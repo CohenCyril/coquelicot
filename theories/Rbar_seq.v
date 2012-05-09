@@ -173,6 +173,42 @@ Proof.
   apply (Rbar_is_sup_seq_rw u v) ; auto.
 Qed.
 
+Lemma Rbar_sup_seq_correct (u : nat -> Rbar) (l : Rbar) :
+  Rbar_is_sup_seq u l -> Rbar_sup_seq u = l.
+Proof.
+  move => Hl ; rewrite /Rbar_sup_seq ; case: (Rbar_ex_sup_seq _) => l0 Hl0 /= ;
+  case: l Hl => [l | | ] Hl ; case: l0 Hl0 => [l0 | | ] Hl0 //.
+  apply Rbar_finite_eq, Rle_antisym ; apply le_epsilon => e He ; 
+  set eps := mkposreal e He ; apply Rlt_le ;
+  case: (Hl (pos_div_2 eps)) => {Hl} Hl [n Hn] ;
+  case: (Hl0 (pos_div_2 eps)) => {Hl0} Hl0 [n0 Hn0].
+  have: (l0 = (l0 - eps/2) + eps/2) ; [by field | move => -> ] ;
+  have : (l + e = (l + eps/2) + eps/2) ; [ simpl ; field | move => -> ] ;
+  apply Rplus_lt_compat_r, (Rbar_lt_trans 
+    (Finite (l0 - eps/2)) (u n0) (Finite (l + eps/2)) Hn0 (Hl _)).
+  have: (l = (l - eps/2) + eps/2) ; [by field | move => -> ] ;
+  have : (l0 + e = (l0 + eps/2) + eps/2) ; [ simpl ; field | move => -> ] ;
+  apply Rplus_lt_compat_r, (Rbar_lt_trans 
+    (Finite (l - eps/2)) (u n) (Finite (l0 + eps/2)) Hn (Hl0 _)).
+  case: (Hl0 (l + 1)) => n {Hl0} Hl0 ; contradict Hl0 ; 
+    apply Rbar_le_not_lt, Rbar_lt_le, (Hl (mkposreal _ Rlt_0_1)).
+  case: (Hl (mkposreal _ Rlt_0_1)) => {Hl} _ [n Hl] ; contradict Hl ; 
+    apply Rbar_le_not_lt, Rbar_lt_le, Hl0.
+  case: (Hl (l0 + 1)) => n {Hl} Hl ; contradict Hl ; 
+    apply Rbar_le_not_lt, Rbar_lt_le, (Hl0 (mkposreal _ Rlt_0_1)).
+  case: (Hl 0) => n {Hl} Hl ; contradict Hl ; 
+    apply Rbar_le_not_lt, Rbar_lt_le, Hl0.
+  case: (Hl0 (mkposreal _ Rlt_0_1)) => {Hl0} _ [n Hl0] ; contradict Hl0 ; 
+    apply Rbar_le_not_lt, Rbar_lt_le, Hl.
+  case: (Hl0 0) => n {Hl0} Hl0 ; contradict Hl0 ; 
+    apply Rbar_le_not_lt, Rbar_lt_le, Hl.
+Qed.
+Lemma Rbar_sup_seq_correct_0 (u : nat -> Rbar) :
+  Rbar_is_sup_seq u (Rbar_sup_seq u).
+Proof.
+  rewrite /Rbar_sup_seq ; case: (Rbar_ex_sup_seq _) => l Hl //.
+Qed.
+
 (** * Inf of a sequence *)
 
 Definition Rbar_is_inf_seq (u : nat -> Rbar) (l : Rbar) :=
