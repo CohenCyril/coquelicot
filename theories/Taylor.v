@@ -42,6 +42,59 @@ Definition DL_regular_n f m x y :=
     Rabs (u-x) < delta -> Rabs (v-y) < delta ->
        Rabs (f u v - DL_pol m f x y (u-x) (v-y)) <= D * (Rmax (Rabs (u-x)) (Rabs (v-y))) ^ (S m).
 
+Lemma MVT_cor4:
+   forall (f f' : R -> R) (a eps : R),
+   (forall c : R, Rabs (c-a) <= eps -> derivable_pt_lim f c (f' c)) ->
+   forall b, (Rabs (b-a) <= eps) -> 
+      exists c : R, f b - f a = f' c * (b - a) /\ (Rabs (c-a) <= Rabs (b-a)).
+intros f f' a eps Hf' b.
+unfold Rabs at 1 3.
+case Rcase_abs; intros H1 H2.
+destruct (MVT_cor2 f f' b a).
+apply Rplus_lt_reg_r with (-a).
+ring_simplify.
+now rewrite Rplus_comm.
+intros; apply Hf'.
+rewrite Rabs_left1.
+apply Rle_trans with (2:=H2).
+apply Ropp_le_contravar.
+now apply Rplus_le_compat_r.
+apply Rplus_le_reg_r with a.
+now ring_simplify.
+exists x; split.
+rewrite - Ropp_minus_distr (proj1 H).
+ring.
+rewrite Rabs_left.
+apply Ropp_le_contravar.
+left; now apply Rplus_lt_compat_r.
+apply Rplus_lt_reg_r with a.
+now ring_simplify.
+destruct H1.
+destruct (MVT_cor2 f f' a b).
+apply Rplus_lt_reg_r with (-a).
+ring_simplify.
+now rewrite Rplus_comm.
+intros; apply Hf'.
+rewrite Rabs_right.
+apply Rle_trans with (2:=H2).
+now apply Rplus_le_compat_r.
+apply Rle_ge; apply Rplus_le_reg_r with a.
+now ring_simplify.
+exists x; split.
+exact (proj1 H0).
+rewrite Rabs_right.
+left; now apply Rplus_lt_compat_r.
+apply Rle_ge; apply Rplus_le_reg_r with a.
+left; now ring_simplify.
+exists a.
+replace b with a.
+split;[ring|idtac].
+rewrite /Rminus Rplus_opp_r Rabs_R0.
+apply Rle_refl.
+apply Rplus_eq_reg_l with (-a).
+ring_simplify.
+rewrite - H; ring.
+Qed.
 
 
 Lemma bounded_variation_aux:
@@ -74,9 +127,9 @@ apply bounded_variation_aux.
 now apply Rnot_le_lt.
 Qed.
 
-Lemma ex_deriv_eta: forall f g x,
-  ex_deriv f x -> (forall y, f y = g y) -> ex_deriv g x.
-intros f g x (l,Hf) Hfg.
+Lemma ex_deriv_eta: forall f g,
+   (forall y, f y = g y) -> forall x, ex_deriv f x -> ex_deriv g x.
+intros f g Hfg x (l,Hf).
 exists l.
 intros t Ht.
 destruct (Hf t Ht).
@@ -85,6 +138,55 @@ rewrite <- 2!Hfg.
 now apply H.
 Qed.
 
+Lemma Deriv_eta: forall f g, 
+   (forall y, f y = g y) -> forall x, Deriv f x = Deriv g x.
+Proof.
+intros f g Hfg x.
+unfold Deriv, Lim, Lim_seq.
+apply f_equal.
+rewrite 2!LimSup_seq_correct.
+apply Rbar_limsup_eq.
+intros n; now rewrite 2!Hfg.
+Qed.
+
+Lemma Deriv_n_eta: forall f g, 
+   (forall y, f y = g y) -> forall n x, Deriv_n f n x = Deriv_n g n x.
+Proof.
+intros f g Hfg.
+induction n.
+now simpl.
+simpl.
+now apply Deriv_eta.
+Qed.
+
+Lemma Deriv_n_comp: forall f n m x,
+  Deriv_n (Deriv_n f m) n x = Deriv_n f (n+m) x.
+intros f n m.
+induction n.
+now simpl.
+simpl.
+now apply Deriv_eta.
+Qed.
+
+
+
+
+
+
+Lemma Schwartz: forall f x y (eps : posreal), 
+   (forall u v, Rabs (u-x) < eps -> Rabs (v-y) < eps 
+          ->  ex_deriv (fun z => f z v) u /\
+              ex_deriv (fun z => f u z) v /\
+              ex_deriv (fun z => Deriv (fun t => f z t) v) u /\
+              ex_deriv (fun z => Deriv (fun t => f t z) u) v)
+    -> continuity2_pt (fun u v => Deriv (fun z => Deriv (fun t => f z t) v) u) x y
+    -> continuity2_pt (fun u v => Deriv (fun z => Deriv (fun t => f t z) u) v) x y
+    -> Deriv (fun z => Deriv (fun t => f z t) y) x = Deriv (fun z => Deriv (fun t => f t z) x) y.
+Proof.
+intros f x y eps H H1 H2.
+set (phi k x := f x (y+k) - f x y).
+set (delta h k := phi k (x+h) - phi k x).
+assert (ex_deriv 
 
 
 
@@ -160,18 +262,51 @@ destruct H as ((eps,H1),H2).
 split.
 exists eps.
 intros m k Hmk u v Hu Hv; split.
-
-
+(* ... *)
+assert (S m + k < S (S n))%nat.
+omega.
+specialize (H1 _ _ H u v Hu Hv).
+apply ex_deriv_eta with (2:=proj1 H1).
+intros; unfold partial_derive.
+replace (S m) with (m + 1)%nat by apply (plus_comm m 1).
+rewrite -(Deriv_n_comp _ m 1).
+apply Deriv_n_eta.
+intros y1.
+admit. (* compliqué *)
+(* ... *)
+assert (S m + k < S (S n))%nat.
+omega.
+specialize (H1 _ _ H u v Hu Hv).
+apply ex_deriv_eta with (2:=proj2 H1).
+intros; unfold partial_derive.
+replace (S m) with (m + 1)%nat by apply (plus_comm m 1).
+rewrite -(Deriv_n_comp _ m 1).
+apply Deriv_n_eta.
+intros y1.
 admit. (* compliqué *)
 
 
-assert (m + S k < S (S n))%nat.
-omega.
-specialize (H1 m (S k) H u v Hu Hv).
-apply ex_deriv_eta with (1:=proj2 H1).
-intros; unfold partial_derive.
+
+rewrite -Deriv_n_comp.
+apply trans_eq with ((Deriv_n (Deriv_n (fun z : R => f y1 z) k) 1) v).
+reflexivity.
+rewrite Deriv_n_comp plus_comm - Deriv_n_comp.
+apply Deriv_n_eta.
 simpl.
+
+
+
+now idtac.
+
+rewrite
+
+rewrite (Deriv_n_comp _ 1 n).
+
+
 apply f_equal. (* argh, mauvais sens du Deriv_n *)
+
+
+
 
 
 
