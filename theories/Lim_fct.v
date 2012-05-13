@@ -1,4 +1,5 @@
-Require Export Reals Lim_seq ssreflect.
+Require Import Reals.
+Require Import Lim_seq ssreflect.
 Open Scope R_scope.
 
 (** * Limit *)

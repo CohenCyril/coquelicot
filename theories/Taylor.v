@@ -1,4 +1,6 @@
-Require Import Deriv_fct.
+Require Import Reals.
+Require Import ssreflect.
+Require Import Lim_seq Lim_fct Sup_seq Rbar_seq Deriv_fct.
 
 
 

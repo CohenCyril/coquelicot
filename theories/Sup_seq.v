@@ -1,4 +1,5 @@
-Require Export Arithmetique Reals Rbar_theory Total_sup.
+Require Import Arithmetique Reals.
+Require Import Rbar_theory Total_sup.
 Require Import ssreflect.
 Open Scope R_scope.
 

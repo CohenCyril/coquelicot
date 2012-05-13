@@ -1,5 +1,5 @@
-Require Import Reals seq.
-Require Import Arithmetique Floor Total_sup Sup_seq.
+Require Import Reals.
+Require Import seq Arithmetique Floor Total_sup Sup_seq.
 Require Import ssreflect ssrbool eqtype.
 
 (** * compatibilities with ssreflect *)

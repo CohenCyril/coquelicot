@@ -1,4 +1,5 @@
-Require Import Reals ssreflect.
+Require Import Reals.
+Require Import ssreflect.
 Require Import Arithmetique.
 
 Open Scope R_scope.

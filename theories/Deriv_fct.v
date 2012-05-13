@@ -1,4 +1,5 @@
-Require Export Reals Lim_fct.
+Require Import Reals.
+Require Import Lim_fct.
 Open Scope R_scope.
 
 (** * Deriv *)

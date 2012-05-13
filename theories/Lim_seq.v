@@ -1,4 +1,5 @@
-Require Export Reals Arithmetique Markov Sup_seq ssreflect.
+Require Import Reals Arithmetique Markov.
+Require Import Sup_seq Rbar_theory Total_sup ssreflect.
 Open Scope R_scope.
 
 (** * Limit sequence *)
