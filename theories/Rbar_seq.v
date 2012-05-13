@@ -34,9 +34,7 @@ Proof.
   case (proj2 (Hl (mkposreal _ Rlt_0_1))) ; clear Hl ; simpl ; intros n Hl.
   assert (H : (exists n0 : nat, u n = u n0)).
   exists n ; auto.
-  generalize (Hb (u n) H) Hl ; clear Hb ; case (u n) ; intuition.
-  contradict H0 ; apply Finite_m_infty.
-  contradict H0 ; apply p_m_infty.
+  generalize (Hb (u n) H) Hl ; clear Hb ; now case (u n).
 (* l = p_infty *)
   apply Rbar_ub_p_infty.
   intro b ; destruct b as [b | | ] ; simpl ; intro Hb.
@@ -47,10 +45,7 @@ Proof.
   case (Hl 0) ; clear Hl; intros n Hl.
   assert (H : (exists n0 : nat, u n = u n0)).
   exists n ; auto.
-  generalize (Hb (u n) H) Hl ; clear Hl ; case (u n) ; intuition.
-  contradict H0 ; apply Finite_m_infty.
-  contradict H0 ; apply p_m_infty.
-  simpl in Hl ; intuition.
+  generalize (Hb (u n) H) Hl ; clear Hl ; now case (u n).
 (* l = m_infty *)
   intro x ; destruct x as [x | | ] ; intros (n, Hx).
   generalize (Hl x n) ; clear Hl ; intro Hl ; rewrite <-Hx in Hl ; apply Rbar_finite_lt, Rlt_irrefl in Hl ; intuition.
@@ -100,14 +95,14 @@ Proof.
   case (Markov (fun n => exists x, Finite x = u n)).
   intro n ; destruct (u n) as [x | | ].
   left ; exists x ; auto.
-  right ; intros (x,Hx) ; contradict Hx ; apply Finite_p_infty.
-  right ; intros (x,Hx) ; contradict Hx ; apply Finite_m_infty.
+  right ; now intros (x,Hx).
+  right ; now intros (x,Hx).
   intro H ; case (Rbar_ex_lub_ne (fun x => exists n, x = u n)).
   case (Markov (fun n => p_infty = u n)).
   intro n0 ; destruct (u n0) as [r | | ].
-  right ; apply sym_not_eq, Finite_p_infty.
+  now right.
   left ; auto.
-  right ; apply p_m_infty.
+  now right.
   intros (n0,Hn0) ; left ; exists n0 ; auto.
   intros H0 ; right ; intros (n0, Hn0) ; generalize Hn0 ; apply H0.
   destruct H as (n, (x, Hnx)).

@@ -112,8 +112,8 @@ Proof.
 (* -> *)
   apply Rbar_finite_le, Ropp_le_cancel, Rbar_finite_le, Hl ; simpl ; rewrite Ropp_involutive ; auto.
   left ; simpl ; auto.
-  case (Hl p_infty Hx) ; simpl ; intuition ; apply sym_eq, Finite_p_infty in H ; intuition.
-  rewrite <-(Ropp_involutive x) in Hx ; case (Hl (Finite (-x)) Hx) ; simpl ; intuition ; apply Finite_m_infty in H ; intuition.
+  now case (Hl p_infty Hx).
+  rewrite <-(Ropp_involutive x) in Hx ; now case (Hl (Finite (-x)) Hx).
   right ; auto.
   case (Hl p_infty Hx) ; simpl ; intuition.
   left ; simpl ; auto.
@@ -121,9 +121,9 @@ Proof.
   right ; simpl ; auto.
 (* <- *)
   apply Rbar_finite_le, Ropp_le_cancel, Rbar_finite_le ; simpl ; rewrite Ropp_involutive ; apply Hl ; auto.
-  case (Hl m_infty Hx) ; simpl ; intuition ; apply Finite_m_infty in H ; intuition.
+  now case (Hl m_infty Hx).
   left ; simpl ; auto.
-  case (Hl (Finite (-x)) Hx) ; simpl ; intuition ; apply sym_eq, Finite_p_infty in H ; intuition.
+  now case (Hl (Finite (-x)) Hx).
   case (Hl m_infty Hx) ; simpl ; intuition.
   right ; auto.
   left ; simpl ; auto.
@@ -140,23 +140,22 @@ Proof.
   destruct x as [x | | ] ; intro Hx.
 (* -> *)
   apply Rbar_finite_le, Ropp_le_cancel, Rbar_finite_le, Hl ; simpl ; rewrite Ropp_involutive ; auto.
-  case (Hl m_infty Hx) ; simpl ; intuition ; apply Finite_m_infty in H ; intuition.
+  now case (Hl m_infty Hx).
   left ; simpl ; auto.
   left ; simpl ; auto.
   right ; auto.
   left ; simpl ; auto.
-  rewrite <-(Ropp_involutive x) in Hx ; case (Hl (Finite (-x)) Hx) ; simpl ; intuition ;
-  apply sym_eq, Finite_p_infty in H ; intuition.
+  rewrite <-(Ropp_involutive x) in Hx ; now case (Hl (Finite (-x)) Hx).
   case (Hl m_infty Hx) ; simpl ; intuition.
   right ; auto.
 (* <- *)
   apply Rbar_finite_le, Ropp_le_cancel, Rbar_finite_le ; simpl ; rewrite Ropp_involutive ; apply Hl ; auto.
   left ; simpl ; auto.
-  case (Hl p_infty Hx) ; simpl ; intuition ; apply sym_eq, Finite_p_infty in H ; intuition.
+  now  case (Hl p_infty Hx).
   left ; simpl ; auto.
   left ; simpl ; auto.
   right ; auto.
-  case (Hl (Finite (-x)) Hx) ; simpl ; intuition ; apply Finite_m_infty in H ; intuition.
+  now case (Hl (Finite (-x)) Hx).
   right ; auto.
   case (Hl p_infty Hx) ; simpl ; intuition.
 Qed.
@@ -256,8 +255,7 @@ Proof.
   left ; simpl ; auto.
   generalize (Rbar_ub_m_infty _ Hb) ; clear Hb ; intro Hb.
   case Hex ; intros x Hx.
-  generalize (Hb _ Hx) ; clear Hb Hx ; intro Hb.
-  contradict Hb ; apply Finite_m_infty.
+  discriminate (Hb _ Hx).
 (* ~ bound E *)
   intro H ; exists p_infty ; split.
   apply Rbar_ub_p_infty.

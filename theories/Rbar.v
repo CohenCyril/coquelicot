@@ -16,10 +16,6 @@ Definition real (x : Rbar) :=
     | _ => 0
   end.
 
-Axiom Finite_p_infty : forall r, Finite r <> p_infty.
-Axiom Finite_m_infty : forall r, Finite r <> m_infty.
-Axiom p_m_infty : p_infty <> m_infty.
-
 (** ** Order *)
 
 Definition Rbar_lt (x y : Rbar) : Prop :=
@@ -112,19 +108,15 @@ Lemma Rbar_eq_dec (x y : Rbar) :
   {x = y} + {x <> y}.
 Proof.
   intros ; destruct (Rbar_total_order x y) as [[H|H]|H].
-  right ; revert H ; destruct x ; auto ; [rename r into x | ] ; destruct y ; simpl ; intros H ; 
-  contradict H. 
+  right ; revert H ; destruct x as [x| |] ; destruct y as [y| |] ; simpl ; intros H ;
+  try easy.
+  contradict H.
   apply Rbar_finite_eq in H ; try apply Rle_not_lt, Req_le ; auto.
-  apply Finite_p_infty in H ; auto.
-  apply sym_equal, Finite_m_infty in H ; auto.
-  apply sym_equal, p_m_infty in H ; auto.
   left ; apply H.
-  right ; revert H ; destruct x ; [rename r into x | | ] ; destruct y ; auto ; intros H ; 
+  right ; revert H ; destruct x as [x| |] ; destruct y as [y| |] ; simpl ; intros H ;
+  try easy.
   contradict H.
   apply Rbar_finite_eq in H ; apply Rle_not_lt, Req_le ; auto.
-  apply Finite_m_infty in H ; auto.
-  apply sym_equal, Finite_p_infty in H ; auto.
-  apply p_m_infty in H ; auto.
 Qed.
 
 Lemma Rbar_lt_dec (x y : Rbar) :
@@ -172,11 +164,9 @@ Qed.
 Lemma Rbar_lt_not_eq (x y : Rbar) :
   Rbar_lt x y -> x<>y.
 Proof.
-  destruct x ; destruct y ; simpl ; intuition.
+  destruct x ; destruct y ; simpl ; try easy.
+  intros H H0.
   apply Rbar_finite_eq in H0 ; revert H0 ; apply Rlt_not_eq, H.
-  apply (Finite_p_infty r), H0.
-  apply (Finite_m_infty r) ; rewrite H0 ; reflexivity.
-  apply p_m_infty ; rewrite H0 ; reflexivity.
 Qed.
 
 Lemma Rbar_not_le_lt (x y : Rbar) :
@@ -194,11 +184,8 @@ Lemma Rbar_lt_not_le (x y : Rbar) :
   Rbar_lt y x -> ~ Rbar_le x y.
 Proof.
   destruct x ; destruct y ; simpl ; intuition ; 
-  [ | destruct H0 | destruct H0 | destruct H0] ; intuition.
+  [ | destruct H0 | destruct H0 | destruct H0] ; try easy.
   contradict H ; apply Rle_not_lt, (Rbar_finite_le _ _), H0.
-  contradict H0 ; apply Finite_m_infty.
-  contradict H0 ; apply sym_not_eq, Finite_p_infty.
-  contradict H0 ; apply p_m_infty.
 Qed.
 Lemma Rbar_not_lt_le (x y : Rbar) :
   ~ Rbar_lt x y -> Rbar_le y x.
@@ -216,9 +203,9 @@ Lemma Rbar_le_not_lt (x y : Rbar) :
 Proof.
   destruct x ; destruct y ; simpl ; intuition ; contradict H0.
   apply Rle_not_lt, (Rbar_finite_le _ _), H.
-  destruct H ; intuition ; contradict H ; apply sym_not_eq, Finite_p_infty.
-  destruct H ; intuition ; contradict H ; apply Finite_m_infty.
-  destruct H ; intuition ; contradict H ; apply p_m_infty.
+  now destruct H.
+  now destruct H.
+  now destruct H.
 Qed.
 Lemma Rbar_lt_le (x y : Rbar) :
   Rbar_lt x y -> Rbar_le x y.
@@ -245,16 +232,11 @@ Proof.
   apply (Rbar_finite_lt _ _), Rlt_le_trans with (r2 := r0).
   apply (Rbar_finite_lt _ _), H.
   apply (Rbar_finite_le _ _), H0.
-  destruct H0 as [H1|H1] ; contradict H1.
-  apply Finite_m_infty.
-  destruct H0 as [H1|H1] ; contradict H1.
-  apply sym_not_eq, Finite_p_infty.
-  destruct H0 as [H1|H1] ; contradict H1.
-  apply p_m_infty.
-  destruct H0 as [H1|H1] ; contradict H1.
-  apply Finite_m_infty.
-  destruct H0 as [H1|H1] ; contradict H1.
-  apply p_m_infty.
+  now destruct H0 as [H1|H1] ; contradict H1.
+  now destruct H0 as [H1|H1] ; contradict H1.
+  now destruct H0 as [H1|H1] ; contradict H1.
+  now destruct H0 as [H1|H1] ; contradict H1.
+  now destruct H0 as [H1|H1] ; contradict H1.
 Qed.
 Lemma Rbar_le_lt_trans (x y z : Rbar) :
   Rbar_le x y -> Rbar_lt y z -> Rbar_lt x z.
@@ -263,16 +245,11 @@ Proof.
   apply (Rbar_finite_lt _ _), Rle_lt_trans with (r2 := r0).
   apply (Rbar_finite_le _ _), H.
   apply H0.
-  destruct H as [H1|H1] ; contradict H1.
-  apply Finite_m_infty.
-  destruct H as [H1|H1] ; contradict H1.
-  apply sym_not_eq, Finite_p_infty.
-  destruct H as [H1|H1] ; contradict H1.
-  apply sym_not_eq, Finite_p_infty.
-  destruct H as [H1|H1] ; contradict H1.
-  apply p_m_infty.
-  destruct H as [H1|H1] ; contradict H1.
-  apply p_m_infty.
+  now destruct H as [H1|H1] ; contradict H1.
+  now destruct H as [H1|H1] ; contradict H1.
+  now destruct H as [H1|H1] ; contradict H1.
+  now destruct H as [H1|H1] ; contradict H1.
+  now destruct H as [H1|H1] ; contradict H1.
 Qed.
 Lemma Rbar_le_trans (x y z : Rbar) :
   Rbar_le x y -> Rbar_le y z -> Rbar_le x z.
@@ -286,12 +263,12 @@ Lemma Rbar_le_antisym (x y : Rbar) :
 Proof.
   destruct x ; destruct y ; simpl ; intuition.
   apply (Rbar_finite_eq _ _), Rle_antisym ; apply (Rbar_finite_le _ _) ; [apply H|apply H0].
-  destruct H0 ; contradict H0 ; apply sym_not_eq, Finite_p_infty.
-  destruct H ; contradict H ; apply Finite_m_infty.
-  destruct H ; contradict H ; apply sym_not_eq, Finite_p_infty.
-  destruct H ; contradict H ; apply p_m_infty.
-  destruct H0 ; contradict H0 ; apply Finite_m_infty.
-  destruct H0 ; contradict H0 ; apply p_m_infty.
+  now destruct H0 ; contradict H0.
+  now destruct H ; contradict H.
+  now destruct H ; contradict H.
+  now destruct H ; contradict H.
+  now destruct H0 ; contradict H0.
+  now destruct H0 ; contradict H0.
 Qed.
 
 (** * Proprieties on operations *)
