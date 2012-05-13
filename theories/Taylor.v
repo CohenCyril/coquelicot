@@ -45,18 +45,21 @@ Definition DL_regular_n f m x y :=
        Rabs (f u v - DL_pol m f x y (u-x) (v-y)) <= D * (Rmax (Rabs (u-x)) (Rabs (v-y))) ^ (S m).
 
 Lemma MVT_cor4:
-   forall (f f' : R -> R) (a eps : R),
-   (forall c : R, Rabs (c-a) <= eps -> derivable_pt_lim f c (f' c)) ->
-   forall b, (Rabs (b-a) <= eps) -> 
-      exists c : R, f b - f a = f' c * (b - a) /\ (Rabs (c-a) <= Rabs (b-a)).
-intros f f' a eps Hf' b.
+  forall (f : R -> R) a eps,
+  (forall c, Rabs (c - a) <= eps -> ex_deriv f c) ->
+  forall b, (Rabs (b - a) <= eps) ->
+  exists c, f b - f a = Deriv f c * (b - a) /\ (Rabs (c - a) <= Rabs (b - a)).
+Proof.
+intros f a eps Hf' b.
 unfold Rabs at 1 3.
 case Rcase_abs; intros H1 H2.
-destruct (MVT_cor2 f f' b a).
+destruct (MVT_cor2 f (Deriv f) b a).
 apply Rplus_lt_reg_r with (-a).
 ring_simplify.
 now rewrite Rplus_comm.
-intros; apply Hf'.
+intros c Hc.
+apply Deriv_prop.
+apply Hf'.
 rewrite Rabs_left1.
 apply Rle_trans with (2:=H2).
 apply Ropp_le_contravar.
@@ -72,11 +75,13 @@ left; now apply Rplus_lt_compat_r.
 apply Rplus_lt_reg_r with a.
 now ring_simplify.
 destruct H1.
-destruct (MVT_cor2 f f' a b).
+destruct (MVT_cor2 f (Deriv f) a b).
 apply Rplus_lt_reg_r with (-a).
 ring_simplify.
 now rewrite Rplus_comm.
-intros; apply Hf'.
+intros c Hc.
+apply Deriv_prop.
+apply Hf'.
 rewrite Rabs_right.
 apply Rle_trans with (2:=H2).
 now apply Rplus_le_compat_r.
@@ -98,35 +103,22 @@ ring_simplify.
 rewrite - H; ring.
 Qed.
 
-
-Lemma bounded_variation_aux:
-  forall h x y D, x < y -> (forall t, x <= t <= y -> ex_deriv h t /\ (Rabs (Deriv h t) <= D)) -> 
-     Rabs (h y - h x) <= D * Rabs (y-x).
-intros h x y D H Ht.
-assert (H2:= MVT_cor2 h (Deriv h) x y H).
-destruct H2.
+Lemma bounded_variation :
+  forall h D x y,
+  (forall t, Rabs (t - x) <= Rabs (y - x) -> ex_deriv h t /\ (Rabs (Deriv h t) <= D)) ->
+  Rabs (h y - h x) <= D * Rabs (y - x).
+Proof.
+intros h D x y H.
+destruct (MVT_cor4 h x (Rabs (y - x))) with (b := y) as [t Ht].
 intros c Hc.
-apply Deriv_prop.
-now apply Ht.
-rewrite (proj1 H0).
+specialize (H c Hc).
+apply H.
+apply Rle_refl.
+rewrite (proj1 Ht).
 rewrite Rabs_mult.
 apply Rmult_le_compat_r.
 apply Rabs_pos.
-apply Ht.
-split; left; apply H0.
-Qed.
-
-Lemma bounded_variation: 
-  forall h x y D, (forall t, Rmin x y <= t <= Rmax x y -> ex_deriv h t /\ (Rabs (Deriv h t) <= D)) -> 
-     Rabs (h x - h y) <= D * Rabs (x-y).
-intros h x y D; unfold Rmin, Rmax.
-destruct (Rle_dec x y) as [[H|H]|H].
-rewrite Rabs_minus_sym (Rabs_minus_sym x _).
-now apply bounded_variation_aux.
-intros _.
-rewrite H /Rminus 2!Rplus_opp_r Rabs_R0 Rmult_0_r; apply Rle_refl.
-apply bounded_variation_aux.
-now apply Rnot_le_lt.
+now apply H.
 Qed.
 
 Lemma ex_deriv_eta: forall f g,
