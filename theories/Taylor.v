@@ -224,17 +224,27 @@ apply bounded_variation with (h:= fun y => f u y).
 intros t Ht.
 split.
 apply H1.
-admit.
-admit.
+apply Rlt_le_trans with (1 := Hu).
+apply Rmin_l.
+apply Rle_lt_trans with (1 := Ht).
+apply Rlt_le_trans with (1 := Hv).
+apply Rmin_l.
 unfold partial_derive in Hd2; simpl in Hd2.
 apply Rplus_le_reg_r with (-Rabs (Deriv (fun x0 : R => f x x0) y)).
 ring_simplify.
 apply Rle_trans with (1:=Rabs_triang_inv _ _).
 left; apply Hd2.
-admit.
-admit.
+apply Rlt_le_trans with (1 := Hu).
+apply Rle_trans with (1 := Rmin_r _ _).
+apply Rmin_l.
+apply Rle_lt_trans with (1 := Ht).
+apply Rlt_le_trans with (1 := Hv).
+apply Rle_trans with (1 := Rmin_r _ _).
+apply Rmin_l.
 apply Rmult_le_compat_l.
-admit.
+apply Rplus_le_le_0_compat.
+apply Rabs_pos.
+apply Rlt_le, Rlt_0_1.
 apply Rmax_r.
 (* . *)
 apply Rle_trans with ((Rabs (Deriv (fun x0 : R => f x0 y) x) + 1) * (Rabs (u - x))).
@@ -242,17 +252,26 @@ apply bounded_variation with (h:= fun x => f x y).
 intros t Ht.
 split.
 apply H1.
-admit.
-admit.
+apply Rle_lt_trans with (1 := Ht).
+apply Rlt_le_trans with (1 := Hu).
+apply Rmin_l.
+rewrite /Rminus Rplus_opp_r Rabs_R0.
+apply cond_pos.
 unfold partial_derive in Hd3; simpl in Hd3.
 apply Rplus_le_reg_r with (-Rabs (Deriv (fun x0 : R => f x0 y) x)).
 ring_simplify.
 apply Rle_trans with (1:=Rabs_triang_inv _ _).
 left; apply Hd3.
-admit.
-admit.
+apply Rle_lt_trans with (1 := Ht).
+apply Rlt_le_trans with (1 := Hu).
+apply Rle_trans with (1 := Rmin_r _ _).
+apply Rmin_r.
+rewrite /Rminus Rplus_opp_r Rabs_R0.
+apply cond_pos.
 apply Rmult_le_compat_l.
-admit.
+apply Rplus_le_le_0_compat.
+apply Rabs_pos.
+apply Rlt_le, Rlt_0_1.
 apply Rmax_l.
 (* *)
 intros f x y H; simpl in H.
