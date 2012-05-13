@@ -35,6 +35,85 @@ Qed.
 
 (** * Operations *)
 
+Lemma is_deriv_opp :
+  forall f x, ex_deriv f x ->
+  is_deriv (fun x => - f x) x (- Deriv f x).
+Proof.
+intros f x Df.
+apply derivable_pt_lim_opp.
+now apply Deriv_prop.
+Qed.
+
+Lemma ex_deriv_opp :
+  forall f x, ex_deriv f x ->
+  ex_deriv (fun x => - f x) x.
+Proof.
+intros f x Df.
+eexists.
+now apply is_deriv_opp.
+Qed.
+
+Lemma Deriv_opp :
+  forall f x, ex_deriv f x ->
+  Deriv (fun x => - f x) x = - Deriv f x.
+Proof.
+intros f x Df.
+apply Deriv_correct.
+now apply is_deriv_opp.
+Qed.
+
+Lemma is_deriv_plus :
+  forall f g x, ex_deriv f x -> ex_deriv g x ->
+  is_deriv (fun x => f x + g x) x (Deriv f x + Deriv g x).
+Proof.
+intros f g x Df Dg.
+apply derivable_pt_lim_plus ; now apply Deriv_prop.
+Qed.
+
+Lemma ex_deriv_plus :
+  forall f g x, ex_deriv f x -> ex_deriv g x ->
+  ex_deriv (fun x => f x + g x) x.
+Proof.
+intros f g x Df Dg.
+eexists.
+now apply is_deriv_plus.
+Qed.
+
+Lemma Deriv_plus :
+  forall f g x, ex_deriv f x -> ex_deriv g x ->
+  Deriv (fun x => f x + g x) x = Deriv f x + Deriv g x.
+Proof.
+intros f g x Df Dg.
+apply Deriv_correct.
+now apply is_deriv_plus.
+Qed.
+
+Lemma is_deriv_minus :
+  forall f g x, ex_deriv f x -> ex_deriv g x ->
+  is_deriv (fun x => f x - g x) x (Deriv f x - Deriv g x).
+Proof.
+intros f g x Df Dg.
+apply derivable_pt_lim_minus ; now apply Deriv_prop.
+Qed.
+
+Lemma ex_deriv_minus :
+  forall f g x, ex_deriv f x -> ex_deriv g x ->
+  ex_deriv (fun x => f x - g x) x.
+Proof.
+intros f g x Df Dg.
+eexists.
+now apply is_deriv_minus.
+Qed.
+
+Lemma Deriv_minus :
+  forall f g x, ex_deriv f x -> ex_deriv g x ->
+  Deriv (fun x => f x - g x) x = Deriv f x - Deriv g x.
+Proof.
+intros f g x Df Dg.
+apply Deriv_correct.
+now apply is_deriv_minus.
+Qed.
+
 Lemma is_deriv_comp (f g : R -> R) (x df dg : R) : 
   is_deriv f (g x) df -> is_deriv g x dg -> is_deriv (fun x => f (g x)) x (df * dg).
 Proof.
@@ -49,7 +128,7 @@ Proof.
   apply Deriv_prop, H.
   apply Deriv_prop, H0.
 Qed.
-Lemma Lim_comp (f g : R -> R) (x : R) : 
+Lemma Deriv_comp (f g : R -> R) (x : R) :
   ex_deriv f (g x) -> ex_deriv g x -> Deriv (fun x => f (g x)) x = Deriv f (g x) * Deriv g x.
 Proof.
   intros.
