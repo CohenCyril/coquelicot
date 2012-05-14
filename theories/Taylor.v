@@ -400,56 +400,43 @@ rewrite -(Deriv_n_comp _ m 1).
 apply Deriv_n_eta.
 intros y1.
 admit. (* compliqué *)
-
-
-
-rewrite -Deriv_n_comp.
-apply trans_eq with ((Deriv_n (Deriv_n (fun z : R => f y1 z) k) 1) v).
-reflexivity.
-rewrite Deriv_n_comp plus_comm - Deriv_n_comp.
+admit.
+(* . *)
+assert (Hy := IHn (fun x y => Deriv (fun z => f x z) y) x y).
+destruct Hy as (Dy,(deltay,Hy)).
+(* .. *)
+destruct H as ((eps,H1),H2).
+split.
+exists eps.
+intros m k Hmk u v Hu Hv; split.
+(* ... *)
+assert (m + S k < S (S n))%nat.
+omega.
+specialize (H1 _ _ H u v Hu Hv).
+apply ex_deriv_eta with (2:=proj1 H1).
+intros; unfold partial_derive.
+revert y0.
 apply Deriv_n_eta.
+intros y0.
+replace (S k) with (k + 1)%nat by apply (plus_comm k 1).
+now rewrite -(Deriv_n_comp _ k 1).
+(* ... *)
+assert (m + S k < S (S n))%nat.
+omega.
+specialize (H1 _ _ H u v Hu Hv).
+apply ex_deriv_eta with (2:=proj2 H1).
+intros; unfold partial_derive.
+apply Deriv_n_eta.
+intros y1.
+replace (S k) with (k + 1)%nat by apply (plus_comm k 1).
+now rewrite -(Deriv_n_comp _ k 1).
+admit.
+(* . *)
+set (D := Rmax Dx Dy).
+exists D.
+exists (mkposreal _ (Rmin_stable_in_posreal deltax deltay)).
 simpl.
-
-
-
-now idtac.
-
-rewrite
-
-rewrite (Deriv_n_comp _ 1 n).
-
-
-apply f_equal. (* argh, mauvais sens du Deriv_n *)
-
-
-
-
-
-
-unfold ex_diff_n in *.
-
-
-; exists (mkposreal 1 Rlt_0_1).
-
-
-
-specialize (H3 (mkposreal 1 Rlt_0_1)).
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+intros u v Hu Hv.
 
 
 
