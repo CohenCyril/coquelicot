@@ -1,5 +1,5 @@
 Require Import Reals Div2.
-Require Import seq Arithmetique Floor Total_sup Sup_seq.
+Require Import seq Arithmetique Floor Total_sup Sup_seq Lim_seq Deriv_fct.
 Require Import ssreflect ssrbool eqtype.
 
 (** * compatibilities with ssreflect *)
@@ -82,6 +82,11 @@ Lemma behead_rev {T : Type} (s : seq T) : behead (rev s) = rev (belast s).
 Proof.
   case: s => // t s ; elim: s t => // t s IHs t0.
   rewrite rev_cons behead_rcons ?IHs ?size_rev -?rev_cons //= ; by apply lt_0_Sn.
+Qed.
+
+Lemma size_belast {T : Type} (s : seq T) : size (belast s) = Peano.pred (size s).
+Proof.
+  case: s => // t s ; elim: s t => // t s /= IHs t0 ; by rewrite IHs.
 Qed.
 
 Lemma size_unzip1 {T T0 : Type} (s : seq (T * T0)) : size (unzip1 s) = size s.
@@ -908,8 +913,9 @@ Lemma ad_SF_val_fun (f : R -> R) (a b : R) (n : nat) :
   ((a <= b) -> adapted_couple (SF_fun (SF_val_seq f a b n) 0) a b 
       (seq2Rlist (RInt_part a b n)) (seq2Rlist (SF_val_ly f a b n)))
   /\ (~(a <= b) -> adapted_couple (SF_fun (SF_rev (SF_val_seq f a b n)) 0) a b 
-      (seq2Rlist (rev (RInt_part a b n))) (seq2Rlist (rev (SF_val_ly f a b n)))).
+      (seq2Rlist (RInt_part b a n)) (seq2Rlist (rev (SF_val_ly f a b n)))).
 Proof.
+  rewrite (RInt_part_bound b a).
   have : SF_lx (SF_val_seq f a b n) = RInt_part a b n ; 
     [apply SF_seq_bij_lx | move => <-].
   have : SF_ly (SF_val_seq f a b n) = SF_val_ly f a b n ;
@@ -936,14 +942,14 @@ Proof.
   exists (seq2Rlist (RInt_part a b n)) ;
   exists (seq2Rlist (SF_val_ly f a b n)) ; by apply ad_SF_val_fun.
   exists (SF_fun (SF_rev (SF_val_seq f a b n)) 0) ;
-  exists (seq2Rlist (rev (RInt_part a b n))) ;
+  exists (seq2Rlist (RInt_part b a n)) ;
   exists (seq2Rlist (rev (SF_val_ly f a b n))) ; by apply ad_SF_val_fun.
 Defined.
 Lemma SF_val_subdiv (f : R -> R) (a b : R) (n : nat) :
   subdivision (SF_val_fun f a b n) = 
   match (Rle_dec a b) with 
     | left _ => seq2Rlist (RInt_part a b n)
-    | right _ => seq2Rlist (rev (RInt_part a b n))
+    | right _ => seq2Rlist (RInt_part b a n)
   end.
 Proof.
   rewrite /SF_val_fun ; case: (Rle_dec a b) => Hab //.
@@ -956,6 +962,48 @@ Lemma SF_val_subdiv_val (f : R -> R) (a b : R) (n : nat) :
   end.
 Proof.
   rewrite /SF_val_fun ; case: (Rle_dec a b) => Hab //.
+Qed.
+
+Definition RInt_val (f : R -> R) (a b : R) (n : nat) :=
+  ((b-a)/2^n) * foldr Rplus 0 (SF_val_ly f a b n).
+
+Lemma RInt_val_correct (f : R -> R) (a b : R) (n : nat) :
+  RInt_val f a b n = RiemannInt_SF (SF_val_fun f a b n).
+Proof.
+  rewrite /RInt_val /RiemannInt_SF SF_val_subdiv SF_val_subdiv_val ; 
+  case: Rle_dec => Hab.
+(* a <= b *)
+  have: (forall i : nat, (S i < size (RInt_part a b n))%nat ->
+    nth 0 (RInt_part a b n) (S i) - nth 0 (RInt_part a b n) i = (b-a) / 2^n).
+    rewrite size_mkseq => i Hi ; rewrite ?nth_mkseq ?S_INR ; 
+    [ field ; apply Rgt_not_eq, pow_lt, Rlt_R0_R2 | | ] ; apply SSR_leq ; intuition.
+  have: (size (RInt_part a b n) = S (size (SF_val_ly f a b n))).
+    by rewrite /SF_val_ly size_belast size_map size_mkseq.
+  elim: (SF_val_ly f a b n) (RInt_part a b n) => {f} [ | h s IH] lx Hs Hnth.
+  rewrite /= ; ring.
+  rewrite /= Rmult_plus_distr_l ; case: lx Hs Hnth => // hx lx Hs Hnth ;
+  rewrite (IH lx) => {IH}.
+  case: lx Hs Hnth => // hx' lx Hs Hnth.
+  move: (Hnth O (lt_n_S _ _ (lt_O_Sn _))) => {Hnth} /= -> ; ring.
+  apply eq_add_S, Hs.
+  move => i Hi ; apply (Hnth (S i)), lt_n_S, Hi.
+(* ~ a <= b *)
+  have: (forall i : nat, (S i < size (RInt_part b a n))%nat ->
+    nth 0 (RInt_part b a n) (S i) - nth 0 (RInt_part b a n) i = -((b-a) / 2^n)).
+    rewrite size_mkseq => i Hi ; rewrite ?nth_mkseq ?S_INR ; 
+    [ field ; apply Rgt_not_eq, pow_lt, Rlt_R0_R2 | | ] ; apply SSR_leq ; intuition.
+  have: (size (RInt_part b a n) = S (size (SF_val_ly f a b n))).
+    by rewrite /SF_val_ly size_belast size_map ?size_mkseq.
+  rewrite -(Rplus_0_r (-Int_SF _ _)) -{4}(Rmult_0_l ((b-a)/2^n)) ;
+  move : (RInt_part b a n) {3 4}(0) ; apply rcons_ind with (s := SF_val_ly f a b n) => {f} [ | s h IH] lx x0 Hs Hnth.
+  rewrite /= ; ring.
+  rewrite foldr_rcons rev_rcons ; case: lx Hs Hnth => // hx lx Hs Hnth ;
+  rewrite (IH lx) => {IH} /=.
+  case: lx Hs Hnth => [| hx' lx] Hs Hnth.
+  rewrite size_rcons /= in Hs ; by apply eq_add_S, O_S in Hs.
+  move: (Hnth O (lt_n_S _ _ (lt_O_Sn _))) => {Hnth} /= -> ; ring.
+  rewrite size_rcons in Hs ; apply eq_add_S, Hs.
+  move => i Hi ; apply (Hnth (S i)), lt_n_S, Hi.
 Qed.
 
 (** *** Local sup and inf *)
@@ -1432,7 +1480,7 @@ Qed.
 
 Lemma SF_inf_incr (f : R -> R) (a b : R) (n : nat) (x : R) :
   Rbar_le (SF_inf_fun f a b n x) (SF_inf_fun f a b (S n) x).
-Admitted.
+Admitted. (** Admitted. *)
 
 (** * StepFun of SF_sup and SF_inf *)
 
@@ -1618,172 +1666,75 @@ Qed.
 (** *)
 Lemma SF_sup_finite (f : R -> R) (a b : R) (n : nat) (M : R) :
   (forall x, Rmin a b <= x <= Rmax a b -> f x <= M) ->
-  (SF_sup f a b n) = SF_map Finite (real_SF_sup f a b n).
+  (SF_sup f a b n) = SF_map Finite (SF_sup_real f a b n).
 Proof.
-  wlog : a b / (a <= b).
-  move => H ; case: (Rle_lt_dec a b) => Hab.
-  by apply H.
-  rewrite Rmin_comm Rmax_comm -SF_sup_bound SF_ly_rev => Hm ; 
-  case: (H _ _ (Rlt_le _ _ Hab) Hm) => l Hl ; exists (rev l).
-  by rewrite Hl map_rev.
-  rewrite /Rmin /Rmax ; case: (Rle_dec a b) => // Hab _ Hm.
+Admitted. (** Admitted. *) 
 
-  exists (map real (SF_ly (SF_sup f a b n))).
-  apply eq_from_nth with (x0 := Finite 0).
-  by rewrite ?size_map.
-  move => i Hi ; apply SSR_leq in Hi ; rewrite SF_size_ly SF_size_sup in Hi.
-  rewrite (nth_map 0) ?size_map ; 
-  [ | apply SSR_leq ; 
-  have : (size (SF_t (SF_sup f a b n)) = SF_size (SF_sup f a b n)) ; 
-  [by []| move => ->] ; by rewrite SF_size_sup ].
-  rewrite (nth_map (Finite 0)) ; [ 
-  | apply SSR_leq ; by rewrite SF_size_ly SF_size_sup].
-  rewrite SF_sup_P_ly nth_behead (nth_pairmap 0) ; 
-  [ | apply SSR_leq ; rewrite size_mkseq ; intuition].
-  have: (nth 0 (0 :: RInt_part a b n) (S i) = nth 0 (RInt_part a b n) i) ; 
-  [by [] | move => ->] ; rewrite ?nth_mkseq ; 
-  [| apply SSR_leq ; intuition | apply SSR_leq ; intuition].
-  have Hord : ((a + INR i * (b - a) / 2 ^ n) <= (a + INR (S i) * (b - a) / 2 ^ n)).
-    rewrite -(Rplus_0_r (a + INR i * (b - a) / 2 ^ n)) ;
-    have : (a + INR (S i) * (b - a) / 2 ^ n = a + INR i * (b - a) / 2 ^ n + (b-a)/2^n) ;
-    [| move => ->].
-    rewrite S_INR ; field ; apply Rgt_not_eq, pow_lt, Rlt_R0_R2.
-    apply Rplus_le_compat_l, Rdiv_le_pos ; 
-    [by apply (Rminus_le_0 a b) | apply pow_lt, Rlt_R0_R2 ].
-    
-  rewrite /Sup_fct /Lub_Rbar_ne ; case: (ex_lub_Rbar_ne _ _) ;
-  case => [x | | ] ; rewrite /Rmin /Rmax ; case (Rle_dec _ _) => H1 [ub lub] //= {H1}.
-(* sup <> p_infty *)
-  have : (Rbar_le p_infty (Finite M)) ; [ | by case].
-  apply lub => {ub} _ [x [-> H]].
-  apply Rbar_finite_le, Hm ; split ;
-  [apply Rle_trans with (2 := proj1 H) | apply Rle_trans with (1 := proj2 H)].
-  rewrite -{1}(Rplus_0_r a) ; apply Rplus_le_compat_l, Rdiv_le_pos ; 
-  [apply Rmult_le_pos|] ; intuition ; by apply (Rminus_le_0 a b).
-  have : (b = a + INR (pow2 n) * (b - a) / 2 ^ n) ; 
-  [rewrite pow2_INR ; field ; apply Rgt_not_eq, pow_lt, Rlt_R0_R2 | move => {2}-> ].
-  apply Rplus_le_compat_l, Rmult_le_compat_r.
-  apply Rlt_le, Rinv_0_lt_compat, pow_lt, Rlt_R0_R2.
-  apply Rmult_le_compat_r.
-  by apply (Rminus_le_0 a b).
-  by apply le_INR.
-(* sup <> m_infty *)
-  have: (Rbar_le (Finite (f (a + INR i * (b - a) / 2 ^ n))) m_infty) ; [| by case].
-  apply ub => {lub}.
-  exists (a + INR i * (b - a) / 2 ^ n) ; intuition.
-Qed. 
-
-Definition RInt_Sum_s f a b n := 
+Definition RInt_sup f a b n := 
   Rbar_div_pos (foldr Rbar_plus (Finite 0) (SF_ly (SF_sup f a b (S n)))) (mkposreal _ (lt_0_INR _ (lt_O_Sn n))).
-Definition RInt_Sum_i f a b n := 
+Definition RInt_inf f a b n := 
   Rbar_div_pos (foldr Rbar_plus (Finite 0) (SF_ly (SF_inf f a b (S n)))) (mkposreal _ (lt_0_INR _ (lt_O_Sn n))).
 
-Lemma RInt_Sum_s_bound f a b n :
-  RInt_Sum_s f a b n = RInt_Sum_s f b a n.
+Lemma RInt_sup_bound f a b n :
+  RInt_sup f a b n = RInt_sup f b a n.
 Proof.
-  have H : (forall i, (i < size (SF_ly (SF_sup f a b (S n))))%nat -> 
-    Rbar_lt m_infty (nth (Finite 0) (SF_ly (SF_sup f a b (S n))) i)).
-    rewrite SF_size_ly => i Hi ; apply lt_n_S in Hi ; rewrite -SF_size_lx SF_seq_bij_lx in Hi ;
-    rewrite ?SF_seq_bij_ly nth_SF_sup_P => //.
-    rewrite size_mkseq in Hi ;
-    rewrite /Sup_fct /Lub_Rbar_ne ; case: (ex_lub_Rbar_ne _ _) ; 
-    case => // ; simpl projT1 ; rewrite ?nth_mkseq ; try apply SSR_leq => // ;
-    set a0 := (a + INR i * (b - a) / INR (S n)) ;
-    set b0 := (a + INR (S i) * (b - a) / INR (S n)).
-    case => ub _ ; case: (ub (f a0)) => //= ;
-    exists a0 ; split => // ; by apply Rmin_Rmax_l.
-    by apply lt_le_weak.
-  apply Rbar_div_pos_eq ; move: H ; rewrite ?SF_seq_bij_ly ;
-  rewrite (RInt_part_bound b a) ?SF_sup_P_bound ; try by apply lt_O_Sn.
-  have: (Rbar_lt m_infty (Finite 0)) => //.
-  move: (SF_sup_P f (RInt_part a b (S n))) (Finite 0) => {f a b n} s x0.
-  rewrite (fold_comm _ _ (rev s)) ?revK ; try by apply Rbar_plus_comm.
-  case: s x0 => // t s ; elim: s t => [| t0 s IH] t x0 Hx0 Hlt /=.
-  apply Rbar_plus_comm.
-  have Rw: (forall a b c, Rbar_lt m_infty a -> Rbar_lt m_infty b -> Rbar_lt m_infty c -> 
-    Rbar_plus a (Rbar_plus b c) = Rbar_plus (Rbar_plus a b) c).
-    case => [a | | ] ; 
-    case => [b | | ] ;
-    case => [c | | ] Ha Hb Hc //= {Ha Hb Hc}.
-    apply Rbar_finite_eq ; ring.
-  move : (Hlt O (lt_O_Sn _)) (Hlt _ (lt_n_S _ _ (lt_O_Sn _))) => H0 H1.
-  rewrite -(Rw x0) ?(Rw t) => //.
-  simpl in IH ; rewrite -(IH (Rbar_plus t t0) x0) => //.
-  case => //= [_ | n Hn].
-  case: t {Hlt} t0 H0 H1 => [t | | ] ; case => [t0 | | ] //.
-  by apply (Hlt (S (S n))), lt_n_S.
-  elim: {IH Rw} s H0 H1 Hlt => // t1 s IH H0 H1 Hlt /=.
-  case: (t1) (Hlt _ (lt_n_S _ _ (lt_n_S _ _ (lt_O_Sn _)))) => // [t2 | ] _ ;
-  case: (foldr Rbar_plus x0 s) IH => // IH.
-  have: (Rbar_lt m_infty m_infty) => //.
-  apply IH => // ; case => // ; case => // n Hn.
-  by apply (Hlt (S (S (S n)))), lt_n_S.
-Qed.
-Lemma RInt_Sum_i_bound f a b n :
-  RInt_Sum_i f a b n = RInt_Sum_i f b a n.
+Admitted. (** Admitted. *)
+Lemma RInt_inf_bound f a b n :
+  RInt_inf f a b n = RInt_inf f b a n.
 Proof.
-  have H : (forall i, (i < size (SF_ly (SF_inf f a b (S n))))%nat -> 
-    Rbar_lt (nth (Finite 0) (SF_ly (SF_inf f a b (S n))) i) p_infty).
-    rewrite SF_size_ly => i Hi ; apply lt_n_S in Hi ; rewrite -SF_size_lx SF_seq_bij_lx in Hi ;
-    rewrite ?SF_seq_bij_ly nth_SF_inf_P => //.
-    rewrite size_mkseq in Hi ;
-    rewrite /Inf_fct /Glb_Rbar_ne ; case: (ex_glb_Rbar_ne _ _) ; 
-    case => // ; simpl projT1 ; rewrite ?nth_mkseq ; try apply SSR_leq => // ;
-    set a0 := (a + INR i * (b - a) / INR (S n)) ;
-    set b0 := (a + INR (S i) * (b - a) / INR (S n)).
-    case => ub _ ; case: (ub (f a0)) => //= ;
-    exists a0 ; split => // ; by apply Rmin_Rmax_l.
-    by apply lt_le_weak.
-  apply Rbar_div_pos_eq ; move: H ; rewrite ?SF_seq_bij_ly ;
-  rewrite (RInt_part_bound b a) ?SF_inf_P_bound ; try by apply lt_O_Sn.
-  have: (Rbar_lt (Finite 0) p_infty) => //.
-  move: (SF_inf_P f (RInt_part a b (S n))) (Finite 0) => {f a b n} s x0.
-  rewrite (fold_comm _ _ (rev s)) ?revK ; try by apply Rbar_plus_comm.
-  case: s x0 => // t s ; elim: s t => [| t0 s IH] t x0 Hx0 Hlt /=.
-  apply Rbar_plus_comm.
-  have Rw: (forall a b c, Rbar_lt a p_infty -> Rbar_lt b p_infty -> Rbar_lt c p_infty -> 
-    Rbar_plus a (Rbar_plus b c) = Rbar_plus (Rbar_plus a b) c).
-    case => [a | | ] ; 
-    case => [b | | ] ;
-    case => [c | | ] Ha Hb Hc //= {Ha Hb Hc}.
-    apply Rbar_finite_eq ; ring.
-  move : (Hlt O (lt_O_Sn _)) (Hlt _ (lt_n_S _ _ (lt_O_Sn _))) => H0 H1.
-  rewrite -(Rw x0) ?(Rw t) => //.
-  simpl in IH ; rewrite -(IH (Rbar_plus t t0) x0) => //.
-  case => //= [_ | n Hn].
-  case: t {Hlt} t0 H0 H1 => [t | | ] ; case => [t0 | | ] //.
-  by apply (Hlt (S (S n))), lt_n_S.
-  elim: {IH Rw} s H0 H1 Hlt => // t1 s IH H0 H1 Hlt /=.
-  case: (t1) (Hlt _ (lt_n_S _ _ (lt_n_S _ _ (lt_O_Sn _)))) => // [t2 | ] _ ;
-  case: (foldr Rbar_plus x0 s) IH => // IH.
-  have: (Rbar_lt p_infty p_infty) => //.
-  apply IH => // ; case => // ; case => // n Hn.
-  by apply (Hlt (S (S (S n)))), lt_n_S.
-Qed.
+Admitted. (** Admitted. *)
 
 (** * A new Riemann_integrable in Prop *)
 
-Definition is_RInt (f : R -> R) (a b : R) :=
-  Rbar_inf_seq (RInt_Sum_s f a b) = Rbar_sup_seq (RInt_Sum_i f a b)
-  /\ Finite (real (Rbar_inf_seq (RInt_Sum_s f a b))) = Rbar_inf_seq (RInt_Sum_s f a b).
+Definition ex_RInt (f : R -> R) (a b : R) :=
+  Rbar_inf_seq (RInt_sup f a b) = Rbar_sup_seq (RInt_inf f a b)
+  /\ Finite (real (Rbar_inf_seq (RInt_sup f a b))) = Rbar_inf_seq (RInt_sup f a b).
 
-Lemma is_RInt_bound (f : R -> R) (a b : R) :
-  is_RInt f a b -> is_RInt f b a.
+Lemma ex_RInt_bound (f : R -> R) (a b : R) :
+  ex_RInt f a b -> ex_RInt f b a.
 Proof.
-  rewrite /is_RInt ; case => H H0 ;
-  rewrite (Rbar_inf_seq_rw _ _ (RInt_Sum_s_bound _ _ _)) ;
-  rewrite (Rbar_sup_seq_rw _ _ (RInt_Sum_i_bound _ _ _)) ; by split.
+  rewrite /ex_RInt ; case => H H0 ;
+  rewrite (Rbar_inf_seq_rw _ _ (RInt_sup_bound _ _ _)) ;
+  rewrite (Rbar_sup_seq_rw _ _ (RInt_inf_bound _ _ _)) ; by split.
 Qed.
 
-Lemma is_RInt_correct_0 (f : R -> R) (a b : R) :
-  is_RInt f a b -> Riemann_integrable f a b.
+Lemma ex_RInt_correct_0 (f : R -> R) (a b : R) :
+  ex_RInt f a b -> Riemann_integrable f a b.
 Proof.
   wlog : a b / (a <= b).
   move => Hgen ; case: (Rle_lt_dec a b) => Hab H.
   by apply Hgen.
   apply Rlt_le in Hab ;
-  apply RiemannInt_P1, Hgen => // ; by apply is_RInt_bound.
-  move => Hab ; case => Heq Hfin eps.
-  
-  set phi := fun n => SF_compat_le _ ()
-Qed.
+  apply RiemannInt_P1, Hgen => // ; by apply ex_RInt_bound.
+Admitted. (** Admitted. *)
+Lemma ex_RInt_correct_1 (f : R -> R) (a b : R) :
+  Riemann_integrable f a b -> ex_RInt f a b.
+Proof.
+  wlog : a b / (a <= b).
+  move => Hgen ; case: (Rle_lt_dec a b) => Hab H.
+  by apply Hgen.
+  apply Rlt_le in Hab ;
+  apply  ex_RInt_bound, Hgen => // ; by apply RiemannInt_P1.
+Admitted. (** Admitted. *)
+
+(** * The RInt function *)
+
+Definition RInt (f : R -> R) (a b : R) := Lim_seq (RInt_val f a b).
+
+Lemma RInt_correct (f : R -> R) (a b : R) :
+  forall pr, RInt f a b = @RiemannInt f a b pr.
+Proof.
+Admitted. (** Admitted. *)
+
+(** * Riemann integral and derivative *)
+
+Lemma Deriv_RInt (f : R -> R) (a : R) (x : R) (eps : posreal) :
+  (ex_RInt f a x) -> (ex_RInt f (x-eps) (x+eps)) -> continuity_pt f x ->
+  Deriv (RInt f a) x = f x.
+Proof.
+Admitted. (** Admitted. *)
+
+Lemma RInt_Deriv (f : R -> R) (a b : R) (eps : posreal) :
+(** TODO -> *) RInt (Deriv f) a b = f b - f a.
+Proof.
+Admitted. (** Admitted. *)
