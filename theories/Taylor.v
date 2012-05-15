@@ -289,7 +289,172 @@ apply Rgt_not_eq.
 now apply Rmult_gt_0_compat.
 Qed.
 
-Theorem Taylor_Lagrange : forall f n x y,
+Lemma is_deriv_eta: forall f1 f2 g t,
+  (forall y, f1 y = f2 y) ->
+  is_deriv f1 t g -> is_deriv f2 t g.
+intros f1 f2 g t H.
+unfold is_deriv, derivable_pt_lim.
+intros H1 eps He.
+destruct (H1 eps He) as (d,Hd).
+exists d; intros h Hh1 Hh2.
+rewrite <- 2!H.
+now apply Hd.
+Qed.
+
+Theorem Taylor_Lagrange :
+  forall f n x y, x < y ->
+  ( forall t, x <= t <= y -> ex_deriv_n f (S n) t ) ->
+  exists zeta, x < zeta < y /\
+    f y =  sum_f_R0 (fun m => (y-x) ^ m / INR (fact m) * Deriv_n f m x )  n
+        + (y-x) ^ (S n) / INR (fact (S n)) * Deriv_n f (S n) zeta.
+Proof.
+intros f n x y Hxy Df.
+pose (c:= (f y - sum_f_R0 (fun m => (y-x) ^ m / INR (fact m) * Deriv_n f m x )  n)
+                / (y-x) ^ (S n)).
+pose (g t := f y - sum_f_R0 (fun m => (y-t) ^ m / INR (fact m) * Deriv_n f m t )  n
+               - c * (y-t) ^ (S n)).
+assert (Dg : forall t, x <= t <= y -> is_deriv g t
+  (- (y-t) ^ n / INR (fact n) * Deriv_n f (S n) t + c * INR (S n) * (y-t) ^ n)).
+intros t Ht.
+unfold g.
+assert (Dp: forall n, derivable_pt_lim (fun x0 : R => (y - x0) ^ S n) t (INR (S n) * (y - t) ^ n * (0 - 1))).
+intros m.
+apply (derivable_pt_lim_comp (fun t => y - t) (fun t => t ^ (S m))).
+apply derivable_pt_lim_minus.
+apply derivable_pt_lim_const.
+apply derivable_pt_lim_id.
+apply derivable_pt_lim_pow.
+(* *)
+apply derivable_pt_lim_plus.
+(* . *)
+clear c g.
+rename n into N.
+generalize (le_refl N).
+generalize N at -2.
+intros n.
+induction n.
+(* .. *)
+intros _.
+simpl.
+replace (-1 / 1 * Deriv (fun x0 : R => f x0) t) with (0 - (1/1 *Deriv (fun x0 : R => f x0) t)) by field.
+apply derivable_pt_lim_minus.
+apply derivable_pt_lim_const.
+apply derivable_pt_lim_scal.
+rewrite (Deriv_eta _ f).
+apply Deriv_prop.
+apply (ex_deriv_n_le (S N) _ _ 1).
+now apply Df.
+apply le_n_S.
+apply le_0_n.
+easy.
+(* .. *)
+intros Hn.
+apply is_deriv_eta with (fun x0 : R =>
+   (f y -
+   (sum_f_R0 (fun m : nat => (y - x0) ^ m / INR (fact m) * Deriv_n f m x0) n)) -
+    (y - x0) ^ (S n) / INR (fact (S n)) *
+     Deriv_n f (S n) x0).
+simpl.
+intros; ring.
+replace (- (y - t) ^ S n / INR (fact (S n)) * Deriv_n f (S (S n)) t) with
+  ((- (y - t) ^ n / INR (fact n) * Deriv_n f (S n) t) -
+      (- (y - t) ^ n / INR (fact n) * (Deriv_n f (S n) t) + 
+       ( (y - t) ^ S n / INR (fact (S n)) * Deriv_n f (S (S n)) t))).
+2: rewrite /Rdiv Ropp_mult_distr_l_reverse ; ring.
+apply derivable_pt_lim_plus.
+apply IHn.
+now apply lt_le_weak.
+apply derivable_pt_lim_opp.
+apply (derivable_pt_lim_mult (fun x0 => ((y - x0) ^ S n / INR (fact (S n)))) 
+  (fun x0 => Deriv_n f (S n) x0)).
+replace (- (y - t) ^ n / INR (fact n)) with
+   (/ INR (fact (S n)) * (INR (S n)*(y - t) ^ n*(0-1))).
+apply is_deriv_eta with (fun x0 : R => (/ INR (fact (S n)) * (y - x0) ^ S n)).
+intros; unfold Rdiv; apply Rmult_comm.
+now apply derivable_pt_lim_scal.
+change (fact (S n)) with ((S n)*fact n)%nat.
+rewrite mult_INR.
+field.
+split.
+apply INR_fact_neq_0.
+now apply not_0_INR.
+apply Deriv_prop.
+specialize (Df t Ht).
+apply (ex_deriv_n_le (S N) _ _ (S (S n))) in Df.
+now destruct Df as (_,Df).
+now apply le_n_S.
+(* . *)
+apply is_deriv_eta with (fun x0 : R => -c * (y - x0) ^ S n).
+intros; ring.
+replace (c * INR (S n) * (y - t) ^ n) with ((-c) * ((INR (S n) * (y - t) ^ n) * (0-1))) by ring.
+now apply derivable_pt_lim_scal.
+(* *)
+assert (Dg' : forall t : R, x <= t <= y -> derivable_pt g t).
+intros t Ht.
+exists (Deriv g t).
+apply Deriv_prop.
+eexists.
+apply (Dg t Ht).
+assert (pr : forall t : R, x < t < y -> derivable_pt g t).
+intros t Ht.
+apply Dg'.
+split ; now apply Rlt_le.
+(* *)
+assert (Zxy: (y - x) ^ (S n) <> 0).
+apply pow_nonzero.
+apply Rgt_not_eq.
+apply Rplus_gt_reg_l with x.
+now ring_simplify.
+(* *)
+destruct (Rolle g x y pr) as (zeta, (Hzeta1,Hzeta2)).
+intros t Ht.
+apply derivable_continuous_pt.
+now apply Dg'.
+exact Hxy.
+apply trans_eq with 0.
+unfold g, c.
+now field.
+unfold g.
+destruct n.
+simpl; field.
+rewrite decomp_sum.
+rewrite sum_eq_R0.
+simpl; field.
+intros; simpl; field.
+exact (INR_fact_neq_0 (S n0)).
+apply lt_0_Sn.
+exists zeta.
+apply (conj Hzeta1).
+rewrite Rmult_assoc.
+replace (/ INR (fact (S n)) * Deriv_n f (S n) zeta) with c.
+unfold c.
+now field.
+apply Rmult_eq_reg_r with (INR (S n) * (y - zeta) ^ n).
+apply Rplus_eq_reg_l with ((- (y - zeta) ^ n / INR (fact n) * Deriv_n f (S n) zeta)).
+change (fact (S n)) with (S n * fact n)%nat.
+rewrite mult_INR.
+apply trans_eq with R0.
+rewrite -Rmult_assoc.
+assert (H: x <= zeta <= y) by (split ; apply Rlt_le ; apply Hzeta1).
+rewrite -(Deriv_correct _ _ _ (Dg _ H)).
+destruct (pr zeta Hzeta1) as (x0,Hd).
+simpl in Hzeta2.
+rewrite Hzeta2 in Hd.
+now apply Deriv_correct.
+field.
+split.
+apply INR_fact_neq_0.
+now apply not_0_INR.
+apply Rmult_integral_contrapositive_currified.
+now apply not_0_INR.
+apply pow_nonzero.
+apply Rgt_not_eq.
+apply Rplus_gt_reg_l with zeta.
+ring_simplify.
+apply Hzeta1.
+Qed.
+
+Theorem Taylor_Lagrange_2D : forall f n x y,
    ex_diff_n f (S n) x y -> DL_regular_n f n x y.
 Proof.
 intros f n; revert f.
@@ -400,56 +565,43 @@ rewrite -(Deriv_n_comp _ m 1).
 apply Deriv_n_eta.
 intros y1.
 admit. (* compliqué *)
-
-
-
-rewrite -Deriv_n_comp.
-apply trans_eq with ((Deriv_n (Deriv_n (fun z : R => f y1 z) k) 1) v).
-reflexivity.
-rewrite Deriv_n_comp plus_comm - Deriv_n_comp.
+admit.
+(* . *)
+assert (Hy := IHn (fun x y => Deriv (fun z => f x z) y) x y).
+destruct Hy as (Dy,(deltay,Hy)).
+(* .. *)
+destruct H as ((eps,H1),H2).
+split.
+exists eps.
+intros m k Hmk u v Hu Hv; split.
+(* ... *)
+assert (m + S k < S (S n))%nat.
+omega.
+specialize (H1 _ _ H u v Hu Hv).
+apply ex_deriv_eta with (2:=proj1 H1).
+intros; unfold partial_derive.
+revert y0.
 apply Deriv_n_eta.
+intros y0.
+replace (S k) with (k + 1)%nat by apply (plus_comm k 1).
+now rewrite -(Deriv_n_comp _ k 1).
+(* ... *)
+assert (m + S k < S (S n))%nat.
+omega.
+specialize (H1 _ _ H u v Hu Hv).
+apply ex_deriv_eta with (2:=proj2 H1).
+intros; unfold partial_derive.
+apply Deriv_n_eta.
+intros y1.
+replace (S k) with (k + 1)%nat by apply (plus_comm k 1).
+now rewrite -(Deriv_n_comp _ k 1).
+admit.
+(* . *)
+set (D := Rmax Dx Dy).
+exists D.
+exists (mkposreal _ (Rmin_stable_in_posreal deltax deltay)).
 simpl.
-
-
-
-now idtac.
-
-rewrite
-
-rewrite (Deriv_n_comp _ 1 n).
-
-
-apply f_equal. (* argh, mauvais sens du Deriv_n *)
-
-
-
-
-
-
-unfold ex_diff_n in *.
-
-
-; exists (mkposreal 1 Rlt_0_1).
-
-
-
-specialize (H3 (mkposreal 1 Rlt_0_1)).
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+intros u v Hu Hv.
 
 
 

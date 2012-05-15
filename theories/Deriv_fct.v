@@ -191,3 +191,21 @@ Proof.
   apply Deriv_correct, Hn.
 Qed.
 
+Lemma ex_deriv_n_le :
+  forall n f x m, ex_deriv_n f n x -> (m <= n)%nat -> ex_deriv_n f m x.
+Proof.
+intros n f x.
+induction n.
+now intros [|].
+intros m.
+destruct (le_or_lt m n).
+simpl.
+intros ((eps,H1),H2) Hm.
+apply: IHn H.
+apply H1.
+rewrite /Rminus Rplus_opp_r Rabs_R0.
+apply cond_pos.
+intros H1 H2.
+assert (H': m = S n) by omega.
+now rewrite H'.
+Qed.
