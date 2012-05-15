@@ -292,6 +292,7 @@ Qed.
 Lemma is_deriv_eta: forall f1 f2 g t,
   (forall y, f1 y = f2 y) ->
   is_deriv f1 t g -> is_deriv f2 t g.
+Proof.
 intros f1 f2 g t H.
 unfold is_deriv, derivable_pt_lim.
 intros H1 eps He.
@@ -301,9 +302,10 @@ rewrite <- 2!H.
 now apply Hd.
 Qed.
 
+
 Theorem Taylor_Lagrange :
   forall f n x y, x < y ->
-  ( forall t, x <= t <= y -> ex_deriv_n f (S n) t ) ->
+  ( forall t, x <= t <= y -> forall k, (k <= S n)%nat -> ex_deriv_n f k t ) ->
   exists zeta, x < zeta < y /\
     f y =  sum_f_R0 (fun m => (y-x) ^ m / INR (fact m) * Deriv_n f m x )  n
         + (y-x) ^ (S n) / INR (fact (S n)) * Deriv_n f (S n) zeta.
@@ -342,8 +344,7 @@ apply derivable_pt_lim_const.
 apply derivable_pt_lim_scal.
 rewrite (Deriv_eta _ f).
 apply Deriv_prop.
-apply (ex_deriv_n_le (S N) _ _ 1).
-now apply Df.
+apply (Df t Ht 1%nat).
 apply le_n_S.
 apply le_0_n.
 easy.
@@ -379,9 +380,7 @@ split.
 apply INR_fact_neq_0.
 now apply not_0_INR.
 apply Deriv_prop.
-specialize (Df t Ht).
-apply (ex_deriv_n_le (S N) _ _ (S (S n))) in Df.
-now destruct Df as (_,Df).
+apply (Df t Ht (S (S n))).
 now apply le_n_S.
 (* . *)
 apply is_deriv_eta with (fun x0 : R => -c * (y - x0) ^ S n).
@@ -454,184 +453,118 @@ ring_simplify.
 apply Hzeta1.
 Qed.
 
+Theorem is_deriv_SF:
+  forall (fn : nat -> R -> R) (N : nat) (x : R),
+  (forall n : nat, (n <= N)%nat -> ex_deriv (fn n) x) ->
+  is_deriv (fun y : R => sum_f_R0 (fun k : nat => fn k y) N) x (sum_f_R0 (fun k => Deriv (fn k) x) N).
+intros fn; induction N.
+intros x H; simpl.
+apply is_deriv_eta with (fn 0%nat).
+easy.
+apply Deriv_prop.
+now apply H.
+intros x H.
+simpl.
+apply derivable_pt_lim_plus.
+apply IHN.
+intros; apply H.
+now apply le_S.
+apply Deriv_prop.
+now apply H.
+Qed.
+
+
+
 Theorem Taylor_Lagrange_2D : forall f n x y,
    ex_diff_n f (S n) x y -> DL_regular_n f n x y.
 Proof.
 intros f n x y Df.
 assert (exists D, exists delta : posreal, forall u v, Rabs (u - x) < delta -> Rabs (v - y) < delta ->
   forall p, (p <= S n)%nat ->
-  Rabs (partial_derive p (S n - p) f u v) < D).
-admit.
+  Rabs (partial_derive p (S n - p) f u v) <= D).
+admit. (* continuité 2D => borné *)
 destruct H as (D,(delta,H)).
-exists D.
+exists  (/ INR (fact (S n)) * D * sum_f_R0 (fun i : nat => Rabs (C (S n) i)) (S n)).
 exists delta.
 intros u v Hu Hv.
-specialize (H u v Hu Hv).
+(* specialize (H u v Hu Hv).*)
 set (g t := f (x + t * (u - x)) (y + t * (v - y))).
 replace (f u v) with (g 1) by (rewrite /g 2!Rmult_1_l ; apply f_equal2 ; ring).
+assert (forall k t, (k <= S n)%nat -> 0 <= t <= 1 -> is_deriv_n g k t (sum_f_R0 (fun m =>  C k m * partial_derive m (k - m)%nat f (x+t*(u-x)) (y+t*(v-y)) *
+         (u-x) ^ m * (v-y) ^ (k - m)%nat) k)).
+induction k.
+simpl.
+unfold C, partial_derive, g.
+simpl.
+intros ; field.
+intros t Hk Ht.
+simpl (Deriv_n g (S k) t).
+unfold is_deriv_n.
+apply is_deriv_eta with (fun t => sum_f_R0
+           (fun m : nat =>
+            C k m *
+            partial_derive m (k - m) f (x + t * (u - x)) (y + t * (v - y)) *
+            (u - x) ^ m * (v - y) ^ (k - m)) k).
+intros y0.
+apply sym_eq.
+apply Deriv_n_correct.
+apply IHk.
+now apply lt_le_weak.
+admit. (* faux *)
+admit. (* dérivée du DL *)
+
 destruct (Taylor_Lagrange g n 0 1 Rlt_0_1) as (t&Ht&Hg).
-admit.
+intros t Ht.
+intros [|k] Hk.
+easy.
+eexists.
+now apply (H0 (S k)).
 rewrite Hg /DL_pol.
 replace (1 - 0) with 1 by ring.
 rewrite pow1 {1}/Rminus Rplus_assoc [_*_+_]Rplus_comm -Rplus_assoc -/(Rminus _ _).
+assert (forall k t, (k <= S n)%nat -> 0 <= t <= 1 -> Deriv_n g k t = 
+      (sum_f_R0 (fun m =>  C k m * partial_derive m (k - m)%nat f (x+t*(u-x)) (y+t*(v-y)) *
+         (u-x) ^ m * (v-y) ^ (k - m)%nat) k)).
+intros k t0 Hk Ht0.
+apply Deriv_n_correct.
+now apply H0.
 rewrite -minus_sum sum_eq_R0.
-
-
-SearchAbout sum_f_R0.
-simpl.
-
-
-
-unfold DL_regular_n.
-
-
-intros f n; revert f.
-induction n.
-(* *)
-intros f x y ((eps,H1),H).
-specialize (H1 0%nat 0%nat (lt_0_Sn _)).
-assert (H2 := (H 0%nat 1%nat (le_refl 1))).
-assert (H3 := (H 1%nat 0%nat (le_refl 1))).
-specialize (H2 (mkposreal 1 Rlt_0_1)); simpl in H2.
-specialize (H3 (mkposreal 1 Rlt_0_1)); simpl in H3.
-destruct H2 as (d2, Hd2).
-destruct H3 as (d3, Hd3).
-exists ((Rabs (partial_derive 0 1 f x y)+1) + (Rabs (partial_derive 1 0 f x y) + 1));
-   exists (mkposreal _ (Rmin_stable_in_posreal eps (mkposreal _ (Rmin_stable_in_posreal d2 d3)))); simpl.
-intros u v Hu Hv.
-unfold DL_pol, differential, partial_derive, C; simpl.
-field_simplify (f u v - 1 / (1 * 1) * f x y * 1 * 1 / 1).
-unfold Rdiv; rewrite Rinv_1 (* Rmult_1_l *) 2!Rmult_1_r.
-replace (f u v - f x y) with ((f u v - f u y) + (f u y - f x y)) by ring.
-apply Rle_trans with (1:= Rabs_triang _ _ ).
-rewrite Rmult_plus_distr_r.
-apply Rplus_le_compat.
-(* . *)
-apply Rle_trans with ((Rabs (Deriv (fun x0 : R => f x x0) y) + 1) * (Rabs (v - y))).
-apply bounded_variation with (h:= fun y => f u y).
-intros t Ht.
-split.
-apply H1.
-apply Rlt_le_trans with (1 := Hu).
-apply Rmin_l.
-apply Rle_lt_trans with (1 := Ht).
-apply Rlt_le_trans with (1 := Hv).
-apply Rmin_l.
-unfold partial_derive in Hd2; simpl in Hd2.
-apply Rplus_le_reg_r with (-Rabs (Deriv (fun x0 : R => f x x0) y)).
-ring_simplify.
-apply Rle_trans with (1:=Rabs_triang_inv _ _).
-left; apply Hd2.
-apply Rlt_le_trans with (1 := Hu).
-apply Rle_trans with (1 := Rmin_r _ _).
-apply Rmin_l.
-apply Rle_lt_trans with (1 := Ht).
-apply Rlt_le_trans with (1 := Hv).
-apply Rle_trans with (1 := Rmin_r _ _).
-apply Rmin_l.
+rewrite H1.
+rewrite Rplus_0_l.
+unfold differential.
+rewrite Rabs_mult.
+eapply Rle_trans.
 apply Rmult_le_compat_l.
-apply Rplus_le_le_0_compat.
 apply Rabs_pos.
-apply Rlt_le, Rlt_0_1.
-apply Rmax_r.
-(* . *)
-apply Rle_trans with ((Rabs (Deriv (fun x0 : R => f x0 y) x) + 1) * (Rabs (u - x))).
-apply bounded_variation with (h:= fun x => f x y).
-intros t Ht.
-split.
-apply H1.
-apply Rle_lt_trans with (1 := Ht).
-apply Rlt_le_trans with (1 := Hu).
-apply Rmin_l.
-rewrite /Rminus Rplus_opp_r Rabs_R0.
-apply cond_pos.
-unfold partial_derive in Hd3; simpl in Hd3.
-apply Rplus_le_reg_r with (-Rabs (Deriv (fun x0 : R => f x0 y) x)).
-ring_simplify.
-apply Rle_trans with (1:=Rabs_triang_inv _ _).
-left; apply Hd3.
-apply Rle_lt_trans with (1 := Ht).
-apply Rlt_le_trans with (1 := Hu).
-apply Rle_trans with (1 := Rmin_r _ _).
-apply Rmin_r.
-rewrite /Rminus Rplus_opp_r Rabs_R0.
-apply cond_pos.
+eapply Rle_trans.
+apply Rsum_abs.
+apply sum_Rle.
+intros n0 Hn0.
+rewrite Rmult_assoc 3!Rabs_mult.
+rewrite Rmult_assoc.
 apply Rmult_le_compat_l.
-apply Rplus_le_le_0_compat.
 apply Rabs_pos.
-apply Rlt_le, Rlt_0_1.
-apply Rmax_l.
-(* *)
-intros f x y H; simpl in H.
-(* . *)
-assert (Hx := IHn (fun x y => Deriv (fun z => f z y) x) x y).
-destruct Hx as (Dx,(deltax,Hx)).
-(* .. *)
-destruct H as ((eps,H1),H2).
-split.
-exists eps.
-intros m k Hmk u v Hu Hv; split.
-(* ... *)
-assert (S m + k < S (S n))%nat.
-omega.
-specialize (H1 _ _ H u v Hu Hv).
-apply ex_deriv_eta with (2:=proj1 H1).
-intros; unfold partial_derive.
-replace (S m) with (m + 1)%nat by apply (plus_comm m 1).
-rewrite -(Deriv_n_comp _ m 1).
-apply Deriv_n_eta.
-intros y1.
-admit. (* compliqué *)
-(* ... *)
-assert (S m + k < S (S n))%nat.
-omega.
-specialize (H1 _ _ H u v Hu Hv).
-apply ex_deriv_eta with (2:=proj2 H1).
-intros; unfold partial_derive.
-replace (S m) with (m + 1)%nat by apply (plus_comm m 1).
-rewrite -(Deriv_n_comp _ m 1).
-apply Deriv_n_eta.
-intros y1.
-admit. (* compliqué *)
-admit.
-(* . *)
-assert (Hy := IHn (fun x y => Deriv (fun z => f x z) y) x y).
-destruct Hy as (Dy,(deltay,Hy)).
-(* .. *)
-destruct H as ((eps,H1),H2).
-split.
-exists eps.
-intros m k Hmk u v Hu Hv; split.
-(* ... *)
-assert (m + S k < S (S n))%nat.
-omega.
-specialize (H1 _ _ H u v Hu Hv).
-apply ex_deriv_eta with (2:=proj1 H1).
-intros; unfold partial_derive.
-revert y0.
-apply Deriv_n_eta.
-intros y0.
-replace (S k) with (k + 1)%nat by apply (plus_comm k 1).
-now rewrite -(Deriv_n_comp _ k 1).
-(* ... *)
-assert (m + S k < S (S n))%nat.
-omega.
-specialize (H1 _ _ H u v Hu Hv).
-apply ex_deriv_eta with (2:=proj2 H1).
-intros; unfold partial_derive.
-apply Deriv_n_eta.
-intros y1.
-replace (S k) with (k + 1)%nat by apply (plus_comm k 1).
-now rewrite -(Deriv_n_comp _ k 1).
-admit.
-(* . *)
-set (D := Rmax Dx Dy).
-exists D.
-exists (mkposreal _ (Rmin_stable_in_posreal deltax deltay)).
-simpl.
-intros u v Hu Hv.
-
-
-
-
-
+apply Rmult_le_compat.
+apply Rabs_pos.
+apply Rmult_le_pos; apply Rabs_pos.
+apply H.
+admit. (* facile *)
+admit. (* facile *)
+exact Hn0.
+rewrite - 2!RPow_abs.
+instantiate (1:=(Rmax (Rabs (u - x)) (Rabs (v - y)) ^ S n)).
+admit. (* bof *)
+rewrite - scal_sum.
+rewrite /Rdiv Rmult_1_l Rabs_right .
+right; ring.
+apply Rle_ge; apply Rlt_le; apply Rinv_0_lt_compat.
+apply INR_fact_lt_0.
+apply le_refl.
+split; apply Rlt_le, Ht.
+intros n0 hn0.
+rewrite H1.
+rewrite 2!Rmult_0_l 2!Rplus_0_r pow1.
+unfold differential, Rdiv; ring.
+now apply le_S.
+split; [apply Rle_refl | apply Rle_0_1].
+Qed.

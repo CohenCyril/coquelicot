@@ -169,43 +169,23 @@ Fixpoint Deriv_n (f : R -> R) (n : nat) x :=
     | S n => Deriv (Deriv_n f n) x
   end.
 
-Fixpoint ex_deriv_n f n x :=
+Definition ex_deriv_n f n x :=
   match n with
-    | O => True
-    | S n => (exists eps : posreal , forall y, Rabs (y-x) < eps -> ex_deriv_n f n y) /\ 
-        ex_deriv (Deriv_n f n) x
+  | O => True
+  | S n => ex_deriv (Deriv_n f n) x
   end.
 
 Definition is_deriv_n f n x l :=
   match n with
-    | O => f x = l
-    | S n => (exists eps : posreal , forall y, Rabs (y-x) < eps -> ex_deriv_n f n y) /\ 
-        is_deriv (Deriv_n f n) x l
+  | O => f x = l
+  | S n => is_deriv (Deriv_n f n) x l
   end.
 
 Lemma Deriv_n_correct f n x l :
   is_deriv_n f n x l -> Deriv_n f n x = l.
 Proof.
-  revert f x l ; induction n ; auto.
-  intros f x l (H,Hn) ; simpl.
-  apply Deriv_correct, Hn.
-Qed.
-
-Lemma ex_deriv_n_le :
-  forall n f x m, ex_deriv_n f n x -> (m <= n)%nat -> ex_deriv_n f m x.
-Proof.
-intros n f x.
-induction n.
-now intros [|].
-intros m.
-destruct (le_or_lt m n).
-simpl.
-intros ((eps,H1),H2) Hm.
-apply: IHn H.
-apply H1.
-rewrite /Rminus Rplus_opp_r Rabs_R0.
-apply cond_pos.
-intros H1 H2.
-assert (H': m = S n) by omega.
-now rewrite H'.
+  case n.
+  easy.
+  simpl; intros n0 H.
+  apply Deriv_correct, H.
 Qed.
