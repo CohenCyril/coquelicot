@@ -457,6 +457,34 @@ Qed.
 Theorem Taylor_Lagrange_2D : forall f n x y,
    ex_diff_n f (S n) x y -> DL_regular_n f n x y.
 Proof.
+intros f n x y Df.
+assert (exists D, exists delta : posreal, forall u v, Rabs (u - x) < delta -> Rabs (v - y) < delta ->
+  forall p, (p <= S n)%nat ->
+  Rabs (partial_derive p (S n - p) f u v) < D).
+admit.
+destruct H as (D,(delta,H)).
+exists D.
+exists delta.
+intros u v Hu Hv.
+specialize (H u v Hu Hv).
+set (g t := f (x + t * (u - x)) (y + t * (v - y))).
+replace (f u v) with (g 1) by (rewrite /g 2!Rmult_1_l ; apply f_equal2 ; ring).
+destruct (Taylor_Lagrange g n 0 1 Rlt_0_1) as (t&Ht&Hg).
+admit.
+rewrite Hg /DL_pol.
+replace (1 - 0) with 1 by ring.
+rewrite pow1 {1}/Rminus Rplus_assoc [_*_+_]Rplus_comm -Rplus_assoc -/(Rminus _ _).
+rewrite -minus_sum sum_eq_R0.
+
+
+SearchAbout sum_f_R0.
+simpl.
+
+
+
+unfold DL_regular_n.
+
+
 intros f n; revert f.
 induction n.
 (* *)
