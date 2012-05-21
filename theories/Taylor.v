@@ -22,27 +22,394 @@ Definition DL_pol (n : nat) (f : R -> R -> R) (x y dx dy : R) : R :=
       differential p f x y dx dy / INR (fact p))
     n.
 
+Definition locally (P : R -> Prop) x :=
+  exists delta : posreal, forall y, Rabs (y - x) < delta -> P y.
+
+Definition locally_2d (P : R -> R -> Prop) x y :=
+  exists delta : posreal, forall u v, Rabs (u - x) < delta -> Rabs (v - y) < delta -> P u v.
+
+Lemma locally_align :
+  forall (P Q : R -> Prop) x,
+  ( forall eps : posreal, (forall v, Rabs (v - x) < eps -> P v) ->
+    forall u, Rabs (u - x) < eps -> Q u ) ->
+  locally P x -> locally Q x.
+Proof.
+intros P Q x K (d,H).
+exists d => y Hy.
+now apply (K d).
+Qed.
+
+Lemma locally_2d_align :
+  forall (P Q : R -> R -> Prop) x y,
+  ( forall eps : posreal, (forall u v, Rabs (u - x) < eps -> Rabs (v - y) < eps -> P u v) ->
+    forall u v, Rabs (u - x) < eps -> Rabs (v - y) < eps -> Q u v ) ->
+  locally_2d P x y -> locally_2d Q x y.
+Proof.
+intros P Q x y K (d,H).
+exists d => u v Hu Hv.
+now apply (K d).
+Qed.
+
+Lemma locally_impl_strong :
+  forall (P Q : R -> Prop) x, locally (fun y => locally P y -> Q y) x ->
+  locally P x -> locally Q x.
+Proof.
+intros P Q x (dpq,Hpq) (dp,Hp).
+exists (mkposreal _ (Rmin_stable_in_posreal dp dpq)) => /= y Hy.
+apply Hpq.
+apply Rlt_le_trans with (1 := Hy).
+apply Rmin_r.
+set (d := mkposreal _ (Rlt_Rminus _ _ Hy)).
+exists d => z Hz.
+apply Hp.
+replace (z - x) with ((z - y) + (y - x)) by ring.
+apply Rle_lt_trans with (1 := Rabs_triang _ _).
+replace (pos dp) with (d + (dp - d)) by ring.
+apply Rplus_lt_le_compat with (1 := Hz).
+simpl.
+apply Rplus_le_reg_r with (- (Rabs (y - x))).
+ring_simplify.
+apply Rge_le.
+apply Rge_minus.
+apply Rle_ge.
+apply Rmin_l.
+Qed.
+
+Lemma locally_2d_impl_strong :
+  forall (P Q : R -> R -> Prop) x y, locally_2d (fun u v => locally_2d P u v -> Q u v) x y ->
+  locally_2d P x y -> locally_2d Q x y.
+Proof.
+intros P Q x y (dpq,Hpq) (dp,Hp).
+exists (mkposreal _ (Rmin_stable_in_posreal dp dpq)) => /= u v Hu Hv.
+apply Hpq.
+apply Rlt_le_trans with (1 := Hu).
+apply Rmin_r.
+apply Rlt_le_trans with (1 := Hv).
+apply Rmin_r.
+assert (Huv: Rmax (Rabs (u - x)) (Rabs (v - y)) < Rmin dp dpq).
+now apply Rmax_case.
+set (d := mkposreal _ (Rlt_Rminus _ _ Huv)).
+exists d => w z Hw Hz.
+apply Hp.
+replace (w - x) with ((w - u) + (u - x)) by ring.
+apply Rle_lt_trans with (1 := Rabs_triang _ _).
+replace (pos dp) with (d + (dp - d)) by ring.
+apply Rplus_lt_le_compat with (1 := Hw).
+simpl.
+apply Rplus_le_reg_r with (- Rmax (Rabs (u - x)) (Rabs (v - y))).
+ring_simplify.
+apply Rle_trans with R0.
+apply Rle_minus.
+apply Rmax_l.
+apply Rge_le.
+apply Rge_minus.
+apply Rle_ge.
+apply Rmin_l.
+replace (z - y) with ((z - v) + (v - y)) by ring.
+apply Rle_lt_trans with (1 := Rabs_triang _ _).
+replace (pos dp) with (d + (dp - d)) by ring.
+apply Rplus_lt_le_compat with (1 := Hz).
+simpl.
+apply Rplus_le_reg_r with (- Rmax (Rabs (u - x)) (Rabs (v - y))).
+ring_simplify.
+apply Rle_trans with R0.
+apply Rle_minus.
+apply Rmax_r.
+apply Rge_le.
+apply Rge_minus.
+apply Rle_ge.
+apply Rmin_l.
+Qed.
+
+Lemma locally_singleton :
+  forall (P : R -> Prop) x, locally P x -> P x.
+Proof.
+intros P x (D,H).
+apply H.
+rewrite /Rminus Rplus_opp_r Rabs_R0.
+apply cond_pos.
+Qed.
+
+Lemma locally_2d_singleton :
+  forall (P : R -> R -> Prop) x y, locally_2d P x y -> P x y.
+Proof.
+intros P x y (D,H).
+apply H ;
+  rewrite /Rminus Rplus_opp_r Rabs_R0 ;
+  apply cond_pos.
+Qed.
+
+Lemma locally_impl :
+  forall (P Q : R -> Prop) x, locally (fun y => P y -> Q y) x ->
+  locally P x -> locally Q x.
+Proof.
+intros P Q x (d,H).
+apply locally_impl_strong.
+exists d => y Hy Hp.
+apply H => //.
+now apply locally_singleton.
+Qed.
+
+Lemma locally_2d_impl :
+  forall (P Q : R -> R -> Prop) x y, locally_2d (fun u v => P u v -> Q u v) x y ->
+  locally_2d P x y -> locally_2d Q x y.
+Proof.
+intros P Q x y (d,H).
+apply locally_2d_impl_strong.
+exists d => u v Hu Hv Hp.
+apply H => //.
+now apply locally_2d_singleton.
+Qed.
+
+Lemma locally_forall :
+  forall (P : R -> Prop) x, (forall y, P y) -> locally P x.
+Proof.
+intros P x Hp.
+now exists (mkposreal _ Rlt_0_1) => u _.
+Qed.
+
+Lemma locally_2d_forall :
+  forall (P : R -> R -> Prop) x y, (forall u v, P u v) -> locally_2d P x y.
+Proof.
+intros P x y Hp.
+now exists (mkposreal _ Rlt_0_1) => u v _ _.
+Qed.
+
+Lemma locally_and :
+  forall (P Q : R -> Prop) x, locally P x -> locally Q x ->
+  locally (fun y => P y /\ Q y) x.
+Proof.
+intros P Q x H.
+apply: locally_impl.
+apply: locally_impl H.
+apply locally_forall.
+now split.
+Qed.
+
+Lemma locally_2d_and :
+  forall (P Q : R -> R -> Prop) x y, locally_2d P x y -> locally_2d Q x y ->
+  locally_2d (fun u v => P u v /\ Q u v) x y.
+Proof.
+intros P Q x y H.
+apply: locally_2d_impl.
+apply: locally_2d_impl H.
+apply locally_2d_forall.
+now split.
+Qed.
+
+Lemma locally_2d_1d_strong :
+  forall (P : R -> R -> Prop) x y,
+  locally_2d P x y ->
+  locally_2d (fun u v => forall t, 0 <= t <= 1 ->
+    locally (fun z => locally_2d P (x + z * (u - x)) (y + z * (v - y))) t) x y.
+Proof.
+intros P x y.
+apply locally_2d_align => eps HP u v Hu Hv t Ht.
+assert (Zm: 0 <= Rmax (Rabs (u - x)) (Rabs (v - y))).
+apply Rmax_case ; apply Rabs_pos.
+destruct Zm as [Zm|Zm].
+(* *)
+assert (H1: Rmax (Rabs (u - x)) (Rabs (v - y)) < eps).
+now apply Rmax_case.
+set (d1 := mkposreal _ (Rlt_Rminus _ _ H1)).
+assert (H2: 0 < pos_div_2 d1 / Rmax (Rabs (u - x)) (Rabs (v - y))).
+apply Rmult_lt_0_compat.
+apply cond_pos.
+now apply Rinv_0_lt_compat.
+set (d2 := mkposreal _ H2).
+exists d2 => z Hz.
+exists (pos_div_2 d1) => p q Hp Hq.
+apply HP.
+(* . *)
+replace (p - x) with (p - (x + z * (u - x)) + (z - t + t) * (u - x)) by ring.
+apply Rle_lt_trans with (1 := Rabs_triang _ _).
+replace (pos eps) with (pos_div_2 d1 + (eps - pos_div_2 d1)) by ring.
+apply Rplus_lt_le_compat with (1 := Hp).
+rewrite Rabs_mult.
+apply Rle_trans with ((d2 + 1) * Rmax (Rabs (u - x)) (Rabs (v - y))).
+apply Rmult_le_compat.
+apply Rabs_pos.
+apply Rabs_pos.
+apply Rle_trans with (1 := Rabs_triang _ _).
+apply Rplus_le_compat.
+now apply Rlt_le.
+now rewrite Rabs_pos_eq.
+apply Rmax_l.
+rewrite /d2 /d1 /=.
+field_simplify.
+apply Rle_refl.
+now apply Rgt_not_eq.
+(* . *)
+replace (q - y) with (q - (y + z * (v - y)) + (z - t + t) * (v - y)) by ring.
+apply Rle_lt_trans with (1 := Rabs_triang _ _).
+replace (pos eps) with (pos_div_2 d1 + (eps - pos_div_2 d1)) by ring.
+apply Rplus_lt_le_compat with (1 := Hq).
+rewrite Rabs_mult.
+apply Rle_trans with ((d2 + 1) * Rmax (Rabs (u - x)) (Rabs (v - y))).
+apply Rmult_le_compat.
+apply Rabs_pos.
+apply Rabs_pos.
+apply Rle_trans with (1 := Rabs_triang _ _).
+apply Rplus_le_compat.
+now apply Rlt_le.
+now rewrite Rabs_pos_eq.
+apply Rmax_r.
+rewrite /d2 /d1 /=.
+field_simplify.
+apply Rle_refl.
+now apply Rgt_not_eq.
+(* *)
+apply locally_forall => z.
+exists eps => p q.
+replace (u - x) with 0.
+replace (v - y) with 0.
+rewrite Rmult_0_r 2!Rplus_0_r.
+apply HP.
+apply sym_eq.
+apply Rabs_eq_0.
+apply Rle_antisym.
+rewrite Zm.
+apply Rmax_r.
+apply Rabs_pos.
+apply sym_eq.
+apply Rabs_eq_0.
+apply Rle_antisym.
+rewrite Zm.
+apply Rmax_l.
+apply Rabs_pos.
+Qed.
+
+Lemma locally_2d_1d :
+  forall (P : R -> R -> Prop) x y,
+  locally_2d P x y ->
+  locally_2d (fun u v => forall t, 0 <= t <= 1 -> locally_2d P (x + t * (u - x)) (y + t * (v - y))) x y.
+Proof.
+intros P x y H.
+apply locally_2d_1d_strong in H.
+apply: locally_2d_impl H.
+apply locally_2d_forall => u v H t Ht.
+specialize (H t Ht).
+now apply locally_singleton in H.
+Qed.
+
+Lemma derivable_pt_lim_locally :
+  forall f x l,
+  derivable_pt_lim f x l <->
+  forall eps : posreal, locally (fun y => y <> x -> Rabs ((f y - f x) / (y - x) - l) < eps) x.
+Proof.
+intros f x l.
+split.
+intros H eps.
+move: (H eps (cond_pos eps)) => {H} [d H].
+exists d => y Hy Zy.
+specialize (H (y - x) (Rminus_eq_contra _ _ Zy) Hy).
+now ring_simplify (x + (y - x)) in H.
+intros H eps He.
+move: (H (mkposreal _ He)) => {H} [d H].
+exists d => h Zh Hh.
+specialize (H (x + h)).
+ring_simplify (x + h - x) in H.
+apply H => //.
+contradict Zh.
+apply Rplus_eq_reg_l with x.
+now rewrite Rplus_0_r.
+Qed.
+
+Lemma is_deriv_eta :
+  forall f g x l,
+  locally (fun t => f t = g t) x ->
+  is_deriv f x l -> is_deriv g x l.
+Proof.
+intros f g x l Heq Hf.
+apply derivable_pt_lim_locally => eps.
+move /derivable_pt_lim_locally :Hf => Hf.
+apply: locally_impl (Hf eps) => {Hf}.
+move: Heq (Heq) => Heq [d Hfg].
+exists d => y Hy H Zy.
+rewrite -Hfg // -(locally_singleton _ _ Heq).
+exact: H.
+Qed.
+
+Lemma ex_deriv_eta :
+  forall f g x,
+  locally (fun t => f t = g t) x ->
+  ex_deriv f x -> ex_deriv g x.
+Proof.
+intros f g x Hfg (l,Hf).
+exists l.
+apply: is_deriv_eta Hfg Hf.
+Qed.
+
+Lemma Deriv_eta :
+  forall f g x,
+  locally (fun t => f t = g t) x ->
+  Deriv f x = Deriv g x.
+Proof.
+intros f g x Hfg.
+unfold Deriv, Lim, Lim_seq.
+apply f_equal.
+(*
+rewrite 2!LimSup_seq_correct /Rbar_limsup_seq.
+case Rbar_ex_limsup_seq => l1 Hl1.
+case Rbar_ex_limsup_seq => l2 Hl2 /=.
+apply Rbar.Rbar_le_antisym.
+move /Rbar_limsup_caract_1 :Hl1 => Hl1.
+move /Rbar_limsup_caract_1 :Hl2 => Hl2.
+SearchAbout Rbar_is_inf_seq.
+apply Rbar_is_inf_seq_le.
+apply (Rbar_is_inf_seq_le (fun n : nat => Rbar_sup_seq (fun m : nat => u (n + m)%nat)) 
+    (fun n : nat => Rbar_sup_seq (fun m : nat => v (n + m)%nat))) => // n.
+  apply Rbar_sup_seq_le => m //.
+  apply (Rbar_is_limsup_leq u v) => // n ; by right.
+  apply (Rbar_is_limsup_leq v u) => // n ; by right.
+
+ ; by apply (Rbar_is_limsup_eq u v).
+*)
+Admitted.
+(*
+apply f_equal.
+rewrite 2!LimSup_seq_correct.
+apply Rbar_limsup_eq.
+intros n; now rewrite 2!Hfg.
+Qed.
+*)
+
+Lemma Deriv_n_eta :
+  forall f g n x,
+  locally (fun t => f t = g t) x ->
+  Deriv_n f n x = Deriv_n g n x.
+Proof.
+intros f g n x Heq.
+pattern x ; apply locally_singleton.
+induction n.
+exact Heq.
+apply: locally_impl_strong IHn.
+apply: locally_align Heq => d Heq y Hy IHn.
+now apply Deriv_eta.
+Qed.
+
+Lemma derivable_pt_lim_sum_f_R0 f d n x :
+  (forall k, (k <= n)%nat -> derivable_pt_lim (fun u => f k u) x (d k)) ->
+  derivable_pt_lim (fun u => sum_f_R0 (fun k => f k u) n) x (sum_f_R0 d n).
+Proof.
+induction n.
+intros H.
+simpl.
+now apply H.
+intros H.
+simpl.
+apply derivable_pt_lim_plus with (f2 := (fun u => f (S n) u)).
+apply IHn => k Hk.
+apply H.
+now apply le_S.
+now apply H.
+Qed.
 
 Definition continuity2_pt (f : R -> R -> R) (x y : R) :=
-  forall eps : posreal, exists delta : posreal, forall (x' y' : R),
-    Rabs (x'-x) < delta -> Rabs (y'-y) < delta -> Rabs (f x' y' - f x y) < eps.
+  forall eps : posreal, locally_2d (fun u v => Rabs (f u v - f x y) < eps) x y.
+
 Definition continuity2 (f : R -> R -> R) :=
   forall (x y : R), continuity2_pt f x y.
-
-Definition ex_diff_n f n x y :=
-    (exists eps : posreal, forall m k, (m+k < n)%nat 
-          -> forall u v, Rabs (u-x) < eps -> Rabs (v-y) < eps 
-             ->  ex_deriv (fun z => partial_derive m k f z v) u /\
-                 ex_deriv (fun z => partial_derive m k f u z) v )
-    /\
-    (forall m k, (m+k <= n)%nat 
-          ->  continuity2_pt (fun u v => partial_derive m k f u v) x y).
-
-
-Definition DL_regular_n f m x y :=
-    exists D, exists delta: posreal, forall u v,
-    Rabs (u-x) < delta -> Rabs (v-y) < delta ->
-       Rabs (f u v - DL_pol m f x y (u-x) (v-y)) <= D * (Rmax (Rabs (u-x)) (Rabs (v-y))) ^ (S m).
 
 Lemma MVT_cor4:
   forall (f : R -> R) a eps,
@@ -121,45 +488,16 @@ apply Rabs_pos.
 now apply H.
 Qed.
 
-Lemma ex_deriv_eta: forall f g,
-   (forall y, f y = g y) -> forall x, ex_deriv f x -> ex_deriv g x.
-intros f g Hfg x (l,Hf).
-exists l.
-intros t Ht.
-destruct (Hf t Ht).
-exists x0; intros h Hh1 Hh2.
-rewrite <- 2!Hfg.
-now apply H.
-Qed.
-
-Lemma Deriv_eta: forall f g, 
-   (forall y, f y = g y) -> forall x, Deriv f x = Deriv g x.
-Proof.
-intros f g Hfg x.
-unfold Deriv, Lim, Lim_seq.
-apply f_equal.
-rewrite 2!LimSup_seq_correct.
-apply Rbar_limsup_eq.
-intros n; now rewrite 2!Hfg.
-Qed.
-
-Lemma Deriv_n_eta: forall f g, 
-   (forall y, f y = g y) -> forall n x, Deriv_n f n x = Deriv_n g n x.
-Proof.
-intros f g Hfg.
-induction n.
-now simpl.
-simpl.
-now apply Deriv_eta.
-Qed.
-
 Lemma Deriv_n_comp: forall f n m x,
   Deriv_n (Deriv_n f m) n x = Deriv_n f (n+m) x.
+Proof.
 intros f n m.
 induction n.
 now simpl.
 simpl.
-now apply Deriv_eta.
+intros x.
+apply Deriv_eta.
+now apply locally_forall.
 Qed.
 
 Lemma Schwarz_aux :
@@ -215,17 +553,18 @@ rewrite /Rminus Rplus_opp_r Rabs_R0.
 apply cond_pos.
 Qed.
 
-Lemma Schwarz: forall f x y (eps : posreal),
-   (forall u v, Rabs (u-x) < eps -> Rabs (v-y) < eps
-          ->  ex_deriv (fun z => f z v) u /\
-              ex_deriv (fun z => f u z) v /\
-              ex_deriv (fun z => Deriv (fun t => f z t) v) u /\
-              ex_deriv (fun z => Deriv (fun t => f t z) u) v)
-    -> continuity2_pt (fun u v => Deriv (fun z => Deriv (fun t => f z t) v) u) x y
-    -> continuity2_pt (fun u v => Deriv (fun z => Deriv (fun t => f t z) u) v) x y
-    -> Deriv (fun z => Deriv (fun t => f z t) y) x = Deriv (fun z => Deriv (fun t => f t z) x) y.
+Lemma Schwarz :
+  forall f x y,
+  locally_2d (fun u v =>
+    ex_deriv (fun z => f z v) u /\
+    ex_deriv (fun z => f u z) v /\
+    ex_deriv (fun z => Deriv (fun t => f z t) v) u /\
+    ex_deriv (fun z => Deriv (fun t => f t z) u) v) x y ->
+  continuity2_pt (fun u v => Deriv (fun z => Deriv (fun t => f z t) v) u) x y ->
+  continuity2_pt (fun u v => Deriv (fun z => Deriv (fun t => f t z) u) v) x y ->
+  Deriv (fun z => Deriv (fun t => f z t) y) x = Deriv (fun z => Deriv (fun t => f t z) x) y.
 Proof.
-intros f x y eps HD HC2 HC1.
+intros f x y (eps, HD) HC2 HC1.
 refine (let H1 := Schwarz_aux f x y eps _ in _).
 intros u v Hu Hv.
 split ; now apply HD.
@@ -289,20 +628,6 @@ apply Rgt_not_eq.
 now apply Rmult_gt_0_compat.
 Qed.
 
-Lemma is_deriv_eta: forall f1 f2 g t,
-  (forall y, f1 y = f2 y) ->
-  is_deriv f1 t g -> is_deriv f2 t g.
-Proof.
-intros f1 f2 g t H.
-unfold is_deriv, derivable_pt_lim.
-intros H1 eps He.
-destruct (H1 eps He) as (d,Hd).
-exists d; intros h Hh1 Hh2.
-rewrite <- 2!H.
-now apply Hd.
-Qed.
-
-
 Theorem Taylor_Lagrange :
   forall f n x y, x < y ->
   ( forall t, x <= t <= y -> forall k, (k <= S n)%nat -> ex_deriv_n f k t ) ->
@@ -341,13 +666,11 @@ simpl.
 replace (-1 / 1 * Deriv (fun x0 : R => f x0) t) with (0 - (1/1 *Deriv (fun x0 : R => f x0) t)) by field.
 apply derivable_pt_lim_minus.
 apply derivable_pt_lim_const.
-apply derivable_pt_lim_scal.
-rewrite (Deriv_eta _ f).
+apply derivable_pt_lim_scal with (f := fun u => f u).
 apply Deriv_prop.
 apply (Df t Ht 1%nat).
 apply le_n_S.
 apply le_0_n.
-easy.
 (* .. *)
 intros Hn.
 apply is_deriv_eta with (fun x0 : R =>
@@ -356,6 +679,7 @@ apply is_deriv_eta with (fun x0 : R =>
     (y - x0) ^ (S n) / INR (fact (S n)) *
      Deriv_n f (S n) x0).
 simpl.
+apply locally_forall.
 intros; ring.
 replace (- (y - t) ^ S n / INR (fact (S n)) * Deriv_n f (S (S n)) t) with
   ((- (y - t) ^ n / INR (fact n) * Deriv_n f (S n) t) -
@@ -371,6 +695,7 @@ apply (derivable_pt_lim_mult (fun x0 => ((y - x0) ^ S n / INR (fact (S n))))
 replace (- (y - t) ^ n / INR (fact n)) with
    (/ INR (fact (S n)) * (INR (S n)*(y - t) ^ n*(0-1))).
 apply is_deriv_eta with (fun x0 : R => (/ INR (fact (S n)) * (y - x0) ^ S n)).
+apply locally_forall.
 intros; unfold Rdiv; apply Rmult_comm.
 now apply derivable_pt_lim_scal.
 change (fact (S n)) with ((S n)*fact n)%nat.
@@ -384,6 +709,7 @@ apply (Df t Ht (S (S n))).
 now apply le_n_S.
 (* . *)
 apply is_deriv_eta with (fun x0 : R => -c * (y - x0) ^ S n).
+apply locally_forall.
 intros; ring.
 replace (c * INR (S n) * (y - t) ^ n) with ((-c) * ((INR (S n) * (y - t) ^ n) * (0-1))) by ring.
 now apply derivable_pt_lim_scal.
@@ -453,72 +779,141 @@ ring_simplify.
 apply Hzeta1.
 Qed.
 
-Theorem is_deriv_SF:
-  forall (fn : nat -> R -> R) (N : nat) (x : R),
-  (forall n : nat, (n <= N)%nat -> ex_deriv (fn n) x) ->
-  is_deriv (fun y : R => sum_f_R0 (fun k : nat => fn k y) N) x (sum_f_R0 (fun k => Deriv (fn k) x) N).
-intros fn; induction N.
-intros x H; simpl.
-apply is_deriv_eta with (fn 0%nat).
-easy.
-apply Deriv_prop.
-now apply H.
-intros x H.
-simpl.
-apply derivable_pt_lim_plus.
-apply IHN.
-intros; apply H.
-now apply le_S.
-apply Deriv_prop.
-now apply H.
-Qed.
+Fixpoint ex_diff_n f n x y :=
+  continuity2_pt f x y /\
+  match n with
+  | O => True
+  | S n =>
+    ex_deriv (fun z => f z y) x /\
+    ex_deriv (fun z => f x z) y /\
+    ex_diff_n (fun u v => Deriv (fun z => f z v) u) n x y /\
+    ex_diff_n (fun u v => Deriv (fun z => f u z) v) n x y
+  end.
 
-
+Definition DL_regular_n f m x y :=
+  exists D, locally_2d (fun u v =>
+    Rabs (f u v - DL_pol m f x y (u-x) (v-y)) <= D * (Rmax (Rabs (u-x)) (Rabs (v-y))) ^ (S m)) x y.
 
 Theorem Taylor_Lagrange_2D : forall f n x y,
-   ex_diff_n f (S n) x y -> DL_regular_n f n x y.
+  locally_2d (fun u v => ex_diff_n f (S n) u v) x y -> DL_regular_n f n x y.
 Proof.
 intros f n x y Df.
-assert (exists D, exists delta : posreal, forall u v, Rabs (u - x) < delta -> Rabs (v - y) < delta ->
-  forall p, (p <= S n)%nat ->
-  Rabs (partial_derive p (S n - p) f u v) <= D).
-admit. (* continuité 2D => borné *)
-destruct H as (D,(delta,H)).
+(* *)
+assert (exists D, locally_2d (fun u v => forall p, (p <= S n)%nat ->
+  Rabs (partial_derive p (S n - p) f u v) <= D) x y).
+(* . *)
+assert (forall p, (p <= S n)%nat -> exists D, locally_2d (fun u v => Rabs (partial_derive p (S n - p) f u v) <= D) x y).
+intros p Hp.
+(* .. *)
+assert (continuity2_pt (partial_derive p (S n - p) f) x y).
+apply locally_2d_singleton in Df.
+refine (proj1 (_: ex_diff_n (partial_derive p (S n - p) f) 0 x y)).
+replace O with (S n - (p + (S n - p)))%nat by rewrite le_plus_minus_r // minus_diag //.
+cut (p + (S n - p) <= S n)%nat.
+2: now rewrite le_plus_minus_r.
+generalize (S n - p)%nat.
+clear Hp.
+revert f Df p.
+generalize (S n).
+clear n.
+induction n.
+intros f (H,_) [|p] [|q] H' ; try inversion H'.
+done.
+intros f H [|p] q H'.
+destruct q as [|q].
+exact H.
+admit.
+admit.
+(* .. *)
+exists (Rabs (partial_derive p (S n - p) f x y) + 1).
+specialize (H (mkposreal 1 Rlt_0_1)).
+apply: locally_2d_impl H.
+apply: locally_2d_forall => u v H.
+replace (partial_derive p (S n - p) f u v) with (partial_derive p (S n - p) f x y + (partial_derive p (S n - p) f u v - partial_derive p (S n - p) f x y)) by ring.
+apply Rle_trans with (1 := Rabs_triang _ _).
+apply Rplus_le_compat_l.
+now apply Rlt_le.
+(* . *)
+clear -H.
+generalize (le_refl (S n)).
+generalize (S n) at 1 3.
+intros p Hp.
+induction p.
+move: (H _ Hp) => {H} [D H].
+exists D.
+apply: locally_2d_impl H.
+apply locally_2d_forall => u v H [|p] Hp' //.
+inversion Hp'.
+move: (IHp (le_S _ _ (le_S_n _ _ Hp))) => {IHp} [D1 H1].
+move: (H _ Hp) => {H} [D2 H2].
+exists (Rmax D1 D2).
+move: (locally_2d_and _ _ x y H1 H2) => {H1 H2} H.
+apply: locally_2d_impl H.
+apply locally_2d_forall => u v H p' Hp'.
+destruct (le_lt_or_eq _ _ Hp').
+apply Rle_trans with (2 := Rmax_l _ _).
+apply H.
+now apply gt_S_le.
+apply Rle_trans with (2 := Rmax_r _ _).
+now rewrite H0.
+(* *)
+destruct H as (D,H).
 exists  (/ INR (fact (S n)) * D * sum_f_R0 (fun i : nat => Rabs (C (S n) i)) (S n)).
-exists delta.
-intros u v Hu Hv.
-(* specialize (H u v Hu Hv).*)
+move: (locally_2d_and _ _ _ _ Df H) => {Df H} HH.
+apply locally_2d_1d in HH.
+apply: locally_2d_impl HH.
+apply locally_2d_forall => u v HH.
 set (g t := f (x + t * (u - x)) (y + t * (v - y))).
 replace (f u v) with (g 1) by (rewrite /g 2!Rmult_1_l ; apply f_equal2 ; ring).
-assert (forall k t, (k <= S n)%nat -> 0 <= t <= 1 -> is_deriv_n g k t (sum_f_R0 (fun m =>  C k m * partial_derive m (k - m)%nat f (x+t*(u-x)) (y+t*(v-y)) *
+assert (forall k t, (k <= S n)%nat -> 0 <= t <= 1 ->
+  is_deriv_n g k t (sum_f_R0 (fun m => C k m * partial_derive m (k - m)%nat f (x+t*(u-x)) (y+t*(v-y)) *
          (u-x) ^ m * (v-y) ^ (k - m)%nat) k)).
+intros k t Hk Ht.
+specialize (HH t Ht).
+pattern t ; apply locally_singleton.
 induction k.
-simpl.
-unfold C, partial_derive, g.
-simpl.
+rewrite /C /partial_derive /g /=.
+apply locally_forall.
 intros ; field.
-intros t Hk Ht.
-simpl (Deriv_n g (S k) t).
-unfold is_deriv_n.
-apply is_deriv_eta with (fun t => sum_f_R0
-           (fun m : nat =>
-            C k m *
-            partial_derive m (k - m) f (x + t * (u - x)) (y + t * (v - y)) *
-            (u - x) ^ m * (v - y) ^ (k - m)) k).
-intros y0.
+specialize (IHk (le_S _ _ (le_S_n _ _ Hk))).
+rewrite /is_deriv_n.
+apply: locally_impl_strong IHk.
+apply locally_forall => {t Ht HH} z IHk.
+apply is_deriv_eta with (fun t => sum_f_R0 (fun m => C k m *
+  partial_derive m (k - m) f (x + t * (u - x)) (y + t * (v - y)) * (u - x) ^ m * (v - y) ^ (k - m)) k).
+apply: locally_impl IHk.
+apply locally_forall => {z} z Hz.
 apply sym_eq.
-apply Deriv_n_correct.
-apply IHk.
-now apply lt_le_weak.
-admit. (* faux *)
-admit. (* dérivée du DL *)
+now apply Deriv_n_correct.
+replace (sum_f_R0 (fun m : nat => C (S k) m *
+    partial_derive m (S k - m) f (x + z * (u - x)) (y + z * (v - y)) * (u - x) ^ m * (v - y) ^ (S k - m)) (S k)) with
+  (sum_f_R0 (fun m : nat => C k m * (u - x) ^ m  * (v - y) ^ (k - m) *
+    ((u - x) * partial_derive (S m) (k - m) f (x + z * (u - x)) (y + z * (v - y)) +
+     (v - y) * partial_derive m (S (k - m)) f (x + z * (u - x)) (y + z * (v - y)))) k).
+apply derivable_pt_lim_sum_f_R0 => p Hp.
+apply is_deriv_eta with (fun u0 => C k p * (u - x) ^ p * (v - y) ^ (k - p) * partial_derive p (k - p) f (x + u0 * (u - x)) (y + u0 * (v - y))).
+apply locally_forall.
+intros w.
+ring.
+apply derivable_pt_lim_scal.
 
+admit.
+rewrite -(sum_eq (fun m =>
+  C k m * (u - x) ^ (S m) * (v - y) ^ (k - m) * partial_derive (S m) (k - m) f (x + z * (u - x)) (y + z * (v - y)) +
+  C k m * (u - x) ^ m * (v - y) ^ (S (k - m)) * partial_derive m (S (k - m)) f (x + z * (u - x)) (y + z * (v - y)))).
+2: intros ; simpl ; ring.
+rewrite plus_sum.
+(*rewrite (decomp_sum _ (S k)).*)
+
+admit.
+(* *)
 destruct (Taylor_Lagrange g n 0 1 Rlt_0_1) as (t&Ht&Hg).
 intros t Ht.
 intros [|k] Hk.
 easy.
 eexists.
-now apply (H0 (S k)).
+now apply (H (S k)).
+(* *)
 rewrite Hg /DL_pol.
 replace (1 - 0) with 1 by ring.
 rewrite pow1 {1}/Rminus Rplus_assoc [_*_+_]Rplus_comm -Rplus_assoc -/(Rminus _ _).
@@ -527,9 +922,9 @@ assert (forall k t, (k <= S n)%nat -> 0 <= t <= 1 -> Deriv_n g k t =
          (u-x) ^ m * (v-y) ^ (k - m)%nat) k)).
 intros k t0 Hk Ht0.
 apply Deriv_n_correct.
-now apply H0.
+now apply H.
 rewrite -minus_sum sum_eq_R0.
-rewrite H1.
+rewrite H0.
 rewrite Rplus_0_l.
 unfold differential.
 rewrite Rabs_mult.
@@ -547,13 +942,27 @@ apply Rabs_pos.
 apply Rmult_le_compat.
 apply Rabs_pos.
 apply Rmult_le_pos; apply Rabs_pos.
-apply H.
-admit. (* facile *)
-admit. (* facile *)
-exact Hn0.
+specialize (HH t (conj (Rlt_le _ _ (proj1 Ht)) (Rlt_le _ _ (proj2 Ht)))).
+apply locally_2d_singleton in HH.
+now apply HH.
 rewrite - 2!RPow_abs.
 instantiate (1:=(Rmax (Rabs (u - x)) (Rabs (v - y)) ^ S n)).
-admit. (* bof *)
+apply Rle_trans with ((Rmax (Rabs (u - x)) (Rabs (v - y)) ^ n0) * (Rmax (Rabs (u - x)) (Rabs (v - y)) ^ (S n - n0))).
+apply Rmult_le_compat.
+apply pow_le ; apply Rabs_pos.
+apply pow_le ; apply Rabs_pos.
+apply pow_incr.
+split.
+apply Rabs_pos.
+apply Rmax_l.
+apply pow_incr.
+split.
+apply Rabs_pos.
+apply Rmax_r.
+rewrite -pow_add.
+rewrite -le_plus_minus.
+apply Rle_refl.
+exact Hn0.
 rewrite - scal_sum.
 rewrite /Rdiv Rmult_1_l Rabs_right .
 right; ring.
@@ -562,7 +971,7 @@ apply INR_fact_lt_0.
 apply le_refl.
 split; apply Rlt_le, Ht.
 intros n0 hn0.
-rewrite H1.
+rewrite H0.
 rewrite 2!Rmult_0_l 2!Rplus_0_r pow1.
 unfold differential, Rdiv; ring.
 now apply le_S.
