@@ -88,31 +88,25 @@ Definition derivable_pt_lim_aux (f : R -> R) (x l : R) :=
 Lemma equiv_deriv_pt_lim_0 : forall f x l,
   derivable_pt_lim f x l -> derivable_pt_lim_aux f x l.
 Proof.
-  intros f x l Df.
-  intros eps.
-  elim (Df eps (cond_pos eps)) ; clear Df ; intros delta Df.
-  exists delta ; intros.
-  destruct (Req_dec (y-x) 0).
-  rewrite H0.
-  rewrite (Rminus_diag_uniq _ _ H0).
-  assert ((f x - f x - l * 0) = 0).
-    ring.
-    rewrite H1 ; clear H1.
-  rewrite Rabs_R0 ; apply Req_le.
-  ring.
-
-  assert ((f y - f x - l * (y - x)) = ((f (x+(y-x)) - f x)/(y-x) - l) * (y-x)).
-    assert (x+(y-x) = y).
-      ring.
-      rewrite H1 ; clear H1.
-    field.
-    apply H0.
-    rewrite H1 ; clear H1.
+  intros f x l.
+  move /derivable_pt_lim_locally => H eps.
+  specialize (H eps).
+  apply: locally_impl H.
+  apply locally_forall => y H.
+  destruct (Req_dec y x) as [H'|H'].
+  rewrite H'.
+  ring_simplify (f x - f x - l * (x - x)).
+  rewrite /Rminus Rplus_opp_r Rabs_R0 Rmult_0_r.
+  apply Rle_refl.
+  move: (H H') => {H} H.
+  replace (f y - f x - l * (y - x)) with (((f y - f x) / (y - x) - l) * (y - x)).
   rewrite Rabs_mult.
   apply Rmult_le_compat_r.
   apply Rabs_pos.
-  apply Rlt_le.
-  apply (Df (y-x) H0 H).
+  now apply Rlt_le.
+  field.
+  contradict H'.
+  now apply Rminus_diag_uniq.
 Qed.
 
 Lemma equiv_deriv_pt_lim_1 : forall f x l,
