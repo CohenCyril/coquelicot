@@ -114,6 +114,33 @@ apply Deriv_correct.
 now apply is_deriv_minus.
 Qed.
 
+Lemma is_deriv_scal :
+  forall f k x, ex_deriv f x ->
+  is_deriv (fun x => k * f x) x (k * Deriv f x).
+Proof.
+intros f k x Df.
+apply derivable_pt_lim_scal.
+now apply Deriv_prop.
+Qed.
+
+Lemma ex_deriv_scal :
+  forall f k x, ex_deriv f x ->
+  ex_deriv (fun x => k * f x) x.
+Proof.
+intros f k x Df.
+eexists.
+now apply is_deriv_scal.
+Qed.
+
+Lemma Deriv_scal :
+  forall f k x, ex_deriv f x ->
+  Deriv (fun x => k * f x) x = k * Deriv f x.
+Proof.
+intros f k x Df.
+apply Deriv_correct.
+now apply is_deriv_scal.
+Qed.
+
 Lemma is_deriv_comp (f g : R -> R) (x df dg : R) : 
   is_deriv f (g x) df -> is_deriv g x dg -> is_deriv (fun x => f (g x)) x (df * dg).
 Proof.
