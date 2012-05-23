@@ -32,6 +32,7 @@ Fixpoint apply p : Rn p -> seq R -> R :=
   end.
 
 Axiom RInt : (R -> R) -> R -> R -> R.
+Axiom ex_RInt : (R -> R) -> R -> R -> Prop.
 
 Fixpoint interp (l : seq R) (e : expr) : R :=
   match e with
@@ -49,6 +50,7 @@ Inductive domain :=
   | Never : domain
   | Always : domain
   | Derivable : expr -> nat -> domain
+  | Integrable : expr -> expr -> expr -> domain
   | And : seq domain -> domain
   | Forall : expr -> expr -> domain -> domain.
 
@@ -57,6 +59,7 @@ Fixpoint interp_domain (l : seq R) (d : domain) : Prop :=
   | Never => False
   | Always => True
   | Derivable e n => ex_deriv (fun x => interp (set_nth R0 l n x) e) (nth R0 l n)
+  | Integrable f e1 e2 => ex_RInt (fun x => interp (x :: l) f) (interp l e1) (interp l e2)
   | And ld => foldr (fun d acc => interp_domain l d /\ acc) True ld
   | Forall e1 e2 s =>
     let a1 := interp l e1 in let a2 := interp l e2 in
@@ -135,10 +138,14 @@ Fixpoint D (e : expr) n : expr * domain :=
   | Binary b e1 e2 =>
     let '(a1,b1) := D e1 n in
     let '(a2,b2) := D e2 n in
-    (match b with
-    | Eplus => Binary Eplus a1 a2
-    | Emult => Binary Eplus (Binary Emult a1 e2) (Binary Emult e1 a2)
-    end, And (b1::b2::nil))
+    match b, is_const e1 n, is_const e2 n with
+    | Eplus, true, _ => (a2, b2)
+    | Eplus, _, true => (a1, b1)
+    | Eplus, _, _ => (Binary Eplus a1 a2, And (b1::b2::nil))
+    | Emult, true, _ => (Binary Emult e1 a2, b2)
+    | Emult, _, true => (Binary Emult a1 e2, b1)
+    | Emult, _, _ => (Binary Eplus (Binary Emult a1 e2) (Binary Emult e1 a2), And (b1::b2::nil))
+    end
   | Unary u e =>
     let '(a,b) := D e n in
     match u with
@@ -152,7 +159,7 @@ Fixpoint D (e : expr) n : expr * domain :=
       (Binary Eplus
         (Binary Emult a2 (App f e2))
         (Unary Eopp (Binary Emult a1 (App f e1))))
-      (Int a3 e1 e2), And (b1::b2::(Forall e1 e2 b3)::nil))
+      (Int a3 e1 e2), And (b1::b2::(Forall e1 e2 b3)::(Integrable f e1 e2)::nil))
   end.
 
 Lemma is_deriv_eq :
@@ -241,18 +248,51 @@ specialize (IHe1 l n).
 specialize (IHe2 l n).
 destruct (D e1 n) as (a1,b1).
 destruct (D e2 n) as (a2,b2).
+case C1: (is_const e1 n).
+(* . *)
+assert (H1 := is_const_correct e1 n C1 l).
+case b ; intros H2.
+rewrite -(Rplus_0_l (interp l a2)).
+apply derivable_pt_lim_plus.
+apply (is_deriv_eq (fun x => interp (set_nth 0 l n 0) e1)).
+apply H1.
+apply derivable_pt_lim_const.
+now apply IHe2.
 simpl.
-intros (H1&H2&_).
-specialize (IHe1 H1).
-specialize (IHe2 H2).
-case b.
-simpl.
-now apply derivable_pt_lim_plus.
-simpl.
-rewrite -(interp_subst n _ e1) -(interp_subst n _ e2).
+replace (interp l e1 * interp l a2) with (0 * interp (set_nth 0 l n (nth 0 l n)) e2 + interp l e1 * interp l a2) by ring.
+rewrite -(interp_subst n _ e1).
 apply (derivable_pt_lim_mult (fun x => interp (set_nth 0 l n x) e1) (fun x => interp (set_nth 0 l n x) e2)).
-exact IHe1.
-exact IHe2.
+apply (is_deriv_eq (fun x => interp (set_nth 0 l n 0) e1)).
+apply H1.
+apply derivable_pt_lim_const.
+now apply IHe2.
+case C2: (is_const e2 n) => {C1}.
+(* . *)
+assert (H2 := is_const_correct e2 n C2 l).
+case b ; intros H1.
+rewrite -(Rplus_0_r (interp l a1)).
+apply derivable_pt_lim_plus.
+now apply IHe1.
+apply (is_deriv_eq (fun x => interp (set_nth 0 l n 0) e2)).
+apply H2.
+apply derivable_pt_lim_const.
+simpl.
+replace (interp l a1 * interp l e2) with (interp l a1 * interp l e2 + interp (set_nth 0 l n (nth 0 l n)) e1 * 0) by ring.
+rewrite -(interp_subst n _ e2).
+apply (derivable_pt_lim_mult (fun x => interp (set_nth 0 l n x) e1) (fun x => interp (set_nth 0 l n x) e2)).
+now apply IHe1.
+apply (is_deriv_eq (fun x => interp (set_nth 0 l n 0) e2)).
+apply H2.
+apply derivable_pt_lim_const.
+(* . *)
+clear C2.
+case b ; simpl ;
+  intros (H1&H2&_) ;
+  specialize (IHe1 H1) ;
+  specialize (IHe2 H2).
+now apply derivable_pt_lim_plus.
+rewrite -(interp_subst n _ e1) -(interp_subst n _ e2).
+now apply (derivable_pt_lim_mult (fun x => interp (set_nth 0 l n x) e1) (fun x => interp (set_nth 0 l n x) e2)).
 (* *)
 simpl => l n.
 specialize (IHe l n).
@@ -307,6 +347,7 @@ Hypothesis P : domain -> Prop.
 Hypothesis P_Never : P Never.
 Hypothesis P_Always : P Always.
 Hypothesis P_Derivable : forall e n, P (Derivable e n).
+Hypothesis P_Integrable : forall f e1 e2, P (Integrable f e1 e2).
 Hypothesis P_And : forall ld, foldr (fun d acc  => P d /\ acc) True ld -> P (And ld).
 Hypothesis P_Forall : forall e1 e2 d, P d -> P (Forall e1 e2 d).
 
@@ -315,6 +356,7 @@ Fixpoint domain_ind' (d : domain) : P d :=
   | Never => P_Never
   | Always => P_Always
   | Derivable e n => P_Derivable e n
+  | Integrable f e1 e2 => P_Integrable f e1 e2
   | And ld => P_And ld
     ((fix domain_ind'' (ld : seq domain) : foldr (fun d acc => P d /\ acc) True ld :=
        match ld return foldr (fun d acc => P d /\ acc) True ld with
@@ -363,6 +405,10 @@ intros e n H1 (H2,H3).
 exact (conj (H1 l H2) (IHld Hb H3)).
 (* . *)
 simpl.
+intros e0 e1 e2 H1 (H2,H3).
+exact (conj (H1 l H2) (IHld Hb H3)).
+(* . *)
+simpl.
 intros ls H1 H2.
 rewrite foldr_cat in H2.
 refine ((fun H => conj (H1 l (proj1 H)) (IHld Hb (proj2 H))) _).
@@ -385,32 +431,18 @@ exact (conj (H1 l H2) (IHld Hb H3)).
 (* *)
 simpl.
 revert IHd.
-destruct (simplify_domain d).
-intros _ (eps,H).
-elim (H 0).
-split.
-rewrite -Ropp_0.
-apply Ropp_lt_contravar.
-apply cond_pos.
-apply Rlt_trans with (1 := Rlt_0_1).
-rewrite -{1}(Rplus_0_r 1).
-apply Rplus_lt_compat_l.
-apply cond_pos.
+assert (HH: forall d', (forall l, interp_domain l d' -> interp_domain l d) ->
+  interp_domain l (Forall e1 e2 d') -> interp_domain l (Forall e1 e2 d)).
+simpl.
+intros d' H1 (eps,H2).
+exists eps => t Ht.
+apply H1.
+now apply H2.
+destruct (simplify_domain d) ; try (apply HH ; fail).
+simpl.
 intros H _.
 exists (mkposreal _ Rlt_0_1) => t Ht.
 now apply H.
-intros H1 (eps,H2).
-exists eps => t Ht.
-apply H1.
-now apply H2.
-intros H1 (eps,H2).
-exists eps => t Ht.
-apply H1.
-now apply H2.
-intros H1 (eps,H2).
-exists eps => t Ht.
-apply H1.
-now apply H2.
 Qed.
 
 Definition var : nat -> R.
@@ -487,7 +519,8 @@ Ltac auto_derive :=
     auto_derive_expr f v ;
     let H := fresh "H" in
     intro H ;
-    refine (eq_ind _ (derivable_pt_lim _ _) (H _) _ _) || refine (eq_ind _ (derivable_pt_lim _ _) H _ _)
+    refine (eq_ind _ (derivable_pt_lim _ _) (H _) _ _) || refine (eq_ind _ (derivable_pt_lim _ _) H _ _) ;
+    clear H
   end.
 
 Goal forall x, derivable_pt_lim (fun y => RInt (fun z => y + z) 0 y + 2 * y) x (3 * x + 2).
