@@ -3,6 +3,22 @@ Require Import ssreflect.
 Require Import Lim_seq Lim_fct Sup_seq Rbar_seq Deriv_fct.
 Require Import Locally Differential.
 
+Lemma C_n_n: forall n, C n n = 1.
+intros n; unfold C.
+rewrite minus_diag.
+simpl.
+field.
+apply INR_fact_neq_0.
+Qed.
+
+Lemma C_n_0: forall n, C n 0 = 1.
+intros n; unfold C.
+rewrite - minus_n_O.
+simpl.
+field.
+apply INR_fact_neq_0.
+Qed.
+
 Definition partial_derive (m k : nat) (f : R -> R -> R) : R -> R -> R :=
   fun x y => Deriv_n (fun t => Deriv_n (fun z => f t z) k y) m x.
 
@@ -524,18 +540,114 @@ ring.
 apply derivable_pt_lim_scal.
 rewrite (Rmult_comm (u - x)) (Rmult_comm (v - y)).
 apply derivable_pt_lim_comp_2d.
+replace (partial_derive (S p) (k - p) f (x + z * (u - x)) (y + z * (v - y)))
+  with (Deriv (fun u : R => partial_derive p (k - p) f u (y + z * (v - y))) (x + z * (u - x))).
+2: reflexivity.
+replace (partial_derive p (S (k - p)) f (x + z * (u - x)) (y + z * (v - y))) with
+  (Deriv (fun v : R => partial_derive p (k - p) f  (x + z * (u - x)) v) (y + z * (v - y))).
 apply derivable_differentiable_pt_lim.
-admit.
-admit. (* facile *)
-admit. (* facile *)
+admit. (* perdu f dérivable ? *)
+admit. (* perdu f dérivable ? *)
+admit. (* perdu f dérivable ? *)
+admit. (* perdu f dérivable ? *)
+admit. (* échange dérivées *)
+pattern (u-x) at 2; replace (u-x) with (0+(u-x)*1) by ring.
+apply derivable_pt_lim_plus.
+apply derivable_pt_lim_const.
+specialize (derivable_pt_lim_scal (fun x => x) (u - x) z 1 (derivable_pt_lim_id z)).
+unfold derivable_pt_lim, mult_real_fct.
+intros H e He; destruct (H e He) as (d, Hd).
+exists d; intros h Hh1 Hh2.
+apply Rle_lt_trans with (2:=Hd h Hh1 Hh2).
+right; apply f_equal; unfold Rdiv; ring.
+pattern (v-y) at 2; replace (v-y) with (0+(v-y)*1) by ring.
+apply derivable_pt_lim_plus.
+apply derivable_pt_lim_const.
+specialize (derivable_pt_lim_scal (fun x => x) (v - y) z 1 (derivable_pt_lim_id z)).
+unfold derivable_pt_lim, mult_real_fct.
+intros H e He; destruct (H e He) as (d, Hd).
+exists d; intros h Hh1 Hh2.
+apply Rle_lt_trans with (2:=Hd h Hh1 Hh2).
+right; apply f_equal; unfold Rdiv; ring.
 rewrite -(sum_eq (fun m =>
   C k m * (u - x) ^ (S m) * (v - y) ^ (k - m) * partial_derive (S m) (k - m) f (x + z * (u - x)) (y + z * (v - y)) +
   C k m * (u - x) ^ m * (v - y) ^ (S (k - m)) * partial_derive m (S (k - m)) f (x + z * (u - x)) (y + z * (v - y)))).
 2: intros ; simpl ; ring.
-rewrite plus_sum.
-(*rewrite (decomp_sum _ (S k)).*)
-
-admit.
+case k; clear Hk IHk k.
+unfold C; simpl.
+field.
+intros k.
+apply sym_eq.
+rewrite (decomp_sum _ (S (S k))).
+2: apply lt_0_Sn.
+rewrite - pred_Sn.
+rewrite tech5.
+rewrite (sum_eq _ (fun i : nat =>
+     (C (S k) i*
+    partial_derive (S i) (S (S k) - S i) f (x + z * (u - x))
+      (y + z * (v - y)) * (u - x) ^ S i * (v - y) ^ (S (S k) - S i))
+     + (C (S k) (S i) *
+       partial_derive (S i) (S (S k) - S i) f (x + z * (u - x))
+      (y + z * (v - y)) * (u - x) ^ S i * (v - y) ^ (S (S k) - S i)))).
+rewrite sum_plus.
+apply sym_eq.
+rewrite sum_plus.
+rewrite tech5.
+rewrite (tech2 _ 0 (S k)).
+2: apply lt_0_Sn.
+replace
+ (sum_f_R0
+   (fun l : nat =>
+    C (S k) l * (u - x) ^ l * (v - y) ^ S (S k - l) *
+    partial_derive l (S (S k - l)) f (x + z * (u - x)) (y + z * (v - y))) 0)
+with  (C (S (S k)) 0 *
+partial_derive 0 (S (S k) - 0) f (x + z * (u - x)) (y + z * (v - y)) *
+(u - x) ^ 0 * (v - y) ^ (S (S k) - 0)).
+replace (C (S k) (S k) * (u - x) ^ S (S k) * (v - y) ^ (S k - S k) *
+   partial_derive (S (S k)) (S k - S k) f (x + z * (u - x)) (y + z * (v - y))) with
+ (C (S (S k)) (S (S k)) *
+ partial_derive (S (S k)) (S (S k) - S (S k)) f (x + z * (u - x))
+   (y + z * (v - y)) * (u - x) ^ S (S k) * (v - y) ^ (S (S k) - S (S k))).
+replace (sum_f_R0
+  (fun l : nat =>
+   C (S k) l *
+   partial_derive (S l) (S (S k) - S l) f (x + z * (u - x)) (y + z * (v - y)) *
+   (u - x) ^ S l * (v - y) ^ (S (S k) - S l)) k)
+  with (sum_f_R0
+  (fun l : nat =>
+   C (S k) l * (u - x) ^ S l * (v - y) ^ (S k - l) *
+   partial_derive (S l) (S k - l) f (x + z * (u - x)) (y + z * (v - y))) k).
+replace (sum_f_R0
+  (fun l : nat =>
+   C (S k) (S l) *
+   partial_derive (S l) (S (S k) - S l) f (x + z * (u - x)) (y + z * (v - y)) *
+   (u - x) ^ S l * (v - y) ^ (S (S k) - S l)) k)
+ with (sum_f_R0
+  (fun i : nat =>
+   C (S k) (1 + i) * (u - x) ^ (1 + i) * (v - y) ^ S (S k - (1 + i)) *
+   partial_derive (1 + i) (S (S k - (1 + i))) f (x + z * (u - x))
+     (y + z * (v - y))) (S k - 1)).
+ring.
+replace (S k - 1)%nat with k. 2: now apply plus_minus.
+apply sum_eq.
+intros i Hi.
+replace (1+i)%nat with (S i) by reflexivity.
+replace (S (S k - S i))%nat with (S (S k) - S i)%nat.
+ring.
+now (rewrite minus_Sn_m; try apply le_n_S).
+apply sum_eq.
+intros i Hi.
+replace (S k - i)%nat with (S (S k) - S i)%nat by reflexivity.
+ring.
+rewrite 2!C_n_n 2!minus_diag.
+ring.
+simpl.
+rewrite 2!C_n_0.
+ring.
+intros.
+rewrite - (pascal (S k) i).
+ring.
+now apply le_lt_n_Sm.
 (* *)
 destruct (Taylor_Lagrange g n 0 1 Rlt_0_1) as (t&Ht&Hg).
 intros t Ht.
