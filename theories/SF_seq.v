@@ -210,6 +210,17 @@ Proof.
   apply (Hrcons (mkSF_seq sh st) t) => //.
 Qed.
 
+Lemma SF_lx_nil {T : Type} (x0 : R) :
+  SF_lx (@SF_nil T x0) = [:: x0].
+Proof.
+  by [].
+Qed.
+Lemma SF_ly_nil {T : Type} (x0 : R) :
+  SF_ly (@SF_nil T x0) = [::].
+Proof.
+  by [].
+Qed.
+
 Lemma SF_lx_cons {T : Type} (h : R*T) (s : @SF_seq T) :
   SF_lx (SF_cons h s) = (fst h) :: (SF_lx s).
 Proof.
@@ -233,20 +244,21 @@ Proof.
   by rewrite (IHst x).
 Qed.
 
-Lemma SF_lx_ly_eq {T : Type} (s s0 : @SF_seq T) :
-  (SF_lx s = SF_lx s0) -> SF_ly s = SF_ly s0 -> s = s0.
+Lemma SF_lx_ly_inj {T : Type} (s s0 : @SF_seq T) :
+  SF_lx s = SF_lx s0 -> SF_ly s = SF_ly s0 -> s = s0.
 Proof.
   move: s0 ; apply SF_cons_ind with (s := s) => {s} [x | h s IH] s0 ;
-  apply SF_cons_dec with (s := s0) => {s0} [x0 | h0 s0] // Hx Hy.
-  rewrite /SF_lx /SF_ly /= in Hx, Hy ;
+    apply SF_cons_dec with (s := s0) => {s0} [x0 | h0 s0] Hx Hy //.
+(* s = SF_nil _ *)
+  rewrite !SF_lx_nil in Hx.
   replace x with (head 0 ([::x])) by intuition ;
-  replace x0 with (head 0 ([::x0])) by intuition ;
   by rewrite Hx.
-  rewrite /SF_cons ;
-  replace (fst h) with (head 0 (SF_lx (SF_cons h s))) ;
-  replace (fst h0) with (head 0 (SF_lx (SF_cons h0 s0))) ;
-  replace (snd h) with (head (snd h) (SF_ly (SF_cons h s))) ;
-  replace (snd h0) with (head (snd h) (SF_ly (SF_cons h0 s0))).
+(* s = SF_cons _ _*)
+  rewrite !SF_lx_cons in Hx ; rewrite !SF_ly_cons in Hy.
+  replace h with (head (fst h) (fst h :: SF_lx s),head (snd h) (snd h :: SF_ly s)) ;
+    [ rewrite Hx Hy (IH s0) //= | move => /= ; by apply injective_projections].
+  replace (SF_lx s) with (behead (fst h :: SF_lx s)) by intuition ; by rewrite Hx.
+  replace (SF_ly s) with (behead (snd h :: SF_ly s)) by intuition ; by rewrite Hy.
 Qed.
 
 (** ** SF_size *)
@@ -273,53 +285,60 @@ Proof.
 Qed.
 
 (** ** SF_rev *)
-
-Definition SF_rev {T : Type} (s : @SF_seq T) :=
-  mkSF_seq (head 0 (rev (SF_lx s))) (zip (behead (rev (SF_lx s))) (rev (SF_ly s))).
-Lemma SF_rev_invol {T : Type} (s : @SF_seq T) :
-  SF_rev (SF_rev s) = s.
+Lemma SF_rev_0 {T : Type} (s : @SF_seq T) :
+  size (rev (SF_lx s)) = S (size (rev (SF_ly s))).
 Proof.
-  move: s ; apply SF_cons_ind => [x0 | h s IHs] //=.
-  rewrite -{2}IHs => {IHs}.
-  case: h => x y ; case: s => sh st ; rewrite -(zip_unzip st) 
-    /SF_rev /SF_lx /SF_ly /SF_cons /= 
-    ?unzip1_zip ?unzip2_zip ?size_behead ?size_rev ; try by elim: st.
-  rewrite !rev_cons !head_rcons !(behead_rcons _ _ (size_rcons_pos _ _)) !rev_rcons !revK /=.
-  rewrite -!rev_cons /=.
-  rewrite (rev_cons sh _) -headI rev_rcons revK zip_unzip.
-  rewrite -rev_cons behead_rev revK /= ; case: st => //.
+  by rewrite ?size_rev SF_size_lx SF_size_ly.
 Qed.
+Definition SF_rev {T : Type} (s : @SF_seq T) : SF_seq :=
+  SF_make (rev (SF_lx s)) (rev (SF_ly s)) (SF_rev_0 s).
+
 Lemma SF_rev_cons {T : Type} (h : R*T) (s : @SF_seq T) :
   SF_rev (SF_cons h s) = SF_rcons (SF_rev s) h.
 Proof.
-  case: s => sh st ;
-  rewrite /SF_rev /SF_cons /SF_rcons /SF_lx /SF_ly /=.
-  rewrite !rev_cons ?head_rcons ?(behead_rcons _ _ (size_rcons_pos _ _)).
-  rewrite zip_rcons.
-  by rewrite -surjective_pairing.
-  rewrite size_behead size_rcons ?size_rev size_unzip1 size_unzip2 => //.
+  apply SF_lx_ly_inj. 
+  by rewrite SF_lx_rcons !SF_seq_bij_lx SF_lx_cons rev_cons.
+  by rewrite SF_ly_rcons !SF_seq_bij_ly SF_ly_cons rev_cons.
 Qed.
 Lemma SF_rev_rcons {T : Type} (s : @SF_seq T) (t : R*T) :
   SF_rev (SF_rcons s t) = SF_cons t (SF_rev s).
 Proof.
-  rewrite -{1}(SF_rev_invol s) -SF_rev_cons SF_rev_invol => //.
+  apply SF_lx_ly_inj. 
+  by rewrite SF_lx_cons !SF_seq_bij_lx SF_lx_rcons rev_rcons.
+  by rewrite SF_ly_cons !SF_seq_bij_ly SF_ly_rcons rev_rcons.
+Qed.
+
+Lemma SF_rev_invol {T : Type} (s : @SF_seq T) :
+  SF_rev (SF_rev s) = s.
+Proof.
+  apply SF_lx_ly_inj.
+  by rewrite /SF_rev ?SF_seq_bij_lx revK.
+  by rewrite /SF_rev ?SF_seq_bij_ly revK.
 Qed.
 
 Lemma SF_lx_rev {T : Type} (s : @SF_seq T) : SF_lx (SF_rev s) = rev (SF_lx s).
 Proof.
-  apply SF_cons_ind with (s := s) => {s} // h s IHs ;
-  by rewrite SF_rev_cons SF_lx_cons SF_lx_rcons IHs -rev_cons.
+  by rewrite /SF_rev ?SF_seq_bij_lx.
 Qed.
 Lemma SF_ly_rev {T : Type} (s : @SF_seq T) : SF_ly (SF_rev s) = rev (SF_ly s).
 Proof.
-  apply SF_cons_ind with (s := s) => {s} // h s IHs ;
-  by rewrite SF_rev_cons SF_ly_cons SF_ly_rcons IHs -rev_cons.
+  by rewrite /SF_rev ?SF_seq_bij_ly.
 Qed.
 
 Lemma SF_size_rev {T : Type} (s : @SF_seq T) : SF_size (SF_rev s) = SF_size s.
 Proof.
-  apply SF_cons_ind with (s := s) => {s} // h s IHs ;
-  by rewrite SF_rev_cons SF_size_rcons SF_size_cons IHs.
+  by rewrite -?SF_size_ly SF_ly_rev size_rev.
+Qed.
+
+Lemma SF_rev_surj {T : Type} (s s0 : @SF_seq T) :
+  s = s0 -> SF_rev s = SF_rev s0.
+Proof.
+  by move => ->.
+Qed.
+Lemma SF_rev_inj {T : Type} (s s0 : @SF_seq T) :
+  SF_rev s = SF_rev s0 -> s = s0.
+Proof.
+  move => H ; by rewrite -(SF_rev_invol s) -(SF_rev_invol s0) H.
 Qed.
 
 (** ** SF_sorted *)
@@ -370,6 +389,14 @@ Lemma SF_map_ly {T T0 : Type} (f : T -> T0) (s : SF_seq) :
 Proof.
   apply SF_cons_ind with (s := s) => {s} //= h s IH ;
   by rewrite SF_map_cons ?SF_ly_cons IH.
+Qed.
+
+Lemma SF_map_rev {T T0 : Type} (f : T -> T0) s :
+  SF_rev (SF_map f s) = SF_map f (SF_rev s).
+Proof.
+  apply SF_lx_ly_inj.
+  by rewrite SF_lx_rev ?SF_map_lx ?SF_lx_rev.
+  by rewrite SF_ly_rev ?SF_map_ly ?SF_ly_rev map_rev.
 Qed.
 
 (** * Definition of SF_fun *)
@@ -504,6 +531,20 @@ Definition SF_seq_f1 {T : Type} (f1 : R -> T) (P : seq R) (x0 : R) : SF_seq :=
 Definition SF_seq_f2 {T : Type} (f2 : R -> R -> T) (P : seq R) (x0 : R) : SF_seq :=
   mkSF_seq (head x0 P) (pairmap (fun x y => (y, f2 x y)) (head x0 P) (behead P)).
 
+Lemma SF_cons_f1 {T : Type} (f1 : R -> T) (h : R) (P : seq R) (x0 : R) : 
+  (0 < size P)%nat -> SF_seq_f1 f1 (h::P) x0 = SF_cons (h,f1 h) (SF_seq_f1 f1 P x0).
+Proof.
+  case: P => [ H | h0 P _] //.
+  by apply lt_n_O in H.
+Qed.
+Lemma SF_cons_f2 {T : Type} (f2 : R -> R -> T) (h : R) (P : seq R) (x0 : R) : 
+  (0 < size P)%nat -> 
+    SF_seq_f2 f2 (h::P) x0 = SF_cons (h,f2 h (head x0 P)) (SF_seq_f2 f2 P h).
+Proof.
+  case: P => [ H | h0 P _] //.
+  by apply lt_n_O in H.
+Qed.
+
 Lemma SF_size_f1 {T : Type} (f1 : R -> T) P x0 :
   SF_size (SF_seq_f1 f1 P x0) = pred (size P).
 Proof.
@@ -555,7 +596,28 @@ Qed.
 Lemma SF_rev_f2 {T : Type} (f2 : R -> R -> T) P x0 : (forall x y, f2 x y = f2 y x) ->
   SF_rev (SF_seq_f2 f2 P x0) = SF_seq_f2 f2 (rev P) x0.
 Proof.
-  move => Hc ; have: ()
+  move => Hf2 ; apply SF_lx_ly_inj ;
+  case: P => [ | h P] //.
+  by rewrite SF_lx_rev !SF_lx_f2 ?rev_cons /= headI.
+  rewrite SF_ly_rev !SF_ly_f2 /= ?rev_cons.
+  elim: P x0 h => [ | h0 P IH] x0 h //=.
+  rewrite ?rev_cons pairmap_rcons behead_rcons ?(IH x0 h0) ?(Hf2 h h0) //.
+  rewrite size_pairmap size_rcons ; apply lt_O_Sn.
+Qed.
+
+Lemma SF_map_f1 {T T0 : Type} (f : T -> T0) (f1 : R -> T) P x0 :
+  SF_map f (SF_seq_f1 f1 P x0) = SF_seq_f1 (fun x => f (f1 x)) P x0.
+Proof.
+  case: P => [| h P] // ; elim: P h => [| h0 P IH] h //.
+  rewrite ?(SF_cons_f1 _ _ (h0::P)) /= ; try intuition.
+  rewrite SF_map_cons IH ; intuition.
+Qed.
+Lemma SF_map_f2 {T T0 : Type} (f : T -> T0) (f2 : R -> R -> T) P x0 :
+  SF_map f (SF_seq_f2 f2 P x0) = SF_seq_f2 (fun x y => f (f2 x y)) P x0.
+Proof.
+  case: P => [| h P] // ; elim: P h => [| h0 P IH] h //.
+  rewrite ?(SF_cons_f2 _ _ (h0::P)) /= ; try intuition.
+  rewrite SF_map_cons IH ; intuition.
 Qed.
 
 (** ** SF_fun *)
