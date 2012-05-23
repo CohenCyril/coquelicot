@@ -501,7 +501,7 @@ now rewrite H0.
 destruct H as (D,H).
 exists  (/ INR (fact (S n)) * D * sum_f_R0 (fun i : nat => Rabs (C (S n) i)) (S n)).
 move: (locally_2d_and _ _ _ _ Df H) => {Df H} HH.
-apply locally_2d_1d in HH.
+apply locally_2d_1d_strong in HH.
 apply: locally_2d_impl HH.
 apply locally_2d_forall => u v HH.
 set (g t := f (x + t * (u - x)) (y + t * (v - y))).
@@ -511,6 +511,7 @@ assert (forall k t, (k <= S n)%nat -> 0 <= t <= 1 ->
          (u-x) ^ m * (v-y) ^ (k - m)%nat) k)).
 intros k t Hk Ht.
 specialize (HH t Ht).
+revert HH.
 pattern t ; apply locally_singleton.
 induction k.
 rewrite /C /partial_derive /g /=.
@@ -519,12 +520,13 @@ intros ; field.
 specialize (IHk (le_S _ _ (le_S_n _ _ Hk))).
 rewrite /is_deriv_n.
 apply: locally_impl_strong IHk.
-(*assert (H: locally_2d (fun u v => ex_diff_n f (S n) u v) x y).*)
-apply locally_forall => {t Ht HH} z IHk.
+apply locally_forall => {t Ht} z IHk HH.
 apply is_deriv_eta with (fun t => sum_f_R0 (fun m => C k m *
   partial_derive m (k - m) f (x + t * (u - x)) (y + t * (v - y)) * (u - x) ^ m * (v - y) ^ (k - m)) k).
 apply: locally_impl IHk.
-apply locally_forall => {z} z Hz.
+apply: locally_impl_strong HH.
+apply locally_forall => {z} z Hz HH.
+specialize (HH Hz).
 apply sym_eq.
 now apply Deriv_n_correct.
 replace (sum_f_R0 (fun m : nat => C (S k) m *
@@ -540,6 +542,7 @@ ring.
 apply derivable_pt_lim_scal.
 rewrite (Rmult_comm (u - x)) (Rmult_comm (v - y)).
 apply derivable_pt_lim_comp_2d.
+apply locally_singleton in HH.
 replace (partial_derive (S p) (k - p) f (x + z * (u - x)) (y + z * (v - y)))
   with (Deriv (fun u : R => partial_derive p (k - p) f u (y + z * (v - y))) (x + z * (u - x))).
 2: reflexivity.
@@ -685,6 +688,7 @@ apply Rmult_le_compat.
 apply Rabs_pos.
 apply Rmult_le_pos; apply Rabs_pos.
 specialize (HH t (conj (Rlt_le _ _ (proj1 Ht)) (Rlt_le _ _ (proj2 Ht)))).
+apply locally_singleton in HH.
 apply locally_2d_singleton in HH.
 now apply HH.
 rewrite - 2!RPow_abs.
