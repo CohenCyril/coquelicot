@@ -266,6 +266,11 @@ apply Rgt_not_eq.
 now apply Rmult_gt_0_compat.
 Qed.
 
+
+
+
+
+
 Theorem Taylor_Lagrange :
   forall f n x y, x < y ->
   ( forall t, x <= t <= y -> forall k, (k <= S n)%nat -> ex_deriv_n f k t ) ->
@@ -428,11 +433,72 @@ Fixpoint ex_diff_n f n x y :=
     ex_diff_n (fun u v => Deriv (fun z => f u z) v) n x y
   end.
 
+Lemma continuity2_pt_eta: forall f g x y,
+    locally_2d (fun u v =>  f u v = g u v) x y 
+      -> continuity2_pt f x y -> continuity2_pt g x y.
+unfold continuity2_pt; intros f g x y H1 H2 eps.
+specialize (H2 eps).
+move: (locally_2d_and _ _ _ _ H1 H2) => {H1 H2} H.
+apply locally_2d_align with (2:=H).
+intros eps0 H1 u v H2 H3.
+rewrite - (proj1 (H1 u v H2 H3)).
+rewrite - (proj1 (H1 x y _ _)).
+now apply H1.
+rewrite Rminus_eq0 Rabs_R0; apply cond_pos.
+rewrite Rminus_eq0 Rabs_R0; apply cond_pos.
+Qed.
+
+
 
 Lemma ex_diff_n_eta: forall f g n x y,
-    (forall x y, f x y = g x y) -> ex_diff_n f n x y -> ex_diff_n g n x y.
-(* todo: locally *)
-Admitted.
+    locally_2d (fun u v =>  f u v = g u v) x y 
+      -> ex_diff_n f n x y -> ex_diff_n g n x y.
+intros f g n; revert f g.
+induction n.
+intros f g x y H; simpl.
+intros (H1,_); split.
+apply (continuity2_pt_eta _ _ _ _ H H1).
+easy.
+simpl.
+intros f g x y H (H1&H2&H3&H4&H5).
+split.
+apply (continuity2_pt_eta _ _ _ _ H H1).
+split.
+apply ex_deriv_eta with (2:=H2).
+destruct H as (d,Hd).
+exists d; intros z Hz.
+apply Hd.
+exact Hz.
+rewrite Rminus_eq0 Rabs_R0; apply cond_pos.
+split.
+apply ex_deriv_eta with (2:=H3).
+destruct H as (d,Hd).
+exists d; intros z Hz.
+apply Hd.
+rewrite Rminus_eq0 Rabs_R0; apply cond_pos.
+exact Hz.
+split.
+apply IHn with (2:=H4).
+apply locally_2d_impl_strong with (2:=H).
+apply locally_2d_forall.
+intros u v H6.
+apply Deriv_eta.
+destruct H6 as (d,Hd).
+exists d; intros z Hz.
+apply Hd.
+exact Hz.
+rewrite Rminus_eq0 Rabs_R0; apply cond_pos.
+apply IHn with (2:=H5).
+apply locally_2d_impl_strong with (2:=H).
+apply locally_2d_forall.
+intros u v H6.
+apply Deriv_eta.
+destruct H6 as (d,Hd).
+exists d; intros z Hz.
+apply Hd.
+rewrite Rminus_eq0 Rabs_R0; apply cond_pos.
+exact Hz.
+Qed.
 
 
 
@@ -496,9 +562,11 @@ intros H f x y H1.
 unfold partial_derive.
 simpl.
 rewrite - minus_n_O.
-now apply: (ex_diff_n_eta f).
+apply: (ex_diff_n_eta _ _ _ _ _ _ H1).
+now apply locally_2d_forall.
 intros H f x y H1.
 apply (ex_diff_n_eta (fun u v => Deriv (fun z => (partial_derive 0 q f) u z) v)).
+apply locally_2d_forall.
 intros u v; unfold partial_derive.
 reflexivity.
 apply ex_diff_n_deriv_aux2.
@@ -509,6 +577,7 @@ exact H1.
 (* . *)
 intros q H f x y H1.
 apply (ex_diff_n_eta (fun u v => Deriv (fun z => (partial_derive p q f) z v) u)).
+apply locally_2d_forall.
 intros u v; unfold partial_derive.
 reflexivity.
 apply ex_diff_n_deriv_aux1.
@@ -559,7 +628,41 @@ exact Hf.
 case_eq (n-(p+q))%nat.
 intros H1; contradict H; auto with zarith.
 intros n1 H1.
-apply ex_deriv_eta with (fun z => Deriv (fun t => (partial_derive p q f t) z) y).
+apply ex_deriv_eta with (fun z => Deriv (fun t => (partial_derive p q f t) y) z).
+apply locally_forall.
+intros x0; unfold partial_derive; simpl.
+reflexivity.
+rewrite H1 in H0; simpl in H0.
+destruct H0 as (T1&T2&T3&T4&T5).
+case_eq n1.
+intros H2; rewrite H2 in H1.
+clear -H H1; contradict H; auto with zarith.
+intros n2 Hn2; rewrite Hn2 in T4.
+apply T4.
+Qed.
+
+
+Lemma ex_diff_n_ex_deriv_inf_2 : forall n p k, (p+k < n)%nat -> forall f x y,
+    ex_diff_n f n x y -> 
+    ex_deriv  (fun z : R => partial_derive p k f x z) y.
+intros n p; case p; clear p.
+(* . *)
+intros k; case k; clear k.
+case n; clear n.
+intros Hn; contradict Hn; apply lt_n_O.
+intros n _ f x y H.
+unfold partial_derive; simpl.
+apply H.
+intros n0 H f x y Hf.
+assert (ex_diff_n (partial_derive 0 n0 f) (n -(0+n0)) x y).
+apply ex_diff_n_deriv.
+auto with zarith.
+exact Hf.
+revert H0; rewrite plus_0_l.
+case_eq (n-n0)%nat.
+intros H1; contradict H; auto with zarith.
+intros n1 H1 H2.
+apply ex_deriv_eta with (fun z => Deriv (fun t => (partial_derive 0 n0 f x) t) z).
 apply locally_forall.
 intros y0; unfold partial_derive; simpl.
 reflexivity.
@@ -570,96 +673,101 @@ intros H2; rewrite H2 in H1.
 clear -H H1; contradict H; auto with zarith.
 intros n2 Hn2; rewrite Hn2 in T5.
 apply T5.
+(* . *)
+intros p q H f x y Hf.
+assert (ex_diff_n (partial_derive p q f) (n -(p+q)) x y).
+apply ex_diff_n_deriv.
+auto with zarith.
+exact Hf.
+case_eq (n-(p+q))%nat.
+intros H1; contradict H; auto with zarith.
+intros n1 H1.
+apply ex_deriv_eta with (fun z => Deriv (fun t => (partial_derive p q f t) z) x).
+apply locally_forall.
+intros x0; unfold partial_derive; simpl.
+reflexivity.
+rewrite H1 in H0; simpl in H0.
+destruct H0 as (T1&T2&T3&T4&T5).
+case_eq n1.
+intros H2; rewrite H2 in H1.
+clear -H H1; contradict H; auto with zarith.
+intros n2 Hn2; rewrite Hn2 in T4.
+apply T4.
+Qed.
 
+
+
+Lemma ex_diff_n_continuity_inf_1 : forall n p k, (p+k < n)%nat -> forall f x y,
+    ex_diff_n f n x y -> 
+    continuity2_pt (fun u v => Deriv (fun z : R => partial_derive p k f z v) u) x y.
+intros n p k Hn f x y Hf.
+assert (ex_diff_n (partial_derive (S p) k f) (n -(S p+k)) x y).
+now apply ex_diff_n_deriv.
+apply continuity2_pt_eta with (partial_derive (S p) k f).
+apply locally_2d_forall.
+intros u v; unfold partial_derive; simpl.
+reflexivity.
+revert H; case (n - (S p + k))%nat.
+simpl; intros H; apply H.
+intros n0; simpl; intros H; apply H.
+Qed.
+
+
+
+
+
+Lemma Schwarz_ext_aux: forall p f x y, 
+  ex_diff_n f p x y ->
+  Deriv (fun v : R => Deriv_n (fun t : R => f t v) p x) y =
+  Deriv_n (fun t : R => Deriv (fun x0 : R => f t x0) y) p x.
+intros p; induction p.
+intros f x y; now simpl.
+intros f x y Hf.
+simpl.
+rewrite (Schwarz (fun v => Deriv_n (fun t : R => f t v) p)).
 apply Deriv_eta.
 apply locally_forall.
-intros y1.
-reflexivity.
-
-
-
-
-intros p.
-case p.
-intros k Hn f x y Hf.
-
-
-admit.
-
-clear p; intros p k Hn f x y Hf.
-apply ex_deriv_eta with 
-  (fun t => (Deriv (fun z => partial_derive p k f z y)  t)).
-apply locally_forall.
-reflexivity.
-simpl in Hf.
-destruct Hf as (T1&T2&T3&T4&T5).
-revert Hn 
-
-revert (proj2 Hf).
-destruct Hf as (T1&T2&T3).
-
-apply IHn.
-
-ex_diff_n_deriv
-
-
-assert (p+k <= n)%nat by auto with arith.
-case (le_lt_or_eq _ _ H).
-intros H1.
-apply IHn.
-exact H1.
-apply: (ex_diff_n_m _ _ _ _ _ _ Hf).
-auto with arith.
-intros H1.
-case p.
-unfold partial_derive.
-simpl.
-admit.
-unfold partial_derive.
-
-simpl.
-
-
-
-simpl in Hf.
-replace p with 0%nat.
-replace k with 0%nat.
-unfold partial_derive.
-simpl.
-apply Hf.
-admit.
+intros y0.
+apply IHp.
+(* apply ex_diff_n_m with (2:=Hf).*)
+(* ex_diff_n n'est pas un locally_2d *)
+(* p+2 *)
 Admitted.
 
-
-Lemma ex_diff_n_ex_deriv_inf_2 : forall n p k, (p+k <= n)%nat -> forall f x y,
-    ex_diff_n f (S n) x y -> 
-    ex_deriv  (fun z : R => partial_derive p k f x z) y.
-Admitted.
-
-Lemma ex_diff_n_continuity_inf_1 : forall n p k, (p+k <= n)%nat -> forall f x y,
-    ex_diff_n f (S n) x y -> 
-    continuity2_pt (fun u v => Deriv (fun z : R => partial_derive p k f z v) u) x y.
-Admitted.
-
-
-Lemma ex_diff_n_continuity_inf_2 : forall n p k, (p+k <= n)%nat -> forall f x y,
-    ex_diff_n f (S n) x y -> 
-    continuity2_pt (fun u v => Deriv (fun z : R => partial_derive p k f u z) v) x y.
-Admitted.
-
-
-Lemma Schwartz_ext: forall p k f x y, 
+Lemma Schwarz_ext: forall p k f x y, 
   Deriv (fun v : R => partial_derive p k f x v) y =
      partial_derive p (S k) f x y.
-Admitted.
+intros p k; induction k.
+intros f x y.
+unfold partial_derive;simpl.
+apply Schwarz_ext_aux.
+admit.
+intros f x y.
+unfold partial_derive.
+rewrite Schwarz_ext_aux.
+reflexivity.
+admit.
+Qed.
 
 
 
 
+Lemma ex_diff_n_continuity_inf_2 : forall n p k, (p+k < n)%nat -> forall f x y,
+    ex_diff_n f n x y -> 
+    continuity2_pt (fun u v => Deriv (fun z : R => partial_derive p k f u z) v) x y.
+intros n p k Hn f x y Hf.
+assert (ex_diff_n (partial_derive p (S k) f) (n -(p+S k)) x y).
+apply ex_diff_n_deriv.
+omega.
+exact Hf.
+apply continuity2_pt_eta with (partial_derive p (S k) f).
+apply locally_2d_forall.
+intros u v; now rewrite Schwarz_ext.
+revert H; case (n - (p + S k))%nat.
+simpl; intros H; apply H.
+intros n0; simpl; intros H; apply H.
+Qed.
 
-
-
-(************************************************************)
 
 
 
@@ -785,32 +893,24 @@ apply derivable_differentiable_pt_lim.
 apply locally_2d_impl with (2:=HH).
 apply locally_2d_forall.
 clear - Hk Hp; intros u v (H1,H2).
-apply ex_diff_n_ex_deriv_inf_1 with n.
-rewrite - le_plus_minus.
-now apply le_S_n.
-exact Hp.
+apply ex_diff_n_ex_deriv_inf_1 with (S n).
+now rewrite - le_plus_minus.
 exact H1.
 apply locally_2d_impl with (2:=HH).
 apply locally_2d_forall.
 clear - Hk Hp; intros u v (H1,H2).
-apply ex_diff_n_ex_deriv_inf_2 with n.
-rewrite - le_plus_minus.
-now apply le_S_n.
-exact Hp.
+apply ex_diff_n_ex_deriv_inf_2 with (S n).
+now rewrite - le_plus_minus.
 exact H1.
 apply locally_2d_singleton in HH.
-apply ex_diff_n_continuity_inf_1 with n.
-rewrite - le_plus_minus.
-now apply le_S_n.
-exact Hp.
+apply ex_diff_n_continuity_inf_1 with (S n).
+now rewrite - le_plus_minus.
 apply HH.
 apply locally_2d_singleton in HH.
-apply ex_diff_n_continuity_inf_2 with n.
-rewrite - le_plus_minus.
-now apply le_S_n.
-exact Hp.
+apply ex_diff_n_continuity_inf_2 with (S n).
+now rewrite - le_plus_minus.
 apply HH.
-apply Schwartz_ext.
+apply Schwarz_ext.
 pattern (u-x) at 2; replace (u-x) with (0+(u-x)*1) by ring.
 apply derivable_pt_lim_plus.
 apply derivable_pt_lim_const.
