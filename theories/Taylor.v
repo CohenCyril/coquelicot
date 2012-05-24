@@ -109,6 +109,23 @@ apply: locally_align Heq => d Heq y Hy IHn.
 now apply Deriv_eta.
 Qed.
 
+Lemma partial_derive_eta :
+  forall f g p q x y,
+  locally_2d (fun u v => f u v = g u v) x y ->
+  partial_derive p q f x y = partial_derive p q g x y.
+intros f g p q x y H.
+unfold partial_derive.
+apply Deriv_n_eta.
+destruct H as (e,He).
+exists e.
+intros u Hu.
+apply Deriv_n_eta.
+exists e.
+intros v Hv.
+now apply He.
+Qed.
+
+
 Lemma derivable_pt_lim_sum_f_R0 f d n x :
   (forall k, (k <= n)%nat -> derivable_pt_lim (fun u => f k u) x (d k)) ->
   derivable_pt_lim (fun u => sum_f_R0 (fun k => f k u) n) x (sum_f_R0 d n).
@@ -713,41 +730,191 @@ intros n0; simpl; intros H; apply H.
 Qed.
 
 
-
-
-
 Lemma Schwarz_ext_aux: forall p f x y, 
-  ex_diff_n f p x y ->
-  Deriv (fun v : R => Deriv_n (fun t : R => f t v) p x) y =
-  Deriv_n (fun t : R => Deriv (fun x0 : R => f t x0) y) p x.
+  locally_2d (ex_diff_n f (S p)) x y ->
+   partial_derive  1 p f x y = partial_derive 0 p (partial_derive  1 0 f) x y.
 intros p; induction p.
-intros f x y; now simpl.
-intros f x y Hf.
+intros f x y H.
+unfold partial_derive; now simpl.
+intros f x y H.
+apply trans_eq with  (partial_derive 1 p (partial_derive 0 1 f) x y).
+unfold partial_derive.
 simpl.
-rewrite (Schwarz (fun v => Deriv_n (fun t : R => f t v) p)).
 apply Deriv_eta.
 apply locally_forall.
+intros t.
+apply trans_eq with (Deriv_n (Deriv_n (fun z : R => f t z) p) 1 y).
+reflexivity.
+rewrite Deriv_n_comp.
+rewrite plus_comm.
+rewrite - Deriv_n_comp.
+reflexivity.
+rewrite IHp.
+apply trans_eq with 
+  (partial_derive 0 p (partial_derive 0 1 (partial_derive 1 0 f)) x y).
+unfold partial_derive.
+simpl.
+apply Deriv_n_eta.
+destruct H as (e, H).
+exists (pos_div_2 e).
+intros y0 Hy0.
+assert (ex_diff_n f (S (S p)) x y0).
+apply H.
+rewrite Rminus_eq0 Rabs_R0; apply cond_pos.
+apply Rlt_le_trans with (1:=Hy0).
+simpl; unfold Rdiv; pattern e at 1; rewrite - (Rmult_1_r e).
+apply Rmult_le_compat_l.
+left; apply cond_pos.
+apply Rle_trans with (/1).
+apply Rlt_le; apply Rinv_1_lt_contravar.
+now right.
+apply Rlt_plus_1.
+right; apply Rinv_1.
+apply Schwarz.
+exists (pos_div_2 e).
+intros u v Hu Hv.
+assert (ex_diff_n f (S (S p)) u v).
+apply H.
+apply Rlt_le_trans with (1:=Hu).
+simpl; unfold Rdiv; pattern e at 1; rewrite - (Rmult_1_r e).
+apply Rmult_le_compat_l.
+left; apply cond_pos.
+apply Rle_trans with (/1).
+apply Rlt_le; apply Rinv_1_lt_contravar.
+now right.
+apply Rlt_plus_1.
+right; apply Rinv_1.
+replace (v-y) with ((v-y0)+ (y0-y)) by ring.
+apply Rle_lt_trans with (1:=Rabs_triang _ _).
+replace (pos e) with (pos_div_2 e + pos_div_2 e)%R.
+apply Rplus_lt_compat; assumption.
+simpl; field.
+split.
+apply H1.
+split.
+apply H1.
+simpl in H1; destruct H1 as (T1&T2&T3&T4&T5).
+split.
+apply T5.
+apply T4.
+simpl in H0; destruct H0 as (T1&T2&T3&T4&T5).
+destruct T5 as (Y1&Y2&Y3&Y4&Y5).
+clear - Y4.
+case p in Y4; simpl in Y4; apply Y4.
+simpl in H0; destruct H0 as (T1&T2&T3&T4&T5).
+destruct T4 as (Y1&Y2&Y3&Y4&Y5).
+clear - Y5.
+case p in Y5; simpl in Y5; apply Y5.
+unfold partial_derive.
+simpl.
+apply trans_eq with (Deriv_n 
+  (Deriv_n (fun z : R => Deriv (fun x0 : R => f x0 z) x) p) 1 y).
+rewrite Deriv_n_comp.
+rewrite plus_comm.
+rewrite - Deriv_n_comp.
+reflexivity.
+reflexivity.
+apply locally_2d_impl with (2:=H).
+apply locally_2d_forall.
+intros u v.
+pattern (S p) at 2; replace (S p) with (S (S p) -(0+1))%nat.
+apply ex_diff_n_deriv.
+rewrite plus_0_l.
+apply lt_le_S; apply lt_0_Sn.
+rewrite plus_0_l.
+omega.
+Qed.
+
+
+(*
+Lemma Schwarz_ext_aux2: forall p f x y, 
+  locally_2d (ex_diff_n f (S p)) x y ->
+       Deriv (fun v : R => Deriv_n (fun t : R => f t v) p y) x =
+       Deriv_n (fun t : R => Deriv (fun x0 : R => f t x0) x) p y.
+*)
+
+Lemma partial_derive_add_zero: forall f p q r s x y,
+  (q=0)%nat \/ (r=0)%nat ->
+  partial_derive p q (partial_derive r s f) x y
+   = partial_derive (p+r) (q+s) f x y.
+intros f p q r s x y H.
+destruct H; rewrite H.
+rewrite plus_0_l.
+unfold partial_derive.
+simpl.
+rewrite - Deriv_n_comp.
+apply Deriv_n_eta.
+now apply locally_forall.
+rewrite plus_0_r.
+unfold partial_derive.
+simpl.
+apply Deriv_n_eta.
+apply locally_forall.
 intros y0.
-apply IHp.
-(* apply ex_diff_n_m with (2:=Hf).*)
-(* ex_diff_n n'est pas un locally_2d *)
-(* p+2 *)
-Admitted.
+rewrite - Deriv_n_comp.
+apply Deriv_n_eta.
+now apply locally_forall.
+Qed.
+
+
+Lemma Schwarz_ext_aux2: forall p k f x y, 
+  partial_derive 0 1 (partial_derive p k f) x y =
+     partial_derive p (S k) f x y.
+intros p; induction p.
+intros; easy.
+intros k f x y.
+apply sym_eq.
+apply trans_eq with
+  (partial_derive p 0 (partial_derive 1 (S k) f) x y).
+rewrite partial_derive_add_zero.
+rewrite plus_0_l.
+replace (S p) with (p+1)%nat by apply plus_comm.
+easy.
+now left.
+apply trans_eq with 
+  (partial_derive p 0 (partial_derive 0 (S k) (partial_derive 1 0 f)) x y).
+apply partial_derive_eta.
+apply locally_2d_forall.
+intros u v.
+apply Schwarz_ext_aux.
+admit. (* k+2 *)
+apply trans_eq with (partial_derive p (S k) (partial_derive 1 0 f) x y).
+rewrite partial_derive_add_zero.
+now rewrite plus_0_l plus_0_r.
+now right.
+rewrite - IHp.
+apply partial_derive_eta.
+apply locally_2d_forall.
+intros u v.
+apply trans_eq with 
+ (partial_derive p 0 (partial_derive 0 k (partial_derive 1 0 f)) u v).
+rewrite (partial_derive_add_zero _ _ 0%nat).
+now rewrite plus_0_l plus_0_r.
+now right.
+apply trans_eq with 
+ (partial_derive p 0 (partial_derive 1 k f) u v).
+apply partial_derive_eta.
+apply locally_2d_forall.
+intros u' v'.
+apply sym_eq.
+apply Schwarz_ext_aux.
+admit. (* k+1 *)
+rewrite partial_derive_add_zero.
+rewrite plus_0_l.
+replace (S p) with (p+1)%nat by apply plus_comm.
+easy.
+now left.
+Qed.
+
 
 Lemma Schwarz_ext: forall p k f x y, 
   Deriv (fun v : R => partial_derive p k f x v) y =
      partial_derive p (S k) f x y.
-intros p k; induction k.
-intros f x y.
-unfold partial_derive;simpl.
-apply Schwarz_ext_aux.
-admit.
-intros f x y.
-unfold partial_derive.
-rewrite Schwarz_ext_aux.
-reflexivity.
-admit.
+intros p k f x y.
+generalize (Schwarz_ext_aux2 p k f x y).
+easy.
 Qed.
+
 
 
 
