@@ -1,6 +1,6 @@
 Require Import Reals.
 Require Import ssreflect seq.
-Require Import Arithmetique Locally Deriv_fct.
+Require Import Arithmetique Locally Deriv_fct RInt.
 
 Fixpoint Rn n :=
   match n with
@@ -30,9 +30,6 @@ Fixpoint apply p : Rn p -> seq R -> R :=
   | O => fun (x : R) l => x
   | S p => fun (f : Rn (S p)) l => match l with h::q => apply p (f h) q | nil => apply p (f R0) l end
   end.
-
-Axiom RInt : (R -> R) -> R -> R -> R.
-Axiom ex_RInt : (R -> R) -> R -> R -> Prop.
 
 Fixpoint interp (l : seq R) (e : expr) : R :=
   match e with
@@ -126,7 +123,8 @@ simpl => n.
 move /ssrbool.andP => [H1].
 move /ssrbool.andP => [H2 H3] l x1 x2.
 rewrite (IHe2 n H2 l x1 x2) (IHe3 n H3 l x1 x2).
-admit. (* RInt_eq *)
+apply RInt_rw => x _.
+apply (IHe1 _ H1 (x :: l)).
 Qed.
 
 Fixpoint D (e : expr) n : expr * domain :=
@@ -217,7 +215,8 @@ now rewrite IHe.
 (* *)
 simpl => n l.
 rewrite IHe2 IHe3.
-admit. (* RInt_eq *)
+apply RInt_rw => x _.
+apply (IHe1 (S n) (x :: l)).
 Qed.
 
 Lemma D_correct :
