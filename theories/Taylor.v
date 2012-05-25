@@ -858,11 +858,12 @@ Qed.
 
 
 Lemma Schwarz_ext_aux2: forall p k f x y, 
+  locally_2d (ex_diff_n f (p+S k)) x y ->
   partial_derive 0 1 (partial_derive p k f) x y =
      partial_derive p (S k) f x y.
 intros p; induction p.
 intros; easy.
-intros k f x y.
+intros k f x y Y.
 apply sym_eq.
 apply trans_eq with
   (partial_derive p 0 (partial_derive 1 (S k) f) x y).
@@ -874,18 +875,24 @@ now left.
 apply trans_eq with 
   (partial_derive p 0 (partial_derive 0 (S k) (partial_derive 1 0 f)) x y).
 apply partial_derive_eta.
+apply locally_2d_impl_strong with (2:=Y).
 apply locally_2d_forall.
-intros u v.
+intros u v H.
 apply Schwarz_ext_aux.
-admit. (* k+2 *)
+apply locally_2d_impl with (2:=H).
+apply locally_2d_forall.
+intros u'' v''.
+apply ex_diff_n_m.
+omega.
 apply trans_eq with (partial_derive p (S k) (partial_derive 1 0 f) x y).
 rewrite partial_derive_add_zero.
 now rewrite plus_0_l plus_0_r.
 now right.
 rewrite - IHp.
 apply partial_derive_eta.
+apply locally_2d_impl_strong with (2:=Y).
 apply locally_2d_forall.
-intros u v.
+intros u v H.
 apply trans_eq with 
  (partial_derive p 0 (partial_derive 0 k (partial_derive 1 0 f)) u v).
 rewrite (partial_derive_add_zero _ _ 0%nat).
@@ -894,28 +901,41 @@ now right.
 apply trans_eq with 
  (partial_derive p 0 (partial_derive 1 k f) u v).
 apply partial_derive_eta.
+apply locally_2d_impl_strong with (2:=H).
 apply locally_2d_forall.
-intros u' v'.
+intros u' v' H'.
 apply sym_eq.
 apply Schwarz_ext_aux.
-admit. (* k+1 *)
+apply locally_2d_impl with (2:=H').
+apply locally_2d_forall.
+intros u'' v''.
+apply ex_diff_n_m.
+apply le_plus_r.
 rewrite partial_derive_add_zero.
 rewrite plus_0_l.
 replace (S p) with (p+1)%nat by apply plus_comm.
 easy.
 now left.
+apply locally_2d_impl with (2:=Y).
+apply locally_2d_forall.
+intros u'' v''.
+replace (p+ S k)%nat with ((S p+S k)-(1+0))%nat. 
+apply ex_diff_n_deriv.
+rewrite plus_0_r.
+apply le_plus_trans; apply lt_le_S; apply lt_0_Sn.
+rewrite plus_0_r.
+omega.
 Qed.
 
 
 Lemma Schwarz_ext: forall p k f x y, 
+ locally_2d (ex_diff_n f (p+S k)) x y ->
   Deriv (fun v : R => partial_derive p k f x v) y =
      partial_derive p (S k) f x y.
-intros p k f x y.
-generalize (Schwarz_ext_aux2 p k f x y).
+intros p k f x y H.
+generalize (Schwarz_ext_aux2 p k f x y H).
 easy.
 Qed.
-
-
 
 
 
@@ -923,16 +943,17 @@ Lemma ex_diff_n_continuity_inf_2 : forall n p k, (p+k < n)%nat -> forall f x y,
     ex_diff_n f n x y -> 
     continuity2_pt (fun u v => Deriv (fun z : R => partial_derive p k f u z) v) x y.
 intros n p k Hn f x y Hf.
-assert (ex_diff_n (partial_derive p (S k) f) (n -(p+S k)) x y).
+assert (ex_diff_n (partial_derive p k f) (n -(p+k)) x y).
 apply ex_diff_n_deriv.
-omega.
+now apply lt_le_weak.
 exact Hf.
-apply continuity2_pt_eta with (partial_derive p (S k) f).
-apply locally_2d_forall.
-intros u v; now rewrite Schwarz_ext.
-revert H; case (n - (p + S k))%nat.
-simpl; intros H; apply H.
-intros n0; simpl; intros H; apply H.
+revert H; case_eq (n-(p+k))%nat.
+intros H; contradict Hn.
+omega.
+intros n0 Hn0; simpl; intros (T1&T2&T3&T4&T5).
+revert T5; case n0.
+intros Y; apply Y.
+intros n1 Y; apply Y.
 Qed.
 
 
@@ -942,6 +963,8 @@ Qed.
 Definition DL_regular_n f m x y :=
   exists D, locally_2d (fun u v =>
     Rabs (f u v - DL_pol m f x y (u-x) (v-y)) <= D * (Rmax (Rabs (u-x)) (Rabs (v-y))) ^ (S m)) x y.
+
+
 
 Theorem Taylor_Lagrange_2D : forall f n x y,
   locally_2d (fun u v => ex_diff_n f (S n) u v) x y -> DL_regular_n f n x y.
@@ -1078,6 +1101,11 @@ apply ex_diff_n_continuity_inf_2 with (S n).
 now rewrite - le_plus_minus.
 apply HH.
 apply Schwarz_ext.
+apply locally_2d_impl with (2:=HH).
+apply locally_2d_forall.
+intros u' v' (Y,_).
+apply ex_diff_n_m with (2:=Y).
+omega.
 pattern (u-x) at 2; replace (u-x) with (0+(u-x)*1) by ring.
 apply derivable_pt_lim_plus.
 apply derivable_pt_lim_const.
