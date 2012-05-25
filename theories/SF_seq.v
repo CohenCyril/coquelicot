@@ -127,6 +127,18 @@ Lemma pairmap_rcons {T T0 : Type} (f : T -> T -> T0) (s : seq T) h0 h x0 :
 Proof.
   elim: s x0 h h0 => [| h1 s IH] x0 h h0 //= ; by rewrite IH.
 Qed.
+Lemma map_pairmap {T T0 T1 : Type} (f : T0 -> T1) (g : T -> T -> T0) (s : seq T) (x0 : T) :
+  map f (pairmap g x0 s) = pairmap (fun x y => f (g x y)) x0 s.
+Proof.
+  elim: s x0 => [| h s IH] x0 //=.
+  by rewrite IH.
+Qed.
+Lemma pairmap_map {T T0 T1 : Type} (f : T0 -> T0 -> T1) (g : T -> T0) (s : seq T) (x0 : T) :
+  pairmap f (g x0) (map g s) = pairmap (fun x y => f (g x) (g y)) x0 s.
+Proof.
+  elim: s x0 => [| h s IH] x0 //=.
+  by rewrite IH.
+Qed.
 (** * Definitions of SF_seq *)
 
 Record SF_seq {T : Type} := mkSF_seq {SF_h : R ; SF_t : seq (R * T)}.
@@ -244,6 +256,16 @@ Proof.
   by rewrite (IHst x).
 Qed.
 
+Lemma SF_lx_surj {T : Type} (s s0 : @SF_seq T) :
+  s = s0 -> SF_lx s = SF_lx s0.
+Proof.
+  by move => ->.
+Qed.
+Lemma SF_ly_surj {T : Type} (s s0 : @SF_seq T) :
+  s = s0 -> SF_ly s = SF_ly s0.
+Proof.
+  by move => ->.
+Qed.
 Lemma SF_lx_ly_inj {T : Type} (s s0 : @SF_seq T) :
   SF_lx s = SF_lx s0 -> SF_ly s = SF_ly s0 -> s = s0.
 Proof.
@@ -514,6 +536,18 @@ Proof.
   apply (IH h0 h1 h2 s).
   apply lt_S_n, Hj.
   apply Hs.
+Qed.
+
+Lemma SF_fun_map {T T0 : Type} (f : T -> T0) (s : SF_seq) x0 :
+  forall x, SF_fun (SF_map f s) (f x0) x = f (SF_fun s x0 x).
+Proof.
+  case: s => sh st ; rewrite /SF_fun /SF_map /= ; case: st => [| h st] x /=.
+  by case: Rle_dec.
+  case: Rlt_dec => //.
+  elim: st sh h x0 x => [| h0 st IH] sh h x0 x Hx //=.
+  by case: Rle_dec.
+  case: Rlt_dec => // {Hx} Hx.
+  by apply: (IH (fst h)).
 Qed.
 
 (** * Definition of RInt_seq *)
