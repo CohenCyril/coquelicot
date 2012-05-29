@@ -274,6 +274,30 @@ specialize (H t Ht).
 now apply locally_singleton in H.
 Qed.
 
+Lemma continuity_pt_locally :
+  forall f x,
+  continuity_pt f x <->
+  forall eps : posreal, locally (fun u => Rabs (f u - f x) < eps) x.
+Proof.
+intros f x.
+split.
+intros H eps.
+move: (H eps (cond_pos eps)) => {H} [d [H1 H2]].
+rewrite /= /R_dist /D_x /no_cond in H2.
+exists (mkposreal d H1) => y H.
+destruct (Req_dec x y) as [<-|Hxy].
+rewrite /Rminus Rplus_opp_r Rabs_R0.
+apply cond_pos.
+by apply H2.
+intros H eps He.
+move: (H (mkposreal _ He)) => {H} [d H].
+exists d.
+split.
+apply cond_pos.
+intros h [Zh Hh].
+exact: H.
+Qed.
+
 Lemma derivable_pt_lim_locally :
   forall f x l,
   derivable_pt_lim f x l <->

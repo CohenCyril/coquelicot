@@ -264,6 +264,77 @@ Proof.
   apply sym_not_eq, Rlt_not_eq, (Rlt_trans _ _ _ Rlt_0_1 n).
 Qed.
 
+(*
+Lemma derivable_differentiable_pt_lim : forall f x y l2,
+  locally (fun u => ex_deriv (fun z => f z y) u) x ->
+  is_deriv (fun z => f x z) y l2 ->
+  continuity_pt (fun u => Deriv (fun z => f z y) u) x ->
+  differentiable_pt_lim f x y (Deriv (fun u => f u y) x) l2.
+Proof.
+  intros f x y l2 Dx.
+  move /derivable_pt_lim_locally => Dy.
+  move /continuity_pt_locally => Cx eps.
+  set (eps' := pos_div_2 eps).
+  move: (Dy eps') => {Dy} [dy Hy].
+  move: (locally_and _ _ _ Dx (Cx eps')) => {Dx Cx} [dx Hx].
+  exists (mkposreal _ (Rmin_stable_in_posreal dx dy)) => /= u v Hu Hv.
+  set (l1 := Deriv (fun u : R => f u y) x).
+  set (g t := f t v - l1*t).
+  replace (f u v - f x y - (l1 * (u - x) + l2 * (v - y))) with
+    ((f u v - f x v - l1 * (u - x)) + (f x v - f x y - l2 * (v - y))) by ring.
+  apply Rle_trans with (1 := Rabs_triang _ _).
+  replace (pos eps) with (eps' + eps') by (apply sym_eq ; apply double_var).
+  rewrite Rmult_plus_distr_r.
+  apply Rplus_le_compat.
+  (* *)
+  apply Rle_trans with (eps' * Rabs (u - x)).
+  apply bounded_variation => t Ht.
+  assert (is_deriv g t (Deriv (fun z : R => f z v) t - l1)).
+    apply derivable_pt_lim_minus with (f2 := fun t => l1 * t).
+    apply Deriv_prop.
+    apply Hx.
+    now apply Rle_lt_trans with (1 := Ht).
+    rewrite -{2}(Rmult_1_r l1).
+    apply derivable_pt_lim_scal.
+    apply derivable_pt_lim_id.
+  split.
+  eexists. apply H0.
+  apply Rlt_le.
+  rewrite (Deriv_correct _ _ _ H0).
+  apply H with (2 := Hv).
+  now apply Rle_lt_trans with (1 := Ht).
+  apply Rmult_le_compat_l.
+  apply Rlt_le.
+  apply cond_pos.
+  apply Rmax_l.
+  (* *)
+  apply Rle_trans with (eps' * Rabs (v - y)).
+  apply bounded_variation => t Ht.
+  assert (is_deriv g2 t (Deriv (fun z : R => f x z) t - l2)).
+    apply derivable_pt_lim_minus with (f1 := fun v => f x v) (f2 := fun t => l2 * t).
+    apply Deriv_prop.
+    apply H.
+    rewrite /Rminus Rplus_opp_r Rabs_R0.
+    apply cond_pos.
+    now apply Rle_lt_trans with (1 := Ht).
+    rewrite -{2}(Rmult_1_r l2).
+    apply derivable_pt_lim_scal.
+    apply derivable_pt_lim_id.
+  split.
+  eexists. apply H0.
+  apply Rlt_le.
+  rewrite (Deriv_correct _ _ _ H0).
+  apply H.
+  rewrite /Rminus Rplus_opp_r Rabs_R0.
+  apply cond_pos.
+  now apply Rle_lt_trans with (1 := Ht).
+  apply Rmult_le_compat_l.
+  apply Rlt_le.
+  apply cond_pos.
+  apply Rmax_r.
+Qed.
+*)
+
 Lemma derivable_differentiable_pt_lim : forall f x y,
   locally_2d (fun u v => ex_deriv (fun z => f z v) u) x y ->
   locally_2d (fun u v => ex_deriv (fun z => f u z) v) x y ->
