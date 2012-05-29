@@ -179,6 +179,31 @@ apply locally_2d_forall.
 now split.
 Qed.
 
+Lemma locally_2d_1d_const_x :
+  forall (P : R -> R -> Prop) x y,
+  locally_2d P x y ->
+  locally (fun t => P x t) y.
+intros P x y (d,Hd).
+exists d; intros z Hz.
+apply Hd.
+rewrite Rminus_eq0 Rabs_R0; apply cond_pos.
+exact Hz.
+Qed.
+
+
+Lemma locally_2d_1d_const_y :
+  forall (P : R -> R -> Prop) x y,
+  locally_2d P x y ->
+  locally (fun t => P t y) x.
+intros P x y (d,Hd).
+exists d; intros z Hz.
+apply Hd.
+exact Hz.
+rewrite Rminus_eq0 Rabs_R0; apply cond_pos.
+Qed.
+
+
+
 Lemma locally_2d_1d_strong :
   forall (P : R -> R -> Prop) x y,
   locally_2d P x y ->

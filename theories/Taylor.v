@@ -482,39 +482,23 @@ split.
 apply (continuity2_pt_eta _ _ _ _ H H1).
 split.
 apply ex_deriv_eta with (2:=H2).
-destruct H as (d,Hd).
-exists d; intros z Hz.
-apply Hd.
-exact Hz.
-rewrite Rminus_eq0 Rabs_R0; apply cond_pos.
+apply locally_2d_1d_const_y with (1:=H).
 split.
 apply ex_deriv_eta with (2:=H3).
-destruct H as (d,Hd).
-exists d; intros z Hz.
-apply Hd.
-rewrite Rminus_eq0 Rabs_R0; apply cond_pos.
-exact Hz.
+apply locally_2d_1d_const_x with (1:=H).
 split.
 apply IHn with (2:=H4).
 apply locally_2d_impl_strong with (2:=H).
 apply locally_2d_forall.
 intros u v H6.
 apply Deriv_eta.
-destruct H6 as (d,Hd).
-exists d; intros z Hz.
-apply Hd.
-exact Hz.
-rewrite Rminus_eq0 Rabs_R0; apply cond_pos.
+apply locally_2d_1d_const_y with (1:=H6).
 apply IHn with (2:=H5).
 apply locally_2d_impl_strong with (2:=H).
 apply locally_2d_forall.
 intros u v H6.
 apply Deriv_eta.
-destruct H6 as (d,Hd).
-exists d; intros z Hz.
-apply Hd.
-rewrite Rminus_eq0 Rabs_R0; apply cond_pos.
-exact Hz.
+apply locally_2d_1d_const_x with (1:=H6).
 Qed.
 
 
@@ -755,53 +739,32 @@ apply trans_eq with
 unfold partial_derive.
 simpl.
 apply Deriv_n_eta.
-destruct H as (e, H).
-exists (pos_div_2 e).
-intros y0 Hy0.
-assert (ex_diff_n f (S (S p)) x y0).
-apply H.
-rewrite Rminus_eq0 Rabs_R0; apply cond_pos.
-apply Rlt_le_trans with (1:=Hy0).
-simpl; unfold Rdiv; pattern e at 1; rewrite - (Rmult_1_r e).
-apply Rmult_le_compat_l.
-left; apply cond_pos.
-apply Rle_trans with (/1).
-apply Rlt_le; apply Rinv_1_lt_contravar.
-now right.
-apply Rlt_plus_1.
-right; apply Rinv_1.
+cut (locally_2d (fun u v => 
+         Deriv (fun x0 : R => Deriv (fun x1 : R => f x0 x1) v) u =
+         Deriv (fun x0 : R => Deriv (fun x1 : R => f x1 x0) u) v) x y).
+apply locally_2d_1d_const_x.
+apply locally_2d_impl_strong with (2:=H).
+apply locally_2d_forall.
+intros u v H1.
 apply Schwarz.
-exists (pos_div_2 e).
-intros u v Hu Hv.
-assert (ex_diff_n f (S (S p)) u v).
-apply H.
-apply Rlt_le_trans with (1:=Hu).
-simpl; unfold Rdiv; pattern e at 1; rewrite - (Rmult_1_r e).
-apply Rmult_le_compat_l.
-left; apply cond_pos.
-apply Rle_trans with (/1).
-apply Rlt_le; apply Rinv_1_lt_contravar.
-now right.
-apply Rlt_plus_1.
-right; apply Rinv_1.
-replace (v-y) with ((v-y0)+ (y0-y)) by ring.
-apply Rle_lt_trans with (1:=Rabs_triang _ _).
-replace (pos e) with (pos_div_2 e + pos_div_2 e)%R.
-apply Rplus_lt_compat; assumption.
-simpl; field.
+apply locally_2d_impl with (2:=H1).
+apply locally_2d_forall.
+intros u' v' H2.
 split.
-apply H1.
+apply H2.
 split.
-apply H1.
-simpl in H1; destruct H1 as (T1&T2&T3&T4&T5).
+apply H2.
+simpl in H2; destruct H2 as (T1&T2&T3&T4&T5).
 split.
 apply T5.
 apply T4.
-simpl in H0; destruct H0 as (T1&T2&T3&T4&T5).
+apply locally_2d_singleton in H1.
+simpl in H1; destruct H1 as (T1&T2&T3&T4&T5).
 destruct T5 as (Y1&Y2&Y3&Y4&Y5).
 clear - Y4.
 case p in Y4; simpl in Y4; apply Y4.
-simpl in H0; destruct H0 as (T1&T2&T3&T4&T5).
+apply locally_2d_singleton in H1.
+simpl in H1; destruct H1 as (T1&T2&T3&T4&T5).
 destruct T4 as (Y1&Y2&Y3&Y4&Y5).
 clear - Y5.
 case p in Y5; simpl in Y5; apply Y5.
