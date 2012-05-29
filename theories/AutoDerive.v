@@ -1,6 +1,6 @@
 Require Import Reals.
 Require Import ssreflect seq.
-Require Import Arithmetique Locally Deriv_fct RInt.
+Require Import Arithmetique Locally Deriv_fct RInt Differential.
 
 Fixpoint Rn n T :=
   match n with
@@ -243,6 +243,11 @@ Fixpoint D (e : expr) n : expr * domain :=
     match is_const f (S n), is_const e1 n, is_const e2 n with
     | true, true, _ =>
       (Binary Emult a2 (App f e2), And (b2::(Integrable f e1 e2)::(Locally e2 (Continuous f))::nil))
+    | true, false, true =>
+      (Unary Eopp (Binary Emult a1 (App f e1)), And (b1::(Integrable f e1 e2)::(Locally e1 (Continuous f))::nil))
+    | true, false, false =>
+      (Binary Eplus (Binary Emult a2 (App f e2)) (Unary Eopp (Binary Emult a1 (App f e1))),
+       And (b1::b2::(Integrable f e1 e2)::(Locally e1 (Continuous f))::(Locally e2 (Continuous f))::nil))
     | _, _, _ =>
       (Binary Eplus
         (Binary Eplus
@@ -323,9 +328,57 @@ Qed.
 
 Axiom derivable_pt_lim_RInt :
   forall f a x,
-  ex_RInt f a x -> (exists eps : posreal, ex_RInt f (x-eps) (x+eps)) ->
+  ex_RInt f a x -> (exists eps : posreal, ex_RInt f (x - eps) (x + eps)) ->
   continuity_pt f x ->
   derivable_pt_lim (fun x => RInt f a x) x (f x).
+
+Axiom RInt_swap :
+  forall f a b,
+  -(RInt f a b) = RInt f b a.
+
+Lemma derivable_pt_lim_RInt' :
+  forall f a x,
+  ex_RInt f x a -> (exists eps : posreal, ex_RInt f (x - eps) (x + eps)) ->
+  continuity_pt f x ->
+  derivable_pt_lim (fun x => RInt f x a) x (- f x).
+Proof.
+intros f a x Hi Ix Cx.
+apply (is_deriv_eq (fun u => - RInt f a u)).
+intros t.
+apply RInt_swap.
+apply derivable_pt_lim_opp.
+apply derivable_pt_lim_RInt ; try easy.
+apply ex_RInt_correct_2.
+apply RiemannInt_P1.
+now apply ex_RInt_correct_1.
+Qed.
+
+Lemma derivable_pt_lim_RInt_bound_comp :
+  forall f a b da db x,
+  ex_RInt f (a x) (b x) ->
+  (exists eps : posreal, ex_RInt f (a x - eps) (a x + eps)) ->
+  (exists eps : posreal, ex_RInt f (b x - eps) (b x + eps)) ->
+  continuity_pt f (a x) ->
+  continuity_pt f (b x) ->
+  derivable_pt_lim a x da ->
+  derivable_pt_lim b x db ->
+  derivable_pt_lim (fun x => RInt f (a x) (b x)) x (db * f (b x) - da * f (a x)).
+Proof.
+intros f a b da db x Hi Ia Ib Ca Cb Da Db.
+replace (db * f (b x) - da * f (a x)) with (- f(a x) * da + f (b x) * db) by ring.
+apply derivable_pt_lim_comp_2d ; try easy.
+replace (- f (a x)) with (Deriv (fun u => RInt f u (b x)) (a x)).
+replace (f (b x)) with (Deriv (fun u => RInt f (a x) u) (b x)).
+apply derivable_differentiable_pt_lim.
+admit.
+admit.
+admit.
+admit.
+apply Deriv_correct.
+now apply derivable_pt_lim_RInt.
+apply Deriv_correct.
+now apply derivable_pt_lim_RInt'.
+Qed.
 
 Lemma D_correct :
   forall (e : expr) l n,
@@ -498,6 +551,26 @@ move: (fun l => IHe1 l (S n)) => {IHe1} IHe1.
 destruct (D e1 (S n)) as (a1,b1).
 destruct (D e2 n) as (a2,b2).
 destruct (D e3 n) as (a3,b3).
+(* . *)
+assert (HexI: forall f x, locally (fun x => continuity_pt f x) x -> exists eps : posreal, ex_RInt f (x - eps) (x + eps)).
+clear => f x [eps H].
+exists (pos_div_2 eps).
+apply ex_RInt_correct_2.
+apply RiemannInt_P6.
+apply Rplus_lt_compat_l.
+apply Rle_lt_trans with (2 := cond_pos _).
+rewrite -Ropp_0.
+apply Ropp_le_contravar.
+apply Rlt_le.
+apply cond_pos.
+intros u Hu.
+apply H.
+apply Rle_lt_trans with (pos_div_2 eps).
+now apply Rabs_le_encadre_cor.
+rewrite (double_var eps).
+rewrite -(Rplus_0_r (pos_div_2 eps)).
+apply Rplus_lt_compat_l.
+apply (cond_pos (pos_div_2 eps)).
 case C1: (is_const e1 (S n)).
 clear IHe1.
 case C2: (is_const e2 n).
@@ -505,7 +578,7 @@ case C2: (is_const e2 n).
 simpl.
 intros (H3&Hi&H1&_).
 rewrite Rmult_comm.
-apply (is_deriv_eq (comp (fun x => RInt (fun t => interp (t :: l(*set_nth 0 (t :: l) (S n) (nth 0 (t :: l) (S n))*)) e1) (interp (set_nth 0 l n (nth 0 l n)) e2) x) (fun x => interp (set_nth 0 l n x) e3))).
+apply (is_deriv_eq (comp (fun x => RInt (fun t => interp (t :: l) e1) (interp (set_nth 0 l n (nth 0 l n)) e2) x) (fun x => interp (set_nth 0 l n x) e3))).
 intros t.
 unfold comp.
 rewrite -(is_const_correct e2 n C2 l (nth 0 l n)).
@@ -517,27 +590,52 @@ apply derivable_pt_lim_comp.
 now apply IHe3.
 rewrite 2!interp_subst.
 apply derivable_pt_lim_RInt with (1 := Hi).
-move: H1 => [eps H1].
-exists (pos_div_2 eps).
-apply ex_RInt_correct_2.
-apply RiemannInt_P6.
-apply Rplus_lt_compat_l.
-apply Rle_lt_trans with (2 := cond_pos _).
-rewrite -Ropp_0.
-apply Ropp_le_contravar.
-apply Rlt_le.
-apply cond_pos.
-intros x Hx.
-apply H1.
-apply Rle_lt_trans with (pos_div_2 eps).
-now apply Rabs_le_encadre_cor.
-rewrite (double_var eps).
-rewrite -(Rplus_0_r (pos_div_2 eps)).
-apply Rplus_lt_compat_l.
-apply (cond_pos (pos_div_2 eps)).
+now apply HexI.
+now apply locally_singleton.
+clear C2.
+case C3: (is_const e3 n).
+(* . *)
+simpl.
+intros (H2&Hi&H1&_).
+rewrite Rmult_comm -Ropp_mult_distr_l_reverse.
+apply (is_deriv_eq (fun x => comp (fun x => RInt (fun t => interp (t :: l) e1) x (interp (set_nth 0 l n (nth 0 l n)) e3)) (fun x => interp (set_nth 0 l n x) e2) x)).
+intros t.
+unfold comp.
+rewrite -(is_const_correct e3 n C3 l (nth 0 l n)).
+apply RInt_rw.
+intros z _.
+rewrite -(interp_subst (S n)).
+apply (is_const_correct e1 (S n) C1 (z :: l)).
+apply (derivable_pt_lim_comp (fun x0 : R => interp (set_nth 0 l n x0) e2)
+  (fun x0 : R => RInt (fun t : R => interp (t :: l) e1) x0 (interp (set_nth 0 l n (nth 0 l n)) e3))).
+now apply IHe2.
+rewrite 2!interp_subst.
+apply derivable_pt_lim_RInt' with (1 := Hi).
+now apply HexI.
 now apply locally_singleton.
 (* . *)
-admit.
+clear C3.
+simpl.
+intros (H2&H3&Hi&H12&H13&_).
+apply (is_deriv_eq (fun x => RInt (fun t => interp (t :: l) e1) (interp (set_nth 0 l n x) e2) (interp (set_nth 0 l n x) e3))).
+intros t.
+apply RInt_rw.
+intros z _.
+rewrite -(interp_subst (S n)).
+apply (is_const_correct e1 (S n) C1 (z :: l)).
+rewrite -(interp_subst n l e2) -(interp_subst n l e3).
+apply derivable_pt_lim_RInt_bound_comp.
+now rewrite 2!interp_subst.
+rewrite interp_subst.
+now apply HexI.
+rewrite interp_subst.
+now apply HexI.
+rewrite interp_subst.
+now apply locally_singleton.
+rewrite interp_subst.
+now apply locally_singleton.
+now apply IHe2.
+now apply IHe3.
 (* . *)
 admit.
 Qed.
@@ -797,3 +895,4 @@ Goal forall f x, derivable_pt_lim (fun y => f (2 * x) + RInt (fun z => z) 0 y + 
 intros f x.
 auto_derive.
 2: ring_simplify.
+Abort.
