@@ -348,9 +348,9 @@ intros t.
 apply RInt_swap.
 apply derivable_pt_lim_opp.
 apply derivable_pt_lim_RInt ; try easy.
-apply ex_RInt_correct_2.
+apply ex_RInt_correct_3.
 apply RiemannInt_P1.
-now apply ex_RInt_correct_1.
+now apply ex_RInt_correct_2.
 Qed.
 
 Lemma derivable_pt_lim_RInt_bound_comp :
@@ -555,7 +555,7 @@ destruct (D e3 n) as (a3,b3).
 assert (HexI: forall f x, locally (fun x => continuity_pt f x) x -> exists eps : posreal, ex_RInt f (x - eps) (x + eps)).
 clear => f x [eps H].
 exists (pos_div_2 eps).
-apply ex_RInt_correct_2.
+apply ex_RInt_correct_3.
 apply RiemannInt_P6.
 apply Rplus_lt_compat_l.
 apply Rle_lt_trans with (2 := cond_pos _).
