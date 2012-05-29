@@ -78,9 +78,11 @@ Inductive domain :=
   | Never : domain
   | Always : domain
   | Derivable : forall k, Rn k R -> seq expr -> nat -> domain
+  | Continuous : expr -> domain
   | Integrable : expr -> expr -> expr -> domain
   | And : seq domain -> domain
-  | Forall : expr -> expr -> domain -> domain.
+  | Forall : expr -> expr -> domain -> domain
+  | Locally : expr -> domain -> domain.
 
 Fixpoint Deriv_Rn_aux n (f : Rn (S n) R) x : Rn n R :=
   match n return Rn (S n) R -> Rn n R with
@@ -111,12 +113,15 @@ Fixpoint interp_domain (l : seq R) (d : domain) : Prop :=
   | Never => False
   | Always => True
   | Derivable k f le n => apply k (ex_deriv_Rn k f n) (map (interp l) le)
+  | Continuous f => continuity_pt (fun x => interp (set_nth R0 l 0 x) f) (nth R0 l 0)
   | Integrable f e1 e2 => ex_RInt (fun x => interp (x :: l) f) (interp l e1) (interp l e2)
   | And ld => foldr (fun d acc => interp_domain l d /\ acc) True ld
   | Forall e1 e2 s =>
     let a1 := interp l e1 in let a2 := interp l e2 in
     exists eps : posreal, forall t, -eps < t < 1 + eps ->
     interp_domain (a1 + t * (a2 - a1) :: l) s
+  | Locally e s =>
+    locally (fun x => interp_domain (x :: l) s) (interp l e)
   end.
 
 Fixpoint is_const (e : expr) n : bool :=
@@ -235,11 +240,16 @@ Fixpoint D (e : expr) n : expr * domain :=
     let '(a1,b1) := D e1 n in
     let '(a2,b2) := D e2 n in
     let '(a3,b3) := D f (S n) in
-    (Binary Eplus
+    match is_const f (S n), is_const e1 n, is_const e2 n with
+    | true, true, _ =>
+      (Binary Emult a2 (App f e2), And (b2::(Integrable f e1 e2)::(Locally e2 (Continuous f))::nil))
+    | _, _, _ =>
       (Binary Eplus
-        (Binary Emult a2 (App f e2))
-        (Unary Eopp (Binary Emult a1 (App f e1))))
-      (Int a3 e1 e2), And (b1::b2::(Forall e1 e2 b3)::(Integrable f e1 e2)::nil))
+        (Binary Eplus
+          (Binary Emult a2 (App f e2))
+          (Unary Eopp (Binary Emult a1 (App f e1))))
+        (Int a3 e1 e2), And (b1::b2::(Forall e1 e2 b3)::(Integrable f e1 e2)::nil))
+    end
   end.
 
 Lemma is_deriv_eq :
@@ -311,6 +321,12 @@ apply RInt_rw => x _.
 apply (IHe1 (S n) (x :: l)).
 Qed.
 
+Axiom derivable_pt_lim_RInt :
+  forall f a x,
+  ex_RInt f a x -> (exists eps : posreal, ex_RInt f (x-eps) (x+eps)) ->
+  continuity_pt f x ->
+  derivable_pt_lim (fun x => RInt f a x) x (f x).
+
 Lemma D_correct :
   forall (e : expr) l n,
   let '(a,b) := D e n in
@@ -318,7 +334,7 @@ Lemma D_correct :
   is_deriv (fun x => interp (set_nth R0 l n x) e) (nth R0 l n) (interp l a).
 Proof.
 induction e using expr_ind'.
-(* *)
+(* Var *)
 simpl => l k _.
 apply is_deriv_eq with (fun x => if ssrnat.eqn n k then x else nth 0 l n).
 intros t.
@@ -326,7 +342,7 @@ now rewrite nth_set_nth.
 case ssrnat.eqnP => [H|H].
 apply derivable_pt_lim_id.
 apply derivable_pt_lim_const.
-(* *)
+(* AppExt *)
 simpl => l n.
 match goal with
 |- appcontext [foldr ?f] => set (g := f)
@@ -407,14 +423,14 @@ simpl.
 intros (H5&H6&H7&H8&_).
 rewrite Rplus_0_r.
 admit. (* manque la continuité des dérivées ou la différentiabilité *)
-(* *)
+(* App *)
 simpl => l n [].
-(* *)
+(* Subst *)
 simpl => l n [].
-(* *)
+(* Cst *)
 simpl => l n _.
 apply derivable_pt_lim_const.
-(* *)
+(* Binary *)
 simpl => l n.
 specialize (IHe1 l n).
 specialize (IHe2 l n).
@@ -465,7 +481,7 @@ case o ; simpl ;
 now apply derivable_pt_lim_plus.
 rewrite -(interp_subst n _ e1) -(interp_subst n _ e2).
 now apply (derivable_pt_lim_mult (fun x => interp (set_nth 0 l n x) e1) (fun x => interp (set_nth 0 l n x) e2)).
-(* *)
+(* Unary *)
 simpl => l n.
 specialize (IHe l n).
 destruct (D e n) as (a,b).
@@ -474,7 +490,7 @@ simpl.
 intros H.
 apply derivable_pt_lim_opp.
 now apply IHe.
-(* *)
+(* Int *)
 simpl => l n.
 specialize (IHe2 l n).
 specialize (IHe3 l n).
@@ -482,10 +498,47 @@ move: (fun l => IHe1 l (S n)) => {IHe1} IHe1.
 destruct (D e1 (S n)) as (a1,b1).
 destruct (D e2 n) as (a2,b2).
 destruct (D e3 n) as (a3,b3).
+case C1: (is_const e1 (S n)).
+clear IHe1.
+case C2: (is_const e2 n).
+(* . *)
 simpl.
-intros (H2&H3&(eps,H1)&_).
-specialize (IHe2 H2).
-specialize (IHe3 H3).
+intros (H3&Hi&H1&_).
+rewrite Rmult_comm.
+apply (is_deriv_eq (comp (fun x => RInt (fun t => interp (t :: l(*set_nth 0 (t :: l) (S n) (nth 0 (t :: l) (S n))*)) e1) (interp (set_nth 0 l n (nth 0 l n)) e2) x) (fun x => interp (set_nth 0 l n x) e3))).
+intros t.
+unfold comp.
+rewrite -(is_const_correct e2 n C2 l (nth 0 l n)).
+apply RInt_rw.
+intros z _.
+rewrite -(interp_subst (S n)).
+apply (is_const_correct e1 (S n) C1 (z :: l)).
+apply derivable_pt_lim_comp.
+now apply IHe3.
+rewrite 2!interp_subst.
+apply derivable_pt_lim_RInt with (1 := Hi).
+move: H1 => [eps H1].
+exists (pos_div_2 eps).
+apply ex_RInt_correct_2.
+apply RiemannInt_P6.
+apply Rplus_lt_compat_l.
+apply Rle_lt_trans with (2 := cond_pos _).
+rewrite -Ropp_0.
+apply Ropp_le_contravar.
+apply Rlt_le.
+apply cond_pos.
+intros x Hx.
+apply H1.
+apply Rle_lt_trans with (pos_div_2 eps).
+now apply Rabs_le_encadre_cor.
+rewrite (double_var eps).
+rewrite -(Rplus_0_r (pos_div_2 eps)).
+apply Rplus_lt_compat_l.
+apply (cond_pos (pos_div_2 eps)).
+now apply locally_singleton.
+(* . *)
+admit.
+(* . *)
 admit.
 Qed.
 
@@ -511,6 +564,13 @@ Fixpoint simplify_domain (d : domain) : domain :=
     | Always => Always
     | _ => Forall e1 e2 d'
     end
+  | Locally e d =>
+    let d' := simplify_domain d in
+    match d' with
+    | Always => Always
+    | Never => Never
+    | _ => Locally e d'
+    end
   | _ => d
   end.
 
@@ -520,15 +580,18 @@ Hypothesis P : domain -> Prop.
 Hypothesis P_Never : P Never.
 Hypothesis P_Always : P Always.
 Hypothesis P_Derivable : forall k f le n, P (Derivable k f le n).
+Hypothesis P_Continuous : forall e, P (Continuous e).
 Hypothesis P_Integrable : forall f e1 e2, P (Integrable f e1 e2).
 Hypothesis P_And : forall ld, foldr (fun d acc  => P d /\ acc) True ld -> P (And ld).
 Hypothesis P_Forall : forall e1 e2 d, P d -> P (Forall e1 e2 d).
+Hypothesis P_Locally : forall e d, P d -> P (Locally e d).
 
 Fixpoint domain_ind' (d : domain) : P d :=
   match d return P d with
   | Never => P_Never
   | Always => P_Always
   | Derivable k f le n => P_Derivable k f le n
+  | Continuous e => P_Continuous e
   | Integrable f e1 e2 => P_Integrable f e1 e2
   | And ld => P_And ld
     ((fix domain_ind'' (ld : seq domain) : foldr (fun d acc => P d /\ acc) True ld :=
@@ -537,6 +600,7 @@ Fixpoint domain_ind' (d : domain) : P d :=
        | cons h q => conj (domain_ind' h) (domain_ind'' q)
        end) ld)
   | Forall e1 e2 d => P_Forall e1 e2 d (domain_ind' d)
+  | Locally e d => P_Locally e d (domain_ind' d)
   end.
 
 End DomainInduction.
@@ -547,7 +611,7 @@ Lemma simplify_domain_correct :
 Proof.
 intros d.
 induction d using domain_ind' => l ; try easy.
-(* *)
+(* And *)
 simpl.
 set (f := fun (d : domain) (acc : seq domain) =>
   match simplify_domain d with
@@ -578,6 +642,10 @@ intros k f' le n H1 (H2,H3).
 exact (conj (H1 l H2) (IHld Hb H3)).
 (* . *)
 simpl.
+intros e H1 (H2,H3).
+exact (conj (H1 l H2) (IHld Hb H3)).
+(* . *)
+simpl.
 intros e0 e1 e2 H1 (H2,H3).
 exact (conj (H1 l H2) (IHld Hb H3)).
 (* . *)
@@ -601,7 +669,11 @@ now apply IHls.
 simpl.
 intros e1 e2 d H1 (H2,H3).
 exact (conj (H1 l H2) (IHld Hb H3)).
-(* *)
+(* . *)
+simpl.
+intros e d H1 (H2,H3).
+exact (conj (H1 l H2) (IHld Hb H3)).
+(* Forall *)
 simpl.
 revert IHd.
 assert (HH: forall d', (forall l, interp_domain l d' -> interp_domain l d) ->
@@ -612,6 +684,22 @@ exists eps => t Ht.
 apply H1.
 now apply H2.
 destruct (simplify_domain d) ; try (apply HH ; fail).
+simpl.
+intros H _.
+exists (mkposreal _ Rlt_0_1) => t Ht.
+now apply H.
+(* Locally *)
+simpl.
+revert IHd.
+assert (HH: forall d', (forall l, interp_domain l d' -> interp_domain l d) ->
+  interp_domain l (Locally e d') -> interp_domain l (Locally e d)).
+simpl.
+intros d' H1 (eps,H2).
+exists eps => t Ht.
+apply H1.
+now apply H2.
+destruct (simplify_domain d) ; try (apply HH ; fail).
+easy.
 simpl.
 intros H _.
 exists (mkposreal _ Rlt_0_1) => t Ht.
@@ -705,7 +793,7 @@ Ltac auto_derive :=
     clear H
   end.
 
-Goal forall f x, derivable_pt_lim (fun y => f (2 * x) y (y * y) + RInt (fun z => y + z) 0 y + 2 * y) x 0.
+Goal forall f x, derivable_pt_lim (fun y => f (2 * x) + RInt (fun z => z) 0 y + 2 * y) x 0.
 intros f x.
 auto_derive.
 2: ring_simplify.
