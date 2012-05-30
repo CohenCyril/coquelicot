@@ -872,22 +872,22 @@ apply H1.
 now apply simplify_domain_correct.
 Qed.
 
-Ltac auto_derive_expr f v :=
+Ltac auto_derive_fun f :=
   let f := eval cbv beta in (f (var O)) in
   let e := reify f O in
   let H := fresh "H" in
-  assert (H := auto_derive_helper e (v :: nil) 0) ;
+  assert (H := fun x => auto_derive_helper e (x :: nil) 0) ;
   simpl in H ;
-  try specialize (H I) ;
   revert H.
 
 Ltac auto_derive :=
   match goal with
   | |- derivable_pt_lim ?f ?v ?l =>
-    auto_derive_expr f v ;
+    auto_derive_fun f ;
     let H := fresh "H" in
     intro H ;
-    refine (eq_ind _ (derivable_pt_lim _ _) (H _) _ _) || refine (eq_ind _ (derivable_pt_lim _ _) H _ _) ;
+    specialize (H v) ;
+    refine (eq_ind _ (derivable_pt_lim _ _) (H _) _ _) ;
     clear H
   end.
 
