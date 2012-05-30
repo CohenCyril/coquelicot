@@ -1887,6 +1887,43 @@ Qed.
 Lemma RInt_sup_decr_0 (f : R -> R) (a b : R) (n : nat) :
   Rbar_le (RInt_sup f a b (S n)) (RInt_sup f a b n).
 Proof.
+  elim: n a b => [| n IH] a b.
+  rewrite /RInt_sup SF_sup_ly /= /Sup_fct /Lub_Rbar_ne ;
+  case: ex_lub_Rbar_ne => l10 [ub10 lub10] ;
+  case: ex_lub_Rbar_ne => l01 [ub01 lub01] ;
+  case: ex_lub_Rbar_ne => l [ub lub] ; simpl projT1.
+  replace (Rbar_div_pos (Rbar_plus l10 (Rbar_plus l01 (Finite 0)))
+    {| pos := 2 * 1; cond_pos := pow_lt 2 1 Rlt_R0_R2 |})
+    with (Rbar_div_pos (Rbar_plus l10 l01)
+    {| pos := 2 ; cond_pos := Rlt_R0_R2 |}).
+  replace (Rbar_div_pos (Rbar_plus l (Finite 0))
+    {| pos := 1; cond_pos := pow_lt 2 0 Rlt_R0_R2 |})
+    with (Rbar_div_pos (Rbar_plus l l)
+    {| pos := 2 ; cond_pos := Rlt_R0_R2 |}).
+  suff: Rbar_le (Rbar_plus l10 l01) (Rbar_plus l l).
+    case: (Rbar_plus l10 l01) => [r | | ] ; 
+    case: (Rbar_plus l l) => [r0 | | ] //= H ; try by case: H ; try by left.
+    apply Rbar_finite_le, Rmult_le_compat_r ; intuition ;
+    apply Rbar_finite_le, H.
+  suff : Rbar_le l10 l.
+  suff : Rbar_le l01 l.
+    case: l {ub lub} => [l | | ] ; 
+    case: l10 {ub10 lub10} => [l10 | | ] ; 
+    case: l01 {ub01 lub01} => [l01 | | ] //= H H0 ; 
+      try by case: H ; try by case: H0 ; try by left.
+    apply Rbar_finite_le, Rplus_le_compat ; by apply Rbar_finite_le.
+  apply: lub01 => _ [x [-> Hx]] ; apply: ub ; exists x ; split => //.
+  move: Hx ; 
+  replace (a + 1 * (b - a) / (2 * 1)) with ((a+b)/2) by field ;
+  replace (a + 2 * (b - a) / (2 * 1)) with b by field ;
+  replace (a + 0 * (b - a) / 1) with a by field ;
+  replace (a + 1 * (b - a) / 1) with b by field.
+  move => {lub ub10 lub10 ub01} ; rewrite /Rmin /Rmax ;
+  case: Rle_dec ; case: Rle_dec ; intuition.
+  apply Rle_trans with (2 := H) ;
+  pattern a at 1 ; replace a with ((a+a)/2) by field ;
+  apply Rmult_le_compat_r, Rplus_le_compat_l ; intuition.
+  contradict b0.
 Admitted.
 Lemma RInt_sup_decr (f : R -> R) (a b : R) (n m : nat) : (n <= m)%nat ->
   Rbar_le (RInt_sup f a b m) (RInt_sup f a b n).
