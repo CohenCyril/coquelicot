@@ -308,6 +308,37 @@ Lemma Rbar_plus_comm (x y : Rbar) : Rbar_plus x y = Rbar_plus y x.
 Proof.
   case x ; case y ; intuition ; simpl ; rewrite Rplus_comm ; auto.
 Qed.
+
+Lemma Rbar_plus_lt_compat (a b c d : Rbar) : 
+  Rbar_lt a b -> Rbar_lt c d -> Rbar_lt (Rbar_plus a c) (Rbar_plus b d).
+Proof.
+  case: a => [a | | ] // ; case: b => [b | | ] // ;
+  case: c => [c | | ] // ; case: d => [d | | ] // ;
+  apply Rplus_lt_compat.
+Qed.
+Lemma Rbar_plus_lt_le_compat (a b c d : Rbar) : 
+  Rbar_lt a b -> Rbar_le c d -> Rbar_le (Rbar_plus a c) (Rbar_plus b d).
+Proof.
+  case: a => [a | | ] // ; case: b => [b | | ] // ;
+  case: c => [c | | ] // ; case: d => [d | | ] // Hab ;
+  case => Hcd // ; rewrite ?Hcd //= ; try by left.
+  left ; by apply Rplus_lt_compat.
+  left ; by apply Rplus_lt_compat_r.
+Qed.
+Lemma Rbar_plus_le_lt_compat (a b c d : Rbar) : 
+  Rbar_le a b -> Rbar_lt c d -> Rbar_le (Rbar_plus a c) (Rbar_plus b d).
+Proof.
+  move => Hab Hcd ; rewrite (Rbar_plus_comm a c) (Rbar_plus_comm b d) ;
+  by apply Rbar_plus_lt_le_compat.
+Qed.
+Lemma Rbar_plus_le_compat (a b c d : Rbar) : 
+  Rbar_le a b -> Rbar_le c d -> Rbar_le (Rbar_plus a c) (Rbar_plus b d).
+Proof.
+  case => [Hab | ->].
+  by apply Rbar_plus_lt_le_compat.
+  case => [Hcd | ->] ; try by right.
+  apply Rbar_plus_le_lt_compat => // ; by right.
+Qed.
 (** ** Rbar_div_pos *)
 Lemma Rbar_div_pos_eq (x y : Rbar) (z : posreal) :
   x = y <-> (Rbar_div_pos x z) = (Rbar_div_pos y z).
@@ -326,4 +357,14 @@ Proof.
   split => //= H.
   apply (Rmult_lt_compat_r (/z)) => // ; by apply Rinv_0_lt_compat.
   apply (Rmult_lt_reg_r (/z)) => // ; by apply Rinv_0_lt_compat.
+Qed.
+
+Lemma Rbar_div_pos_le (x y : Rbar) (z : posreal) :
+  Rbar_le x y <-> Rbar_le (Rbar_div_pos x z) (Rbar_div_pos y z).
+Proof.
+  split ; case => H.
+  left ; by apply Rbar_div_pos_lt.
+  right ; by apply Rbar_div_pos_eq.
+  left ; by apply Rbar_div_pos_lt with z.
+  right ; by apply Rbar_div_pos_eq with z.
 Qed.
