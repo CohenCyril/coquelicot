@@ -1,5 +1,6 @@
 Require Import Reals.
 Require Import Lim_seq ssreflect.
+Require Import Locally.
 Open Scope R_scope.
 
 (** * Limit *)
@@ -7,8 +8,7 @@ Open Scope R_scope.
 Definition Lim (f : R -> R) (x : R) := Lim_seq (fun n => f (x+/INR n)).
 
 Definition is_lim f x l :=
-  forall eps : posreal, exists delta : posreal, forall y, 
-    y <> x -> Rabs (y-x) < delta -> Rabs (f y - l) < eps.
+  forall eps : posreal, locally (fun y => y <> x -> Rabs (f y - l) < eps) x.
 Definition ex_lim f x := exists l, is_lim f x l.
 
 (** ** Equivalence with Coq définition *)
@@ -27,7 +27,7 @@ Proof.
   intros H (e,He).
   elim (H e He) ; clear H ; intros d (Hd,H) ; set (delta := mkposreal d Hd).
   exists delta ; intros ; apply (H y).
-  split ; [apply H0|apply H1].
+  now split.
 Qed.
 Lemma is_lim_Coq f x l :
   limit1_in f (fun y => y <> x) l x <-> is_lim f x l.
@@ -46,11 +46,11 @@ Proof.
   elim (Hf eps) ; clear Hf ; intros delta Hf.
   elim (Hu' delta) ; clear Hu' ; intros N' Hu'.
   exists (N+N')%nat ; intros ; apply Hf.
-  apply Hu, le_trans with (2 := H) ; intuition.
   apply Hu', le_trans with (2 := H) ; intuition.
+  apply Hu, le_trans with (2 := H) ; intuition.
 Qed.
 
-Lemma Lim_correct f x l :
+Lemma is_lim_unique f x l :
   is_lim f x l -> Lim f x = l.
 Proof.
   intros.
@@ -65,13 +65,13 @@ Proof.
   apply is_lim_seq_inv_n.
   ring.
 Qed.
-Lemma Lim_prop f x :
+Lemma Lim_correct f x :
   ex_lim f x -> is_lim f x (Lim f x).
 Proof.
   intros (l,H).
   cut (Lim f x = l).
     intros ; rewrite H0 ; apply H.
-  apply Lim_correct, H.
+  apply is_lim_unique, H.
 Qed.
 
 (** * Operations *)
@@ -85,7 +85,7 @@ Proof.
   exists delta ; intros.
   destruct (Req_EM_T (g y) l).
   rewrite e (Rminus_diag_eq _ _ (refl_equal _)) Rabs_R0 ; apply eps.
-  apply (Hf _ n).
+  apply: Hf n.
   apply (Hg _ H H0).
 Qed.
 Lemma ex_lim_comp (f g : R -> R) (x : R) : 
@@ -94,16 +94,16 @@ Proof.
   intros.
   exists (f (Lim g x)) ; apply is_lim_comp.
   apply H.
-  apply Lim_prop, H0.
+  apply Lim_correct, H0.
 Qed.
 Lemma Lim_comp (f g : R -> R) (x : R) : 
   is_lim f (Lim g x) (f (Lim g x)) -> ex_lim g x -> Lim (fun x => f (g x)) x = f (Lim g x).
 Proof.
   intros.
-  apply Lim_correct.
+  apply is_lim_unique.
   apply is_lim_comp.
   apply H.
-  apply Lim_prop, H0.
+  apply Lim_correct, H0.
 Qed.
 
 Lemma is_lim_CL (f g : R -> R) (a x lf lg : R) :
@@ -115,26 +115,21 @@ Proof.
     apply Rlt_le_trans with (1 := Rlt_0_1) ; rewrite -{1}(Rplus_0_r 1) ;
     apply Rplus_le_compat_l, Rabs_pos
   | set (eps := mkposreal _ He)].
-  move: (Hf eps) => {Hf} [df Hf].
-  move: (Hg eps) => {Hg} [dg Hg].
-  assert (Hd : 0 < Rmin df dg) ;
-  [ apply Rmin_pos ; [apply df | apply dg]
-  | set (delta := mkposreal _ Hd)].
-  exists delta ; intros.
-  assert (Rw : f y + a * g y - (lf + a * lg) = (f y - lf) + a * (g y - lg)) ; 
-  [ ring | rewrite Rw ; clear Rw].
-  assert (Rw : (pos e0) = eps + Rabs a * eps) ;
-  [ simpl ; field ; apply Rgt_not_eq, Rlt_le_trans with (1 := Rlt_0_1) ; 
-    rewrite -{1}(Rplus_0_r 1) ; apply Rplus_le_compat_l, Rabs_pos
-  | rewrite Rw ; clear Rw].
+  move: (locally_and _ _ _ (Hf eps) (Hg eps)) => {Hf Hg}.
+  apply locally_impl.
+  apply locally_forall.
+  intros y (Hf,Hg) H0.
+  replace (f y + a * g y - (lf + a * lg)) with ((f y - lf) + a * (g y - lg)) by ring.
+  replace (pos e0) with (eps + Rabs a * eps).
   apply Rle_lt_trans with (1 := Rabs_triang _ _).
   apply Rplus_lt_le_compat.
-  apply (Hf _ H).
-  apply Rlt_le_trans with (1 := H0) ; simpl ; apply Rmin_l.
+  apply: Hf H0.
   rewrite Rabs_mult ; apply Rmult_le_compat_l.
   apply Rabs_pos.
-  apply Rlt_le, (Hg _ H).
-  apply Rlt_le_trans with (1 := H0) ; simpl ; apply Rmin_r.
+  apply Rlt_le.
+  apply: Hg H0.
+  simpl ; field ; apply Rgt_not_eq, Rlt_le_trans with (1 := Rlt_0_1) ;
+  rewrite -{1}(Rplus_0_r 1) ; apply Rplus_le_compat_l, Rabs_pos.
 Qed.
 Lemma ex_lim_CL (f g : R -> R) (a x : R) :
   ex_lim f x -> ex_lim g x -> ex_lim (fun x => f x + a * g x) x.
@@ -146,8 +141,8 @@ Lemma Lim_CL (f g : R -> R) (a x : R) :
   ex_lim f x -> ex_lim g x -> Lim (fun x => f x + a * g x) x = Lim f x + a * Lim g x.
 Proof.
   intros.
-  apply Lim_correct.
-  apply is_lim_CL ; apply Lim_prop.
+  apply is_lim_unique.
+  apply is_lim_CL ; apply Lim_correct.
   apply H.
   apply H0.
 Qed.

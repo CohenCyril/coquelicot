@@ -2399,7 +2399,7 @@ Lemma RInt_correct (f : R -> R) (a b : R) :
 Proof.
 Admitted. (** Admitted. *)
 
-Lemma RInt_rw (f g : R -> R) (a b : R) :
+Lemma RInt_ext (f g : R -> R) (a b : R) :
   (forall x, Rmin a b <= x <= Rmax a b -> f x = g x) -> RInt f a b = RInt g a b.
 Proof.
   move => Hf ; rewrite /RInt /RInt_val.
@@ -2407,15 +2407,15 @@ Admitted.
 
 (** * Riemann integral and derivative *)
 
-Lemma Deriv_RInt (f : R -> R) (a : R) (x : R) :
-  (ex_RInt f a x) -> (exists eps : posreal, ex_RInt f (x-eps) (x+eps)) 
-  -> continuity_pt f x -> Deriv (RInt f a) x = f x.
+Lemma derivable_pt_lim_RInt (f : R -> R) (a : R) (x : R) :
+  ex_RInt f a x -> (exists eps : posreal, ex_RInt f (x - eps) (x + eps)) ->
+  continuity_pt f x -> derivable_pt_lim (fun x => RInt f a x) x (f x).
 Proof.
 Admitted. (** Admitted. *)
 
-Lemma RInt_Deriv (f : R -> R) (a b : R) (eps : posreal) :
- (forall x, Rmin a b - eps <= x <= Rmax a b + eps -> ex_deriv f x) ->
-   (continuity_pt (Deriv f) a) -> (continuity_pt (Deriv f) b) -> 
-     RInt (Deriv f) a b = f b - f a.
+Lemma RInt_Derive (f : R -> R) (a b : R) (eps : posreal) :
+  (forall x, Rmin a b - eps <= x <= Rmax a b + eps -> ex_derive f x) ->
+  continuity_pt (Derive f) a -> continuity_pt (Derive f) b ->
+  RInt (Derive f) a b = f b - f a.
 Proof.
 Admitted. (** Admitted. *)

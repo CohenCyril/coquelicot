@@ -4,19 +4,19 @@ Require Import Arithmetique Locally Deriv_fct.
 
 Lemma MVT_cor4:
   forall (f : R -> R) a eps,
-  (forall c, Rabs (c - a) <= eps -> ex_deriv f c) ->
+  (forall c, Rabs (c - a) <= eps -> ex_derive f c) ->
   forall b, (Rabs (b - a) <= eps) ->
-  exists c, f b - f a = Deriv f c * (b - a) /\ (Rabs (c - a) <= Rabs (b - a)).
+  exists c, f b - f a = Derive f c * (b - a) /\ (Rabs (c - a) <= Rabs (b - a)).
 Proof.
 intros f a eps Hf' b.
 unfold Rabs at 1 3.
 case Rcase_abs; intros H1 H2.
-destruct (MVT_cor2 f (Deriv f) b a).
+destruct (MVT_cor2 f (Derive f) b a).
 apply Rplus_lt_reg_r with (-a).
 ring_simplify.
 now rewrite Rplus_comm.
 intros c Hc.
-apply Deriv_prop.
+apply Derive_correct.
 apply Hf'.
 rewrite Rabs_left1.
 apply Rle_trans with (2:=H2).
@@ -33,12 +33,12 @@ left; now apply Rplus_lt_compat_r.
 apply Rplus_lt_reg_r with a.
 now ring_simplify.
 destruct H1.
-destruct (MVT_cor2 f (Deriv f) a b).
+destruct (MVT_cor2 f (Derive f) a b).
 apply Rplus_lt_reg_r with (-a).
 ring_simplify.
 now rewrite Rplus_comm.
 intros c Hc.
-apply Deriv_prop.
+apply Derive_correct.
 apply Hf'.
 rewrite Rabs_right.
 apply Rle_trans with (2:=H2).
@@ -63,7 +63,7 @@ Qed.
 
 Lemma bounded_variation :
   forall h D x y,
-  (forall t, Rabs (t - x) <= Rabs (y - x) -> ex_deriv h t /\ (Rabs (Deriv h t) <= D)) ->
+  (forall t, Rabs (t - x) <= Rabs (y - x) -> ex_derive h t /\ (Rabs (Derive h t) <= D)) ->
   Rabs (h y - h x) <= D * Rabs (y - x).
 Proof.
 intros h D x y H.
@@ -336,11 +336,11 @@ Qed.
 *)
 
 Lemma derivable_differentiable_pt_lim : forall f x y,
-  locally_2d (fun u v => ex_deriv (fun z => f z v) u) x y ->
-  locally_2d (fun u v => ex_deriv (fun z => f u z) v) x y ->
-  continuity2_pt (fun u v => Deriv (fun z => f z v) u) x y ->
-  continuity2_pt (fun u v => Deriv (fun z => f u z) v) x y ->
-  differentiable_pt_lim f x y (Deriv (fun u => f u y) x) (Deriv (fun v => f x v) y).
+  locally_2d (fun u v => ex_derive (fun z => f z v) u) x y ->
+  locally_2d (fun u v => ex_derive (fun z => f u z) v) x y ->
+  continuity2_pt (fun u v => Derive (fun z => f z v) u) x y ->
+  continuity2_pt (fun u v => Derive (fun z => f u z) v) x y ->
+  differentiable_pt_lim f x y (Derive (fun u => f u y) x) (Derive (fun v => f x v) y).
 Proof.
   intros f x y Dx Dy Cx Cy eps.
   set (eps' := pos_div_2 eps).
@@ -349,8 +349,8 @@ Proof.
   move: (locally_2d_and _ _ _ _ Dx Dy) => {Dx Dy} H.
   move: (locally_2d_and _ _ _ _ H Cx) => {H Cx} H.
   move: (locally_2d_and _ _ _ _ H Cy) => {H Cy}.
-  set (l1 := Deriv (fun u : R => f u y) x).
-  set (l2 := Deriv (fun v : R => f x v) y).
+  set (l1 := Derive (fun u : R => f u y) x).
+  set (l2 := Derive (fun v : R => f x v) y).
   apply: locally_2d_align => delta H u v Hu Hv.
   set (g1 t := f t v - l1*t).
   set (g2 t := f x t - l2*t).
@@ -364,9 +364,9 @@ Proof.
   (* *)
   apply Rle_trans with (eps' * Rabs (u - x)).
   apply bounded_variation => t Ht.
-  assert (is_deriv g1 t (Deriv (fun z : R => f z v) t - l1)).
+  assert (is_derive g1 t (Derive (fun z : R => f z v) t - l1)).
     apply derivable_pt_lim_minus with (f2 := fun t => l1 * t).
-    apply Deriv_prop.
+    apply Derive_correct.
     apply H with (2 := Hv).
     now apply Rle_lt_trans with (1 := Ht).
     rewrite -{2}(Rmult_1_r l1).
@@ -375,7 +375,7 @@ Proof.
   split.
   eexists. apply H0.
   apply Rlt_le.
-  rewrite (Deriv_correct _ _ _ H0).
+  rewrite (is_derive_unique _ _ _ H0).
   apply H with (2 := Hv).
   now apply Rle_lt_trans with (1 := Ht).
   apply Rmult_le_compat_l.
@@ -385,9 +385,9 @@ Proof.
   (* *)
   apply Rle_trans with (eps' * Rabs (v - y)).
   apply bounded_variation => t Ht.
-  assert (is_deriv g2 t (Deriv (fun z : R => f x z) t - l2)).
+  assert (is_derive g2 t (Derive (fun z : R => f x z) t - l2)).
     apply derivable_pt_lim_minus with (f1 := fun v => f x v) (f2 := fun t => l2 * t).
-    apply Deriv_prop.
+    apply Derive_correct.
     apply H.
     rewrite /Rminus Rplus_opp_r Rabs_R0.
     apply cond_pos.
@@ -398,7 +398,7 @@ Proof.
   split.
   eexists. apply H0.
   apply Rlt_le.
-  rewrite (Deriv_correct _ _ _ H0).
+  rewrite (is_derive_unique _ _ _ H0).
   apply H.
   rewrite /Rminus Rplus_opp_r Rabs_R0.
   apply cond_pos.

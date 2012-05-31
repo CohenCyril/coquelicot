@@ -6,20 +6,20 @@ Open Scope R_scope.
 
 (** * Deriv *)
 
-Definition Deriv (f : R -> R) (x : R) := Lim (fun h => (f (x+h) - f x)/h) 0.
+Definition Derive (f : R -> R) (x : R) := Lim (fun h => (f (x+h) - f x)/h) 0.
 
-Definition is_deriv f x l := derivable_pt_lim f x l.
-Definition ex_deriv f x := exists l, is_deriv f x l.
+Notation is_derive f x l := (derivable_pt_lim f x l).
+Definition ex_derive f x := exists l, is_derive f x l.
 
 (** ** Compute Deriv *)
 
-Lemma Deriv_correct f x l :
-  is_deriv f x l -> Deriv f x = l.
+Lemma is_derive_unique f x l :
+  is_derive f x l -> Derive f x = l.
 Proof.
   intros.
   apply (uniqueness_step1 f x).
   apply is_lim_Coq_0.
-  apply Lim_prop.
+  apply Lim_correct.
   exists l.
   apply is_lim_Coq_1.
   
@@ -27,21 +27,21 @@ Proof.
   apply uniqueness_step2, H.
 Qed.
 
-Lemma Deriv_prop f x :
-  ex_deriv f x -> is_deriv f x (Deriv f x).
+Lemma Derive_correct f x :
+  ex_derive f x -> is_derive f x (Derive f x).
 Proof.
     intros (l,H).
-  cut (Deriv f x = l).
+  cut (Derive f x = l).
     intros ; rewrite H0 ; apply H.
-  apply Deriv_correct, H.
+  apply is_derive_unique, H.
 Qed.
 
 (** ** Equality *)
 
-Lemma is_deriv_eta :
+Lemma is_derive_ext_loc :
   forall f g x l,
   locally (fun t => f t = g t) x ->
-  is_deriv f x l -> is_deriv g x l.
+  is_derive f x l -> is_derive g x l.
 Proof.
 intros f g x l Heq Hf.
 apply derivable_pt_lim_locally => eps.
@@ -53,23 +53,43 @@ rewrite -Hfg // -(locally_singleton _ _ Heq).
 exact: H.
 Qed.
 
-Lemma ex_deriv_eta :
+Lemma is_derive_ext :
+  forall f g x l,
+  (forall t, f t = g t) ->
+  is_derive f x l -> is_derive g x l.
+Proof.
+intros f g x l Heq.
+apply is_derive_ext_loc.
+now apply locally_forall.
+Qed.
+
+Lemma ex_derive_ext_loc :
   forall f g x,
   locally (fun t => f t = g t) x ->
-  ex_deriv f x -> ex_deriv g x.
+  ex_derive f x -> ex_derive g x.
 Proof.
 intros f g x Hfg (l,Hf).
 exists l.
-apply: is_deriv_eta Hfg Hf.
+apply: is_derive_ext_loc Hfg Hf.
 Qed.
 
-Lemma Deriv_eta :
+Lemma ex_derive_ext :
+  forall f g x,
+  (forall t, f t = g t) ->
+  ex_derive f x -> ex_derive g x.
+Proof.
+intros f g x Heq.
+apply ex_derive_ext_loc.
+now apply locally_forall.
+Qed.
+
+Lemma Derive_ext_loc :
   forall f g x,
   locally (fun t => f t = g t) x ->
-  Deriv f x = Deriv g x.
+  Derive f x = Derive g x.
 Proof.
 intros f g x Hfg.
-unfold Deriv, Lim, Lim_seq.Lim_seq.
+unfold Derive, Lim, Lim_seq.Lim_seq.
 apply f_equal.
 rewrite 2!Sup_seq.LimSup_seq_correct.
 apply Rbar_seq.Rbar_limsup_seq_eq_ge.
@@ -117,164 +137,109 @@ apply Rle_ge; left; apply Rinv_0_lt_compat.
 now apply lt_0_INR.
 Qed.
 
+Lemma Derive_ext :
+  forall f g x,
+  (forall t, f t = g t) ->
+  Derive f x = Derive g x.
+Proof.
+intros f g x Hfg.
+apply Derive_ext_loc.
+now apply locally_forall.
+Qed.
+
 (** * Operations *)
 
-Lemma is_deriv_opp :
-  forall f x, ex_deriv f x ->
-  is_deriv (fun x => - f x) x (- Deriv f x).
+Lemma ex_derive_opp :
+  forall f x, ex_derive f x ->
+  ex_derive (fun x => - f x) x.
+Proof.
+intros f x (df,Df).
+exists (-df).
+now apply derivable_pt_lim_opp.
+Qed.
+
+Lemma Derive_opp :
+  forall f x, ex_derive f x ->
+  Derive (fun x => - f x) x = - Derive f x.
 Proof.
 intros f x Df.
+apply is_derive_unique.
 apply derivable_pt_lim_opp.
-now apply Deriv_prop.
+now apply Derive_correct.
 Qed.
 
-Lemma ex_deriv_opp :
-  forall f x, ex_deriv f x ->
-  ex_deriv (fun x => - f x) x.
+Lemma ex_derive_plus :
+  forall f g x, ex_derive f x -> ex_derive g x ->
+  ex_derive (fun x => f x + g x) x.
 Proof.
-intros f x Df.
-eexists.
-now apply is_deriv_opp.
+intros f g x (df,Df) (dg,Dg).
+exists (df + dg).
+now apply derivable_pt_lim_plus.
 Qed.
 
-Lemma Deriv_opp :
-  forall f x, ex_deriv f x ->
-  Deriv (fun x => - f x) x = - Deriv f x.
-Proof.
-intros f x Df.
-apply Deriv_correct.
-now apply is_deriv_opp.
-Qed.
-
-Lemma is_deriv_plus :
-  forall f g x, ex_deriv f x -> ex_deriv g x ->
-  is_deriv (fun x => f x + g x) x (Deriv f x + Deriv g x).
+Lemma Derive_plus :
+  forall f g x, ex_derive f x -> ex_derive g x ->
+  Derive (fun x => f x + g x) x = Derive f x + Derive g x.
 Proof.
 intros f g x Df Dg.
-apply derivable_pt_lim_plus ; now apply Deriv_prop.
+apply is_derive_unique.
+apply derivable_pt_lim_plus ;
+  now apply Derive_correct.
 Qed.
 
-Lemma ex_deriv_plus :
-  forall f g x, ex_deriv f x -> ex_deriv g x ->
-  ex_deriv (fun x => f x + g x) x.
+Lemma ex_derive_minus :
+  forall f g x, ex_derive f x -> ex_derive g x ->
+  ex_derive (fun x => f x - g x) x.
+Proof.
+intros f g x (df,Df) (dg,Dg).
+exists (df - dg).
+now apply derivable_pt_lim_minus.
+Qed.
+
+Lemma Derive_minus :
+  forall f g x, ex_derive f x -> ex_derive g x ->
+  Derive (fun x => f x - g x) x = Derive f x - Derive g x.
 Proof.
 intros f g x Df Dg.
-eexists.
-now apply is_deriv_plus.
+apply is_derive_unique.
+apply derivable_pt_lim_minus ;
+  now apply Derive_correct.
 Qed.
 
-Lemma Deriv_plus :
-  forall f g x, ex_deriv f x -> ex_deriv g x ->
-  Deriv (fun x => f x + g x) x = Deriv f x + Deriv g x.
+Lemma ex_derive_scal :
+  forall f k x, ex_derive f x ->
+  ex_derive (fun x => k * f x) x.
 Proof.
-intros f g x Df Dg.
-apply Deriv_correct.
-now apply is_deriv_plus.
+intros f k x (df,Df).
+exists (k * df).
+now apply derivable_pt_lim_scal.
 Qed.
 
-Lemma is_deriv_minus :
-  forall f g x, ex_deriv f x -> ex_deriv g x ->
-  is_deriv (fun x => f x - g x) x (Deriv f x - Deriv g x).
-Proof.
-intros f g x Df Dg.
-apply derivable_pt_lim_minus ; now apply Deriv_prop.
-Qed.
-
-Lemma ex_deriv_minus :
-  forall f g x, ex_deriv f x -> ex_deriv g x ->
-  ex_deriv (fun x => f x - g x) x.
-Proof.
-intros f g x Df Dg.
-eexists.
-now apply is_deriv_minus.
-Qed.
-
-Lemma Deriv_minus :
-  forall f g x, ex_deriv f x -> ex_deriv g x ->
-  Deriv (fun x => f x - g x) x = Deriv f x - Deriv g x.
-Proof.
-intros f g x Df Dg.
-apply Deriv_correct.
-now apply is_deriv_minus.
-Qed.
-
-Lemma is_deriv_scal :
-  forall f k x, ex_deriv f x ->
-  is_deriv (fun x => k * f x) x (k * Deriv f x).
+Lemma Derive_scal : (* TODO : remove hypothesis *)
+  forall f k x, ex_derive f x ->
+  Derive (fun x => k * f x) x = k * Derive f x.
 Proof.
 intros f k x Df.
+apply is_derive_unique.
 apply derivable_pt_lim_scal.
-now apply Deriv_prop.
+now apply Derive_correct.
 Qed.
 
-Lemma ex_deriv_scal :
-  forall f k x, ex_deriv f x ->
-  ex_deriv (fun x => k * f x) x.
+Lemma ex_derive_comp (f g : R -> R) (x : R) :
+  ex_derive f (g x) -> ex_derive g x -> ex_derive (fun x => f (g x)) x.
 Proof.
-intros f k x Df.
-eexists.
-now apply is_deriv_scal.
-Qed.
-
-Lemma Deriv_scal :
-  forall f k x, ex_deriv f x ->
-  Deriv (fun x => k * f x) x = k * Deriv f x.
-Proof.
-intros f k x Df.
-apply Deriv_correct.
-now apply is_deriv_scal.
-Qed.
-
-Lemma is_deriv_comp (f g : R -> R) (x df dg : R) : 
-  is_deriv f (g x) df -> is_deriv g x dg -> is_deriv (fun x => f (g x)) x (df * dg).
-Proof.
-  intros Hf Hg.
-  apply derivable_pt_lim_comp ; auto.
-Qed.
-
-Lemma ex_lim_comp (f g : R -> R) (x : R) : 
-  ex_deriv f (g x) -> ex_deriv g x -> ex_deriv (fun x => f (g x)) x.
-Proof.
-  intros.
-  exists (Deriv f (g x) * Deriv g x) ; apply is_deriv_comp.
-  apply Deriv_prop, H.
-  apply Deriv_prop, H0.
+intros (df,Df) (dg,Dg).
+exists (df * dg).
+now apply derivable_pt_lim_comp.
 Qed.
 
 Lemma Deriv_comp (f g : R -> R) (x : R) :
-  ex_deriv f (g x) -> ex_deriv g x -> Deriv (fun x => f (g x)) x = Deriv f (g x) * Deriv g x.
+  ex_derive f (g x) -> ex_derive g x -> Derive (fun x => f (g x)) x = Derive f (g x) * Derive g x.
 Proof.
-  intros.
-  apply Deriv_correct.
-  apply is_deriv_comp.
-  apply Deriv_prop, H.
-  apply Deriv_prop, H0.
-Qed.
-
-Lemma is_deriv_CL (f g : R -> R) (a x lf lg : R) :
-  is_deriv f x lf -> is_deriv g x lg -> is_deriv (fun x => f x + a * g x) x (lf + a * lg).
-Proof.
-  intros Hf Hg.
-  apply derivable_pt_lim_plus.
-  apply Hf.
-  apply derivable_pt_lim_scal, Hg.
-Qed.
-
-Lemma ex_deriv_CL (f g : R -> R) (a x : R) :
-  ex_deriv f x -> ex_deriv g x -> ex_deriv (fun x => f x + a * g x) x.
-Proof.
-  intros (lf,Hf) (lg,Hg).
-  exists (lf + a * lg) ; apply is_deriv_CL ; [apply Hf | apply Hg].
-Qed.
-
-Lemma Deriv_CL (f g : R -> R) (a x : R) :
-  ex_deriv f x -> ex_deriv g x -> Deriv (fun x => f x + a * g x) x = Deriv f x + a * Deriv g x.
-Proof.
-  intros.
-  apply Deriv_correct.
-  apply is_deriv_CL ; apply Deriv_prop.
-  apply H.
-  apply H0.
+intros Df Dg.
+apply is_derive_unique.
+apply derivable_pt_lim_comp ;
+  now apply Derive_correct.
 Qed.
 
 Lemma derivable_pt_lim_sum_f_R0 f d n x :
@@ -295,37 +260,37 @@ now apply H.
 Qed.
 
 (** * nth deriv *)
-Fixpoint Deriv_n (f : R -> R) (n : nat) x :=
+Fixpoint Derive_n (f : R -> R) (n : nat) x :=
   match n with
     | O => f x
-    | S n => Deriv (Deriv_n f n) x
+    | S n => Derive (Derive_n f n) x
   end.
 
-Definition ex_deriv_n f n x :=
+Definition ex_derive_n f n x :=
   match n with
   | O => True
-  | S n => ex_deriv (Deriv_n f n) x
+  | S n => ex_derive (Derive_n f n) x
   end.
 
-Definition is_deriv_n f n x l :=
+Definition is_derive_n f n x l :=
   match n with
   | O => f x = l
-  | S n => is_deriv (Deriv_n f n) x l
+  | S n => is_derive (Derive_n f n) x l
   end.
 
-Lemma Deriv_n_correct f n x l :
-  is_deriv_n f n x l -> Deriv_n f n x = l.
+Lemma is_derive_n_unique f n x l :
+  is_derive_n f n x l -> Derive_n f n x = l.
 Proof.
   case n.
   easy.
   simpl; intros n0 H.
-  apply Deriv_correct, H.
+  now apply is_derive_unique.
 Qed.
 
-Lemma Deriv_n_eta :
+Lemma Derive_n_ext_loc :
   forall f g n x,
   locally (fun t => f t = g t) x ->
-  Deriv_n f n x = Deriv_n g n x.
+  Derive_n f n x = Derive_n g n x.
 Proof.
 intros f g n x Heq.
 pattern x ; apply locally_singleton.
@@ -333,17 +298,26 @@ induction n.
 exact Heq.
 apply: locally_impl_strong IHn.
 apply: locally_align Heq => d Heq y Hy IHn.
-now apply Deriv_eta.
+now apply Derive_ext_loc.
 Qed.
 
-Lemma Deriv_n_comp: forall f n m x,
-  Deriv_n (Deriv_n f m) n x = Deriv_n f (n+m) x.
+Lemma Derive_n_ext :
+  forall f g n x,
+  (forall t, f t = g t) ->
+  Derive_n f n x = Derive_n g n x.
+Proof.
+intros f g n x Heq.
+apply Derive_n_ext_loc.
+now apply locally_forall.
+Qed.
+
+Lemma Derive_n_comp: forall f n m x,
+  Derive_n (Derive_n f m) n x = Derive_n f (n+m) x.
 Proof.
 intros f n m.
 induction n.
 now simpl.
 simpl.
 intros x.
-apply Deriv_eta.
-now apply locally_forall.
+now apply Derive_ext.
 Qed.
