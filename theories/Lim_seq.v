@@ -153,3 +153,17 @@ Proof.
   apply Lim_seq_rw.
   apply is_lim_seq_inv_n.
 Qed.
+
+Lemma is_lim_seq_opp (u : nat -> R) (l : R) :
+  is_lim_seq u l -> is_lim_seq (fun n => -u n) (-l).
+Proof.
+  move => H eps ; case: (H eps) => {H} N H ; exists N => n Hn.
+  replace (-u n--l) with (-(u n-l)) by ring ;
+  rewrite Rabs_Ropp ; by apply H.
+Qed.
+Lemma ex_lim_seq_opp (u : nat -> R) :
+  ex_lim_seq u -> ex_lim_seq (fun n => -u n).
+Proof.
+  case => l Hl ; exists (-l) ; by apply is_lim_seq_opp.
+Qed.
+
