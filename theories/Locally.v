@@ -324,6 +324,73 @@ exact: H.
 Qed.
 
 
+Lemma toto: forall a b (P : R -> posreal -> Prop),
+ (forall (d1 d2:posreal) x, P x d1 -> d2 <= d1 -> P x d2) ->
+ a <= b ->
+ (forall x, a <= x <= b -> exists d, P x d) ->
+  exists d, forall x, a <= x <= b -> P x d.
+intros a b P H1 H2 H3.
+pose (g:=fun r=> a <= r <= b /\  exists d, forall x, a <= x <= r -> P x d).
+destruct (completeness g) as (d,Hd).
+unfold bound, is_upper_bound.
+exists b; intros x; unfold g; intros Hx.
+apply Hx.
+exists a.
+unfold g.
+split.
+split.
+now apply Req_le.
+apply H2.
+destruct (H3 a) as (d,Hd).
+split.
+now apply Req_le.
+apply H2.
+exists d.
+intros x Hx.
+replace x with a.
+apply Hd.
+apply Rle_antisym; apply Hx.
+
+assert (g d).
+
+specialize (adherence_P3 g).
+unfold adherence,point_adherent.
+
+
+assert (U:(compact (fun r=> a <= r <= b))) by apply compact_P3.
+apply compact_P2 in U.
+apply adherence_P2 in U.
+
+
+
+unfold adherence,point_adherent,included in U.
+
+
+
+case (Rle_dec d b).
+intros H; case H.
+
+admit.
+Bolzano_Weierstrass
+admit.
+
+
+
+
+intros H'.
+rewrite H' in Hd.
+destruct Hd as (Y1,Y2).
+unfold is_upper_bound in Y1.
+
+
+auto with real.
+
+
+
+
+
+completeness
+
 
 Lemma toto: forall a b (P:R->R->Prop),
  ( forall d x, (forall y : R, Rabs (y - x) < d -> P x y) ->
@@ -335,11 +402,11 @@ Lemma toto: forall a b (P:R->R->Prop),
 intros a b P KK H.
 assert (T1:(compact (fun r => a <= r <= b))).
 apply compact_P3.
-pose (ind := fun delta => exists x, forall y : R, Rabs (y - x) < delta -> P x y).
-pose (g:= fun delta x => forall y : R, Rabs (y - x) < delta -> P x y).
+pose (ind := fun delta => 0 < delta).
+pose (g:= fun delta x => 0 < delta /\ forall y : R, Rabs (y - x) < delta -> P x y).
 assert (T2:(forall x : R, (exists y : R, g x y) -> ind x)).
 unfold ind,g.
-easy.
+admit. (* easy.*)
 pose (fam:=mkfamily ind g T2).
 specialize (T1 fam).
 assert (T3:covering_open_set (fun r : R => a <= r <= b) fam).
@@ -349,7 +416,7 @@ simpl.
 intros x Hx.
 destruct (H x Hx) as (d,Hd).
 exists d.
-exact Hd.
+admit. (* exact Hd.*)
 
 unfold family_open_set.
 intros d; unfold fam,g.
