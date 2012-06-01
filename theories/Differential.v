@@ -1,6 +1,6 @@
 Require Import Reals.
 Require Import ssreflect.
-Require Import Arithmetique Locally Deriv_fct.
+Require Import Rcomplements Locally Deriv_fct.
 
 Lemma MVT_cor4:
   forall (f : R -> R) a eps,
@@ -433,7 +433,7 @@ Proof.
   exists delta ; simpl in Df ; intros.
   replace (f y0 - f x - l * (y0 - x)) with (f y0 - f x - (l * (y0 - x) + 0 * (y - y))) by ring.
   assert (Rabs (y0 - x) = Rmax (Rabs (y0 - x)) (Rabs (y-y))).
-    rewrite Rmax_comm ; apply sym_equal, Rmax_eq_l.
+    rewrite Rmax_comm ; apply sym_equal, Rmax_right.
     rewrite Rminus_eq0 Rabs_R0 ; apply Rabs_pos.
   rewrite H0 ; clear H0.
   apply (Df _ _ H).
@@ -518,7 +518,7 @@ Proof.
     apply Rmult_le_compat_l.
     apply Rlt_le, eps1.
     rewrite Rmax_mult.
-    apply Rmax_le.
+    apply Rmax_le_compat.
     rewrite Rplus_assoc Rmult_plus_distr_r.
     apply (Rle_trans _ (Rabs (f2 x' y' - f2 x y - (l2_1 * (x' - x) + l2_2 * (y' - y)))
       + Rabs (l2_1 * (x' - x) + l2_2 * (y' - y)))).

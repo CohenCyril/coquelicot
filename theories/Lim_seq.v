@@ -1,4 +1,4 @@
-Require Import Reals Arithmetique Markov.
+Require Import Reals Rcomplements Markov.
 Require Import Sup_seq Rbar_theory Total_sup ssreflect.
 Open Scope R_scope.
 
@@ -15,7 +15,7 @@ Lemma is_lim_seq_correct (u : nat -> R) (l : R) :
   is_lim_seq u l <-> Rbar_is_lim_seq (fun n => Finite (u n)) (Finite l).
 Proof.
   split => /= Hl eps ; case: (Hl eps) => {Hl} N Hl ; exists N => n Hn ;
-  by apply Rabs_lt_encadre_cor, Hl.
+  by apply Rabs_lt_between', Hl.
 Qed.
 Lemma Lim_seq_correct (u : nat -> R) :
   Lim_seq u = real (Rbar_lim_seq (fun n => Finite (u n))).

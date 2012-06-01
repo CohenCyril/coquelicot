@@ -1,6 +1,6 @@
 Require Import Reals Div2.
 Require Import ssreflect ssrbool eqtype seq.
-Require Import Markov Arithmetique Floor Total_sup Sup_seq Lim_seq Deriv_fct SF_seq.
+Require Import Markov Rcomplements Floor Total_sup Sup_seq Lim_seq Deriv_fct SF_seq.
 
 
 (*
@@ -901,7 +901,7 @@ Proof.
     (nth 0 (RInt_part a b n) (S i)) -> a <= x <= b.
     move => x {i Hi} i Hi lub ; split.
     (* * a <= x *)
-    apply Rle_trans with (2 := proj1 lub) ; apply Rmin_le.
+    apply Rle_trans with (2 := proj1 lub) ; apply Rmin_case.
     pattern a at 1 ; replace a with (head 0 (RInt_part a b n)).
     replace (nth 0 (0 :: RInt_part a b n) (S i)) with (nth 0 (RInt_part a b n) i) by intuition ; 
     apply sorted_head.
@@ -1062,7 +1062,7 @@ Proof.
     (nth 0 (RInt_part a b n) (S i)) -> a <= x <= b.
     move => x {i Hi} i Hi lub ; split.
     (* * a <= x *)
-    apply Rle_trans with (2 := proj1 lub) ; apply Rmin_le.
+    apply Rle_trans with (2 := proj1 lub) ; apply Rmin_case.
     pattern a at 1 ; replace a with (head 0 (RInt_part a b n)).
     replace (nth 0 (0 :: RInt_part a b n) (S i)) with (nth 0 (RInt_part a b n) i) by intuition ; 
     apply sorted_head.
@@ -2196,7 +2196,7 @@ Proof.
 
   rewrite SF_val_fun_rw SF_sup_fun_rw SF_inf_fun_rw ;
   case: RInt_part_nat => {Hx} [ [i [Hx Hi]] | Hx] ; simpl projT1 ;
-  apply Rabs_le_encadre ; rewrite Ropp_minus_distr' ; split ; 
+  apply Rabs_le_between ; rewrite Ropp_minus_distr' ; split ; 
   apply Rplus_le_compat ; try apply Ropp_le_contravar ; apply Rbar_finite_le.
   
   have Hi' : (nth 0 (RInt_part a b n) i <= nth 0 (RInt_part a b n) (S i)) ;

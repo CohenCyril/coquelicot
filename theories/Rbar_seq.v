@@ -1,6 +1,6 @@
 Require Import Reals Markov.
 Require Import ssreflect.
-Require Import Rbar Rbar_bound Arithmetique.
+Require Import Rbar Rbar_bound Rcomplements.
 
 (** * Sup of a sequence *)
 

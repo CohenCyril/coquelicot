@@ -1,6 +1,6 @@
 Require Import Reals.
-Require Import ssreflect seq.
-Require Import Arithmetique Locally Deriv_fct RInt Differential.
+Require Import ssreflect ssrbool seq.
+Require Import Rcomplements Locally Deriv_fct RInt Differential.
 
 Fixpoint Rn n T :=
   match n with
@@ -137,7 +137,7 @@ Fixpoint is_const (e : expr) n : bool :=
   end.
 
 Lemma is_const_correct :
-  forall e n, is_const e n ->
+  forall e n, is_const e n = true ->
   forall l x1 x2,
   interp (set_nth 0 l n x1) e = interp (set_nth 0 l n x2) e.
 Proof.
@@ -548,7 +548,7 @@ apply cond_pos.
 intros u Hu.
 apply H.
 apply Rle_lt_trans with (pos_div_2 eps).
-now apply Rabs_le_encadre_cor.
+now apply Rabs_le_between'.
 rewrite (double_var eps).
 rewrite -(Rplus_0_r (pos_div_2 eps)).
 apply Rplus_lt_compat_l.
