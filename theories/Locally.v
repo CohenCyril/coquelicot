@@ -323,6 +323,63 @@ intros h [Zh Hh].
 exact: H.
 Qed.
 
+
+
+Lemma toto: forall a b (P:R->R->Prop),
+ ( forall d x, (forall y : R, Rabs (y - x) < d -> P x y) ->
+    exists delta : posreal,
+     forall x0 : R,
+       Rabs (x0 - x) < delta -> forall y : R, Rabs (y - x0) < d -> P x0 y) ->
+   (forall x, a <= x <= b -> exists delta, forall y, (Rabs (y-x) < delta -> P x y)) ->
+  exists delta, forall x y, a <= x <= b -> Rabs (y-x) < delta -> P x y.
+intros a b P KK H.
+assert (T1:(compact (fun r => a <= r <= b))).
+apply compact_P3.
+pose (ind := fun delta => exists x, forall y : R, Rabs (y - x) < delta -> P x y).
+pose (g:= fun delta x => forall y : R, Rabs (y - x) < delta -> P x y).
+assert (T2:(forall x : R, (exists y : R, g x y) -> ind x)).
+unfold ind,g.
+easy.
+pose (fam:=mkfamily ind g T2).
+specialize (T1 fam).
+assert (T3:covering_open_set (fun r : R => a <= r <= b) fam).
+split.
+unfold covering, fam, g.
+simpl.
+intros x Hx.
+destruct (H x Hx) as (d,Hd).
+exists d.
+exact Hd.
+
+unfold family_open_set.
+intros d; unfold fam,g.
+simpl.
+unfold open_set.
+intros x H1.
+unfold neighbourhood, included, disc.
+apply KK.
+apply H1.
+
+specialize (T1 T3).
+destruct T1 as (D, (HD1,HD2)).
+unfold family_finite, domain_finite in HD1, HD2.
+destruct HD2 as (l,Hl).
+exists (MinRlist l).
+intros x y Hx Hy.
+destruct (HD1 x Hx).
+destruct H0 as (Y1,Y2).
+unfold fam,g in Y1;simpl in Y1.
+apply Y1.
+apply Rlt_le_trans with (1:=Hy).
+apply MinRlist_P1.
+apply Hl.
+simpl; split.
+unfold ind.
+now exists x.
+exact Y2.
+Qed.
+
+
 Lemma derivable_pt_lim_locally :
   forall f x l,
   derivable_pt_lim f x l <->
