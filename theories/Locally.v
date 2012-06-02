@@ -324,34 +324,109 @@ exact: H.
 Qed.
 
 
-Lemma toto: forall a b (P : R -> posreal -> Prop),
- (forall (d1 d2:posreal) x, P x d1 -> d2 <= d1 -> P x d2) ->
- a <= b ->
- (forall x, a <= x <= b -> exists d, P x d) ->
-  exists d, forall x, a <= x <= b -> P x d.
-intros a b P H1 H2 H3.
-pose (g:=fun r=> a <= r <= b /\  exists d, forall x, a <= x <= r -> P x d).
-destruct (completeness g) as (d,Hd).
-unfold bound, is_upper_bound.
-exists b; intros x; unfold g; intros Hx.
-apply Hx.
-exists a.
+Require Import Classical.
+
+Lemma is_lub_eps: forall P x (eps:posreal), is_lub P x -> 
+   exists y, x-eps <= y <= x /\ P y.
+intros P x eps H.
+case (classic (exists y : R, x - eps <= y <= x /\ P y)).
+easy.
+intros H1.
+assert (forall y, ~(x - eps <= y <= x /\ P y)).
+now apply not_ex_all_not.
+absurd (is_upper_bound P (x-eps)).
+intros H2.
+absurd (x <= x-eps).
+apply Rlt_not_le.
+apply Rplus_lt_reg_r with (-x+eps).
+ring_simplify.
+apply cond_pos.
+now apply H.
+intros z Hz.
+case (Rle_or_lt z (x-eps)).
+easy.
+intros Hz1.
+case (Rle_or_lt z x); intros Hz2.
+absurd (x - eps <= z <= x /\ P z).
+apply H0.
+split.
+split.
+now left.
+exact Hz2.
+exact Hz.
+absurd (x < z).
+apply Rle_not_lt.
+now apply H.
+exact Hz2.
+Qed.
+
+
+
+Lemma toto: forall a b (P : R -> R -> Prop),
+  a <= b ->
+  (forall x, a <= x <= b -> exists delta:posreal, forall y, (Rabs (y-x) < delta -> P x y)) ->
+    exists delta:posreal, forall x y, a <= x <= b -> Rabs (y-x) < delta -> P x y.
+intros a b P H1 H2.
+pose (g:=fun r=> a <= r <= b /\  
+    exists d:posreal, forall x, a <= x <= r -> forall y, Rabs (y - x) < d-> P x y).
+(* *)
+assert (g a).
 unfold g.
 split.
 split.
 now apply Req_le.
-apply H2.
-destruct (H3 a) as (d,Hd).
+apply H1.
+destruct (H2 a) as (da,Hda).
 split.
 now apply Req_le.
-apply H2.
-exists d.
+apply H1.
+exists da.
 intros x Hx.
 replace x with a.
-apply Hd.
+apply Hda.
 apply Rle_antisym; apply Hx.
-
+(* *)
+destruct (completeness g) as (d,Hd).
+unfold bound, is_upper_bound.
+exists b; intros x; unfold g; intros Hx.
+apply Hx.
+now exists a.
+(* *)
 assert (g d).
+assert (a <= d <= b).
+split.
+now apply Hd.
+apply Hd.
+unfold g; intros z Hz; apply Hz.
+split.
+exact H0.
+destruct (H2 _ H0) as (s,Hs).
+destruct (is_lub_eps _ _ s Hd) as (z,Hz).
+destruct Hz as (Hz1,(Hz2,(dz,Hz3))).
+exists (mkposreal _ (Rmin_stable_in_posreal dz s)).
+intros x Hx y; simpl; intros Hy.
+case (Rle_or_lt x z).
+intros Hx1.
+apply Hz3.
+split.
+apply Hx.
+exact Hx1.
+apply Rlt_le_trans with (1:=Hy).
+apply Rmin_l.
+intros Hx1.
+apply H1 with s.
+apply Hz3.
+split.
+apply Hx.
+exact Hx1.
+simpl.
+apply Rmin_l.
+
+
+
+(Rmin d1 d).
+
+
 
 specialize (adherence_P3 g).
 unfold adherence,point_adherent.
@@ -360,7 +435,7 @@ unfold adherence,point_adherent.
 assert (U:(compact (fun r=> a <= r <= b))) by apply compact_P3.
 apply compact_P2 in U.
 apply adherence_P2 in U.
-
+is_lub_eps
 
 
 unfold adherence,point_adherent,included in U.
