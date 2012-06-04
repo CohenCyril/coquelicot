@@ -1,6 +1,6 @@
 Require Import Reals Div2.
 Require Import ssreflect ssrbool eqtype seq.
-Require Import Markov Rcomplements Floor Total_sup Sup_seq Lim_seq Deriv_fct SF_seq.
+Require Import Markov Rcomplements Floor Total_sup Sup_seq Lim_seq Derive SF_seq.
 
 
 (*

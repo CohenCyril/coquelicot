@@ -1,6 +1,6 @@
 Require Import Reals.
 Require Import ssreflect.
-Require Import Rcomplements Locally Deriv_fct.
+Require Import Rcomplements Locally Derive.
 
 Lemma MVT_cor4:
   forall (f : R -> R) a eps,
