@@ -272,24 +272,36 @@ Lemma derivable_differentiable_pt_lim : forall f x y l2,
     differentiable_pt_lim f x y (Derive (fun u => f u y) x) l2. 
 Proof.
   intros f x y l2 Dx.
-
-  assert (exists e, forall y, x-e <= y <= x+e -> forall eps, exists d, forall h,
-      Rabs h < d -> Rabs ((f (x + h) y - f x y) - Derive (fun t => f x t) x*h) < eps*h).
-  fold derivable_pt_lim_aux.
-
-
- 
-  unfold ex_derive in He.
-  generalize toto.
-
-  move /derivable_pt_lim_locally => Dy.
+  (* . *)
+  assert (Dx2:(locally (fun u => derivable_pt_lim_aux (fun t => f t u) x (Derive (fun t => f t u) x)) y)).
+  apply locally_impl with (2:=Dx).
+  apply locally_forall.
+  intros z Hz.
+  apply equiv_deriv_pt_lim_0.
+  apply Derive_correct.
+  exact Hz.
+  unfold derivable_pt_lim_aux in Dx2.
+  assert (Dx3: forall eps:posreal, locally_2d (fun u v : R =>
+            Rabs (f u v - f x v - Derive (fun t : R => f t v) x * (u - x)) <=
+            eps * Rabs (u - x)) x y).
+  apply toto2.
+  exact Dx2.
+  clear Dx Dx2.
+  (* . *)
+  intros Dy.
+  assert (Dy2:derivable_pt_lim_aux (fun t => f x t) y l2).
+  now apply equiv_deriv_pt_lim_0.
+  clear Dy.
+  (* . *)
   move /continuity_pt_locally => Cx eps.
   set (eps' := pos_div_2 (pos_div_2 eps)).
-  move: (Dy eps') => {Dy} [dy Hy].
-  unfold ex_deriv, is_deriv, derivable_pt_lim in Dx.
-  move: (locally_and _ _ _ Dx (Cx eps')) => {Dx Cx} [dx Hx].
-  exists (mkposreal _ (Rmin_stable_in_posreal dx dy)) => /= u v Hu Hv.
-  set (l1 := Deriv (fun u : R => f u y) x).
+  move: (Dy2 eps') => {Dy2} [dy Hy].
+  move: (Dx3 eps') => {Dx3} [dx Hx].
+  move: (Cx eps') => {Cx} [dx2 Cx].
+  (* *)
+  pose (d1:=(mkposreal _ (Rmin_stable_in_posreal dx dy))).
+  exists (mkposreal _ (Rmin_stable_in_posreal d1 dx2)) => /= u v Hu Hv.
+  set (l1 := Derive (fun u : R => f u y) x).
   replace (f u v - f x y - (l1 * (u - x) + l2 * (v - y))) with
     ((f u v - f x v - l1 * (u - x)) + (f x v - f x y - l2 * (v - y))) by ring.
   apply Rle_trans with (1 := Rabs_triang _ _).
@@ -299,106 +311,45 @@ Proof.
   (* *)
   apply Rle_trans with (pos_div_2 eps * Rabs (u - x)).
   replace  (f u v - f x v - l1 * (u - x)) with
-    ((f u v - f x v - Deriv (fun u : R => f u v) x *(u-x))+ (u-x)*(Deriv (fun u : R => f u v) x-l1)) by ring.
+    ((f u v - f x v - Derive (fun u : R => f u v) x *(u-x))+ (u-x)*(Derive (fun u : R => f u v) x-l1)) by ring.
   apply Rle_trans with (1:=Rabs_triang _ _).
   replace (pos (pos_div_2 eps)) with (eps' + eps') by (apply sym_eq ; apply double_var).
   rewrite Rmult_plus_distr_r.
   apply Rplus_le_compat.
-  case (Req_dec u x).
-  intros T; rewrite T.
-  ring_simplify (f x v - f x v - Deriv (fun u0 : R => f u0 v) x * (x - x)).
-  ring_simplify (x-x).
-  rewrite Rabs_R0 Rmult_0_r.
-  now apply Req_le.
-  intros T.
-  destruct (Hx v).
-  apply Rlt_le_trans with (1:=Hv).
+  apply Hx.
+  apply Rlt_le_trans with (1:=Hu).
+  apply Rle_trans with (1:=Rmin_l _ _).
   apply Rmin_l.
-
-
-
-  apply Deriv_prop in H.
-  unfold is_deriv, derivable_pt_lim in H.
-  
-
-
-  unfold ex_deriv in H.
- 
-; ring_simplify.
-
-
-
-  apply Rle_trans with (eps' * Rabs (u - x)).
-  replace  (f u v - f x v - l1 * (u - x)) with
-    ((f u v - f x v - Deriv (fun u : R => f u v) x *(u-x))+ (u-x)*(Deriv (fun u : R => f u v) x-l1)) by ring.
-  apply Rle_trans with (1:=Rabs_triang _ _).
-  destruct (Hx v).
-
-admit.
-
-apply Deriv_prop in H.
-unfold is_deriv, derivable_pt_lim in H.
-
-admit.
-
-
-
-
-admit.
-
-
-
-
-
-(*
-  apply bounded_variation => t Ht.
-  assert (is_deriv g t (Deriv (fun z : R => f z v) t - l1)).
-    apply derivable_pt_lim_minus with (f2 := fun t => l1 * t).
-    apply Deriv_prop.
-    apply Hx.
-    now apply Rle_lt_trans with (1 := Ht).
-    rewrite -{2}(Rmult_1_r l1).
-    apply derivable_pt_lim_scal.
-    apply derivable_pt_lim_id.
-  split.
-  eexists. apply H0.
-  apply Rlt_le.
-  rewrite (Deriv_correct _ _ _ H0).
-  apply H with (2 := Hv).
-  now apply Rle_lt_trans with (1 := Ht).
-*)
-
+  apply Rlt_le_trans with (1:=Hv).
+  apply Rle_trans with (1:=Rmin_l _ _).
+  apply Rmin_l.
+  rewrite (Rmult_comm eps' _) Rabs_mult.
   apply Rmult_le_compat_l.
-  apply Rlt_le.
-  apply cond_pos.
+  apply Rabs_pos.
+  unfold l1; left.
+  apply Cx.
+  apply Rlt_le_trans with (1:=Hv).
+  apply Rmin_r.
+  apply Rmult_le_compat_l.
+  left; apply cond_pos.
   apply Rmax_l.
   (* *)
   apply Rle_trans with (eps' * Rabs (v - y)).
-  apply bounded_variation => t Ht.
-  assert (is_deriv g2 t (Deriv (fun z : R => f x z) t - l2)).
-    apply derivable_pt_lim_minus with (f1 := fun v => f x v) (f2 := fun t => l2 * t).
-    apply Deriv_prop.
-    apply H.
-    rewrite /Rminus Rplus_opp_r Rabs_R0.
-    apply cond_pos.
-    now apply Rle_lt_trans with (1 := Ht).
-    rewrite -{2}(Rmult_1_r l2).
-    apply derivable_pt_lim_scal.
-    apply derivable_pt_lim_id.
-  split.
-  eexists. apply H0.
-  apply Rlt_le.
-  rewrite (Deriv_correct _ _ _ H0).
-  apply H.
-  rewrite /Rminus Rplus_opp_r Rabs_R0.
-  apply cond_pos.
-  now apply Rle_lt_trans with (1 := Ht).
-  apply Rmult_le_compat_l.
-  apply Rlt_le.
-  apply cond_pos.
+  apply Hy.
+  apply Rlt_le_trans with (1:=Hv).
+  apply Rle_trans with (1:=Rmin_l _ _).
+  apply Rmin_r.
+  apply Rmult_le_compat.
+  left; apply cond_pos.
+  apply Rabs_pos.
+  rewrite <- (Rplus_0_r eps').
+  rewrite (double_var (pos_div_2 eps)); unfold eps'.
+  apply Rplus_le_compat_l.
+  replace (pos_div_2 eps / 2) with (pos eps') by reflexivity.
+  left; apply cond_pos.
   apply Rmax_r.
-Qed.
-*)
+  Qed.
+
 
 Lemma derivable_differentiable_pt_lim : forall f x y,
   locally_2d (fun u v => ex_derive (fun z => f z v) u) x y ->

@@ -324,6 +324,9 @@ exact: H.
 Qed.
 
 
+
+(*
+
 Require Import Classical.
 
 Lemma is_lub_eps: forall P x (eps:posreal), is_lub P x -> 
@@ -414,6 +417,9 @@ exact Hx1.
 apply Rlt_le_trans with (1:=Hy).
 apply Rmin_l.
 intros Hx1.
+Admitted.
+
+(*
 apply H1 with s.
 apply Hz3.
 split.
@@ -520,6 +526,151 @@ unfold ind.
 now exists x.
 exact Y2.
 Qed.
+*)
+*)
+
+
+
+Lemma toto2: forall (P:posreal -> R -> R->Prop) x y,
+   locally (fun u => forall eps:posreal, locally (fun t => P eps t u) x) y -> 
+      forall eps:posreal, locally_2d (P eps) x y.
+intros P x0 y0 (d1,H1) eps; unfold locally in H1.
+assert (T1:(compact (fun r => y0-d1/2 <= r <= y0+d1/2))).
+apply compact_P3. 
+(* *)
+pose (ind := fun delta => exists y:R, 0 < delta /\  Rabs (y - y0) < d1 /\ forall x, Rabs (x - x0) < delta -> Rabs (y - y0) < delta -> P eps x y).
+pose (g:= fun delta y => 0 < delta /\  Rabs (y - y0) < d1 /\ forall x, Rabs (x - x0) < delta -> Rabs (y - y0) < delta -> P eps x y).
+assert (T2:(forall x : R, (exists y : R, g x y) -> ind x)).
+unfold ind,g.
+easy.
+pose (fam:=mkfamily ind g T2). 
+specialize (T1 fam).
+(* *)
+assert (T3:covering_open_set (fun r : R =>  y0-d1/2 <= r <= y0+d1/2) fam).
+split. 
+unfold covering, fam, g.
+simpl. 
+intros y Hy.
+assert (Rabs (y - y0) < d1).
+admit.
+destruct (H1 _ H eps) as (d,Hd).
+exists d.
+split.
+apply cond_pos.
+split.
+exact H.
+intros x Hx Hy2.
+now apply Hd.
+(* *)
+unfold family_open_set.
+intros d; unfold fam,g.
+simpl.
+unfold open_set.
+intros y (Hd,(Hy1,Hy2)).
+unfold neighbourhood.
+assert (0 < d1 - Rabs (y - y0)).
+admit.
+exists (mkposreal _ H).
+unfold included, disc; simpl.
+intros y1 Hy3.
+split.
+apply Hd.
+split.
+admit.
+intros.
+
+admit. (* ??? *)
+
+
+
+specialize (T1 T3).
+destruct T1 as (D, (HD1,HD2)).
+unfold family_finite, domain_finite in HD1, HD2.
+destruct HD2 as (l,Hl).
+assert (0 < MinRlist l).
+admit.
+exists (mkposreal (MinRlist l) H).
+simpl.
+intros y x Hx Hy.
+destruct (HD1 x).
+admit.
+destruct H0 as (Y1,Y2).
+unfold fam,g in Y1;simpl in Y1.
+apply Y1.
+apply Rlt_le_trans with (1:=Hx).
+apply MinRlist_P1.
+apply Hl.
+simpl; split.
+unfold ind.
+now exists x.
+exact Y2.
+Qed.
+*)
+
+
+
+assert (forall x : R,
+        y0-d1/2 <= x <= y0+d1/2 ->
+        exists delta : posreal, forall y : R, Rabs (y - x) < delta -> P eps y x).
+intros x Hx.
+assert (Rabs (x - y0) < d1).
+admit.
+destruct (H1 x H eps) as (d2,H2).
+exists d2.
+intros y Hy.
+apply H2.
+admit.
+assert (y0-d1/2 <= y0+d1/2).
+admit.
+destruct (toto _ _ _ H0 H) as (d,Hd).
+
+unfold locally_2d.
+exists (mkposreal _ (Rmin_stable_in_posreal d1 d)).
+simpl; intros u v Hu Hv.
+apply Hd.
+admit.
+
+
+(* *)
+assert (y-d1/2 <= y+d1/2).
+admit.
+specialize (toto (y-d1/2) (y+d1/2) (fun y z => forall t, Rabs (t - x) < d1 -> (P eps t y)) H).
+intros H3.
+destruct H3 as (d2,H2).
+intros z Hz.
+unfold locally in H1.
+assert (Rabs (z - y) < d1).
+admit.
+destruct (H1 z H0 eps) as (d2,H2).
+exists d1.
+intros u Hu t Ht.
+apply H2.
+exists d2.
+exact H2.
+(* *)
+exists (mkposreal _ (Rmin_stable_in_posreal d1 d2)).
+simpl; intros u v Hu Hv.
+apply H2.
+
+
+
+
+apply H2.
+
+
+
+apply H1.
+
+
+unfold locally_2d.
+
+
+
+
+
+Admitted.
+
+
 
 
 Lemma derivable_pt_lim_locally :
