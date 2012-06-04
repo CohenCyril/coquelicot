@@ -3110,8 +3110,3 @@ Lemma RInt_Derive (f : R -> R) (a b : R) (eps : posreal) :
   RInt (Derive f) a b = f b - f a.
 Proof.
 Admitted. (** Admitted. *)
-
-Lemma param_RInt_Derive (f : R -> R -> R) (a b : R) (x : R) :
-  Derive (fun x => RInt (fun y => f x y) a b) x = RInt (fun y => Derive (fun x => f x y) x) a b.
-Proof.
-Admitted.
