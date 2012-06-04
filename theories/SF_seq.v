@@ -741,30 +741,29 @@ Proof.
   apply lt_S_n, Hi.
 Qed.
 
-Lemma sorted_incr (s : seq R) i j : sorted Rle s -> (i < j)%nat -> (j < size s)%nat
+Lemma sorted_incr (s : seq R) i j : sorted Rle s -> (i <= j)%nat -> (j < size s)%nat
   -> forall x0, nth x0 s i <= nth x0 s j.
 Proof.
   elim: i j s => [| i IH] j s Hs Hij Hj x0.
   rewrite nth0 ; by apply sorted_head.
   case: j Hij Hj => [| j] Hij Hj.
-  by apply lt_n_O in Hij.
+  by apply le_Sn_O in Hij.
   case: s Hs Hj => [| h s] Hs Hj.
   by apply lt_n_O in Hj.
   apply (IH j s) with (x0 := x0) => //.
   case: (s) Hs => {s Hj} [| h0 s] Hs ; apply Hs.
-  apply lt_S_n, Hij.
-  apply lt_S_n, Hj.
+  apply le_S_n, Hij.
+  apply le_S_n, Hj.
 Qed.
 
 Lemma sorted_last (s : seq R) i : 
   sorted Rle s -> (i < size s)%nat -> forall x0, nth x0 s i <= last x0 s.
 Proof.
   move => Hs Hi x0 ; rewrite -nth_last.
-  case: s Hs Hi => [| h s] Hs /= Hi.
+  case: s Hi Hs => [| h s] Hi Hs //.
   by apply lt_n_O in Hi.
-  apply lt_n_Sm_le, le_lt_eq_dec in Hi ; case: Hi => Hi.
   apply sorted_incr => //.
-  rewrite Hi ; apply Rle_refl.
+  intuition.
 Qed.
 
 (** ** from SF_seq to StepFun *)
