@@ -2695,6 +2695,29 @@ Proof.
   exists (sf_SF_val_fun f a b n) ; exists (SF_psi_r f a b n) ; split => // ;
   apply ex_RInt_correct_0, Hri.
 Defined.
+
+Lemma ex_RInt_correct_4 (f : R -> R) (a b : R) : Riemann_integrable f a b -> 
+  forall (eps : posreal), exists n, 
+    Rbar_le (RInt_sup f a b n) (Rbar_plus (RInt_inf f a b n) (Finite eps)).
+Proof.
+  wlog: a b / (a <= b) => [Hw | Hab].
+    case: (Rle_lt_dec a b) => Hab Hri eps.
+    by apply Hw.
+    apply RiemannInt_P1 in Hri ; apply Rlt_le in Hab ;
+    case: (Hw b a Hab Hri eps) => {Hw} n Hw ; exists n.
+    rewrite RInt_sup_bound RInt_inf_bound ; apply Hw.
+  move => Hri eps ; set e2 := pos_div_2 eps ; 
+  case: (Hri e2) => phi [psi [Hle Heps]] ;
+  set SF_max := mkStepFun (StepFun_P28 1 phi psi) ;
+  set SF_min := mkStepFun (StepFun_P28 (-1) phi psi).
+
+  have : forall t : R, a <= t <= b -> SF_min t <= f t <= SF_max t.
+    move => t Ht ; rewrite /SF_min /SF_max /= Ropp_mult_distr_l_reverse Rmult_1_l ; 
+    apply Rabs_le_between', Hle ; rewrite /Rmin /Rmax ; case: Rle_dec => //.
+  move => {Hle} Hle.
+  
+Admitted.
+
 Lemma ex_RInt_correct_3 (f : R -> R) (a b : R) :
   Riemann_integrable f a b -> ex_RInt f a b.
 Proof.
@@ -2703,7 +2726,160 @@ Proof.
     by apply Hw.
     apply Rlt_le in Hab ; apply  ex_RInt_bound, Hw => // ; 
     by apply RiemannInt_P1.
-Admitted. (** Admitted. *)
+  move => Hri.
+  case: (Riemann_integrable_bound f a b Hri) => M Hmax.
+  have : (exists m, forall x : R, Rmin a b <= x <= Rmax a b -> m <= f x).
+    have: exists m : R, forall x : R, Rmin a b <= x <= Rmax a b -> 0+ (-1)* f x <= m.
+      apply (Riemann_integrable_bound (fun x => 0+ (-1)* f x) a b).
+      apply RiemannInt_P10 => // ; apply RiemannInt_P14.
+    case => m Hm ; exists (-m) => h Hx ; apply Ropp_le_cancel ;
+    rewrite Ropp_involutive ; replace (- f h) with (0 + -1 * f h) by ring => // ;
+    by apply Hm.
+  case => m Hmin.
+  have H : (Finite (real (Rbar_inf_seq (RInt_sup f a b))) = Rbar_inf_seq (RInt_sup f a b)).
+    rewrite /Rbar_inf_seq ; case: Rbar_ex_inf_seq ; case => glb //=.
+  (* RInt_sup --> p_infty *)
+    move: (glb M O) => {glb} glb.
+    contradict glb ; apply Rbar_le_not_lt.
+    rewrite /RInt_sup SF_sup_ly /= ;
+    replace (Finite M) with 
+    (Rbar_div_pos (Finite M) (mkposreal _ (pow_lt 2 O Rlt_R0_R2))).
+    apply Rbar_div_pos_le ; rewrite /= Rmult_1_l.
+    rewrite /Sup_fct /Lub_Rbar_ne ; case: ex_lub_Rbar_ne => l Hl /=.
+    replace (Rbar_plus _ _) with l.
+    apply Hl => {Hl} _ [x [-> Hl]] ; apply Rbar_finite_le, Hmax ;
+    replace a with (a + 0 * (b - a) / 1) by field ;
+    pattern b at 2 4 ; replace b with (a + (b - a) / 1) by field ;
+    by apply Hl.
+    case: (l) => //= r ; by rewrite Rplus_0_r.
+    simpl ; apply Rbar_finite_eq ; field.
+    
+  (* RInt_inf --> p_infty *)
+    case: (glb m) => {glb} n glb.
+    contradict glb ; apply Rbar_le_not_lt.
+    rewrite /RInt_sup SF_sup_ly.
+    replace (Finite m) with 
+      (Rbar_div_pos (Finite (2^n*m)) (mkposreal _ (pow_lt 2 n Rlt_R0_R2))).
+    apply Rbar_div_pos_le.
+    replace (2^n) with (INR (Peano.pred (size (RInt_part a b n)))).
+    have: (forall i, (i < size (RInt_part a b n))%nat -> 
+      Rmin a b <= nth 0 (RInt_part a b n) i <= Rmax a b).
+      move => i Hi ; 
+      replace (Rmin a b) with (head 0 (RInt_part a b n)).
+      replace (Rmax a b) with (last 0 (RInt_part a b n)).
+      split.
+      apply sorted_head => // ; by apply RInt_part_sort.
+      apply sorted_last => // ; by apply RInt_part_sort.
+      rewrite /Rmax ; case: Rle_dec => // _ ; 
+      rewrite -nth_last size_mkseq nth_mkseq //= pow2_INR ;
+      field ; apply Rgt_not_eq ; intuition.
+      rewrite /Rmin ; case: Rle_dec => // _ ; 
+      rewrite -nth0 nth_mkseq //= ;
+      field ; apply Rgt_not_eq ; intuition.
+    case: (RInt_part a b n) => [| h s] /=.
+    right ; apply Rbar_finite_eq ; ring.
+    elim: s h => [| h0 s IH] h Hdom.
+    right => /= ; apply Rbar_finite_eq ; ring.
+    replace (size (_::_)) with (S (size s)) by auto ; rewrite S_INR /=.
+    rewrite Rmult_plus_distr_r Rplus_comm Rmult_1_l ; 
+    apply (Rbar_plus_le_compat (Finite m) _ (Finite (INR (size s) * m))).
+    rewrite /Sup_fct /Lub_Rbar_ne ; case: ex_lub_Rbar_ne => l Hl /=.
+    apply Rbar_le_trans with (Finite (f h)).
+    apply Rbar_finite_le, Hmin, (Hdom O), lt_O_Sn.
+    apply Hl ; exists h ; split => // ; apply Rmin_Rmax_l.
+    apply (IH h0) => i Hi ; apply (Hdom (S i)) => /= ; intuition.
+    rewrite size_mkseq /= pow2_INR //.
+    simpl ; apply Rbar_finite_eq ; field ; apply Rgt_not_eq ; intuition.
+  have H0 : (Finite (real (Rbar_sup_seq (RInt_inf f a b))) = Rbar_sup_seq (RInt_inf f a b)).
+    rewrite /Rbar_sup_seq ; case: Rbar_ex_sup_seq ; case => lub //=.
+  (* RInt_inf --> p_infty *)
+    case: (lub M) => {lub} n lub.
+    contradict lub ; apply Rbar_le_not_lt.
+    rewrite /RInt_inf SF_inf_ly.
+    replace (Finite M) with 
+      (Rbar_div_pos (Finite (2^n*M)) (mkposreal _ (pow_lt 2 n Rlt_R0_R2))).
+    apply Rbar_div_pos_le.
+    replace (2^n) with (INR (Peano.pred (size (RInt_part a b n)))).
+    have: (forall i, (i < size (RInt_part a b n))%nat -> 
+      Rmin a b <= nth 0 (RInt_part a b n) i <= Rmax a b).
+      move => i Hi ; 
+      replace (Rmin a b) with (head 0 (RInt_part a b n)).
+      replace (Rmax a b) with (last 0 (RInt_part a b n)).
+      split.
+      apply sorted_head => // ; by apply RInt_part_sort.
+      apply sorted_last => // ; by apply RInt_part_sort.
+      rewrite /Rmax ; case: Rle_dec => // _ ; 
+      rewrite -nth_last size_mkseq nth_mkseq //= pow2_INR ;
+      field ; apply Rgt_not_eq ; intuition.
+      rewrite /Rmin ; case: Rle_dec => // _ ; 
+      rewrite -nth0 nth_mkseq //= ;
+      field ; apply Rgt_not_eq ; intuition.
+    case: (RInt_part a b n) => [| h s] /=.
+    right ; apply Rbar_finite_eq ; ring.
+    elim: s h => [| h0 s IH] h Hdom.
+    right => /= ; apply Rbar_finite_eq ; ring.
+    replace (size (_::_)) with (S (size s)) by auto ; rewrite S_INR /=.
+    rewrite Rmult_plus_distr_r Rplus_comm Rmult_1_l ; 
+    apply (Rbar_plus_le_compat _ (Finite M) _ (Finite (INR (size s) * M))).
+    rewrite /Inf_fct /Glb_Rbar_ne ; case: ex_glb_Rbar_ne => l Hl /=.
+    apply Rbar_le_trans with (Finite (f h)).
+    apply Hl ; exists h ; split => // ; apply Rmin_Rmax_l.
+    apply Rbar_finite_le, Hmax, (Hdom O), lt_O_Sn.
+    apply (IH h0) => i Hi ; apply (Hdom (S i)) => /= ; intuition.
+    rewrite size_mkseq /= pow2_INR //.
+    simpl ; apply Rbar_finite_eq ; field ; apply Rgt_not_eq ; intuition.
+  (* RInt_inf --> m_infty *)
+    move: (lub m O) => {lub} lub.
+    contradict lub ; apply Rbar_le_not_lt.
+    rewrite /RInt_inf SF_inf_ly /= ;
+    replace (Finite m) with 
+      (Rbar_div_pos (Finite (m)) (mkposreal _ (pow_lt 2 O Rlt_R0_R2))).
+    apply Rbar_div_pos_le ; rewrite /= Rmult_1_l.
+    rewrite /Inf_fct /Glb_Rbar_ne ; case: ex_glb_Rbar_ne => l Hl /=.
+    replace (Rbar_plus _ _) with l.
+    apply Hl => {Hl} _ [x [-> Hl]] ; apply Rbar_finite_le, Hmin ;
+    replace a with (a + 0 * (b - a) / 1) by field ;
+    pattern b at 2 4 ; replace b with (a + (b - a) / 1) by field ;
+    by apply Hl.
+    case: (l) => //= r ; by rewrite Rplus_0_r.
+    simpl ; apply Rbar_finite_eq ; field.
+    
+  split => //.
+  move: H ; rewrite /Rbar_inf_seq ; case: Rbar_ex_inf_seq ; 
+    case => [g | | ] glb // _ ; simpl projT1.
+  move: H0 ; rewrite /Rbar_sup_seq ; case: Rbar_ex_sup_seq ; 
+    case => [l | | ] lub // _ ; simpl projT1.
+  apply Rbar_finite_eq, Rle_antisym ; apply le_epsilon => eps Heps ; 
+  set e := mkposreal eps Heps ; case: (Hri e) => phi [psi [Hphi Hpsi]]. 
+  set e2 := pos_div_2 e ; set e4 := pos_div_2 e2 ; 
+  case: (lub e4) => {lub} ub _ ; case: (glb e2) => {glb} lb _.
+  
+  case: (ex_RInt_correct_4 f a b Hri e4) => {Hri} n Hri.
+  apply Rbar_finite_le ; replace g with ((g-e2)+e2) by ring ;
+  replace (l+eps) with (((l+e4)+e4)+e2).
+  apply (Rbar_plus_le_compat (Finite _) (Finite _) (Finite e2) (Finite e2)) ;
+  try by right.
+  left ; apply (Rbar_lt_le_trans (Finite (g - e2)) (RInt_sup f a b n)) with (1 := lb n).
+  apply Rbar_le_trans with (1 := Hri).
+  apply (Rbar_plus_lt_le_compat _ (Finite _) (Finite _) (Finite _)) ;
+  try by right.
+  apply ub.
+  simpl ; field.
+  
+  set e2 := pos_div_2 e ; 
+  case: (lub e2) => {lub} _ [Nl lub] ; case: (glb e2) => {glb} _ [Ng glb].
+  replace l with ((l-e2)+e2) by ring ; replace (g+eps) with ((g+e2)+e2) ;
+  try apply Rplus_le_compat_r, Rlt_le.
+  apply (Rbar_lt_trans (Finite (l-e2)) _ (Finite (g+e2))) with (1 := lub).
+  apply (Rbar_le_lt_trans _ _ (Finite (g+e2))) with (2 := glb).
+  case: (le_dec Nl Ng) => Hn.
+  apply Rbar_le_trans with (2 := RInt_inf_le_sup _ _ _ _) ;
+  by apply RInt_inf_incr.
+  apply not_le, lt_le_weak in Hn.
+  apply Rbar_le_trans with (1 := RInt_inf_le_sup _ _ _ _) ;
+  by apply RInt_sup_decr.
+  simpl ; field.
+Qed.
 
 (** * The RInt function *)
 
