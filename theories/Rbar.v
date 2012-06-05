@@ -304,6 +304,15 @@ Proof.
   destruct x as [x | | ] ; simpl ; intuition.
 Qed.
 (** ** Rbar_plus *)
+Lemma Rbar_plus_0_r (x : Rbar) : Rbar_plus x (Finite 0) = x.
+Proof.
+  case: x => //= ; intuition.
+Qed.
+Lemma Rbar_plus_0_l (x : Rbar) : Rbar_plus (Finite 0) x = x.
+Proof.
+  case: x => //= ; intuition.
+Qed.
+
 Lemma Rbar_plus_comm (x y : Rbar) : Rbar_plus x y = Rbar_plus y x.
 Proof.
   case x ; case y ; intuition ; simpl ; rewrite Rplus_comm ; auto.
