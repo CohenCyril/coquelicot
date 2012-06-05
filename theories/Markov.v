@@ -170,7 +170,7 @@ Proof.
   rewrite Rmult_0_l ; apply Rlt_le, Rinv_0_lt_compat, pow_lt, Rlt_R0_R2.
   unfold u ; destruct (P'1 n) ; rewrite e.
   rewrite Rmult_0_l.
-  set (proj1 Hn).
+  set (r0 :=proj1 Hn).
   absurd ((/ 2) ^ S n < l) ; [|apply r0].
   apply Rle_not_lt.
   apply lub.

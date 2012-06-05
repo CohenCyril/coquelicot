@@ -1,6 +1,7 @@
 Require Import Reals.
 Require Import ssreflect.
 Require Import Rcomplements.
+Require Import List.
 
 Open Scope R_scope.
 
@@ -529,20 +530,384 @@ Qed.
 *)
 *)
 
+Require Import Markov Total_sup.
+
+
+Lemma locally_ex_dec: forall P x, (forall x, {P x}+{~P x}) -> locally P x -> {d:posreal| forall y, Rabs (y-x) < d -> P y}.
+Proof.
+intros P x P_dec H.
+set (Q := fun z => forall y,  Rabs (y-x) < z -> P y).
+destruct (ex_lub_Rbar_ne Q) as ([d| |],(H1,H2)).
+destruct H as (d1,Hd1).
+now exists d1.
+(* *)
+assert (Zd: 0 < d).
+destruct H as (d1,Hd1).
+apply Rlt_le_trans with (1 := cond_pos d1).
+apply Rbar_finite_le.
+now apply H1.
+exists (mkposreal d Zd).
+simpl.
+intros y Hy.
+destruct (P_dec y) as [Py|Py].
+exact Py.
+elim (Rlt_not_le _ _ Hy).
+apply Rbar_finite_le.
+apply H2.
+intros u Hu.
+apply Rbar_finite_le.
+apply Rnot_lt_le.
+contradict Py.
+now apply Hu.
+(* *)
+exists (mkposreal 1 Rlt_0_1).
+simpl.
+intros y Hy.
+destruct (P_dec y) as [Py|Py].
+exact Py.
+elim (Rlt_not_le _ _ Hy).
+apply Rbar_finite_le.
+apply Rbar_le_trans with p_infty.
+now left.
+apply H2.
+intros u Hu.
+apply Rbar_finite_le.
+apply Rnot_lt_le.
+contradict Py.
+now apply Hu.
+(* *)
+elimtype False.
+destruct H as (d1,Hd1).
+now destruct (H1 d1).
+Qed.
+
+
+
+
+Section Toto.
+
+Variable a b : R.
+
+Variable delta : R -> posreal.
+
+Hypothesis Hab : a <= b.
+
+
+Definition Q l x := {Hx: a <= x <= b | forall y, l <= y <= x -> Rabs (l-y) < delta y}.
+
+Lemma Q_aux1: forall l, a <= l <= b -> exists x, Q l x.
+intros l Hl; unfold Q.
+exists l.
+exists Hl.
+intros y Hy.
+replace y with l.
+rewrite /Rminus Rplus_opp_r Rabs_R0.
+apply cond_pos.
+now apply Rle_antisym.
+Qed.
+
+Lemma Q_aux2: forall l, exists M, forall x, Q l x -> x <= M.
+intros l.
+exists b.
+intros x Hx.
+apply Hx.
+Qed.
+
+Definition Q_sup (l:{ x | a <= x <= b }) :=
+  (projT1 (completeness (Q (projT1 l)) (Q_aux2 (projT1 l)) (Q_aux1 _ (projT2 l)))).
+
+Lemma Q_sup_aux: forall (l:{ x | a <= x <= b }),
+   a <= Q_sup l <= b.
+intros (l,Hl).
+unfold Q_sup.
+case completeness.
+simpl; intros x (H1,H2).
+split.
+apply Rle_trans with (1:=proj1 Hl).
+apply H1.
+unfold Q.
+exists Hl.
+intros y Hy.
+replace y with l.
+rewrite /Rminus Rplus_opp_r Rabs_R0.
+apply cond_pos.
+now apply Rle_antisym.
+apply H2.
+intros y Hy.
+apply Hy.
+Qed.
+
+Fixpoint l n : { x | a <= x <= b } :=
+  match n with
+      O => existT _ a (conj (Rle_refl a) Hab)
+  | S n => existT _ (Q_sup (l n)) (Q_sup_aux _)
+  end.
+
+
+Lemma compacity_extract: {l: list R | forall x, a <= x <= b -> exists z, List.In z l /\ Rabs (x-z) < delta z }.
+destruct (Markov (fun n => projT1 (l n) = b)) as [(n,Hn)|Hn].
+admit.
+(* *)
+rewrite <- Hn.
+clear Hn.
+induction n.
+(* . *)
+simpl.
+exists (cons a nil).
+intros x Hx.
+exists a.
+split.
+now left.
+replace x with a.
+rewrite /Rminus Rplus_opp_r Rabs_R0.
+apply cond_pos.
+now apply Rle_antisym.
+(* . *)
+destruct IHn as (l1,Hl1).
+exists (cons ((projT1 (l (S n)) + projT1 (l n))/2) l1).
+intros x Hx.
+case (Rle_or_lt x (projT1 (l n))); intros Hx2.
+destruct (Hl1 x (conj (proj1 Hx) Hx2)) as (z,(Hz1,Hz2)).
+exists z; split.
+now right.
+exact Hz2.
+exists ((projT1 (l (S n)) + projT1 (l n)) / 2).
+split.
+now left.
+apply Rle_lt_trans with (Rabs (projT1 (l n) - (projT1 (l (S n)) + projT1 (l n)) / 2)).
+admit. (* calculs *)
+simpl.
+unfold Q_sup.
+case completeness.
+simpl; intros y (Hy1,Hy2).
+apply Rnot_le_lt.
+intros Hy3.
+unfold Q,is_upper_bound in Hy2.
+specialize (Hy2  ((y + projT1 (l n)) / 2)).
+absurd (y <= (y + projT1 (l n)) / 2).
+admit. (* débile *)
+apply Hy2.
+intros u (Hu1,Hu2).
+apply Rnot_lt_le.
+intros Hm1.
+specialize (Hu2 ((y + projT1 (l n)) / 2)).
+apply Rle_not_lt with (1:=Hy3).
+apply Hu2.
+admit. (* ok O_o *)
+(* . *)
+elimtype False.
+
+absurd (Rabs (projT1 (l n) - ) < delta y).
+
+
+simpl.
+
+
+
+ (projT1 (l (S n)))).
+
+
+
+apply Hy2.
+
+
+
+
+Section Toto_copie.
+
+Variable a b : R.
+
+Variable delta : R -> posreal.
+
+Hypothesis Hab : a <= b.
+
+
+Definition Q l x := {Hx: a <= x <= b | Rabs (l-x) < delta x}.
+
+Lemma Q_aux1: forall l, a <= l <= b -> exists x, Q l x.
+intros l Hl; unfold Q.
+exists l.
+exists Hl.
+rewrite /Rminus Rplus_opp_r Rabs_R0.
+apply cond_pos.
+Qed.
+
+Lemma Q_aux2: forall l, exists M, forall x, Q l x -> x <= M.
+intros l.
+exists b.
+intros x Hx.
+apply Hx.
+Qed.
+
+Definition Q_sup (l:{ x | a <= x <= b }) :=
+  (projT1 (completeness (Q (projT1 l)) (Q_aux2 (projT1 l)) (Q_aux1 _ (projT2 l)))).
+
+Lemma Q_sup_aux: forall (l:{ x | a <= x <= b }),
+   a <= Q_sup l <= b.
+intros (l,Hl).
+unfold Q_sup.
+case completeness.
+simpl; intros x (H1,H2).
+split.
+apply Rle_trans with (1:=proj1 Hl).
+apply H1.
+unfold Q.
+exists Hl.
+rewrite /Rminus Rplus_opp_r Rabs_R0.
+apply cond_pos.
+apply H2.
+intros y Hy.
+apply Hy.
+Qed.
+
+Fixpoint l n : { x | a <= x <= b } :=
+  match n with
+      O => existT _ a (conj (Rle_refl a) Hab)
+  | S n => existT _ (Q_sup (l n)) (Q_sup_aux _)
+  end.
+
+
+Lemma compacity_extract: {l: list R | forall x, a <= x <= b -> exists z, List.In z l /\ Rabs (x-z) < delta z }.
+destruct (Markov (fun n => projT1 (l n) = b)) as [(n,Hn)|Hn].
+admit.
+(* *)
+rewrite <- Hn.
+clear Hn.
+induction n.
+(* . *)
+simpl.
+exists (cons a nil).
+intros x Hx.
+exists a.
+split.
+now left.
+replace x with a.
+rewrite /Rminus Rplus_opp_r Rabs_R0.
+apply cond_pos.
+now apply Rle_antisym.
+(* . *)
+destruct IHn as (l1,Hl1).
+exists (cons ((projT1 (l (S n)) + projT1 (l n))/2) l1).
+intros x Hx.
+case (Rle_or_lt x (projT1 (l n))); intros Hx2.
+destruct (Hl1 x (conj (proj1 Hx) Hx2)) as (z,(Hz1,Hz2)).
+exists z; split.
+now right.
+exact Hz2.
+exists ((projT1 (l (S n)) + projT1 (l n)) / 2).
+split.
+now left.
+(* apply Rlt_le_trans with (Rabs (projT1 (l n) - projT1 (l (S n)))).
+admit.*)
+simpl.
+unfold Q_sup.
+case completeness.
+simpl; intros y (Hy1,Hy2).
+
+
+specialize (Hy2 ((y + projT1 (l n)) / 2)).
+
+unfold Q in Hy1.
+
+
+
+apply Rnot_lt_le.
+intros Hxy.
+unfold is_upper_bound, Q in Hy1, Hy2.
+
+
+simpl in Hy1,Hy2.
+
+
+simpl.
+
+
+rewrite Rabs_left1.
+
+
+
+destruct (H _ (projT2 (l (S n)))) as (d2,Hd2).
+exists (mkposreal _ (Rmin_stable_in_posreal d1 d2)).
+intros x y Hx; simpl; intros Hy.
+case (Rle_or_lt x (projT1 (l n))); intros Hx2.
+apply Hd1.
+now split.
+apply Rlt_le_trans with (1:=Hy).
+apply Rmin_l.
+(* apply P_cont with x (projT1 (l (S n))).*)
+Admitted.
+
+
+
+(* Hypothesis P_cont: forall x y u v, Rmin x y <= u <= Rmax x y ->  Rmin x y <= v <= Rmax x y -> P x y -> P u v.*)
+
+Lemma compacity: exists delta:posreal, forall x y, a <= x <= b -> Rabs (y-x) < delta -> P x y.
+destruct (Markov (fun n => projT1 (l n) = b)) as [(n,Hn)|Hn].
+admit.
+(* *)
+rewrite <- Hn.
+clear Hn.
+induction n.
+(* . *)
+simpl.
+destruct (H a (conj (Rle_refl a) Hab)) as (d0,Hd0).
+exists d0.
+intros x y Hx.
+replace x with a.
+apply Hd0.
+now apply Rle_antisym.
+(* . *)
+destruct IHn as (d1,Hd1).
+destruct (H _ (projT2 (l (S n)))) as (d2,Hd2).
+exists (mkposreal _ (Rmin_stable_in_posreal d1 d2)).
+intros x y Hx; simpl; intros Hy.
+case (Rle_or_lt x (projT1 (l n))); intros Hx2.
+apply Hd1.
+now split.
+apply Rlt_le_trans with (1:=Hy).
+apply Rmin_l.
+(* apply P_cont with x (projT1 (l (S n))).*)
+Admitted.
+
+End Toto.
+
+Lemma toto_GM: forall P a b x,
+   (forall t, a <= t <= b -> locally (fun y => P y t) x) ->
+    locally (fun y => forall t, a <= t <= b -> P y t) x.
+intros P a b x H.
+destruct (compacity a b P) as (d,Hd).
+exists d.
+intros y Hy t Ht.
+apply Hd.
+
+
+destruct (H x Hx).
+
+
 
 
 Lemma toto2: forall (P:posreal -> R -> R->Prop) x y,
    locally (fun u => forall eps:posreal, locally (fun t => P eps t u) x) y -> 
       forall eps:posreal, locally_2d (P eps) x y.
-intros P x0 y0 (d1,H1) eps; unfold locally in H1.
+intros P x0 y0 (d1,H1) eps.
+
+
+Markov_cor1
+; unfold locally in H1.
+
+
+
 assert (T1:(compact (fun r => y0-d1/2 <= r <= y0+d1/2))).
 apply compact_P3. 
 (* *)
-pose (ind := fun delta => exists y:R, 0 < delta /\  Rabs (y - y0) < d1 /\ forall x, Rabs (x - x0) < delta -> Rabs (y - y0) < delta -> P eps x y).
-pose (g:= fun delta y => 0 < delta /\  Rabs (y - y0) < d1 /\ forall x, Rabs (x - x0) < delta -> Rabs (y - y0) < delta -> P eps x y).
+pose (ind := fun delta => exists y:R, Rabs (y - y0) < d1 /\ 0 < delta  /\ forall x, Rabs (x - x0) < delta -> P eps x y).
+pose (g:= fun delta y => Rabs (y - y0) < d1 /\ 0 < delta  /\ forall x, Rabs (x - x0) < delta -> P eps x y).
 assert (T2:(forall x : R, (exists y : R, g x y) -> ind x)).
 unfold ind,g.
+
+intros d Hd.
 easy.
+
 pose (fam:=mkfamily ind g T2). 
 specialize (T1 fam).
 (* *)
@@ -551,35 +916,33 @@ split.
 unfold covering, fam, g.
 simpl. 
 intros y Hy.
-assert (Rabs (y - y0) < d1).
+admit.
+(* assert (Rabs (y - y0) < d1).
 admit.
 destruct (H1 _ H eps) as (d,Hd).
-exists d.
+exists d. (* min d d1 *)
 split.
 apply cond_pos.
 split.
-exact H.
+admit.
 intros x Hx Hy2.
-now apply Hd.
+now apply Hd.*)
 (* *)
 unfold family_open_set.
 intros d; unfold fam,g.
 simpl.
 unfold open_set.
-intros y (Hd,(Hy1,Hy2)).
+intros y (Hd,Hy1).
 unfold neighbourhood.
-assert (0 < d1 - Rabs (y - y0)).
+(*assert (0 < d1 - Rabs (y - y0)).
 admit.
-exists (mkposreal _ H).
+exists (mkposreal _ H).*)
+exists (mkposreal _ (proj1 Hy1)).
 unfold included, disc; simpl.
 intros y1 Hy3.
 split.
 apply Hd.
-split.
 admit.
-intros.
-
-admit. (* ??? *)
 
 
 
