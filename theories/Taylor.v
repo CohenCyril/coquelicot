@@ -1,6 +1,6 @@
 Require Import Reals Rcomplements.
 Require Import ssreflect.
-Require Import Deriv_fct.
+Require Import Derive.
 Require Import Locally Differential.
 
 Lemma C_n_n: forall n, C n n = 1.

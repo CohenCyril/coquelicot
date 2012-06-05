@@ -1,6 +1,6 @@
 Require Import Reals.
 Require Import ssreflect ssrbool seq.
-Require Import Rcomplements Locally Deriv_fct RInt Differential.
+Require Import Rcomplements Locally Derive RInt Differential.
 
 Fixpoint Rn n T :=
   match n with
