@@ -533,7 +533,7 @@ Qed.
 Require Import Markov Total_sup.
 
 
-Lemma locally_ex_dec: forall P x, (forall x, {P x}+{~P x}) -> locally P x -> {d:posreal| forall y, Rabs (y-x) < d -> P y}.
+Lemma locally_ex_dec: forall P x, (forall x, P x \/ ~P x) -> locally P x -> {d:posreal| forall y, Rabs (y-x) < d -> P y}.
 Proof.
 intros P x P_dec H.
 set (Q := fun z => forall y,  Rabs (y-x) < z -> P y).
