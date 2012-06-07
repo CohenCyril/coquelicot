@@ -4,7 +4,7 @@ Open Scope R_scope.
 
 (** * Limit sequence *)
 
-Definition Lim_seq (u : nat -> R) : R := real (LimSup_seq u).
+Definition Lim_seq (u : nat -> R) : R := (real (Rbar_plus (LimSup_seq u) (LimInf_seq u)))/2.
 Definition is_lim_seq (u : nat -> R) (l : R) :=
   forall eps : posreal, exists N : nat, forall n : nat,
     (N <= n)%nat -> Rabs (u n - l) < eps.
@@ -21,7 +21,8 @@ Lemma Lim_seq_correct (u : nat -> R) :
   Lim_seq u = real (Rbar_lim_seq (fun n => Finite (u n))).
 Proof.
   rewrite /Lim_seq /Rbar_lim_seq.
-  by rewrite (LimSup_seq_correct u).
+  rewrite (LimSup_seq_correct u) (LimInf_seq_correct u) /= ;
+  case: (Rbar_plus _ _) => //= ; field.
 Qed.
 
 (** ** Compute limit *)
@@ -165,5 +166,130 @@ Lemma ex_lim_seq_opp (u : nat -> R) :
   ex_lim_seq u -> ex_lim_seq (fun n => -u n).
 Proof.
   case => l Hl ; exists (-l) ; by apply is_lim_seq_opp.
+Qed.
+
+Lemma Lim_seq_scal (u : nat -> R) (a : R) :
+  Lim_seq (fun n => a * u n) = a * Lim_seq u.
+Proof.
+  wlog: u a / (0 <= a) => [Hw | Ha].
+    case: (Rle_lt_dec 0 a) => Ha.
+    by apply Hw.
+    apply Ropp_0_gt_lt_contravar, Rlt_le in Ha ; 
+    move: (Hw (fun n => - u n) _ Ha) => {Hw}.
+    rewrite /Lim_seq.
+    have H : (forall u, Rbar_limsup_seq u = 
+      Rbar_inf_seq (fun n => Rbar_sup_seq (fun m => u (n+m)%nat))).
+      move => u0 ; rewrite /Rbar_limsup_seq ; case: Rbar_ex_limsup_seq => ls Hls ;
+      rewrite /Rbar_inf_seq ; case: Rbar_ex_inf_seq => i Hi /=.
+      apply (Rbar_is_inf_seq_rw (fun n : nat => Rbar_sup_seq (fun m : nat => u0 (n + m)%nat)) 
+      (fun n : nat => Rbar_sup_seq (fun m : nat => u0 (n + m)%nat))) => //.
+      by apply Rbar_limsup_caract_1.
+    rewrite ?LimSup_seq_correct ?H => {H}.
+    have H : (forall u, Rbar_liminf_seq u = 
+      Rbar_sup_seq (fun n => Rbar_inf_seq (fun m => u (n+m)%nat))).
+      move => u0 ; rewrite /Rbar_liminf_seq ; case: Rbar_ex_liminf_seq => ls Hls ;
+      rewrite /Rbar_sup_seq ; case: Rbar_ex_sup_seq => i Hi /=.
+      apply (Rbar_is_sup_seq_rw (fun n : nat => Rbar_inf_seq (fun m : nat => u0 (n + m)%nat)) 
+      (fun n : nat => Rbar_inf_seq (fun m : nat => u0 (n + m)%nat))) => //.
+      by apply Rbar_liminf_caract_1.
+    rewrite ?LimInf_seq_correct ?H => {H}.
+    move => Hw.
+    rewrite (Rbar_inf_seq_rw (fun n : nat =>
+      Rbar_sup_seq (fun m : nat => Finite (a * u (n + m)%nat))) 
+      (fun n : nat =>
+      Rbar_sup_seq (fun m : nat => Finite (-a * -u (n + m)%nat)))).
+    rewrite (Rbar_sup_seq_rw (fun n : nat =>
+      Rbar_inf_seq (fun m : nat => Finite (a * u (n + m)%nat))) 
+      (fun n : nat =>
+      Rbar_inf_seq (fun m : nat => Finite (-a * -u (n + m)%nat)))).
+    rewrite Hw => {Hw} ;
+    rewrite Ropp_mult_distr_l_reverse -Ropp_mult_distr_r_reverse ;
+    apply Rmult_eq_compat_l ; rewrite -Ropp_mult_distr_l_reverse ;
+    apply Rmult_eq_compat_r.
+    rewrite -Rbar_opp_real.
+    have : (forall x y, Rbar_opp (Rbar_plus x y) = Rbar_plus (Rbar_opp x) (Rbar_opp y)).
+      case => [x | | ] ; case => [y | | ] //= ; apply Rbar_finite_eq ; intuition.
+    move => ->.
+    rewrite Rbar_plus_comm.
+    rewrite Rbar_inf_opp_sup Rbar_opp_involutive ;
+    rewrite Rbar_sup_opp_inf Rbar_opp_involutive.
+    rewrite (Rbar_inf_seq_rw (fun n : nat =>
+      Rbar_opp (Rbar_inf_seq (fun m : nat => Finite (- u (n + m)%nat))))
+      (fun n : nat => Rbar_sup_seq (fun m : nat => Finite (u (n + m)%nat)))).
+    rewrite (Rbar_sup_seq_rw (fun n : nat =>
+      Rbar_opp (Rbar_sup_seq (fun m : nat => Finite (- u (n + m)%nat))))
+      (fun n : nat => Rbar_inf_seq (fun m : nat => Finite (u (n + m)%nat)))) //.
+    move => n ; by rewrite -(Rbar_inf_opp_sup (fun m => Finite (u (n+m)%nat))).
+    move => n ; by rewrite -(Rbar_sup_opp_inf (fun m => Finite (u (n+m)%nat))).
+    move => n ; apply Rbar_inf_seq_rw => m ; apply Rbar_finite_eq ; ring.
+    move => n ; apply Rbar_sup_seq_rw => m ; apply Rbar_finite_eq ; ring.
+  
+  rewrite /Lim_seq /LimSup_seq /LimInf_seq ;
+  case: ex_LimSup_seq => ls' Hls' ; case: ex_LimSup_seq => ls Hls ;
+  case: ex_LimInf_seq => li' Hli' ; case: ex_LimInf_seq => li Hli /=.
+  apply Rle_lt_or_eq_dec in Ha ; case: Ha => Ha.
+(* 0 < a *)
+  replace ls' with (Rbar_mult_pos ls (mkposreal _ Ha)).
+  replace li' with (Rbar_mult_pos li (mkposreal _ Ha)).
+  case: (ls) ; case: (li) => //= ; intros ; field.
+(* a*li = li'*)
+  apply (is_LimInf_seq_eq (fun n => a * u n) (fun n => a * u n)) => // ;
+  case: li Hli => [li | | ] /= Hli.
+  move => eps ; have He : (0 < eps / a) ; 
+  [apply Rdiv_lt_0_compat => // ; apply eps | set e := mkposreal _ He ].
+  move: (Hli e) => {Hli} Hli.
+  split ; [case: Hli => Hli _ | case: Hli => _ [N Hli]].
+  move => N ; case: (Hli N) => {Hli} n Hli ; exists n ; intuition.
+  replace (_*_+_) with (a * (li+e)).
+  by apply Rmult_lt_compat_l.
+  simpl ; field ; by apply Rgt_not_eq.
+  exists N => n Hn.
+  replace (_*_-_) with (a * (li-e)).
+  by apply Rmult_lt_compat_l, Hli.
+  simpl ; field ; by apply Rgt_not_eq.
+  move => M ; case: (Hli (M/a)) => {Hli} N Hli ; 
+  exists N => n Hn.
+  replace M with (a*(M/a)).
+  by apply Rmult_lt_compat_l, Hli.
+  field ; by apply Rgt_not_eq.
+  move => M N ; case: (Hli (M/a) N) => {Hli} n Hli.
+  exists n ; replace M with (a*(M/a)) ; intuition.
+  field ; by apply Rgt_not_eq.
+  (* a*ls = ls'*)
+  apply (is_LimSup_seq_eq (fun n => a * u n) (fun n => a * u n)) => // ;
+  case: ls Hls => [ls | | ] /= Hls.
+  move => eps ; have He : (0 < eps / a) ; 
+  [apply Rdiv_lt_0_compat => // ; apply eps | set e := mkposreal _ He ].
+  move: (Hls e) => {Hls} Hls.
+  split ; [case: Hls => Hls _ | case: Hls => _ [N Hls]].
+  move => N ; case: (Hls N) => {Hls} n Hls ; exists n ; intuition.
+  replace (_*_-_) with (a * (ls-e)).
+  by apply Rmult_lt_compat_l.
+  simpl ; field ; by apply Rgt_not_eq.
+  exists N => n Hn.
+  replace (_*_+_) with (a * (ls+e)).
+  by apply Rmult_lt_compat_l, Hls.
+  simpl ; field ; by apply Rgt_not_eq.
+  move => M N ; case: (Hls (M/a) N) => {Hls} n Hls.
+  exists n ; replace M with (a*(M/a)) ; intuition.
+  field ; by apply Rgt_not_eq.
+  move => M ; case: (Hls (M/a)) => {Hls} N Hls ; 
+  exists N => n Hn.
+  replace M with (a*(M/a)).
+  by apply Rmult_lt_compat_l, Hls.
+  field ; by apply Rgt_not_eq.
+(* a = 0 *)
+  rewrite -Ha in Hls' Hli' |- *.
+  replace ls' with (Finite 0).
+  replace li' with (Finite 0).
+  simpl ; field.
+(* li' = 0*)
+  apply (is_LimInf_seq_eq (fun n => 0 * u n) (fun n => 0 * u n)) => //= ;
+  intuition ; [exists N | exists O] ; intuition ; ring_simplify ; 
+  case: eps ; intuition.
+(* ls' = 0*)
+  apply (is_LimSup_seq_eq (fun n => 0 * u n) (fun n => 0 * u n)) => //= ;
+  intuition ; [exists N | exists O] ; intuition ; ring_simplify ; 
+  case: eps ; intuition.
 Qed.
 
