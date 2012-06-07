@@ -583,7 +583,7 @@ Qed.
 
 
 
-
+(*
 Section Toto.
 
 Variable a b : R.
@@ -883,15 +883,41 @@ apply Hd.
 
 destruct (H x Hx).
 
+*)
 
-
+Require Import Compactness.
 
 Lemma toto2: forall (P:posreal -> R -> R->Prop) x y,
    locally (fun u => forall eps:posreal, locally (fun t => P eps t u) x) y -> 
       forall eps:posreal, locally_2d (P eps) x y.
 intros P x0 y0 (d1,H1) eps.
+assert (P_dec:(forall x0 t: R, P eps t x0 \/ ~ P eps t x0)). 
+admit.
+pose (delta := fun y => match Rlt_dec (Rabs (y -y0)) d1 with
+        | left H => projT1 (locally_ex_dec _ _ (P_dec y) (H1 _ H eps))
+        | right _ => d1
+      end).
+generalize (compactness_value (y0-d1/2) (y0+d1/2) delta).
+intros (d2,Hd2).
+exists (mkposreal _ (Rmin_stable_in_posreal d1 d2)).
+simpl; intros u v Hu Hv.
+specialize (Hd2 v).
+assert (y0 - d1 / 2 <= v <= y0 + d1 / 2).
+admit.
+specialize (Hd2 H).
+unfold delta in Hd2.
 
 
+
+
+exists (Rmin d1 d2).
+
+generalize (locally_ex_dec (P eps)).
+
+generalize compactness_value.
+locally_ex_dec
+
+(*
 Markov_cor1
 ; unfold locally in H1.
 
@@ -1033,7 +1059,7 @@ unfold locally_2d.
 
 Admitted.
 
-
+*)
 
 
 Lemma derivable_pt_lim_locally :
