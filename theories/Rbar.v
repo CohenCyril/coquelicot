@@ -48,6 +48,11 @@ Definition Rbar_div_pos (x : Rbar) (y : posreal) :=
     | Finite x => Finite (x/y)
     | _ => x
   end.
+Definition Rbar_mult_pos (x : Rbar) (y : posreal) :=
+  match x with
+    | Finite x => Finite (x*y)
+    | _ => x
+  end.
 
 (** * Compatibilities with Real numbers *)
 
@@ -376,4 +381,34 @@ Proof.
   right ; by apply Rbar_div_pos_eq.
   left ; by apply Rbar_div_pos_lt with z.
   right ; by apply Rbar_div_pos_eq with z.
+Qed.
+
+(** ** Rbar_mult_pos *)
+Lemma Rbar_mult_pos_eq (x y : Rbar) (z : posreal) :
+  x = y <-> (Rbar_mult_pos x z) = (Rbar_mult_pos y z).
+Proof.
+  case: z => z Hz ; case: x => [x | | ] ; case: y => [y | | ] ;
+  split => //= H ; apply Rbar_finite_eq in H.
+  by rewrite H.
+  apply Rbar_finite_eq, (Rmult_eq_reg_r (z)) => // ; 
+  by apply Rgt_not_eq.
+Qed.
+
+Lemma Rbar_mult_pos_lt (x y : Rbar) (z : posreal) :
+  Rbar_lt x y <-> Rbar_lt (Rbar_mult_pos x z) (Rbar_mult_pos y z).
+Proof.
+  case: z => z Hz ; case: x => [x | | ] ; case: y => [y | | ] ;
+  split => //= H.
+  apply (Rmult_lt_compat_r (z)) => //.
+  apply (Rmult_lt_reg_r (z)) => //.
+Qed.
+
+Lemma Rbar_mult_pos_le (x y : Rbar) (z : posreal) :
+  Rbar_le x y <-> Rbar_le (Rbar_mult_pos x z) (Rbar_mult_pos y z).
+Proof.
+  split ; case => H.
+  left ; by apply Rbar_mult_pos_lt.
+  right ; by apply Rbar_mult_pos_eq.
+  left ; by apply Rbar_mult_pos_lt with z.
+  right ; by apply Rbar_mult_pos_eq with z.
 Qed.

@@ -826,3 +826,78 @@ Proof.
   apply Rle_trans with (1 := IH (le_trans _ _ _ (le_n_Sn i) Hi)), (sorted_nth Rle) ;
   intuition.
 Qed.
+
+(** Chasles Theorem *)
+
+Fixpoint seq_cut_down {T : Type} (s : seq (R*T)) (x : R) (x0 : T) : seq (R*T) :=
+  match s with
+    | [::] => [:: (x,x0)]
+    | h :: t => 
+        match Rle_dec x (fst h) with
+          | left _ => [:: (x,snd h)]
+          | right _ => h :: (seq_cut_down t x x0)
+        end
+  end.
+Fixpoint seq_cut_up {T : Type} (s : seq (R*T)) (x : R) (x0 : T) : seq (R*T) :=
+  match s with
+    | [::] => [:: (x,x0)]
+    | h :: t => 
+        match Rle_dec x (fst h) with
+          | left _ => (x,x0)::h::t
+          | right _ => seq_cut_up t x (snd h)
+        end
+  end.
+
+Lemma seq_cut_correct {T : Type} (s : seq (R*T)) (x : R) (x0 : T) :
+  belast (seq_cut_down s x x0) ++ behead (seq_cut_up s x x0) = s.
+Proof.
+  case: s => [ | h0 s] //= ; case: Rle_dec => H0 //=.
+  elim: s h0 H0 => [ | h1 s IH] h0 H0 //= ; case: Rle_dec => H1 //=.
+  by rewrite (IH h1).
+Qed.
+
+Definition SF_cut_down {T : Type} (x0 : T) (sf : @SF_seq T) (x : R) :=
+  let s := seq_cut_down ((SF_h sf,x0) :: (SF_t sf)) x x0 in
+  mkSF_seq (fst (head (SF_h sf,x0) s)) (behead s).
+Definition SF_cut_up {T : Type} (x0 : T) (sf : @SF_seq T) (x : R) :=
+  let s := seq_cut_up ((SF_h sf,x0) :: (SF_t sf)) x x0 in
+  mkSF_seq (fst (head (SF_h sf,x0) s)) (behead s).
+
+Lemma SF_cut_up_head {T : Type} (x0 : T) (sf : @SF_seq T) (x : R) :
+  SF_h (SF_cut_up x0 sf x) = x.
+Proof.
+  rewrite /SF_cut_up ; case: sf => h0 sf /=.
+  case: Rle_dec => //=.
+  elim: sf h0 x0 (h0, x0) => [ | h1 sf IH] h0' h0 x0 H0 //=.
+  case: Rle_dec => //= H1 ;
+  by apply IH with (p := x0) (x0 := snd h1) (h0 := fst h1).
+Qed.
+
+Lemma SF_Chasles (s : SF_seq) x : SF_sorted Rle s ->
+  (SF_h s <= x <= fst (last (SF_h s,0) (SF_t s))) ->
+  RInt_seq s Rplus Rmult 0 = 
+  (RInt_seq (SF_cut_down 0 s x) Rplus Rmult 0) 
+  + (RInt_seq (SF_cut_up 0 s x) Rplus Rmult 0).
+Proof.
+  move => Hs Hx ; 
+  rewrite /SF_cut_down /SF_cut_up.
+  case: s Hs Hx => s0 sf ; simpl SF_h ; simpl SF_t.
+  pattern s0 at 1 2 4 ; replace s0 with (fst (s0,0)) by auto.
+  have : (snd (s0,0) = 0)  => //.
+  move: (s0,0) => {s0} h0 /= Hsnd Hs Hx;
+  rewrite /RInt_seq /= ; case: Rle_dec => //= Hx0.
+  rewrite (Rle_antisym _ _ Hx0 (proj1 Hx)) ; 
+  ring_simplify ; by rewrite -Hsnd -surjective_pairing.
+  rewrite -{2 4 7}Hsnd -surjective_pairing.
+  elim: sf h0 {7 9}h0 {Hsnd} Hs Hx Hx0 => [ | h1 sf IH] h0' h0 Hs Hx Hx0 //=.
+  ring.
+  case: Rle_dec => //= Hx1.
+  ring.
+  rewrite (IH h1 h0).
+  ring.
+  apply Hs.
+  apply Rnot_le_lt in Hx1 ; intuition.
+  apply Hx1.
+Qed.
+
+

@@ -106,6 +106,17 @@ Proof.
   by apply is_LimSup_seq_correct.
 Qed.
 
+Lemma is_LimSup_seq_eq (u v : nat -> R) lu lv :
+  (forall n, u n = v n)
+  -> is_LimSup_seq u lu -> is_LimSup_seq v lv
+  -> lu = lv.
+Proof.
+  move => Heq Hu Hv.
+  apply is_LimSup_seq_correct in Hu ; apply is_LimSup_seq_correct in Hv.
+  apply (Rbar_is_limsup_eq (fun n : nat => Finite (u n)) (fun n : nat => Finite (v n))) 
+  => // n ; by rewrite Heq.
+Qed.
+
 (** ** LimInf *)
 
 Definition is_LimInf_seq (u : nat -> R) (l : Rbar) :=
@@ -140,4 +151,15 @@ Proof.
   rewrite /Rbar_liminf_seq ; case: (Rbar_ex_liminf_seq _) => l' Hl' /=.
   apply (Rbar_is_liminf_eq (fun n => Finite (u n)) (fun n => Finite (u n))) => // ; 
   by apply is_LimInf_seq_correct.
+Qed.
+
+Lemma is_LimInf_seq_eq (u v : nat -> R) lu lv :
+  (forall n, u n = v n)
+  -> is_LimInf_seq u lu -> is_LimInf_seq v lv
+  -> lu = lv.
+Proof.
+  move => Heq Hu Hv.
+  apply is_LimInf_seq_correct in Hu ; apply is_LimInf_seq_correct in Hv.
+  apply (Rbar_is_liminf_eq (fun n : nat => Finite (u n)) (fun n : nat => Finite (v n))) 
+  => // n ; by rewrite Heq.
 Qed.

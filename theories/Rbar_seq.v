@@ -774,6 +774,64 @@ Proof.
   case (Rbar_ex_liminf_seq v) => l2 Hl2 /= ; by apply (Rbar_is_liminf_eq u v).
 Qed.
 
+Lemma Rbar_liminf_seq_shift: forall u k,
+   (Rbar_liminf_seq u  = Rbar_liminf_seq (fun n => u (n+k)%nat)).
+intros u k.
+unfold Rbar_liminf_seq at 1.
+case (Rbar_ex_liminf_seq u).
+intros x Hx; simpl.
+assert (Rbar_is_liminf_seq (fun n : nat => u (n + k)%nat) x).
+revert Hx; case x.
+(* . *)
+simpl; intros r H eps.
+specialize (H eps).
+split.
+destruct H as ((N1,H1),_).
+exists N1.
+intros n Hn.
+apply H1.
+now apply le_plus_trans.
+intros N.
+destruct H as (_,H1).
+destruct (H1 (N+k)%nat) as (m,(Hm1,Hm2)).
+exists (m-k)%nat; split.
+omega.
+replace (m-k+k)%nat with m.
+exact Hm2.
+omega.
+(* . *)
+simpl.
+intros H M.
+destruct (H M) as (m, Hm).
+exists m.
+intros n Hn.
+apply Hm.
+now apply le_plus_trans.
+(* . *)
+simpl.
+intros H M N.
+destruct (H M (N+k)%nat) as (m,(Hm1,Hm2)).
+exists (m-k)%nat; split.
+omega.
+replace (m-k+k)%nat with m.
+exact Hm2.
+omega.
+(* *)
+unfold Rbar_liminf_seq; case (Rbar_ex_liminf_seq (fun n : nat => u (n + k)%nat)).
+intros y Hy; simpl.
+apply: (Rbar_is_liminf_eq _ _ _ _ _ H Hy).
+easy.
+Qed.
+
+Lemma Rbar_liminf_seq_eq_ge: forall u v,
+  (exists N, forall n, (N <= n)%nat -> (u n) = (v n)) -> Rbar_liminf_seq u = Rbar_liminf_seq v.
+intros u v (N,H).
+rewrite (Rbar_liminf_seq_shift u N). 
+rewrite (Rbar_liminf_seq_shift v N).
+apply Rbar_liminf_eq.
+intros n; apply H.
+now apply le_plus_r.
+Qed.
 (** * Limit *)
 
 Definition Rbar_is_lim_seq (u : nat -> Rbar) (l : Rbar) :=
@@ -784,7 +842,8 @@ Definition Rbar_is_lim_seq (u : nat -> Rbar) (l : Rbar) :=
     | m_infty => forall M, exists N, forall n, (N <= n)%nat -> Rbar_lt (u n) (Finite M)
   end.
 Definition Rbar_ex_lim_seq (u : nat -> Rbar) := exists l, Rbar_is_lim_seq u l.
-Definition Rbar_lim_seq (u : nat -> Rbar) := Rbar_limsup_seq u.
+Definition Rbar_lim_seq (u : nat -> Rbar) := 
+  Rbar_div_pos (Rbar_plus (Rbar_limsup_seq u) (Rbar_liminf_seq u)) (mkposreal 2 (Rlt_R0_R2)).
 
 (** ** limsup, liminf and limit *)
 Lemma Rbar_is_lim_limsup (u : nat -> Rbar) (l : Rbar) :
@@ -833,10 +892,15 @@ Qed.
 Lemma Rbar_is_lim_correct (u : nat -> Rbar) (l : Rbar) :
   Rbar_is_lim_seq u l -> Rbar_lim_seq u = l.
 Proof.
-  move => Hl ; rewrite /Rbar_lim_seq /Rbar_limsup_seq ; 
-  case Rbar_ex_limsup_seq => l' Hl' /= ;
-  apply (Rbar_is_limsup_eq u u) => // ;
-  by apply Rbar_is_lim_limsup.
+  move => Hl ; rewrite /Rbar_lim_seq /Rbar_limsup_seq /Rbar_liminf_seq ; 
+  case Rbar_ex_limsup_seq => ls Hls /= ; case Rbar_ex_liminf_seq => li Hli /=. 
+  replace ls with l.
+  replace li with l.
+  case: (l) => //= l' ; apply Rbar_finite_eq ; field.
+  apply Rbar_is_lim_liminf in Hl ;
+  apply (Rbar_is_liminf_eq u u) => //.
+  apply Rbar_is_lim_limsup in Hl ;
+  apply (Rbar_is_limsup_eq u u) => //.
 Qed.
 
 Lemma Rbar_ex_lim_is_lim (u : nat -> Rbar) :
