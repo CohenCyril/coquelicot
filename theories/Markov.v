@@ -1,4 +1,4 @@
-Require Export Reals Max Floor.
+Require Import Reals Max Floor.
 Open Scope R_scope.
 
 (** * Le principe de Markov *)
@@ -221,16 +221,4 @@ Proof.
   contradict H0.
   intros (n,H1).
   contradict H1 ; apply H0.
-Qed.
-Lemma Markov_cor3 : forall P : nat -> Prop, (forall n, {P n}+{~P n}) ->
-  (exists n : nat, P n) -> {n : nat | P n}.
-Proof.
-  intros.
-  destruct (Markov P H).
-  apply s.
-  contradict n.
-  intro.
-  destruct H0 as (n,H2).
-  contradict H2.
-  apply H1.
 Qed.

@@ -1,4 +1,5 @@
-Require Export Reals Max.
+Require Import Reals Max.
+Require Import ConstructiveEpsilon.
 Open Scope R_scope.
 
 (** * Définitions de parties entières *)
@@ -109,6 +110,7 @@ Definition nfloor3 x pr := projT1 (nfloor3_ex x pr).
 (** * Logarithme entier *)
 (** ** Dans Z *)
 
+(*
 Lemma Zlog_1_lt_x_ex (x y : R) : 1 < x -> 0 < y -> 
   {n : Z |  Rpower x (IZR n) <= y < Rpower x (IZR n + 1)}.
 Proof.
@@ -156,9 +158,11 @@ Proof.
   reflexivity.
 Qed.
 Definition Zlog_x_lt_1 (x y : R) pr_x pr_y := projT1 (Zlog_x_lt_1_ex x y pr_x pr_y).
+*)
 
 (** ** dans nat *)
 
+(*
 Lemma log_1_lt_x_ex (x y : R) : 1 < x -> 1 <= y -> {n : nat |  x^n <= y < x^(S n)}.
 Proof.
   intros Hx Hy.
@@ -195,40 +199,46 @@ Proof.
   rewrite S_INR ; apply Rmult_lt_compat_r with (1 := Hx2), Hn.
 Qed.
 Definition log_1_lt_x (x y : R) pr_x pr_y := projT1 (log_1_lt_x_ex x y pr_x pr_y).
+*)
 
 Lemma log_x_lt_1_ex (x y : R) : 0 < x < 1 -> 0 < y <= 1 -> {n : nat |  x^(S n) < y <= x^n}.
 Proof.
-  intros.
-  destruct (log_1_lt_x_ex (/x) (/y)) as (n,Hn).
-  rewrite <- Rinv_1 ; apply Rinv_lt_contravar.
-  rewrite Rmult_1_r ; apply H.
-  apply H.
-  rewrite <- Rinv_1 ; apply Rle_Rinv.
-  apply H0.
-  apply Rlt_0_1.
-  apply H0.
-  exists n ; split.
-  assert (Rw : x ^ S n = (/y) * (y * x^(S n))) ;
-    [field ; apply Rgt_not_eq, H0|rewrite Rw ; clear Rw].
-  assert (Rw : y = (/x^(S n)) * (y * x^(S n))) ;
-    [field ; apply Rgt_not_eq, pow_lt, H|pattern y at 3 ; rewrite Rw ; clear Rw].
-  apply Rmult_lt_compat_r.
-  apply Rmult_lt_0_compat.
-  apply H0.
-  apply pow_lt, H.
-  rewrite Rinv_pow.
-  apply Hn.
-  apply Rgt_not_eq, H.
-  assert (Rw : x ^ n = (/y) * (y * x^(n))) ;
-    [field ; apply Rgt_not_eq, H0|rewrite Rw ; clear Rw].
-  assert (Rw : y = (/x^( n)) * (y * x^( n))) ;
-    [field ; apply Rgt_not_eq, pow_lt, H|pattern y at 1 ; rewrite Rw ; clear Rw].
-  apply Rmult_le_compat_r.
-  apply Rlt_le, Rmult_lt_0_compat.
-  apply H0.
-  apply pow_lt, H.
-  rewrite Rinv_pow.
-  apply Hn.
-  apply Rgt_not_eq, H.
+  intros Hx Hy.
+  apply constructive_indefinite_description_nat.
+    intros n.
+    destruct (Rle_dec y (x^n)) as [H1|H1].
+    destruct (Rle_dec y (x^(S n))) as [H2|H2].
+    right.
+    intros H3.
+    now apply Rle_not_lt with (1 := H2).
+    left.
+    split.
+    now apply Rnot_le_lt with (1 := H2).
+    exact H1.
+    right.
+    easy.
+  assert (Hx': Rabs x < 1).
+    rewrite Rabs_pos_eq.
+    apply Hx.
+    now apply Rlt_le.
+  destruct (pow_lt_1_zero x Hx' y (proj1 Hy)) as [N H4].
+  assert (HN: x^(S N) < y).
+    rewrite <- (Rabs_pos_eq x).
+    rewrite RPow_abs.
+    apply H4.
+    now apply le_S.
+    now apply Rlt_le.
+  clear H4.
+  set (g := fix g n := if Rle_dec y (x^n) then n else match n with O => O | S n => g n end).
+  exists (g N).
+  induction N ; simpl.
+    case Rle_dec.
+    now split.
+    easy.
+  case Rle_dec.
+  now split.
+  intros H.
+  apply IHN.
+  now apply Rnot_le_lt.
 Qed.
 Definition log_x_lt_1 (x y : R) pr_x pr_y := projT1 (log_x_lt_1_ex x y pr_x pr_y).
