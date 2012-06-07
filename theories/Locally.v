@@ -885,27 +885,60 @@ destruct (H x Hx).
 
 *)
 
+
+Lemma glop: forall P, ~P -> ~~~P.
+intuition.
+Qed.
+
 Require Import Compactness.
 
 Lemma toto2: forall (P:posreal -> R -> R->Prop) x y,
+   (forall eps u v, P eps u v \/ ~ P eps u v) ->
    locally (fun u => forall eps:posreal, locally (fun t => P eps t u) x) y -> 
       forall eps:posreal, locally_2d (P eps) x y.
-intros P x0 y0 (d1,H1) eps.
-assert (P_dec:(forall x0 t: R, P eps t x0 \/ ~ P eps t x0)). 
-admit.
+intros P x0 y0 P_dec_aux (d1,H1) eps.
+assert (P_dec:(forall x0 t: R, P eps t x0 \/ ~ P eps t x0)).
+intros; now apply P_dec_aux.
 pose (delta := fun y => match Rlt_dec (Rabs (y -y0)) d1 with
         | left H => projT1 (locally_ex_dec _ _ (P_dec y) (H1 _ H eps))
-        | right _ => d1
+        | right _ => (pos_div_2 d1)
       end).
 generalize (compactness_value (y0-d1/2) (y0+d1/2) delta).
 intros (d2,Hd2).
-exists (mkposreal _ (Rmin_stable_in_posreal d1 d2)).
+exists (mkposreal _ (Rmin_stable_in_posreal (pos_div_2 d1) d2)).
 simpl; intros u v Hu Hv.
 specialize (Hd2 v).
 assert (y0 - d1 / 2 <= v <= y0 + d1 / 2).
-admit.
+admit. (* ok *)
 specialize (Hd2 H).
 unfold delta in Hd2.
+case (P_dec v u).
+easy.
+intros HP.
+elimtype False.
+revert Hd2.
+apply glop.
+intros (t,Ht).
+revert Ht.
+case (Rlt_dec (Rabs (t - y0)) d1); intros H2.
+case (locally_ex_dec (fun t0 : R => P eps t0 t) x0 (P_dec t) (H1 t H2 eps))
+  as (d,Hd).
+simpl.
+intros (Hd1,Hd2).
+
+
+
+admit.
+
+
+intros (Hd1,Hd2).
+apply H2.
+admit. (* ok *)
+Qed.
+
+
+H.
+
 
 
 
