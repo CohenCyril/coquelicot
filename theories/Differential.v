@@ -271,7 +271,7 @@ Lemma derivable_differentiable_pt_lim : forall f x y l2,
     continuity_pt (fun u => Derive (fun z => f z u) x) y ->
     differentiable_pt_lim f x y (Derive (fun u => f u y) x) l2. 
 Proof.
-  intros f x y l2 Dx.
+  intros f x y l2 Dx Dy CC.
   (* . *)
   assert (Dx2:(locally (fun u => derivable_pt_lim_aux (fun t => f t u) x (Derive (fun t => f t u) x)) y)).
   apply locally_impl with (2:=Dx).
@@ -285,15 +285,23 @@ Proof.
             Rabs (f u v - f x v - Derive (fun t : R => f t v) x * (u - x)) <=
             eps * Rabs (u - x)) x y).
   apply toto2.
+  intros eps u v.
+  case (Rle_or_lt (Rabs (f u v - f x v - Derive (fun t : R => f t v) x * (u - x)))
+              (eps * Rabs (u - x))).
+  intros; now left.
+  intros; right; now apply Rlt_not_le.
   exact Dx2.
+  intros eps.
+  
+  admit.
+
   clear Dx Dx2.
   (* . *)
-  intros Dy.
   assert (Dy2:derivable_pt_lim_aux (fun t => f x t) y l2).
   now apply equiv_deriv_pt_lim_0.
   clear Dy.
   (* . *)
-  move /continuity_pt_locally => Cx eps.
+  revert CC; move /continuity_pt_locally => Cx eps.
   set (eps' := pos_div_2 (pos_div_2 eps)).
   move: (Dy2 eps') => {Dy2} [dy Hy].
   move: (Dx3 eps') => {Dx3} [dx Hx].
@@ -349,6 +357,14 @@ Proof.
   left; apply cond_pos.
   apply Rmax_r.
   Qed.
+
+
+
+Lemma derivable_differentiable_pt_lim2 : forall f x y,
+  locally_2d (fun u v => ex_derive (fun z => f z v) u) x y ->
+  is_derive (fun z => f x z) y l2 -> 
+  continuity2_pt (fun u v => Derive (fun z => f z v) u) x y ->
+  differentiable_pt_lim f x y (Derive (fun u => f u y) x) l2.
 
 
 Lemma derivable_differentiable_pt_lim : forall f x y,

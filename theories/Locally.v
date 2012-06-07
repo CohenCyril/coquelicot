@@ -894,61 +894,58 @@ Require Import Compactness.
 
 Lemma toto2: forall (P:posreal -> R -> R->Prop) x y,
    (forall eps u v, P eps u v \/ ~ P eps u v) ->
-   locally (fun u => forall eps:posreal, locally (fun t => P eps t u) x) y -> 
+   locally (fun u => forall eps:posreal, locally (fun t => P eps t u) x) y ->
+   (forall eps,  exists delta:posreal, forall u v t, Rabs (u-x) < delta -> Rabs (v-y) < delta -> Rabs (v-t) < delta 
+             -> P eps u t -> P eps u v) ->
       forall eps:posreal, locally_2d (P eps) x y.
-intros P x0 y0 P_dec_aux (d1,H1) eps.
+intros P x0 y0 P_dec_aux (d1,H1) Y eps.
+destruct (Y eps) as (d3,H3).
 assert (P_dec:(forall x0 t: R, P eps t x0 \/ ~ P eps t x0)).
 intros; now apply P_dec_aux.
-pose (delta := fun y => match Rlt_dec (Rabs (y -y0)) d1 with
-        | left H => projT1 (locally_ex_dec _ _ (P_dec y) (H1 _ H eps))
-        | right _ => (pos_div_2 d1)
+assert (J:forall z, (Rle z (pos_div_2 d1) -> Rlt z d1)).
+admit.
+assert (J2:(forall d1 d2:posreal, 0 < Rmax d1 d2)).
+admit.
+pose (delta := fun y => match Rle_dec (Rabs (y -y0)) (pos_div_2 d1) with
+        | left H => mkposreal _ (J2 d3 (projT1 (locally_ex_dec _ _ (P_dec y)  (H1 _ (J _ H) eps))))
+        | right _ => (pos_div_2 (pos_div_2 d1))
       end).
 generalize (compactness_value (y0-d1/2) (y0+d1/2) delta).
-intros (d2,Hd2).
-exists (mkposreal _ (Rmin_stable_in_posreal (pos_div_2 d1) d2)).
+intros (d2,H2).
+exists (mkposreal _ (Rmin_stable_in_posreal d3 (mkposreal _ (Rmin_stable_in_posreal d2 (pos_div_2 (pos_div_2 d1)))))).
 simpl; intros u v Hu Hv.
-specialize (Hd2 v).
+specialize (H2 v).
 assert (y0 - d1 / 2 <= v <= y0 + d1 / 2).
 admit. (* ok *)
-specialize (Hd2 H).
-unfold delta in Hd2.
-case (P_dec v u).
+specialize (H2 H).
+case (P_dec_aux eps u v).
 easy.
 intros HP.
 elimtype False.
-revert Hd2.
-apply glop.
+revert H2; unfold delta; apply glop.
 intros (t,Ht).
 revert Ht.
-case (Rlt_dec (Rabs (t - y0)) d1); intros H2.
-case (locally_ex_dec (fun t0 : R => P eps t0 t) x0 (P_dec t) (H1 t H2 eps))
+case (Rle_dec (Rabs (t - y0)) (pos_div_2 d1)); intros H5.
+simpl.
+case (locally_ex_dec (fun t0 : R => P eps t0 t) x0 (P_dec t)
+         (H1 t (J (Rabs (t - y0)) H5) eps))
   as (d,Hd).
 simpl.
 intros (Hd1,Hd2).
-
-
-
+assert (P eps u t).
+apply Hd.
+admit. (* ok *)
+apply HP.
+apply H3 with (4:=H0).
 admit.
-
-
-intros (Hd1,Hd2).
-apply H2.
+admit.
+admit.
+simpl; intros (Hd1,Hd2).
+apply H5.
 admit. (* ok *)
 Qed.
 
 
-H.
-
-
-
-
-
-exists (Rmin d1 d2).
-
-generalize (locally_ex_dec (P eps)).
-
-generalize compactness_value.
-locally_ex_dec
 
 (*
 Markov_cor1
@@ -1030,7 +1027,7 @@ Qed.
 *)
 
 
-
+(*
 assert (forall x : R,
         y0-d1/2 <= x <= y0+d1/2 ->
         exists delta : posreal, forall y : R, Rabs (y - x) < delta -> P eps y x).
