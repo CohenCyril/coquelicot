@@ -1,6 +1,7 @@
 Require Import Reals.
 Require Import ssreflect.
 Require Import Rcomplements Derive RInt Differential Locally.
+Require Import Compactness.
 
 Lemma ex_RInt_ext :
   forall f g a b,
@@ -131,6 +132,75 @@ rewrite (RInt_correct _ _ _ (ex_RInt_correct_2 _ _ _ If)).
 rewrite (RInt_correct _ _ _ (ex_RInt_correct_2 _ _ _ Ig)).
 rewrite (RInt_correct _ _ _ (ex_RInt_correct_2 _ _ _ (ex_RInt_minus _ _ _ _ If Ig))).
 apply RiemannInt_minus.
+Qed.
+
+Axiom locally_ex_dec: forall P x, (forall x, {P x}+{~P x}) -> locally P x -> {d:posreal| forall y, Rabs (y-x) < d -> P y}.
+Axiom locally_2d_ex_dec: forall P x y, (forall x y, {P x y}+{~P x y}) -> locally_2d P x y -> {d:posreal| forall u v, Rabs (u-x) < d -> Rabs (v-y) < d -> P u v}.
+
+Lemma uniform_continuity_2d :
+  forall f a b c d,
+  (forall x y, a <= x <= b -> c <= y <= d -> forall eps : posreal, locally_2d (fun u v => Rabs (f u v - f x y) < eps) x y) ->
+  forall eps : posreal, exists delta : posreal,
+  forall x y u v,
+  a <= x <= b -> c <= y <= d ->
+  a <= u <= b -> c <= v <= d ->
+  Rabs (u - x) < delta -> Rabs (v - y) < delta ->
+  Rabs (f u v - f x y) < eps.
+Proof.
+intros f a b c d Cf eps.
+set (P x y u v := Rabs (f u v - f x y) < pos_div_2 eps).
+refine (_ (fun x y Hx Hy => locally_2d_ex_dec (P x y) x y _ (Cf x y Hx Hy _))).
+intros delta1.
+set (delta2 x y := match Rle_dec a x, Rle_dec x b, Rle_dec c y, Rle_dec y d with
+  left Ha, left Hb, left Hc, left Hd => pos_div_2 (projT1 (delta1 x y (conj Ha Hb) (conj Hc Hd))) |
+  _, _, _, _ => mkposreal _ Rlt_0_1 end).
+destruct (compactness_value_2d a b c d delta2) as (delta,Hdelta).
+exists (pos_div_2 delta) => x y u v Hx Hy Hu Hv Hux Hvy.
+specialize (Hdelta x y Hx Hy).
+apply Rnot_le_lt.
+apply: false_not_not Hdelta => Hdelta.
+apply Rlt_not_le.
+destruct Hdelta as (p&q&(Hap,Hpb)&(Hcq,Hqd)&Hxp&Hyq&Hd).
+replace (f u v - f x y) with (f u v - f p q + (f p q - f x y)) by ring.
+apply Rle_lt_trans with (1 := Rabs_triang _ _).
+rewrite (double_var eps).
+revert Hxp Hyq Hd.
+unfold delta2.
+case Rle_dec => Hap' ; try easy.
+case Rle_dec => Hpb' ; try easy.
+case Rle_dec => Hcq' ; try easy.
+case Rle_dec => Hqd' ; try easy.
+clear delta2.
+case delta1 => /= r Hr Hxp Hyq Hd.
+apply Rplus_lt_compat.
+apply Hr.
+replace (u - p) with (u - x + (x - p)) by ring.
+apply Rle_lt_trans with (1 := Rabs_triang _ _).
+rewrite (double_var r).
+apply Rplus_lt_compat with (2 := Hxp).
+apply Rlt_le_trans with (2 := Hd).
+apply Rlt_trans with (1 := Hux).
+apply: Rlt_eps2_eps.
+apply cond_pos.
+replace (v - q) with (v - y + (y - q)) by ring.
+apply Rle_lt_trans with (1 := Rabs_triang _ _).
+rewrite (double_var r).
+apply Rplus_lt_compat with (2 := Hyq).
+apply Rlt_le_trans with (2 := Hd).
+apply Rlt_trans with (1 := Hvy).
+apply: Rlt_eps2_eps.
+apply cond_pos.
+rewrite Rabs_minus_sym.
+apply Hr.
+apply Rlt_trans with (1 := Hxp).
+apply Rlt_eps2_eps.
+apply cond_pos.
+apply Rlt_trans with (1 := Hyq).
+apply Rlt_eps2_eps.
+apply cond_pos.
+intros u v.
+unfold P.
+apply Rlt_dec.
 Qed.
 
 Axiom locally_compact :
