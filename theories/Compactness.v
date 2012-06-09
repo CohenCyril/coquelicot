@@ -4,8 +4,6 @@ Require Import List.
 
 Open Scope R_scope.
 
-Section Compactness.
-
 Lemma completeness_any :
   forall P : R -> Prop,
   ( forall x y, x <= y -> P y -> P x ) ->
@@ -24,148 +22,222 @@ apply: HP Pt.
 now apply Rlt_le.
 Qed.
 
-Variable a b : R.
-Variable delta : R -> posreal.
-
-Lemma compactness_list : ~~ exists l, forall x, a <= x <= b -> exists t, In t l /\ Rabs (x - t) < delta t.
+Lemma false_not_not :
+  forall P Q : Prop, (P -> ~Q) -> (~~P -> ~Q).
 Proof.
-destruct (Rlt_or_le b a) as [Hab|Hab].
+intros P Q H HP HQ.
+apply HP.
+intros H'.
+now apply H.
+Qed.
+
+Section Compactness.
+
+Fixpoint Tn n T : Type :=
+  match n with
+  | O => unit
+  | S n => (T * Tn n T)%type
+  end.
+
+Fixpoint bounded_n n : Tn n R -> Tn n R -> Tn n R -> Prop :=
+  match n return Tn n R -> Tn n R -> Tn n R -> Prop with
+  | O => fun a b x : Tn O R => True
+  | S n => fun a b x : Tn (S n) R =>
+    let '(a1,a2) := a in
+    let '(b1,b2) := b in
+    let '(x1,x2) := x in
+    a1 <= x1 <= b1 /\ bounded_n n a2 b2 x2
+  end.
+
+Fixpoint close_n n d : Tn n R -> Tn n R -> Prop :=
+  match n return Tn n R -> Tn n R -> Prop with
+  | O => fun x t : Tn O R => True
+  | S n => fun x t : Tn (S n) R =>
+    let '(x1,x2) := x in
+    let '(t1,t2) := t in
+    Rabs (x1 - t1) < d /\ close_n n d x2 t2
+  end.
+
+Lemma compactness_list :
+  forall n a b (delta : Tn n R -> posreal),
+  ~~ exists l, forall x, bounded_n n a b x -> exists t, In t l /\ close_n n (delta t) x t.
+Proof.
+induction n.
+intros a b delta.
+intros H.
+apply H.
+exists (tt :: nil).
+intros x Hx.
+exists tt.
+repeat split.
+now left.
+simpl.
+(* *)
+intros (a,a') (b,b') delta.
+destruct (Rlt_le_dec b a) as [Hab|Hab].
 intros H.
 apply H.
 exists nil.
-intros x Hx.
+intros (x,x') (Hx,_).
 elim (Rlt_irrefl a).
 apply Rle_lt_trans with (2 := Hab).
 now apply Rle_trans with x.
-set (P y := y <= b /\ exists l, forall x, a <= x <= y -> exists t, In t l /\ Rabs (x - t) < delta t).
-assert (P1 : exists x, P x).
+(* *)
+set (P y := y <= b /\ ~~exists l, forall x, bounded_n (S n) (a,a') (y,b') x -> exists t, In t l /\ close_n (S n) (delta t) x t).
+(* . *)
+assert (P1: exists x, P x).
 exists a.
 split.
 apply Hab.
-exists (cons a nil).
-intros x Hx.
+simpl.
+specialize (IHn a' b' (fun x' => delta (a,x'))).
+contradict IHn.
+contradict IHn.
+destruct IHn as (l,Hl).
+exists (fold_right (fun x' acc => (a,x')::acc) nil l).
+intros (x,x') (Hx,Hx').
 replace x with a by now apply Rle_antisym.
-exists a.
+destruct (Hl x' Hx') as (t',(Ht1,Ht2)).
+exists (a,t').
 split.
-now left.
+clear -Ht1.
+induction l.
+easy.
+simpl in Ht1 |- *.
+destruct Ht1 as [Ht1|Ht1].
+left.
+now apply f_equal2.
+right.
+now apply IHl.
+split.
 rewrite /Rminus Rplus_opp_r Rabs_R0.
 apply cond_pos.
-assert (P2 : bound P).
+exact Ht2.
+(* . *)
+assert (P2: bound P).
 exists b => y Hy.
 apply Hy.
+(* . *)
 assert (P3: forall x y, x <= y -> P y -> P x).
-intros x y Hxy (Py1,(d,Py2)).
+intros x y Hxy (Py1,Py2).
 split.
 now apply Rle_trans with y.
-exists d => z Hz.
+contradict Py2.
+contradict Py2.
+destruct Py2 as (l,Py2).
+exists l => [[z z']] Hz.
 apply Py2.
 split.
+split.
 apply Hz.
-now apply Rle_trans with (1 := proj2 Hz).
-(* *)
-destruct (Rle_or_lt a (b - delta b)) as [Ha|Ha].
-destruct (Rle_or_lt b (projT1 (completeness _ P2 P1))) as [Hb|Hb].
+now apply Rle_trans with (1 := proj2 (proj1 Hz)).
+apply Hz.
 (* . *)
-generalize (completeness_any _ P3 P1 P2 (b - delta b)).
-intros H.
-refine (_ (H _)).
-clear H => HP.
-contradict HP.
-contradict HP.
-destruct HP as (H1,(l,H2)).
-exists (b :: l).
-simpl.
-intros x Hx.
-destruct (Rle_or_lt x (b - delta b)) as [Hx'|Hx'].
-destruct (H2 x (conj (proj1 Hx) Hx')) as (t,Ht).
-exists t.
-split.
-now right.
-apply Ht.
-exists b.
-split.
-now left.
-rewrite Rabs_left1.
-apply Rplus_lt_reg_r with (x - delta b).
-replace (x - delta b + - (x - b)) with (b - delta b) by ring.
-now rewrite Rplus_assoc Rplus_opp_l Rplus_0_r.
-now apply Rle_minus.
-apply Rlt_le_trans with (2 := Hb).
-rewrite -{3}(Rplus_0_r b) -Ropp_0.
-apply Rplus_lt_compat_l.
-apply Ropp_lt_contravar.
-apply cond_pos.
-(* . *)
-revert Hb.
-generalize (completeness_any _ P3 P1 P2).
-case completeness => y [Hy1 Hy2] /= Hy3 Hy4.
-elimtype False.
-apply (Hy3 (y - delta y)).
-rewrite -{3}(Rplus_0_r y) -Ropp_0.
-apply Rplus_lt_compat_l.
-apply Ropp_lt_contravar.
-apply cond_pos.
-intros Hy5.
-specialize (Hy1 (Rmin b (y + delta y / 2))).
-apply (Rlt_not_le (Rmin b (y + delta y / 2)) y).
-apply Rmin_case.
-exact Hy4.
-rewrite -{1}(Rplus_0_r y).
-apply Rplus_lt_compat_l.
+set (y := projT1 (completeness _ P2 P1)).
+assert (P4: ~~exists d : posreal, P (Rmin b (y + d))).
+specialize (IHn a' b' (fun x' => delta (y,x'))).
+contradict IHn.
+contradict IHn.
+destruct IHn as (l, Hl).
+set (d := fold_right (fun t acc => mkposreal _ (Rmin_stable_in_posreal (delta (y,t)) acc)) (mkposreal _ Rlt_0_1) l).
+assert (Hd: 0 < d/2).
 apply Fourier_util.Rlt_mult_inv_pos.
 apply cond_pos.
 apply Rlt_R0_R2.
-apply Hy1.
+exists (mkposreal _ Hd).
 split.
 apply Rmin_l.
-destruct Hy5 as (_,(l,Hl)).
-exists (y :: l) => x Hx.
-destruct (Rle_or_lt x (y - delta y)) as [Hx'|Hx'].
-destruct (Hl x (conj (proj1 Hx) Hx')) as (t,Ht).
+refine (_ (completeness_any _ P3 P1 P2 (y - d) _)).
+intros Hy.
+apply: false_not_not Hy => Hy.
+destruct Hy as (Hy1,Hy2).
+apply: false_not_not Hy2 => Hy2.
+apply.
+destruct Hy2 as (l',Hl').
+exists (app (fold_right (fun x' acc => (y,x')::acc) nil l) l').
+simpl.
+intros (x,x') (Hx,Hx').
+destruct (Rle_or_lt x (y - d)) as [Hxy|Hxy].
+destruct (Hl' (x,x') (conj (conj (proj1 Hx) Hxy) Hx')) as (t,(Ht1,Ht2)).
 exists t.
 split.
+apply in_or_app.
 now right.
-apply Ht.
-exists y.
+exact Ht2.
+destruct (Hl x' Hx') as (t',(Ht1,Ht2)).
+exists (y, t').
 split.
-now left.
-unfold Rabs.
-case Rcase_abs => Hxy.
-apply Rplus_lt_reg_r with (x - delta y).
-replace (x - delta y + - (x - y)) with (y - delta y) by ring.
-now rewrite Rplus_assoc Rplus_opp_l Rplus_0_r.
+apply in_or_app.
+left.
+clear -Ht1.
+induction l.
+easy.
+simpl in Ht1 |- *.
+destruct Ht1 as [Ht1|Ht1].
+left.
+now apply f_equal2.
+right.
+now apply IHl.
+split.
+apply Rlt_le_trans with d.
+apply Rabs_def1.
 apply Rplus_lt_reg_r with y.
-ring_simplify (y + (x - y)).
-apply Rle_lt_trans with (1 := proj2 Hx).
-apply Rle_lt_trans with (1 := Rmin_r _ _).
+ring_simplify.
+apply Rle_lt_trans with (y + d/2).
+now apply Rle_trans with (2 := Rmin_r b _).
 apply Rplus_lt_compat_l.
-rewrite -{1}(Rplus_0_r (delta y / 2)).
-rewrite {2}(double_var (delta y)).
+rewrite -(Rplus_0_r (d/2)).
+rewrite {2}(double_var d).
+now apply Rplus_lt_compat_l.
+apply Rplus_lt_reg_r with y.
+now ring_simplify (y + (x - y)).
+clearbody y.
+clear -Ht1.
+induction l.
+easy.
+simpl in Ht1.
+destruct Ht1 as [Ht1|Ht1].
+rewrite -Ht1.
+apply: Rmin_l.
+unfold d.
+simpl.
+apply Rle_trans with (1 := Rmin_r _ _).
+now apply IHl.
+exact Ht2.
+fold y.
+rewrite -{2}(Rplus_0_r y) -Ropp_0.
 apply Rplus_lt_compat_l.
-apply Fourier_util.Rlt_mult_inv_pos.
+apply Ropp_lt_contravar.
 apply cond_pos.
-apply Rlt_R0_R2.
 (* . *)
-intro H.
-apply H.
-clear H.
-exists (b :: nil) => x Hx.
-exists b.
-split.
-now left.
-rewrite Rabs_left1.
-apply Rplus_lt_reg_r with (x - delta b).
-replace (x - delta b + - (x - b)) with (b - delta b) by ring.
-rewrite Rplus_assoc Rplus_opp_l Rplus_0_r.
-apply Rlt_le_trans with (1 := Ha).
-apply Hx.
-now apply Rle_minus.
+apply: false_not_not P4 => P4.
+destruct P4 as (d,P4).
+destruct (Rle_or_lt b y) as [Hby|Hby].
+rewrite Rmin_left in P4.
+apply P4.
+rewrite -(Rplus_0_r b).
+apply Rplus_le_compat with (1 := Hby).
+apply Rlt_le.
+apply cond_pos.
+elimtype False.
+unfold y in *.
+clear y.
+revert P4 Hby.
+case completeness => /= y [Hy1 Hy2] P4 Hby.
+apply Rle_not_lt with (1 := Hy1 (Rmin b (y + d)) P4).
+apply Rmin_case.
+exact Hby.
+rewrite -{1}(Rplus_0_r y).
+apply Rplus_lt_compat_l.
+apply cond_pos.
 Qed.
 
 Lemma compactness_value :
-  exists d : posreal, forall x, a <= x <= b -> ~~ exists t, Rabs (x - t) < delta t /\ d <= delta t.
+  forall n a b (delta : Tn n R -> posreal),
+  { d : posreal | forall x, bounded_n n a b x -> ~~ exists t, close_n n (delta t) x t /\ d <= delta t }.
 Proof.
-set (P d := d <= 1 /\ forall x, a <= x <= b -> exists t, Rabs (x - t) < delta t /\ d <= delta t).
+intros n a b delta.
+set (P d := d <= 1 /\ forall x, bounded_n n a b x -> exists t, close_n n (delta t) x t /\ d <= delta t).
 assert (P1 : exists d, P d).
 exists 0.
 split.
@@ -173,8 +245,14 @@ apply Rle_0_1.
 intros x Hx.
 exists x.
 split.
+clear.
+induction n.
+easy.
+destruct x as (x,x').
+split.
 rewrite /Rminus Rplus_opp_r Rabs_R0.
 apply cond_pos.
+apply (IHn (fun x' => delta (x,x'))).
 apply Rlt_le.
 apply cond_pos.
 assert (P2 : bound P).
@@ -189,7 +267,7 @@ intros d (Hd1,Hd2).
 simpl.
 apply Rnot_le_lt.
 intros Hd3.
-apply compactness_list.
+apply (compactness_list n a b delta).
 intros (l,Hl).
 set (v := fold_right (fun t acc => mkposreal _ (Rmin_stable_in_posreal (delta t) acc)) (mkposreal _ Rlt_0_1) l).
 apply (Rlt_not_le _ _ (cond_pos v)).
@@ -249,3 +327,41 @@ apply Rlt_R0_R2.
 Qed.
 
 End Compactness.
+
+Lemma compactness_value_1d :
+  forall a b (delta : R -> posreal),
+  { d : posreal | forall x, a <= x <= b -> ~~ exists t, Rabs (x - t) < delta t /\ d <= delta t }.
+Proof.
+intros a b delta.
+destruct (compactness_value 1 (a,tt) (b,tt) (fun t => let '(t,_) := t in delta t)) as (d, Hd).
+exists d.
+intros x Hx.
+specialize (Hd (x,tt) (conj Hx I)).
+do 2 contradict Hd.
+destruct Hd as ((t,t'),Ht).
+exists t.
+split.
+apply Ht.
+apply Ht.
+Qed.
+
+Lemma compactness_value_2d :
+  forall a b a' b' (delta : R -> R -> posreal),
+  { d : posreal | forall x y, a <= x <= b -> a' <= y <= b' ->
+    ~~ exists u, exists v, Rabs (x - u) < delta u v /\ Rabs (y - v) < delta u v /\ d <= delta u v }.
+Proof.
+intros a b a' b' delta.
+destruct (compactness_value 2 (a,(a',tt)) (b,(b',tt)) (fun t => let '(u,(v,_)) := t in delta u v)) as (d, Hd).
+exists d.
+intros x y Hx Hy.
+specialize (Hd (x,(y,tt)) (conj Hx (conj Hy I))).
+do 2 contradict Hd.
+destruct Hd as ((u,(v,w)),Ht).
+exists u.
+exists v.
+split.
+apply Ht.
+split.
+apply Ht.
+apply Ht.
+Qed.
