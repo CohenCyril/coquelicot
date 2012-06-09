@@ -60,7 +60,7 @@ Fixpoint close_n n d : Tn n R -> Tn n R -> Prop :=
 
 Lemma compactness_list :
   forall n a b (delta : Tn n R -> posreal),
-  ~~ exists l, forall x, bounded_n n a b x -> exists t, In t l /\ close_n n (delta t) x t.
+  ~~ exists l, forall x, bounded_n n a b x -> exists t, In t l /\ bounded_n n a b t /\ close_n n (delta t) x t.
 Proof.
 induction n.
 intros a b delta.
@@ -83,10 +83,10 @@ elim (Rlt_irrefl a).
 apply Rle_lt_trans with (2 := Hab).
 now apply Rle_trans with x.
 (* *)
-set (P y := y <= b /\ ~~exists l, forall x, bounded_n (S n) (a,a') (y,b') x -> exists t, In t l /\ close_n (S n) (delta t) x t).
+set (P y := y <= b /\ ~~exists l, forall x, bounded_n (S n) (a,a') (y,b') x ->
+  exists t, In t l /\ bounded_n (S n) (a,a') (b,b') t /\ close_n (S n) (delta t) x t).
 (* . *)
-assert (P1: exists x, P x).
-exists a.
+assert (P1': P a).
 split.
 apply Hab.
 simpl.
@@ -109,10 +109,13 @@ left.
 now apply f_equal2.
 right.
 now apply IHl.
-split.
+repeat split.
+apply Rle_refl.
+exact Hab.
+apply Ht2.
 rewrite /Rminus Rplus_opp_r Rabs_R0.
 apply cond_pos.
-exact Ht2.
+apply Ht2.
 (* . *)
 assert (P2: bound P).
 exists b => y Hy.
@@ -132,6 +135,8 @@ split.
 apply Hz.
 now apply Rle_trans with (1 := proj2 (proj1 Hz)).
 apply Hz.
+assert (P1: exists x, P x).
+now exists a.
 (* . *)
 set (y := projT1 (completeness _ P2 P1)).
 assert (P4: ~~exists d : posreal, P (Rmin b (y + d))).
@@ -178,7 +183,15 @@ left.
 now apply f_equal2.
 right.
 now apply IHl.
+do 2 split.
+unfold y.
+case completeness => /= z [Hz1 Hz2].
 split.
+now apply Hz1.
+apply Hz2.
+intros w Hw.
+apply Hw.
+apply Ht2.
 apply Rlt_le_trans with d.
 apply Rabs_def1.
 apply Rplus_lt_reg_r with y.
@@ -203,7 +216,7 @@ unfold d.
 simpl.
 apply Rle_trans with (1 := Rmin_r _ _).
 now apply IHl.
-exact Ht2.
+apply Ht2.
 fold y.
 rewrite -{2}(Rplus_0_r y) -Ropp_0.
 apply Rplus_lt_compat_l.
@@ -234,16 +247,18 @@ Qed.
 
 Lemma compactness_value :
   forall n a b (delta : Tn n R -> posreal),
-  { d : posreal | forall x, bounded_n n a b x -> ~~ exists t, close_n n (delta t) x t /\ d <= delta t }.
+  { d : posreal | forall x, bounded_n n a b x -> ~~ exists t, bounded_n n a b t /\ close_n n (delta t) x t /\ d <= delta t }.
 Proof.
 intros n a b delta.
-set (P d := d <= 1 /\ forall x, bounded_n n a b x -> exists t, close_n n (delta t) x t /\ d <= delta t).
+set (P d := d <= 1 /\ forall x, bounded_n n a b x -> exists t, bounded_n n a b t /\ close_n n (delta t) x t /\ d <= delta t).
 assert (P1 : exists d, P d).
 exists 0.
 split.
 apply Rle_0_1.
 intros x Hx.
 exists x.
+split.
+exact Hx.
 split.
 clear.
 induction n.
@@ -286,6 +301,8 @@ destruct (Hl x Hx) as (t,(Ht1,Ht2)).
 exists t.
 split.
 apply Ht2.
+split.
+apply Ht2.
 clear -Ht1.
 induction l.
 easy.
@@ -315,6 +332,8 @@ destruct (Pv2 z Hz) as (t,Ht).
 exists t.
 split.
 apply Ht.
+split.
+apply Ht.
 apply Rle_trans with (1 := Huv).
 apply Ht.
 fold d.
@@ -330,7 +349,7 @@ End Compactness.
 
 Lemma compactness_value_1d :
   forall a b (delta : R -> posreal),
-  { d : posreal | forall x, a <= x <= b -> ~~ exists t, Rabs (x - t) < delta t /\ d <= delta t }.
+  { d : posreal | forall x, a <= x <= b -> ~~ exists t, a <= t <= b /\ Rabs (x - t) < delta t /\ d <= delta t }.
 Proof.
 intros a b delta.
 destruct (compactness_value 1 (a,tt) (b,tt) (fun t => let '(t,_) := t in delta t)) as (d, Hd).
@@ -340,15 +359,13 @@ specialize (Hd (x,tt) (conj Hx I)).
 do 2 contradict Hd.
 destruct Hd as ((t,t'),Ht).
 exists t.
-split.
-apply Ht.
-apply Ht.
+repeat split ; apply Ht.
 Qed.
 
 Lemma compactness_value_2d :
   forall a b a' b' (delta : R -> R -> posreal),
   { d : posreal | forall x y, a <= x <= b -> a' <= y <= b' ->
-    ~~ exists u, exists v, Rabs (x - u) < delta u v /\ Rabs (y - v) < delta u v /\ d <= delta u v }.
+    ~~ exists u, exists v, a <= u <= b /\ a' <= v <= b' /\ Rabs (x - u) < delta u v /\ Rabs (y - v) < delta u v /\ d <= delta u v }.
 Proof.
 intros a b a' b' delta.
 destruct (compactness_value 2 (a,(a',tt)) (b,(b',tt)) (fun t => let '(u,(v,_)) := t in delta u v)) as (d, Hd).
@@ -359,9 +376,6 @@ do 2 contradict Hd.
 destruct Hd as ((u,(v,w)),Ht).
 exists u.
 exists v.
-split.
-apply Ht.
-split.
-apply Ht.
-apply Ht.
+simpl in Ht.
+repeat split ; apply Ht.
 Qed.
