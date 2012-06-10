@@ -895,23 +895,25 @@ Require Import Compactness.
 Lemma toto2: forall (P:posreal -> R -> R->Prop) x y,
    (forall eps u v, P eps u v \/ ~ P eps u v) ->
    locally (fun u => forall eps:posreal, locally (fun t => P eps t u) x) y ->
-   (forall eps,  exists delta:posreal, forall u v t, Rabs (u-x) < delta -> Rabs (v-y) < delta -> Rabs (v-t) < delta 
+  (forall eps,  exists delta:posreal, forall u v t, Rabs (u-x) < delta -> Rabs (v-y) < delta -> Rabs (v-t) < delta 
              -> P eps u t -> P eps u v) ->
       forall eps:posreal, locally_2d (P eps) x y.
 intros P x0 y0 P_dec_aux (d1,H1) Y eps.
-destruct (Y eps) as (d3,H3).
+(* *)
 assert (P_dec:(forall x0 t: R, P eps t x0 \/ ~ P eps t x0)).
 intros; now apply P_dec_aux.
-assert (J:forall z, (Rle z (pos_div_2 d1) -> Rlt z d1)).
+assert (J1:forall z d, (Rle z (pos_div_2 d) -> Rlt z d)).
 admit.
 assert (J2:(forall d1 d2:posreal, 0 < Rmax d1 d2)).
 admit.
-pose (delta := fun y => match Rle_dec (Rabs (y -y0)) (pos_div_2 d1) with
-        | left H => mkposreal _ (J2 d3 (projT1 (locally_ex_dec _ _ (P_dec y)  (H1 _ (J _ H) eps))))
+destruct (Y eps) as (d3,H3).
+pose (deltay := fun y => match Rle_dec (Rabs (y -y0)) (pos_div_2 d1) with
+        | left H => (mkposreal _ (J2 d3 (projT1 (locally_ex_dec _ _ (P_dec y)  (H1 _ (J1 _ d1 H) eps)))))
         | right _ => (pos_div_2 (pos_div_2 d1))
       end).
-generalize (compactness_value (y0-d1/2) (y0+d1/2) delta).
+generalize (compactness_value (y0-d1/2) (y0+d1/2) deltay).
 intros (d2,H2).
+(* *)
 exists (mkposreal _ (Rmin_stable_in_posreal d3 (mkposreal _ (Rmin_stable_in_posreal d2 (pos_div_2 (pos_div_2 d1)))))).
 simpl; intros u v Hu Hv.
 specialize (H2 v).
@@ -922,13 +924,13 @@ case (P_dec_aux eps u v).
 easy.
 intros HP.
 elimtype False.
-revert H2; unfold delta; apply glop.
+revert H2; unfold deltay; apply glop.
 intros (t,Ht).
 revert Ht.
 case (Rle_dec (Rabs (t - y0)) (pos_div_2 d1)); intros H5.
 simpl.
 case (locally_ex_dec (fun t0 : R => P eps t0 t) x0 (P_dec t)
-         (H1 t (J (Rabs (t - y0)) H5) eps))
+        (H1 t (J1 (Rabs (t - y0)) d1 H5) eps))
   as (d,Hd).
 simpl.
 intros (Hd1,Hd2).

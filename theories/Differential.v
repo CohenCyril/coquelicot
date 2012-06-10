@@ -265,6 +265,40 @@ Proof.
 Qed.
 
 
+
+Lemma toto3: forall f eps x y, 
+  locally_2d (fun u v => continuity_pt (fun t => f t v) u) x y -> 
+  exists delta:posreal,
+    forall u v t : R,
+     Rabs (u - x) < delta ->
+     Rabs (v - y) < delta ->
+     Rabs (v - t) < delta ->
+     Rabs (f u t - f x t) <= eps ->
+     Rabs (f u v - f x v) <= eps.
+intros f eps x y (d,H).
+exists d.
+intros u v t Hu Hv Ht H1.
+
+assert (locally
+         (fun u : R =>
+          forall eps : posreal, locally (fun t : R => Rabs (f u t - f x t) <= eps ) x) y).
+apply (locally_impl (fun v : R => continuity_pt (fun u : R => f u v) x) 
+  (fun u : R => forall eps0 : posreal, locally (fun t : R => Rabs (f u t - f x t) <= eps0) x) y).
+2: apply H.
+apply locally_forall.
+intros z Hz.
+specialize (proj1 (continuity_pt_locally _ _) Hz).
+
+apply continuity_pt_locally in Hz.
+.
+
+continuity_pt_locally
+
+unfold continuity_pt, continue_in in H1.
+
+
+
+
 Lemma derivable_differentiable_pt_lim : forall f x y l2,
     locally (fun u => ex_derive (fun z => f z u) x) y -> 
     is_derive (fun z => f x z) y l2 -> 
@@ -292,7 +326,8 @@ Proof.
   intros; right; now apply Rlt_not_le.
   exact Dx2.
   intros eps.
-  
+  exists delta : posreal,
+ 
   admit.
 
   clear Dx Dx2.
