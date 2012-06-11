@@ -137,9 +137,12 @@ Qed.
 Axiom locally_ex_dec: forall P x, (forall x, {P x}+{~P x}) -> locally P x -> {d:posreal| forall y, Rabs (y-x) < d -> P y}.
 Axiom locally_2d_ex_dec: forall P x y, (forall x y, {P x y}+{~P x y}) -> locally_2d P x y -> {d:posreal| forall u v, Rabs (u-x) < d -> Rabs (v-y) < d -> P u v}.
 
+Definition continuity_2d f x y :=
+  forall eps : posreal, locally_2d (fun u v => Rabs (f u v - f x y) < eps) x y.
+
 Lemma uniform_continuity_2d :
   forall f a b c d,
-  (forall x y, a <= x <= b -> c <= y <= d -> forall eps : posreal, locally_2d (fun u v => Rabs (f u v - f x y) < eps) x y) ->
+  (forall x y, a <= x <= b -> c <= y <= d -> continuity_2d f x y) ->
   forall eps : posreal, exists delta : posreal,
   forall x y u v,
   a <= x <= b -> c <= y <= d ->
@@ -203,13 +206,76 @@ unfold P.
 apply Rlt_dec.
 Qed.
 
-Axiom locally_compact :
-  forall (P : R -> R -> Prop) a b x,
-  (forall t, a <= t <= b -> locally (fun y => P y t) x) ->
-  locally (fun y => forall t, a <= t <= b -> P y t) x.
+Lemma uniform_continuity_2d_1d :
+  forall f a b c,
+  (forall x, a <= x <= b -> continuity_2d f x c) ->
+  forall eps : posreal, exists delta : posreal,
+  forall x y u v,
+  a <= x <= b -> c - delta <= y <= c + delta ->
+  a <= u <= b -> c - delta <= v <= c + delta ->
+  Rabs (u - x) < delta ->
+  Rabs (f u v - f x y) < eps.
+Proof.
+intros f a b c Cf eps.
+set (P x y u v := Rabs (f u v - f x y) < pos_div_2 eps).
+refine (_ (fun x Hx => locally_2d_ex_dec (P x c) x c _ (Cf x Hx _))).
+intros delta1.
+set (delta2 x := match Rle_dec a x, Rle_dec x b with
+  left Ha, left Hb => pos_div_2 (projT1 (delta1 x (conj Ha Hb))) |
+  _, _ => mkposreal _ Rlt_0_1 end).
+destruct (compactness_value_1d a b delta2) as (delta,Hdelta).
+exists (pos_div_2 delta) => x y u v Hx Hy Hu Hv Hux.
+specialize (Hdelta x Hx).
+apply Rnot_le_lt.
+apply: false_not_not Hdelta => Hdelta.
+apply Rlt_not_le.
+destruct Hdelta as (p&(Hap,Hpb)&Hxp&Hd).
+replace (f u v - f x y) with (f u v - f p c + (f p c - f x y)) by ring.
+apply Rle_lt_trans with (1 := Rabs_triang _ _).
+rewrite (double_var eps).
+revert Hxp Hd.
+unfold delta2.
+case Rle_dec => Hap' ; try easy.
+case Rle_dec => Hpb' ; try easy.
+clear delta2.
+case delta1 => /= r Hr Hxp Hd.
+apply Rplus_lt_compat.
+apply Hr.
+replace (u - p) with (u - x + (x - p)) by ring.
+apply Rle_lt_trans with (1 := Rabs_triang _ _).
+rewrite (double_var r).
+apply Rplus_lt_compat with (2 := Hxp).
+apply Rlt_le_trans with (2 := Hd).
+apply Rlt_trans with (1 := Hux).
+apply: Rlt_eps2_eps.
+apply cond_pos.
+apply Rle_lt_trans with (pos_div_2 delta).
+now apply Rabs_le_between'.
+apply Rlt_le_trans with(1 := Rlt_eps2_eps _ (cond_pos delta)).
+apply Rle_trans with (1 := Hd).
+apply Rlt_le.
+apply Rlt_eps2_eps.
+apply cond_pos.
+rewrite Rabs_minus_sym.
+apply Hr.
+apply Rlt_trans with (1 := Hxp).
+apply Rlt_eps2_eps.
+apply cond_pos.
+apply Rle_lt_trans with (pos_div_2 delta).
+now apply Rabs_le_between'.
+apply Rlt_le_trans with(1 := Rlt_eps2_eps _ (cond_pos delta)).
+apply Rle_trans with (1 := Hd).
+apply Rlt_le.
+apply Rlt_eps2_eps.
+apply cond_pos.
+intros u v.
+unfold P.
+apply Rlt_dec.
+Qed.
 
 Lemma derivable_pt_lim_param : forall f a b x,
-  (forall t, Rmin a b <= t <= Rmax a b -> ex_derive (fun u : R => f u t) x) ->
+  locally (fun x => forall t, Rmin a b <= t <= Rmax a b -> ex_derive (fun u => f u t) x) x ->
+  (forall t, Rmin a b <= t <= Rmax a b -> continuity_2d (fun u v => Derive (fun z => f z v) u) x t) ->
   locally (fun y => ex_RInt (fun t => f y t) a b) x ->
   ex_RInt (fun t => Derive (fun u => f u t) x) a b ->
   derivable_pt_lim (fun x => RInt (fun t => f x t) a b) x
@@ -220,7 +286,7 @@ wlog: a b / a < b => H.
 (* *)
 destruct (total_order_T a b) as [[Hab|Hab]|Hab].
 now apply H.
-intros _ _ _.
+intros _ _ _ _.
 rewrite Hab.
 rewrite RInt_point.
 apply (is_derive_ext (fun _ => 0)).
@@ -228,7 +294,7 @@ intros t.
 apply sym_eq.
 apply RInt_point.
 apply derivable_pt_lim_const.
-intros H1 H2 H3.
+intros H1 H2 H3 H4.
 apply (is_derive_ext (fun u => - RInt (fun t => f u t) b a)).
 intros t.
 apply RInt_swap.
@@ -237,21 +303,44 @@ apply derivable_pt_lim_opp.
 apply H.
 exact Hab.
 now rewrite Rmin_comm Rmax_comm.
-apply: locally_impl H2.
-apply locally_forall => {H} y H.
+now rewrite Rmin_comm Rmax_comm.
+apply: locally_impl H3.
+apply locally_forall => y H3.
 now apply ex_RInt_bound.
 now apply ex_RInt_bound.
 (* *)
-intros Df If Idf.
+rewrite Rmin_left. 2: now apply Rlt_le.
+rewrite Rmax_right. 2: now apply Rlt_le.
+intros Df Cdf If IDf.
 apply equiv_deriv_pt_lim_1.
-intro eps.
-assert (K := locally_compact (fun y t => Rabs (f y t - f x t - Derive (fun u => f u t) x * (y - x)) <= eps / Rabs (b - a) * Rabs (y - x)) a b x).
-refine (locally_impl _ _ x _ (K _)) => {K}.
-(* *)
-apply: locally_align If => delta If y Hy K.
-assert (D1: ex_RInt (fun t => f y t) a b) by now apply If.
+refine (let Cdf' := uniform_continuity_2d_1d (fun u v => Derive (fun z => f z u) v) a b x _ in _).
+intros t Ht eps.
+specialize (Cdf t Ht eps).
+simpl in Cdf.
+destruct Cdf as (d,Cdf).
+exists d.
+intros v u Hv Hu.
+now apply Cdf.
+intros eps. clear Cdf.
+assert (H': 0 < eps / Rabs (b - a)).
+apply Rmult_lt_0_compat.
+apply cond_pos.
+apply Rinv_0_lt_compat.
+apply Rabs_pos_lt.
+apply Rgt_not_eq.
+now apply Rgt_minus.
+move: (Cdf' (mkposreal _ H')) => {Cdf'} [d1 Cdf].
+move: (locally_and _ _ _ Df If) => {Df If} [d2 DIf].
+exists (mkposreal _ (Rmin_stable_in_posreal d1 (pos_div_2 d2))) => /= y Hy.
+assert (D1: ex_RInt (fun t => f y t) a b).
+apply DIf.
+apply Rlt_le_trans with (1 := Hy).
+apply Rle_trans with (1 := Rmin_r _ _).
+apply Rlt_le.
+apply Rlt_eps2_eps.
+apply cond_pos.
 assert (D2: ex_RInt (fun t => f x t) a b).
-apply If.
+apply DIf.
 rewrite /Rminus Rplus_opp_r Rabs_R0.
 apply cond_pos.
 rewrite -RInt_minus //.
@@ -266,9 +355,37 @@ assert (D6: ex_RInt (fun t => Rabs (f y t - f x t - (y - x) * Derive (fun u => f
 apply Rle_trans with (1 := RiemannInt_P17 _ (ex_RInt_correct_2 _ _ _ D6) (Rlt_le _ _ H)).
 refine (Rle_trans _ _ _ (RiemannInt_P19 _ (RiemannInt_P14 a b (eps / Rabs (b - a) * Rabs (y - x))) (Rlt_le _ _ H) _) _).
 intros u Hu.
-rewrite Rmult_comm.
-apply K.
+destruct (MVT_cor4 (fun t => f t u) x) with (eps := pos_div_2 d2) (b := y) as (z,Hz).
+intros z Hz.
+apply DIf.
+apply Rle_lt_trans with (1 := Hz).
+apply: Rlt_eps2_eps.
+apply cond_pos.
 split ; now apply Rlt_le.
+apply Rlt_le.
+apply Rlt_le_trans with (1 := Hy).
+apply Rmin_r.
+rewrite (proj1 Hz).
+rewrite Rmult_comm.
+rewrite -Rmult_minus_distr_l Rabs_mult.
+rewrite Rmult_comm.
+apply Rmult_le_compat_r.
+apply Rabs_pos.
+apply Rlt_le.
+apply Cdf.
+split ; now apply Rlt_le.
+apply Rabs_le_between'.
+rewrite /Rminus Rplus_opp_r Rabs_R0.
+apply Rlt_le.
+apply cond_pos.
+split ; now apply Rlt_le.
+apply Rabs_le_between'.
+apply Rle_trans with (1 := proj2 Hz).
+apply Rlt_le.
+apply Rlt_le_trans with (1 := Hy).
+apply Rmin_l.
+rewrite /Rminus Rplus_opp_r Rabs_R0.
+apply cond_pos.
 rewrite RiemannInt_P15.
 rewrite Rabs_pos_eq.
 right.
@@ -278,22 +395,4 @@ now apply Rgt_minus.
 apply Rge_le.
 apply Rge_minus.
 now apply Rgt_ge.
-(* *)
-intros t Ht.
-assert (H': 0 < eps / Rabs (b - a)).
-apply Rmult_lt_0_compat.
-apply cond_pos.
-apply Rinv_0_lt_compat.
-apply Rabs_pos_lt.
-apply Rgt_not_eq.
-now apply Rgt_minus.
-fold (pos (mkposreal _ H')).
-apply (equiv_deriv_pt_lim_0 (fun u => f u t) x).
-apply Derive_correct.
-apply Df.
-rewrite Rmin_left.
-rewrite Rmax_right.
-apply Ht.
-now apply Rlt_le.
-now apply Rlt_le.
 Qed.
