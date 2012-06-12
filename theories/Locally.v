@@ -886,21 +886,20 @@ destruct (H x Hx).
 *)
 
 
-Lemma glop: forall P, ~P -> ~~~P.
-intuition.
-Qed.
+
 
 Require Import Compactness.
 
-Lemma toto2: forall (P:posreal -> R -> R->Prop) x y,
+Lemma locally_locally_2D: forall (P:posreal -> R -> R->Prop) x y,
    (forall eps u v, P eps u v \/ ~ P eps u v) ->
    locally (fun u => forall eps:posreal, locally (fun t => P eps t u) x) y ->
   (forall eps,  exists delta:posreal, forall u v t, Rabs (u-x) < delta -> Rabs (v-y) < delta -> Rabs (v-t) < delta 
-             -> P eps u t -> P eps u v) ->
+             -> P (pos_div_2 eps) u t -> P eps u v) ->
       forall eps:posreal, locally_2d (P eps) x y.
 intros P x0 y0 P_dec_aux (d1,H1) Y eps.
 (* *)
-assert (P_dec:(forall x0 t: R, P eps t x0 \/ ~ P eps t x0)).
+assert (glop: forall P, ~P -> ~~~P) by intuition.
+assert (P_dec:(forall x0 t: R, P (pos_div_2 eps) t x0 \/ ~ P (pos_div_2 eps) t x0)).
 intros; now apply P_dec_aux.
 assert (J1:forall z d, (Rle z (pos_div_2 d) -> Rlt z d)).
 admit.
@@ -908,7 +907,7 @@ assert (J2:(forall d1 d2:posreal, 0 < Rmax d1 d2)).
 admit.
 destruct (Y eps) as (d3,H3).
 pose (deltay := fun y => match Rle_dec (Rabs (y -y0)) (pos_div_2 d1) with
-        | left H => (mkposreal _ (J2 d3 (projT1 (locally_ex_dec _ _ (P_dec y)  (H1 _ (J1 _ d1 H) eps)))))
+        | left H => (mkposreal _ (J2 d3 (projT1 (locally_ex_dec _ _ (P_dec y)  (H1 _ (J1 _ d1 H) (pos_div_2 eps))))))
         | right _ => (pos_div_2 (pos_div_2 d1))
       end).
 generalize (compactness_value (y0-d1/2) (y0+d1/2) deltay).
@@ -929,12 +928,12 @@ intros (t,Ht).
 revert Ht.
 case (Rle_dec (Rabs (t - y0)) (pos_div_2 d1)); intros H5.
 simpl.
-case (locally_ex_dec (fun t0 : R => P eps t0 t) x0 (P_dec t)
-        (H1 t (J1 (Rabs (t - y0)) d1 H5) eps))
+case (locally_ex_dec (fun t0 : R => P (pos_div_2 eps) t0 t) x0 (P_dec t)
+        (H1 t (J1 (Rabs (t - y0)) d1 H5) (pos_div_2 eps)))
   as (d,Hd).
 simpl.
 intros (Hd1,Hd2).
-assert (P eps u t).
+assert (P (pos_div_2 eps) u t).
 apply Hd.
 admit. (* ok *)
 apply HP.
@@ -1092,6 +1091,7 @@ unfold locally_2d.
 Admitted.
 
 *)
+
 
 
 Lemma derivable_pt_lim_locally :

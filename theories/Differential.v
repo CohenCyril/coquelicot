@@ -265,7 +265,7 @@ Proof.
 Qed.
 
 
-
+(*
 Lemma toto3: forall f eps x y, 
   locally_2d (fun u v => continuity_pt (fun t => f t v) u) x y -> 
   exists delta:posreal,
@@ -295,19 +295,21 @@ apply continuity_pt_locally in Hz.
 continuity_pt_locally
 
 unfold continuity_pt, continue_in in H1.
-
-
+*)
 
 
 Lemma derivable_differentiable_pt_lim : forall f x y l2,
-    locally (fun u => ex_derive (fun z => f z u) x) y -> 
+    locally_2d (fun u v => ex_derive (fun z => f z v) u) x y ->
+    (*locally (fun u => ex_derive (fun z => f z u) x) y ->*)
     is_derive (fun z => f x z) y l2 -> 
     continuity_pt (fun u => Derive (fun z => f z u) x) y ->
+    (* continuity2_pt (fun u v => Derive (fun z => f z v) u) x y ->*)
     differentiable_pt_lim f x y (Derive (fun u => f u y) x) l2. 
 Proof.
   intros f x y l2 Dx Dy CC.
   (* . *)
   assert (Dx2:(locally (fun u => derivable_pt_lim_aux (fun t => f t u) x (Derive (fun t => f t u) x)) y)).
+  apply locally_2d_1d_const_x in Dx.
   apply locally_impl with (2:=Dx).
   apply locally_forall.
   intros z Hz.
@@ -318,15 +320,36 @@ Proof.
   assert (Dx3: forall eps:posreal, locally_2d (fun u v : R =>
             Rabs (f u v - f x v - Derive (fun t : R => f t v) x * (u - x)) <=
             eps * Rabs (u - x)) x y).
-  apply toto2.
-  intros eps u v.
+  intros eps.
+  apply locally_locally_2D with 
+    (P:=fun eps u v =>  Rabs (f u v - f x v - Derive (fun t : R => f t v) x * (u - x)) <= eps * Rabs (u - x)).
+  intros eps0 u v. 
   case (Rle_or_lt (Rabs (f u v - f x v - Derive (fun t : R => f t v) x * (u - x)))
-              (eps * Rabs (u - x))).
+              (eps0 * Rabs (u - x))).
   intros; now left.
   intros; right; now apply Rlt_not_le.
   exact Dx2.
-  intros eps.
-  exists delta : posreal,
+  clear eps.
+  destruct Dx as (d,H1).
+  unfold ex_derive in H1.
+
+
+  exists (mkposreal _ Rlt_0_1).
+  simpl; intros u v t Hu Hv Ht H1.
+  replace (f u v - f x v - Derive (fun t0 : R => f t0 v) x * (u - x)) with
+     ((f u t - f x t - Derive (fun t0 : R => f t0 t) x * (u - x))
+            + (f u v - f u t)+-(f x v - f x t) + -((Derive (fun t0 : R => f t0 v) x - Derive (fun t0 : R => f t0 t) x)
+                * (u - x))) by ring.
+apply Rle_trans with (1:=Rabs_triang _ _).
+rewrite (double_var eps) Rmult_plus_distr_r Rabs_Ropp.
+apply Rplus_le_compat.
+apply Rle_trans with (1:=Rabs_triang _ _).
+
+
+
+2: ring.
+
+
  
   admit.
 
@@ -336,7 +359,17 @@ Proof.
   now apply equiv_deriv_pt_lim_0.
   clear Dy.
   (* . *)
-  revert CC; move /continuity_pt_locally => Cx eps.
+  assert (continuity_pt (fun u => Derive (fun z => f z u) x) y).
+  intros eps Heps. 
+  destruct (CC (mkposreal eps Heps))  as (d,Hd).
+  exists d; split.
+  apply cond_pos.
+  simpl; unfold dist, R_dist; intros z (_,Hz2).
+  apply Hd.
+  rewrite /Rminus Rplus_opp_r Rabs_R0.
+  apply cond_pos.
+  exact Hz2.
+  clear CC; revert H; move /continuity_pt_locally => Cx eps.
   set (eps' := pos_div_2 (pos_div_2 eps)).
   move: (Dy2 eps') => {Dy2} [dy Hy].
   move: (Dx3 eps') => {Dx3} [dx Hx].
