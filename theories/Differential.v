@@ -316,11 +316,15 @@ Proof.
   apply equiv_deriv_pt_lim_0.
   apply Derive_correct.
   exact Hz.
-  unfold derivable_pt_lim_aux in Dx2.
   assert (Dx3: forall eps:posreal, locally_2d (fun u v : R =>
             Rabs (f u v - f x v - Derive (fun t : R => f t v) x * (u - x)) <=
             eps * Rabs (u - x)) x y).
   intros eps.
+  unfold ex_derive, derivable_pt_lim in Dx. 
+
+  destruct Dx as (d,Hd).
+
+
   apply locally_locally_2D with 
     (P:=fun eps u v =>  Rabs (f u v - f x v - Derive (fun t : R => f t v) x * (u - x)) <= eps * Rabs (u - x)).
   intros eps0 u v. 
@@ -335,19 +339,8 @@ Proof.
 
 
   exists (mkposreal _ Rlt_0_1).
-  simpl; intros u v t Hu Hv Ht H1.
-  replace (f u v - f x v - Derive (fun t0 : R => f t0 v) x * (u - x)) with
-     ((f u t - f x t - Derive (fun t0 : R => f t0 t) x * (u - x))
-            + (f u v - f u t)+-(f x v - f x t) + -((Derive (fun t0 : R => f t0 v) x - Derive (fun t0 : R => f t0 t) x)
-                * (u - x))) by ring.
-apply Rle_trans with (1:=Rabs_triang _ _).
-rewrite (double_var eps) Rmult_plus_distr_r Rabs_Ropp.
-apply Rplus_le_compat.
-apply Rle_trans with (1:=Rabs_triang _ _).
+  simpl; intros u v t Hu Hv Ht H2.
 
-
-
-2: ring.
 
 
  
@@ -359,7 +352,7 @@ apply Rle_trans with (1:=Rabs_triang _ _).
   now apply equiv_deriv_pt_lim_0.
   clear Dy.
   (* . *)
-  assert (continuity_pt (fun u => Derive (fun z => f z u) x) y).
+(*  assert (continuity_pt (fun u => Derive (fun z => f z u) x) y).
   intros eps Heps. 
   destruct (CC (mkposreal eps Heps))  as (d,Hd).
   exists d; split.
@@ -369,7 +362,8 @@ apply Rle_trans with (1:=Rabs_triang _ _).
   rewrite /Rminus Rplus_opp_r Rabs_R0.
   apply cond_pos.
   exact Hz2.
-  clear CC; revert H; move /continuity_pt_locally => Cx eps.
+  clear CC; revert H; move /continuity_pt_locally => Cx eps.*)
+  revert CC; move /continuity_pt_locally => Cx eps.
   set (eps' := pos_div_2 (pos_div_2 eps)).
   move: (Dy2 eps') => {Dy2} [dy Hy].
   move: (Dx3 eps') => {Dx3} [dx Hx].
