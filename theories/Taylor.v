@@ -928,18 +928,13 @@ clear - Hk Hp; intros u v (H1,H2).
 apply ex_diff_n_ex_deriv_inf_1 with (S n).
 now rewrite - le_plus_minus.
 exact H1.
-apply locally_2d_impl with (2:=HH).
-apply locally_2d_forall.
-clear - Hk Hp; intros u v (H1,H2).
-apply ex_diff_n_ex_deriv_inf_2 with (S n).
-now rewrite - le_plus_minus.
-exact H1.
 apply locally_2d_singleton in HH.
-apply ex_diff_n_continuity_inf_1 with (S n).
+apply Derive_correct.
+apply ex_diff_n_ex_deriv_inf_2 with (S n).
 now rewrite - le_plus_minus.
 apply HH.
 apply locally_2d_singleton in HH.
-apply ex_diff_n_continuity_inf_2 with (S n).
+apply ex_diff_n_continuity_inf_1 with (S n).
 now rewrite - le_plus_minus.
 apply HH.
 apply Schwarz_ext.

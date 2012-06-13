@@ -532,7 +532,6 @@ apply derivable_differentiable_pt_lim.
 admit.
 admit.
 admit.
-admit.
 apply is_derive_unique.
 now apply derivable_pt_lim_RInt.
 apply is_derive_unique.
