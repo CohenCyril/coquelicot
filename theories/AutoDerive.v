@@ -801,7 +801,8 @@ apply is_derive_ext with (f := fun x => interp (set_nth 0 (set_nth 0 (t :: l) (S
 intros t'.
 now rewrite set_set_nth eqtype.eq_refl.
 intros t Ht.
-apply continuity_2d_pt_ext with (f := fun x y => interp (y :: set_nth 0 l n x) a1).
+apply continuity_2d_pt_ext_loc with (f := fun x y => interp (set_nth 0 (y :: l) (S n) x) a1).
+apply locally_2d_forall. (* non !!! *)
 intros x y.
 apply sym_eq.
 apply is_derive_unique.
@@ -810,7 +811,7 @@ intros u.
 now rewrite set_set_nth eqtype.eq_refl.
 pattern x at 2; replace x with (nth 0 (set_nth 0 (y :: l) (S n) x) (S n)).
 apply IHe1.
-admit.
+admit. (* H3', cf ci-dessus *)
 now rewrite nth_set_nth /= eqtype.eq_refl.
 now apply H4.
 apply: locally_impl H2.

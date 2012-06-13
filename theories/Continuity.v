@@ -164,3 +164,8 @@ apply: locally_2d_impl (Cf eps).
 apply locally_2d_forall => u v.
 now rewrite 2!Heq.
 Qed.
+
+Axiom continuity_2d_pt_ext_loc :
+  forall f g x y,
+  locally_2d (fun u v => f u v = g u v) x y ->
+  continuity_2d_pt f x y -> continuity_2d_pt g x y.
