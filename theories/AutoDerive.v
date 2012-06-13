@@ -1,6 +1,6 @@
 Require Import Reals.
 Require Import ssreflect ssrbool seq.
-Require Import Rcomplements Locally Derive RInt Differential Integral.
+Require Import Rcomplements Locally Derive RInt Differential Integral Continuity.
 
 Fixpoint Rn n T :=
   match n with
@@ -151,7 +151,7 @@ Fixpoint interp_domain (l : seq R) (d : domain) : Prop :=
   | Always => True
   | Derivable n k f le => apply k (ex_derive_Rn k f n) (map (interp l) le)
   | Continuous n f => continuity_pt (fun x => interp (set_nth R0 l n x) f) (nth R0 l n)
-  | Continuous2 m n f => continuity_2d (fun x y => interp (set_nth R0 (set_nth R0 l n y) m x) f) (nth R0 l m) (nth R0 l n)
+  | Continuous2 m n f => continuity_2d_pt (fun x y => interp (set_nth R0 (set_nth R0 l n y) m x) f) (nth R0 l m) (nth R0 l n)
   | Integrable f e1 e2 => ex_RInt (fun x => interp (x :: l) f) (interp l e1) (interp l e2)
   | And ld => foldr (fun d acc => interp_domain l d /\ acc) True ld
   (*| Forall e1 e2 s =>
@@ -376,32 +376,6 @@ now apply f_equal.
 easy.
 Qed.
 
-Lemma continuity_pt_ext :
-  forall f g x,
-  (forall x, f x = g x) ->
-  continuity_pt f x -> continuity_pt g x.
-Proof.
-intros f g x Heq Cf eps Heps.
-destruct (Cf eps Heps) as (d,(Hd1,Hd2)).
-exists d.
-split.
-exact Hd1.
-intros u Hu.
-rewrite -2!Heq.
-now apply Hd2.
-Qed.
-
-Lemma continuity_2d_ext :
-  forall f g x y,
-  (forall x y, f x y = g x y) ->
-  continuity_2d f x y -> continuity_2d g x y.
-Proof.
-intros f g x y Heq Cf eps.
-apply: locally_2d_impl (Cf eps).
-apply locally_2d_forall => u v.
-now rewrite 2!Heq.
-Qed.
-
 Lemma interp_domain_ext :
   forall l1 l2 b,
   (forall k, nth 0 l1 k = nth 0 l2 k) ->
@@ -423,7 +397,7 @@ now case eqtype.eq_op.
 (* *)
 simpl => l1 l2 Hl.
 rewrite 2!Hl.
-apply continuity_2d_ext => x y.
+apply continuity_2d_pt_ext => x y.
 apply interp_ext => k.
 rewrite 2!nth_set_nth /=.
 case eqtype.eq_op => //.
@@ -827,13 +801,13 @@ apply is_derive_ext with (f := fun x => interp (set_nth 0 (set_nth 0 (t :: l) (S
 intros t'.
 now rewrite set_set_nth eqtype.eq_refl.
 intros t Ht.
-apply continuity_2d_ext with (f := fun x y => interp (y :: set_nth 0 l n x) a1).
+apply continuity_2d_pt_ext with (f := fun x y => interp (y :: set_nth 0 l n x) a1).
 intros x y.
 apply sym_eq.
 apply is_derive_unique.
-apply is_derive_ext with (f := fun u => interp (set_nth 0 (y :: set_nth 0 l n x) (S n) u) e1).
+apply is_derive_ext with (f := fun u => interp (set_nth 0 (set_nth 0 (y :: l) (S n) x) (S n) u) e1).
 intros u.
-admit.
+now rewrite set_set_nth eqtype.eq_refl.
 pattern x at 2; replace x with (nth 0 (set_nth 0 (y :: l) (S n) x) (S n)).
 apply IHe1.
 admit.
