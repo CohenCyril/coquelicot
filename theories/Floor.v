@@ -38,7 +38,7 @@ Lemma nfloor_ex : forall x : R, 0 <= x -> {n : nat | INR n <= x < INR n + 1}.
 Proof.
   intros.
   destruct (floor_ex x) as (m,Hm).
-  destruct (Z_lt_le_dec m 0).
+  destruct (Z_lt_le_dec m 0) as [z|z].
   apply Zlt_le_succ in z.
   contradict z.
   apply Zlt_not_le.
@@ -200,6 +200,7 @@ Proof.
 Qed.
 Definition log_1_lt_x (x y : R) pr_x pr_y := projT1 (log_1_lt_x_ex x y pr_x pr_y).
 *)
+
 
 Lemma log_x_lt_1_ex (x y : R) : 0 < x < 1 -> 0 < y <= 1 -> {n : nat |  x^(S n) < y <= x^n}.
 Proof.

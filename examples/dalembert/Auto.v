@@ -1,5 +1,5 @@
 Require Import Reals.
-Require Import Derive RInt.
+Require Import Derive RInt Locally.
 Require Import AutoDerive.
 Require Import ssreflect.
 

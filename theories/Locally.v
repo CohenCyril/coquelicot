@@ -1,6 +1,7 @@
 Require Import Reals.
 Require Import ssreflect.
 Require Import Rcomplements.
+Require Import List.
 
 Open Scope R_scope.
 
@@ -322,6 +323,121 @@ apply cond_pos.
 intros h [Zh Hh].
 exact: H.
 Qed.
+
+
+Require Import Markov Total_sup.
+
+
+Lemma locally_ex_dec: forall P x, (forall x, P x \/ ~P x) -> locally P x -> {d:posreal| forall y, Rabs (y-x) < d -> P y}.
+Proof.
+intros P x P_dec H.
+set (Q := fun z => forall y,  Rabs (y-x) < z -> P y).
+destruct (ex_lub_Rbar_ne Q) as ([d| |],(H1,H2)).
+destruct H as (d1,Hd1).
+now exists d1.
+(* *)
+assert (Zd: 0 < d).
+destruct H as (d1,Hd1).
+apply Rlt_le_trans with (1 := cond_pos d1).
+apply Rbar_finite_le.
+now apply H1.
+exists (mkposreal d Zd).
+simpl.
+intros y Hy.
+destruct (P_dec y) as [Py|Py].
+exact Py.
+elim (Rlt_not_le _ _ Hy).
+apply Rbar_finite_le.
+apply H2.
+intros u Hu.
+apply Rbar_finite_le.
+apply Rnot_lt_le.
+contradict Py.
+now apply Hu.
+(* *)
+exists (mkposreal 1 Rlt_0_1).
+simpl.
+intros y Hy.
+destruct (P_dec y) as [Py|Py].
+exact Py.
+elim (Rlt_not_le _ _ Hy).
+apply Rbar_finite_le.
+apply Rbar_le_trans with p_infty.
+now left.
+apply H2.
+intros u Hu.
+apply Rbar_finite_le.
+apply Rnot_lt_le.
+contradict Py.
+now apply Hu.
+(* *)
+elimtype False.
+destruct H as (d1,Hd1).
+now destruct (H1 d1).
+Qed.
+
+
+Lemma locally_2d_ex_dec: forall P x y, (forall x y, P x y \/ ~P x y) -> locally_2d P x y
+   -> {d:posreal| forall u v, Rabs (u-x) < d -> Rabs (v-y) < d -> P u v}.
+Proof.
+intros P x y P_dec H.
+set (Q := fun z => forall u v,   Rabs (u-x) < z -> Rabs (v-y) < z -> P u v).
+destruct (ex_lub_Rbar_ne Q) as ([d| |],(H1,H2)).
+destruct H as (d1,Hd1).
+now exists d1.
+(* *)
+assert (Zd: 0 < d).
+destruct H as (d1,Hd1).
+apply Rlt_le_trans with (1 := cond_pos d1).
+apply Rbar_finite_le.
+now apply H1.
+exists (mkposreal d Zd).
+simpl.
+intros u v Hu Hv.
+destruct (P_dec  u v) as [Puv|Puv].
+exact Puv.
+assert (Hi:(Rmax (Rabs (u - x)) (Rabs (v - y)) < d)).
+now apply Rmax_case.
+elim (Rlt_not_le _ _ Hi).
+apply Rbar_finite_le.
+apply H2.
+intros z Hz.
+apply Rbar_finite_le.
+apply Rnot_lt_le.
+contradict Puv.
+apply Hz.
+apply Rle_lt_trans with (2:=Puv).
+apply Rmax_l.
+apply Rle_lt_trans with (2:=Puv).
+apply Rmax_r.
+(* *)
+exists (mkposreal 1 Rlt_0_1).
+simpl.
+intros u v Hu Hv.
+destruct (P_dec u v) as [Puv|Puv].
+exact Puv.
+assert (Hi:(Rmax (Rabs (u - x)) (Rabs (v - y)) < 1)).
+now apply Rmax_case.
+elim (Rlt_not_le _ _ Hi).
+apply Rbar_finite_le.
+apply Rbar_le_trans with p_infty.
+now left.
+apply H2.
+intros z Hz.
+apply Rbar_finite_le.
+apply Rnot_lt_le.
+contradict Puv.
+apply Hz.
+apply Rle_lt_trans with (2:=Puv).
+apply Rmax_l.
+apply Rle_lt_trans with (2:=Puv).
+apply Rmax_r.
+(* *)
+elimtype False.
+destruct H as (d1,Hd1).
+now destruct (H1 d1).
+Qed.
+
 
 Lemma derivable_pt_lim_locally :
   forall f x l,

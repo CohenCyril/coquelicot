@@ -430,6 +430,18 @@ Proof.
 Qed.
 Lemma cont2_impl_unif_cont2 : forall (f : R -> R -> R),
   continuity2 f -> (forall a b c d, unif_cont2_pave f a b c d).
+unfold continuity2, continuity2_pt, unif_cont2_pave.
+intros f H a b c d eps.
+specialize (H a c eps).
+
+
+apply H.
+unfold continuity2.
+unfold continuity2_pt.
+unfold unif_cont2_pave.
+
+
+
 Admitted.
 
 (** Basic functions and operations *)
