@@ -2922,6 +2922,7 @@ admit.
   move: (IH Hx2) => {IH}.
   
 Admitted.
+(*
 Lemma ex_RInt_correct_aux_2 (f : R -> R) (a b : R) :
   (exists I : R, forall eps : posreal, exists alpha : nat, forall (sigma xi : seq R) 
   (H : pointed_subdiv a b sigma xi), (size sigma <= alpha)%nat ->
@@ -2931,7 +2932,7 @@ Admitted.
 Lemma ex_RInt_correct_aux_3 (f : R -> R) (a b : R) :
   ex_RInt f a b -> Riemann_integrable f a b.
 Proof.
-Admitted.
+Admitted. *)
 
 (** * my proof *)
 
