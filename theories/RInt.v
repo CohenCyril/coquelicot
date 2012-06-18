@@ -2483,6 +2483,392 @@ Proof.
   move => i ; apply (Hi (S i)).
 Qed.
 
+(** * Gourdon's proof *)
+
+Definition pointed_subdiv (sigma xi : seq R) :=
+  size sigma = S (size xi) 
+  /\ (forall i, (i < size xi)%nat -> nth 0 sigma i <= nth 0 xi i <= nth 0 sigma (S i)).
+Lemma pointed_pty0 (x0 y0 : R) (sigma xi : seq R) : 
+  pointed_subdiv (x0::sigma) (y0::xi) -> pointed_subdiv sigma xi.
+Proof.
+  case => H H0 ; split ; intuition ; apply (H0 (S i) (lt_n_S _ _ H1)).
+Qed.
+Lemma pointed_pty1 (sigma xi : seq R) : 
+  pointed_subdiv sigma xi -> sorted Rle sigma.
+Proof.
+  case: sigma => [| x0 sigma].
+    case => //.
+  elim: sigma x0 xi => [| x1 sigma IH] x0 ; case => [| y0 xi] ; case => H H0 //.
+  split.
+  apply Rle_trans with y0 ; apply (H0 O (lt_O_Sn _)).
+  apply (IH x1 xi) ; apply (pointed_pty0 x0 y0) ; split => //.
+Qed.
+
+Lemma sorted_const (s : seq R) : sorted Rle s -> head 0 s = last 0 s -> 
+  forall i, (i < size s)%nat -> nth 0 s i = head 0 s.
+Proof.
+  move => Hs Heq.
+  have H : (forall i, (i < size s)%nat -> head 0 s <= nth 0 s i <= last 0 s).
+    move => i Hi ; split.
+    apply sorted_head => //.
+    apply sorted_last => //.
+  move => i Hi ; apply Rle_antisym.
+  rewrite Heq ; apply H => //.
+  apply H => //.
+Qed.
+
+Definition seq_step s := 
+  foldr Rmax 0 (pairmap (fun x y => Rabs (Rminus y x)) (head 0 s) (behead s)).
+
+Definition Riemann_sum (f : R -> R) (sigma xi : seq R) 
+  (H : pointed_subdiv sigma xi) :=
+  RInt_seq (SF_map f (SF_make sigma xi (proj1 H))) Rplus Rmult 0.
+
+Lemma Riemann_sum_cons (f : R -> R) x0 x1 sigma y0 xi 
+  H H' :
+  Riemann_sum f (x0::x1::sigma) (y0::xi) H =
+    f y0 * (x1-x0) + Riemann_sum f (x1::sigma) xi H'.
+Proof.
+  rewrite /Riemann_sum /RInt_seq /=.
+  case: sigma xi H H' => [ | x2 sigma] ;
+  case => [ | y1 xi] ; by case.
+Qed. 
+
+Lemma pointed_pty2 f (sigma xi : seq R) : 
+  forall (H : pointed_subdiv sigma xi), 
+  head 0 sigma = last 0 sigma -> Riemann_sum f sigma xi H = 0.
+Proof.
+  case: sigma => [| x0 sigma] //.
+  case => //.
+  elim: sigma x0 xi => [| x1 sigma IH] x0 ; case => [| y0 xi] H Heq //.
+  move: (IH x1 xi (pointed_pty0 _ _ _ _ H)) => {IH}.
+  replace (Riemann_sum f [:: x0, x1 & sigma] (y0 :: xi) H) 
+    with (f y0 * (x1 - x0) 
+      + Riemann_sum f (x1 :: sigma) xi (pointed_pty0 x0 y0 (x1 :: sigma) xi H)).
+  move => ->.
+  move: (sorted_const _ (pointed_pty1 _ _ H) Heq 1%nat 
+    (lt_n_S _ _ (lt_O_Sn _))) => /= -> ; ring.
+  
+  rewrite -nth_last ; move: (sorted_const _ (pointed_pty1 _ _ H) Heq _
+    (lt_n_Sn _)) => /= ->.
+  move: (sorted_const _ (pointed_pty1 _ _ H) Heq 1%nat 
+    (lt_n_S _ _ (lt_O_Sn _))) => //=.
+    rewrite /Riemann_sum /RInt_seq /=.
+    case: sigma H Heq  => [| x2 sigma] ; case: xi => [| y1 xi] //.
+Qed.
+
+Definition signe (x : R) :=
+  match Rle_dec 0 x with
+    | left H => match Rle_lt_or_eq_dec _ _ H with
+        | left _ => 1
+        | right _ => 0
+      end
+    | right _ => -1
+  end.
+Lemma Ropp_signe (x : R) : signe (-x) = - signe x.
+Proof.
+  rewrite /signe ; 
+  case: Rle_dec => H ; case: Rle_dec => H0.
+  have: ~ (0 < - x).
+    apply Rle_not_lt, Ropp_le_cancel ; intuition.
+  have: ~ (0 < x).
+    apply Rle_not_lt, Ropp_le_cancel ; rewrite Ropp_0 ; intuition.
+  case: Rle_lt_or_eq_dec => // ; case: Rle_lt_or_eq_dec => // ; intuition.
+  have: ~ (0 = - x).
+    contradict H0 ; apply Ropp_le_cancel ; rewrite -H0 ; intuition.
+  case: Rle_lt_or_eq_dec => // ; intuition.
+  have: ~ (0 = x).
+    contradict H ; rewrite -H ; intuition.
+  case: Rle_lt_or_eq_dec => // ; intuition.
+  contradict H0 ; apply Ropp_le_cancel, Rlt_le, Rnot_le_lt ; intuition.
+Qed.
+
+Lemma ex_RInt_correct_aux_1 (f : R -> R) (a b : R) :
+  forall pr : Riemann_integrable f a b,
+    forall eps : posreal, exists alpha : posreal, 
+    forall (sigma xi : seq R) (H : pointed_subdiv sigma xi), 
+    sorted Rlt sigma ->
+    seq_step sigma < alpha -> 
+    head 0 sigma = Rmin a b -> last 0 sigma = Rmax a b ->
+    Rabs (RiemannInt pr - signe (b-a) * Riemann_sum f sigma xi H) <= eps.
+Proof.
+  wlog: a b / (a < b) => [Hw | Hab].
+    case: (total_order_T a b) => [[Hab | <-] | Hab] pr eps.
+    by apply Hw.
+    exists (mkposreal 1 Rlt_0_1) => sigma xi H _ _ H0 H1.
+    replace (Riemann_sum _ _ _ _) with 0.
+    rewrite RiemannInt_P9 Rmult_0_r Rminus_0_r Rabs_R0 ; apply Rlt_le, eps.
+    apply sym_equal, pointed_pty2 ; rewrite H1 //.
+    move: (RiemannInt_P1 pr) => pr'.
+    case: (Hw _ _ Hab pr' eps) ; rewrite Rmin_comm Rmax_comm => {Hw} alpha Hw ; 
+    exists alpha ; intros.
+    rewrite (RiemannInt_P8 pr pr').
+    rewrite -(Ropp_minus_distr' b a) Ropp_signe 
+    {1}/Rminus -(Ropp_plus_distr _ (_*_)) Rabs_Ropp
+    Ropp_mult_distr_l_reverse.
+    apply Hw => //.
+
+  rewrite /Rmin /Rmax ; move: (Rlt_le _ _ Hab) ; case: Rle_dec => //= _ _.
+  rewrite /signe ;
+  move: (Rlt_Rminus _ _ Hab) => Hab' ; 
+  move: (Rlt_le _ _ Hab') (Rlt_not_eq _ _ Hab') ;
+  case: Rle_dec => // H _ ; case: Rle_lt_or_eq_dec => // _ _ {H Hab'}.
+(** Step1 : $f = f0 * \chi_{[a0;b0]}$ *)  
+have S1 : forall a0 b0 f0, a <= a0 -> a0 <= b0 -> b0 <= b ->
+  forall (f := mkSF_seq a0 [::(b0,f0)]) (eps : posreal),
+  exists alpha : posreal,
+  forall (sigma xi : seq R) (H : pointed_subdiv sigma xi),
+  sorted Rlt sigma ->
+  seq_step sigma < alpha ->
+  head 0 sigma = a ->
+  last 0 sigma = b ->
+  Rabs (RInt_seq f Rplus Rmult 0 - Riemann_sum (SF_fun f 0) sigma xi H) <= eps.
+  
+  move => {f} a0 b0 f0 Ha Hdom Hb f ;
+  rewrite /RInt_seq /= Rplus_0_r ; revert f ;
+  case: (Req_dec f0 0) => [ -> | Hf0] f eps.
+(* f = 0 *)
+  exists (mkposreal _ Rlt_0_1) => sigma xi H _ _ H0 H1.
+  replace (Riemann_sum (SF_fun f 0) _ _ _) with 0.
+  rewrite Rmult_0_l Rminus_0_r Rabs_R0 ; apply Rlt_le, eps.
+  case: sigma H {H0 H1} => [ | x0 sigma] ; try by case.
+  elim: sigma x0 xi => [ | x1 sigma IH] x0 ; case => [ | y0 xi] ;
+  try by case.
+  move => H ; move: (pointed_pty0 x0 y0 _ _ H) => H'.
+  replace (Riemann_sum _ _ _ _) with 
+    ((SF_fun f 0) y0 * (x1-x0) + Riemann_sum (SF_fun f 0) (x1 :: sigma) xi H').
+  rewrite -IH /SF_fun /= => {IH} ;
+  case: Rlt_dec => Hy ; try case: Rle_dec => Hy' ; ring.
+  rewrite /Riemann_sum /RInt_seq /= => {IH}; 
+  case: sigma xi H {H'} => [| x2 sigma] ; case => [ | y1 xi] ; try by case.
+(* f <> 0 *)
+  have Halp : ( 0 < eps / (4*Rabs f0)) ; [ | set alpha := mkposreal _ Halp].
+    apply Rdiv_lt_0_compat, Rmult_lt_0_compat ; 
+    [apply eps | apply Rmult_lt_0_compat ; apply Rlt_R0_R2 | apply Rabs_pos_lt, Hf0].
+  have Halp1: (alpha < 2 * alpha).
+    rewrite RIneq.double ; rewrite -{1}(Rplus_0_r alpha) ; 
+    apply Rplus_lt_compat_l, alpha.
+  exists alpha ; case => [ | x0 sigma] xi H Hsort Hstep H0 H1 ; 
+  try by case H.
+  simpl in H0 ; rewrite -H0 in Ha, Hab => {a H0}.
+  simpl in H1 ; rewrite -H1 in Hb, Hab => {b H1}.
+  case: sigma xi H Ha Hb Hab Hsort Hstep => [ | x1 sigma ] ; 
+  case => [ | y0 xi] ; try by case.
+  intros ; contradict Hab ; apply Rle_not_lt, Rle_refl.
+  move => H Ha Hb _ Hsort Hstep ; simpl in Hb.
+  have Haux : sorted Rle (rcons [:: x0, x1 & sigma] (last x1 sigma)).
+    apply (sorted_nth Rle) => i Hi z.
+    simpl in Hi ; rewrite size_rcons in Hi.
+    elim: i (sigma) Hi (x0) (x1) (pointed_pty1 _ _ H) => [ | i IH].
+    simpl ; intuition.
+    case => {sigma H Hb Hsort Hstep x0 Ha x1} [ | x2 sigma] Hi x0 x1 Hsort.
+    case: (i) Hi ; intuition.
+    by apply lt_S_n, lt_S_n, lt_n_O in Hi.
+    apply (IH sigma (lt_S_n _ _ Hi) x1 x2 (proj2 Hsort)).
+  case: (sorted_dec (rcons [:: x0, x1 & sigma] (last x1 sigma)) 0 a0 Haux) 
+    => [ | [i [Hax Hi]] | Hax].
+    rewrite head_rcons last_rcons ; simpl ; intuition ;
+    apply Rle_trans with (1 := (Hdom)), Hb.
+  case: (sorted_dec (rcons [:: x0, x1 & sigma] (last x1 sigma)) 0 b0 Haux) 
+    => [ | [j [Hbx Hj]] | Hbx].
+    rewrite head_rcons last_rcons ; simpl ; intuition ;
+    apply Rle_trans with (2 := Hdom), Ha.
+  clear Ha Hb.
+  have Hij: (i <= j)%nat.
+    apply not_lt ; contradict Hdom ; apply Rlt_not_le.
+    apply Rlt_le_trans with (1 := proj2 Hbx).
+    apply Rle_trans with (2 := proj1 Hax).
+    apply sorted_incr ; intuition.
+  case: Hax => Hax Hax' ; apply Rle_lt_or_eq_dec in Hax ; case: Hax => Hax.
+  move: (conj Hax Hax') => {Hax Hax'} Hax.
+  elim: i j sigma x0 x1 xi y0 H Hi Hj Hij Hax Hbx Hsort Hstep Haux 
+    => [ | i IH] ; intros.
+    clear Hi Hij.
+  case: j Hj Hbx => [ | j] /= ; rewrite size_rcons /= => Hj Hbx.
+    clear Hj.
+(* $[a_0;b_0] \subset [x_0;y_0]$ *)
+  move: (proj2 H O (lt_O_Sn _)) (pointed_pty0 _ _ _ _ H) => /= H' H0 ;
+  rewrite Riemann_sum_cons ; clear H ; rename H0 into H.
+  have: (Rabs (x1 - x0) < alpha /\ seq_step [:: x1 & sigma] < alpha) ;
+    [ split ; apply Rle_lt_trans with (2 := Hstep) ; 
+    rewrite /seq_step /= ; [apply RmaxLess1 | apply RmaxLess2] | 
+    case => {Hstep} Hstep' Hstep].
+  have: sorted Rlt [:: x1 & sigma] ;
+    [apply Hsort | move: (proj1 Hsort) => {Hsort} Hsort' Hsort].
+  replace (Riemann_sum _ _ _ _) with 0.
+  rewrite Rplus_0_r (double_var eps) ; 
+  replace (eps/2) with (Rabs f0 * (2* alpha)) ; 
+  [ | simpl ; field ; by apply Rabs_no_R0 ].
+  apply Rle_trans with (1 := Rabs_triang _ _), Rplus_le_compat ;
+  rewrite ?Rabs_Ropp Rabs_mult ; apply Rmult_le_compat ; intuition ; 
+  try by apply Rabs_pos.
+  apply Rlt_le, Rlt_trans with (2 := Halp1), Rle_lt_trans with (2 := Hstep'), Rle_trans with (2 := Rle_abs _) ;
+  rewrite (Rabs_pos_eq _ (proj1 (Rminus_le_0 _ _) Hdom)).
+  apply Rplus_le_compat, Ropp_le_contravar ; intuition.
+  rewrite /SF_fun /= ; case: Rlt_dec => _ ; [ rewrite Rabs_R0 ; apply Rabs_pos | ] ;
+  case: Rle_dec => _ ; [apply Rle_refl | rewrite Rabs_R0 ; apply Rabs_pos].
+  apply Rlt_le, Rlt_trans with (2 := Halp1) => //.
+  simpl in Hax ; case: Hax => _ Hax ; case: Hbx => _ Hbx ;
+  clear x0 y0 Haux H' Hstep' Hsort'.
+  elim: sigma x1 xi H Hsort Hax Hbx {Hstep} => [ | x1 sigma IH] x0 ;
+  case => [ | y0 xi] ; intros ; try by case H.
+  move: (proj2 H O (lt_O_Sn _)) (pointed_pty0 _ _ _ _ H) => /= H' H0 ;
+  rewrite Riemann_sum_cons ; clear H ; rename H0 into H.
+  rewrite -(IH x1 xi H (proj2 Hsort)).
+  rewrite /SF_fun /=.
+  have: ~y0 <= b0.
+    apply Rlt_not_le, Rlt_le_trans with (1 := Hbx), H'.
+  case: Rlt_dec => // ; try case: Rle_dec => // ; intros ; ring.
+  apply Rlt_trans with (1 := Hax), Hsort.
+  apply Rlt_trans with (1 := Hbx), Hsort.
+(* $a_0 < x_0$ *)
+  repeat apply lt_S_n in Hj.
+  move: (proj2 H O (lt_O_Sn _)) (pointed_pty0 _ _ _ _ H) => /= H' H0 ;
+  rewrite Riemann_sum_cons ; clear H ; rename H0 into H.
+  have: (Rabs (x1 - x0) < alpha /\ seq_step [:: x1 & sigma] < alpha) ;
+    [ split ; apply Rle_lt_trans with (2 := Hstep) ; 
+    rewrite /seq_step /= ; [apply RmaxLess1 | apply RmaxLess2] | 
+    case => {Hstep} Hstep' Hstep].
+  have: sorted Rlt [:: x1 & sigma] ;
+    [apply Hsort | move: (proj1 Hsort) => {Hsort} Hsort' Hsort].
+  replace (_-_) with ((f0 * (x1-a0) - SF_fun f 0 y0 * (x1 - x0)) 
+    + (f0 * (b0 - x1) - Riemann_sum (SF_fun f 0) (x1 :: sigma) xi H)) ;
+    [ | by ring_simplify].
+  rewrite (double_var eps) ; 
+  replace (eps/2) with (Rabs f0 * (2*alpha)) ; 
+  [ | simpl ; field ; by apply Rabs_no_R0 ].
+  apply Rle_trans with (1 := Rabs_triang _ _), Rplus_le_compat.
+  have : Rabs (f0 * (x1 - a0) - 0 * (x1 - x0)) <= Rabs f0 * (2*alpha).
+    rewrite Rmult_0_l Rminus_0_r Rabs_mult ; apply Rmult_le_compat_l ;
+    [ apply Rabs_pos | apply Rlt_le, Rlt_trans with (2 := Halp1), Rle_lt_trans with (2 := Hstep') ] ;
+    apply Rle_trans with (2 := Rle_abs _) ; rewrite Rabs_pos_eq ; 
+    [ | rewrite -Rminus_le_0 ; intuition] ;
+    apply Rplus_le_compat_l, Ropp_le_contravar, Rlt_le, Hax.
+  rewrite /SF_fun ; simpl Rabs ;
+  case: Rlt_dec => // _ ; case: Rle_dec => // _ _.
+  replace (_-_) with (- (f0 * (a0-x0))) ;
+  [ | by ring_simplify ] ; rewrite Rabs_Ropp Rabs_mult ; 
+    apply Rmult_le_compat_l ;
+    [ apply Rabs_pos | apply Rlt_le, Rlt_trans with (2 := Halp1), Rle_lt_trans with (2 := Hstep') ] ;
+    apply Rle_trans with (2 := Rle_abs _) ; rewrite Rabs_pos_eq ; 
+    [ | rewrite -Rminus_le_0 ; intuition] ; 
+    apply Rplus_le_compat_r, Rlt_le, Hax.
+  simpl in Hax ; case: Hax => _ Hax ; have: sorted Rle (rcons [:: x1 & sigma] (last x1 sigma)) ;
+    [ by apply Haux | move => {Haux} Haux ] ;
+  clear x0 y0 H' Hstep' Hsort'.
+  elim: j sigma x1 xi H Hj Hax Hbx Hstep Hsort Haux => [ | j IH] ; 
+  case => [ | x1 sigma] x0 ; case => [ | y0 xi] H Hj Hax Hbx Hstep Hsort Haux ; 
+  simpl in Hbx ; try by case: H.
+  by apply lt_n_O in Hj.
+  move: (proj2 H O (lt_O_Sn _)) (pointed_pty0 _ _ _ _ H) => H' H0 ; 
+  simpl in H' ; rewrite Riemann_sum_cons ; clear H ; rename H0 into H.
+  have: (Rabs (x1 - x0) < alpha /\ seq_step [:: x1 & sigma] < alpha) ;
+    [ split ; apply Rle_lt_trans with (2 := Hstep) ; 
+    rewrite /seq_step /= ; [apply RmaxLess1 | apply RmaxLess2] | 
+    case => {Hstep} Hstep' Hstep].
+  have: sorted Rlt [:: x1 & sigma] ;
+    [apply Hsort | move: (proj1 Hsort) => {Hsort} Hsort' Hsort].
+  have: sorted Rle (rcons [:: x1 & sigma] (last x1 (sigma))) ;
+    [ apply Haux | move => {Haux} Haux ].
+  replace (Riemann_sum _ _ _ _) with 0.
+  have: Rabs (f0 * (b0 - x0) - 0 * (x1 - x0)) <= Rabs f0 * (2*alpha).
+    rewrite Rmult_0_l Rminus_0_r Rabs_mult ; apply Rmult_le_compat_l ;
+    [ apply Rabs_pos | apply Rlt_le, Rlt_trans with (2 := Halp1), Rle_lt_trans with (2 := Hstep') ] ;
+    apply Rle_trans with (2 := Rle_abs _) ; rewrite Rabs_pos_eq ; 
+    [ | rewrite -Rminus_le_0 ; intuition] ;
+    apply Rplus_le_compat_r, Rlt_le, Hbx.
+  rewrite Rplus_0_r /SF_fun ; simpl Rabs ;
+  case: Rlt_dec => // _ ; case: Rle_dec => // _ _.
+  replace (_-_) with (-(f0 * (x1 - b0))) ;
+    [ | by ring_simplify].
+    rewrite Rabs_Ropp Rabs_mult ; apply Rmult_le_compat_l ;
+    [ apply Rabs_pos | apply Rlt_le, Rlt_trans with (2 := Halp1), Rle_lt_trans with (2 := Hstep') ] ;
+    apply Rle_trans with (2 := Rle_abs _) ; rewrite Rabs_pos_eq ; 
+    [ | rewrite -Rminus_le_0 ; intuition] ;
+    apply Rplus_le_compat_l, Ropp_le_contravar, Hbx.
+  case: Hbx => _ Hbx ;
+  clear x0 y0 Hax H' Hstep' Hsort'.
+  elim: sigma x1 xi H {Hj Hstep} Hsort Hbx Haux => [ | x1 sigma IH] x0 ;
+  case => [ | y0 xi] ; intros ; try by case: H.
+  move: (proj2 H O (lt_O_Sn _)) (pointed_pty0 _ _ _ _ H) => /= H' H0 ;
+  rewrite Riemann_sum_cons ; clear H ; rename H0 into H.
+  have: sorted Rlt [:: x1 & sigma] ;
+    [apply Hsort | move: (proj1 Hsort) => {Hsort} Hsort' Hsort].
+  rewrite -IH // ; [ | by apply Rlt_trans with x0 | by apply Haux].
+  rewrite /SF_fun /= ; case: Rlt_dec => // _ ; try ring.
+  have: ~ y0 <= b0.
+    apply Rlt_not_le, Rlt_le_trans with (1 := Hbx), H'.
+  case: Rle_dec => // _ _ ; ring.
+  by apply lt_n_O in Hj.
+  move: (proj2 H O (lt_O_Sn _)) (pointed_pty0 _ _ _ _ H) => H' H0 ;
+  simpl in H' ; rewrite Riemann_sum_cons ; clear H ; rename H0 into H.
+  have: (Rabs (x1 - x0) < alpha /\ seq_step [:: x1 & sigma] < alpha) ;
+    [ split ; apply Rle_lt_trans with (2 := Hstep) ; 
+    rewrite /seq_step /= ; [apply RmaxLess1 | apply RmaxLess2] | 
+    case => {Hstep} Hstep' Hstep].
+  have: sorted Rlt [:: x1 & sigma] ;
+    [apply Hsort | move: (proj1 Hsort) => {Hsort} Hsort' Hsort].
+  simpl in Hj ; apply lt_S_n in Hj.
+  move: (IH sigma x1 xi H Hj (Rlt_trans _ _ _ Hax Hsort') Hbx Hstep Hsort (proj2 Haux))
+    => {IH} IH.
+  replace (_-_) with ((f0 * (x1 - x0) - SF_fun f 0 y0 * (x1 - x0)) +
+    (f0 * (b0 - x1) - Riemann_sum (SF_fun f 0) (x1 :: sigma) xi H)) ;
+    [ | by ring_simplify].
+  replace (_-_) with 0.
+  rewrite Rplus_0_l ; apply IH.
+  rewrite /SF_fun /=.
+  have: ~ y0 < a0.
+    apply Rle_not_lt, Rlt_le, Rlt_le_trans with (1 := Hax), H'.
+  case: Rlt_dec => // _ _.
+  have: y0 <= b0.
+    apply Rle_trans with (1 := proj2 H'), Rle_trans with (2 := proj1 Hbx) ;
+    apply (sorted_head (x1 :: _)).
+    apply Haux.
+    simpl ; rewrite size_rcons ; intuition.
+  case: Rle_dec => // _ _ ; ring.
+  case: j Hj Hij Hbx => [ | j] ; intros.
+    by apply lt_n_O in Hij.
+  case: sigma xi H Hi Hj Hax Hbx Hsort Hstep Haux => [ | x2 sigma] ; 
+  case => [ | y1 xi] ; intros ; try by case: H.
+  rewrite size_rcons in Hi ; repeat apply lt_S_n in Hi ; by apply lt_n_O in Hi.
+  move: (proj2 H O (lt_O_Sn _)) (pointed_pty0 _ _ _ _ H) => /= H' H0 ;
+  rewrite Riemann_sum_cons ; clear H ; rename H0 into H.
+  have: (Rabs (x1 - x0) < alpha /\ seq_step [:: x1, x2 & sigma] < alpha) ;
+    [ split ; apply Rle_lt_trans with (2 := Hstep) ; 
+    rewrite /seq_step /= ; [apply RmaxLess1 | apply RmaxLess2] | 
+    case => {Hstep} Hstep' Hstep].
+  have: sorted Rlt [:: x1, x2 & sigma] ;
+    [apply Hsort | move: (proj1 Hsort) => {Hsort} Hsort' Hsort].
+  
+  move: (IH j sigma x1 x2 xi y1 H (lt_S_n _ _ Hi) (lt_S_n _ _ Hj) 
+    (le_S_n _ _ Hij) Hax Hbx Hsort Hstep (proj2 Haux)) => {IH} IH.
+  simpl in Hax.
+  replace (SF_fun f 0 y0 * (x1 - x0)) with 0.
+  rewrite Rplus_0_l //.
+  have: y0 < a0.
+    apply Rle_lt_trans with (1 := proj2 H').
+    apply Rle_lt_trans with (2 := proj1 Hax).
+    apply (sorted_head (x1 :: _) i) => //.
+    apply Haux.
+    rewrite  /= size_rcons in Hi |- * ; intuition.
+  rewrite /SF_fun /= ; case: Rlt_dec => // _ _ ; ring.
+  
+(* a0 = x_i *)
+Admitted.
+(* modif SB: ça compile pas et ça n'a pas l'air utilisé... 
+Lemma ex_RInt_correct_aux_2 (f : R -> R) (a b : R) :
+  (exists I : R, forall eps : posreal, exists alpha : nat, forall (sigma xi : seq R) 
+  (H : pointed_subdiv a b sigma xi), (size sigma <= alpha)%nat ->
+  Rabs (I - Riemann_sum f a b sigma xi H) <= eps) -> ex_RInt f a b.
+Proof.
+Admitted.
+Lemma ex_RInt_correct_aux_3 (f : R -> R) (a b : R) :
+  ex_RInt f a b -> Riemann_integrable f a b.
+Proof.
+Admitted.*)
+
+(** * my proof *)
+
 Lemma ex_RInt_correct_0 (f : R -> R) (a b : R) : ex_RInt f a b -> 
   forall n x, Rmin a b <= x <= Rmax a b -> 
     Rabs (f x - sf_SF_val_fun f a b n x) <= SF_psi_r f a b n x.
@@ -3083,33 +3469,261 @@ Proof.
   move: (Rlt_le _ _ Hab) ; rewrite /Rmin /Rmax ; case: Rle_dec => //.
 Qed.
 
+Lemma sorted_cons_ORlist (s s' : Rlist) :
+  (ordered_Rlist s) -> (ordered_Rlist s') ->
+     cons_ORlist s s' =
+       match s with
+         | RList.nil => s'
+         | RList.cons h t =>
+             match s' with
+               | RList.nil => s
+               | RList.cons h' t' =>
+                   match Rle_dec h' h with
+                     | left _ => RList.cons h' (cons_ORlist s t')
+                     | right _ => RList.cons h (cons_ORlist t s')
+                   end
+            end
+        end.
+Proof.
+  have H : (forall s s', ordered_Rlist s -> ordered_Rlist s' ->
+    ((0 < Rlength s)%nat -> pos_Rl s' (Peano.pred (Rlength s')) <= pos_Rl s O) ->
+    cons_ORlist s s' = cons_Rlist s' s).
+    move => {s s'} s s' ; elim: s s' => [ | h s IH] s' Hs Hs' Hpos //=.
+    elim: s' {Hs' Hpos} => [ | h' s' IH] //=.
+    by rewrite -IH.
+    case: s' Hs' Hpos => [ | h' s'] Hs' Hpos.
+    apply IH => //.
+    apply (RList_P4 _ _ Hs).
+    move => i Hi ; by apply lt_n_O in Hi.
+    simpl ; case: s Hs {IH Hpos} => [ | h0 s] Hs Hi //=.
+    by apply lt_n_O in Hi.
+    by apply (Hs O (lt_O_Sn _)).
+    have : (h' <= h).
+      replace h' with (pos_Rl (RList.cons h' s') O) by auto.
+      apply Rle_trans with (2 := Hpos (lt_O_Sn _)).
+      elim: s' h' Hs' {Hpos} => {IH} [| h'0 s' IH] h' Hs'.
+      by apply Rle_refl.
+      apply Rle_trans with (1 := Hs' O (lt_O_Sn _)).
+      apply (IH h'0 (RList_P4 _ _ Hs')).
+    simpl ; case: Rle_dec => // _ _.
+    rewrite IH // => {IH}.
+    simpl ;
+    replace (cons_Rlist (insert s' h) s) with 
+      (cons_Rlist s' (RList.cons h s)) => //.
+    move: (Hpos (lt_O_Sn _)) Hs' Hs ; elim: s' h' s h {Hpos} =>
+      [ | h'0 s' IH] h' s h Hpos Hs' Hs //=.
+      have : (h'0 <= h).
+      replace h'0 with (pos_Rl (RList.cons h' (RList.cons h'0 s')) 1) by auto.
+      apply Rle_trans with (2 := Hpos).
+      elim: s' h' h'0 Hs' {IH Hpos} => [| h'1 s' IH] h' h'0 Hs'.
+      by apply Rle_refl.
+      apply Rle_trans with (1 := Hs' 1%nat (lt_n_S _ _ (lt_O_Sn _))).
+      apply (IH h'0 h'1 (RList_P4 _ _ Hs')).
+      case: Rle_dec => //= _ _.
+      rewrite (IH h'0 s h) => //.
+      apply (RList_P4 _ _ Hs').
+      apply (RList_P4 _ _ Hs).
+    have : (h' <= h).
+      replace h' with (pos_Rl (RList.cons h' s') O) by auto.
+      apply Rle_trans with (2 := Hpos (lt_O_Sn _)).
+      elim: s' h' Hs' {Hpos} => [| h'0 s' IH] h' Hs'.
+      by apply Rle_refl.
+      apply Rle_trans with (1 := Hs' O (lt_O_Sn _)).
+      apply (IH h'0 (RList_P4 _ _ Hs')).
+      elim: s' h' Hs' Hpos => [ | h'0 s' IH] h' Hs' Hpos Hle //= i Hi.
+      case: i Hi => [ | i] //= Hi.
+      by apply lt_S_n, lt_n_O in Hi.
+      have : (h'0 <= h).
+      replace h'0 with (pos_Rl (RList.cons h' (RList.cons h'0 s')) 1) by auto.
+      apply Rle_trans with (2 := (Hpos (lt_O_Sn _))).
+      elim: s' h' h'0 Hs' {IH Hpos Hle Hi} => [| h'1 s' IH] h' h'0 Hs'.
+      by apply Rle_refl.
+      apply Rle_trans with (1 := Hs' 1%nat (lt_n_S _ _ (lt_O_Sn _))).
+      apply (IH h'0 h'1 (RList_P4 _ _ Hs')).
+      move: Hi ; case: Rle_dec => // _ Hi H.
+      case: i Hi => [ | i] Hi.
+      apply (Hs' O) => //= ; by apply lt_O_Sn.
+      apply (IH h'0 (RList_P4 _ _ Hs')) => //.
+      apply lt_S_n, Hi.
+      case: s Hs Hpos => [ | h0 s] Hs Hpos Hi.
+      by apply lt_n_O in Hi.
+      clear Hi.
+      simpl Peano.pred.
+      apply Rle_trans with (2 := Hs O (lt_O_Sn _)).
+      move: (Hpos (lt_O_Sn _)) => {Hpos} ; 
+      elim: s' h' s h h0 {1 3}((Rlength (insert s' h))) (le_refl (Rlength (insert s' h))) Hs' Hs 
+      => [ | h'0 s' IH]  h' s h h0 i Hi Hs' Hs Hpos //.
+      simpl ; case: i Hi => // ; case => //.
+      move => _ ; apply Rle_refl.
+      move => i /= Hi ; by apply lt_S_n, lt_n_O in Hi.
+      have : (h'0 <= h).
+      replace h'0 with (pos_Rl (RList.cons h' (RList.cons h'0 s')) 1) by auto.
+      apply Rle_trans with (2 := (Hpos)).
+      elim: s' h' h'0 Hs' {IH Hpos Hi} => [| h'1 s' IH] h' h'0 Hs'.
+      by apply Rle_refl.
+      apply Rle_trans with (1 := Hs' 1%nat (lt_n_S _ _ (lt_O_Sn _))).
+      apply (IH h'0 h'1 (RList_P4 _ _ Hs')).
+      move: Hi ; simpl RList.cons ; simpl Rlength ; case: Rle_dec => // _ Hi _.
+      case: i Hi => [ /= |i] Hi.
+      replace h' with (pos_Rl (RList.cons h' s') O) by auto.
+      apply Rle_trans with (2 := Hpos).
+      elim: s' h' h'0 Hs' {IH Hpos Hi} => [| h'1 s' IH] h' h'0 Hs'.
+      by apply (Hs' O (lt_O_Sn _)).
+      apply Rle_trans with (1 := Hs' O (lt_O_Sn _)).
+      apply (IH h'0 h'1 (RList_P4 _ _ Hs')).
+    apply (IH h'0 s h h0) => // ; intuition.
+    apply (RList_P4 _ _ Hs').
+
+  elim: s s' => [ | h s IH] ; case => [ | h' s'] // Hs Hs'.
+  simpl ; apply H => //= ; intuition.
+  apply (RList_P4 _ _ Hs).
+  move => i Hi ; by apply lt_n_O in Hi.
+  case: s Hs H0 {IH} => // ; intuition.
+  by apply lt_n_O in H0.
+  by apply (Hs O (lt_O_Sn _)).
+  simpl ; case: Rle_dec => // H0.
+  simpl ; rewrite IH => {IH}.
+  case: s Hs => [ | h0 s] Hs //.
+  have : (h' <= h0).
+    apply Rle_trans with (1 := H0), (Hs O (lt_O_Sn _)).
+  case: Rle_dec => // _ _.
+  apply RList_P4 with (1 := Hs).
+  case: s' Hs' => // [ | h'0 s'] Hs' ; case => [ | i] // Hi.
+  simpl in Hi ; by apply lt_S_n, lt_n_O in Hi.
+  case: (RList_P0 (RList.cons h'0 s') h) => //= -> //.
+  apply (Hs' O (lt_O_Sn _)).
+  apply (RList_P1 _ _ (RList_P4 _ _ Hs') i) ; intuition.
+  simpl ; rewrite IH => {IH}.
+  case: s Hs => [ | h0 s] Hs //.
+  move: (Hs O (lt_O_Sn _)).
+  case: Rle_dec => // _ _.
+  apply RList_P4 with (1 := Hs).
+  case => [ | i] Hi.
+  apply Rlt_le, Rnot_le_lt, H0.
+  apply (Hs' i (lt_S_n _ _ Hi)).
+Admitted.
+
 Lemma RInt_sup_up f a b n (Hab : a < b) :
   forall sf : StepFun a b, forall M,
-  (forall t, a <= t <= b -> f t <= sf t) ->
-  (forall t, a <= t <= b -> f t <= M) ->
-  (forall t, a <= t <= b -> 0 <= f t) ->
+  (forall t, a <= t <= b -> 0 <= f t <= sf t) ->
+  (forall t, a <= t <= b -> 0 <= f t <= M) ->
     Rbar_le 
       (Rbar_mult_pos (RInt_sup f a b n) (mkposreal (b-a) (Rlt_Rminus _ _ Hab)))
-      (Finite (RiemannInt_SF sf + M*(b-a)/2^n * INR (S (Rlength (projT1 (pre sf)))))).
+      (Finite (RiemannInt_SF sf + M*(b-a)/2^n * INR (Rlength (projT1 (pre sf))))).
 Proof.
   intros.
+  rewrite -(RInt_sup_real_1 f a b n M) ; 
+  [ | rewrite /Rmin /Rmax ; move: (Rlt_le _ _ Hab) ; 
+  case: Rle_dec => // _ _ x Hx ; by apply H0].
   replace (Rbar_mult_pos _ _) with 
-    (Finite (RInt_seq (SF_map real (SF_sup_seq f a b n)) Rplus Rmult 0)).
+    (Finite (RiemannInt_SF (SF_sup_r f a b n))) ; 
+    [ | rewrite (RInt_sup_compat f a b n M) /= ; 
+    [ apply Rbar_finite_eq ; ring 
+    | rewrite /Rmin /Rmax ; move: (Rlt_le _ _ Hab) ; 
+    case: Rle_dec => // _ _ x Hx ; by apply H0]].
   apply Rbar_finite_le.
-  rewrite /RiemannInt_SF ; move: (Rlt_le _ _ Hab) ; case: Rle_dec => // _ _.
+  move : (proj1 (ad_SF_sup_r f a b n) (Rlt_le _ _ Hab)) => Had.
+  rewrite /RiemannInt_SF SF_sup_subdiv SF_sup_subdiv_val ; 
+  move: (Rlt_le _ _ Hab) ; case: Rle_dec => // _ _.
   rewrite /subdivision_val /subdivision ;
-  case: sf H => sf [sx [sy Hsf]] ; simpl Rlength ; simpl Int_SF ; simpl fe => H.
-  case: sx Hsf (StepFun_P9 Hsf (Rlt_not_eq _ _ Hab)) => [ _ Hs | x0 sx].
-    by apply lt_n_O in Hs.
-  case: sx => [ _ Hs | x1 sx Hsf _].
-    by apply lt_irrefl in Hs.
-  case: sy Hsf => [ | y0 sy Hsf].
-    rewrite /adapted_couple ; intuition ; by [].
-  rewrite (SF_Chasles _ x0).
-  elim: sx x0 x1 sy y0 Hsf => [| x2 sx IH] x0 x1 ;
-  case => [ | y1 sy] y0 Hsf.
-  have : (forall i, (0 < i < (pow2 n)-2)%nat -> 
-    Rbar_le (Sup_fct f (nth 0 (RInt_part a b n) i) (nth 0 (RInt_part a b n) (S i))) (Finite y0)).
+  case: sf H => sf [sx [sy' Hsf]] ; simpl Rlength ; 
+  simpl Int_SF at 2 ; simpl fe => H.
+
+  have Hnth : (forall i, (S i < Rlength (seq2Rlist (RInt_part a b n)))%nat ->
+    pos_Rl (seq2Rlist (RInt_part a b n)) (S i) - pos_Rl (seq2Rlist (RInt_part a b n)) i 
+      = (b-a)/2^n).
+    move => i ; rewrite ?nth_compat size_compat ?size_mkseq => Hi ; 
+    rewrite ?nth_mkseq ?S_INR /= ; try apply SSR_leq ; intuition ;
+    field ; apply Rgt_not_eq ; intuition.
+  move: Had ; rewrite /SF_sup_fun ; move: (Rlt_le _ _ Hab) ; 
+  case: Rle_dec => // _ _ ; rewrite /SF_sup_seq.
+  rewrite -{1 3 4}(Rlist2seq_bij (RInt_part a b n)) => Had.
+(* initialisation *)
+  move: (seq2Rlist (RInt_part a b n)) (seq2Rlist
+    (behead
+    (pairmap (fun x y : R => real (Sup_fct f x y)) 0
+    (Rlist2seq (seq2Rlist (RInt_part a b n)))))) Had Hnth => rx ry' Had Hnth.
+  case: (StepFun_P23 (existT (fun _ => _) sy' Hsf) (existT (fun _ => _) ry' Had))
+    => sy Hsy ;
+  case: (StepFun_P25 (existT (fun _ => _) sy' Hsf) (existT (fun _ => _) ry' Had))
+    => ry Hry ;
+  move: (StepFun_P9 Hsf (Rlt_not_eq _ _ Hab)) => Hsx ;
+  move: (StepFun_P9 Had (Rlt_not_eq _ _ Hab)) => Hrx ;
+  rewrite (StepFun_P17 Had Hry) ;
+  rewrite (StepFun_P17 Hsf Hsy).
+  case: (RList_P20 sx Hsx) Hsf Hsy Hry => {sx Hsx} x0 [x1 [sx ->]] Hsf ;
+  case: (RList_P20 rx Hrx) Had Hnth => {rx Hrx} h0 [h1 [rx ->]] Had Hnth Hsy Hry.
+  have H1 : exists y0, exists y1, exists y2, exists sy0, 
+    sy = RList.cons y0 (RList.cons y1 (RList.cons y2 sy0)).
+    move: (sy) (proj1 (proj2 (proj2 (proj2 Hsy)))) ;
+    rewrite RList_P11 ; case => //= y0 ; rewrite -?plus_n_Sm ; 
+    case => //= y1 ; case => //= y2 sy0 _ ;
+    exists y0 ; exists y1 ; exists y2 ; exists sy0 => //.
+  case: H1 Hsy => {sy} y0 [y1 [y2 [sy ->]]] Hsy.
+  have H1 : exists l0, exists l1, exists l2, exists ry0, 
+    ry = RList.cons l0 (RList.cons l1 (RList.cons l2 ry0)).
+    move: (ry) (proj1 (proj2 (proj2 (proj2 Hry)))) ;
+    rewrite RList_P11 ; case => //= l0 ; rewrite -?plus_n_Sm ; 
+    case => //= l1 ; case => //= l2 ry0 _ ;
+    exists l0 ; exists l1 ; exists l2 ; exists ry0 => //.
+  case: H1 Hry => {ry} l0 [l1 [l2 [ry ->]]] Hry.
+  move: (proj1 Hsf) (proj1 Had) (proj1 (proj2 (proj2 (proj2 Hsy))))
+  (proj1 (proj2 (proj2 (proj2 Hry)))) => {Hsf Had} Hsx Hrx.
+  rewrite RList_P11 ; simpl Rlength ; rewrite -?plus_n_Sm ?plus_Sn_m => Hsxy Hrxy.
+  repeat apply eq_add_S in Hsxy ;
+  repeat apply eq_add_S in Hrxy.
+
+  have Ha : a = Rmin x0 h0.
+    rewrite sorted_cons_ORlist in Hsy => //.
+    apply Rmin_case_strong => H1 ; 
+    [apply Rle_lt_or_eq_dec in H1 ; case: H1 => H1 ; 
+    [ apply Rlt_not_le in H1 | ] | ] ;
+    move: Hsy ; rewrite /Rmin ; case: Rle_dec => // H2 Hsy.
+    apply sym_equal ; rewrite -(Rmin_left a b (Rlt_le _ _ Hab)) ; apply Hsy.
+    rewrite -H1 in Hsy ; apply sym_equal ; 
+    rewrite -(Rmin_left a b (Rlt_le _ _ Hab)) ; apply Hsy.
+    contradict H2 ; apply Req_le ; by rewrite H1.
+    apply sym_equal ; rewrite -(Rmin_left a b (Rlt_le _ _ Hab)) ; apply Hsy.
+  move : (Hab) => Hb ; rewrite Ha in H, H0, Hsy, Hry, Hb.
+  
+  move : {2}(Rlength sx + Rlength rx)%nat (le_refl (Rlength sx + Rlength rx)%nat) 
+  (Req_le _ _ Ha) (Rlt_le _ _ Hb) Hsx Hrx => {sy' ry' Ha Hb} i.
+  
+(* récurrence *)
+  elim: i x0 x1 sx sy h0 h1 rx ry H H0 Hsy Hry Hsxy Hrxy Hnth 
+    => [ | i IH] x0 x1 sx sy h0 h1 rx ry H H0 Hsy Hry Hsxy Hrxy Hnth Hi Ha Hb Hsx Hrx.
+
+(* * |sx| + |rx| = 0*)
+  apply le_n_0_eq, sym_equal, plus_is_O in Hi ; case: Hi => Hi Hi'.
+  case: sx Hi Hsx Hi' Hrx Hsy Hsxy Hry Hrxy => // _ Hsx.
+  case: rx Hnth => // Hnth _ Hrx Hsy Hsxy Hry Hrxy.
+  case: ry Hrxy Hry => // _ Hry.
+  case: sy Hsxy Hsy => // _ Hsy.
+  have Hs0 : ordered_Rlist RList.nil.
+    move => i Hi ; by apply lt_n_O in Hi.
+  have Hh1 : ordered_Rlist (RList.cons h1 RList.nil).
+    move => i Hi ; by apply lt_n_O in Hi.
+  have Hx1 : ordered_Rlist (RList.cons x1 RList.nil).
+    move => i Hi ; by apply lt_n_O in Hi.
+  move: Hsy Hry ; rewrite ?sorted_cons_ORlist // => {Hs0 Hh1 Hx1}.
+  move: (Hsx O (lt_O_Sn _)) => {Hsx} Hsx ; simpl in Hsx.
+  move: (Hrx O (lt_O_Sn _)) => {Hrx} Hrx ; simpl in Hrx.
+  case: Rle_dec => // H2 ; case: Rle_dec => // H3 ; 
+  try case: Rle_dec => // H4 ; move => /= Hsy Hry ;
+  rewrite !Rplus_0_r.
+  move: (proj2 (proj2 (proj2 (proj2 Hry))) O (lt_O_Sn _) ((h1-h0)/2)) => /= <-.
+  replace (y0 * (h1 - h0) + (y1 * (x0 - h1) + (y2 * (x1 - x0))) +
+    M * (b - a) / 2 ^ n * 2) with 
+    (M*(b-a)/2^n + (y0 * (h1 - h0) + (y1 * (x0 - h1) + (y2 * (x1 - x0))) +
+    M * (b - a) / 2 ^ n)) by ring.
+  apply Rplus_le_compat.
+  move: (Hnth O (lt_n_S _ _ (lt_O_Sn _))) => /= ->.
+  rewrite /Rdiv ?Rmult_assoc.
+  apply Rmult_le_compat_r.
+  apply Rdiv_le_pos.
+  apply Rlt_le, Rlt_Rminus => //.
+  intuition.
+  rewrite /SF_fun /=.
 Admitted.
 
 Lemma ex_RInt_correct_4 (f : R -> R) (a b : R) : Riemann_integrable f a b -> 
@@ -3330,54 +3944,6 @@ Proof.
        {| pos := 2 ^ n; cond_pos := pow_lt 2 n Rlt_R0_R2 |}).
     apply Rbar_div_pos_le, Rbar_le_trans with (1 := Hle0).
 Admitted.
-(*    suff : exists N : nat,
-      Rbar_le
-      (Rbar_div_pos
-      (Rbar_plus (Finite (pos_Rl SFy j))
-      (foldr Rbar_plus (Finite 0) (pairmap (Sup_fct f) h0 s)))
-      {| pos := 2 ^ n; cond_pos := pow_lt 2 n Rlt_R0_R2 |})
-      (Finite (Int_SF SFy SFx / (b - a) + M / 2 ^ n * INR N)).
-      case => N ; exists N ;
-    
-    apply Rbar_le_trans with ((Rbar_div_pos
-     (Rbar_plus (Finite (pos_Rl SFy j))
-        (foldr Rbar_plus (Finite 0) (pairmap (Sup_fct f) h0 s)))
-     {| pos := 2 ^ n; cond_pos := pow_lt 2 n Rlt_R0_R2 |})) => //.
-     apply Rbar_div_pos_le, Rbar_plus_le_compat => //.
-     by right.
-
-     set SFx0 := insert_pos SFx h (S j) ; set SFx' := insert_pos SFx0 h0 (S (S j)).
-     set SFy0 := insert_pos SFy 0 (S j) ; set SFy' := insert_pos SFy0 (pos_Rl SFy j) (S (S j)).
-     have : (Int_SF SFy SFx = Int_SF SFy' SFx' + (pos_Rl SFy j) * (h0 - h)).
-       rewrite /SFx' /SFy' /SFx0 /SFy0.
-       elim: SFy SFx j Hs Hj {Hle Hle0 Hdec SFx0 SFx' SFy0 SFy'}
-       => {IH} [| y0 SFy IH] // ; case => [| x0] // ; case => [| x1 SFx] // ;
-       case => [ /= | j] //= Hs Hj.
-       ring.
-       intuition ; by apply lt_S_n, lt_n_O in H2.
-       case: (SFy) (SFx) Hs => {IH} /= [ | y1 sy] // ;
-       case => /= [ | x2 sx] // ; move => _ ; ring.
-       rewrite (IH (RList.cons x1 SFx) j) //= ; intuition.
-     move ->.
-     rewrite (Hnth O) ; [| intuition].
-     suff : exists N : nat,
-  Rbar_le
-    (Rbar_div_pos
-       (Rbar_plus (Finite (pos_Rl SFy j))
-          (foldr Rbar_plus (Finite 0) (pairmap (Sup_fct f) h0 s)))
-       {| pos := 2 ^ n; cond_pos := pow_lt 2 n Rlt_R0_R2 |})
-    (Rbar_div_pos ( Rbar_plus (Finite (pos_Rl SFy j)) 
-         (Finite (Int_SF SFy' SFx' * 2^n / (b-a) + M*INR N)) ) 
-         (mkposreal _ (pow_lt 2 n Rlt_R0_R2))).
-    case => N Hn ; exists N.
-    apply Rbar_le_trans with (1 := Hn) => /=.
-    right ; apply Rbar_finite_eq ; field ; split ; apply Rgt_not_eq ; intuition ;
-    by apply Rlt_Rminus.
-    have Hs' : (Rlength SFx' = S (Rlength SFy')).
-      rewrite ?Rlength_insert_pos ; intuition.
-    have Hi' : (1 < size (h0 :: s))%nat.
-    case: (IH h0 SFx' SFy' Hs').
-Admitted. *)
 
 Lemma ex_RInt_correct_3 (f : R -> R) (a b : R) :
   Riemann_integrable f a b -> ex_RInt f a b.
