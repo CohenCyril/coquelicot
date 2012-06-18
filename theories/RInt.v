@@ -2854,8 +2854,8 @@ have S1 : forall a0 b0 f0, a <= a0 -> a0 <= b0 -> b0 <= b ->
   rewrite /SF_fun /= ; case: Rlt_dec => // _ _ ; ring.
   
 (* a0 = x_i *)
-  
-Qed.
+Admitted.
+(* modif SB: ça compile pas et ça n'a pas l'air utilisé... 
 Lemma ex_RInt_correct_aux_2 (f : R -> R) (a b : R) :
   (exists I : R, forall eps : posreal, exists alpha : nat, forall (sigma xi : seq R) 
   (H : pointed_subdiv a b sigma xi), (size sigma <= alpha)%nat ->
@@ -2865,7 +2865,7 @@ Admitted.
 Lemma ex_RInt_correct_aux_3 (f : R -> R) (a b : R) :
   ex_RInt f a b -> Riemann_integrable f a b.
 Proof.
-Admitted.
+Admitted.*)
 
 (** * my proof *)
 

@@ -165,7 +165,21 @@ apply locally_2d_forall => u v.
 now rewrite 2!Heq.
 Qed.
 
-Axiom continuity_2d_pt_ext_loc :
+Lemma continuity_2d_pt_ext_loc :
   forall f g x y,
   locally_2d (fun u v => f u v = g u v) x y ->
   continuity_2d_pt f x y -> continuity_2d_pt g x y.
+Proof.
+intros f g x y H1 H2 eps.
+specialize (locally_2d_and _ _ _ _ H1 (H2 eps)).
+apply locally_2d_impl.
+apply locally_2d_forall.
+intros u v (H3,H4).
+rewrite <- H3.
+apply locally_2d_singleton in H1.
+rewrite <- H1.
+exact H4.
+Qed.
+
+
+
