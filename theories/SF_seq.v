@@ -556,6 +556,15 @@ Definition RInt_seq {T : Type} (s : SF_seq) (Tplus : T -> T -> T)
   (Tmult : T -> R -> T) x0 :=
   foldr Tplus x0 (pairmap (fun x y => (Tmult (snd y) (fst y - fst x))) (SF_h s,x0) (SF_t s)).
 
+Lemma RInt_seq_cons {T : Type} h (s : SF_seq) (Tplus : T -> T -> T) 
+  (Tmult : T -> R -> T) x0 : 
+  RInt_seq (SF_cons h s) Tplus Tmult x0 = Tplus 
+    (Tmult (snd h) (SF_h s - fst h)) (RInt_seq s Tplus Tmult x0).
+Proof.
+  rewrite /RInt_seq //=.
+  apply SF_cons_dec with (s := s) => {s} [x1 | h0 s] //=.
+Qed.
+
 (** * SF_seq form seq R *)
 
 (** ** SF_seq *)
@@ -855,6 +864,20 @@ Proof.
   elim: s h0 H0 => [ | h1 s IH] h0 H0 //= ; case: Rle_dec => H1 //=.
   by rewrite (IH h1).
 Qed.
+
+Lemma seq_cut_up_head {T : Type} (s : seq (R*T)) x x0 z :
+  fst (head z (seq_cut_up s x x0)) = x.
+Proof.
+    elim: s x x0 ; simpl ; intuition.
+    case: Rle_dec => //= H.
+Qed.
+Lemma seq_cut_up_behead {T : Type} (s : seq (R*T)) x x0 x1 : 
+  behead (seq_cut_up s x x0) = behead (seq_cut_up s x x1).
+Proof.
+  elim: s x x0 x1 ; simpl ; intuition.
+  case: Rle_dec => //= H.
+Qed.
+  
 
 Definition SF_cut_down {T : Type} (x0 : T) (sf : @SF_seq T) (x : R) :=
   let s := seq_cut_down ((SF_h sf,x0) :: (SF_t sf)) x x0 in
