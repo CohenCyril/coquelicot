@@ -1,5 +1,5 @@
 Require Import Reals.
-Require Import Derive RInt Locally.
+Require Import Rcomplements Derive RInt Locally Differential.
 Require Import AutoDerive.
 Require Import ssreflect.
 
@@ -68,9 +68,43 @@ End Alpha.
 
 Parameter u1 : R -> R.
 
-Hypothesis Cu1 : forall x, continuity_pt (fun u => u1 u) x.
-Hypothesis Iu1 : forall a b, ex_RInt (fun u => u1 u) a b.
 Hypothesis Du1 : forall x, ex_derive (fun u => u1 u) x.
+
+
+
+
+Lemma Cu1 : forall x, continuity_pt (fun u => u1 u) x.
+intros x.
+destruct (Du1 x) as (l,Hl).
+apply derivable_continuous_pt.
+unfold derivable_pt, derivable_pt_abs.
+now exists l.
+Qed.
+
+
+
+Lemma continuity_implies_ex_Rint: forall f a b, 
+   (forall x, continuity_pt f x) -> ex_RInt f a b.
+intros f a b H.
+case (Rle_or_lt a b); intros H1.
+apply ex_RInt_correct_3.
+apply continuity_implies_RiemannInt.
+exact H1.
+intros x _; apply H.
+apply ex_RInt_bound.
+apply ex_RInt_correct_3.
+apply continuity_implies_RiemannInt.
+left; exact H1.
+intros x _; apply H.
+Qed.
+
+
+Lemma Iu1: forall a b, ex_RInt (fun u => u1 u) a b.
+intros a b.
+apply continuity_implies_ex_Rint.
+apply Cu1.
+Qed.
+
 
 Section Beta.
 
@@ -84,6 +118,7 @@ Proof.
 intros x t.
 unfold beta.
 auto_derive_2.
+(* . *)
 split.
 apply Iu1.
 repeat split.
@@ -130,6 +165,35 @@ Proof.
 intros x t.
 unfold gamma.
 auto_derive_2.
+(* . 
+split.
+apply continuity_implies_ex_Rint.
+intros y.
+apply continuity_pt_plus.
+apply continuity_pt_scal.
+admit. (* cont 2D -> 1D avec composition *)
+admit. (* cont 2D -> 1D avec composition *)
+split.
+apply locally_forall.
+intros y z Hz.
+split.
+apply continuity_implies_ex_Rint.
+admit. (* cont 2D -> 1D *)
+split.
+apply locally_forall.
+admit. (* cont 2D -> 1D *)
+split.
+apply locally_forall.
+admit. (* cont 2D -> 1D *)
+easy.
+split.
+apply locally_forall.
+intros y.
+apply continuity_implies_ex_Rint.
+intros z.
+apply derivable_continuous_pt.
+unfold derivable_pt, derivable_pt_abs.
+*)
 admit.
 admit.
 unfold gamma20.
@@ -161,12 +225,12 @@ admit.
 admit.
 unfold gamma02.
 ring_simplify.
-rewrite Rplus_opp_r Rmult_0_r Ropp_0 Rplus_0_r.
+(* rewrite Rplus_opp_r Rmult_0_r Ropp_0 Rplus_0_r.
 rewrite RInt_null Rmult_0_r Rplus_0_r.
 apply Rplus_eq_reg_l with (- f x t).
 field_simplify.
 2: exact Zc.
-rewrite Rmult_1_r.
+rewrite Rmult_1_r.*)
 Abort.
 
 End Gamma.

@@ -1,7 +1,7 @@
 Require Import Reals Rcomplements.
 Require Import ssreflect.
 Require Import Derive.
-Require Import Locally Differential.
+Require Import Locally Continuity Differential.
 
 Lemma C_n_n: forall n, C n n = 1.
 intros n; unfold C.
@@ -114,8 +114,8 @@ Lemma Schwarz :
     ex_derive (fun z => f u z) v /\
     ex_derive (fun z => Derive (fun t => f z t) v) u /\
     ex_derive (fun z => Derive (fun t => f t z) u) v) x y ->
-  continuity2_pt (fun u v => Derive (fun z => Derive (fun t => f z t) v) u) x y ->
-  continuity2_pt (fun u v => Derive (fun z => Derive (fun t => f t z) u) v) x y ->
+  continuity_2d_pt (fun u v => Derive (fun z => Derive (fun t => f z t) v) u) x y ->
+  continuity_2d_pt (fun u v => Derive (fun z => Derive (fun t => f t z) u) v) x y ->
   Derive (fun z => Derive (fun t => f z t) y) x = Derive (fun z => Derive (fun t => f t z) x) y.
 Proof.
 intros f x y (eps, HD) HC2 HC1.
@@ -331,7 +331,7 @@ apply Hzeta1.
 Qed.
 
 Fixpoint ex_diff_n f n x y :=
-  continuity2_pt f x y /\
+  continuity_2d_pt f x y /\
   match n with
   | O => True
   | S n =>
@@ -341,22 +341,6 @@ Fixpoint ex_diff_n f n x y :=
     ex_diff_n (fun u v => Derive (fun z => f u z) v) n x y
   end.
 
-Lemma continuity2_pt_eta: forall f g x y,
-    locally_2d (fun u v =>  f u v = g u v) x y 
-      -> continuity2_pt f x y -> continuity2_pt g x y.
-unfold continuity2_pt; intros f g x y H1 H2 eps.
-specialize (H2 eps).
-move: (locally_2d_and _ _ _ _ H1 H2) => {H1 H2} H.
-apply locally_2d_align with (2:=H).
-intros eps0 H1 u v H2 H3.
-rewrite - (proj1 (H1 u v H2 H3)).
-rewrite - (proj1 (H1 x y _ _)).
-now apply H1.
-rewrite Rminus_eq0 Rabs_R0; apply cond_pos.
-rewrite Rminus_eq0 Rabs_R0; apply cond_pos.
-Qed.
-
-
 
 Lemma ex_diff_n_eta: forall f g n x y,
     locally_2d (fun u v =>  f u v = g u v) x y 
@@ -365,12 +349,12 @@ intros f g n; revert f g.
 induction n.
 intros f g x y H; simpl.
 intros (H1,_); split.
-apply (continuity2_pt_eta _ _ _ _ H H1).
+apply (continuity_2d_pt_ext_loc _ _ _ _ H H1).
 easy.
 simpl.
 intros f g x y H (H1&H2&H3&H4&H5).
 split.
-apply (continuity2_pt_eta _ _ _ _ H H1).
+apply (continuity_2d_pt_ext_loc _ _ _ _ H H1).
 split.
 apply ex_derive_ext_loc with (2:=H2).
 apply locally_2d_1d_const_y with (1:=H).
@@ -591,12 +575,12 @@ Qed.
 
 Lemma ex_diff_n_continuity_inf_1 : forall n p k, (p+k < n)%nat -> forall f x y,
   ex_diff_n f n x y ->
-  continuity2_pt (fun u v => Derive (fun z : R => partial_derive p k f z v) u) x y.
+  continuity_2d_pt (fun u v => Derive (fun z : R => partial_derive p k f z v) u) x y.
 Proof.
 intros n p k Hn f x y Hf.
 assert (ex_diff_n (partial_derive (S p) k f) (n -(S p+k)) x y).
 now apply ex_diff_n_deriv.
-apply continuity2_pt_eta with (partial_derive (S p) k f).
+apply continuity_2d_pt_ext_loc with (partial_derive (S p) k f).
 apply locally_2d_forall.
 intros u v; unfold partial_derive; simpl.
 reflexivity.
@@ -783,7 +767,7 @@ Qed.
 
 Lemma ex_diff_n_continuity_inf_2 : forall n p k, (p+k < n)%nat -> forall f x y,
   ex_diff_n f n x y ->
-  continuity2_pt (fun u v => Derive (fun z : R => partial_derive p k f u z) v) x y.
+  continuity_2d_pt (fun u v => Derive (fun z : R => partial_derive p k f u z) v) x y.
 Proof.
 intros n p k Hn f x y Hf.
 assert (ex_diff_n (partial_derive p k f) (n -(p+k)) x y).
@@ -820,7 +804,7 @@ assert (exists D, locally_2d (fun u v => forall p, (p <= S n)%nat ->
 assert (forall p, (p <= S n)%nat -> exists D, locally_2d (fun u v => Rabs (partial_derive p (S n - p) f u v) <= D) x y).
 intros p Hp.
 (* .. *)
-assert (continuity2_pt (partial_derive p (S n - p) f) x y).
+assert (continuity_2d_pt (partial_derive p (S n - p) f) x y).
 apply locally_2d_singleton in Df.
 refine (proj1 (_: ex_diff_n (partial_derive p (S n - p) f) 0 x y)).
 replace O with (S n - (p + (S n - p)))%nat by rewrite le_plus_minus_r // minus_diag //.
