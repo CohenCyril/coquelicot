@@ -465,52 +465,7 @@ now apply f_equal.
 easy.
 Qed.
 
-Axiom RInt_swap :
-  forall f a b,
-  -(RInt f a b) = RInt f b a.
 
-Lemma derivable_pt_lim_RInt' :
-  forall f a x,
-  ex_RInt f x a -> (exists eps : posreal, ex_RInt f (x - eps) (x + eps)) ->
-  continuity_pt f x ->
-  derivable_pt_lim (fun x => RInt f x a) x (- f x).
-Proof.
-intros f a x Hi Ix Cx.
-apply (is_derive_ext (fun u => - RInt f a u)).
-intros t.
-apply RInt_swap.
-apply derivable_pt_lim_opp.
-apply derivable_pt_lim_RInt ; try easy.
-apply ex_RInt_correct_3.
-apply RiemannInt_P1.
-now apply ex_RInt_correct_2.
-Qed.
-
-Lemma derivable_pt_lim_RInt_bound_comp :
-  forall f a b da db x,
-  ex_RInt f (a x) (b x) ->
-  (exists eps : posreal, ex_RInt f (a x - eps) (a x + eps)) ->
-  (exists eps : posreal, ex_RInt f (b x - eps) (b x + eps)) ->
-  continuity_pt f (a x) ->
-  continuity_pt f (b x) ->
-  derivable_pt_lim a x da ->
-  derivable_pt_lim b x db ->
-  derivable_pt_lim (fun x => RInt f (a x) (b x)) x (db * f (b x) - da * f (a x)).
-Proof.
-intros f a b da db x Hi Ia Ib Ca Cb Da Db.
-replace (db * f (b x) - da * f (a x)) with (- f(a x) * da + f (b x) * db) by ring.
-apply derivable_pt_lim_comp_2d ; try easy.
-replace (- f (a x)) with (Derive (fun u => RInt f u (b x)) (a x)).
-replace (f (b x)) with (Derive (fun u => RInt f (a x) u) (b x)).
-apply derivable_differentiable_pt_lim.
-admit.
-admit.
-admit.
-apply is_derive_unique.
-now apply derivable_pt_lim_RInt.
-apply is_derive_unique.
-now apply derivable_pt_lim_RInt'.
-Qed.
 
 Lemma D_correct :
   forall (e : expr) l n,
