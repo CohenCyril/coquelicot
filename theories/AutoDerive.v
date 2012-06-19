@@ -498,14 +498,21 @@ Lemma derivable_pt_lim_RInt_bound_comp :
   derivable_pt_lim (fun x => RInt f (a x) (b x)) x (db * f (b x) - da * f (a x)).
 Proof.
 intros f a b da db x Hi Ia Ib Ca Cb Da Db.
+
 replace (db * f (b x) - da * f (a x)) with (- f(a x) * da + f (b x) * db) by ring.
 apply derivable_pt_lim_comp_2d ; try easy.
 replace (- f (a x)) with (Derive (fun u => RInt f u (b x)) (a x)).
 replace (f (b x)) with (Derive (fun u => RInt f (a x) u) (b x)).
 apply derivable_differentiable_pt_lim.
+
+admit. (* PB : hypothèses locales pas assez fortes *)
+
+apply Derive_correct ;
+exists (f(b x)) ; 
+apply derivable_pt_lim_RInt => //.
+
 admit.
-admit.
-admit.
+
 apply is_derive_unique.
 now apply derivable_pt_lim_RInt.
 apply is_derive_unique.
