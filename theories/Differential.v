@@ -1,6 +1,6 @@
 Require Import Reals.
 Require Import ssreflect.
-Require Import Rcomplements Locally Derive.
+Require Import Rcomplements Locally Continuity Derive.
 
 Lemma MVT_cor4:
   forall (f : R -> R) a eps,
@@ -79,8 +79,6 @@ apply Rabs_pos.
 now apply H.
 Qed.
 
-Definition continuity2_pt (f : R -> R -> R) (x y : R) :=
-  forall eps : posreal, locally_2d (fun u v => Rabs (f u v - f x y) < eps) x y.
 
 Definition derivable_pt_lim_aux (f : R -> R) (x l : R) :=
   forall eps : posreal, locally (fun y => Rabs (f y - f x - l * (y-x)) <= eps * Rabs (y-x)) x.
@@ -165,7 +163,7 @@ Definition differentiable_pt (f : R -> R -> R) (x y : R) :=
   exists lx, exists ly, differentiable_pt_lim f x y lx ly.
 
 Lemma differentiable_continuity_pt : forall f x y,
-  differentiable_pt f x y -> continuity2_pt f x y.
+  differentiable_pt f x y -> continuity_2d_pt f x y.
 Proof.
   intros f x y (l1&l2&Df) eps ; simpl in Df.
   assert (0 < eps / 2).
@@ -268,7 +266,7 @@ Qed.
 Lemma derivable_differentiable_pt_lim : forall f x y l2,
   locally_2d (fun u v => ex_derive (fun z => f z v) u) x y ->
   is_derive (fun z => f x z) y l2 -> 
-  continuity2_pt (fun u v => Derive (fun z => f z v) u) x y ->
+  continuity_2d_pt (fun u v => Derive (fun z => f z v) u) x y ->
   differentiable_pt_lim f x y (Derive (fun u => f u y) x) l2.
 Proof.
   intros f x y l2 Dx Dy Cx eps.
@@ -448,10 +446,10 @@ Lemma differentiable_pt_lim_comp : forall f1 f2 f3 x y l1x l1y l2x l2y l3x l3y,
 Proof.
   intros f1 f2 f3 x y l1_1 l1_2 l2_1 l2_2 l3_1 l3_2
     Df1 Df2 Df3 eps ; simpl.
-  assert (Cf2 : continuity2_pt f2 x y).
+  assert (Cf2 : continuity_2d_pt f2 x y).
     apply differentiable_continuity_pt.
     exists l2_1 ; exists l2_2 ; apply Df2.
-  assert (Cf3 : continuity2_pt f3 x y).
+  assert (Cf3 : continuity_2d_pt f3 x y).
     apply differentiable_continuity_pt.
     exists l3_1 ; exists l3_2 ; apply Df3.
   assert (He2 : 0 < eps / (4 * Rmax (Rabs l1_1) 1)).

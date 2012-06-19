@@ -293,3 +293,22 @@ Proof.
   case: eps ; intuition.
 Qed.
 
+
+Lemma Lim_seq_ext:  forall u v, 
+  (forall n, u n = v n) -> 
+  Lim_seq u = Lim_seq v.
+Proof.
+intros u v H.
+unfold Lim_seq, LimSup_seq, LimInf_seq.
+destruct (ex_LimSup_seq u) as (lu1,Hlu1).
+destruct (ex_LimSup_seq v) as (lv1,Hlv1).
+destruct (ex_LimInf_seq u) as (lu2,Hlu2).
+destruct (ex_LimInf_seq v) as (lv2,Hlv2).
+simpl.
+rewrite (is_LimSup_seq_eq _ _ _ _ H Hlu1 Hlv1).
+rewrite (is_LimInf_seq_eq _ _ _ _ H Hlu2 Hlv2).
+easy.
+Qed.
+
+
+
