@@ -842,18 +842,18 @@ Fixpoint seq_cut_down {T : Type} (s : seq (R*T)) (x : R) (x0 : T) : seq (R*T) :=
   match s with
     | [::] => [:: (x,x0)]
     | h :: t => 
-        match Rle_dec x (fst h) with
-          | left _ => [:: (x,snd h)]
-          | right _ => h :: (seq_cut_down t x x0)
+        match Rle_dec (fst h) x with
+          | right _ => [:: (x,snd h)]
+          | left _ => h :: (seq_cut_down t x x0)
         end
   end.
 Fixpoint seq_cut_up {T : Type} (s : seq (R*T)) (x : R) (x0 : T) : seq (R*T) :=
   match s with
     | [::] => [:: (x,x0)]
     | h :: t => 
-        match Rle_dec x (fst h) with
-          | left _ => (x,x0)::h::t
-          | right _ => seq_cut_up t x (snd h)
+        match Rle_dec (fst h) x with
+          | right _ => (x,x0)::h::t
+          | left _ => seq_cut_up t x (snd h)
         end
   end.
 
@@ -896,31 +896,33 @@ Proof.
   by apply IH with (p := x0) (x0 := snd h1) (h0 := fst h1).
 Qed.
 
-Lemma SF_Chasles (s : SF_seq) x : SF_sorted Rle s ->
+Lemma SF_Chasles (s : SF_seq) x :
   (SF_h s <= x <= fst (last (SF_h s,0) (SF_t s))) ->
   RInt_seq s Rplus Rmult 0 = 
   (RInt_seq (SF_cut_down 0 s x) Rplus Rmult 0) 
   + (RInt_seq (SF_cut_up 0 s x) Rplus Rmult 0).
 Proof.
-  move => Hs Hx ; 
-  rewrite /SF_cut_down /SF_cut_up.
-  case: s Hs Hx => s0 sf ; simpl SF_h ; simpl SF_t.
-  pattern s0 at 1 2 4 ; replace s0 with (fst (s0,0)) by auto.
-  have : (snd (s0,0) = 0)  => //.
-  move: (s0,0) => {s0} h0 /= Hsnd Hs Hx;
-  rewrite /RInt_seq /= ; case: Rle_dec => //= Hx0.
-  rewrite (Rle_antisym _ _ Hx0 (proj1 Hx)) ; 
-  ring_simplify ; by rewrite -Hsnd -surjective_pairing.
-  rewrite -{2 4 7}Hsnd -surjective_pairing.
-  elim: sf h0 {7 9}h0 {Hsnd} Hs Hx Hx0 => [ | h1 sf IH] h0' h0 Hs Hx Hx0 //=.
-  ring.
-  case: Rle_dec => //= Hx1.
-  ring.
-  rewrite (IH h1 h0).
-  ring.
-  apply Hs.
-  apply Rnot_le_lt in Hx1 ; intuition.
-  apply Hx1.
+  apply SF_cons_ind with (s := s) => {s} [ x0 | h s IH] Hx.
+  have Hx0 : x = x0.
+    apply Rle_antisym ; intuition.
+  rewrite Hx0.
+  move: (Rle_refl x0).
+  rewrite /SF_cut_down /SF_cut_up /= ; case: Rle_dec => //= _ _.
+  rewrite /RInt_seq /= ; ring.
+  case: (Rle_dec (SF_h s) x) => H.
+  rewrite RInt_seq_cons IH.
+  simpl in Hx ; move: (proj1 Hx).
+  rewrite {2}/SF_cut_down {2}/SF_cut_up /= ; case: Rle_dec => //= _ _.
+  rewrite {1}/SF_cut_down {1}/SF_cut_up /= ; case: Rle_dec => //= _.
+  rewrite ?seq_cut_up_head (seq_cut_up_behead _ _ (snd h) 0).
+  rewrite (RInt_seq_cons h (mkSF_seq (SF_h s) (seq_cut_down _ _ _))) /= Rplus_assoc //.
+  intuition.
+  simpl in H1 |-* .
+  case: (SF_t s) H1 => //.
+  simpl in Hx ; move: (proj1 Hx).
+  rewrite /SF_cut_down /SF_cut_up /= ; case: Rle_dec => //= _ _.
+  case: Rle_dec => //= _.
+  rewrite /RInt_seq /= ; ring.
 Qed.
 
 
