@@ -156,7 +156,7 @@ Qed.
 
 
 
-Lemma derivable_pt_lim_param : forall f a b x,
+Lemma derivable_pt_lim_param_aux : forall f a b x,
   locally (fun x => forall t, Rmin a b <= t <= Rmax a b -> ex_derive (fun u => f u t) x) x ->
   (forall t, Rmin a b <= t <= Rmax a b -> continuity_2d_pt (fun u v => Derive (fun z => f z v) u) x t) ->
   locally (fun y => ex_RInt (fun t => f y t) a b) x ->
@@ -281,6 +281,51 @@ now apply Rgt_ge.
 Qed.
 
 
+Lemma derivable_pt_lim_param : forall f a b x,
+  locally (fun x => forall t, Rmin a b <= t <= Rmax a b -> ex_derive (fun u => f u t) x) x ->
+  (forall t, Rmin a b <= t <= Rmax a b -> continuity_2d_pt (fun u v => Derive (fun z => f z v) u) x t) ->
+  locally (fun y => ex_RInt (fun t => f y t) a b) x ->
+  derivable_pt_lim (fun x => RInt (fun t => f x t) a b) x
+    (RInt (fun t => Derive (fun u => f u t) x) a b).
+Proof.
+intros f a b x H1 H2 H3.
+apply derivable_pt_lim_param_aux; try easy.
+apply ex_RInt_correct_3.
+clear H1 H3.
+wlog: a b H2 / a < b => H.
+case (total_order_T a b).
+intro Y; case Y.
+now apply H.
+intros Heq; rewrite Heq.
+apply RiemannInt_P7.
+intros  Y.
+apply RiemannInt_P1.
+apply H.
+intros; apply H2.
+rewrite Rmin_comm Rmax_comm.
+exact H0.
+exact Y.
+rewrite Rmin_left in H2.
+2: now left.
+rewrite Rmax_right in H2.
+2: now left.
+apply continuity_implies_RiemannInt.
+now left.
+intros y Hy eps Heps.
+destruct (H2 _ Hy (mkposreal eps Heps)) as (d,Hd).
+simpl in Hd.
+exists d; split.
+apply cond_pos.
+unfold dist; simpl; unfold R_dist; simpl.
+intros z (_,Hz).
+apply Hd.
+rewrite /Rminus Rplus_opp_r Rabs_R0.
+apply cond_pos.
+exact Hz.
+Qed.
+
+
+
 Lemma derivable_pt_lim_RInt' :
   forall f a x,
   ex_RInt f x a -> (exists eps : posreal, ex_RInt f (x - eps) (x + eps)) ->
@@ -311,23 +356,33 @@ Lemma derivable_pt_lim_RInt_bound_comp :
   derivable_pt_lim (fun x => RInt f (a x) (b x)) x (db * f (b x) - da * f (a x)).
 Proof.
 intros f a b da db x Hi Ia Ib Ca Cb Da Db.
-replace (db * f (b x) - da * f (a x)) with (- f(a x) * da + f (b x) * db) by ring.
-apply derivable_pt_lim_comp_2d ; try easy.
-replace (- f (a x)) with (Derive (fun u => RInt f u (b x)) (a x)).
-replace (f (b x)) with (Derive (fun u => RInt f (a x) u) (b x)).
-apply derivable_differentiable_pt_lim.
-(* *)
 destruct Ia as (d1,H1).
-destruct Ib as (d2,H2).
-exists (mkposreal _ (Rmin_stable_in_posreal d1  (mkposreal _ (Rmin_stable_in_posreal (pos_div_2 d1) d2)))).
-simpl; intros u v Hu Hv.
-exists (-f u).
-apply (derivable_pt_lim_RInt' f v u).
-apply ex_RInt_add_interval with (a x+d1).
+apply is_derive_ext with (fun x0 => comp (fun y => RInt f y (a x + d1)) a x0 
+  + comp (fun y => RInt f (a x + d1) y) b x0).
+(* *)
+intros t.
+unfold comp.
+apply sym_eq, RInt_Chasles.
+replace (db * f (b x) - da * f (a x)) with (- f(a x) * da + f (b x) * db) by ring.
+apply derivable_pt_lim_plus.
+(* *)
+apply derivable_pt_lim_comp.
+exact Da.
+apply derivable_pt_lim_RInt'.
 apply ex_RInt_included2 with (a x - d1).
 exact H1.
-apply Rabs_le_between'.
-apply Rlt_le, Rlt_le_trans with (1:=Hu), Rmin_l.
+pattern (a x) at 2 3; rewrite <- (Rplus_0_r (a x)).
+split; apply Rplus_le_compat_l.
+rewrite <- Ropp_0.
+apply Ropp_le_contravar.
+left; apply cond_pos.
+left; apply cond_pos.
+now exists d1.
+exact Ca.
+(* *)
+apply derivable_pt_lim_comp.
+exact Db.
+apply derivable_pt_lim_RInt.
 apply ex_RInt_add_interval with (a x).
 apply ex_RInt_bound.
 apply ex_RInt_included2 with (a x - d1).
@@ -338,83 +393,33 @@ rewrite <- Ropp_0.
 apply Ropp_le_contravar.
 left; apply cond_pos.
 left; apply cond_pos.
-apply ex_RInt_add_interval with (b x).
 exact Hi.
-apply ex_RInt_add_interval with (b x-d2).
-apply ex_RInt_bound.
-apply ex_RInt_included1 with (b x + d2).
-exact H2.
-pattern (b x) at 2 3; rewrite <- (Rplus_0_r (b x)).
-split; apply Rplus_le_compat_l.
-rewrite <- Ropp_0.
-apply Ropp_le_contravar.
-left; apply cond_pos.
-left; apply cond_pos.
-apply ex_RInt_included1 with (b x + d2).
-exact H2.
-apply Rabs_le_between'.
-apply Rlt_le, Rlt_le_trans with (1:=Hv).
-apply Rle_trans with (1:=Rmin_r _ _), Rmin_r.
-exists (pos_div_2 d1).
-apply ex_RInt_included2 with (a x - d1).
-apply ex_RInt_included1 with (a x + d1).
-exact H1.
-apply Rabs_le_between'.
-replace (u + pos_div_2 d1 - a x) with ((u-a x)+pos_div_2 d1) by ring.
-apply Rle_trans with (1:=Rabs_triang _ _).
-rewrite (double_var d1).
-apply Rplus_le_compat.
-apply Rlt_le; apply Rlt_le_trans with (1:=Hu).
-apply Rle_trans with (1:=Rmin_r _ _), Rmin_l.
-rewrite Rabs_right.
-now right.
-apply Rle_ge, Rlt_le, cond_pos.
-split.
-apply Rplus_le_reg_l with (d1-u).
-apply Rle_trans with (-(u-a x)).
-right; ring.
-apply Rle_trans with (1:= RRle_abs _).
-rewrite Rabs_Ropp.
-apply Rlt_le, Rlt_le_trans with (1:=Hu).
-apply Rle_trans with (1:=Rmin_r _ _), Rle_trans with (1:=Rmin_l _ _).
-pattern d1 at 1; rewrite (double_var d1).
-right; simpl; ring.
-apply Rplus_le_compat_l.
-apply Rle_trans with 0.
-rewrite <- Ropp_0.
-apply Ropp_le_contravar.
-left; apply cond_pos.
-left; apply cond_pos.
-admit. (* hum.... f continue autour de a x ? *)
-(* *)
-apply Derive_correct.
-exists (f (b x)).
-now apply derivable_pt_lim_RInt.
-(* *)
-
-(* intros eps.
-destruct (proj1 (continuity_pt_locally _ _) Ca eps) as (d1,H1).
-destruct (proj1 (continuity_pt_locally _ _) Cb eps) as (d2,H2).
-exists (mkposreal _ (Rmin_stable_in_posreal d1 d2)).
-simpl; intros u v Hu Hv.
-replace  (Derive (fun u => RInt f u (b x)) (a x)) with (- f (a x)).
-replace  (Derive (fun z => RInt f z v) u) with (- f u).
-admit.
-apply sym_eq; apply is_derive_unique.
-apply derivable_pt_lim_RInt'.
-apply sym_eq; apply is_derive_unique.
-now apply derivable_pt_lim_RInt'.
-*)
-admit.
-(* *)
-apply is_derive_unique.
-now apply derivable_pt_lim_RInt.
-apply is_derive_unique.
-now apply derivable_pt_lim_RInt'.
+exact Ib.
+exact Cb.
 Qed.
 
+(*
+Lemma derivable_pt_lim_RInt_bound_comp :
+  forall f a b da db x,
+  ex_RInt f (a x) (b x) ->
+  (exists eps : posreal, ex_RInt f (a x - eps) (a x + eps)) ->
+  (exists eps : posreal, ex_RInt f (b x - eps) (b x + eps)) ->
+  continuity_pt f (a x) ->
+  continuity_pt f (b x) ->
+  derivable_pt_lim a x da ->
+  derivable_pt_lim b x db ->
+  derivable_pt_lim (fun x => RInt f (a x) (b x)) x (db * f (b x) - da * f (a x)).
+Proof.
+Lemma derivable_pt_lim_param : forall f a b x,
+  locally (fun x => forall t, Rmin a b <= t <= Rmax a b 
+              -> ex_derive (fun u => f u t) x) x ->
+  (forall t, Rmin a b <= t <= Rmax a b 
+              -> continuity_2d_pt (fun u v => Derive (fun z => f z v) u) x t) ->
+  locally (fun y => ex_RInt (fun t => f y t) a b) x ->
+  derivable_pt_lim (fun x => RInt (fun t => f x t) a b) x
+    (RInt (fun t => Derive (fun u => f u t) x) a b).
 
-(* Il manque encore son copain avec f qui dépend aussi de x *)
+ Il manque encore son copain avec f qui dépend aussi de x *)
 
 
 

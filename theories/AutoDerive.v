@@ -949,14 +949,14 @@ apply locally_forall => y.
 rewrite (is_const_correct e2 n C2 l y (nth 0 l n)).
 rewrite (is_const_correct e3 n C3 l y (nth 0 l n)).
 now rewrite 2!interp_set_nth.
-apply ex_RInt_ext with (2 := H1).
+(*apply ex_RInt_ext with (2 := H1).
 intros t Ht.
 apply sym_eq.
 apply is_derive_unique.
 apply locally_singleton in H3'.
 apply (IHe1 (t :: l)).
 generalize (H3' t Ht).
-apply (interp_domain_set_nth (S n) (t :: l)).
+apply (interp_domain_set_nth (S n) (t :: l)).*)
 intros t Ht.
 apply sym_eq.
 apply is_derive_unique.
