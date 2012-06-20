@@ -3027,18 +3027,57 @@ admit.
     rewrite unzip1_zip ?seq2Rlist_bij // ; apply ssrnat.eq_leq ;
     simpl in Hsize ; intuition.
   case: (S2 (x0,y0) (SF_make (x1 :: Rlist2seq lx) (Rlist2seq ly) Hsize) 
-    Ha Hb Hsort eps) => {S2} alpha ; rewrite -/f0 => S2.
+    Ha Hb Hsort (pos_div_2 eps)) => {S2} alpha1 ; rewrite -/f0 => S2.
+  set alp2 := foldr Rplus 1 (map (fun x => Rabs (SF_fun f0 0 x - f x)) [::x0, x1 & Rlist2seq lx]).
+  have Halp2 : 0 < alp2.
+    rewrite /alp2 /= ; repeat apply Rplus_le_lt_0_compat with (1 := Rabs_pos _).
+    elim: (Rlist2seq lx) => [ | h t] /= ; intuition.
+    by apply Rplus_le_lt_0_compat with (1 := Rabs_pos _).
+Search _ (0 < _/_).
+  set alpha2 := mkposreal _ (Rdiv_lt_0_compat _ _ (is_pos_div_2 eps) Halp2).
+  have Halp : 0 < Rmin alpha1 alpha2.
+    apply Rmin_case_strong => _ ; [ apply alpha1 | apply alpha2 ].
+  set alpha := mkposreal _ Halp.
+  
   exists alpha ; intros.
-  move: (S2 sigma xi H H0 H1 H2 H3) => {S2} S2.
+  move: (S2 sigma xi H H0 (Rlt_le_trans _ _ _ H1 (Rmin_l _ _)) H2 H3) => {S2} S2.
   have: Int_SF (RList.cons y0 ly) (RList.cons x0 (RList.cons x1 lx))
     = RInt_seq f0 Rplus Rmult 0.
     rewrite /RInt_seq /=.
     apply (f_equal (Rplus (y0 * (x1 - x0)))).
-    clear f0 Ha Hb Hsort S2 Had Hlx ;
+    clear H1 alpha Halp alpha2 f0 Ha alp2 Halp2 Hb Hsort S2 Had Hlx ;
     elim: lx x1 ly y0 Hsize => [ | x2 lx IH] x1 ;
     case => [ | y1 ly] y0 Hsize ; try by intuition.
     simpl ; apply (f_equal (Rplus (y1 * (x2 - x1)))), IH ; intuition.
   move => ->.
+  replace (_-_) with ((RInt_seq f0 Rplus Rmult 0 - Riemann_sum (SF_fun f0 0) sigma xi H) 
+    + (Riemann_sum (SF_fun f0 0) sigma xi H - Riemann_sum f sigma xi H)) ;
+    [ | by ring_simplify].
+  rewrite (double_var eps) ; apply Rle_trans with (1 := Rabs_triang _ _),
+    Rplus_le_compat => //.
+  replace (eps/2) with (alp2 * alpha2) ; 
+    [ | simpl ; field ; by apply Rgt_not_eq].
+  rewrite /Riemann_sum => {S2}.
+  have Heq : x0 = a.
+    case: Had ; intuition ; simpl in H4 ; rewrite H4 /Rmin ; 
+    move: (Rlt_le _ _ Hab) ; case: Rle_dec => //.
+  rewrite Heq in Had Hlx f0 Ha Hb Hsort alp2 Halp2 alpha2 Halp alpha H1 |-*
+  => {x0 Ha S1 Heq} ; rename x1 into x0.
+  case: sigma H H0 H1 H2 H3 => [ | h0 sigma] ; try by case.
+  intros ; simpl in H2, H3.
+  rewrite H2 in H H0 H1 H3 |- * => {h0 H2}.
+  case: sigma xi H H0 H1 H3
+  => [ | h0 sigma] ; case => [ | l0 xi] ; try by case.
+  intros ; simpl in H3 ; contradict H3 ; by apply Rlt_not_eq.
+  intro ; move: (proj1 H) (proj2 H O (lt_O_Sn _)) (pointed_pty0 _ _ _ _ H)
+    => {H} Hs H' H ; simpl in Hs, H'.
+  intro ; move: (proj1 H0) (proj2 H0 : sorted Rlt (h0::sigma)) => {H0} H0' H0 ;
+    simpl in H0'.
+  intro ; move: (Rlt_le_trans _ _ _ H1 (Rmin_r _ _)) => {H1} H1 ;
+  move: (Rle_lt_trans _ _ _ (RmaxLess1 _ _) H1) 
+    (Rle_lt_trans _ _ _ (RmaxLess2 _ _) H1 : seq_step (h0 :: sigma) < alpha2)
+    => {H1} H1' H1 ; simpl Rabs in H1'.
+  intro H2 ; simpl in H2.
 Admitted.
 (*
 Lemma ex_RInt_correct_aux_2 (f : R -> R) (a b : R) :
