@@ -200,7 +200,7 @@ unfold gamma20.
 ring_simplify.
 apply f_equal.
 apply RInt_ext => z _.
-now rewrite 4!Rmult_1_l 2!Rplus_0_r.
+now rewrite 4!Rmult_1_l.
 Qed.
 
 Lemma RInt_null : forall g a, RInt g a a = 0.

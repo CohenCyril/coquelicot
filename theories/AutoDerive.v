@@ -541,16 +541,16 @@ now apply f_equal.
 easy.
 Qed.
 
-Definition foldr_not_const l n :=
-  fst (foldr (fun v acc =>
+Definition foldl_not_const l n :=
+  fst (foldl (fun acc v =>
     let '(acc1,acc2) := acc in
     if is_const v n then (acc1, S acc2)
     else (acc2::acc1, S acc2)
   ) (nil, O) l).
 
-Lemma foldr_not_const_correct :
+Lemma foldl_not_const_correct :
   forall n l (k : nat),
-  not (mem_seq (T:=ssrnat.nat_eqType) (foldr_not_const l n) k) ->
+  not (mem_seq (T:=ssrnat.nat_eqType) (foldl_not_const l n) k) ->
   is_const (nth (Cst 0) l k) n = true.
 Proof.
 admit.
@@ -560,13 +560,13 @@ Lemma interp_AppExt_set_nth_not_const :
   forall k f le l n x,
   interp (set_nth 0 l n x) (AppExt k f le) =
   apply k f (foldr (fun v acc i => if ssrnat.eqn i v then interp (set_nth 0 l n x) (nth (Cst 0) le v) else acc i)
-    (nth 0 (map (interp l) le)) (foldr_not_const le n)).
+    (nth 0 (map (interp l) le)) (foldl_not_const le n)).
 Proof.
 intros k f le l n x.
 simpl.
 apply apply_ext => m _.
-generalize (foldr_not_const_correct n le m).
-induction (foldr_not_const le n).
+generalize (foldl_not_const_correct n le m).
+induction (foldl_not_const le n).
 simpl => Hp.
 case (ssrnat.leqP (size le) m) => Hs.
 rewrite 2?nth_default ?size_map //.
@@ -590,24 +590,7 @@ Fixpoint D (e : expr) n {struct e} : expr * domain :=
   | Var v => (if ssrnat.eqn v n then Cst 1 else Cst 0, Always)
   | Cst _ => (Cst 0, Always)
   | AppExt k f le =>
-(*
-    if orb (ssrnat.leq 3 k) (negb (ssrnat.eqn (size le) k)) then (Cst 0, Never) else (* TODO: prove in the general case *)
-    let '(d1,d2,_,_) :=
-      foldr (fun v acc =>
-        let '(acc1,acc2,acc3,acc4) := acc in
-        if is_const v n then (acc1,acc2,S acc3,acc4)
-        else
-          let '(d1,d2) := D v n in
-          (Binary Eplus (Binary Emult d1 (AppExt k (Derive_Rn k f acc3) le)) acc1,
-           match acc4 with
-           | nil => Derivable acc3 k f le :: d2 :: acc2
-           | y :: nil =>
-           | _ => Never
-           end, S acc3,acc3::acc4)
-      ) (Cst 0, nil, O, nil) le in
-    (d1, And d2)
-*)
-    let lnc := foldr_not_const le n in
+    let lnc := foldl_not_const le n in
     let ld := map (fun e => D e n) le in
     match lnc with
     | nil => (Cst 0, Always)
@@ -655,8 +638,8 @@ Fixpoint D (e : expr) n {struct e} : expr * domain :=
        And (b1::b2::(Integrable f e1 e2)::(Forone e1 (Locally 0 (Continuous 0 f)))::(Forone e2 (Locally 0 (Continuous 0 f)))::nil))
     | false, true, true =>
       (Int a3 e1 e2,
-       And ((Integrable a3 e1 e2)::(ForallWide n e1 e2 b3)::
-            (Locally n (Integrable f e1 e2))::(Forall e1 e2 (Continuous2 (S n) 0 a3))::nil))
+       And ((ForallWide n e1 e2 b3)::(Locally n (Integrable f e1 e2))::
+            (Forall e1 e2 (Continuous2 (S n) 0 a3))::nil))
     | _, _, _ => (Cst 0, Never)
 (*
     | _, _, _ =>
@@ -701,7 +684,7 @@ apply H.
 simpl.
 now apply IHle.
 move: (interp_AppExt_set_nth_not_const k f le l n).
-case (foldr_not_const le n) => [|v1 [|v2 [|v3 q]]] /= Hc.
+case (foldl_not_const le n) => [|v1 [|v2 [|v3 q]]] /= Hc.
 (* . *)
 intros _.
 apply (is_derive_ext (fun x => apply k f (nth 0 (map (interp l) le)))).
@@ -973,7 +956,7 @@ clear IHe3.
 (* . *)
 clear C1.
 simpl.
-intros (H1&H3&H2&H4&_).
+intros (H3&H2&H4&_).
 apply (is_derive_ext (fun x => RInt (fun t => interp (t :: set_nth 0 l n x) e1) (interp (set_nth 0 l n (nth 0 l n)) e2) (interp (set_nth 0 l n (nth 0 l n)) e3))).
 intros t.
 apply f_equal2.
@@ -1031,14 +1014,6 @@ apply locally_forall => y.
 rewrite (is_const_correct e2 n C2 l y (nth 0 l n)).
 rewrite (is_const_correct e3 n C3 l y (nth 0 l n)).
 now rewrite 2!interp_set_nth.
-(*apply ex_RInt_ext with (2 := H1).
-intros t Ht.
-apply sym_eq.
-apply is_derive_unique.
-apply locally_singleton in H3'.
-apply (IHe1 (t :: l)).
-generalize (H3' t Ht).
-apply (interp_domain_set_nth (S n) (t :: l)).*)
 intros t Ht.
 apply sym_eq.
 apply is_derive_unique.
