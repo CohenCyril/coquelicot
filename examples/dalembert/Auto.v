@@ -203,18 +203,6 @@ apply RInt_ext => z _.
 now rewrite 4!Rmult_1_l.
 Qed.
 
-Lemma RInt_null : forall g a, RInt g a a = 0.
-Proof.
-intros g a.
-apply Rmult_eq_reg_r with 2.
-rewrite Rmult_plus_distr_l Rmult_0_l Rmult_1_r.
-rewrite -{1}(Ropp_involutive (RInt g a a)).
-rewrite RInt_swap.
-apply Rplus_opp_l.
-apply Rgt_not_eq.
-apply Rlt_R0_R2.
-Qed.
-
 Lemma gamma02_lim :
   forall x t, is_derive_n (fun u => gamma x u) 2 t (gamma02 x t).
 Proof.
@@ -226,7 +214,7 @@ admit.
 unfold gamma02.
 ring_simplify.
 (* rewrite Rplus_opp_r Rmult_0_r Ropp_0 Rplus_0_r.
-rewrite RInt_null Rmult_0_r Rplus_0_r.
+rewrite RInt_point Rmult_0_r Rplus_0_r.
 apply Rplus_eq_reg_l with (- f x t).
 field_simplify.
 2: exact Zc.

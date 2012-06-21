@@ -541,32 +541,49 @@ now apply f_equal.
 easy.
 Qed.
 
-Definition foldl_not_const l n :=
-  fst (foldl (fun acc v =>
-    let '(acc1,acc2) := acc in
-    if is_const v n then (acc1, S acc2)
-    else (acc2::acc1, S acc2)
-  ) (nil, O) l).
+Definition index_not_const l n :=
+  filter (fun v => ~~ is_const (nth (Cst 0) l v) n) (iota 0 (size l)).
 
-Lemma foldl_not_const_correct :
+Lemma uniq_index_not_const :
+  forall n l,
+  uniq (T:=ssrnat.nat_eqType) (index_not_const l n).
+Proof.
+intros n l.
+unfold index_not_const.
+apply filter_uniq.
+apply iota_uniq.
+Qed.
+
+Lemma index_not_const_correct :
   forall n l (k : nat),
-  not (mem_seq (T:=ssrnat.nat_eqType) (foldl_not_const l n) k) ->
+  not (in_mem k (mem (T:=ssrnat.nat_eqType) (index_not_const l n))) ->
   is_const (nth (Cst 0) l k) n = true.
 Proof.
-admit.
+intros n l k.
+rewrite /index_not_const (@mem_filter ssrnat.nat_eqType) mem_iota /=.
+rewrite ssrnat.add0n.
+case E: ssrnat.leq.
+case is_const.
+easy.
+now elim.
+intros _.
+rewrite nth_default //.
+revert E.
+rewrite ssrnat.ltnNge.
+now case ssrnat.leq.
 Qed.
 
 Lemma interp_AppExt_set_nth_not_const :
   forall k f le l n x,
   interp (set_nth 0 l n x) (AppExt k f le) =
   apply k f (foldr (fun v acc i => if ssrnat.eqn i v then interp (set_nth 0 l n x) (nth (Cst 0) le v) else acc i)
-    (nth 0 (map (interp l) le)) (foldl_not_const le n)).
+    (nth 0 (map (interp l) le)) (index_not_const le n)).
 Proof.
 intros k f le l n x.
 simpl.
 apply apply_ext => m _.
-generalize (foldl_not_const_correct n le m).
-induction (foldl_not_const le n).
+generalize (index_not_const_correct n le m).
+induction (index_not_const le n).
 simpl => Hp.
 case (ssrnat.leqP (size le) m) => Hs.
 rewrite 2?nth_default ?size_map //.
@@ -574,7 +591,7 @@ rewrite 2?(nth_map (Cst 0)) //.
 rewrite (is_const_correct _ n _ l x (nth 0 l n)).
 apply interp_set_nth.
 now apply Hp.
-rewrite /= -ssrnat.eqnE.
+rewrite (@in_cons ssrnat.nat_eqType) /= -ssrnat.eqnE.
 case E: (ssrnat.eqn m t).
 intros _.
 rewrite (ssrnat.eqnP E).
@@ -590,7 +607,7 @@ Fixpoint D (e : expr) n {struct e} : expr * domain :=
   | Var v => (if ssrnat.eqn v n then Cst 1 else Cst 0, Always)
   | Cst _ => (Cst 0, Always)
   | AppExt k f le =>
-    let lnc := foldl_not_const le n in
+    let lnc := index_not_const le n in
     let ld := map (fun e => D e n) le in
     match lnc with
     | nil => (Cst 0, Always)
@@ -683,16 +700,17 @@ destruct v as [|v].
 apply H.
 simpl.
 now apply IHle.
-move: (interp_AppExt_set_nth_not_const k f le l n).
-case (foldl_not_const le n) => [|v1 [|v2 [|v3 q]]] /= Hc.
+move: (interp_AppExt_set_nth_not_const k f le l n) (uniq_index_not_const n le).
+case (index_not_const le n) => [|v1 [|v2 [|v3 q]]] /= Hc.
 (* . *)
-intros _.
+intros _ _.
 apply (is_derive_ext (fun x => apply k f (nth 0 (map (interp l) le)))).
 intros t.
 apply sym_eq.
 apply Hc.
 apply derivable_pt_lim_const.
 (* . *)
+intros _.
 case (ssrnat.leqP (size le) v1) => Hv1.
 rewrite nth_default ?size_map //.
 now intros (_&F&_).
@@ -709,6 +727,7 @@ rewrite interp_set_nth.
 rewrite -(nth_map (Cst 0) 0) //.
 now apply Derive_correct.
 (* . *)
+intros Hv.
 case (ssrnat.leqP (size le) v1) => Hv1.
 rewrite nth_default ?size_map //.
 case (nth (Cst 0, Never) (map (fun e => D e n) le) v2) => [d3 d4].
@@ -760,9 +779,10 @@ now case E: (ssrnat.eqn p v1).
 apply: is_derive_ext (Derive_correct _ _ H4) => t.
 apply apply_ext => p Hp.
 case E: (ssrnat.eqn p v1) => //.
-case E': (ssrnat.eqn p v2).
-admit. (* p1 <> p2 *)
-now rewrite (ssrnat.eqnP E).
+rewrite (ssrnat.eqnP E).
+revert Hv.
+rewrite /in_mem /= ssrnat.eqnE.
+now case eqtype.eq_op.
 apply: continuity_2d_pt_ext H2 => u v.
 unfold Derive_Rn.
 rewrite ssrnat.eqnE eqtype.eq_refl.
