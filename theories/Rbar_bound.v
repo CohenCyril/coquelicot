@@ -6,7 +6,7 @@ Require Import Reals Decidable Rbar Markov Floor Rcomplements.
 Definition Rbar_is_upper_bound (E : Rbar -> Prop) (l : Rbar) :=
   forall x, E x -> Rbar_le x l.
 
-(** ** Particular upper bounds *)
+(** ** Specific upper bounds *)
 
 Lemma Rbar_ub_p_infty (E : Rbar -> Prop) :
   Rbar_is_upper_bound E p_infty.

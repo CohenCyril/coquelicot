@@ -1,7 +1,7 @@
 Require Import Reals Max Floor.
 Open Scope R_scope.
 
-(** * Le principe de Markov *)
+(** * Markov's principle *)
 
 Lemma Markov : forall P : nat -> Prop, (forall n, {P n}+{~P n}) ->
   {n : nat| P n} + {forall n, ~ P n}.
@@ -204,6 +204,7 @@ Proof.
   exists n ; reflexivity.
   apply (u0 n).
 Qed.
+
 Lemma Markov_cor1 : forall P : nat -> Prop, (forall n, {P n}+{~P n}) ->
   (~ forall n : nat, ~ P n) -> exists n : nat, P n.
 Proof.
@@ -212,6 +213,7 @@ Proof.
   destruct s as (n,H1) ; exists n ; apply H1.
   contradict H0 ; apply n.
 Qed.
+
 Lemma Markov_cor2 : forall P : nat -> Prop, (forall n, {P n}+{~P n}) ->
   ~~ (exists n : nat, P n) -> exists n : nat, P n.
 Proof.

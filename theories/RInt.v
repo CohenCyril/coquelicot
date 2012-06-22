@@ -4,14 +4,7 @@ Require Import Markov Rcomplements Floor Total_sup Sup_seq Lim_seq Derive SF_seq
 
 
 (*
-(** * compatibilities with ssreflect *)
-(** ** ssrnat *)
-derivab
-
-Lemma SSR_add (n m : nat) : ssrnat.addn n m = (n + m)%nat.
-Proof.
-  elim: m n => //.
-Qed.
+(** * Compatibility with ssreflect *)
 
 (** ** seq *)
 Lemma size_belast {T : Type} (s : seq T) : size (belast s) = Peano.pred (size s).
@@ -2641,7 +2634,7 @@ Proof.
   move: (Rlt_Rminus _ _ Hab) => Hab' ; 
   move: (Rlt_le _ _ Hab') (Rlt_not_eq _ _ Hab') ;
   case: Rle_dec => // H _ ; case: Rle_lt_or_eq_dec => // _ _ {H Hab'}.
-(** Step1 : $f = f0 * \chi_{[a0;b0]}$ *)  
+(** Step 1 : $f = f0 * \chi_{[a0;b0]}$ *)
 have S1 : forall a0 b0 f0, a <= a0 -> a0 <= b0 -> b0 <= b ->
   forall (f := mkSF_seq a0 [::(b0,f0)]) (eps : posreal),
   exists alpha : posreal,

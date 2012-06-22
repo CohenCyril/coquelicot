@@ -2,8 +2,8 @@ Require Import Reals Max.
 Require Import ConstructiveEpsilon.
 Open Scope R_scope.
 
-(** * Définitions de parties entières *)
-(** ** Dans Z *)
+(** * Integer part *)
+(** ** to Z *)
 
 Lemma floor_ex : forall x : R, {n : Z | IZR n <= x < IZR n + 1}.
 Proof.
@@ -32,7 +32,7 @@ Proof.
 Qed.
 Definition floor1 x := projT1 (floor1_ex x).
 
-(** ** Dans nat *)
+(** ** to nat *)
 
 Lemma nfloor_ex : forall x : R, 0 <= x -> {n : nat | INR n <= x < INR n + 1}.
 Proof.
@@ -107,100 +107,7 @@ Proof.
 Qed.
 Definition nfloor3 x pr := projT1 (nfloor3_ex x pr).
 
-(** * Logarithme entier *)
-(** ** Dans Z *)
-
-(*
-Lemma Zlog_1_lt_x_ex (x y : R) : 1 < x -> 0 < y -> 
-  {n : Z |  Rpower x (IZR n) <= y < Rpower x (IZR n + 1)}.
-Proof.
-  intros.
-  assert (ln_x : 0 < ln x).
-    rewrite <- ln_1 ; apply ln_increasing ; [apply Rlt_0_1|apply H].
-  assert (Rw : ln y = (ln y / ln x) * ln x).
-    field ; apply Rgt_not_eq, ln_x.
-  destruct (floor_ex (ln y / ln x)) as (n,(Hn1,Hn2)).
-  exists n ; rewrite <- (exp_ln y H0) ; split.
-  destruct Hn1 as [Hn1|Hn1] ; [apply Rlt_le | apply Req_le].
-  apply exp_increasing ;
-  rewrite Rw ;
-  apply Rmult_lt_compat_r with (1 := ln_x), Hn1.
-  rewrite Hn1 ;
-  pattern (ln y) at 2 ; rewrite Rw ;
-  reflexivity.
-  apply exp_increasing ;
-  rewrite Rw ; 
-  apply Rmult_lt_compat_r with (1 := ln_x), Hn2.
-Qed.
-Definition Zlog_1_lt_x (x y : R) pr_x pr_y := projT1 (Zlog_1_lt_x_ex x y pr_x pr_y).
-
-Lemma Zlog_x_lt_1_ex (x y : R) : 0 < x < 1 -> 0 < y -> 
-  {n : Z |  Rpower x (IZR n + 1) < y <= Rpower x (IZR n)}.
-Proof.
-  intros.
-  assert (ln_x : 0 < - ln x).
-    rewrite <- Ropp_0, <- ln_1 ; apply Ropp_lt_contravar, ln_increasing ; apply H.
-  assert (Rw : ln y = (ln y / ln x) * ln x).
-    field ; apply Rlt_not_eq, Ropp_lt_cancel ; rewrite Ropp_0 ; apply ln_x.
-  destruct (floor_ex (ln y / ln x)) as (n,(Hn1,Hn2)).
-  exists n ; rewrite <- (exp_ln y H0) ; split.
-  apply exp_increasing ; rewrite Rw ;
-  apply Ropp_lt_cancel ;
-  repeat rewrite <- (Ropp_mult_distr_r_reverse) ;
-  apply Rmult_lt_compat_r with (1 := ln_x), Hn2.
-  destruct Hn1 as [Hn1|Hn1] ; [apply Rlt_le | apply Req_le].
-  apply exp_increasing ; rewrite Rw ;
-  apply Ropp_lt_cancel ;
-  repeat rewrite <- (Ropp_mult_distr_r_reverse) ;
-  apply Rmult_lt_compat_r with (1 := ln_x), Hn1.
-  rewrite Hn1 ;
-  pattern (ln y) at 1 ; rewrite Rw ;
-  reflexivity.
-Qed.
-Definition Zlog_x_lt_1 (x y : R) pr_x pr_y := projT1 (Zlog_x_lt_1_ex x y pr_x pr_y).
-*)
-
-(** ** dans nat *)
-
-(*
-Lemma log_1_lt_x_ex (x y : R) : 1 < x -> 1 <= y -> {n : nat |  x^n <= y < x^(S n)}.
-Proof.
-  intros Hx Hy.
-  assert (Hx1 : 0 < x).
-    apply Rlt_trans with (1 := Rlt_0_1), Hx.
-  assert (Hx2 : 0 < ln x).
-    rewrite <- ln_1 ; apply ln_increasing ; [apply Rlt_0_1| apply Hx].
-  assert (Hy1 : 0 < y).
-    apply Rlt_le_trans with (1 := Rlt_0_1), Hy.
-  assert (Hy2 : 0 <= ln y).
-    rewrite <- ln_1 ;
-    destruct (Rle_lt_or_eq_dec 1 y Hy).
-    apply Rlt_le, ln_increasing ; [apply Rlt_0_1| apply r].
-    rewrite e ; apply Rle_refl.
-  destruct (nfloor_ex (ln y/ln x)) as (n,Hn).
-    unfold Rdiv ; apply Rmult_le_pos.
-    apply Hy2.
-    apply Rlt_le, Rinv_0_lt_compat, Hx2.
-  exists n.
-  repeat rewrite <- (Rpower_pow _ _ Hx1).
-  rewrite <- (exp_ln y Hy1).
-  unfold Rpower ; split.
-  destruct (Rle_lt_or_eq_dec (INR n) (ln y / ln x) (proj1 Hn)).
-  apply Rlt_le, exp_increasing.
-  assert (Rw : ln y = (ln y / ln x) * ln x) ; 
-    [field ; apply Rgt_not_eq, Hx2|rewrite Rw ; clear Rw].
-  apply Rmult_lt_compat_r with (1 := Hx2), r.
-  assert (Rw : INR n * ln x = ln y) ; 
-    [rewrite e ; field ; apply Rgt_not_eq, Hx2 | rewrite Rw ; clear Rw].
-  apply Rle_refl.
-  apply exp_increasing.
-  assert (Rw : ln y = (ln y / ln x) * ln x) ; 
-    [field ; apply Rgt_not_eq, Hx2|rewrite Rw ; clear Rw].
-  rewrite S_INR ; apply Rmult_lt_compat_r with (1 := Hx2), Hn.
-Qed.
-Definition log_1_lt_x (x y : R) pr_x pr_y := projT1 (log_1_lt_x_ex x y pr_x pr_y).
-*)
-
+(** * Discrete logarithm *)
 
 Lemma log_x_lt_1_ex (x y : R) : 0 < x < 1 -> 0 < y <= 1 -> {n : nat |  x^(S n) < y <= x^n}.
 Proof.

@@ -11,7 +11,7 @@ Definition is_lim f x l :=
   forall eps : posreal, locally (fun y => y <> x -> Rabs (f y - l) < eps) x.
 Definition ex_lim f x := exists l, is_lim f x l.
 
-(** ** Equivalence with Coq définition *)
+(** ** Equivalence with Coq definition *)
 
 Lemma is_lim_Coq_0 f x l :
   is_lim f x l -> limit1_in f (fun y => y <> x) l x.

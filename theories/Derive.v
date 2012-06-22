@@ -4,14 +4,14 @@ Require Import Lim_seq Lim_fct.
 Require Import Locally.
 Open Scope R_scope.
 
-(** * Deriv *)
+(** * Derive *)
 
 Definition Derive (f : R -> R) (x : R) := Lim (fun h => (f (x+h) - f x)/h) 0.
 
 Notation is_derive f x l := (derivable_pt_lim f x l).
 Definition ex_derive f x := exists l, is_derive f x l.
 
-(** ** Compute Deriv *)
+(** ** Compute Derive *)
 
 Lemma is_derive_unique f x l :
   is_derive f x l -> Derive f x = l.
@@ -36,7 +36,7 @@ Proof.
   apply is_derive_unique, H.
 Qed.
 
-(** ** Equality *)
+(** ** Extensionality *)
 
 Lemma is_derive_ext_loc :
   forall f g x l,
@@ -180,7 +180,6 @@ now apply le_INR.
 apply sym_not_eq, Rlt_not_eq, cond_pos.
 apply Rle_ge; left; apply Rinv_0_lt_compat.
 now apply lt_0_INR.
-
 Qed.
 
 Lemma Derive_ext :
@@ -311,7 +310,8 @@ now apply le_S.
 now apply H.
 Qed.
 
-(** * nth deriv *)
+(** * Iterated differential *)
+
 Fixpoint Derive_n (f : R -> R) (n : nat) x :=
   match n with
     | O => f x
