@@ -4391,7 +4391,7 @@ Proof.
   set Hex := (ex_RInt_correct_3 f a b pr) ;
   rewrite (RiemannInt_P5 pr (ex_RInt_correct_2 f a b Hex)).
   rewrite /RInt /RiemannInt => /= ; case: RiemannInt_exists => l /= Hl.
-  case: Rle_dec => // _ ; apply Lim_seq_rw => /= eps. 
+  case: Rle_dec => // _ ; apply is_lim_seq_unique => /= eps.
   set e2 := pos_div_2 eps ; set e4 := pos_div_2 e2.
   case: (Hl _ (cond_pos e2)) => {Hl} Naux Hl.
   move: (Hl Naux (le_refl Naux)) => {Hl} ; rewrite /R_dist.

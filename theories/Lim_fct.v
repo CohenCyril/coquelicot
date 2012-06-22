@@ -55,7 +55,7 @@ Lemma is_lim_unique f x l :
 Proof.
   intros.
   unfold Lim.
-  apply Lim_seq_rw.
+  apply is_lim_seq_unique.
   apply (is_lim_comp_seq f x l H).
   exists 1%nat ; intros ; apply Rgt_not_eq, Rlt_gt ;
   pattern x at 1 ; rewrite <- Rplus_0_r ; apply Rplus_lt_compat_l.
