@@ -3026,9 +3026,10 @@ admit.
      rewrite /RiemannInt_SF /subdivision /subdivision_val ; 
      move: (Rlt_le _ _ Hab) ; case: Rle_dec => //= _ _.
   case: lx Had => [ | x0 lx ] Had ; try by move: (proj1 (proj2 (proj2 (proj2 Had)))).
+  
   have Hsize : size (x0 :: Rlist2seq lx) = S (size (Rlist2seq ly)).
     simpl ; rewrite -?size_compat ?seq2Rlist_bij ; case: Had ; intuition.
-  set f0 := (SF_make (x0 :: Rlist2seq lx) (Rlist2seq ly) Hsize).
+  set f0 := (SF_make _ _ Hsize).
   have Ha : a <= SF_h f0.
     simpl ; apply Req_le ; move: (proj1 (proj2 Had)) => /= ->.
     move: (Rlt_le _ _ Hab) ; rewrite /Rmin ; case: Rle_dec => //.
@@ -3036,25 +3037,26 @@ admit.
     case: Had ; intuition.
     replace (fst (last (SF_h f0, 0) (SF_t f0))) with
       (pos_Rl (RList.cons x0 ( lx))
-       (Peano.pred (Rlength (RList.cons x0 (lx))))).
+       (Peano.pred (Rlength (RList.cons x0 ( lx))))).
     apply Req_le ; rewrite H1 ; rewrite /Rmax ; move: (Rlt_le _ _ Hab) ; case: Rle_dec => //.
     rewrite -last_map /=.
     clear Hsize f0 Ha H3 a0 H H1 ;
     elim: lx x0 ly H0 => [ | x1 lx IH] x0 ; 
     case => [ | y0 ly] H0 ; simpl ; try by [].
-    apply IH ; intuition.
+    apply (IH x1 ly) ; intuition.
   have Hsort : SF_sorted Rle f0.
     rewrite /SF_sorted ; apply sorted_compat => /=.
     move: (proj1 Had).
     rewrite unzip1_zip ?seq2Rlist_bij // ; apply ssrnat.eq_leq ;
     simpl in Hsize ; intuition.
-  case: (S2 (SF_make (x0 :: Rlist2seq lx) (Rlist2seq ly) Hsize) 
-    Ha Hb Hsort (pos_div_2 eps)) => {S2} alpha1 ; rewrite -/f0 => S2.
-  set alp2 := foldr Rplus 1 (map (fun x => Rabs (SF_fun f0 0 x - f x)) [::x0 & Rlist2seq lx]).
+  case: (S2 f0 Ha Hb Hsort (pos_div_2 eps)) => {S2} alpha1 ; rewrite -/f0 => S2.
+  set alp2 := foldr Rplus 1 (map (fun x => 2 * Rabs (SF_fun f0 0 x - f x)) 
+    (belast [::x0 & Rlist2seq lx])).
   have Halp2 : 0 < alp2.
-    rewrite /alp2 /= ; apply Rplus_le_lt_0_compat with (1 := Rabs_pos _).
-    elim: (Rlist2seq lx) => [ | h t] /= ; intuition.
-    by apply Rplus_le_lt_0_compat with (1 := Rabs_pos _).
+    rewrite /alp2 /= ; repeat apply Rplus_le_lt_0_compat 
+      with (1 := Rmult_le_pos _ _ (Rlt_le _ _ Rlt_R0_R2) (Rabs_pos _)).
+    elim: (Rlist2seq lx) (x0) => [ | z1 t] z0 /= ; intuition.
+    by apply Rplus_le_lt_0_compat with (1 := Rmult_le_pos _ _ (Rlt_le _ _ Rlt_R0_R2) (Rabs_pos _)).
   set alpha2 := mkposreal _ (Rdiv_lt_0_compat _ _ (is_pos_div_2 eps) Halp2).
   have Halp : 0 < Rmin alpha1 alpha2.
     apply Rmin_case_strong => _ ; [ apply alpha1 | apply alpha2 ].
@@ -3062,14 +3064,14 @@ admit.
   
   exists alpha ; intros.
   move: (S2 sigma xi H H0 (Rlt_le_trans _ _ _ H1 (Rmin_l _ _)) H2 H3) => {S2} S2.
-  have: Int_SF ( ly) (RList.cons x0 (lx))
+  have: Int_SF ( ly) (RList.cons x0 ( lx))
     = RInt_seq f0 Rplus Rmult 0.
     rewrite /f0 /= ;
     clear H1 alpha Halp alpha2 f0 Ha alp2 Halp2 Hb Hsort S2 Had ;
     elim: lx x0 ly Hsize => [ | x1 lx IH] x0 ;
-    case => [ | y0 ly] Hsize ; try by intuition.
+    case => [ | y0 ly] Hsize ; try by [].
     simpl ; rewrite IH ; intuition.
-    rewrite (RInt_seq_cons (x0,y0) (SF_make (x1 :: Rlist2seq lx) (Rlist2seq ly) Hyp0)) //=.
+    rewrite (RInt_seq_cons (x0, y0) (SF_make _ _ Hyp0)) //=.
   move => ->.
   replace (_-_) with ((RInt_seq f0 Rplus Rmult 0 - Riemann_sum (SF_fun f0 0) sigma xi H) 
     + (Riemann_sum (SF_fun f0 0) sigma xi H - Riemann_sum f sigma xi H)) ;
@@ -3088,42 +3090,39 @@ admit.
   have Heq : a = x0.
     apply Rle_antisym ; case: Had ; intuition ;
     simpl in H4 ; rewrite H4 ; apply Rmin_l.
-  clear S1 Hab Ha ; 
-  rewrite Heq in Had H2 H3 
-  |-* => {Heq a}.
+  clear S1 Ha ; 
+  rewrite Heq in Had Hab H2 H3 |-* => {Heq a}.
+  move: (Rlt_le _ _ Hab) => {Hab} Hab.
   have Hx0 : x0 <= l0.
     simpl in H2 ; rewrite -H2.
     apply (proj2 H O (lt_O_Sn _)).
   clear H2 ;
   simpl in H3 ; 
-  revert Hsize f0 Hb Hsort alp2 Halp2 alpha2 Halp alpha H1
-  Hx0 ;
+  revert Hsize f0 Hb Hsort alp2 Halp2 alpha2 Halp alpha H1 Hx0 ;
   elim: lx x0 ly Had
-        sigma h0 h1 xi l0 H
-        H0 H3
-        => [ | x1 lx IHlx] x0 ;
-        case => [ | y0 ly] Had ; intros ; try by [].
-    move: (proj1 H) (proj2 H O (lt_O_Sn _)) 
-      (pointed_pty0 _ _ _ _ H : pointed_subdiv (h1::sigma) xi)
-      => {H} Hs H' H ; simpl in H'.
-    move: (proj1 H0) (proj2 H0 : sorted Rlt (h1::sigma))
-      => {H0} H0' H0 ; simpl in H0'.
-    move: (Rlt_le_trans _ _ _ (Rle_lt_trans _ _ _ (RmaxLess1 _ _) H1) (Rmin_r _ _))
-      ((Rlt_le_trans _ _ _ (Rle_lt_trans _ _ _ (RmaxLess2 _ _) H1) (Rmin_r _ _))
-        : seq_step (h1 :: sigma) < alpha2)
-      => {H1} H1' H1 ; simpl Rabs in H1'.
-Admitted.
+    sigma h0 h1 xi l0 H
+    Hab H0 H3
+    => [ | x1 lx IHlx] x0 ;
+    case => [ | y0 ly] Had ; intros ; try by [].
+  have H5 : h0 = x0.
+admit.
+  have H6 : h1 = x0.
+admit.
+  absurd (h0 < h1).
+    apply Rle_not_lt, Req_le ; rewrite H5 H6 //.
+    apply H0.
+Admitted. (** Admitted *)
 (*
 Lemma ex_RInt_correct_aux_2 (f : R -> R) (a b : R) :
   (exists I : R, forall eps : posreal, exists alpha : nat, forall (sigma xi : seq R) 
   (H : pointed_subdiv a b sigma xi), (size sigma <= alpha)%nat ->
   Rabs (I - Riemann_sum f a b sigma xi H) <= eps) -> ex_RInt f a b.
 Proof.
-Admitted.
+Admitted. (** Admitted *)
 Lemma ex_RInt_correct_aux_3 (f : R -> R) (a b : R) :
   ex_RInt f a b -> Riemann_integrable f a b.
 Proof.
-Admitted. *)
+Admitted. (** Admitted *) *)
 
 (** * my proof *)
 
@@ -3859,7 +3858,7 @@ Proof.
   case => [ | i] Hi.
   apply Rlt_le, Rnot_le_lt, H0.
   apply (Hs' i (lt_S_n _ _ Hi)).
-Admitted.
+Admitted. (** Admitted *) (** Admitted *)
 
 Lemma RInt_sup_up f a b n (Hab : a < b) :
   forall sf : StepFun a b, forall M,
@@ -3982,7 +3981,7 @@ Proof.
   apply Rlt_le, Rlt_Rminus => //.
   intuition.
   rewrite /SF_fun /=.
-Admitted.
+Admitted. (** Admitted *) (** Admitted *)
 
 Lemma ex_RInt_correct_4 (f : R -> R) (a b : R) : Riemann_integrable f a b -> 
   forall (eps : posreal), exists n, 
@@ -4201,7 +4200,7 @@ Proof.
       (Rbar_div_pos (Finite (Int_SF SFy SFx * 2^n / (b - a) + M*INR (Rlength SFx)))
        {| pos := 2 ^ n; cond_pos := pow_lt 2 n Rlt_R0_R2 |}).
     apply Rbar_div_pos_le, Rbar_le_trans with (1 := Hle0).
-Admitted.
+Admitted. (** Admitted *) (** Admitted *)
 
 Lemma ex_RInt_correct_3 (f : R -> R) (a b : R) :
   Riemann_integrable f a b -> ex_RInt f a b.
@@ -4370,7 +4369,7 @@ Qed.
 
 Lemma ex_RInt_cv (f : R -> R) (a b : R) : 
   ex_RInt f a b -> ex_lim_seq (RInt_val f a b).
-Admitted.
+Admitted. (** Admitted *)
 
 Definition RInt (f : R -> R) (a b : R) := 
   match Rle_dec a b with
@@ -4439,24 +4438,24 @@ Proof.
       replace (nth 0 (0 :: RInt_part a b n1) (S i))
       with (nth 0 ( RInt_part a b n1) (i)) by auto.
 
-Admitted.
+Admitted. (** Admitted *) (** Admitted *)
 
 Lemma RInt_ext (f g : R -> R) (a b : R) :
   (forall x, Rmin a b <= x <= Rmax a b -> f x = g x) -> RInt f a b = RInt g a b.
 Proof.
   move => Hf ; rewrite /RInt /RInt_val.
-Admitted.
+Admitted. (** Admitted *) (** Admitted *)
 
 Lemma RInt_const (a b c : R) :
   RInt (fun _ => c) a b = c * (b-a).
 Proof.
   rewrite (RInt_correct _ _ _ (Riemann_integrable_const _ _ _))
           RiemannInt_const //.
-Admitted.
+Admitted. (** Admitted *) (** Admitted *)
 Lemma RInt_Chasles (f : R -> R) (a b c : R) :
   RInt f a c = RInt f a b + RInt f b c.
 Proof.
-Admitted.
+Admitted. (** Admitted *) (** Admitted *)
 
 (** * Riemann integral and derivative *)
 
@@ -4465,7 +4464,7 @@ Lemma derivable_pt_lim_RInt (f : R -> R) (a : R) (x : R) :
   continuity_pt f x -> derivable_pt_lim (fun x => RInt f a x) x (f x).
 Proof.
   move => Iax Iloc Cx e He ; set eps := mkposreal e He.
-Admitted. (** Admitted. *)
+Admitted. (** Admitted *) (** Admitted. *)
 
 Lemma RInt_Derive (f : R -> R) (a b : R) (eps : posreal) :
   (forall x, Rmin a b - eps <= x <= Rmax a b + eps -> ex_derive f x) ->
