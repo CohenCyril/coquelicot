@@ -293,7 +293,6 @@ Proof.
   case: eps ; intuition.
 Qed.
 
-
 Lemma Lim_seq_ext:  forall u v, 
   (forall n, u n = v n) -> 
   Lim_seq u = Lim_seq v.
@@ -310,5 +309,13 @@ rewrite (is_LimInf_seq_eq _ _ _ _ H Hlu2 Hlv2).
 easy.
 Qed.
 
-
-
+Lemma Lim_seq_opp :
+  forall u,
+  Lim_seq (fun n => - u n) = - Lim_seq u.
+Proof.
+intros u.
+rewrite -(Rmult_1_l (Lim_seq u)) -Ropp_mult_distr_l_reverse.
+rewrite -Lim_seq_scal.
+apply Lim_seq_ext => n.
+now rewrite Ropp_mult_distr_l_reverse Rmult_1_l.
+Qed.
