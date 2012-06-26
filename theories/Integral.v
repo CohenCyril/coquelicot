@@ -398,153 +398,246 @@ exact Ib.
 exact Cb.
 Qed.
 
-(*
-Lemma derivable_pt_lim_RInt_param_bound_comp_aux1 :
+
+Lemma continuity_2d_Der_Int: forall f a b x,  
+  (locally (fun y => ex_RInt (fun t => f y t) (a x) b) x) ->
+  (exists eps:posreal, locally
+    (fun x0 : R =>
+       forall t : R,
+        Rmin (a x-eps) b <= t <= Rmax (a x+eps) b ->
+        ex_derive (fun u : R => f u t) x0) x) ->
+  (exists eps:posreal, locally
+    (fun x0 => 
+       forall t : R,
+          Rmin (a x-eps) b <= t <= Rmax (a x+eps) b ->
+         continuity_2d_pt (fun u v : R => Derive (fun z : R => f z v) u) x0 t) x) ->
+
+  continuity_2d_pt
+     (fun u v : R => Derive (fun z : R => RInt (fun t : R => f z t) v b) u) x (a x).
+Proof.
+intros f a b x Ia Df Cdf.
+exists (mkposreal _ Rlt_0_1).
+simpl; intros u v Hu Hv.
+replace (Derive (fun z : R => RInt (fun t : R => f z t) v b) u) with 
+  (RInt (fun z => Derive (fun u => f u z) u) v b).
+replace (Derive (fun z : R => RInt (fun t : R => f z t) (a x) b) x) with
+  (RInt (fun z => Derive (fun u => f u z) x) (a x) b).
+
+(* ???????????????????????????????????????????? *)
+admit.
+(* *)
+apply sym_eq, is_derive_unique.
+apply derivable_pt_lim_param.
+destruct Df as (d ,Hd).
+apply locally_impl with (2:= Hd).
+apply locally_forall.
+intros y H t Ht.
+apply H.
+admit. (* ok *)
+destruct Cdf as (d ,Hd).
+apply locally_singleton in Hd.
+intros t Ht; apply Hd.
+admit. (* ok *)
+exact Ia.
+(* *)
+apply sym_eq, is_derive_unique.
+apply derivable_pt_lim_param.
+Admitted.
+
+
+
+
+
+
+Lemma derivable_pt_lim_RInt_param_bound_comp_aux :
   forall f a b x da,
-  ex_RInt (fun t => f x t) (a x) b ->
-  (exists eps : posreal, ex_RInt (fun t => f x t) (a x - eps) (a x + eps)) ->
+  (locally (fun y => ex_RInt (fun t => f y t) (a x) b) x) ->
+  (exists eps:posreal, locally (fun y => ex_RInt (fun t => f y t) (a x -eps) (a x + eps)) x) ->
   derivable_pt_lim a x da ->
   (exists eps:posreal, locally
     (fun x0 : R =>
        forall t : R,
         Rmin (a x-eps) b <= t <= Rmax (a x+eps) b ->
         ex_derive (fun u : R => f u t) x0) x) ->
-  (exists eps:posreal, forall t : R,
-    Rmin (a x-eps) b <= t <= Rmax (a x+eps) b ->
-     continuity_2d_pt (fun u v : R => Derive (fun z : R => f z v) u) x t) ->
-   
-
-
+  (exists eps:posreal, locally
+   (fun x0 => 
+       forall t : R,
+          Rmin (a x-eps) b <= t <= Rmax (a x+eps) b ->
+         continuity_2d_pt (fun u v : R => Derive (fun z : R => f z v) u) x0 t) x) ->
+   continuity_pt (fun t => f x t) (a x) ->   
 
  derivable_pt_lim (fun x => RInt (fun t => f x t) (a x) b) x
-    1.
+    ((Derive (fun u => RInt (fun t : R => f u t) (a x) b) x)+(-f x (a x))*da).
 Proof.
-intros f a b x da Hi Ia Da Df Cdf.
-replace 1 with (2*1+1*da) by admit (* hum *).
+intros f a b x da Hi (d0,Ia) Da Df Cdf Cfa.
+replace  (Derive (fun u => RInt (fun t : R => f u t) (a x) b) x) with 
+   ((Derive (fun u => RInt (fun t : R => f u t) (a x) b) x)*1) by ring.
 apply derivable_pt_lim_comp_2d with 
    (f1 := fun x0 y => RInt (fun t : R => f x0 t) y b).
-replace 2 with (Derive (fun u => RInt (fun t : R => f u t) (a x) b) x)
-  by admit. (* hum *)
+(* *)
 apply derivable_differentiable_pt_lim.
-
-
-3: easy.
-
-
-intros f a b x da Hi Ia Da (e1,H1) (e2,H2).
-destruct Ia as (e3,H3).
-pose (d:=Rmin e1 (Rmin e2 e3)).
-
-apply is_derive_ext with (fun x0 =>
-  comp (fun y => RInt (fun t : R => f x0 t) y (a x + d)) a x0 +  
- RInt (fun t : R => f x0 t) (a x + d) b).
-(* *)
-intros t.
-unfold comp.
-apply sym_eq, RInt_Chasles.
-replace 1 with (1*1+
-    (RInt (fun t : R => Derive (fun u : R => f u t) x) (a x + d) b)) by admit. (* argh *)
-apply derivable_pt_lim_plus.
-(* *)
-
-apply derivable_pt_lim_comp.
-
-admit.
-(*
-apply derivable_pt_lim_comp.
-exact Da.
-apply derivable_pt_lim_RInt'.
-apply ex_RInt_included2 with (a x - d1).
-exact H1.
-pattern (a x) at 2 3; rewrite <- (Rplus_0_r (a x)).
-split; apply Rplus_le_compat_l.
-rewrite <- Ropp_0.
-apply Ropp_le_contravar.
-left; apply cond_pos.
-left; apply cond_pos.
-now exists d1.
-exact Ca.*)
-(* *)
-apply derivable_pt_lim_param.
-apply locally_impl with (2:=H1).
-apply locally_forall.
-intros y J1 t Ht.
-apply J1.
+(* . *)
+destruct Df as (d1,(d2,Hd12)).
+destruct Cdf as (d3,(d4,Hd34)).
+move: (locally_and _ _ _ Hi Ia) => Y.
+destruct Y as (d5,Hd5).
+exists (mkposreal _ (Rmin_stable_in_posreal  
+                       (mkposreal _ (Rmin_stable_in_posreal (mkposreal _ (Rmin_stable_in_posreal d0 (pos_div_2 d5)))
+                                    (mkposreal _ (Rmin_stable_in_posreal d3 d4))))
+                       (mkposreal _ (Rmin_stable_in_posreal d1 (pos_div_2 d2))))).
+simpl; intros u v Hu Hv.
+eexists; eapply derivable_pt_lim_param.
+(* .. *)
+exists (pos_div_2 d2).
+intros y Hy t Ht.
+apply Hd12.
+replace (y-x) with ((y-u)+(u-x)) by ring.
+rewrite (double_var d2).
+apply Rle_lt_trans with (1:=Rabs_triang _ _).
+apply Rplus_lt_compat.
+exact Hy.
+apply Rlt_le_trans with (1:=Hu).
+apply Rle_trans with (1:=Rmin_r _ _).
+apply Rmin_r.
 split.
 apply Rle_trans with (2:=proj1 Ht).
-admit. (* ok *)
+apply Rle_min_compat_r.
+apply Rplus_le_reg_l with (d1-v).
+apply Rle_trans with (-(v- a x)).
+right; ring.
+apply Rle_trans with (1:=RRle_abs _).
+rewrite Rabs_Ropp.
+apply Rle_trans with d1;[idtac|right; ring].
+left; apply Rlt_le_trans with (1:=Hv).
+apply Rle_trans with (1:=Rmin_r _ _).
+apply Rmin_l.
 apply Rle_trans with (1:=proj2 Ht).
-admit. (* ok *)
+apply Rle_max_compat_r.
+apply Rplus_le_reg_l with (- a x).
+apply Rle_trans with (v- a x).
+right; ring.
+apply Rle_trans with (1:=RRle_abs _).
+apply Rle_trans with d1;[idtac|right; ring].
+left; apply Rlt_le_trans with (1:=Hv).
+apply Rle_trans with (1:=Rmin_r _ _).
+apply Rmin_l.
+(* .. *)
 intros t Ht.
-apply H2.
-admit. (* ok *)
-apply locally_forall.
-admit. (* ok *)
-
-
-
-exact Db.
-apply derivable_pt_lim_RInt.
+apply Hd34.
+apply Rlt_le_trans with (1:=Hu).
+apply Rle_trans with (1:=Rmin_l _ _).
+apply Rle_trans with (1:=Rmin_r _ _).
+apply Rmin_r.
+split.
+apply Rle_trans with (2:=proj1 Ht).
+apply Rle_min_compat_r.
+apply Rplus_le_reg_l with (d3-v).
+apply Rle_trans with (-(v- a x)).
+right; ring.
+apply Rle_trans with (1:=RRle_abs _).
+rewrite Rabs_Ropp.
+apply Rle_trans with d3;[idtac|right; ring].
+left; apply Rlt_le_trans with (1:=Hv).
+apply Rle_trans with (1:=Rmin_l _ _).
+apply Rle_trans with (1:=Rmin_r _ _).
+apply Rmin_l.
+apply Rle_trans with (1:=proj2 Ht).
+apply Rle_max_compat_r.
+apply Rplus_le_reg_l with (- a x).
+apply Rle_trans with (v- a x).
+right; ring.
+apply Rle_trans with (1:=RRle_abs _).
+apply Rle_trans with d3;[idtac|right; ring].
+left; apply Rlt_le_trans with (1:=Hv).
+apply Rle_trans with (1:=Rmin_l _ _).
+apply Rle_trans with (1:=Rmin_r _ _).
+apply Rmin_l.
+(* .. *)
+exists (pos_div_2 d5).
+intros y Hy.
 apply ex_RInt_add_interval with (a x).
-apply ex_RInt_bound.
-apply ex_RInt_included2 with (a x - d1).
-exact H1.
-pattern (a x) at 2 3; rewrite <- (Rplus_0_r (a x)).
-split; apply Rplus_le_compat_l.
+case (Rle_or_lt v (a x)); intros Y.
+apply ex_RInt_included2 with (a x - d0).
+apply ex_RInt_included1 with (a x + d0).
+apply Hd5.
+replace (y-x) with ((y-u)+(u-x)) by ring.
+rewrite (double_var d5).
+apply Rle_lt_trans with (1:=Rabs_triang _ _).
+apply Rplus_lt_compat.
+exact Hy.
+apply Rlt_le_trans with (1:=Hu).
+apply Rle_trans with (1:=Rmin_l _ _).
+apply Rle_trans with (1:=Rmin_l _ _).
+apply Rmin_r.
+split.
+apply Rplus_le_reg_l with (-a x); ring_simplify.
 rewrite <- Ropp_0.
-apply Ropp_le_contravar.
+apply Ropp_le_contravar; left; apply cond_pos.
+apply Rplus_le_reg_l with (-a x); ring_simplify.
 left; apply cond_pos.
+split.
+apply Rplus_le_reg_l with (d0-v).
+apply Rle_trans with (-(v- a x)).
+right; ring.
+apply Rle_trans with (1:=RRle_abs _).
+rewrite Rabs_Ropp.
+apply Rle_trans with d0;[idtac|right; ring].
+left; apply Rlt_le_trans with (1:=Hv).
+apply Rle_trans with (1:=Rmin_l _ _).
+apply Rle_trans with (1:=Rmin_l _ _).
+apply Rmin_l.
+exact Y.
+apply ex_RInt_bound.
+apply ex_RInt_included1 with (a x + d0).
+apply ex_RInt_included2 with (a x - d0).
+apply Hd5.
+replace (y-x) with ((y-u)+(u-x)) by ring.
+rewrite (double_var d5).
+apply Rle_lt_trans with (1:=Rabs_triang _ _).
+apply Rplus_lt_compat.
+exact Hy.
+apply Rlt_le_trans with (1:=Hu).
+apply Rle_trans with (1:=Rmin_l _ _).
+apply Rle_trans with (1:=Rmin_l _ _).
+apply Rmin_r.
+split.
+apply Rplus_le_reg_l with (-a x); ring_simplify.
+rewrite <- Ropp_0.
+apply Ropp_le_contravar; left; apply cond_pos.
+apply Rplus_le_reg_l with (-a x); ring_simplify.
 left; apply cond_pos.
+split.
+left; exact Y.
+apply Rplus_le_reg_l with (-a x).
+apply Rle_trans with ((v- a x)).
+right; ring.
+apply Rle_trans with (1:=RRle_abs _).
+apply Rle_trans with d0;[idtac|right; ring].
+left; apply Rlt_le_trans with (1:=Hv).
+apply Rle_trans with (1:=Rmin_l _ _).
+apply Rle_trans with (1:=Rmin_l _ _).
+apply Rmin_l.
+apply Hd5.
+replace (y-x) with ((y-u)+(u-x)) by ring.
+rewrite (double_var d5).
+apply Rle_lt_trans with (1:=Rabs_triang _ _).
+apply Rplus_lt_compat.
+exact Hy.
+apply Rlt_le_trans with (1:=Hu).
+apply Rle_trans with (1:=Rmin_l _ _).
+apply Rle_trans with (1:=Rmin_l _ _).
+apply Rmin_r.
+(* . *)
+apply derivable_pt_lim_RInt'.
+apply locally_singleton in Hi.
 exact Hi.
-exact Ib.
-exact Cb.
+apply locally_singleton in Ia.
+now exists d0.
+exact Cfa.
+now apply continuity_2d_Der_Int.
+apply derivable_pt_lim_id.
+exact Da.
 Qed.
-
-
-
-
-Lemma derivable_pt_lim_RInt_param_bound_comp :
-  forall f a b x da db,
-  ex_RInt (fun t => f x t) (a x) (b x) ->
-  (exists eps : posreal, ex_RInt (fun t => f x t) (a x - eps) (a x + eps)) ->
-  derivable_pt_lim a x da ->
-  derivable_pt_lim b x db ->
-
- derivable_pt_lim (fun x => RInt (fun t => f x t) (a x) (b x)) x
-    1.
-Proof.
-i
-
-
-
-eapply derivable_pt_lim_param.
-
-apply is_derive_ext with (fun x0 => comp 
-   (fun y => RInt (fun t => f x0 t) y (b x0)) a x0).
-intros t; now unfold comp.
-apply (derivable_pt_lim_comp (fun y : R => RInt (fun t : R => f x0 t)  y) a x).
-
-is_derive_ext with (fun x0 => comp (fun y => RInt f y (a x + d1)) a x0 
-
-  ex_RInt f (a x) (b x) ->
-  (exists eps : posreal, ex_RInt f (a x - eps) (a x + eps)) ->
-  (exists eps : posreal, ex_RInt f (b x - eps) (b x + eps)) ->
-  continuity_pt f (a x) ->
-  continuity_pt f (b x) ->
-  derivable_pt_lim a x da ->
-  derivable_pt_lim b x db ->
-  derivable_pt_lim (fun x => RInt f (a x) (b x)) x (db * f (b x) - da * f (a x)).
-Proof.
-Lemma derivable_pt_lim_param : forall f a b x,
-  locally (fun x => forall t, Rmin a b <= t <= Rmax a b 
-              -> ex_derive (fun u => f u t) x) x ->
-  (forall t, Rmin a b <= t <= Rmax a b 
-              -> continuity_2d_pt (fun u v => Derive (fun z => f z v) u) x t) ->
-  locally (fun y => ex_RInt (fun t => f y t) a b) x ->
-  derivable_pt_lim (fun x => RInt (fun t => f x t) a b) x
-    (RInt (fun t => Derive (fun u => f u t) x) a b).
-
- Il manque encore son copain avec f qui dépend aussi de x *)
 
 
 
