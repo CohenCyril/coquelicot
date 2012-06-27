@@ -54,7 +54,7 @@ Definition Rbar_mult_pos (x : Rbar) (y : posreal) :=
     | _ => x
   end.
 
-(** * Compatibilities with Real numbers *)
+(** * Compatibility with Real numbers *)
 
 Lemma Rbar_finite_eq (x y : R) :
   Finite x = Finite y <-> x = y.
@@ -101,7 +101,7 @@ Proof.
   right ; apply sym_eq, (Rbar_finite_eq _ _), H.
 Qed.
 
-(** * Decidabilities *)
+(** * Decidability *)
 
 Lemma Rbar_total_order (x y : Rbar) :
   {Rbar_lt x y} + {x = y} + {Rbar_gt x y}.
@@ -276,8 +276,10 @@ Proof.
   now destruct H0 ; contradict H0.
 Qed.
 
-(** * Proprieties on operations *)
+(** * Properties of operations *)
+
 (** ** Rbar_opp *)
+
 Lemma Rbar_opp_involutive (x : Rbar) : (Rbar_opp (Rbar_opp x)) = x.
 Proof.
   destruct x as [x| | ] ; auto ; simpl ; rewrite Ropp_involutive ; auto.
@@ -308,7 +310,9 @@ Lemma Rbar_opp_real (x : Rbar) : real (Rbar_opp x) = - real x.
 Proof.
   destruct x as [x | | ] ; simpl ; intuition.
 Qed.
+
 (** ** Rbar_plus *)
+
 Lemma Rbar_plus_0_r (x : Rbar) : Rbar_plus x (Finite 0) = x.
 Proof.
   case: x => //= ; intuition.
@@ -353,7 +357,9 @@ Proof.
   case => [Hcd | ->] ; try by right.
   apply Rbar_plus_le_lt_compat => // ; by right.
 Qed.
+
 (** ** Rbar_div_pos *)
+
 Lemma Rbar_div_pos_eq (x y : Rbar) (z : posreal) :
   x = y <-> (Rbar_div_pos x z) = (Rbar_div_pos y z).
 Proof.
@@ -384,6 +390,7 @@ Proof.
 Qed.
 
 (** ** Rbar_mult_pos *)
+
 Lemma Rbar_mult_pos_eq (x y : Rbar) (z : posreal) :
   x = y <-> (Rbar_mult_pos x z) = (Rbar_mult_pos y z).
 Proof.

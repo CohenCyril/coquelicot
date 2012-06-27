@@ -352,7 +352,7 @@ Proof.
   by apply (Rbar_is_inf_seq_rw u v).
 Qed.
 
-(** * Other proprieties about sup and inf *)
+(** * Other properties about sup and inf *)
 
 Lemma Rbar_sup_eq_lub (u : nat -> Rbar) Hp Hex :
   Rbar_sup_seq u = Rbar_lub_ne (fun x => exists n, x = u n) Hp Hex.

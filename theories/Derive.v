@@ -1,17 +1,17 @@
 Require Import Reals.
 Require Import ssreflect.
-Require Import Lim_fct.
+Require Import Lim_seq Lim_fct.
 Require Import Locally.
 Open Scope R_scope.
 
-(** * Deriv *)
+(** * Derive *)
 
 Definition Derive (f : R -> R) (x : R) := Lim (fun h => (f (x+h) - f x)/h) 0.
 
 Notation is_derive f x l := (derivable_pt_lim f x l).
 Definition ex_derive f x := exists l, is_derive f x l.
 
-(** ** Compute Deriv *)
+(** ** Compute Derive *)
 
 Lemma is_derive_unique f x l :
   is_derive f x l -> Derive f x = l.
@@ -36,7 +36,7 @@ Proof.
   apply is_derive_unique, H.
 Qed.
 
-(** ** Equality *)
+(** ** Extensionality *)
 
 Lemma is_derive_ext_loc :
   forall f g x l,
@@ -180,7 +180,6 @@ now apply le_INR.
 apply sym_not_eq, Rlt_not_eq, cond_pos.
 apply Rle_ge; left; apply Rinv_0_lt_compat.
 now apply lt_0_INR.
-
 Qed.
 
 Lemma Derive_ext :
@@ -205,13 +204,16 @@ now apply derivable_pt_lim_opp.
 Qed.
 
 Lemma Derive_opp :
-  forall f x, ex_derive f x ->
+  forall f x,
   Derive (fun x => - f x) x = - Derive f x.
 Proof.
-intros f x Df.
-apply is_derive_unique.
-apply derivable_pt_lim_opp.
-now apply Derive_correct.
+intros f x.
+unfold Derive, Lim.
+rewrite -Lim_seq_opp.
+apply Lim_seq_ext => n.
+rewrite -Ropp_mult_distr_l_reverse.
+apply (f_equal (fun v => v / _)).
+ring.
 Qed.
 
 Lemma ex_derive_plus :
@@ -261,14 +263,17 @@ exists (k * df).
 now apply derivable_pt_lim_scal.
 Qed.
 
-Lemma Derive_scal : (* TODO : remove hypothesis *)
-  forall f k x, ex_derive f x ->
+Lemma Derive_scal :
+  forall f k x,
   Derive (fun x => k * f x) x = k * Derive f x.
 Proof.
-intros f k x Df.
-apply is_derive_unique.
-apply derivable_pt_lim_scal.
-now apply Derive_correct.
+intros f k x.
+unfold Derive, Lim.
+rewrite -Lim_seq_scal.
+apply Lim_seq_ext => n.
+rewrite -Rmult_assoc.
+apply (f_equal (fun v => v / _)).
+ring.
 Qed.
 
 Lemma ex_derive_comp (f g : R -> R) (x : R) :
@@ -279,7 +284,7 @@ exists (df * dg).
 now apply derivable_pt_lim_comp.
 Qed.
 
-Lemma Deriv_comp (f g : R -> R) (x : R) :
+Lemma Derive_comp (f g : R -> R) (x : R) :
   ex_derive f (g x) -> ex_derive g x -> Derive (fun x => f (g x)) x = Derive f (g x) * Derive g x.
 Proof.
 intros Df Dg.
@@ -305,7 +310,8 @@ now apply le_S.
 now apply H.
 Qed.
 
-(** * nth deriv *)
+(** * Iterated differential *)
+
 Fixpoint Derive_n (f : R -> R) (n : nat) x :=
   match n with
     | O => f x
