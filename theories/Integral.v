@@ -403,7 +403,8 @@ Lemma RInt_abs: forall f a b,
    Rabs (RInt f a b) <= RInt (fun t => Rabs (f t)) a b.
 Admitted.
 
-Lemma Rint_le: forall f a b M,
+
+Lemma RInt_le: forall f a b M,
   ex_RInt f a b ->
   (forall t, Rmin a b <= t <= Rmax a b -> Rabs (f t) <= M) ->
   Rabs (RInt f a b) <= Rabs (b-a) * M.
@@ -467,6 +468,11 @@ Lemma derivable_pt_lim_RInt_param_bound_comp_aux1: forall f a b x,
      (fun u v : R => Derive (fun z : R => RInt (fun t : R => f z t) v b) u) x (a x).
 Proof.
 intros f a b x (d1,Ia) (d2,Ib) (d3,Df) (d4,Cdf) eps.
+case (Req_dec b (a x)); intros Eqba.
+(* *)
+admit. (* ??? *)
+
+(* *)
 exists (mkposreal _ Rlt_0_1). (* hum *)
 simpl; intros u v Hu Hv.
 replace (Derive (fun z : R => RInt (fun t : R => f z t) v b) u) with 
@@ -483,6 +489,12 @@ apply Rle_lt_trans with (1:=Rabs_triang _ _).
 rewrite (double_var eps).
 apply Rplus_lt_compat.
 rewrite <- RInt_minus.
+apply Rle_lt_trans with (Rabs (b-v) * eps).
+apply RInt_le.
+admit. (* un peu long *)
+intros t Ht.
+destruct (Cdf t) with eps.
+admit.
 
 
 (* ???????????????????????????????????????????? *)
@@ -504,6 +516,7 @@ admit. (* ok *)
 exact Ia.
 (* *)
 apply sym_eq, is_derive_unique.
+
 apply derivable_pt_lim_param.*)
 Admitted.
 
@@ -522,11 +535,17 @@ Lemma derivable_pt_lim_RInt_param_bound_comp_aux2 :
        forall t : R,
         Rmin (a x-eps) b <= t <= Rmax (a x+eps) b ->
         ex_derive (fun u : R => f u t) x0) x) ->
-  (exists eps:posreal, locally
+ (* (exists eps:posreal, locally
    (fun x0 => 
        forall t : R,
           Rmin (a x-eps) b <= t <= Rmax (a x+eps) b ->
-         continuity_2d_pt (fun u v : R => Derive (fun z : R => f z v) u) x0 t) x) ->
+         continuity_2d_pt (fun u v : R => Derive (fun z : R => f z v) u) x0 t) x) ->*)
+
+   (exists eps:posreal, 
+   (forall t : R,
+          Rmin (a x-eps) b <= t <= Rmax (a x+eps) b ->
+         continuity_2d_pt (fun u v : R => Derive (fun z : R => f z v) u) x t)) ->
+
    continuity_pt (fun t => f x t) (a x) ->   
 
  derivable_pt_lim (fun x => RInt (fun t => f x t) (a x) b) x
@@ -541,12 +560,13 @@ apply derivable_pt_lim_comp_2d with
 apply derivable_differentiable_pt_lim.
 (* . *)
 destruct Df as (d1,(d2,Hd12)).
-destruct Cdf as (d3,(d4,Hd34)).
+destruct Cdf as (d3,Hd3).
+(* destruct Cdf as (d3,(d4,Hd34)).*)
 move: (locally_and _ _ _ Hi Ia) => Y.
 destruct Y as (d5,Hd5).
 exists (mkposreal _ (Rmin_stable_in_posreal  
                        (mkposreal _ (Rmin_stable_in_posreal (mkposreal _ (Rmin_stable_in_posreal d0 (pos_div_2 d5)))
-                                    (mkposreal _ (Rmin_stable_in_posreal d3 d4))))
+                                    (mkposreal _ (Rmin_stable_in_posreal d3 d3))))
                        (mkposreal _ (Rmin_stable_in_posreal d1 (pos_div_2 d2))))).
 simpl; intros u v Hu Hv.
 eexists; eapply derivable_pt_lim_param.
@@ -585,8 +605,33 @@ left; apply Rlt_le_trans with (1:=Hv).
 apply Rle_trans with (1:=Rmin_r _ _).
 apply Rmin_l.
 (* .. *)
-intros t Ht.
-apply Hd34.
+intros t Ht eps.
+specialize (uniform_continuity_2d_1d (fun u v => Derive (fun z : R => f z u) v) (Rmin (a x - d3) b)
+    (Rmax (a x + d3) b) x); intros T.
+destruct T with (eps:=eps) as (d,Hd).
+intros y Hy; specialize (Hd3 y Hy).
+intros e; specialize (Hd3 e).
+destruct Hd3 as (k,Hk).
+exists k; intros u0 v0 Hu0 Hv0.
+now apply Hk.
+exists d.
+(*intros u0 v0 Hu0 Hv0.
+apply Hd./06/2012
+
+
+apply locally_2d_impl.
+
+unfold continuity_2d_pt.
+
+
+destruct (uniform_continuity_2d_1d (fun u v => Derive (fun z : R => f z u) v) (Rmin (a x - d1) b)
+    (Rmax (a x + d1) b) x) as (d4,Hd4).
+ _ _ _ Hd3).
+refine (let Cdf' := uniform_continuity_2d_1d (fun u v => Derive (fun z => f z u) v) a b x _ in _).
+*)
+
+(*
+apply Hd3.
 apply Rlt_le_trans with (1:=Hu).
 apply Rle_trans with (1:=Rmin_l _ _).
 apply Rle_trans with (1:=Rmin_r _ _).
@@ -704,8 +749,8 @@ admit.
 admit.
 apply derivable_pt_lim_id.
 exact Da.
-Qed.
+Qed.*)
 
-
+Admitted.
 
 
