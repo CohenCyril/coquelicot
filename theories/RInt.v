@@ -2970,40 +2970,106 @@ Definition Rle_bool x y := projT1 (Sumbool.bool_of_sumbool (Rle_dec x y)).
   replace (pos eps) with
     (INR (size lx') / INR (size (Rlist2seq lx)) * eps).
   
-  have H : forall sigma lx', pointed_subdiv (head 0 sigma :: lx') ((pairmap (fun x y => (x+y)/2) (head 0 sigma) lx')).
+  have H : forall sigma, 
+    let lx' := filter (fun x : R => Rle_bool (head 0 sigma) x) (Rlist2seq lx) in 
+    pointed_subdiv (head 0 sigma :: lx') ((pairmap (fun x y => (x+y)/2) (head 0 sigma) lx')).
     split => /=.
     rewrite size_pairmap //.
-admit.
-  replace (Int_SF ly lx) with (Riemann_sum f _ _ (H sigma lx')).
+    move: (head 0 sigma0) => {sigma0} z0.
+    rewrite size_pairmap.
+    elim: (lx) (proj1 (proj1 Hf)) => /= [ | x0 s IH] Hs.
+    move => i Hi ; by apply lt_n_O in Hi.
+    move: (RList_P4 _ _ Hs) ;
+    rewrite {1 4 7 10 13}/Rle_bool ; case: Rle_dec => //= Hx0.
+    move => _ {IH}.
+    case => /= [ | i] Hi.
+    split.
+    pattern z0 at 1 ; replace z0 with ((z0+z0)/2) by field ;
+    apply Rmult_le_compat_r ; intuition.
+    pattern x0 at 2 ; replace x0 with ((x0+x0)/2) by field ;
+    apply Rmult_le_compat_r ; intuition.
+    apply lt_S_n in Hi ; move: i Hi.
+    elim: s x0 Hx0 Hs => //= [ | x1 s IH] x0 Hx0 Hs.
+    move => i Hi ; by apply lt_n_O in Hi.
+    move: (Hs O (lt_O_Sn _)) => /= Hs'.
+    move: (Rle_trans _ _ _ Hx0 Hs').
+    rewrite {1 4 7 10 13}/Rle_bool ; case: Rle_dec => //= Hx1 _.
+    case => /= [ | i ] Hi.
+    split.
+    pattern x0 at 1 ; replace x0 with ((x0+x0)/2) by field ;
+    apply Rmult_le_compat_r ; intuition.
+    pattern x1 at 2 ; replace x1 with ((x1+x1)/2) by field ;
+    apply Rmult_le_compat_r ; intuition.
+    apply lt_S_n in Hi ;
+    apply IH => // ;
+    apply (RList_P4 _ x0) => //.
+  replace (Int_SF ly lx) with (Riemann_sum f _ _ (H sigma)) ; rewrite -/lx'.
   rewrite -Ha -Hb in Hf => {a Ha b Hb Hab}.
   have : last (last 0 sigma) lx' = last 0 sigma.
-admit.
-  revert lx' ; move: (proj1 (proj1 Hf)) 
-  (proj2 (proj2 (proj2 (proj2 (proj1 Hf))))) => {Hf} Hlx Hf ;
+    replace lx' with (Rlist2seq lx).
+    rewrite (last_nth 0) -nth_compat -size_compat /= seq2Rlist_bij.
+    move: (proj1 (proj2 (proj2 (proj1 Hf)))).
+    suff : (head 0 sigma) <= (last 0 sigma).
+    rewrite /Rmax ; case: Rle_dec => // _ _ <-.
+    elim: (lx) => [ | x0 s IH] //=.
+    rewrite -nth0 ; apply sorted_last.
+    apply (pointed_pty1 _ _ Hpt).
+    case: (sigma) Hpt => [ | x0 s] H0 /= ; try by case: H0.
+    apply lt_O_Sn.
+    rewrite /lx' /=.
+    suff Hs : (head 0 sigma) <= pos_Rl lx 0.
+    elim: (lx) Hs (proj1 (proj1 Hf)) => //= x0 s IH Hx0 Hs.
+    case: s IH Hs => //= [ | x1 s] IH Hs.
+    rewrite {1}/Rle_bool ; case: Rle_dec => //= _.
+    rewrite {1}/Rle_bool ; case: Rle_dec => //= _.
+    apply f_equal, IH => //.
+    apply Rle_trans with (1 := Hx0), (Hs O (lt_O_Sn _)).
+    apply (RList_P4 _ _ Hs).
+    apply Req_le ; rewrite (proj1 (proj2 ( (proj1 Hf)))).
+    suff : (head 0 sigma) <= (last 0 sigma).
+    rewrite /Rmin ; case: Rle_dec => // _.
+    rewrite -nth0 ; apply sorted_last.
+    apply (pointed_pty1 _ _ Hpt).
+    case: (sigma) Hpt => [ | x0 s] H0 /= ; try by case: H0.
+    apply lt_O_Sn.
+  revert lx' ; move: (proj1 (proj1 Hf)) (proj1 (proj2 (proj2 (proj2 (proj1 Hf))))) 
+  (proj2 (proj2 (proj2 (proj2 (proj1 Hf))))) => {Hf} Hlx Hly Hf ;
   elim : sigma xi Hpt Hstep Hsort => [ | x0 sigma IH] xi ; try by case.
   case: sigma xi IH => [ | x1 sigma] ; 
   case => [ | y0 xi] IH Hpt Hstep Hsort lx' Hlx' ; 
   try by case: Hpt.
   rewrite pointed_pty2.
   rewrite /Riemann_sum /RInt_seq /=.
-admit.
- rewrite /= Hlx' //.
+  rewrite Rminus_0_r Rabs_R0.
+  apply Rmult_le_pos.
+  apply Rdiv_le_pos.
+  apply pos_INR.
+  case: (lx) Hly => //= h t _ ; case: size ; intuition.
+  apply Rlt_le, eps.
+  rewrite /= Hlx' //.
   rewrite Riemann_sum_cons => [ | Hpt'].
   by apply (pointed_pty0 x0 y0).
   rewrite /lx' /=.
   move: (IH xi Hpt' (Rle_lt_trans _ _ _ (RmaxLess2 _ _) Hstep) (proj2 Hsort))
    => {IH} /= IH.
-rewrite /lx' /= in Hlx'.
+   rewrite /lx' /= in Hlx'.
+  suff H1 : pointed_subdiv
+    (x0
+     :: rcons
+          (filter (fun u : R => Rle_bool x0 u && ~~ Rle_bool x1 u)
+             (Rlist2seq lx)) x1)
+    (rcons
+       (pairmap (fun x y : R => (x + y) / 2) x0
+          (filter (fun x : R => Rle_bool x0 x && ~~ Rle_bool x1 x)
+             (Rlist2seq lx))) x1).
   replace (Riemann_sum _ _ _ _) with
- (Riemann_sum f (x0 :: rcons (filter (fun u => Rle_bool x0 u && Rle_bool u x1) (Rlist2seq lx)) x1)
-   _ (H (x0 :: sigma) _) +
+  (Riemann_sum f _ _ (H1) +
 
-Riemann_sum f
+  Riemann_sum f
           (x1 :: filter (fun x0 : R => Rle_bool x1 x0) (Rlist2seq lx))
           (pairmap (fun x0 y : R => (x0 + y) / 2) x1
              (filter (fun x0 : R => Rle_bool x1 x0) (Rlist2seq lx)))
-          (H (x1 :: sigma)
-             (filter (fun x0 : R => Rle_bool x1 x0) (Rlist2seq lx)))).
+          (H (x1 :: sigma))).
 assert (forall a b c d : R, a + b - (c + d) = a - c + (b - d)) by (intros ; ring).
 rewrite H0.
 clear H0.
@@ -3011,7 +3077,7 @@ apply Rle_trans with (1 := Rabs_triang _ _).
 refine (_ (IH _)).
 clear IH.
 intros IH.
-apply Rle_trans with (1 := Rplus_le_compat_l _ _ _ IH). 
+apply Rle_trans with (1 := Rplus_le_compat_l _ _ _ IH) => {IH}.
 Admitted. (** Admitted *)
 (*
 Lemma ex_RInt_correct_aux_2 (f : R -> R) (a b : R) :
