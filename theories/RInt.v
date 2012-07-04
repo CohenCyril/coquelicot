@@ -2924,27 +2924,6 @@ have S1 : forall c d, let f := mkSF_seq c [:: (d,1)] in
   have Hd : head 0 sigma <= d.
     by apply Rle_trans with c.
   
- (* case => [ | x0 sigma] xi [Ha Hc] Hb Hsort Hpt Hstep ;
-  simpl in Ha, Hb ; try by case: Hpt.
-  case: sigma xi Hpt Hc Hb Hsort Hstep => [ | x1 sigma] ; 
-  case => [ | y0 xi] Hpt Hc Hb Hsort Hstep ; simpl in Hb, Hc ;
-  try by case: Hpt.
-  contradict Hc ; apply Rle_not_lt, Ha.
-  rewrite Riemann_sum_cons => [ | Hpt'].
-  by apply (pointed_pty0 x0 y0).
-  replace (_-_) with (- SF_fun f 0 y0 * (x1 - x0) + 
-    (RInt_seq f Rplus Rmult 0 -
-    Riemann_sum (SF_fun f 0) (x1 :: sigma) xi Hpt')) ;
-    [ | by ring_simplify].
-  replace (3 * eps4) with (1 * eps4 + 2 * eps4) ; [ | simpl ; field].
-  apply Rle_trans with (1 := Rabs_triang _ _), Rplus_le_compat.
-  rewrite Rabs_mult Rabs_Ropp ; apply Rmult_le_compat ;
-  try apply Rabs_pos.
-  rewrite /SF_fun /= ; case: Rlt_dec => _ ; try case: Rle_dec => _.
-  rewrite Rabs_R0 ; apply Rle_0_1.
-  rewrite Rabs_R1 ; apply Rle_refl.
-  rewrite Rabs_R0 ; apply Rle_0_1.
-  apply Rlt_le, (Rle_lt_trans _ _ _ (RmaxLess1 _ _) Hstep).*)
   
 admit.
   clear S1.
@@ -2960,76 +2939,129 @@ admit.
   set fmin2 := foldr Rmin 0 (map f (Rlist2seq lx)).
   set fmin := Rmin fmin1 fmin2.
   
-  case: (Req_dec fmin fmax) => Heq.
-  have : forall x, a <= x <= b -> f x = f a.
-    suff : forall x, a <= x <= b -> f x = fmax.
-    move => H x Hx ; rewrite (H a) ; intuition.
-    move => x Hx ; apply Rle_antisym.
+  have Hfx : forall x, a <= x <= b -> fmin <= f x <= fmax.
+    move => x Hx.
     case: (sorted_dec (Rlist2seq lx) 0 x).
-    apply sorted_compat ; rewrite seq2Rlist_bij ; apply Hf.
-    rewrite -nth0 -nth_last -?nth_compat -size_compat ?seq2Rlist_bij.
-    replace (pos_Rl lx 0) with a.
-    replace (pos_Rl lx (ssrnat.predn (Rlength lx))) with b.
-    by [].
-    replace (ssrnat.predn (Rlength lx)) with (Peano.pred (Rlength lx)).
-    rewrite (proj1 (proj2 (proj2 (proj1 Hf)))).
-    move: (Rlt_le _ _ Hab) ; rewrite /Rmax ; case: Rle_dec => //.
-    elim: (lx) => [ | h t IH] //.
-    rewrite (proj1 (proj2 ( (proj1 Hf)))).
-    move: (Rlt_le _ _ Hab) ; rewrite /Rmin ; case: Rle_dec => //.
-    case => i ; case ; case ; case => {Hx} Hx Hx' Hi.
-    rewrite (proj2 (proj2 (proj2 (proj2 (proj1 Hf)))) i) //=.
-    rewrite -(seq2Rlist_bij ly) nth_compat.
-    apply Rle_trans with (2 := RmaxLess1 _ _).
-    rewrite -size_compat seq2Rlist_bij 
-    (proj1 (proj2 (proj2 (proj2 (proj1 Hf))))) in Hi.
-    rewrite /fmax1 ; elim: (ly) (i) Hi => [ | h t IH] //=.
-    move => n Hn.
-    by apply lt_S_n, lt_n_O in Hn.
-    case => [ | n] Hn //=.
-    apply RmaxLess1.
-    apply Rle_trans with (2 := RmaxLess2 _ _), IH ; intuition.
-    rewrite -size_compat seq2Rlist_bij 
-    (proj1 (proj2 (proj2 (proj2 (proj1 Hf))))) /= in Hi |-* ; intuition.
-    rewrite -?nth_compat ?seq2Rlist_bij  in Hx, Hx'.
-    by split.
-    rewrite -Hx ; apply Rle_trans with (2 := RmaxLess2 _ _).
-    rewrite /fmax2.
-    elim: (Rlist2seq lx) (i) Hi => [ | h t IH] //.
-    move => n Hn.
-    by apply lt_n_O in Hn.
-    case => [ | n] Hn //=.
-    apply RmaxLess1.
-    apply Rle_trans with (2 := RmaxLess2 _ _), IH ; intuition.
-    case ; case => {Hx} Hx.
-    case => Hx'.
-    rewrite (proj2 (proj2 (proj2 (proj2 (proj1 Hf)))) (size (Rlist2seq lx) - 2)%nat) //=.
-    rewrite -(seq2Rlist_bij ly) nth_compat.
-    apply Rle_trans with (2 := RmaxLess1 _ _).
-    rewrite -size_compat seq2Rlist_bij 
-    (proj1 (proj2 (proj2 (proj2 (proj1 Hf))))).
-    rewrite /fmax1 ; elim: (ly) => //= [ | h t IH].
-    apply Rle_0_1.
-    case: t IH => [ | h0 t] //= IH.
-    apply RmaxLess1.
-    rewrite -minus_n_O in IH.
-    apply Rle_trans with (2 := RmaxLess2 _ _), IH.
-    case: (lx) (StepFun_P9 (proj1 Hf) (Rlt_not_eq _ _ Hab))
-      => //= [ Hs | h t].
-    by apply lt_n_O in Hs.
-    case: t => //= [Hs | h0 t _].
-    by apply lt_S_n, lt_n_O in Hs.
-    rewrite -minus_n_O -size_compat seq2Rlist_bij ; apply lt_n_Sn.
-    rewrite -?nth_compat ?seq2Rlist_bij in Hx, Hx' ; split => //=.
-    case: (lx) (StepFun_P9 (proj1 Hf) (Rlt_not_eq _ _ Hab)) Hx'
-      => //= h t.
-    case: t => //= [Hs | h0 t _].
-    by apply lt_S_n, lt_n_O in Hs.
-    by rewrite -minus_n_O.
-  admit.
-  admit.
-  admit.
-  admit.
+      apply sorted_compat ; rewrite seq2Rlist_bij ; apply Hf.
+      rewrite -nth0 -nth_last -?nth_compat -size_compat ?seq2Rlist_bij.
+      split ; [apply Rle_trans with a | apply Rle_trans with b] ; 
+      try by intuition.
+      rewrite (proj1 (proj2 ( (proj1 Hf)))) ; apply Rmin_l.
+      replace (ssrnat.predn (Rlength lx)) with (Peano.pred (Rlength lx)).
+      rewrite (proj1 (proj2 (proj2 (proj1 Hf)))) ; apply RmaxLess2.
+      elim: (lx) => [ | h t IH] //.
+      case => i ;
+      rewrite -?nth_compat -size_compat ?seq2Rlist_bij ; 
+      case ; case ; case => {Hx} Hx Hx' Hi ; 
+      [rewrite (proj2 (proj2 (proj2 (proj2 (proj1 Hf)))) i) => // | rewrite -Hx].
+      rewrite (proj1 (proj2 (proj2 (proj2 (proj1 Hf))))) in Hi ;
+      apply lt_S_n in Hi ; split.
+      apply Rle_trans with (1 := Rmin_l _ _) ;
+      rewrite /fmin1 ;
+      elim: (ly) (i) Hi => //= [n Hn | h0 t IH].
+      by apply lt_n_O in Hn.
+      case => [ | n] Hn //=.
+      by apply Rmin_l.
+      by apply Rle_trans with (1 := Rmin_r _ _), IH, lt_S_n.
+      apply Rle_trans with (2 := RmaxLess1 _ _) ;
+      rewrite /fmax1 ;
+      elim: (ly) (i) Hi => //= [n Hn | h0 t IH].
+      by apply lt_n_O in Hn.
+      case => [ | n] Hn //=.
+      by apply RmaxLess1.
+      by apply Rle_trans with (2 := RmaxLess2 _ _), IH, lt_S_n.
+      case: (lx) Hi => [ | _] //= ; intuition.
+      split.
+      apply Rle_trans with (1 := Rmin_r _ _) ;
+      rewrite /fmin2 ;
+      elim: (lx) (i) Hi => //= [n Hn | h0 t IH].
+      by apply lt_n_O in Hn.
+      case => [ | n] Hn //=.
+      by apply Rmin_l.
+      by apply Rle_trans with (1 := Rmin_r _ _), IH, lt_S_n.
+      apply Rle_trans with (2 := RmaxLess2 _ _) ;
+      rewrite /fmax2 ;
+      elim: (lx) (i) Hi => //= [n Hn | h0 t IH].
+      by apply lt_n_O in Hn.
+      case => [ | n] Hn //=.
+      by apply RmaxLess1.
+      by apply Rle_trans with (2 := RmaxLess2 _ _), IH, lt_S_n.
+      move: (StepFun_P9 (proj1 Hf) (Rlt_not_eq _ _ Hab)) => Hi ;
+      rewrite -?nth_compat -size_compat ?seq2Rlist_bij ;
+      case ; case => {Hx} [Hx | <- _].
+      case => [ Hx' | -> {Hx} ] ;
+      [rewrite (proj2 (proj2 (proj2 (proj2 (proj1 Hf)))) (Rlength lx - 2)%nat) => // | ].
+      rewrite (proj1 (proj2 (proj2 (proj2 (proj1 Hf))))) in Hi |- * ;
+      apply lt_S_n in Hi ; split.
+      apply Rle_trans with (1 := Rmin_l _ _) ;
+      rewrite /fmin1 ;
+      elim: (ly) Hi => //= [Hn | h0 t IH].
+      by apply lt_n_O in Hn.
+      case: t IH => //= [ | h1 t] IH Hn.
+      by apply Rmin_l.
+      rewrite -minus_n_O in IH ;
+      apply Rle_trans with (1 := Rmin_r _ _), IH, lt_O_Sn.
+      apply Rle_trans with (2 := RmaxLess1 _ _) ;
+      rewrite /fmax1 ;
+      elim: (ly) Hi => //= [Hn | h0 t IH].
+      by apply lt_n_O in Hn.
+      case: t IH => //= [ | h1 t] IH Hn.
+      by apply RmaxLess1.
+      rewrite -minus_n_O in IH ;
+      apply Rle_trans with (2 := RmaxLess2 _ _), IH, lt_O_Sn.
+      case: (lx) Hi => [ | _] //= ; intuition.
+      split => //.
+      case: (lx) Hi Hx' => //= h0 t ; rewrite -minus_n_O ;
+      case: t => //= [ | h1 t ] Hi Hx'.
+      by apply lt_irrefl in Hi.
+      by rewrite -minus_n_O.
+      split.
+      apply Rle_trans with (1 := Rmin_r _ _) ;
+      rewrite /fmin2 ;
+      elim: (lx) Hi => //= [Hn | h0 t IH].
+      by apply lt_n_O in Hn.
+      case: t IH => //= [ | h1 t] IH Hn.
+      by apply Rmin_l.
+      rewrite -minus_n_O in IH ; 
+      case: t IH {Hn} => /= [ | h2 t] IH.
+      apply Rle_trans with (1 := Rmin_r _ _), Rmin_l.
+      apply Rle_trans with (1 := Rmin_r _ _), IH ; intuition.
+       apply Rle_trans with (2 := RmaxLess2 _ _) ;
+      rewrite /fmax2 ;
+      elim: (lx) Hi => //= [Hn | h0 t IH].
+      by apply lt_n_O in Hn.
+      case: t IH => //= [ | h1 t] IH Hn.
+      by apply RmaxLess1.
+      rewrite -minus_n_O in IH ; 
+      case: t IH {Hn} => /= [ | h2 t] IH.
+      apply Rle_trans with (2 := RmaxLess2 _ _), RmaxLess1.
+      apply Rle_trans with (2 := RmaxLess2 _ _), IH ; intuition.
+      split.
+      apply Rle_trans with (1 := Rmin_r _ _) ;
+      rewrite /fmin2 ;
+      elim: (lx) Hi => //= [Hn | h0 t IH].
+      by apply lt_n_O in Hn.
+      case: t IH => //= [ | h1 t] IH Hn.
+      by apply Rmin_l.
+      rewrite -minus_n_O ; 
+      case: t IH {Hn} => /= [ | h2 t] IH.
+      apply Rmin_l.
+       rewrite -minus_n_O in IH ; 
+      apply Rle_trans with (1 := Rmin_r _ _), IH ; intuition.
+       apply Rle_trans with (2 := RmaxLess2 _ _) ;
+      rewrite /fmax2 ;
+      elim: (lx) Hi => //= [Hn | h0 t IH].
+      by apply lt_n_O in Hn.
+      case: t IH => //= [ | h1 t] IH Hn.
+      by apply RmaxLess1.
+      rewrite -minus_n_O ; 
+      case: t IH {Hn} => /= [ | h2 t] IH.
+      apply RmaxLess1.
+      rewrite -minus_n_O in IH ; 
+      apply Rle_trans with (2 := RmaxLess2 _ _), IH ; intuition.
+  move : (Hfx a (conj (Rle_refl _) (Rlt_le _ _ Hab))) => Hfa.
+  case: (Rle_trans _ _ _ (proj1 Hfa) (proj2 Hfa)) => {Hfa} Heq.
+      
   have Halpha : 0 < eps / ((fmax - fmin) * INR (size (Rlist2seq lx))).
 admit.
   set alpha := mkposreal _ Halpha.
