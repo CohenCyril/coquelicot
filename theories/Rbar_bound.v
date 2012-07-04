@@ -18,7 +18,8 @@ Proof.
 Qed.
 
 Lemma Rbar_ub_Finite (E : Rbar -> Prop) (l : R) :
-  Rbar_is_upper_bound E (Finite l) -> is_upper_bound (fun x => E (Finite x)) l.
+  Rbar_is_upper_bound E (Finite l) -> 
+    is_upper_bound (fun x => E (Finite x)) l.
 Proof.
   intros H x Ex.
   apply Rbar_finite_le, H ; auto.
@@ -35,7 +36,8 @@ Qed.
 (** ** Decidability *)
 
 Lemma Rbar_ub_dec (E : Rbar -> Prop) (Hp : ~ E p_infty) :
-  {M : R | Rbar_is_upper_bound E (Finite M)} + {(forall M, ~Rbar_is_upper_bound E (Finite M))}.
+  {M : R | Rbar_is_upper_bound E (Finite M)} 
+    + {(forall M, ~Rbar_is_upper_bound E (Finite M))}.
 Proof.
   set (G n := fun x => x = 0 \/ (E (Finite x) /\ x <= INR n)).
   assert (Hne : (forall n, exists x, G n x)).
