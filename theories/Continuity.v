@@ -139,6 +139,29 @@ unfold P.
 edestruct (Rlt_dec _ _) ; [left|right] ; eassumption.
 Qed.
 
+Lemma uniform_continuity_2d_1d' :
+  forall f a b c,
+  (forall x, a <= x <= b -> continuity_2d_pt f c x) ->
+  forall eps : posreal, exists delta : posreal,
+  forall x y u v,
+  a <= x <= b -> c - delta <= y <= c + delta ->
+  a <= u <= b -> c - delta <= v <= c + delta ->
+  Rabs (u - x) < delta ->
+  Rabs (f v u - f y x) < eps.
+Proof.
+intros f a b c Cf eps.
+assert (T:(forall x : R, a <= x <= b -> continuity_2d_pt (fun x0 y : R => f y x0) x c) ).
+intros x Hx e.
+destruct (Cf x Hx e) as (d,Hd).
+exists d.
+intros; now apply Hd.
+destruct (uniform_continuity_2d_1d (fun x y => f y x) a b c T eps) as (d,Hd).
+exists d; intros.
+now apply Hd.
+Qed.
+
+
+
 Lemma continuity_pt_ext :
   forall f g x,
   (forall x, f x = g x) ->
