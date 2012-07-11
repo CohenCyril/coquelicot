@@ -3240,7 +3240,7 @@ case => [ _ | lx1 lx IH] ; case => [ | ly0 ly] // H1
   constant_D_eq f
     (open_interval (pos_Rl (RList.cons lx1 lx) i)
        (pos_Rl (RList.cons lx1 lx) (S i))) (pos_Rl ly i)).
-  (*move: H1 (fun H2 => IH ly H2 Halpha0 H3 H4 H5 H6) => {IH} /=.
+ (* move: H1 (fun H2 => IH ly H2 Halpha0 H3 H4 H5 H6) => {IH} /=.
   simpl in Hx0.
   case: Hx0 => Hx0.
   apply Rlt_not_le in Hx0 ;
