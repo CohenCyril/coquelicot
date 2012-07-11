@@ -626,27 +626,99 @@ apply Rle_lt_trans with (Rabs (b-v) * (eps/ (Rabs ( b - a x)+1)/2)).
 apply RInt_le_const.
 apply ex_RInt_minus.
 apply Hd7.
-admit. (* ok  *)
-admit. (* ok  *)
+apply Rlt_le_trans with (1:=Hu).
+apply Rle_trans with (1:=Rmin_r _ _).
+apply Rle_trans with (1:=Rmin_l _ _).
+apply Rle_trans with (1:=Rmin_r _ _).
+apply Rmin_r.
+apply Rlt_le_trans with (1:=Hv).
+apply Rle_trans with (1:=Rmin_r _ _).
+apply Rle_trans with (1:=Rmin_l _ _).
+apply Rle_trans with (1:=Rmin_r _ _).
+apply Rmin_r.
 apply Hd7.
-admit. (* ok  *)
-admit. (* ok  *)
+rewrite /Rminus Rplus_opp_r Rabs_R0.
+apply cond_pos.
+apply Rlt_le_trans with (1:=Hv).
+apply Rle_trans with (1:=Rmin_r _ _).
+apply Rle_trans with (1:=Rmin_l _ _).
+apply Rle_trans with (1:=Rmin_r _ _).
+apply Rmin_r.
 intros t Ht.
 simpl in Hd5.
 left.
 apply Hd5.
-admit. (* ok  *)
-admit. (* ok *)
-admit. (* ok *)
-admit. (* ok *)
-admit. (* ok *)
-admit. (* ok mais chiant *)
+split.
+apply Rle_trans with (2:=proj1 Ht).
+apply Rle_min_compat_r.
+apply (Rabs_le_between' _ _).
+left; apply Rlt_le_trans with (1:=Hv).
+apply Rle_trans with (1:=Rmin_l _ _).
+apply Rmin_l.
+apply Rle_trans with (1:=proj2 Ht).
+apply Rle_max_compat_r.
+apply (Rabs_le_between' _ _).
+left; apply Rlt_le_trans with (1:=Hv).
+apply Rle_trans with (1:=Rmin_l _ _).
+apply Rmin_l.
+split; apply Rplus_le_reg_l with (-x); ring_simplify.
+rewrite <- Ropp_0; apply Ropp_le_contravar.
+left; apply cond_pos.
+left; apply cond_pos.
+split.
+apply Rle_trans with (2:=proj1 Ht).
+apply Rle_min_compat_r.
+apply (Rabs_le_between' _ _).
+left; apply Rlt_le_trans with (1:=Hv).
+apply Rle_trans with (1:=Rmin_l _ _).
+apply Rmin_l.
+apply Rle_trans with (1:=proj2 Ht).
+apply Rle_max_compat_r.
+apply (Rabs_le_between' _ _).
+left; apply Rlt_le_trans with (1:=Hv).
+apply Rle_trans with (1:=Rmin_l _ _).
+apply Rmin_l.
+apply Rabs_le_between'.
+left; apply Rlt_le_trans with (1:=Hu).
+apply Rle_trans with (1:=Rmin_l _ _).
+apply Rmin_r.
+rewrite /Rminus Rplus_opp_r Rabs_R0.
+apply cond_pos.
+apply Rlt_le_trans with ((Rabs (b - a x) + 1)*(eps / (Rabs (b - a x) + 1) / 2)).
+apply Rmult_lt_compat_r.
+exact J1.
+replace (b-v) with ((b-a x)+-(v-a x)) by ring.
+apply Rle_lt_trans with (1:=Rabs_triang _ _).
+apply Rplus_lt_compat_l.
+rewrite Rabs_Ropp.
+apply Rlt_le_trans with (1:=Hv).
+apply Rle_trans with (1:=Rmin_r _ _).
+apply Rle_trans with (1:=Rmin_r _ _).
+apply Rmin_l.
+right; field.
+apply sym_not_eq, Rlt_not_eq.
+apply Rlt_le_trans with (0+1).
+rewrite Rplus_0_l; apply Rlt_0_1.
+apply Rplus_le_compat_r; apply Rabs_pos.
 apply Hd7.
-admit. (* ok *)
-admit.
+apply Rlt_le_trans with (1:=Hu).
+apply Rle_trans with (1:=Rmin_r _ _).
+apply Rle_trans with (1:=Rmin_l _ _).
+apply Rle_trans with (1:=Rmin_r _ _).
+apply Rmin_r.
+apply Rlt_le_trans with (1:=Hv).
+apply Rle_trans with (1:=Rmin_r _ _).
+apply Rle_trans with (1:=Rmin_l _ _).
+apply Rle_trans with (1:=Rmin_r _ _).
+apply Rmin_r.
 apply Hd7.
-admit. (* ok *)
-admit.
+rewrite /Rminus Rplus_opp_r Rabs_R0.
+apply cond_pos.
+apply Rlt_le_trans with (1:=Hv).
+apply Rle_trans with (1:=Rmin_r _ _).
+apply Rle_trans with (1:=Rmin_l _ _).
+apply Rle_trans with (1:=Rmin_r _ _).
+apply Rmin_r.
 unfold Rminus; rewrite RInt_swap.
 rewrite <- RInt_Chasles.
 apply Rle_lt_trans with (Rabs (a x -v) *
@@ -654,12 +726,19 @@ apply Rle_lt_trans with (Rabs (a x -v) *
 apply RInt_le_const.
 apply ex_RInt_add_interval with b.
 apply Hd7.
-admit. (* ok *)
-admit. (* ok *)
+rewrite /Rminus Rplus_opp_r Rabs_R0.
+apply cond_pos.
+apply Rlt_le_trans with (1:=Hv).
+apply Rle_trans with (1:=Rmin_r _ _).
+apply Rle_trans with (1:=Rmin_l _ _).
+apply Rle_trans with (1:=Rmin_r _ _).
+apply Rmin_r.
 apply ex_RInt_bound.
 apply Hd7.
-admit. (* ok *)
-admit. (* ok *)
+rewrite /Rminus Rplus_opp_r Rabs_R0.
+apply cond_pos.
+rewrite /Rminus Rplus_opp_r Rabs_R0.
+apply cond_pos.
 admit. (* ok mais chiant Hd6 *)
 admit. (* ok mais chiant Hv *)
 (* *)
