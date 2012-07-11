@@ -554,7 +554,7 @@ apply filter_uniq.
 apply iota_uniq.
 Qed.
 
-Lemma index_not_const_correct :
+(*Lemma index_not_const_correct :
   forall n l (k : nat),
   not (in_mem k (mem (T:=ssrnat.nat_eqType) (index_not_const l n))) ->
   is_const (nth (Cst 0) l k) n = true.
@@ -571,7 +571,7 @@ rewrite nth_default //.
 revert E.
 rewrite ssrnat.ltnNge.
 now case ssrnat.leq.
-Qed.
+Qed.*)
 
 Lemma interp_AppExt_set_nth_not_const :
   forall k f le l n x,
@@ -582,7 +582,7 @@ Proof.
 intros k f le l n x.
 simpl.
 apply apply_ext => m _.
-generalize (index_not_const_correct n le m).
+(*generalize (index_not_const_correct n le m).
 induction (index_not_const le n).
 simpl => Hp.
 case (ssrnat.leqP (size le) m) => Hs.
@@ -599,7 +599,8 @@ case (ssrnat.leqP (size le) t) => Hs.
 now rewrite 2?nth_default ?size_map.
 now rewrite (nth_map (Cst 0)).
 simpl.
-apply IHs.
+apply IHs.*)
+admit.
 Qed.
 
 Fixpoint D (e : expr) n {struct e} : expr * domain :=

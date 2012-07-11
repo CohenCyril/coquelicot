@@ -3106,7 +3106,7 @@ Definition Rle_bool x y := projT1 (Sumbool.bool_of_sumbool (Rle_dec x y)).
     apply IH => // ;
     apply (RList_P4 _ x0) => //.
   replace (Int_SF ly lx) with (Riemann_sum f _ _ (H sigma)) ; rewrite -/lx'.
-  rewrite -Ha -Hb in Hf => {a Ha b Hb Hab}.
+  rewrite -Ha -Hb in Hf => {a Ha b Hb Hab Hfx}.
   have : last (last 0 sigma) lx' = last 0 sigma.
     replace lx' with (Rlist2seq lx).
     rewrite (last_nth 0) -nth_compat -size_compat /= seq2Rlist_bij.
@@ -3226,6 +3226,7 @@ case => [ _ | lx1 lx IH] ; case => [ | ly0 ly] // H1
              ((fmax0 - fmin0) * INR (size (Rlist2seq (RList.cons lx1 lx)))).
    apply Rdiv_lt_0_compat.
    apply eps.
+   admit.
  set alpha0 :=
    {|
    pos := eps /
@@ -3239,7 +3240,7 @@ case => [ _ | lx1 lx IH] ; case => [ | ly0 ly] // H1
   constant_D_eq f
     (open_interval (pos_Rl (RList.cons lx1 lx) i)
        (pos_Rl (RList.cons lx1 lx) (S i))) (pos_Rl ly i)).
-  move: H1 (fun H2 => IH ly H2 Halpha0 H3 H4 H5 H6) => {IH} /=.
+  (*move: H1 (fun H2 => IH ly H2 Halpha0 H3 H4 H5 H6) => {IH} /=.
   simpl in Hx0.
   case: Hx0 => Hx0.
   apply Rlt_not_le in Hx0 ;
@@ -3254,7 +3255,7 @@ case => [ _ | lx1 lx IH] ; case => [ | ly0 ly] // H1
   case: Rle_dec => //= Hlx0'.
   move: (Rle_trans _ _ _ Hlx0' (Hlx O (lt_O_Sn _))) => /= Hlx1'.
   rewrite [Rle_bool x1 lx1]/Rle_bool ;
-  case: Rle_dec => //= _.
+  case: Rle_dec => //= _.*)
 
 Admitted. (** Admitted *)
 (*

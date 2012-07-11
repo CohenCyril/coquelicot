@@ -542,14 +542,14 @@ apply Rle_ge, Rplus_le_reg_l with a.
 now ring_simplify.
 Qed.
 
-Lemma derivable_pt_lim_RInt_param_bound_comp_aux0:
+(*Lemma derivable_pt_lim_RInt_param_bound_comp_aux0:
   forall f a b x,
    (exists eps:posreal,
        forall t : R,
           Rmin (a x-eps) b <= t <= Rmax (a x+eps) b ->
          continuity_2d_pt (fun u v : R => Derive (fun z : R => f z v) u) x t) ->
   exists d, forall u v, Rabs (u-x) < d -> Rabs (v - a x) < d ->
-  ex_RInt (fun z : R => Derive (fun u0 : R => f u0 z) u) v b.
+  ex_RInt (fun z : R => Derive (fun u0 : R => f u0 z) u) v b.*)
 
 
 Lemma derivable_pt_lim_RInt_param_bound_comp_aux1: forall f a b x,  
