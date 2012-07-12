@@ -739,8 +739,66 @@ rewrite /Rminus Rplus_opp_r Rabs_R0.
 apply cond_pos.
 rewrite /Rminus Rplus_opp_r Rabs_R0.
 apply cond_pos.
-admit. (* ok mais chiant Hd6 *)
-admit. (* ok mais chiant Hv *)
+intros t Ht.
+apply Rplus_le_reg_r with (-Rabs (Derive (fun z : R => f z (a x)) x)).
+apply Rle_trans with (1:=Rabs_triang_inv _ _).
+apply Rle_trans with 1;[idtac|right; ring].
+left; apply Hd6.
+rewrite /Rminus Rplus_opp_r Rabs_R0.
+apply cond_pos.
+apply Rle_lt_trans with (Rabs (v-a x)).
+unfold Rabs; case (Rcase_abs (t - a x)); case (Rcase_abs (v - a x)); intros Y1 Y2.
+apply Ropp_le_contravar; apply Rplus_le_compat_r.
+apply Rle_trans with (2:=proj1 Ht).
+right; apply sym_eq, Rmin_left.
+apply Rplus_le_reg_l with (-a x); ring_simplify.
+left; apply Rle_lt_trans with (2:=Y1).
+right; ring.
+contradict Y2.
+apply Rle_not_lt.
+apply Rplus_le_reg_l with (a x); ring_simplify.
+apply Rle_trans with (2:=proj1 Ht).
+right; apply sym_eq, Rmin_right.
+apply Rplus_le_reg_l with (-a x); ring_simplify.
+apply Rge_le, Rge_trans with (2:=Y1).
+right; ring.
+case Y2; intros Y3.
+contradict Y3.
+apply Rle_not_lt.
+apply Rplus_le_reg_l with (a x); ring_simplify.
+apply Rle_trans with (1:=proj2 Ht).
+right; apply Rmax_right.
+apply Rplus_le_reg_l with (-a x); ring_simplify.
+left; apply Rle_lt_trans with (2:=Y1).
+right; ring.
+rewrite Y3.
+apply Rlt_le; apply Ropp_0_gt_lt_contravar; exact Y1.
+apply Rplus_le_compat_r.
+apply Rle_trans with (1:=proj2 Ht).
+right; apply Rmax_left.
+apply Rplus_le_reg_l with (-a x); ring_simplify.
+apply Rge_le, Rge_trans with (2:=Y1).
+right; ring.
+apply Rlt_le_trans with (1:=Hv).
+apply Rle_trans with (1:=Rmin_r _ _).
+apply Rle_trans with (1:=Rmin_l _ _).
+apply Rmin_l.
+apply Rlt_le_trans with ((eps / (Rabs (Derive (fun z : R => f z (a x)) x) + 1) / 2) * 
+  (Rabs (Derive (fun z : R => f z (a x)) x) + 1)).
+apply Rmult_lt_compat_r.
+apply Rlt_le_trans with (0+1).
+rewrite Rplus_0_l; apply Rlt_0_1.
+apply Rplus_le_compat_r; apply Rabs_pos.
+replace (a x -v) with (-(v-a x)) by ring; rewrite Rabs_Ropp.
+apply Rlt_le_trans with (1:=Hv).
+apply Rle_trans with (1:=Rmin_r _ _).
+apply Rle_trans with (1:=Rmin_r _ _).
+apply Rmin_r.
+right; field.
+apply sym_not_eq, Rlt_not_eq.
+apply Rlt_le_trans with (0+1).
+rewrite Rplus_0_l; apply Rlt_0_1.
+apply Rplus_le_compat_r; apply Rabs_pos.
 (* *)
 apply sym_eq, is_derive_unique.
 apply derivable_pt_lim_param.
@@ -749,7 +807,18 @@ exists d.
 intros y Hy t Ht.
 apply Hd.
 exact Hy.
-admit. (* ok *)
+split.
+apply Rle_trans with (2:=proj1 Ht).
+apply Rle_min_compat_r.
+pattern (a x) at 2; replace (a x) with (a x-0) by ring.
+apply Rplus_le_compat_l.
+apply Ropp_le_contravar.
+left; apply cond_pos.
+apply Rle_trans with (1:=proj2 Ht).
+apply Rle_max_compat_r.
+pattern (a x) at 1; replace (a x) with (a x+0) by ring.
+apply Rplus_le_compat_l.
+left; apply cond_pos.
 intros t Ht.
 apply Cdf.
 rewrite /Rminus Rplus_opp_r Rabs_R0; apply cond_pos.
