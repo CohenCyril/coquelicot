@@ -561,7 +561,7 @@ Lemma derivable_pt_lim_RInt_param_bound_comp_aux1: forall f a b x,
   continuity_2d_pt
      (fun u v : R => Derive (fun z : R => RInt (fun t : R => f z t) v b) u) x (a x).
 Proof.
-intros f a b x (d1,Ia) (d2,Ib) (d3,Df) Y.
+intros f a b x (d1,Ia) (d2,Ib) (d3,(d3',Hd3)) Y.
 destruct (derivable_pt_lim_RInt_param_bound_comp_aux0 _ _ _ _ Y) as (d7,Hd7).
 destruct Y as (d4,(d0,Cdf)).
 intros eps.
@@ -598,15 +598,20 @@ apply Rlt_le_trans with (0+1).
 rewrite Rplus_0_l; apply Rlt_0_1.
 apply Rplus_le_compat_r; apply Rabs_pos.
 apply Rle_lt_0_plus_1; apply Rlt_le; exact Rlt_0_1.
+destruct Ib as (d8,Hd8).
 (*********************************************************)
 exists (mkposreal _ (Rmin_stable_in_posreal 
-                  (mkposreal _ (Rmin_stable_in_posreal  d4 d5))
+                  (mkposreal _ (Rmin_stable_in_posreal 
+                         (mkposreal _ (Rmin_stable_in_posreal  d4 d5))
+                         (mkposreal _ (Rmin_stable_in_posreal  d3 (pos_div_2 d3')))))
                   (mkposreal _ (Rmin_stable_in_posreal  
                         (mkposreal _ (Rmin_stable_in_posreal d6 
                                 (mkposreal _ (Rmin_stable_in_posreal d0 d7))))
                         (mkposreal _ (Rmin_stable_in_posreal 
-                                     (mkposreal _ Rlt_0_1)
-                                     (mkposreal _ J2))))))).
+                                     (mkposreal _ (Rmin_stable_in_posreal d2 (mkposreal _ Rlt_0_1)))
+                                     (mkposreal _ (Rmin_stable_in_posreal
+                                        (mkposreal _ (Rmin_stable_in_posreal (pos_div_2 d1) (pos_div_2 d8)))
+                                        (mkposreal _ J2))))))))).
 simpl; intros u v Hu Hv.
 replace (Derive (fun z : R => RInt (fun t : R => f z t) v b) u) with 
   (RInt (fun z => Derive (fun u => f u z) u) v b).
@@ -654,11 +659,13 @@ apply Rle_min_compat_r.
 apply (Rabs_le_between' _ _).
 left; apply Rlt_le_trans with (1:=Hv).
 apply Rle_trans with (1:=Rmin_l _ _).
+apply Rle_trans with (1:=Rmin_l _ _).
 apply Rmin_l.
 apply Rle_trans with (1:=proj2 Ht).
 apply Rle_max_compat_r.
 apply (Rabs_le_between' _ _).
 left; apply Rlt_le_trans with (1:=Hv).
+apply Rle_trans with (1:=Rmin_l _ _).
 apply Rle_trans with (1:=Rmin_l _ _).
 apply Rmin_l.
 split; apply Rplus_le_reg_l with (-x); ring_simplify.
@@ -671,15 +678,18 @@ apply Rle_min_compat_r.
 apply (Rabs_le_between' _ _).
 left; apply Rlt_le_trans with (1:=Hv).
 apply Rle_trans with (1:=Rmin_l _ _).
+apply Rle_trans with (1:=Rmin_l _ _).
 apply Rmin_l.
 apply Rle_trans with (1:=proj2 Ht).
 apply Rle_max_compat_r.
 apply (Rabs_le_between' _ _).
 left; apply Rlt_le_trans with (1:=Hv).
 apply Rle_trans with (1:=Rmin_l _ _).
+apply Rle_trans with (1:=Rmin_l _ _).
 apply Rmin_l.
 apply Rabs_le_between'.
 left; apply Rlt_le_trans with (1:=Hu).
+apply Rle_trans with (1:=Rmin_l _ _).
 apply Rle_trans with (1:=Rmin_l _ _).
 apply Rmin_r.
 rewrite /Rminus Rplus_opp_r Rabs_R0.
@@ -694,7 +704,8 @@ rewrite Rabs_Ropp.
 apply Rlt_le_trans with (1:=Hv).
 apply Rle_trans with (1:=Rmin_r _ _).
 apply Rle_trans with (1:=Rmin_r _ _).
-apply Rmin_l.
+apply Rle_trans with (1:=Rmin_l _ _).
+apply Rmin_r.
 right; field.
 apply sym_not_eq, Rlt_not_eq.
 apply Rlt_le_trans with (0+1).
@@ -793,6 +804,7 @@ replace (a x -v) with (-(v-a x)) by ring; rewrite Rabs_Ropp.
 apply Rlt_le_trans with (1:=Hv).
 apply Rle_trans with (1:=Rmin_r _ _).
 apply Rle_trans with (1:=Rmin_r _ _).
+apply Rle_trans with (1:=Rmin_r _ _).
 apply Rmin_r.
 right; field.
 apply sym_not_eq, Rlt_not_eq.
@@ -802,10 +814,9 @@ apply Rplus_le_compat_r; apply Rabs_pos.
 (* *)
 apply sym_eq, is_derive_unique.
 apply derivable_pt_lim_param.
-destruct Df as (d ,Hd).
-exists d.
+exists d3'.
 intros y Hy t Ht.
-apply Hd.
+apply Hd3.
 exact Hy.
 split.
 apply Rle_trans with (2:=proj1 Ht).
@@ -822,19 +833,154 @@ left; apply cond_pos.
 intros t Ht.
 apply Cdf.
 rewrite /Rminus Rplus_opp_r Rabs_R0; apply cond_pos.
-admit. (* ok *)
+split.
+apply Rle_trans with (2:=proj1 Ht).
+apply Rle_min_compat_r.
+pattern (a x) at 2; replace (a x) with (a x-0) by ring.
+apply Rplus_le_compat_l.
+apply Ropp_le_contravar.
+left; apply cond_pos.
+apply Rle_trans with (1:=proj2 Ht).
+apply Rle_max_compat_r.
+pattern (a x) at 1; replace (a x) with (a x+0) by ring.
+apply Rplus_le_compat_l.
+left; apply cond_pos.
 exists d1.
 intros y Hy.
 now apply Ia.
 (* *)
 apply sym_eq, is_derive_unique.
 apply derivable_pt_lim_param.
-admit. (* mouais faudra pe d3/2 ... *)
+exists (pos_div_2 d3').
+intros y Hy t Ht.
+apply Hd3.
+replace (y-x) with ((y-u)+(u-x)) by ring.
+apply Rle_lt_trans with (1:=Rabs_triang _ _).
+rewrite (double_var d3').
+apply Rplus_lt_compat.
+exact Hy.
+apply Rlt_le_trans with (1:=Hu).
+apply Rle_trans with (1:=Rmin_l _ _).
+apply Rle_trans with (1:=Rmin_r _ _).
+apply Rmin_r.
+split.
+apply Rle_trans with (2:=proj1 Ht).
+apply Rle_min_compat_r.
+apply Rplus_le_reg_l with (d3-v); ring_simplify.
+apply Rle_trans with (-(v-a x));[right; ring|idtac].
+apply Rle_trans with (1:=RRle_abs _).
+rewrite Rabs_Ropp.
+left; apply Rlt_le_trans with (1:=Hv).
+apply Rle_trans with (1:=Rmin_l _ _).
+apply Rle_trans with (1:=Rmin_r _ _).
+apply Rmin_l.
+apply Rle_trans with (1:=proj2 Ht).
+apply Rle_max_compat_r.
+apply Rplus_le_reg_l with (- a x); ring_simplify.
+apply Rle_trans with (v-a x);[right; ring|idtac].
+apply Rle_trans with (1:=RRle_abs _).
+left; apply Rlt_le_trans with (1:=Hv).
+apply Rle_trans with (1:=Rmin_l _ _).
+apply Rle_trans with (1:=Rmin_r _ _).
+apply Rmin_l.
 intros t Ht.
 apply Cdf.
-admit. (* ok *)
-admit. (* ok *)
-admit. (* see Df *)
+apply Rlt_le_trans with (1:=Hu).
+apply Rle_trans with (1:=Rmin_r _ _).
+apply Rle_trans with (1:=Rmin_l _ _).
+apply Rle_trans with (1:=Rmin_r _ _).
+apply Rmin_l.
+split.
+apply Rle_trans with (2:=proj1 Ht).
+apply Rle_min_compat_r.
+apply Rplus_le_reg_l with (d4-v); ring_simplify.
+apply Rle_trans with (-(v-a x));[right; ring|idtac].
+apply Rle_trans with (1:=RRle_abs _).
+rewrite Rabs_Ropp.
+left; apply Rlt_le_trans with (1:=Hv).
+apply Rle_trans with (1:=Rmin_l _ _).
+apply Rle_trans with (1:=Rmin_l _ _).
+apply Rmin_l.
+apply Rle_trans with (1:=proj2 Ht).
+apply Rle_max_compat_r.
+apply Rplus_le_reg_l with (- a x); ring_simplify.
+apply Rle_trans with (v-a x);[right; ring|idtac].
+apply Rle_trans with (1:=RRle_abs _).
+left; apply Rlt_le_trans with (1:=Hv).
+apply Rle_trans with (1:=Rmin_l _ _).
+apply Rle_trans with (1:=Rmin_l _ _).
+apply Rmin_l.
+exists (mkposreal _ (Rmin_stable_in_posreal (pos_div_2 d8) (pos_div_2 d1))).
+simpl; intros y Hy.
+apply ex_RInt_add_interval with (a x).
+case (Rle_or_lt v (a x)); intros T1.
+apply ex_RInt_included1 with (a x + d2).
+apply ex_RInt_included2 with (a x - d2).
+apply Hd8.
+rewrite (double_var d8).
+replace (y-x) with ((y-u)+(u-x)) by ring.
+apply Rle_lt_trans with (1:=Rabs_triang _ _).
+apply Rplus_lt_compat.
+apply Rlt_le_trans with (1:=Hy).
+apply Rmin_l.
+apply Rlt_le_trans with (1:=Hu).
+apply Rle_trans with (1:=Rmin_r _ _).
+apply Rle_trans with (1:=Rmin_r _ _).
+apply Rle_trans with (1:=Rmin_r _ _).
+apply Rle_trans with (1:=Rmin_l _ _).
+apply Rmin_r.
+apply Rabs_le_between'.
+left; apply Rlt_le_trans with (1:=Hv).
+apply Rle_trans with (1:=Rmin_r _ _).
+apply Rle_trans with (1:=Rmin_r _ _).
+apply Rle_trans with (1:=Rmin_l _ _).
+apply Rmin_l.
+split.
+exact T1.
+apply Rplus_le_reg_l with (-a x); ring_simplify.
+left; apply cond_pos.
+apply ex_RInt_bound.
+apply ex_RInt_included1 with (a x + d2).
+apply ex_RInt_included2 with (a x - d2).
+apply Hd8.
+rewrite (double_var d8).
+replace (y-x) with ((y-u)+(u-x)) by ring.
+apply Rle_lt_trans with (1:=Rabs_triang _ _).
+apply Rplus_lt_compat.
+apply Rlt_le_trans with (1:=Hy).
+apply Rmin_l.
+apply Rlt_le_trans with (1:=Hu).
+apply Rle_trans with (1:=Rmin_r _ _).
+apply Rle_trans with (1:=Rmin_r _ _).
+apply Rle_trans with (1:=Rmin_r _ _).
+apply Rle_trans with (1:=Rmin_l _ _).
+apply Rmin_r.
+apply Rabs_le_between'.
+rewrite /Rminus Rplus_opp_r Rabs_R0.
+left; apply cond_pos.
+split.
+left; exact T1.
+apply Rplus_le_reg_l with (-a x); ring_simplify.
+apply Rle_trans with (v-a x);[right; ring|idtac].
+apply Rle_trans with (1:=RRle_abs _).
+left; apply Rlt_le_trans with (1:=Hv).
+apply Rle_trans with (1:=Rmin_r _ _).
+apply Rle_trans with (1:=Rmin_r _ _).
+apply Rle_trans with (1:=Rmin_l _ _).
+apply Rmin_l.
+apply Ia.
+replace (y-x) with ((y-u)+(u-x)) by ring.
+apply Rle_lt_trans with (1:=Rabs_triang _ _).
+rewrite (double_var d1).
+apply Rplus_lt_compat.
+apply Rlt_le_trans with (1:=Hy).
+apply Rmin_r.
+apply Rlt_le_trans with (1:=Hu).
+apply Rle_trans with (1:=Rmin_r _ _).
+apply Rle_trans with (1:=Rmin_r _ _).
+apply Rle_trans with (1:=Rmin_r _ _).
+apply Rle_trans with (1:=Rmin_l _ _).
+apply Rmin_l.
 Qed.
 
 
@@ -1037,5 +1183,62 @@ exact Da.
 Qed.
 
 
+Lemma derivable_pt_lim_RInt_param_bound_comp :
+  forall f a b x da db,
+  (locally (fun y => ex_RInt (fun t => f y t) (a x) (b x)) x) ->
+  (exists eps:posreal, locally (fun y => ex_RInt (fun t => f y t) (a x -eps) (a x + eps)) x) ->
+  (exists eps:posreal, locally (fun y => ex_RInt (fun t => f y t) (b x -eps) (b x + eps)) x) ->
+  derivable_pt_lim a x da -> derivable_pt_lim b x db ->
+  (exists eps:posreal, locally
+    (fun x0 : R =>
+       forall t : R,
+        Rmin (a x-eps) (b x -eps) <= t <= Rmax (a x+eps) (b x + eps) ->
+        ex_derive (fun u : R => f u t) x0) x) ->
+  (exists eps:posreal, locally
+   (fun x0 => 
+       forall t : R,
+          Rmin (a x-eps) (b x -eps) <= t <= Rmax (a x+eps) (b x + eps) ->
+         continuity_2d_pt (fun u v : R => Derive (fun z : R => f z v) u) x0 t) x) ->
+   continuity_pt (fun t => f x t) (a x) ->   
+   continuity_pt (fun t => f x t) (b x) ->   
+ derivable_pt_lim (fun x => RInt (fun t => f x t) (a x) (b x)) x
+    ((Derive (fun u => RInt (fun t : R => f u t) (a x) (b x)) x)+(-f x (a x))*da+(f x (b x))*db).
+Proof.
+intros f a b x da db If Ifa Ifb Da Db Df Cf Cfa Cfb.
+apply is_derive_ext with (fun x0 : R => RInt (fun t : R => f x0 t) (a x0) (a x) 
+    - RInt (fun t : R => f x0 t) (b x0) (a x)).
+intros t.
+(* apply sym_eq, RInt_Chasles.*)
+admit.
+replace ((Derive (fun u : R => RInt (fun t : R => f u t) (a x) (b x)) x +
+   - f x (a x) * da + f x (b x) * db)) with
+   ((Derive (fun u : R => RInt (fun t : R => f u t) (a x) (a x)) x + - f x (a x) * da) +
+      -(Derive (fun u : R => RInt (fun t : R => f u t) (b x) (a x)) x + -f x (b x)*db)).
+apply derivable_pt_lim_plus.
+(* *)
+apply derivable_pt_lim_RInt_param_bound_comp_aux2.
+admit.
+easy.
+easy.
+admit.
+admit.
+easy.
+(* *)
+apply derivable_pt_lim_opp.
+apply derivable_pt_lim_RInt_param_bound_comp_aux2.
+admit.
+easy.
+easy.
+admit.
+admit.
+easy.
+admit.
+Qed.
 
+
+
+
+
+
+(* rmq à voir: virer les hyp ex_RInt ? et continuité en a x et b x ? csq de ex_derive *)
 
