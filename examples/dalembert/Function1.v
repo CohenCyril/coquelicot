@@ -1,5 +1,5 @@
 Require Import Reals.
-Require Import Arithmetique.
+Require Import Rcomplements.
 
 Open Local Scope R_scope.
 
@@ -440,15 +440,15 @@ Proof.
     destruct (Rle_dec (x - 1) y).
     destruct (Rle_dec y (x + 1)).
     apply RiemannInt_P5.
-    apply Rabs_lt_encadre_cor in H.
+    apply Rabs_lt_between' in H.
     elim n ; apply Rlt_le ; apply H.
-    apply Rabs_lt_encadre_cor in H.
+    apply Rabs_lt_between' in H.
     elim n ; apply Rlt_le ; apply H.
   rewrite <- (Rplus_0_l (f x)).
   apply derivable_pt_lim_plus.
   apply derivable_pt_lim_const.
   apply RiemannInt_P28.
-  apply (Rabs_le_encadre_cor x x 1).
+  apply (Rabs_le_between' x x 1).
   rewrite (Rminus_eq0), Rabs_R0 ;
   apply Rle_0_1.
 Qed.
@@ -503,10 +503,8 @@ Proof.
   intros.
   apply Heq.
   split.
-  rewrite (Rmin_eq_l _ _ r).
-  apply Rlt_le ; apply H.
-  rewrite (Rmax_eq_l _ _ r).
-  apply Rlt_le ; apply H.
+  unfold Rmin ; case Rle_dec ; intuition.
+  unfold Rmax ; case Rle_dec ; intuition.
   rewrite (RiemannInt_P8 pr_f (RiemannInt_P1 pr_f)).
   rewrite (RiemannInt_P8 pr_g (RiemannInt_P1 pr_g)).
   apply Ropp_eq_compat.
@@ -515,10 +513,10 @@ Proof.
   intros.
   apply Heq.
   split.
-  rewrite (Rmin_eq_r _ _ r).
-  apply Rlt_le ; apply H.
-  rewrite (Rmax_eq_r _ _ r).
-  apply Rlt_le ; apply H.
+  unfold Rmin ; case Rle_dec ; intuition.
+  apply Rlt_le, Rle_lt_trans with b ; intuition.
+  unfold Rmax ; case Rle_dec ; intuition.
+  apply Rlt_le, Rlt_le_trans with a ; intuition.
 Qed.
 
 (** Constant function *)
@@ -659,10 +657,8 @@ Proof.
   apply r.
   intros ; apply Hle.
   split.
-  rewrite (Rmin_eq_l _ _ r).
-  apply Rlt_le ; apply H.
-  rewrite (Rmax_eq_l _ _ r).
-  apply Rlt_le ; apply H.
+  unfold Rmin ; case Rle_dec ; intuition.
+  unfold Rmax ; case Rle_dec ; intuition.
   apply Rge_minus.
   apply Rle_ge, r.
 
@@ -683,11 +679,11 @@ Proof.
   apply RiemannInt_P19.
   apply Rlt_le, r.
   intros ; apply Hle.
+  assert (~(a <= b)).
+    apply Rlt_not_le, Rlt_trans with x ; intuition.
   split.
-  rewrite (Rmin_eq_r _ _ r).
-  apply Rlt_le ; apply H.
-  rewrite (Rmax_eq_r _ _ r).
-  apply Rlt_le ; apply H.
+  unfold Rmin ; case Rle_dec ; intuition.
+  unfold Rmax ; case Rle_dec ; intuition.
 Qed.
 
 (** * Value theorem *)
@@ -702,8 +698,8 @@ Proof.
     exists c.
     split.
     apply MVT.
-    rewrite Rmin_eq_l, Rmax_eq_l ; [| apply Rlt_le ; apply H | apply Rlt_le ; apply H].
-    split ; apply Rlt_le ; apply MVT.
+    set (Rlt_le _ _ H).
+    unfold Rmin, Rmax ; case Rle_dec ; intuition.
     apply MVT_cor1 ; apply H.
   destruct H.
   exists a.
@@ -721,7 +717,8 @@ Proof.
     rewrite Ropp_mult_distr_r_reverse.
     apply Ropp_eq_compat.
     apply MVT.
-    rewrite Rmin_eq_r, Rmax_eq_r ; [| apply H | apply H].
-    split ; apply Rlt_le ; apply MVT.
+    assert (~(a <= b)).
+      apply Rlt_not_le, Rlt_trans with c ; intuition.
+    unfold Rmin, Rmax ; case Rle_dec ; intuition.
     apply MVT_cor1 ; apply H.
 Qed.

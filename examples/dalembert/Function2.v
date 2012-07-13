@@ -1,6 +1,6 @@
 Require Import Reals.
 
-Require Import Arithmetique Function1.
+Require Import Rcomplements Function1.
 
 Open Local Scope R_scope.
 
@@ -397,7 +397,7 @@ Proof.
     apply Rmin_l.
     apply (Rplus_le_reg_l (-x)) ; repeat rewrite (Rplus_comm (-x)) ; apply (Rle_trans _ delta).
     apply (Rle_trans _ (Rabs (x'-x))) ;
-    [apply Rabs_maj1 | apply Rlt_le, H2].
+    [apply Rle_abs | apply Rlt_le, H2].
     apply (Rle_trans _ (Rmin (x - a) (b - x))).
     apply (Rle_trans _ (Rmin (Rmin (x - a) (b - x)) (Rmin (y - c) (d - y)))).
     unfold delta ; simpl ; apply Rmin_r.
@@ -417,7 +417,7 @@ Proof.
     apply Rmin_l.
     apply (Rplus_le_reg_l (-y)) ; repeat rewrite (Rplus_comm (-y)) ; apply (Rle_trans _ delta).
     apply (Rle_trans _ (Rabs (y'-y))) ;
-    [apply Rabs_maj1 | apply Rlt_le, H3].
+    [apply Rle_abs | apply Rlt_le, H3].
     apply (Rle_trans _ (Rmin (y - c) (d - y))).
     apply (Rle_trans _ (Rmin (Rmin (x - a) (b - x)) (Rmin (y - c) (d - y)))).
     unfold delta ; simpl ; apply Rmin_r.
@@ -433,15 +433,6 @@ Lemma cont2_impl_unif_cont2 : forall (f : R -> R -> R),
 unfold continuity2, continuity2_pt, unif_cont2_pave.
 intros f H a b c d eps.
 specialize (H a c eps).
-
-
-apply H.
-unfold continuity2.
-unfold continuity2_pt.
-unfold unif_cont2_pave.
-
-
-
 Admitted.
 
 (** Basic functions and operations *)
@@ -625,17 +616,16 @@ Proof.
     apply Rlt_le, H1.
   unfold delta ; simpl ;
   apply (Rle_trans _ ((eps / (Rabs x + Rabs y + 1)) * (Rabs y + 1) + Rabs x * (eps / (Rabs x + Rabs y + 1)))).
-  destruct (Rle_lt_dec 1 (eps / (Rabs x + Rabs y + 1))) ;
-  [rewrite (Rmin_eq_l _ _ r)| rewrite (Rmin_eq_r _ _ r)].
+  apply Rmin_case_strong ; intro H2.
   apply Rplus_le_compat.
   apply Rmult_le_compat_r.
   apply Rplus_le_le_0_compat.
   apply Rabs_pos.
   apply Rle_0_1.
-  apply r.
+  apply H2.
   apply Rmult_le_compat_l.
   apply Rabs_pos.
-  apply r.
+  apply H2.
   apply Req_le ; reflexivity.
   apply Req_le ; field.
   apply sym_not_eq, Rlt_not_eq, Rplus_le_lt_0_compat.
@@ -762,8 +752,9 @@ Proof.
     ring.
     rewrite H1 ; clear H1.
   assert (Rabs (y0 - x) = Rmax (Rabs (y0 - x)) (Rabs (y - y))).
-    apply sym_equal ; rewrite Rmax_comm ; apply Rmax_eq_l.
-    rewrite Rminus_eq0, Rabs_R0 ; apply Rabs_pos.
+    assert ((Rabs (y - y)) <= (Rabs (y0 - x))).
+    rewrite Rminus_eq0, Rabs_R0 ; apply Rabs_pos. 
+    apply sym_equal ; rewrite Rmax_comm ; unfold Rmax ; case Rle_dec ; intuition.
     rewrite H1 ; clear H1.
   apply (Df _ _ H H0).
 Qed.
@@ -800,8 +791,9 @@ Proof.
     ring.
     rewrite H1 ; clear H1.
   assert (Rabs (y0 - y) = Rmax (Rabs (x - x)) (Rabs (y0 - y))).
-    apply sym_equal ; apply Rmax_eq_l.
-    rewrite Rminus_eq0, Rabs_R0 ; apply Rabs_pos.
+    assert ((Rabs (x - x)) <= (Rabs (y0 - y))).
+    rewrite Rminus_eq0, Rabs_R0 ; apply Rabs_pos.  
+    apply sym_equal ; unfold Rmax ; case Rle_dec ; intuition.
     rewrite H1 ; clear H1.
   apply (Df _ _ H0 H).
 Qed.
@@ -906,17 +898,16 @@ Proof.
   apply Rabs_pos.
   apply Rlt_le ; apply C10.
   apply (Rle_lt_trans _ (Rabs (x'-x))).
-  destruct (Rle_lt_dec x x').
-  rewrite (Rmin_eq_l _ _ r), (Rmax_eq_l _ _ r) in Hc.
+  revert Hc ; unfold Rmin, Rmax ;
+  destruct (Rle_dec x x') ; intro Hc.
   repeat rewrite Rabs_right.
   unfold Rminus ; apply Rplus_le_compat_r, Hc.
   apply Rge_minus, Rle_ge, r.
   apply Rge_minus, Rle_ge, Hc.
-  rewrite (Rmin_eq_r _ _ r), (Rmax_eq_r _ _ r) in Hc.
   repeat rewrite Rabs_left1.
   unfold Rminus ;
   apply Ropp_le_contravar, Rplus_le_compat_r, Hc.
-  apply Rle_minus, Rlt_le, r.
+  apply Rle_minus, Rlt_le, Rnot_le_lt, n.
   apply Rle_minus, Hc.
   apply (Rlt_le_trans _ _ _ H0).
   unfold delta ; simpl ; apply Rmin_l.
@@ -949,17 +940,16 @@ Proof.
   apply Rlt_le ; apply C01.
   rewrite Rminus_eq0, Rabs_R0 ; apply d2.
   apply (Rle_lt_trans _ (Rabs (y'-y))).
-  destruct (Rle_lt_dec y y').
-  rewrite (Rmin_eq_l _ _ r), (Rmax_eq_l _ _ r) in Hc.
+  revert Hc ; unfold Rmin, Rmax ;
+  destruct (Rle_dec y y') as [r | r] ; intro Hc.
   repeat rewrite Rabs_right.
   unfold Rminus ; apply Rplus_le_compat_r, Hc.
   apply Rge_minus, Rle_ge, r.
   apply Rge_minus, Rle_ge, Hc.
-  rewrite (Rmin_eq_r _ _ r), (Rmax_eq_r _ _ r) in Hc.
   repeat rewrite Rabs_left1.
   unfold Rminus ;
   apply Ropp_le_contravar, Rplus_le_compat_r, Hc.
-  apply Rle_minus, Rlt_le, r.
+  apply Rle_minus, Rlt_le, Rnot_le_lt, r.
   apply Rle_minus, Hc.
   apply (Rlt_le_trans _ _ _ H2).
   unfold delta ; simpl ; apply Rmin_r.
@@ -1220,8 +1210,9 @@ Proof.
     unfold Fct2_proj1 ; ring.
   rewrite H0 ; clear H0.
   assert (Rabs (y0 - x) = Rmax (Rabs (y0 - x)) (Rabs (y-y))).
-    rewrite Rmax_comm ; apply sym_equal, Rmax_eq_l.
+    assert ( (Rabs (y - y)) <= (Rabs (y0 - x)) ).
     rewrite Rminus_eq0, Rabs_R0 ; apply Rabs_pos.
+    rewrite Rmax_comm ; apply sym_equal ; unfold Rmax ; case Rle_dec ; intuition.
   rewrite H0 ; clear H0.
   apply (Df _ _ H).
   rewrite Rminus_eq0, Rabs_R0 ; apply delta.
@@ -1263,8 +1254,9 @@ Proof.
     unfold Fct2_proj2 ; ring.
   rewrite H0 ; clear H0.
   assert (Rabs (y0 - y) = Rmax (Rabs (x - x)) (Rabs (y0-y))).
-    apply sym_equal, Rmax_eq_l.
+    assert ((Rabs (x - x)) <= (Rabs (y0 - y))).
     rewrite Rminus_eq0, Rabs_R0 ; apply Rabs_pos.
+    apply sym_equal ; unfold Rmax ; case Rle_dec ; intuition.
   rewrite H0 ; clear H0.
   apply Df.
   rewrite Rminus_eq0, Rabs_R0 ; apply delta.
@@ -1406,7 +1398,9 @@ Proof.
     apply Rmult_le_compat_l.
     apply Rlt_le, eps1.
     rewrite Rmax_mult.
-    apply Rmax_le.
+    apply Rmax_case_strong ; intros _ ; 
+    [ apply Rle_trans with (2 := RmaxLess1 _ _) 
+    | apply Rle_trans with (2 := RmaxLess2 _ _)].
     rewrite Rplus_assoc, Rmult_plus_distr_r.
     apply (Rle_trans _ (Rabs (f2 x' y' - f2 x y - (l2_1 * (x' - x) + l2_2 * (y' - y)))
       + Rabs (l2_1 * (x' - x) + l2_2 * (y' - y)))).
@@ -1768,7 +1762,7 @@ Proof.
   apply H0.
   apply H0.
   split ; [apply (Rle_minus2 x x 1)|] ; apply Rlt_le, Rlt_plus_1.
-  apply (Rabs_le_encadre_cor _ _ _).
+  apply (Rabs_le_between' _ _ _).
   apply (Rle_trans _ (Rabs (y-x))).
   revert Hc ; unfold Rmin, Rmax ; destruct (Rle_dec x y) ; intros.
   repeat rewrite Rabs_right.

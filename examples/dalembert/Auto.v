@@ -110,6 +110,7 @@ Section Beta.
 
 Definition beta (x t : R) := 1/(2*c) * RInt (fun u => u1 u) (x - c * t) (x + c * t).
 Definition beta20 x t := 1/(2*c) * (Derive (fun u => u1 u) (x + c * t) - Derive (fun u => u1 u) (x - c * t)).
+Definition beta01 x t := 1/2 * (u1 (x + c * t) + u1 (x - c * t)).
 Definition beta02 x t := c/2 * (Derive (fun u => u1 u) (x + c * t) - Derive (fun u => u1 u) (x - c * t)).
 
 Lemma beta20_lim :
@@ -129,6 +130,23 @@ apply Cu1.
 repeat split ; apply Du1.
 unfold beta20, Rminus.
 ring.
+Qed.
+
+Lemma beta01_lim :
+  forall x t, is_derive (fun u => beta x u) t (beta01 x t).
+Proof.
+intros x t.
+unfold beta.
+auto_derive.
+split.
+apply Iu1.
+repeat split.
+apply Locally.locally_forall.
+apply Cu1.
+apply Locally.locally_forall.
+apply Cu1.
+unfold beta01, Rminus, Rdiv.
+now field.
 Qed.
 
 Lemma beta02_lim :

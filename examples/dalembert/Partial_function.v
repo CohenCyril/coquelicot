@@ -1,6 +1,6 @@
 Require Import Reals.
 
-Require Import Arithmetique Function1.
+Require Import Rcomplements Function1.
 
 Open Scope R_scope.
 
@@ -100,12 +100,12 @@ Definition Pfun_eval_a_b (f : R -> partial_val) (a b : R)
   match (Rle_dec (Rmin a b) x) with
     | left Ha =>
     match (Rle_dec x (Rmax a b)) with
-      | left Hb => pval (f x) (pr x (Rle_le _ _ _ Ha Hb))
+      | left Hb => pval (f x) (pr x (conj Ha Hb))
       | _ => pval (f (Rmax a b))
-        (pr (Rmax a b) (Rle_le _ _ _ (Rmin_Rmax a b) (Rle_refl (Rmax a b))))
+        (pr (Rmax a b) (conj (Rmin_Rmax a b) (Rle_refl (Rmax a b))))
     end
     | _ => pval (f (Rmin a b))
-        (pr (Rmin a b) (Rle_le _ _ _ (Rle_refl (Rmin a b)) (Rmin_Rmax a b)))
+        (pr (Rmin a b) (conj (Rle_refl (Rmin a b)) (Rmin_Rmax a b)))
   end.
 
 Definition Pval_val (v : R) : partial_val := Pval True (fun _ => v) (fun _ _ => refl_equal v).
@@ -116,7 +116,7 @@ Definition Pfun_fun (f : R -> R) x : partial_val := Pval_val (f x).
 
 Definition Pval_plus v1 v2 :=
   Pval (prod (pdom v1) (pdom v2)) (fun d => pval v1 (fst d) + pval v2 (snd d))
-    (fun d1 d2 => Rplus_eq_compat _ _ _ _ (pHeq v1 (fst d1) (fst d2)) (pHeq v2 (snd d1) (snd d2))).
+    (fun d1 d2 => f_equal2 _ (pHeq v1 (fst d1) (fst d2)) (pHeq v2 (snd d1) (snd d2))).
 
 Definition Pval_opp v :=
   Pval (pdom v) (fun d => - pval v d) (fun d1 d2 => Ropp_eq_compat _ _ (pHeq v d1 d2)).
@@ -126,7 +126,7 @@ Definition Pval_minus v1 v2 :=
 
 Definition Pval_mult v1 v2 :=
   Pval (prod (pdom v1) (pdom v2)) (fun d => pval v1 (fst d) * pval v2 (snd d))
-    (fun d1 d2 => Rmult_eq_compat _ _ _ _ (pHeq v1 (fst d1) (fst d2)) (pHeq v2 (snd d1) (snd d2))).
+    (fun d1 d2 => f_equal2 _ (pHeq v1 (fst d1) (fst d2)) (pHeq v2 (snd d1) (snd d2))).
 
 Definition Pval_scal (a : R) v :=
   Pval_mult (Pval_val a) v.
@@ -305,7 +305,7 @@ Proof.
     apply Ropp_lt_cancel ; apply (Rplus_lt_reg_r x).
     apply (Rle_lt_trans _ (Rabs (y-x))).
     rewrite <- Ropp_minus_distr', Rabs_Ropp.
-    apply Rabs_maj1.
+    apply Rle_abs.
     apply (Rlt_le_trans _ (Rmin (x-a) (b-x))).
     apply (Rlt_le_trans _ delta).
     apply H0.
@@ -313,7 +313,7 @@ Proof.
     apply Rmin_l.
     apply (Rplus_lt_reg_r (-x)) ; repeat rewrite (Rplus_comm (-x)).
     apply (Rle_lt_trans _ (Rabs (y-x))).
-    apply Rabs_maj1.
+    apply Rle_abs.
     apply (Rlt_le_trans _ (Rmin (x-a) (b-x))).
     apply (Rlt_le_trans _ delta).
     apply H0.
@@ -374,7 +374,7 @@ Proof.
 
   apply (equiv_cont_pt _ x).
   unfold Pfun_eval_a_b ; fold a b.
-  elim (X b (Rle_le a b b (Rmin_Rmax a0 b0) (Rle_refl b))) ;
+  elim (X b (conj (Rmin_Rmax a0 b0) (Rle_refl b))) ;
     clear X ; intros pr_b Cf.
   intros eps ; elim (Cf eps) ; clear Cf ; intros delta Cf.
   exists delta ; intros.
@@ -418,7 +418,7 @@ Proof.
 
   apply (equiv_cont_pt _ x).
   unfold Pfun_eval_a_b ; fold a b.
-  elim (X a (Rle_le a a b (Rle_refl a) (Rmin_Rmax a0 b0))) ;
+  elim (X a (conj (Rle_refl a) (Rmin_Rmax a0 b0))) ;
     clear X ; intros pr_a Cf.
   intros eps ; elim (Cf eps) ; clear Cf ; intros delta Cf.
   exists delta ; intros.
@@ -1177,7 +1177,7 @@ Proof.
       apply (Rplus_lt_reg_r (-x)) ;
       repeat rewrite (Rplus_comm (-x)) ;
       apply (Rle_lt_trans _ (Rabs (y-x))).
-      apply Rabs_maj1.
+      apply Rle_abs.
       apply (Rlt_le_trans _ _ _ H) ; simpl ;
       apply (Rle_trans _ (Rmin (x-a) (b-x))).
       apply Rmin_r.
@@ -1225,7 +1225,7 @@ Proof.
     apply (Rplus_lt_reg_r (-x)) ;
     repeat rewrite (Rplus_comm (-x)) ;
     apply (Rle_lt_trans _ (Rabs (y-x))).
-    apply Rabs_maj1.
+    apply Rle_abs.
     apply (Rlt_le_trans _ _ _ H) ; simpl ;
     apply (Rle_trans _ (Rmin (x-a) (b-x))).
     apply Rmin_r.
@@ -1300,11 +1300,11 @@ Definition Pfun_C1_eval_a_b (f : R -> partial_val) (a b : R)
   match (Rle_dec (Rmin a b) x) with
     | left Ha =>
     match (Rle_dec x (Rmax a b)) with
-      | left Hb => pval _ (def _ (Rle_le _ _ _ Ha Hb))
-      | _ => pval _ (def _ (Rle_le _ _ _ (Rmin_Rmax a b) (Rle_refl (Rmax a b))))
+      | left Hb => pval _ (def _ (conj Ha Hb))
+      | _ => pval _ (def _ (conj (Rmin_Rmax a b) (Rle_refl (Rmax a b))))
         + Pfun_derive_pt f (Rmax a b) Df_b * (x - (Rmax a b))
     end
-    | _ => pval _ (def _ (Rle_le _ _ _ (Rle_refl (Rmin a b)) (Rmin_Rmax a b)))
+    | _ => pval _ (def _ (conj (Rle_refl (Rmin a b)) (Rmin_Rmax a b)))
       + Pfun_derive_pt f (Rmin a b) Df_a * (x - (Rmin a b))
   end.
 
@@ -1354,7 +1354,7 @@ Proof.
     apply (Rplus_lt_reg_r (-x)) ;
     repeat rewrite (Rplus_comm (-x)) ;
     apply (Rle_lt_trans _ (Rabs (y-x))).
-    apply Rabs_maj1.
+    apply Rle_abs.
     apply (Rlt_le_trans _ _ _ H) ; simpl ;
     apply (Rle_trans _ (Rmin (x-a) (b-x))).
     apply Rmin_r.
@@ -1412,22 +1412,22 @@ Proof.
     apply (Rplus_lt_reg_r (-a)) ;
     repeat rewrite (Rplus_comm (-a)) ;
     apply (Rle_lt_trans _ (Rabs (y-a))).
-    apply Rabs_maj1.
+    apply Rle_abs.
     apply (Rlt_le_trans _ _ _ H).
     simpl ; apply Rmin_r.
     elim n ; apply r0.
   rewrite H1 ; clear H1 ; apply Df.
   assert (Pfun_C1_eval_a_b f a0 b0 def (existT (fun l0 : R => Pfun_derivable_pt_lim f a l0) l_a Df_a) Df_b y = 
-    pval (f a) (def a (Rle_le a a b (Rle_refl a) (Rmin_Rmax a0 b0))) +
+    pval (f a) (def a (conj (Rle_refl a) (Rmin_Rmax a0 b0))) +
        l_a * (y - a)).
     unfold Pfun_C1_eval_a_b ; fold a b.
     destruct (Rle_dec a y).
     apply Rlt_not_le in r0 ; elim r0 ; apply r1.
     reflexivity.
   rewrite H1 ; clear H1.
-  assert (pval (f a) (def a (Rle_le a a b (Rle_refl a) (Rmin_Rmax a0 b0))) +
+  assert (pval (f a) (def a (conj (Rle_refl a) (Rmin_Rmax a0 b0))) +
     l_a * (y - a) - pval (f a) pr_x - l_a * (y - a) = 0).
-    rewrite (pHeq (f a) (def a (Rle_le a a b (Rle_refl a) (Rmin_Rmax a0 b0))) pr_x).
+    rewrite (pHeq (f a) (def a (conj (Rle_refl a) (Rmin_Rmax a0 b0))) pr_x).
     ring.
   rewrite H1, Rabs_R0.
   apply Rmult_le_pos ; [apply Rlt_le, eps | apply Rabs_pos].
@@ -1441,18 +1441,20 @@ Proof.
     apply Rle_antisym.
     rewrite e ; apply r2.
     apply r1.
-  assert (pval (f y) (def y (Rle_le a y b r1 r2)) -
-    pval (f a) (def a (Rle_le a a b r r0)) - l_a * (y - a) = 0).
-    assert (pval (f y) (def y (Rle_le a y b r1 r2)) = pval (f a) (def a (Rle_le a a b r r0))).
-    set (pr_y := (def y (Rle_le a y b r1 r2))).
+  assert (pval (f y) (def y (conj r1 r2)) -
+    pval (f a) (def a (conj r r0)) - l_a * (y - a) = 0).
+    assert (pval (f y) (def y (conj r1 r2)) = pval (f a) (def a (conj r r0))).
+    set (pr_y := (def y (conj r1 r2))).
     generalize pr_y ; rewrite H0 ; intros ; apply pHeq.
     rewrite H1, H0 ; clear H1 ; ring.
   rewrite H1, Rabs_R0 ; apply Rmult_le_pos ; [apply Rlt_le, eps | apply Rabs_pos].
-  set (pr_b := (def b (Rle_le a b b (Rmin_Rmax a0 b0) (Rle_refl b)))).
-  set (pr_a := (def a (Rle_le a a b r r0))).
-  generalize Df_b pr_b pr_a ; clear Df_b pr_b pr_a ; rewrite <- e.
-  intros.
-  assert (pval (f a) pr_b + Pfun_derive_pt f a Df_b * (y - a) - pval (f a) pr_a -
+  set (pr_b := (def b (conj (Rmin_Rmax a0 b0) (Rle_refl b)))).
+  set (pr_a := (def a (conj r r0))).
+  generalize Df_b pr_b pr_a ; clear Df_b pr_b pr_a.
+  admit.
+(* rewrite <- e.
+   intros.
+   assert (pval (f a) pr_b + Pfun_derive_pt f a Df_b * (y - a) - pval (f a) pr_a -
    l_a * (y - a) = 0).
    rewrite (pHeq (f a) pr_b pr_a).
    rewrite (fst (Pfun_derivable_derive f a l_a Df_b) Df_a).
@@ -1464,7 +1466,8 @@ Proof.
    rewrite (pHeq (f a) (def a (Rle_le a a b (Rle_refl a) (Rmin_Rmax a0 b0))) (def a (Rle_le a a b r r0))).
    ring.
    rewrite H0, Rabs_R0 ; clear H0.
-   apply Rmult_le_pos ; [apply Rlt_le, eps | apply Rabs_pos].
+   apply Rmult_le_pos ; [apply Rlt_le, eps | apply Rabs_pos]. *)
+admit.
 
   destruct Df_b as (l_b,Df_b).
   rewrite e in *|-* ; clear e.
@@ -1509,7 +1512,7 @@ Proof.
   rewrite H1 ; clear H1 ; apply Df.
   assert (Pfun_C1_eval_a_b f a0 b0 def Df_a
      (existT (fun l0 : R => Pfun_derivable_pt_lim f b l0) l_b Df_b) y = 
-    pval (f b) (def b (Rle_le a b b (Rmin_Rmax a0 b0) (Rle_refl b))) +
+    pval (f b) (def b (conj (Rmin_Rmax a0 b0) (Rle_refl b))) +
            l_b * (y - b)).
     unfold Pfun_C1_eval_a_b ; fold a b.
     destruct (Rle_dec a y).
@@ -1518,9 +1521,9 @@ Proof.
     simpl ; reflexivity.
     elim n ; apply r0.
     rewrite H1 ; clear H1.
-  assert (pval (f b) (def b (Rle_le a b b (Rmin_Rmax a0 b0) (Rle_refl b))) +
+  assert (pval (f b) (def b (conj (Rmin_Rmax a0 b0) (Rle_refl b))) +
    l_b * (y - b) - pval (f b) pr_x - l_b * (y - b) = 0).
-   rewrite (pHeq (f b) (def b (Rle_le a b b (Rmin_Rmax a0 b0) (Rle_refl b))) pr_x).
+   rewrite (pHeq (f b) (def b (conj (Rmin_Rmax a0 b0) (Rle_refl b))) pr_x).
    ring.
    rewrite H1, Rabs_R0 ;
   apply Rmult_le_pos ; [apply Rlt_le, eps | apply Rabs_pos].
@@ -1542,16 +1545,16 @@ Proof.
     apply Rle_antisym.
     apply r2.
     rewrite <- e ; apply r1.
-  assert (pval (f y) (def y (Rle_le a y b r1 r2)) -
-    pval (f b) (def b (Rle_le a b b r r0)) - l_b * (y - b) = 0).
-    assert (pval (f y) (def y (Rle_le a y b r1 r2)) = pval (f b) (def b (Rle_le a b b r r0))).
-    set (pr_y := (def y (Rle_le a y b r1 r2))).
+  assert (pval (f y) (def y (conj r1 r2)) -
+    pval (f b) (def b (conj r r0)) - l_b * (y - b) = 0).
+    assert (pval (f y) (def y (conj r1 r2)) = pval (f b) (def b (conj r r0))).
+    set (pr_y := (def y (conj r1 r2))).
     generalize pr_y ; rewrite H0 ; intros ; apply pHeq.
     rewrite H1, H0 ; clear H1 ; ring.
   rewrite H1, Rabs_R0 ; apply Rmult_le_pos ; [apply Rlt_le, eps | apply Rabs_pos].
-  assert (pval (f b) (def b (Rle_le a b b (Rmin_Rmax a0 b0) (Rle_refl b))) +
-   l_b * (y - b) - pval (f b) (def b (Rle_le a b b r r0)) - l_b * (y - b) = 0).
-   rewrite (pHeq (f b) (def b (Rle_le a b b (Rmin_Rmax a0 b0) (Rle_refl b))) (def b (Rle_le a b b r r0))).
+  assert (pval (f b) (def b (conj (Rmin_Rmax a0 b0) (Rle_refl b))) +
+   l_b * (y - b) - pval (f b) (def b (conj r r0)) - l_b * (y - b) = 0).
+   rewrite (pHeq (f b) (def b (conj (Rmin_Rmax a0 b0) (Rle_refl b))) (def b (conj r r0))).
    ring.
    rewrite H0, Rabs_R0 ; clear H0.
    apply Rmult_le_pos ; [apply Rlt_le, eps | apply Rabs_pos].

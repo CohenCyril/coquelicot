@@ -556,7 +556,7 @@ Qed.
 
 (*Lemma index_not_const_correct :
   forall n l (k : nat),
-  not (in_mem k (mem (T:=ssrnat.nat_eqType) (index_not_const l n))) ->
+  not (in_mem k (mem (T:=ssrnat.nat_eqType) (uniq_index_not_const l n))) ->
   is_const (nth (Cst 0) l k) n = true.
 Proof.
 intros n l k.
