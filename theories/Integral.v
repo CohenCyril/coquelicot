@@ -544,6 +544,41 @@ apply cond_pos.
 exact Hz.
 Qed.
 
+(*
+Lemma derivable_pt_lim_RInt_param_bound_comp_aux1: forall f a b x,  
+  (locally (fun y => ex_RInt (fun t => f y t) (a x) b) x) ->
+  (exists eps:posreal, locally (fun y => ex_RInt (fun t => f y t) (a x -eps) (a x + eps)) x) ->
+  (exists eps:posreal, locally
+    (fun x0 : R =>
+       forall t : R,
+        Rmin (a x-eps) b <= t <= Rmax (a x+eps) b ->
+        ex_derive (fun u : R => f u t) x0) x) ->
+  (((forall t : R,
+          Rmin (a x) b <= t <= Rmax (a x) b ->
+         continuity_2d_pt (fun u v : R => Derive (fun z : R => f z v) u) x t))) ->
+  (locally_2d (fun x' t =>
+         continuity_2d_pt (fun u v : R => Derive (fun z : R => f z v) u) x' t) x (a x)) ->
+
+  continuity_2d_pt
+     (fun u v : R => Derive (fun z : R => RInt (fun t : R => f z t) v b) u) x (a x).
+*)
+
+(*
+Lemma derivable_pt_lim_RInt_param_bound_comp_aux1: forall f a x,  
+  (exists eps:posreal, locally (fun y => ex_RInt (fun t => f y t) (a x -eps) (a x + eps)) x) ->
+  (exists eps:posreal, locally
+    (fun x0 : R =>
+       forall t : R,
+        (a x-eps) <= t <=  (a x+eps) ->
+        ex_derive (fun u : R => f u t) x0) x) ->
+  (locally_2d (fun x' t =>
+         continuity_2d_pt (fun u v : R => Derive (fun z : R => f z v) u) x' t) x (a x)) ->
+
+  continuity_2d_pt
+     (fun u v : R => Derive (fun z : R => RInt (fun t : R => f z t) v (a x)) u) x (a x).
+*)
+
+
 
 Lemma derivable_pt_lim_RInt_param_bound_comp_aux1: forall f a b x,  
   (locally (fun y => ex_RInt (fun t => f y t) (a x) b) x) ->
