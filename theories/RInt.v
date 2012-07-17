@@ -1,4 +1,4 @@
-Require Import Reals Div2.
+Require Import Reals Div2 ConstructiveEpsilon.
 Require Import ssreflect ssrbool eqtype seq.
 Require Import Markov Rcomplements Floor Total_sup Sup_seq Lim_seq Derive SF_seq.
 
@@ -3648,7 +3648,7 @@ Qed.
 Lemma ex_RInt_correct_1 (f : R -> R) (a b : R) (eps : posreal) : ex_RInt f a b -> 
   {n : nat | Rabs (RiemannInt_SF (SF_psi_r f a b n)) < eps}.
 Proof.
-  move => Hex ; apply ConstructiveEpsilon.constructive_indefinite_description_nat ; [move => n ; apply Rlt_dec | ].
+  move => Hex ; apply constructive_indefinite_description_nat ; [move => n ; apply Rlt_dec | ].
   have Hsup : (forall a b, ex_RInt f a b ->
     exists M, forall x, Rmin a b <= x <= Rmax a b -> f x <= M).
     move => {a b Hex} a b Hex ;
