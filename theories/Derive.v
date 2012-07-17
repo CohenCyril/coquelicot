@@ -194,6 +194,40 @@ Qed.
 
 (** * Operations *)
 
+Lemma ex_derive_const :
+  forall a x, ex_derive (fun _ => a) x.
+Proof.
+intros x.
+exists 0.
+apply derivable_pt_lim_const.
+Qed.
+
+Lemma Derive_const :
+  forall a x,
+  Derive (fun _ => a) x = 0.
+Proof.
+intros a x.
+apply is_derive_unique.
+apply derivable_pt_lim_const.
+Qed.
+
+Lemma ex_derive_id :
+  forall x, ex_derive id x.
+Proof.
+intros x.
+exists 1.
+apply derivable_pt_lim_id.
+Qed.
+
+Lemma Derive_id :
+  forall x,
+  Derive id x = 1.
+Proof.
+intros x.
+apply is_derive_unique.
+apply derivable_pt_lim_id.
+Qed.
+
 Lemma ex_derive_opp :
   forall f x, ex_derive f x ->
   ex_derive (fun x => - f x) x.

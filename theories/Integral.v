@@ -1,7 +1,7 @@
 Require Import Reals.
 Require Import ssreflect.
 Require Import Rcomplements Derive RInt Differential Locally.
-Require Import Continuity.
+Require Import Continuity Lim_seq.
 
 Lemma ex_RInt_ext :
   forall f g a b,
@@ -44,24 +44,12 @@ elim H'.
 now apply Rlt_le.
 Qed.
 
-Lemma ex_RInt_opp :
-  forall f a b, ex_RInt f a b ->
-  ex_RInt (fun x => - f x) a b.
+Lemma ex_RInt_const :
+  forall v a b, ex_RInt (fun _ => v) a b.
 Proof.
-intros f a b If.
+intros f a b.
 apply ex_RInt_correct_3.
-apply Riemann_integrable_opp.
-now apply ex_RInt_correct_2.
-Qed.
-
-Lemma RInt_opp :
-  forall f a b, ex_RInt f a b ->
-  RInt (fun x => - f x) a b = - RInt f a b.
-Proof.
-intros f a b If.
-rewrite (RInt_correct _ _ _ (ex_RInt_correct_2 _ _ _ If)).
-rewrite (RInt_correct _ _ _ (ex_RInt_correct_2 _ _ _ (ex_RInt_opp _ _ _ If))).
-apply RiemannInt_opp.
+apply Riemann_integrable_const.
 Qed.
 
 Lemma ex_RInt_abs :
@@ -85,13 +73,58 @@ now apply ex_RInt_correct_2.
 Qed.
 
 Lemma RInt_scal :
-  forall f l a b, ex_RInt f a b ->
+  forall f l a b,
   RInt (fun x => l * f x) a b = l * RInt f a b.
 Proof.
-intros f l a b If.
-rewrite (RInt_correct _ _ _ (ex_RInt_correct_2 _ _ _ If)).
-rewrite (RInt_correct _ _ _ (ex_RInt_correct_2 _ _ _ (ex_RInt_scal _ _ _ _ If))).
-apply RiemannInt_scal.
+intros f l.
+(* *)
+assert (forall a b, Lim_seq (RInt_val (fun x : R => l * f x) a b) = l * Lim_seq (RInt_val f a b)).
+intros a b.
+rewrite -Lim_seq_scal.
+apply Lim_seq_ext => n.
+unfold RInt_val.
+replace (l * ((b - a) / 2 ^ n * seq.foldr Rplus 0 (SF_val_ly f a b n)))
+  with ((b - a) / 2 ^ n * (l * seq.foldr Rplus 0 (SF_val_ly f a b n))) by ring.
+apply f_equal.
+unfold SF_val_ly.
+apply eq_sym.
+destruct (RInt_part a b n) as [|h q].
+apply Rmult_0_r.
+simpl.
+revert h.
+induction q => h.
+apply Rmult_0_r.
+simpl.
+rewrite -IHq.
+apply Rmult_plus_distr_l.
+(* *)
+intros a b.
+unfold RInt.
+case Rle_dec => _.
+apply H.
+rewrite H.
+apply eq_sym, Ropp_mult_distr_r_reverse.
+Qed.
+
+Lemma ex_RInt_opp :
+  forall f a b, ex_RInt f a b ->
+  ex_RInt (fun x => - f x) a b.
+Proof.
+intros f a b If.
+apply ex_RInt_correct_3.
+apply Riemann_integrable_opp.
+now apply ex_RInt_correct_2.
+Qed.
+
+Lemma RInt_opp :
+  forall f a b,
+  RInt (fun x => - f x) a b = - RInt f a b.
+Proof.
+intros f a b.
+replace (-RInt f a b) with ((-1) * RInt f a b) by ring.
+rewrite -RInt_scal.
+apply RInt_ext => x _.
+ring.
 Qed.
 
 Lemma ex_RInt_plus :
@@ -431,7 +464,6 @@ now apply ex_RInt_abs.
 intros.
 rewrite <- Rabs_Ropp.
 apply RRle_abs.
-exact If.
 apply RInt_le.
 exact H1.
 exact If.
