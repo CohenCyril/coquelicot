@@ -9,7 +9,7 @@ Lemma ex_RInt_ext :
   ex_RInt f a b -> ex_RInt g a b.
 Proof.
 intros f g a b Heq If.
-apply ex_RInt_correct_3.
+apply ex_RInt_correct_1.
 apply Riemann_integrable_ext with (1 := Heq).
 now apply ex_RInt_correct_2.
 Qed.
@@ -48,7 +48,7 @@ Lemma ex_RInt_const :
   forall v a b, ex_RInt (fun _ => v) a b.
 Proof.
 intros f a b.
-apply ex_RInt_correct_3.
+apply ex_RInt_correct_1.
 apply Riemann_integrable_const.
 Qed.
 
@@ -57,7 +57,7 @@ Lemma ex_RInt_abs :
   ex_RInt (fun x => Rabs (f x)) a b.
 Proof.
 intros f a b If.
-apply ex_RInt_correct_3.
+apply ex_RInt_correct_1.
 apply RiemannInt_P16.
 now apply ex_RInt_correct_2.
 Qed.
@@ -67,7 +67,7 @@ Lemma ex_RInt_scal :
   ex_RInt (fun x => l * f x) a b.
 Proof.
 intros f l a b If.
-apply ex_RInt_correct_3.
+apply ex_RInt_correct_1.
 apply Riemann_integrable_scal.
 now apply ex_RInt_correct_2.
 Qed.
@@ -111,7 +111,7 @@ Lemma ex_RInt_opp :
   ex_RInt (fun x => - f x) a b.
 Proof.
 intros f a b If.
-apply ex_RInt_correct_3.
+apply ex_RInt_correct_1.
 apply Riemann_integrable_opp.
 now apply ex_RInt_correct_2.
 Qed.
@@ -132,7 +132,7 @@ Lemma ex_RInt_plus :
   ex_RInt (fun x => f x + g x) a b.
 Proof.
 intros f g a b If Ig.
-apply ex_RInt_correct_3.
+apply ex_RInt_correct_1.
 apply Riemann_integrable_plus ; now apply ex_RInt_correct_2.
 Qed.
 
@@ -152,7 +152,7 @@ Lemma ex_RInt_minus :
   ex_RInt (fun x => f x - g x) a b.
 Proof.
 intros f g a b If Ig.
-apply ex_RInt_correct_3.
+apply ex_RInt_correct_1.
 apply Riemann_integrable_minus ; now apply ex_RInt_correct_2.
 Qed.
 
@@ -170,20 +170,20 @@ Qed.
 Lemma ex_RInt_add_interval : forall f a b c, ex_RInt f a b -> ex_RInt f b c -> ex_RInt f a c.
 Proof.
 intros f a b c H1 H2.
-apply ex_RInt_correct_3.
+apply ex_RInt_correct_1.
 apply RiemannInt_P24 with b; now apply ex_RInt_correct_2.
 Qed.
 
 Lemma ex_RInt_included1: forall f a b c, ex_RInt f a b -> a <= c <= b -> ex_RInt f a c.
 Proof.
 intros f a b c H1 H2.
-apply ex_RInt_correct_3.
+apply ex_RInt_correct_1.
 apply RiemannInt_P22 with b;[now apply ex_RInt_correct_2|exact H2].
 Qed.
 
 Lemma ex_RInt_included2: forall f a b c, ex_RInt f a b -> a <= c <= b -> ex_RInt f c b.
 intros f a b c H1 H2.
-apply ex_RInt_correct_3.
+apply ex_RInt_correct_1.
 apply RiemannInt_P23 with a;[now apply ex_RInt_correct_2|exact H2].
 Qed.
 
@@ -322,7 +322,7 @@ Lemma derivable_pt_lim_param : forall f a b x,
 Proof.
 intros f a b x H1 H2 H3.
 apply derivable_pt_lim_param_aux; try easy.
-apply ex_RInt_correct_3.
+apply ex_RInt_correct_1.
 clear H1 H3.
 wlog: a b H2 / a < b => H.
 case (total_order_T a b).
@@ -370,7 +370,7 @@ intros t.
 apply RInt_swap.
 apply derivable_pt_lim_opp.
 apply derivable_pt_lim_RInt ; try easy.
-apply ex_RInt_correct_3.
+apply ex_RInt_correct_1.
 apply RiemannInt_P1.
 now apply ex_RInt_correct_2.
 Qed.
@@ -498,7 +498,7 @@ apply Rle_trans with (1:=RInt_abs _ _ _ Hab If).
 apply RInt_le.
 exact Hab.
 now apply ex_RInt_abs.
-apply ex_RInt_correct_3.
+apply ex_RInt_correct_1.
 apply continuity_implies_RiemannInt.
 exact Hab.
 intros x Hx eps Heps.
@@ -523,7 +523,7 @@ Lemma ex_RInt_cont_min_max: forall f a b ainf asup,
    ex_RInt f a b.
 intros f a b ainf asup H1 H2.
 case (Rle_or_lt a b); intros Hab.
-apply ex_RInt_correct_3.
+apply ex_RInt_correct_1.
 apply continuity_implies_RiemannInt.
 exact Hab.
 intros; apply H2.
@@ -534,7 +534,7 @@ apply Rmin_l.
 apply Rle_trans with (1:=proj2 H).
 apply Rmax_r.
 apply ex_RInt_bound.
-apply ex_RInt_correct_3.
+apply ex_RInt_correct_1.
 apply continuity_implies_RiemannInt.
 now left.
 intros; apply H2.
