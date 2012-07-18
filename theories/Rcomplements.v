@@ -510,6 +510,31 @@ Proof.
   apply H.
 Qed.
 
+Lemma Rabs_le_between_min_max : forall x y z, Rmin x y <= z <= Rmax x y -> Rabs (z - y) <= Rabs (x - y).
+Proof.
+ intros x y z H.
+ case (Rle_or_lt x y); intros H'.
+ (* *)
+ rewrite Rmin_left in H;[idtac|exact H'].
+ rewrite Rmax_right in H;[idtac|exact H'].
+ rewrite Rabs_left1.
+ rewrite Rabs_left1.
+ apply Ropp_le_contravar.
+ apply Rplus_le_compat_r.
+ apply H.
+ apply Rle_minus; exact H'.
+ apply Rle_minus; apply H.
+ (* *)
+ rewrite Rmin_right in H;[idtac|left; exact H'].
+ rewrite Rmax_left in H;[idtac|left; exact H'].
+ rewrite Rabs_right.
+ rewrite Rabs_right.
+ apply Rplus_le_compat_r.
+ apply H.
+ apply Rge_minus; left; apply H'.
+ apply Rge_minus, Rle_ge; apply H.
+ Qed.
+
 Lemma Rabs_eq_0 : forall x, Rabs x = 0 -> x = 0.
 Proof.
   intros.
