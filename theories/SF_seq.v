@@ -81,26 +81,6 @@ Proof.
   case: (IHs t) => {IHs} _ IHs.
   apply: IHs => i Hi x0 ; apply: (H (S i)) ; simpl ; apply lt_n_S, Hi.
 Qed.
-(** zip and unzip *)
-Lemma size_unzip1 {T T0 : Type} (s : seq (T * T0)) : size (unzip1 s) = size s.
-Proof.
-  by elim: s => //= _ s0 ->.
-Qed.
-Lemma size_unzip2 {T T0 : Type} (s : seq (T * T0)) : size (unzip2 s) = size s.
-Proof.
-  by elim: s => //= _ s0 ->.
-Qed.
-Lemma zip_cons {S T : Type} hs ht (s : seq S) (t : seq T) :
-  zip (hs :: s) (ht :: t) = (hs,ht) :: zip s t.
-Proof.
-  by [].
-Qed.
-Lemma zip_rcons {S T : Type} (s : seq S) (t : seq T) hs ht : size s = size t ->
-  zip (rcons s hs) (rcons t ht) = rcons (zip s t) (hs,ht).
-Proof.
-  elim: s t hs ht => [| hs s IHs] ; case => //= ht t hs' ht' Hs.
-  rewrite IHs => // ; by apply eq_add_S.
-Qed.
 (* head, last, behead and belast *)
 Lemma head_rcons {T : Type} (x0 : T) (s : seq T) (t : T) : head x0 (rcons s t) = head t s.
 Proof.
@@ -139,6 +119,78 @@ Proof.
   elim: s x0 => [| h s IH] x0 //=.
   by rewrite IH.
 Qed.
+(** zip and unzip *)
+Lemma size_unzip1 {T T0 : Type} (s : seq (T * T0)) : size (unzip1 s) = size s.
+Proof.
+  by elim: s => //= _ s0 ->.
+Qed.
+Lemma size_unzip2 {T T0 : Type} (s : seq (T * T0)) : size (unzip2 s) = size s.
+Proof.
+  by elim: s => //= _ s0 ->.
+Qed.
+Lemma zip_cons {S T : Type} hs ht (s : seq S) (t : seq T) :
+  zip (hs :: s) (ht :: t) = (hs,ht) :: zip s t.
+Proof.
+  by [].
+Qed.
+Lemma zip_rcons {S T : Type} (s : seq S) (t : seq T) hs ht : size s = size t ->
+  zip (rcons s hs) (rcons t ht) = rcons (zip s t) (hs,ht).
+Proof.
+  elim: s t hs ht => [| hs s IHs] ; case => //= ht t hs' ht' Hs.
+  rewrite IHs => // ; by apply eq_add_S.
+Qed.
+Lemma unzip1_rcons {S T : Type} (s : seq (S*T)) (h : S*T) :
+  unzip1 (rcons s h) = rcons (unzip1 s) (fst h).
+Proof.
+  elim: s => [ | h0 s IH] //= ; by rewrite IH.
+Qed.
+Lemma unzip2_rcons {S T : Type} (s : seq (S*T)) (h : S*T) :
+  unzip2 (rcons s h) = rcons (unzip2 s) (snd h).
+Proof.
+  elim: s => [ | h0 s IH] //= ; by rewrite IH.
+Qed.
+Lemma unzip1_belast {S T : Type} (s : seq (S*T)) :
+  unzip1 (belast s) = belast (unzip1 s).
+Proof.
+  elim: s => //= h0 ; case => //= h1 s -> //.
+Qed.
+Lemma unzip2_belast {S T : Type} (s : seq (S*T)) :
+  unzip2 (belast s) = belast (unzip2 s).
+Proof.
+  elim: s => //= h0 ; case => //= h1 s -> //.
+Qed.
+Lemma unzip1_behead {S T : Type} (s : seq (S*T)) :
+  unzip1 (behead s) = behead (unzip1 s).
+Proof.
+  elim: s => //= h0 ; case => //= h1 s -> //.
+Qed.
+Lemma unzip2_behead {S T : Type} (s : seq (S*T)) :
+  unzip2 (behead s) = behead (unzip2 s).
+Proof.
+  elim: s => //= h0 ; case => //= h1 s -> //.
+Qed.
+Lemma unzip1_fst {S T : Type} (s : seq (S*T)) :
+  unzip1 s = map (@fst S T) s.
+Proof.
+  by elim: s.
+Qed.
+Lemma unzip2_snd {S T : Type} (s : seq (S*T)) :
+  unzip2 s = map (@snd S T) s.
+Proof.
+  by elim: s.
+Qed.
+Lemma size_belast' {T : Type} (s : seq T) :
+  size (belast s) = Peano.pred (size s).
+Proof.
+  case: s => /= [ | x0 s] //.
+  by rewrite size_belast.
+Qed.
+Lemma head_map {T1 T2 : Type} (f : T1 -> T2) (s : seq T1) (x : T1) :
+  head (f x) (map f s) = f (head x s).
+Proof.
+  by case: s.
+Qed.
+
 (** * Definitions of SF_seq *)
 
 Record SF_seq {T : Type} := mkSF_seq {SF_h : R ; SF_t : seq (R * T)}.
@@ -844,7 +896,7 @@ Fixpoint seq_cut_down {T : Type} (s : seq (R*T)) (x : R) (x0 : T) : seq (R*T) :=
     | h :: t => 
         match Rle_dec (fst h) x with
           | right _ => [:: (x,snd h)]
-          | left _ => h :: (seq_cut_down t x x0)
+          | left _ => h :: (seq_cut_down t x (snd h))
         end
   end.
 Fixpoint seq_cut_up {T : Type} (s : seq (R*T)) (x : R) (x0 : T) : seq (R*T) :=
@@ -896,33 +948,36 @@ Proof.
   by apply IH with (p := x0) (x0 := snd h1) (h0 := fst h1).
 Qed.
 
-Lemma SF_Chasles (s : SF_seq) x :
-  (SF_h s <= x <= fst (last (SF_h s,0) (SF_t s))) ->
+Lemma SF_Chasles x0 (s : SF_seq) x :
+  (SF_h s <= x <= fst (last (SF_h s,x0) (SF_t s))) ->
   RInt_seq s Rplus Rmult 0 = 
-  (RInt_seq (SF_cut_down 0 s x) Rplus Rmult 0) 
-  + (RInt_seq (SF_cut_up 0 s x) Rplus Rmult 0).
+  (RInt_seq (SF_cut_down x0 s x) Rplus Rmult 0) 
+  + (RInt_seq (SF_cut_up x0 s x) Rplus Rmult 0).
 Proof.
-  apply SF_cons_ind with (s := s) => {s} [ x0 | h s IH] Hx.
-  have Hx0 : x = x0.
-    apply Rle_antisym ; intuition.
-  rewrite Hx0.
-  move: (Rle_refl x0).
+  rename x0 into z0.
+  apply SF_cons_ind with (s := s) => {s} /= [ x0 | [x0 y0] s IH] /= Hx.
+  rewrite (Rle_antisym _ _ (proj1 Hx) (proj2 Hx)).
+  move: (Rle_refl x).
   rewrite /SF_cut_down /SF_cut_up /= ; case: Rle_dec => //= _ _.
   rewrite /RInt_seq /= ; ring.
-  case: (Rle_dec (SF_h s) x) => H.
-  rewrite RInt_seq_cons IH.
-  simpl in Hx ; move: (proj1 Hx).
-  rewrite {2}/SF_cut_down {2}/SF_cut_up /= ; case: Rle_dec => //= _ _.
-  rewrite {1}/SF_cut_down {1}/SF_cut_up /= ; case: Rle_dec => //= _.
-  rewrite ?seq_cut_up_head (seq_cut_up_behead _ _ (snd h) 0).
-  rewrite (RInt_seq_cons h (mkSF_seq (SF_h s) (seq_cut_down _ _ _))) /= Rplus_assoc //.
-  intuition.
-  simpl in H1 |-* .
-  case: (SF_t s) H1 => //.
-  simpl in Hx ; move: (proj1 Hx).
-  rewrite /SF_cut_down /SF_cut_up /= ; case: Rle_dec => //= _ _.
-  case: Rle_dec => //= _.
-  rewrite /RInt_seq /= ; ring.
+  rewrite -!(last_map (@fst R R)) /= -!unzip1_fst in IH, Hx.
+  move: (fun Hx1 => IH (conj Hx1 (proj2 Hx))) => {IH}.
+  rewrite /SF_cut_down /SF_cut_up /= ; 
+  case: (Rle_dec x0 _) (proj1 Hx) => //= Hx0 _.
+  case: (Rle_dec (SF_h s) x) => //= Hx1 IH.
+  move: (IH Hx1) => {IH} IH.
+  rewrite (RInt_seq_cons (x0,y0)) 
+    (RInt_seq_cons (x0,y0) (mkSF_seq (SF_h s) (seq_cut_down (SF_t s) x y0))) 
+    IH /= => {IH}.
+  rewrite Rplus_assoc ; apply f_equal.
+  rewrite ?seq_cut_up_head.
+  move: (proj2 Hx) Hx1 => {Hx} ;
+  apply SF_cons_dec with (s := s) => {s} /= [x1 | [x1 y1] s] //= Hx Hx1.
+  rewrite /RInt_seq /= ; rewrite (Rle_antisym _ _ Hx Hx1) ; ring.
+  by case: Rle_dec.
+  clear IH.
+  rewrite RInt_seq_cons (RInt_seq_cons (x,y0) s) {2}/RInt_seq /=.
+  ring.
 Qed.
 
 

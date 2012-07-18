@@ -2585,46 +2585,7 @@ Definition SF_belast {T : Type} (s : SF_seq) : SF_seq :=
   mkSF_seq (SF_h s) (belast (SF_t s) : seq (R*T)).
 
 
-Lemma unzip1_rcons {S T : Type} (s : seq (S*T)) (h : S*T) :
-  unzip1 (rcons s h) = rcons (unzip1 s) (fst h).
-Proof.
-  elim: s => [ | h0 s IH] //= ; by rewrite IH.
-Qed.
-Lemma unzip2_rcons {S T : Type} (s : seq (S*T)) (h : S*T) :
-  unzip2 (rcons s h) = rcons (unzip2 s) (snd h).
-Proof.
-  elim: s => [ | h0 s IH] //= ; by rewrite IH.
-Qed.
-Lemma unzip1_belast {S T : Type} (s : seq (S*T)) :
-  unzip1 (belast s) = belast (unzip1 s).
-Proof.
-  elim: s => //= h0 ; case => //= h1 s -> //.
-Qed.
-Lemma unzip2_belast {S T : Type} (s : seq (S*T)) :
-  unzip2 (belast s) = belast (unzip2 s).
-Proof.
-  elim: s => //= h0 ; case => //= h1 s -> //.
-Qed.
-Lemma unzip1_behead {S T : Type} (s : seq (S*T)) :
-  unzip1 (behead s) = behead (unzip1 s).
-Proof.
-  elim: s => //= h0 ; case => //= h1 s -> //.
-Qed.
-Lemma unzip2_behead {S T : Type} (s : seq (S*T)) :
-  unzip2 (behead s) = behead (unzip2 s).
-Proof.
-  elim: s => //= h0 ; case => //= h1 s -> //.
-Qed.
-Lemma unzip1_fst {S T : Type} (s : seq (S*T)) :
-  unzip1 s = map (@fst S T) s.
-Proof.
-  by elim: s.
-Qed.
-Lemma unzip2_snd {S T : Type} (s : seq (S*T)) :
-  unzip2 s = map (@snd S T) s.
-Proof.
-  by elim: s.
-Qed.
+
 
 
 Lemma ex_RInt_correct_aux_1 (f : R -> R) (a b : R) :
@@ -2730,16 +2691,20 @@ Proof.
   move: (Rlt_le _ _ Hab) ; case: Rle_dec => //= _ _.
   move: (Rlt_le _ _ Hab) Hphi => {Hab} ;
   elim: lx ly eps a b => [ | lx0 lx IH] ly eps a b Hab.
+(* lx = [::] *)
   case ; intuition ; by [].
   case: lx IH ly => [ | lx1 lx] IH ;
   case => [ {IH} | ly0 ly] Had ; try by (case: Had ; intuition ; by []).
+(* lx = [:: lx0] *)
   exists eps => ptd Hptd Hstep (*Hsort*) Ha Hb /=.
   rewrite pointed_pty2.
   rewrite Rmult_0_r Rminus_0_r Rabs_R0 ; apply Rlt_le, eps.
   by apply ptd_sort.
   rewrite /SF_lx /= Hb Ha ; case: Had => {Ha Hb} _ [Ha [Hb _]] ; move: Ha Hb ;
   rewrite /Rmin /Rmax ; case: Rle_dec => // _ <- <- //.
+(* lx = [:: lx0, lx1 & lx] *)
   set eps2 := pos_div_2 eps ; set eps4 := pos_div_2 eps2.
+(* * alpha1 from IH *)
   case: (IH ly eps4 lx1 b) => {IH}.
   
   replace b with (last 0 (Rlist2seq (RList.cons lx0 (RList.cons lx1 lx)))).
@@ -2749,11 +2714,11 @@ Proof.
   simpl ; apply lt_n_S, lt_O_Sn.
   case: Had => /= _ [_ [Hb _]] ; move: Hb ; rewrite /Rmax ; 
   case: Rle_dec => //= _ ;
-  elim: (lx) lx1 => //= h s IH _ ; apply IH.
+  elim: (lx) lx1  => //= h s IH _ ; apply IH.
   apply (StepFun_P7 Hab Had).
   
   move => /= alpha1 IH.
-
+(* * alpha2 from H *)  
   suff H : forall eps : posreal,
     exists alpha : posreal,
     forall ptd : SF_seq,
@@ -2762,9 +2727,9 @@ Proof.
     SF_h ptd = a ->
     last (SF_h ptd) (SF_lx ptd) = lx1 ->
     Rabs (ly0 * (lx1 - lx0) - Riemann_sum phi ptd) <= eps.
-  
+
   case: (H eps4) => {H} alpha2 H.
-  
+(* * alpha3 from (fmax - fmin) *)
   set fmin1 := foldr Rmin 0 (ly0::Rlist2seq ly).
   set fmin2 := foldr Rmin 0 (map phi (lx0::lx1::Rlist2seq lx)).
   set fmin := Rmin fmin1 fmin2.
@@ -2772,11 +2737,11 @@ Proof.
   set fmax2 := foldr Rmax 0 (map phi (lx0::lx1::Rlist2seq lx)).
   set fmax := Rmax fmax1 fmax2.
   
-  have Ha3 : (0 < eps4 / (Rmax (2*(fmax - fmin)) 1)).
+  have Ha3 : (0 < eps4 / (Rmax (fmax - fmin) 1)).
     apply Rdiv_lt_0_compat ; [ apply eps4 | ].
     apply Rlt_le_trans with (2 := RmaxLess2 _ _), Rlt_0_1.
   set alpha3 := mkposreal _ Ha3.  
-  
+(* * alpha = Rmin (Rmin alpha1 alpha2) alpha3 *)  
   have Halpha : (0 < Rmin (Rmin alpha1 alpha2) alpha3).
     apply Rmin_case_strong => _ ; [ | apply alpha3].
     apply Rmin_case_strong => _ ; [ apply alpha1 | apply alpha2].
@@ -2786,11 +2751,10 @@ Proof.
   suff Hff : forall x, a <= x <= b -> fmin <= phi x <= fmax.
   suff Hab0 : a <= lx1 <= b.
   suff Hab1 : forall i, (i <= SF_size ptd)%nat -> a <= nth 0 (SF_lx ptd) i <= b.
-  
-  rewrite /Riemann_sum (SF_Chasles _ lx1) /=.
+  rewrite /Riemann_sum (SF_Chasles (phi (SF_h ptd)) _ lx1) /=.
   replace (_-_) with 
-    ((ly0 * (lx1 - lx0) - 1* RInt_seq (SF_cut_down 0 (SF_map phi ptd) lx1) Rplus Rmult 0)
-    + (Int_SF ly (RList.cons lx1 lx) - 1* RInt_seq (SF_cut_up 0 (SF_map phi ptd) lx1) Rplus Rmult 0))
+    ((ly0 * (lx1 - lx0) - 1* RInt_seq (SF_cut_down (phi (SF_h ptd)) (SF_map phi ptd) lx1) Rplus Rmult 0)
+    + (Int_SF ly (RList.cons lx1 lx) - 1* RInt_seq (SF_cut_up (phi (SF_h ptd)) (SF_map phi ptd) lx1) Rplus Rmult 0))
     ; [ | by ring_simplify].
   
   rewrite (double_var eps) ;
@@ -2799,7 +2763,7 @@ Proof.
 (* partie [lx0;lx1] *)
 
   replace (SF_cut_down _ _ _: @SF_seq R) with 
-  (SF_map phi (SF_cut_down 0 ptd lx1) : @SF_seq R).
+  (SF_map phi (SF_cut_down (SF_h ptd) ptd lx1) : @SF_seq R).
 
   set ptd_r_last := (SF_last a (SF_cut_down a ptd lx1)).
   set ptd_r_belast := (SF_belast (SF_cut_down a ptd lx1)).
@@ -2813,7 +2777,7 @@ Proof.
   rewrite (double_var (eps/2)) ;
   apply Rle_trans with (1 := Rabs_triang _ _), Rplus_le_compat.
 
-(* appliquer H *)
+(* * appliquer H *)
   apply: H => {IH}.
   
   Focus 3.
@@ -2828,7 +2792,7 @@ Proof.
     //= Hx0 ; case: Rle_dec => //= _.
     by rewrite unzip1_rcons /= last_rcons.
 
-(* ptd_r est une subdivision pointée *)
+(* ** ptd_r est une subdivision pointée *)
 
   revert ptd_r_belast ptd_r Hptd ;
   apply SF_cons_ind with (s := ptd) => /= [ x0 | [x0 y0] s IH ] Hptd.
@@ -2876,19 +2840,6 @@ Proof.
   rewrite ?unzip1_behead ?unzip2_behead /=.
   case: (Rle_dec x0 lx1) => //= Hx0.
   case: (Rle_dec (SF_h s) lx1) => //= Hx1.
-Lemma SF_size_belast {T : Type} (s : @SF_seq T) :
-  SF_size (SF_belast s) = Peano.pred (SF_size s).
-Proof.
-  rewrite /SF_size /SF_belast /=.
-  case: (SF_t s) => {s} /= [ | x0 s] //.
-  by rewrite size_belast.
-Qed.
-Lemma size_belast' {T : Type} (s : seq T) :
-  size (belast s) = Peano.pred (size s).
-Proof.
-  case: s => /= [ | x0 s] //.
-  by rewrite size_belast.
-Qed.
   rewrite size_belast size_belast'.
   move: Hx1 ;
   apply SF_cons_dec with (s := s) => {s Hptd} /= [ x1 | [x1 y1] s] //= Hx1.
@@ -2946,7 +2897,7 @@ Qed.
   apply Rmax_case_strong => _.
   apply Rabs_pos.
   exact: IH.
- 
+(* ** transition 1 *) 
   clear H IH.
   apply Rle_trans with ((fmax - fmin) * alpha3).
   rewrite Rabs_mult ; apply Rmult_le_compat ; try apply Rabs_pos.
@@ -2967,6 +2918,9 @@ Qed.
   rewrite /SF_cut_down /SF_last /= -?(last_map (@snd R R)) -?unzip2_snd.
   case: (Rle_dec x0 lx1) => //= Hx0'.
   case: (Rle_dec x1 lx1) => //= Hx1'.
+  move => _ ; split.
+  apply Rle_trans with (1 := proj1 Hx0), (Hptd O (lt_O_Sn _)).
+  apply Rle_trans with (2 := proj2 Hx1), (Hptd O (lt_O_Sn _)).
   move => _ ; split.
   apply Rle_trans with (1 := proj1 Hx0), (Hptd O (lt_O_Sn _)).
   apply Rle_trans with (2 := proj2 Hx1), (Hptd O (lt_O_Sn _)).
@@ -3030,6 +2984,162 @@ Qed.
   case: (Rle_dec x1 lx1) => //= Hx1'.
   move => _ ; by apply Hab0.
   
+  apply Rle_trans with (2 := Rmin_r (Rmin alpha1 alpha2) alpha3).
+  apply Rle_trans with (2 := Rlt_le _ _ Hstep).
+  rewrite Rabs_right.
+  rewrite -Ha -Hb in Hab0 ;
+  revert ptd_r_belast ptd_r Hptd Hab0 ;
+  apply SF_cons_ind with (s := ptd) => /= [x0 | [x0 y0] s IH] //=.
+  rewrite /SF_cut_down /SF_belast /SF_last /seq_step /= => Hptd Hab0.
+  move: (proj1 Hab0) ; case: Rle_dec => //= _ _.
+  rewrite (Rle_antisym _ _ (proj1 Hab0) (proj2 Hab0)) ; apply Req_le ; by ring.
+  move => Hptd Hab0 ; 
+  move: (fun Hx1 => IH (ptd_cons _ _ Hptd) (conj Hx1 (proj2 Hab0))) => {IH}.
+  rewrite /SF_cut_down /SF_belast /SF_last /=.
+  move: (proj1 Hab0) ; case: (Rle_dec x0 _) => //= _ _.
+  case: (Rle_dec (SF_h s)) => //= Hx1 IH.
+  move: (proj1 Hab0) Hx1 (IH Hx1) => {IH Hab0} Hx0.
+  apply SF_cons_dec with (s := s) => {s Hptd} /= [x1 | [x1 y1] s] /= Hx1.
+  rewrite /seq_step /= => IH.
+  apply Rle_trans with (1 := IH) ; by apply RmaxLess2.
+  case: (Rle_dec (SF_h s)) => //= Hx2 IH.
+  move: Hx2 IH ;
+  apply SF_cons_dec with (s := s) => {s} /= [x2 | [x2 y2] s] /= Hx2.
+  rewrite /seq_step /= => IH.
+  apply Rle_trans with (1 := IH) ; by apply RmaxLess2.
+  case: (Rle_dec (SF_h s)) => //= Hx3 IH.
+  apply Rle_trans with (1 := IH).
+  rewrite /seq_step /= ; by apply RmaxLess2.
+  rewrite /seq_step /=.
+  apply Rle_trans with (2 := RmaxLess2 _ _).
+  apply Rle_trans with (2 := RmaxLess2 _ _).
+  apply Rle_trans with (2 := RmaxLess1 _ _).
+  apply Rle_trans with (2 := Rle_abs _), Rplus_le_compat_r, Rlt_le, Rnot_le_lt, Hx3.
+  rewrite /seq_step /=.
+  apply Rle_trans with (2 := RmaxLess2 _ _).
+  apply Rle_trans with (2 := RmaxLess1 _ _).
+  apply Rle_trans with (2 := Rle_abs _), Rplus_le_compat_r, Rlt_le, Rnot_le_lt, Hx2.
+  rewrite /seq_step /=.
+  apply Rle_trans with (2 := RmaxLess1 _ _).
+  apply Rle_trans with (2 := Rle_abs _), Rplus_le_compat_r, Rlt_le, Rnot_le_lt, Hx1.
+  
+  apply Rle_ge ; rewrite -Rminus_le_0.
+  revert ptd_r_belast ptd_r ; rewrite -Ha in Hab0 ; move: (proj1 Hab0) ;
+  apply SF_cons_ind with (s := ptd) => /= [x0 | [x0 y0] s IH] /= Hx0.
+  rewrite /SF_cut_down /SF_belast /SF_last /=.
+  by case: Rle_dec.
+  move: IH ; rewrite /SF_cut_down /SF_belast /SF_last /=.
+  case: (Rle_dec x0 _) => //= _.
+  case: (Rle_dec (SF_h s) _) => //= Hx1 IH.
+  move: Hx1 (IH Hx1) => {IH}.
+  apply SF_cons_dec with (s := s) => {s} /= [x1 | [x1 y1] s] //= Hx1.
+  case: (Rle_dec (SF_h s) _) => //=.
+  apply SF_cons_dec with (s := s) => {s} /= [x2 | [x2 y2] s] //= Hx2.
+  case: (Rle_dec (SF_h s) _) => //=.
+  
+  rewrite /alpha3 /=.
+  apply (Rmax_case_strong (fmax - fmin)) => H.
+  apply Req_le ; field.
+  apply Rgt_not_eq, Rlt_le_trans with 1 ; by intuition.
+  rewrite -Rdiv_1 -{2}(Rmult_1_l (eps/2/2)).
+  apply Rmult_le_compat_r, H.
+  apply Rlt_le, eps4.
+  
+  clear H IH.
+  rewrite Rplus_assoc -Ropp_minus_distr Rmult_1_l.
+  apply (f_equal (Rminus (ly0 * (lx1 - lx0)))).
+  revert ptd_r_last ptd_r_belast ptd_r ; move: (proj1 Hab0) ; 
+  rewrite -Ha => {Hab0} ;
+  apply SF_cons_ind with (s := ptd) => /= [x0 | [x0 y0] s IH] /= Hx0.
+  rewrite /SF_cut_down /=.
+  case: (Rle_dec x0 lx1) => //= _.
+  rewrite /Riemann_sum /RInt_seq /=.
+  by ring.
+  case: (Rle_dec (SF_h s) lx1) => //= => Hx1.
+  move: Hx1 (IH Hx1) => {IH}.
+  apply SF_cons_dec with (s := s) => {s} [x1 | [x1 y1] s] /= Hx1.
+  rewrite /SF_cut_down /= ; 
+  case: (Rle_dec x0 _) => //= _ ;
+  case: (Rle_dec x1 _) => //= _.
+  rewrite /Riemann_sum /RInt_seq /= => _.
+  ring.
+  rewrite /SF_cut_down /= ; 
+  case: (Rle_dec x0 _) => //= _ ;
+  case: (Rle_dec x1 _) => //= _ ;
+  case: (Rle_dec (SF_h s) _) => //= Hx2.
+  rewrite (SF_map_cons _ (x0,y0) (mkSF_seq x1 ([:: (SF_h s, y1) & seq_cut_down (SF_t s) lx1 y1])))
+    RInt_seq_cons /=.
+  move => <-.
+  rewrite /SF_belast /SF_last /SF_rcons /=.
+  rewrite /Riemann_sum.
+  rewrite (SF_map_cons _ (x0,y0) (mkSF_seq x1 (rcons _ _))) RInt_seq_cons /=.
+  rewrite -!(last_map (@fst R R)) -!unzip1_fst /=.
+  ring.
+  rewrite /Riemann_sum /RInt_seq /= => _ ; ring.
+  rewrite /SF_cut_down /= ; case: Rle_dec => //= _ ; case: Rle_dec => //= _.
+  rewrite /Riemann_sum /RInt_seq /= ; ring.
+  
+  apply SF_cons_ind with (s := ptd) => {IH} /= [x0 | [x0 y0] s IH] /=.
+  rewrite /SF_cut_down /= ; by case: Rle_dec.
+  move: IH.
+  apply SF_cons_dec with (s := s) => {s} /= [x1 | [x1 y1] s] /=.
+  rewrite /SF_cut_down /= ; case: Rle_dec => //= _ ; case: Rle_dec => //=.
+  rewrite /SF_cut_down /=.
+  case: (Rle_dec x0 _) => //= _.
+  case: (Rle_dec x1 _) => //= _.
+  case: (Rle_dec (SF_h s) _) => //= _.
+  rewrite (SF_map_cons _ (x0,y0) (mkSF_seq x1 ((SF_h s, y1) :: seq_cut_down (SF_t s) lx1 y1))) /=.
+  by move => -> /=.
+(* partie [lx1 ; b] *)
+  replace (SF_cut_up _ _ _: @SF_seq R) with 
+  (SF_map phi (SF_cut_up (SF_h ptd) ptd lx1) : @SF_seq R).
+Definition SF_head {T : Type} (x0 : T) (s : @SF_seq T) := (SF_h s, head x0 (SF_ly s)).
+Definition SF_behead {T : Type} (s : @SF_seq T) :=
+  mkSF_seq (head (SF_h s) (unzip1 (SF_t s))) (behead (SF_t s)).
+  set ptd_l_head := (SF_head a (SF_cut_up a ptd lx1)).
+  set ptd_l_behead := (SF_behead (SF_cut_up a ptd lx1)).
+  set ptd_l := SF_cons (lx1, (lx1 + fst (SF_head a ptd_l_behead))/2) ptd_l_behead.
+
+  move: (IH ptd_l) => {IH} IH.
+
+  replace (_-_) with ((Int_SF ly (RList.cons lx1 lx) - 1 * Riemann_sum phi ptd_l) +
+    (phi ((lx1 + fst (SF_head 0 ptd_l_behead))/2) - phi (snd ptd_l_head)) 
+      * (lx1 - fst (SF_head 0 ptd_l_behead))).
+  rewrite (double_var (eps/2)) ;
+  apply Rle_trans with (1 := Rabs_triang _ _), Rplus_le_compat.
+(* * hypothèse d'induction *)
+  apply: IH.
+(* ** ptd_l est une subdivision pointée *)
+  case.
+  move => _ ; move: (proj1 Hab0) ; rewrite -Ha => /= Hx0 ;
+  case: Rle_dec => //= _.
+  rewrite seq_cut_up_head.
+  move: Hx0 ; apply SF_cons_ind with (s := ptd) => /= [x0 | [x0 y0] s IH] /= Hx0.
+  split ; apply Req_le ; field.
+  case: Rle_dec => //= Hx1.
+  move: Hx1 (IH Hx1) => {IH}.
+  apply SF_cons_dec with (s := s) => {s} /= [x1 | [x1 y1] s] //= Hx1.
+  case: Rle_dec => //= Hx2.
+  pattern (SF_h s) at 3 ; replace (SF_h s) with ((SF_h s+SF_h s)/2) by field.
+  pattern lx1 at 1 ; replace lx1 with ((lx1+lx1)/2) by field.
+  apply Rnot_le_lt, Rlt_le in Hx1 ; split ;
+  apply Rmult_le_compat_r ; by intuition.
+  rewrite /ptd_l SF_lx_cons SF_ly_cons SF_size_cons => i Hi ;
+  move: i {Hi} (lt_S_n _ _ Hi).
+  revert ptd_l_behead ptd_l Hptd ;
+  apply SF_cons_ind with (s := ptd) 
+    => /= [x0 | [x0 y0] s IH] /= Hptd.
+  rewrite /SF_cut_up /=.
+  case: Rle_dec => //=.
+  rewrite /SF_size /SF_behead /= => _ i Hi ; by apply lt_n_O in Hi.
+  move: (IH (ptd_cons _ _ Hptd)) => {IH}.
+  rewrite /SF_cut_up /=.
+  case: (Rle_dec x0 _) => //= Hx0.
+  case: (Rle_dec (SF_h s) _) => //= Hx1.
+  rewrite !seq_cut_up_head.
+  move: Hx1 ; apply SF_cons_dec with (s := s) => {s Hptd} /= [x1 | [x1 y1] s] //= Hx1.
+  case: (Rle_dec (SF_h s) _) => //= Hx2.
+(* * seq_step (SF_lx ptd_l) < alpha1 *)
 Admitted.
 
 (** TODO : Corriger ex_RInt avec convergence des sommes *)
