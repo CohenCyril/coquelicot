@@ -828,7 +828,10 @@ apply locally_singleton in Ia.
 now exists d0.
 exact Cfa.
 (* . *)
-apply derivable_pt_lim_RInt_param_bound_comp_aux1; admit. (* à voir *)
+apply derivable_pt_lim_RInt_param_bound_comp_aux1; try easy.
+exists d0; exact Ia.
+destruct Df as (d,Hd).
+admit. (* à voir *)
 (* . *)
 apply is_derive_unique.
 apply is_derive_ext with (fun _ => 0).
