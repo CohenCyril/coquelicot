@@ -831,7 +831,16 @@ exact Cfa.
 apply derivable_pt_lim_RInt_param_bound_comp_aux1; try easy.
 exists d0; exact Ia.
 destruct Df as (d,Hd).
-admit. (* à voir *)
+exists d.
+apply locally_impl with (2:=Hd).
+apply locally_forall.
+intros y H t Ht.
+apply H.
+split.
+apply Rle_trans with (2:=proj1 Ht).
+apply Rmin_l.
+apply Rle_trans with (1:=proj2 Ht).
+apply Rmax_l.
 (* . *)
 apply is_derive_unique.
 apply is_derive_ext with (fun _ => 0).
@@ -862,47 +871,66 @@ exact Hi.
 Qed.
 
 
-(*
+
 Lemma derivable_pt_lim_RInt_param_bound_comp :
-  forall f a b x da db,
+ forall f a b x da db,
   (locally (fun y => ex_RInt (fun t => f y t) (a x) (b x)) x) ->
-  (exists eps:posreal, locally (fun y => ex_RInt (fun t => f y t) (a x -eps) (a x + eps)) x) ->
-  (exists eps:posreal, locally (fun y => ex_RInt (fun t => f y t) (b x -eps) (b x + eps)) x) ->
-  derivable_pt_lim a x da -> derivable_pt_lim b x db ->
+  (exists eps:posreal, locally (fun y => ex_RInt (fun t => f y t) (a x - eps) (a x + eps)) x) ->
+  (exists eps:posreal, locally (fun y => ex_RInt (fun t => f y t) (b x - eps) (b x + eps)) x) ->
+  derivable_pt_lim a x da ->
+  derivable_pt_lim b x db ->
   (exists eps:posreal, locally
     (fun x0 : R =>
        forall t : R,
-        Rmin (a x-eps) (b x -eps) <= t <= Rmax (a x+eps) (b x + eps) ->
+        Rmin (a x-eps) (b x -eps) <= t <= Rmax (a x+eps) (b x+eps) ->
         ex_derive (fun u : R => f u t) x0) x) ->
-  (exists eps:posreal, locally
-   (fun x0 => 
-       forall t : R,
-          Rmin (a x-eps) (b x -eps) <= t <= Rmax (a x+eps) (b x + eps) ->
-         continuity_2d_pt (fun u v : R => Derive (fun z : R => f z v) u) x0 t) x) ->
-   continuity_pt (fun t => f x t) (a x) ->   
-   continuity_pt (fun t => f x t) (b x) ->   
+  (forall t : R,
+          Rmin (a x) (b x) <= t <= Rmax (a x) (b x) ->
+         continuity_2d_pt (fun u v : R => Derive (fun z : R => f z v) u) x t) -> 
+  (locally_2d (fun x' t =>
+         continuity_2d_pt (fun u v : R => Derive (fun z : R => f z v) u) x' t) x (a x)) ->
+ (locally_2d (fun x' t =>
+         continuity_2d_pt (fun u v : R => Derive (fun z : R => f z v) u) x' t) x (b x)) ->
+   continuity_pt (fun t => f x t) (a x) ->   continuity_pt (fun t => f x t) (b x) ->   
+
  derivable_pt_lim (fun x => RInt (fun t => f x t) (a x) (b x)) x
     ((Derive (fun u => RInt (fun t : R => f u t) (a x) (b x)) x)+(-f x (a x))*da+(f x (b x))*db).
 Proof.
-intros f a b x da db If Ifa Ifb Da Db Df Cf Cfa Cfb.
+intros f a b x da db If Ifa Ifb Da Db Df Cf Cfa Cfb Ca Cb.
 apply is_derive_ext with (fun x0 : R => RInt (fun t : R => f x0 t) (a x0) (a x) 
     - RInt (fun t : R => f x0 t) (b x0) (a x)).
 intros t.
-(* apply sym_eq, RInt_Chasles.*)
-admit.
+unfold Rminus; rewrite (RInt_swap _ (b t) (a x)).
+apply sym_eq, RInt_Chasles.
 replace ((Derive (fun u : R => RInt (fun t : R => f u t) (a x) (b x)) x +
    - f x (a x) * da + f x (b x) * db)) with
    ((Derive (fun u : R => RInt (fun t : R => f u t) (a x) (a x)) x + - f x (a x) * da) +
       -(Derive (fun u : R => RInt (fun t : R => f u t) (b x) (a x)) x + -f x (b x)*db)).
 apply derivable_pt_lim_plus.
 (* *)
-apply derivable_pt_lim_RInt_param_bound_comp_aux2.
+apply derivable_pt_lim_RInt_param_bound_comp_aux2; try easy.
+exists (mkposreal _ Rlt_0_1).
+intros y Hy.
+apply ex_RInt_point.
+destruct Df as (e,H).
+exists e.
+apply locally_impl with (2:=H).
+apply locally_forall.
+intros y H' t Ht.
+apply H'.
+split.
+apply Rle_trans with (2:=proj1 Ht).
+apply Rle_trans with (1:=Rmin_l _ _).
+right; apply sym_eq, Rmin_left.
+apply Rplus_le_reg_l with (-a x + e); ring_simplify.
+left; apply cond_pos.
+apply Rle_trans with (1:=proj2 Ht).
+apply Rle_trans with (2:=Rmax_l _ _).
+right; apply Rmax_left.
+apply Rplus_le_reg_l with (-a x); ring_simplify.
+left; apply cond_pos.
+intros t.
 admit.
-easy.
-easy.
-admit.
-admit.
-easy.
 (* *)
 apply derivable_pt_lim_opp.
 apply derivable_pt_lim_RInt_param_bound_comp_aux2.
@@ -912,13 +940,6 @@ easy.
 admit.
 admit.
 easy.
+easy.
 admit.
 Qed.
-*)
-
-
-
-
-
-(* rmq à voir: virer les hyp ex_RInt ? et continuité en a x et b x ? csq de ex_derive *)
-
