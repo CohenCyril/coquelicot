@@ -929,17 +929,53 @@ apply Rle_trans with (2:=Rmax_l _ _).
 right; apply Rmax_left.
 apply Rplus_le_reg_l with (-a x); ring_simplify.
 left; apply cond_pos.
-intros t.
-admit.
+intros t Ht.
+apply Cf.
+split.
+apply Rle_trans with (2:=proj1 Ht).
+apply Rle_trans with (1:=Rmin_l _ _).
+right; apply sym_eq, Rmin_left.
+now right.
+apply Rle_trans with (1:=proj2 Ht).
+apply Rle_trans with (2:=Rmax_l _ _).
+right; apply Rmax_left.
+now right.
 (* *)
 apply derivable_pt_lim_opp.
-apply derivable_pt_lim_RInt_param_bound_comp_aux2.
-admit.
-easy.
-easy.
-admit.
-admit.
-easy.
-easy.
-admit.
+apply derivable_pt_lim_RInt_param_bound_comp_aux2; try easy.
+apply locally_impl with (2:=If).
+apply locally_forall.
+intros y H.
+now apply ex_RInt_bound.
+destruct Df as (e,H).
+exists e.
+apply locally_impl with (2:=H).
+apply locally_forall.
+intros y H' t Ht.
+apply H'.
+split.
+apply Rle_trans with (2:=proj1 Ht).
+rewrite Rmin_comm.
+apply Rle_min_compat_l.
+apply Rplus_le_reg_l with (-a x + e); ring_simplify.
+left; apply cond_pos.
+apply Rle_trans with (1:=proj2 Ht).
+rewrite Rmax_comm.
+apply Rle_max_compat_r.
+apply Rplus_le_reg_l with (-a x); ring_simplify.
+left; apply cond_pos.
+intros t Ht.
+apply Cf.
+rewrite Rmin_comm Rmax_comm.
+exact Ht.
+replace (Derive (fun u : R => RInt (fun t : R => f u t) (a x) (a x)) x ) with 0.
+replace (Derive (fun u : R => RInt (fun t : R => f u t) (b x) (a x)) x) with
+ (-Derive (fun u : R => RInt (fun t : R => f u t) (a x) (b x)) x).
+ring.
+rewrite <- Derive_opp.
+apply Derive_ext.
+intros t; apply RInt_swap.
+rewrite (Derive_ext _ (fun z => 0)).
+apply sym_eq, is_derive_unique, derivable_pt_lim_const.
+intros t; apply RInt_point.
 Qed.
