@@ -14,6 +14,14 @@ apply Riemann_integrable_ext with (1 := Heq).
 now apply ex_RInt_correct_2.
 Qed.
 
+Lemma ex_RInt_point :
+  forall f a, ex_RInt f a a.
+Proof.
+intros f a.
+apply ex_RInt_correct_1.
+apply RiemannInt_P7.
+Qed.
+
 Lemma RInt_point :
   forall f a, RInt f a a = 0.
 Proof.
@@ -50,6 +58,13 @@ Proof.
 intros f a b.
 apply ex_RInt_correct_1.
 apply Riemann_integrable_const.
+Qed.
+
+Lemma RInt_const (a b c : R) :
+  RInt (fun _ => c) a b = c * (b-a).
+Proof.
+rewrite (RInt_correct _ _ _ (Riemann_integrable_const _ _ _)).
+apply RiemannInt_const.
 Qed.
 
 Lemma ex_RInt_abs :
@@ -167,11 +182,25 @@ rewrite (RInt_correct _ _ _ (ex_RInt_correct_2 _ _ _ (ex_RInt_minus _ _ _ _ If I
 apply RiemannInt_minus.
 Qed.
 
-Lemma ex_RInt_add_interval : forall f a b c, ex_RInt f a b -> ex_RInt f b c -> ex_RInt f a c.
+Lemma ex_RInt_Chasles :
+  forall f a b c, ex_RInt f a b -> ex_RInt f b c -> ex_RInt f a c.
 Proof.
 intros f a b c H1 H2.
 apply ex_RInt_correct_1.
 apply RiemannInt_P24 with b; now apply ex_RInt_correct_2.
+Qed.
+
+Lemma RInt_Chasles :
+  forall f a b c,
+  ex_RInt f a b -> ex_RInt f b c ->
+  RInt f a b + RInt f b c = RInt f a c.
+Proof.
+intros f a b c H1 H2.
+apply ex_RInt_correct_2 in H1.
+apply ex_RInt_correct_2 in H2.
+rewrite (RInt_correct _ _ _ H1) (RInt_correct _ _ _ H2).
+rewrite (RInt_correct _ _ _ (RiemannInt_P24 H1 H2)).
+apply RiemannInt_P26.
 Qed.
 
 Lemma ex_RInt_included1: forall f a b c, ex_RInt f a b -> a <= c <= b -> ex_RInt f a c.
@@ -221,8 +250,8 @@ now rewrite Rmin_comm Rmax_comm.
 now rewrite Rmin_comm Rmax_comm.
 apply: locally_impl H3.
 apply locally_forall => y H3.
-now apply ex_RInt_bound.
-now apply ex_RInt_bound.
+now apply ex_RInt_swap.
+now apply ex_RInt_swap.
 (* *)
 rewrite Rmin_left. 2: now apply Rlt_le.
 rewrite Rmax_right. 2: now apply Rlt_le.
@@ -375,6 +404,84 @@ apply RiemannInt_P1.
 now apply ex_RInt_correct_2.
 Qed.
 
+Lemma ex_RInt_inside :
+  forall f a b x e,
+  ex_RInt f (x-e) (x+e) -> Rabs (a-x) <= e -> Rabs (b-x) <= e ->
+  ex_RInt f a b.
+Proof.
+intros f a b x e Hf Ha Hb.
+wlog: a b Ha Hb / (a <= b) => [Hw | Hab].
+case (Rle_or_lt a b); intros H.
+now apply Hw.
+apply ex_RInt_swap.
+apply Hw; try easy.
+now left.
+apply ex_RInt_included1 with (x+e).
+apply ex_RInt_included2 with (x-e).
+exact Hf.
+now apply Rabs_le_between'.
+split.
+exact Hab.
+assert (x-e <= b <= x+e) by now apply Rabs_le_between'.
+apply H.
+Qed.
+
+Lemma RInt_Chasles_bound_comp_l_loc :
+  forall f a b x,
+  locally (fun y => ex_RInt (f y) (a x) b) x ->
+  (exists eps : posreal, locally (fun y => ex_RInt (f y) (a x - eps) (a x + eps)) x) ->
+  continuity_pt a x ->
+  locally (fun x' => RInt (f x') (a x') (a x) + RInt (f x') (a x) b =
+    RInt (f x') (a x') b) x.
+Proof.
+intros f a b x Hab (eps,Hae) Ca.
+move /continuity_pt_locally: Ca => Ca.
+apply: locally_impl (Ca eps).
+apply: locally_impl Hab.
+apply: locally_impl Hae.
+apply locally_forall => y Hae Hab Hy.
+apply RInt_Chasles with (2 := Hab).
+apply ex_RInt_inside with (1 := Hae).
+now apply Rlt_le.
+rewrite /Rminus Rplus_opp_r Rabs_R0.
+apply Rlt_le, cond_pos.
+Qed.
+
+Lemma RInt_Chasles_bound_comp_loc :
+  forall f a b x,
+  locally (fun y => ex_RInt (f y) (a x) (b x)) x ->
+  (exists eps : posreal, locally (fun y => ex_RInt (f y) (a x - eps) (a x + eps)) x) ->
+  (exists eps : posreal, locally (fun y => ex_RInt (f y) (b x - eps) (b x + eps)) x) ->
+  continuity_pt a x ->
+  continuity_pt b x ->
+  locally (fun x' => RInt (f x') (a x') (a x) + RInt (f x') (a x) (b x') =
+    RInt (f x') (a x') (b x')) x.
+Proof.
+intros f a b x Hab (ea,Hae) (eb,Hbe) Ca Cb.
+move /continuity_pt_locally: Ca => Ca.
+move /continuity_pt_locally: Cb => Cb.
+set (e := mkposreal _ (Rmin_stable_in_posreal ea eb)).
+apply: locally_impl (Ca e).
+apply: locally_impl (Cb e).
+apply: locally_impl Hab.
+apply: locally_impl Hae.
+apply: locally_impl Hbe.
+apply locally_forall => y Hbe Hae Hab Hby Hay.
+apply RInt_Chasles.
+apply ex_RInt_inside with (1 := Hae).
+apply Rlt_le.
+apply Rlt_le_trans with (1 := Hay).
+exact: Rmin_l.
+rewrite /Rminus Rplus_opp_r Rabs_R0.
+apply Rlt_le, cond_pos.
+apply ex_RInt_Chasles with (1 := Hab).
+apply ex_RInt_inside with (1 := Hbe).
+rewrite /Rminus Rplus_opp_r Rabs_R0.
+apply Rlt_le, cond_pos.
+apply Rlt_le.
+apply Rlt_le_trans with (1 := Hby).
+exact: Rmin_r.
+Qed.
 
 Lemma derivable_pt_lim_RInt_bound_comp :
   forall f a b da db x,
@@ -388,48 +495,33 @@ Lemma derivable_pt_lim_RInt_bound_comp :
   derivable_pt_lim (fun x => RInt f (a x) (b x)) x (db * f (b x) - da * f (a x)).
 Proof.
 intros f a b da db x Hi Ia Ib Ca Cb Da Db.
-destruct Ia as (d1,H1).
-apply is_derive_ext with (fun x0 => comp (fun y => RInt f y (a x + d1)) a x0 
-  + comp (fun y => RInt f (a x + d1) y) b x0).
+apply is_derive_ext_loc with (fun x0 => comp (fun y => RInt f y (a x)) a x0
+  + comp (fun y => RInt f (a x) y) b x0).
 (* *)
-intros t.
 unfold comp.
-apply sym_eq, RInt_Chasles.
+apply RInt_Chasles_bound_comp_loc.
+now apply locally_forall.
+destruct Ia as (d1,H1).
+exists d1.
+now apply locally_forall.
+destruct Ib as (d2,H2).
+exists d2.
+now apply locally_forall.
+apply derivable_continuous_pt.
+eexists ; eassumption.
+apply derivable_continuous_pt.
+eexists ; eassumption.
+(* *)
 replace (db * f (b x) - da * f (a x)) with (- f(a x) * da + f (b x) * db) by ring.
 apply derivable_pt_lim_plus.
-(* *)
 apply derivable_pt_lim_comp.
 exact Da.
-apply derivable_pt_lim_RInt'.
-apply ex_RInt_included2 with (a x - d1).
-exact H1.
-pattern (a x) at 2 3; rewrite <- (Rplus_0_r (a x)).
-split; apply Rplus_le_compat_l.
-rewrite <- Ropp_0.
-apply Ropp_le_contravar.
-left; apply cond_pos.
-left; apply cond_pos.
-now exists d1.
-exact Ca.
-(* *)
+apply derivable_pt_lim_RInt' ; trivial.
+apply ex_RInt_point.
 apply derivable_pt_lim_comp.
 exact Db.
-apply derivable_pt_lim_RInt.
-apply ex_RInt_add_interval with (a x).
-apply ex_RInt_bound.
-apply ex_RInt_included2 with (a x - d1).
-exact H1.
-pattern (a x) at 2 3; rewrite <- (Rplus_0_r (a x)).
-split; apply Rplus_le_compat_l.
-rewrite <- Ropp_0.
-apply Ropp_le_contravar.
-left; apply cond_pos.
-left; apply cond_pos.
-exact Hi.
-exact Ib.
-exact Cb.
+now apply derivable_pt_lim_RInt.
 Qed.
-
 
 Lemma RInt_le: forall f g a b,
     a <= b ->
@@ -488,7 +580,7 @@ apply Hw.
 intros t Ht; apply H.
 rewrite Rmin_comm Rmax_comm.
 exact Ht.
-apply ex_RInt_bound.
+apply ex_RInt_swap.
 exact If.
 now left.
 (* *)
@@ -516,36 +608,12 @@ now ring_simplify.
 Qed.
 
 
-Lemma ex_RInt_point: forall f a, ex_RInt f a a.
-intros f a.
-apply ex_RInt_correct_1.
-apply RiemannInt_P7.
-Qed.
-
-Lemma ex_RInt_inside: forall f a b x e, ex_RInt f (x-e) (x+e) -> Rabs (a-x) <= e -> Rabs (b-x) <= e -> ex_RInt f a b.
-intros f a b x e Hf Ha Hb.
-wlog: a b Ha Hb / (a <= b) => [Hw | Hab].
-case (Rle_or_lt a b); intros H.
-now apply Hw.
-apply ex_RInt_bound.
-apply Hw; try easy.
-now left.
-apply ex_RInt_included1 with (x+e).
-apply ex_RInt_included2 with (x-e).
-exact Hf.
-now apply Rabs_le_between'.
-split.
-exact Hab.
-assert (x-e <= b <= x+e) by now apply Rabs_le_between'.
-apply H.
-Qed. 
-
 Lemma ex_RInt_cont: forall f a b, (forall x, Rmin a b <= x <= Rmax a b -> continuity_pt f x) -> ex_RInt f a b.
 intros f a b H.
 wlog: a b H / (a <= b) => [Hw | Hab].
 case (Rle_or_lt a b); intros H'.
 now apply Hw.
-apply ex_RInt_bound.
+apply ex_RInt_swap.
 apply Hw; try easy.
 intros x; rewrite Rmin_comm Rmax_comm.
 apply H.
@@ -737,8 +805,13 @@ Lemma derivable_pt_lim_RInt_param_bound_comp_aux2 :
 Proof.
 intros f a b x da Hi (d0,Ia) Da Df Cdf1 Cdf2 Cfa.
 rewrite Rplus_comm.
-apply is_derive_ext with (fun x0 => RInt (fun t : R => f x0 t) (a x0) (a x) + RInt (fun t : R => f x0 t) (a x) b). 
-intros t; apply sym_eq, RInt_Chasles.
+apply is_derive_ext_loc with (fun x0 => RInt (fun t : R => f x0 t) (a x0) (a x) + RInt (fun t : R => f x0 t) (a x) b).
+apply RInt_Chasles_bound_comp_l_loc.
+exact Hi.
+now exists d0.
+apply derivable_continuous_pt.
+eexists.
+apply Da.
 apply derivable_pt_lim_plus.
 (* *)
 replace (- f x (a x) * da) with (0*1+- f x (a x) * da) by ring.
@@ -900,7 +973,7 @@ apply derivable_pt_lim_RInt_param_bound_comp_aux2; try easy.
 apply locally_impl with (2:=If).
 apply locally_forall.
 intros y H.
-now apply ex_RInt_bound.
+now apply ex_RInt_swap.
 destruct Df as (e,H).
 exists e.
 apply locally_impl with (2:=H).
@@ -941,9 +1014,15 @@ Lemma derivable_pt_lim_RInt_param_bound_comp :
     (RInt (fun t : R => Derive (fun u => f u t) x) (a x) (b x)+(-f x (a x))*da+(f x (b x))*db).
 Proof.
 intros f a b x da db If Ifa Ifb Da Db Df Cf Cfa Cfb Ca Cb.
-apply is_derive_ext with (fun x0 : R => RInt (fun t : R => f x0 t) (a x0) (a x) 
+apply is_derive_ext_loc with (fun x0 : R => RInt (fun t : R => f x0 t) (a x0) (a x)
     + RInt (fun t : R => f x0 t) (a x) (b x0)).
-intros t; apply sym_eq, RInt_Chasles.
+apply RInt_Chasles_bound_comp_loc ; trivial.
+apply derivable_continuous_pt.
+eexists.
+apply Da.
+apply derivable_continuous_pt.
+eexists.
+apply Db.
 replace (RInt (fun t : R => Derive (fun u : R => f u t) x) (a x) (b x) +
    - f x (a x) * da + f x (b x) * db) with
    ((RInt (fun t : R => Derive (fun u : R => f u t) x) (a x) (a x) + - f x (a x) * da) +

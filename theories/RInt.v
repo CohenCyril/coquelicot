@@ -2596,9 +2596,11 @@ Definition ex_RInt (f : R -> R) (a b : R) :=
     SF_h ptd = Rmin a b -> last (SF_h ptd) (SF_lx ptd) = Rmax a b ->
     Rabs (I - signe (b-a) * Riemann_sum f ptd) <= eps.
 
-Lemma ex_RInt_bound (f : R -> R) (a b : R) :
+Lemma ex_RInt_swap :
+  forall f a b,
   ex_RInt f a b -> ex_RInt f b a.
 Proof.
+  intros f a b.
   rewrite /ex_RInt ; case => If Hex.
   exists (- If) => eps.
   case: (Hex eps) => {Hex} alpha Hex.
@@ -3720,7 +3722,7 @@ Proof.
     rewrite -(Rbar_sup_seq_rw (RInt_inf f b a)).
     apply Hw.
     exact: Hab.
-    by apply ex_RInt_bound.
+    by apply ex_RInt_swap.
     by apply RInt_inf_bound.
     by apply RInt_sup_bound.
     
@@ -3757,7 +3759,7 @@ Proof.
     case: (Rle_lt_dec a b) => Hab.
     by apply Hw.
     apply Rlt_le in Hab ;
-    apply ex_RInt_bound in Hex ; 
+    apply ex_RInt_swap in Hex ;
     apply RiemannInt_P1 ;
     by apply Hw.
   apply ex_RInt_correct_aux_2 in Hex.    
@@ -3785,17 +3787,6 @@ Lemma RInt_ext (f g : R -> R) (a b : R) :
   (forall x, Rmin a b <= x <= Rmax a b -> f x = g x) -> RInt f a b = RInt g a b.
 Proof.
   move => Hf ; rewrite /RInt /RInt_val.
-Admitted. (** Admitted *) (** Admitted *)
-
-Lemma RInt_const (a b c : R) :
-  RInt (fun _ => c) a b = c * (b-a).
-Proof.
-  rewrite (RInt_correct _ _ _ (Riemann_integrable_const _ _ _))
-          RiemannInt_const //.
-Admitted. (** Admitted *) (** Admitted *)
-Lemma RInt_Chasles (f : R -> R) (a b c : R) :
-  RInt f a c = RInt f a b + RInt f b c.
-Proof.
 Admitted. (** Admitted *) (** Admitted *)
 
 (** * Riemann integral and derivative *)
