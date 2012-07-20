@@ -870,6 +870,52 @@ Qed.
 
 
 
+Lemma derivable_pt_lim_RInt_param_bound_comp_aux3 :
+  forall f a b x db,
+  (locally (fun y => ex_RInt (fun t => f y t) a (b x)) x) ->
+  (exists eps:posreal, locally (fun y => ex_RInt (fun t => f y t) (b x - eps) (b x + eps)) x) ->
+  derivable_pt_lim b x db ->
+  (exists eps:posreal, locally
+    (fun x0 : R =>
+       forall t : R,
+        Rmin a (b x-eps) <= t <= Rmax a (b x+eps) ->
+        ex_derive (fun u : R => f u t) x0) x) ->
+  (forall t : R,
+          Rmin a (b x) <= t <= Rmax a (b x) ->
+         continuity_2d_pt (fun u v : R => Derive (fun z : R => f z v) u) x t) -> 
+  (locally_2d (fun x' t =>
+         continuity_2d_pt (fun u v : R => Derive (fun z : R => f z v) u) x' t) x (b x)) ->
+   continuity_pt (fun t => f x t) (b x) ->   
+
+ derivable_pt_lim (fun x => RInt (fun t => f x t) a (b x)) x
+    (RInt (fun t : R => Derive (fun u => f u t) x) a (b x) +f x (b x)*db).
+Proof.
+intros f a b x db If Ib Db Df Cf1 Cf2 Cfb.
+apply is_derive_ext with (fun x0 => - RInt (fun t : R => f x0 t) (b x0) a).
+intros t; apply RInt_swap.
+replace (RInt (fun t : R => Derive (fun u => f u t) x) a (b x) +f x (b x)*db) with
+      (- ((RInt (fun t : R => Derive (fun u : R => f u t) x) (b x) a) + - f x (b x)*db)).
+apply derivable_pt_lim_opp.
+apply derivable_pt_lim_RInt_param_bound_comp_aux2; try easy.
+apply locally_impl with (2:=If).
+apply locally_forall.
+intros y H.
+now apply ex_RInt_bound.
+destruct Df as (e,H).
+exists e.
+apply locally_impl with (2:=H).
+apply locally_forall.
+intros y H' t Ht.
+apply H'.
+now rewrite Rmin_comm Rmax_comm.
+intros t Ht.
+apply Cf1.
+now rewrite Rmin_comm Rmax_comm.
+rewrite <- RInt_swap.
+ring.
+Qed.
+
+
 Lemma derivable_pt_lim_RInt_param_bound_comp :
  forall f a b x da db,
   (locally (fun y => ex_RInt (fun t => f y t) (a x) (b x)) x) ->
@@ -896,14 +942,12 @@ Lemma derivable_pt_lim_RInt_param_bound_comp :
 Proof.
 intros f a b x da db If Ifa Ifb Da Db Df Cf Cfa Cfb Ca Cb.
 apply is_derive_ext with (fun x0 : R => RInt (fun t : R => f x0 t) (a x0) (a x) 
-    - RInt (fun t : R => f x0 t) (b x0) (a x)).
-intros t.
-unfold Rminus; rewrite (RInt_swap _ (b t) (a x)).
-apply sym_eq, RInt_Chasles.
+    + RInt (fun t : R => f x0 t) (a x) (b x0)).
+intros t; apply sym_eq, RInt_Chasles.
 replace (RInt (fun t : R => Derive (fun u : R => f u t) x) (a x) (b x) +
    - f x (a x) * da + f x (b x) * db) with
    ((RInt (fun t : R => Derive (fun u : R => f u t) x) (a x) (a x) + - f x (a x) * da) +
-      - (RInt (fun t : R => Derive (fun u : R => f u t) x) (b x) (a x) + - f x (b x)*db)).
+      (RInt (fun t : R => Derive (fun u : R => f u t) x) (a x) (b x) + f x (b x)*db)).
 apply derivable_pt_lim_plus.
 (* *)
 apply derivable_pt_lim_RInt_param_bound_comp_aux2; try easy.
@@ -939,12 +983,7 @@ apply Rle_trans with (2:=Rmax_l _ _).
 right; apply Rmax_left.
 now right.
 (* *)
-apply derivable_pt_lim_opp.
-apply derivable_pt_lim_RInt_param_bound_comp_aux2; try easy.
-apply locally_impl with (2:=If).
-apply locally_forall.
-intros y H.
-now apply ex_RInt_bound.
+apply derivable_pt_lim_RInt_param_bound_comp_aux3; try easy.
 destruct Df as (e,H).
 exists e.
 apply locally_impl with (2:=H).
@@ -953,20 +992,13 @@ intros y H' t Ht.
 apply H'.
 split.
 apply Rle_trans with (2:=proj1 Ht).
-rewrite Rmin_comm.
-apply Rle_min_compat_l.
+apply Rle_min_compat_r.
 apply Rplus_le_reg_l with (-a x + e); ring_simplify.
 left; apply cond_pos.
 apply Rle_trans with (1:=proj2 Ht).
-rewrite Rmax_comm.
 apply Rle_max_compat_r.
 apply Rplus_le_reg_l with (-a x); ring_simplify.
 left; apply cond_pos.
-intros t Ht.
-apply Cf.
-rewrite Rmin_comm Rmax_comm.
-exact Ht.
 rewrite RInt_point.
-rewrite <- RInt_swap.
 ring.
 Qed.
