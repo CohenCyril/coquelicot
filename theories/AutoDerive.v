@@ -120,7 +120,9 @@ Inductive domain :=
   | Forall : expr -> expr -> domain -> domain
   | Forone : expr -> domain -> domain
   | Locally : nat -> domain -> domain
-  | ForallWide : nat -> expr -> expr -> domain -> domain.
+  | Locally2 : nat -> nat -> domain -> domain
+  | ForallWide : nat -> expr -> expr -> domain -> domain
+  | SpecialFull : nat -> expr -> expr -> expr -> domain -> domain.
 
 Section DomainInduction.
 
@@ -136,7 +138,9 @@ Hypothesis P_And : forall ld, foldr (fun d acc  => P d /\ acc) True ld -> P (And
 Hypothesis P_Forall : forall e1 e2 d, P d -> P (Forall e1 e2 d).
 Hypothesis P_Forone : forall e d, P d -> P (Forone e d).
 Hypothesis P_Locally : forall n d, P d -> P (Locally n d).
+Hypothesis P_Locally2 : forall m n d, P d -> P (Locally2 m n d).
 Hypothesis P_ForallWide : forall n e1 e2 d, P d -> P (ForallWide n e1 e2 d).
+Hypothesis P_SpecialFull : forall n f e1 e2 d, P d -> P (SpecialFull n f e1 e2 d).
 
 Fixpoint domain_ind' (d : domain) : P d :=
   match d return P d with
@@ -156,7 +160,9 @@ Fixpoint domain_ind' (d : domain) : P d :=
   | Forall e1 e2 d => P_Forall e1 e2 d (domain_ind' d)
   | Forone e d => P_Forone e d (domain_ind' d)
   | Locally n d => P_Locally n d (domain_ind' d)
+  | Locally2 m n d => P_Locally2 m n d (domain_ind' d)
   | ForallWide n e1 e2 d => P_ForallWide n e1 e2 d (domain_ind' d)
+  | SpecialFull n f e1 e2 d => P_SpecialFull n f e1 e2 d (domain_ind' d)
   end.
 
 End DomainInduction.
@@ -258,11 +264,19 @@ Fixpoint interp_domain (l : seq R) (d : domain) : Prop :=
   | Forone e s => interp_domain (interp l e :: l) s
   | Locally n s =>
     locally (fun x => interp_domain (set_nth R0 l n x) s) (nth R0 l n)
+  | Locally2 m n s =>
+    locally_2d (fun x y => interp_domain (set_nth R0 (set_nth R0 l n y) m x) s) (nth R0 l m) (nth R0 l n)
   | ForallWide n e1 e2 s =>
     let a1 := interp l e1 in let a2 := interp l e2 in
     exists d : posreal,
     forall t u, Rmin a1 a2 - d < t < Rmax a1 a2 + d -> Rabs (u - nth R0 l n) < d ->
     interp_domain (t :: set_nth R0 l n u) s
+  | SpecialFull n f e1 e2 s =>
+    let a1 := interp l e1 in let a2 := interp l e2 in
+    locally (fun y => ex_RInt (fun t => interp (t :: set_nth R0 l n y) f) a1 a2) (nth R0 l n) /\
+    (exists eps : posreal, locally (fun y => ex_RInt (fun t => interp (t :: set_nth R0 l n y) f) (a1 - eps) (a1 + eps)) (nth R0 l n)) /\
+    (exists eps : posreal, locally (fun y => ex_RInt (fun t => interp (t :: set_nth R0 l n y) f) (a2 - eps) (a2 + eps)) (nth R0 l n)) /\
+    (exists eps : posreal, locally (fun y => forall t, Rmin a1 a2 - eps <= t <= Rmax a1 a2 + eps -> interp_domain (t :: set_nth R0 l n y) s) (nth 0 l n))
   end.
 
 Fixpoint is_const (e : expr) n : bool :=
@@ -513,10 +527,51 @@ apply IHb => k.
 now rewrite 2!nth_set_nth /= Hl.
 (* *)
 simpl => l1 l2 Hl.
+rewrite 2!Hl.
+apply locally_2d_impl.
+apply locally_2d_forall => u v.
+apply IHb => k.
+rewrite 2!nth_set_nth /=.
+case eqtype.eq_op => //.
+rewrite 2!nth_set_nth /=.
+now case eqtype.eq_op.
+(* *)
+simpl => l1 l2 Hl.
 rewrite Hl 2!(interp_ext _ _ _ Hl).
 intros (d,Hd).
 exists d => t u Ht Hu.
 apply: IHb (Hd t u Ht Hu).
+intros [|k].
+easy.
+now rewrite /= 2!nth_set_nth /= Hl.
+(* *)
+simpl => l1 l2 Hl.
+rewrite Hl 2!(interp_ext _ _ _ Hl).
+intros ((d1,H1)&(c2&d2&H2)&(c3&d3&H3)&(c4&d4&H4)).
+repeat split.
+exists d1 => y Hy.
+apply: ex_RInt_ext (H1 y Hy) => t Ht.
+apply interp_ext.
+intros [|k].
+easy.
+now rewrite /= 2!nth_set_nth /= Hl.
+exists c2.
+exists d2 => y Hy.
+apply: ex_RInt_ext (H2 y Hy) => t Ht.
+apply interp_ext.
+intros [|k].
+easy.
+now rewrite /= 2!nth_set_nth /= Hl.
+exists c3.
+exists d3 => y Hy.
+apply: ex_RInt_ext (H3 y Hy) => t Ht.
+apply interp_ext.
+intros [|k].
+easy.
+now rewrite /= 2!nth_set_nth /= Hl.
+exists c4.
+exists d4 => y Hy t Ht.
+apply: IHb (H4 y Hy t Ht).
 intros [|k].
 easy.
 now rewrite /= 2!nth_set_nth /= Hl.
@@ -648,9 +703,11 @@ Fixpoint D (e : expr) n {struct e} : expr * domain :=
     let '(a3,b3) := D f (S n) in
     match is_const f (S n), is_const e1 n, is_const e2 n with
     | true, true, _ =>
-      (Binary Emult a2 (App f e2), And (b2::(Integrable f e1 e2)::(Forone e2 (Locally 0 (Continuous 0 f)))::nil))
+      (Binary Emult a2 (App f e2),
+       And (b2::(Integrable f e1 e2)::(Forone e2 (Locally 0 (Continuous 0 f)))::nil))
     | true, false, true =>
-      (Unary Eopp (Binary Emult a1 (App f e1)), And (b1::(Integrable f e1 e2)::(Forone e1 (Locally 0 (Continuous 0 f)))::nil))
+      (Unary Eopp (Binary Emult a1 (App f e1)),
+       And (b1::(Integrable f e1 e2)::(Forone e1 (Locally 0 (Continuous 0 f)))::nil))
     | true, false, false =>
       (Binary Eplus (Binary Emult a2 (App f e2)) (Unary Eopp (Binary Emult a1 (App f e1))),
        And (b1::b2::(Integrable f e1 e2)::(Forone e1 (Locally 0 (Continuous 0 f)))::(Forone e2 (Locally 0 (Continuous 0 f)))::nil))
@@ -658,6 +715,18 @@ Fixpoint D (e : expr) n {struct e} : expr * domain :=
       (Int a3 e1 e2,
        And ((ForallWide n e1 e2 b3)::(Locally n (Integrable f e1 e2))::
             (Forall e1 e2 (Continuous2 (S n) 0 a3))::nil))
+    | false, false, false =>
+      (Binary Eplus
+        (Binary Eplus
+          (Binary Emult a2 (App f e2))
+          (Unary Eopp (Binary Emult a1 (App f e1))))
+        (Int a3 e1 e2),
+       And ((Forone e1 (Locally2 (S n) 0 (Continuous2 (S n) 0 a3)))::
+            (Forone e2 (Locally2 (S n) 0 (Continuous2 (S n) 0 a3)))::
+            (Forall e1 e2 (Continuous2 (S n) 0 a3))::
+            b1::(Forone e1 (Locally 0 (Continuous 0 f)))::
+            b2::(Forone e2 (Locally 0 (Continuous 0 f)))::
+            SpecialFull n f e1 e2 b3::nil))
     | _, _, _ => (Cst 0, Never)
 (*
     | _, _, _ =>
@@ -1044,7 +1113,124 @@ generalize (H3' t Ht).
 apply (interp_domain_set_nth (S n) (t :: l)).
 (* . *)
 easy.
+case C3: (is_const e3 n).
+clear IHe3.
+(* . *)
+clear C1 C2.
 easy.
+(* . *)
+clear C1 C2 C3.
+simpl.
+intros (H1&H2&H3&H4&H5&H6&H7&(H8&H9&H10&H11)&_).
+assert (HexD: forall t, Rmin (interp l e2) (interp l e3) <= t <= Rmax (interp l e2) (interp l e3) ->
+  locally_2d (fun u v => is_derive (fun x => interp (v :: set_nth 0 l n x) e1) u (interp (v :: set_nth 0 l n u) a1)) (nth 0 l n) t).
+intros t Ht.
+destruct H11 as (e&d&H11).
+exists (mkposreal _ (Rmin_stable_in_posreal e d)) => /= u v Hu Hv.
+assert (H: Rmin (interp l e2) (interp l e3) - e <= v <= Rmax (interp l e2) (interp l e3) + e).
+apply (Rlt_le_trans _ _ e) in Hv. 2: apply Rmin_l.
+apply Rabs_lt_between' in Hv.
+split.
+apply Rle_trans with (t - e).
+now apply Rplus_le_compat_r.
+now apply Rlt_le.
+apply Rle_trans with (t + e).
+now apply Rlt_le.
+now apply Rplus_le_compat_r.
+apply (Rlt_le_trans _ _ d) in Hu. 2: apply Rmin_r.
+move: (IHe1 _ (H11 u Hu v H)) => {IHe1} /=.
+rewrite nth_set_nth /= eqtype.eq_refl.
+apply is_derive_ext => z.
+now rewrite set_set_nth /= eqtype.eq_refl.
+rewrite Rplus_comm Rmult_comm (Rmult_comm (interp l a2)) -Ropp_mult_distr_l_reverse.
+rewrite [_*_+_]Rplus_comm -Rplus_assoc.
+rewrite -(RInt_ext (fun x => Derive (fun t => interp (x :: set_nth 0 l n t) e1) (nth 0 l n))).
+rewrite -(interp_set_nth (S n) (interp l e2 :: l) e1) -(interp_set_nth (S n) (interp l e3 :: l) e1).
+rewrite -(interp_set_nth n l e2) -(interp_set_nth n l e3) /=.
+apply (derivable_pt_lim_RInt_param_bound_comp (fun x t => interp (t :: set_nth 0 l n x) e1)
+  (fun x => interp (set_nth 0 l n x) e2) (fun x => interp (set_nth 0 l n x) e3)).
+rewrite 2!interp_set_nth.
+exact H8.
+rewrite interp_set_nth.
+exact H9.
+rewrite interp_set_nth.
+exact H10.
+now apply IHe2.
+now apply IHe3.
+rewrite 2!interp_set_nth.
+destruct H11 as (e&d&H11).
+exists e.
+exists d => y Hy t Ht.
+assert (H: Rmin (interp l e2) (interp l e3) - e <= t <= Rmax (interp l e2) (interp l e3) + e).
+now rewrite Rplus_max_distr_r /Rminus Rplus_min_distr_r.
+eexists.
+move: (IHe1 _ (H11 y Hy t H)) => {IHe1} /=.
+rewrite nth_set_nth /= eqtype.eq_refl.
+apply is_derive_ext => z.
+now rewrite set_set_nth eqtype.eq_refl.
+rewrite 2!interp_set_nth.
+intros t Ht.
+apply continuity_2d_pt_ext_loc with (f := fun x y => interp (set_nth 0 (y :: l) (S n) x) a1).
+apply: locally_2d_impl (HexD t Ht).
+apply locally_2d_forall => u v H.
+apply sym_eq.
+now apply is_derive_unique.
+now apply H3.
+rewrite interp_set_nth.
+apply: locally_2d_impl H1.
+specialize (HexD _ (conj (Rmin_l _ _) (Rmax_l _ _))).
+apply: locally_2d_impl_strong HexD.
+apply locally_2d_forall => u v H.
+rewrite nth_set_nth /= eqtype.eq_refl.
+apply continuity_2d_pt_ext_loc.
+apply: locally_2d_impl H.
+apply locally_2d_forall => u' v' H.
+apply sym_eq.
+apply is_derive_unique.
+now rewrite set_set_nth eqtype.eq_refl.
+rewrite interp_set_nth.
+apply: locally_2d_impl H2.
+specialize (HexD _ (conj (Rmin_r _ _) (Rmax_r _ _))).
+apply: locally_2d_impl_strong HexD.
+apply locally_2d_forall => u v H.
+rewrite nth_set_nth /= eqtype.eq_refl.
+apply continuity_2d_pt_ext_loc.
+apply: locally_2d_impl H.
+apply locally_2d_forall => u' v' H.
+apply sym_eq.
+apply is_derive_unique.
+now rewrite set_set_nth eqtype.eq_refl.
+rewrite interp_set_nth.
+apply locally_singleton in H5.
+apply: continuity_pt_ext H5.
+intros t.
+apply sym_eq.
+apply (interp_set_nth (S n) (t :: l)).
+rewrite interp_set_nth.
+apply locally_singleton in H7.
+apply: continuity_pt_ext H7.
+intros t.
+apply sym_eq.
+apply (interp_set_nth (S n) (t :: l)).
+intros t Ht.
+apply is_derive_unique.
+apply (IHe1 (t :: l)).
+destruct H11 as (e,H11).
+apply locally_singleton in H11.
+rewrite -(interp_domain_set_nth (S n)) /=.
+apply H11.
+split.
+apply Rle_trans with (2 := proj1 Ht).
+rewrite -{2}[Rmin _ _]Rplus_0_r -Ropp_0.
+apply Rplus_le_compat_l.
+apply Ropp_le_contravar.
+apply Rlt_le.
+apply cond_pos.
+apply Rle_trans with (1 := proj2 Ht).
+rewrite -{1}[Rmax _ _]Rplus_0_r.
+apply Rplus_le_compat_l.
+apply Rlt_le.
+apply cond_pos.
 Qed.
 
 Fixpoint simplify_domain (d : domain) : domain :=
@@ -1150,7 +1336,13 @@ exact (conj (H1 l H2) (IHld Hb H3)).
 intros n d H1 (H2,H3).
 exact (conj (H1 l H2) (IHld Hb H3)).
 (* . *)
+intros m n d H1 (H2,H3).
+exact (conj (H1 l H2) (IHld Hb H3)).
+(* . *)
 intros n e1 e2 d H1 (H2,H3).
+exact (conj (H1 l H2) (IHld Hb H3)).
+(* . *)
+intros n e1 e2 e3 d H1 (H2,H3).
 exact (conj (H1 l H2) (IHld Hb H3)).
 (* Forall *)
 revert IHd.
