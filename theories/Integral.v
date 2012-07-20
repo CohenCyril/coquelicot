@@ -733,7 +733,7 @@ Lemma derivable_pt_lim_RInt_param_bound_comp_aux2 :
    continuity_pt (fun t => f x t) (a x) ->   
 
  derivable_pt_lim (fun x => RInt (fun t => f x t) (a x) b) x
-    ((Derive (fun u => RInt (fun t : R => f u t) (a x) b) x)+(-f x (a x))*da).
+    (RInt (fun t : R => Derive (fun u => f u t) x) (a x) b+(-f x (a x))*da).
 Proof.
 intros f a b x da Hi (d0,Ia) Da Df Cdf1 Cdf2 Cfa.
 rewrite Rplus_comm.
@@ -850,8 +850,6 @@ apply derivable_pt_lim_const.
 apply derivable_pt_lim_id.
 exact Da.
 (* *)
-apply Derive_correct.
-eexists.
 apply derivable_pt_lim_param.
 destruct Df as (d,Df).
 apply locally_impl with (2:= Df).
@@ -894,7 +892,7 @@ Lemma derivable_pt_lim_RInt_param_bound_comp :
    continuity_pt (fun t => f x t) (a x) ->   continuity_pt (fun t => f x t) (b x) ->   
 
  derivable_pt_lim (fun x => RInt (fun t => f x t) (a x) (b x)) x
-    ((Derive (fun u => RInt (fun t : R => f u t) (a x) (b x)) x)+(-f x (a x))*da+(f x (b x))*db).
+    (RInt (fun t : R => Derive (fun u => f u t) x) (a x) (b x)+(-f x (a x))*da+(f x (b x))*db).
 Proof.
 intros f a b x da db If Ifa Ifb Da Db Df Cf Cfa Cfb Ca Cb.
 apply is_derive_ext with (fun x0 : R => RInt (fun t : R => f x0 t) (a x0) (a x) 
@@ -902,10 +900,10 @@ apply is_derive_ext with (fun x0 : R => RInt (fun t : R => f x0 t) (a x0) (a x)
 intros t.
 unfold Rminus; rewrite (RInt_swap _ (b t) (a x)).
 apply sym_eq, RInt_Chasles.
-replace ((Derive (fun u : R => RInt (fun t : R => f u t) (a x) (b x)) x +
-   - f x (a x) * da + f x (b x) * db)) with
-   ((Derive (fun u : R => RInt (fun t : R => f u t) (a x) (a x)) x + - f x (a x) * da) +
-      -(Derive (fun u : R => RInt (fun t : R => f u t) (b x) (a x)) x + -f x (b x)*db)).
+replace (RInt (fun t : R => Derive (fun u : R => f u t) x) (a x) (b x) +
+   - f x (a x) * da + f x (b x) * db) with
+   ((RInt (fun t : R => Derive (fun u : R => f u t) x) (a x) (a x) + - f x (a x) * da) +
+      - (RInt (fun t : R => Derive (fun u : R => f u t) x) (b x) (a x) + - f x (b x)*db)).
 apply derivable_pt_lim_plus.
 (* *)
 apply derivable_pt_lim_RInt_param_bound_comp_aux2; try easy.
@@ -968,14 +966,7 @@ intros t Ht.
 apply Cf.
 rewrite Rmin_comm Rmax_comm.
 exact Ht.
-replace (Derive (fun u : R => RInt (fun t : R => f u t) (a x) (a x)) x ) with 0.
-replace (Derive (fun u : R => RInt (fun t : R => f u t) (b x) (a x)) x) with
- (-Derive (fun u : R => RInt (fun t : R => f u t) (a x) (b x)) x).
+rewrite RInt_point.
+rewrite <- RInt_swap.
 ring.
-rewrite <- Derive_opp.
-apply Derive_ext.
-intros t; apply RInt_swap.
-rewrite (Derive_ext _ (fun z => 0)).
-apply sym_eq, is_derive_unique, derivable_pt_lim_const.
-intros t; apply RInt_point.
 Qed.
