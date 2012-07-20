@@ -87,12 +87,12 @@ Lemma continuity_implies_ex_Rint: forall f a b,
    (forall x, continuity_pt f x) -> ex_RInt f a b.
 intros f a b H.
 case (Rle_or_lt a b); intros H1.
-apply ex_RInt_correct_3.
+apply ex_RInt_correct_1.
 apply continuity_implies_RiemannInt.
 exact H1.
 intros x _; apply H.
 apply ex_RInt_bound.
-apply ex_RInt_correct_3.
+apply ex_RInt_correct_1.
 apply continuity_implies_RiemannInt.
 left; exact H1.
 intros x _; apply H.
@@ -183,36 +183,32 @@ Proof.
 intros x t.
 unfold gamma.
 auto_derive_2.
-(* . 
 split.
-apply continuity_implies_ex_Rint.
-intros y.
-apply continuity_pt_plus.
-apply continuity_pt_scal.
-admit. (* cont 2D -> 1D avec composition *)
-admit. (* cont 2D -> 1D avec composition *)
-split.
-apply locally_forall.
-intros y z Hz.
-split.
-apply continuity_implies_ex_Rint.
+exists (mkposreal _ Rlt_0_1).
+simpl.
+intros t' u' _ _.
+refine (conj I (conj I (conj _ (conj _ (conj _ I))))).
+apply continuity_implies_ex_Rint => y.
 admit. (* cont 2D -> 1D *)
-split.
-apply locally_forall.
+apply locally_forall => y.
 admit. (* cont 2D -> 1D *)
-split.
-apply locally_forall.
+apply locally_forall => y.
 admit. (* cont 2D -> 1D *)
-easy.
-split.
-apply locally_forall.
-intros y.
-apply continuity_implies_ex_Rint.
-intros z.
-apply derivable_continuous_pt.
-unfold derivable_pt, derivable_pt_abs.
-*)
+refine (conj _ (conj _ I)).
+apply locally_forall => y.
+apply continuity_implies_ex_Rint => z.
+admit. (* ??? *)
+intros t' _.
 admit.
+repeat split.
+exists (mkposreal _ Rlt_0_1).
+intros t' u' _ _.
+refine (conj (conj _ (conj I I)) (conj (conj _ (conj I I)) I)).
+admit.
+admit.
+apply locally_forall => y.
+admit.
+intros t' _.
 admit.
 unfold gamma20.
 ring_simplify.
@@ -231,13 +227,20 @@ admit.
 admit.
 unfold gamma02.
 ring_simplify.
-(* rewrite Rplus_opp_r Rmult_0_r Ropp_0 Rplus_0_r.
-rewrite RInt_point Rmult_0_r Rplus_0_r.
+rewrite Rplus_opp_r Rmult_0_r Ropp_0 Rplus_0_r.
+rewrite Integral.RInt_point Rmult_0_r Rplus_0_r.
 apply Rplus_eq_reg_l with (- f x t).
 field_simplify.
 2: exact Zc.
-rewrite Rmult_1_r.*)
-Abort.
+rewrite Rmult_1_r.
+rewrite /Rdiv Rmult_comm.
+rewrite -Integral.RInt_scal.
+rewrite Rmult_assoc (Rmult_comm _ (/2)) -Rmult_assoc.
+rewrite -Integral.RInt_scal.
+apply RInt_ext => u _.
+unfold Rminus.
+now field.
+Qed.
 
 End Gamma.
 
