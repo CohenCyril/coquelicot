@@ -16,6 +16,17 @@ Definition real (x : Rbar) :=
     | _ => 0
   end.
 
+Definition is_finite (x : Rbar) := Finite (real x) = x.
+Lemma is_finite_correct (x : Rbar) :
+  is_finite x <-> exists y : R, x = Finite y.
+Proof.
+  rewrite /is_finite ;
+  case: x => /= ; split => // H.
+  by exists r.
+  by case: H.
+  by case: H.
+Qed.
+
 (** ** Order *)
 
 Definition Rbar_lt (x y : Rbar) : Prop :=

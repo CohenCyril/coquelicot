@@ -196,14 +196,13 @@ Proof.
  apply H0.
 Qed.
 
-Lemma Rdiv_le_1 : forall r1 r2, 0 < r2 -> (r1 <= r2 <-> r1/r2 <= 1).
+Lemma Rdiv_lt_1 : forall r1 r2, 0 < r2 -> (r1 < r2 <-> r1 / r2 < 1).
 Proof.
   split.
   intros.
   unfold Rdiv.
   rewrite (Rinv_r_sym r2).
-  apply Rmult_le_compat_r.
-  apply Rlt_le.
+  apply Rmult_lt_compat_r.
   apply Rinv_0_lt_compat.
   apply H.
   apply H0.
@@ -211,7 +210,7 @@ Proof.
   apply H.
 
   intros.
-  apply (Rmult_le_reg_l (/r2)).
+  apply (Rmult_lt_reg_l (/r2)).
   apply Rinv_0_lt_compat.
   apply H.
   repeat rewrite (Rmult_comm (/r2)).
@@ -219,6 +218,14 @@ Proof.
   apply H0.
   apply Rgt_not_eq.
   apply H.
+Qed.
+Lemma Rdiv_le_1 : forall r1 r2, 0 < r2 -> (r1 <= r2 <-> r1/r2 <= 1).
+Proof.
+  split ; intro H0 ; destruct H0.
+  left ; rewrite <- Rdiv_lt_1 ; auto.
+  rewrite H0 ; right ; field ; apply Rgt_not_eq, H.
+  left ; rewrite Rdiv_lt_1 ; auto.
+  rewrite <- (Rmult_1_l r2), <- H0 ; right ; field ; apply Rgt_not_eq, H.
 Qed.
 
 Lemma Rmult_minus_distr_r: forall r1 r2 r3 : R, (r1 - r2) * r3 = r1 * r3 - r2 * r3.
@@ -799,3 +806,14 @@ Proof.
   apply RiemannInt_ext.
   intros ; ring.
 Qed.
+
+(** ln *)
+
+Lemma ln_pow x n : 0 < x -> ln (x^n) = INR n * ln x.
+  intro Hx ;
+  induction n as [ | n IH].
+  rewrite pow_O, ln_1 ; simpl ; ring.
+  rewrite S_INR ; simpl ; rewrite ln_mult ; try intuition.
+  rewrite IH ; ring.
+Qed.
+

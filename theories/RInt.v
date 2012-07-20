@@ -2339,17 +2339,7 @@ Qed.
 
 (** * A new Riemann_integrable in Prop *)
 
-Definition ex_RInt (f : R -> R) (a b : R) :=
-  Rbar_inf_seq (RInt_sup f a b) = Rbar_sup_seq (RInt_inf f a b)
-  /\ (Finite (real (Rbar_inf_seq (RInt_sup f a b))) = Rbar_inf_seq (RInt_sup f a b)).
-
-Lemma ex_RInt_bound (f : R -> R) (a b : R) :
-  ex_RInt f a b -> ex_RInt f b a.
-Proof.
-  rewrite /ex_RInt ; case => H H0 ;
-  rewrite (Rbar_inf_seq_rw _ _ (RInt_sup_bound _ _ _)) ;
-  rewrite (Rbar_sup_seq_rw _ _ (RInt_inf_bound _ _ _)) ; by split.
-Qed.
+(*
 
 Lemma ex_RInt_sup (f : R -> R) (a b : R) :
   ex_RInt f a b -> forall n, 
@@ -2474,7 +2464,7 @@ Proof.
   move => i0 Hi0 ; apply (Hrw (S i0)) ; simpl ; intuition.
   move => i ; apply (Hs (S i)).
   move => i ; apply (Hi (S i)).
-Qed.
+Qed. *)
 
 (** * Gourdon's proof *)
 
@@ -2598,6 +2588,28 @@ Definition SF_belast {T : Type} (s : SF_seq) : SF_seq :=
 Definition SF_head {T : Type} (x0 : T) (s : @SF_seq T) := (SF_h s, head x0 (SF_ly s)).
 Definition SF_behead {T : Type} (s : @SF_seq T) :=
   mkSF_seq (head (SF_h s) (unzip1 (SF_t s))) (behead (SF_t s)).
+
+Definition ex_RInt (f : R -> R) (a b : R) :=
+  exists I : R, forall eps : posreal, exists alpha : posreal, 
+    forall (ptd : SF_seq) (H : pointed_subdiv ptd), 
+    seq_step (SF_lx ptd) < alpha -> 
+    SF_h ptd = Rmin a b -> last (SF_h ptd) (SF_lx ptd) = Rmax a b ->
+    Rabs (I - signe (b-a) * Riemann_sum f ptd) <= eps.
+
+Lemma ex_RInt_bound (f : R -> R) (a b : R) :
+  ex_RInt f a b -> ex_RInt f b a.
+Proof.
+  rewrite /ex_RInt ; case => If Hex.
+  exists (- If) => eps.
+  case: (Hex eps) => {Hex} alpha Hex.
+  exists alpha => ptd Hptd Hstep Ha Hb.
+  rewrite Rmin_comm in Ha ; rewrite Rmax_comm in Hb ;
+  move: (Hex ptd Hptd Hstep Ha Hb) => {Hex Hptd Hstep Ha Hb} Hex.
+  replace (_-_) with (-(If - signe (b - a) * Riemann_sum f ptd)) by
+    (rewrite -(Ropp_minus_distr' a b) Ropp_signe ; ring).
+  rewrite Rabs_Ropp ; exact: Hex.
+Qed.
+
 
 Lemma ex_RInt_correct_aux_1 (f : R -> R) (a b : R) :
   forall pr : Riemann_integrable f a b,
@@ -3687,16 +3699,68 @@ Proof.
   by apply IH.
 Qed.
 
-(** TODO : Corriger ex_RInt avec convergence des sommes *)
-
 Lemma ex_RInt_correct_1 (f : R -> R) (a b : R) :
   Riemann_integrable f a b -> ex_RInt f a b.
 Proof.
+  move => pr ; exists (RiemannInt pr) ; apply ex_RInt_correct_aux_1.
+Qed.
+
+Lemma ex_RInt_correct_aux_2 (f : R -> R) (a b : R) :
+  ex_RInt f a b -> 
+    Rbar_inf_seq (RInt_sup f a b) = Rbar_sup_seq (RInt_inf f a b)
+    /\ is_finite (Rbar_inf_seq (RInt_sup f a b)).
+Proof.
+  wlog: a b /(a < b) => [Hw | Hab] Hex.
+    case: (Rle_lt_dec a b) => Hab.
+    case: Hab => Hab.
+    by apply Hw.
+    
+    Focus 2.
+    rewrite -(Rbar_inf_seq_rw (RInt_sup f b a)).
+    rewrite -(Rbar_sup_seq_rw (RInt_inf f b a)).
+    apply Hw.
+    exact: Hab.
+    by apply ex_RInt_bound.
+    by apply RInt_inf_bound.
+    by apply RInt_sup_bound.
+    
+    rewrite Hab.
+    have H : forall n i, nth b (RInt_part b b n) i = b.
+      move => n i ; case: (le_lt_dec (S i) (S (pow2 n))) => Hi.
+      rewrite nth_mkseq.
+      rewrite /Rdiv ; ring.
+      by apply SSR_leq.
+      rewrite nth_default.
+      by [].
+      rewrite size_mkseq ; apply SSR_leq ; by intuition.
+    replace (Rbar_inf_seq (RInt_sup f b b)) with (Finite (f b)).
+    replace (Rbar_sup_seq (RInt_inf f b b)) with (Finite (f b)).
+    rewrite /is_finite ; by intuition.
+    rewrite -(Rbar_sup_seq_rw (fun _ => Finite (f b))).
+    apply sym_equal ; apply Rbar_sup_seq_correct.
+    split => /=.
+    move => _ ; apply Rminus_gt ; ring_simplify ; apply eps.
+    exists O ; apply Rminus_gt ; ring_simplify ; apply eps.
+    move => n ;
+    rewrite /RInt_inf SF_inf_ly ;
+    move: (pow_lt 2 n Rlt_R0_R2) ;
+    move: (H n) => {H} ; 
+    replace (2^n) with (INR (Peano.pred (size (RInt_part b b n)))).
+    elim: (RInt_part b b n) => [ | x0 s IH] Hval /= Hsize.
+    by apply Rlt_irrefl in Hsize.
 Admitted.
 
 Lemma ex_RInt_correct_2 (f : R -> R) (a b : R) :
   ex_RInt f a b -> Riemann_integrable f a b.
 Proof.
+  wlog: a b /(a <= b) => [Hw | Hab ] Hex.
+    case: (Rle_lt_dec a b) => Hab.
+    by apply Hw.
+    apply Rlt_le in Hab ;
+    apply ex_RInt_bound in Hex ; 
+    apply RiemannInt_P1 ;
+    by apply Hw.
+  apply ex_RInt_correct_aux_2 in Hex.    
 Admitted.
 
 
