@@ -292,6 +292,46 @@ Qed.
 
 (** * Rewriting Rmin and Rmax *)
 
+Lemma Rplus_max_distr_l :
+  forall a b c, a + Rmax b c = Rmax (a + b) (a + c).
+Proof.
+intros a b c.
+unfold Rmax.
+case Rle_dec ; intros H ; case Rle_dec ; intros H' ; try easy.
+elim H'.
+apply Rplus_le_compat_l with (1 := H).
+elim H.
+apply Rplus_le_reg_l with (1 := H').
+Qed.
+
+Lemma Rplus_max_distr_r :
+  forall a b c, Rmax b c + a = Rmax (b + a) (c + a).
+Proof.
+intros a b c.
+rewrite <- 3!(Rplus_comm a).
+apply Rplus_max_distr_l.
+Qed.
+
+Lemma Rplus_min_distr_l :
+  forall a b c, a + Rmin b c = Rmin (a + b) (a + c).
+Proof.
+intros a b c.
+unfold Rmin.
+case Rle_dec ; intros H ; case Rle_dec ; intros H' ; try easy.
+elim H'.
+apply Rplus_le_compat_l with (1 := H).
+elim H.
+apply Rplus_le_reg_l with (1 := H').
+Qed.
+
+Lemma Rplus_min_distr_r :
+  forall a b c, Rmin b c + a = Rmin (b + a) (c + a).
+Proof.
+intros a b c.
+rewrite <- 3!(Rplus_comm a).
+apply Rplus_min_distr_l.
+Qed.
+
 Lemma Rmax_le_compat : forall a b c d, a <= b -> c <= d -> Rmax a c <= Rmax b d.
 Proof.
   intros.
