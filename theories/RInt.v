@@ -3783,12 +3783,6 @@ Lemma RInt_correct (f : R -> R) (a b : R) :
 Proof.
 Admitted. (** Admitted *) (** Admitted *)
 
-Lemma RInt_ext (f g : R -> R) (a b : R) :
-  (forall x, Rmin a b <= x <= Rmax a b -> f x = g x) -> RInt f a b = RInt g a b.
-Proof.
-  move => Hf ; rewrite /RInt /RInt_val.
-Admitted. (** Admitted *) (** Admitted *)
-
 (** * Riemann integral and derivative *)
 
 Lemma derivable_pt_lim_RInt (f : R -> R) (a : R) (x : R) :

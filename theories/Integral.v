@@ -52,6 +52,79 @@ elim H'.
 now apply Rlt_le.
 Qed.
 
+Lemma RInt_ext :
+  forall f g a b,
+  (forall x, Rmin a b <= x <= Rmax a b -> f x = g x) ->
+  RInt f a b = RInt g a b.
+Proof.
+intros f g a b.
+wlog H: a b / a <= b.
+intros H Heq.
+destruct (Rle_dec a b) as [Hab|Hab].
+now apply H.
+rewrite -RInt_swap -(RInt_swap g).
+rewrite H //.
+apply Rlt_le.
+now apply Rnot_le_lt.
+now rewrite Rmin_comm Rmax_comm.
+rewrite Rmin_left // Rmax_right //.
+intros Heq.
+unfold RInt.
+destruct (Rle_dec a b) as [Hab|Hab].
+clear H.
+2: easy.
+apply Lim_seq_ext => n.
+rewrite /RInt /RInt_val.
+apply f_equal.
+rewrite /SF_val_ly /=.
+change 0 with (INR 0) at 2 4.
+rewrite -(minus_diag (pow2 n)).
+generalize (le_refl (pow2 n)).
+generalize (pow2 n) at 1 4 6 7 9 11 12.
+elim => [|m IHm].
+easy.
+intros H.
+rewrite minus_Sn_m //.
+simpl.
+rewrite IHm.
+2: now apply le_Sn_le.
+rewrite Heq //.
+rewrite minus_INR //.
+rewrite minus_INR.
+2: now apply le_Sn_le.
+replace (INR m) with (INR m + 1 - 1) by ring.
+rewrite -S_INR.
+rewrite pow2_INR.
+replace ((a + (2 ^ n - INR (S m)) * (b - a) / 2 ^ n + (a + (2 ^ n - (INR (S m) - 1)) * (b - a) / 2 ^ n)) / 2)
+  with (a + (b - a) * ((2 * (2 ^ n - INR (S m)) + 1) / (2 * 2 ^ n))).
+pattern a at 1 ; replace a with (a + (b - a) * 0) by ring.
+pattern b at 4 ; replace b with (a + (b - a) * 1) by ring.
+assert (Hminus: forall x y, x <= y -> 0 <= y - x).
+intros x y Hxy.
+apply Rplus_le_reg_r with x.
+now ring_simplify.
+change (2 * 2 ^ n) with (2 ^ (S n)).
+rewrite -pow2_INR -minus_INR // -(mult_INR 2) -(plus_INR _ 1).
+split ; apply Rplus_le_compat_l ; apply Rmult_le_compat_l.
+now apply Hminus.
+apply Rdiv_le_pos.
+apply pos_INR.
+apply pow_lt, Rlt_R0_R2.
+now apply Hminus.
+apply Rmult_le_reg_r with (2 ^ (S n)).
+apply pow_lt, Rlt_R0_R2.
+rewrite Rmult_assoc Rinv_l.
+rewrite Rmult_1_l Rmult_1_r -pow2_INR.
+apply le_INR.
+simpl pow2.
+clear -H ; omega.
+apply pow_nonzero.
+now apply (IZR_neq 2 0).
+field.
+apply pow_nonzero.
+now apply (IZR_neq 2 0).
+Qed.
+
 Lemma ex_RInt_const :
   forall v a b, ex_RInt (fun _ => v) a b.
 Proof.
