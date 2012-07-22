@@ -91,7 +91,7 @@ apply ex_RInt_correct_1.
 apply continuity_implies_RiemannInt.
 exact H1.
 intros x _; apply H.
-apply ex_RInt_bound.
+apply ex_RInt_swap.
 apply ex_RInt_correct_1.
 apply continuity_implies_RiemannInt.
 left; exact H1.
@@ -213,7 +213,7 @@ admit.
 unfold gamma20.
 ring_simplify.
 apply f_equal.
-apply RInt_ext => z _.
+apply Integral.RInt_ext => z _.
 now rewrite 4!Rmult_1_l.
 Qed.
 
@@ -237,7 +237,7 @@ rewrite /Rdiv Rmult_comm.
 rewrite -Integral.RInt_scal.
 rewrite Rmult_assoc (Rmult_comm _ (/2)) -Rmult_assoc.
 rewrite -Integral.RInt_scal.
-apply RInt_ext => u _.
+apply Integral.RInt_ext => u _.
 unfold Rminus.
 now field.
 Qed.
