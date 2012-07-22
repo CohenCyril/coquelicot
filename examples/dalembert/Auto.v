@@ -183,18 +183,17 @@ Proof.
 intros x t.
 unfold gamma.
 auto_derive_2.
-split.
+repeat split.
 exists (mkposreal _ Rlt_0_1).
 simpl.
 intros t' u' _ _.
-refine (conj I (conj I (conj _ (conj _ (conj _ I))))).
+repeat split.
 apply continuity_implies_ex_Rint => y.
 admit. (* cont 2D -> 1D *)
 apply locally_forall => y.
 admit. (* cont 2D -> 1D *)
 apply locally_forall => y.
 admit. (* cont 2D -> 1D *)
-refine (conj _ (conj _ I)).
 apply locally_forall => y.
 apply continuity_implies_ex_Rint => z.
 admit. (* ??? *)
@@ -203,7 +202,7 @@ admit.
 repeat split.
 exists (mkposreal _ Rlt_0_1).
 intros t' u' _ _.
-refine (conj (conj _ (conj I I)) (conj (conj _ (conj I I)) I)).
+repeat split.
 admit.
 admit.
 apply locally_forall => y.
@@ -211,7 +210,6 @@ admit.
 intros t' _.
 admit.
 unfold gamma20.
-ring_simplify.
 apply f_equal.
 apply Integral.RInt_ext => z _.
 now rewrite 4!Rmult_1_l.
@@ -223,6 +221,72 @@ Proof.
 intros x t.
 unfold gamma.
 auto_derive_2.
+repeat split.
+apply locally_2d_forall => y z.
+admit.
+intros t' _.
+admit.
+apply locally_forall => y.
+admit.
+apply locally_forall => y.
+apply continuity_implies_ex_Rint => z.
+admit.
+exists (mkposreal _ Rlt_0_1).
+simpl.
+apply locally_forall => y.
+apply continuity_implies_ex_Rint => z.
+admit.
+exists (mkposreal _ Rlt_0_1).
+simpl.
+intros t' u' _ _.
+repeat split.
+apply continuity_implies_ex_Rint => y.
+admit.
+apply locally_forall => y.
+admit.
+apply locally_forall => y.
+admit.
+repeat split.
+apply locally_2d_forall => y z.
+admit.
+apply locally_2d_forall => y z.
+admit.
+intros x' _.
+admit.
+apply locally_forall => y.
+admit.
+apply locally_forall => y.
+admit.
+apply locally_forall => y.
+apply continuity_implies_ex_Rint => z.
+admit.
+exists (mkposreal _ Rlt_0_1).
+apply locally_forall => y.
+apply continuity_implies_ex_Rint => z.
+admit.
+exists (mkposreal _ Rlt_0_1).
+apply locally_forall => y.
+apply continuity_implies_ex_Rint => z.
+admit.
+exists (mkposreal _ Rlt_0_1).
+intros t' u' _ _.
+admit.
+apply locally_2d_forall => y z.
+admit.
+intros t' _.
+admit.
+apply locally_forall => y.
+admit.
+apply locally_forall => y.
+apply continuity_implies_ex_Rint => z.
+admit.
+exists (mkposreal _ Rlt_0_1).
+apply locally_forall => y.
+apply continuity_implies_ex_Rint => z.
+admit.
+exists (mkposreal _ Rlt_0_1).
+intros t' u' _ _.
+repeat split.
 admit.
 admit.
 unfold gamma02.
