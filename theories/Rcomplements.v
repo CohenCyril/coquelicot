@@ -582,6 +582,30 @@ Proof.
  apply Rge_minus, Rle_ge; apply H.
  Qed.
 
+Lemma Rabs_le_between_Rmax : forall x m M,
+  m <= x <= M -> Rabs x <= Rmax M (-m).
+Proof.
+  intros x m M Hx.
+  unfold Rabs ; 
+  destruct Rcase_abs as [H|H].
+  apply Rle_trans with (2 := RmaxLess2 _ _).
+  apply Ropp_le_contravar, Hx.
+  apply Rle_trans with (2 := RmaxLess1 _ _).
+  apply Hx.
+Qed.
+
+Lemma Rabs_lt_between_Rmax : forall x m M,
+  m < x < M -> Rabs x < Rmax M (-m).
+Proof.
+  intros x m M Hx.
+  unfold Rabs ; 
+  destruct Rcase_abs as [H|H].
+  apply Rlt_le_trans with (2 := RmaxLess2 _ _).
+  apply Ropp_lt_contravar, Hx.
+  apply Rlt_le_trans with (2 := RmaxLess1 _ _).
+  apply Hx.
+Qed.
+
 Lemma Rabs_eq_0 : forall x, Rabs x = 0 -> x = 0.
 Proof.
   intros.
@@ -857,3 +881,22 @@ Lemma ln_pow x n : 0 < x -> ln (x^n) = INR n * ln x.
   rewrite IH ; ring.
 Qed.
 
+Lemma ln_le x y : 0 < x -> x <= y -> ln x <= ln y.
+Proof.
+  intros Hx Hxy ; destruct Hxy.
+  left ; apply ln_increasing.
+  exact Hx.
+  exact H.
+  rewrite H ; exact (Rle_refl _).
+Qed.
+
+Lemma ln_div x y : 0 < x -> 0 < y -> ln (x / y) = ln x - ln y.
+Proof.
+  intros Hx Hy ; unfold Rdiv.
+  rewrite ln_mult.
+  rewrite ln_Rinv.
+  ring.
+  exact Hy.
+  exact Hx.
+  apply Rinv_0_lt_compat ; exact Hy.
+Qed.

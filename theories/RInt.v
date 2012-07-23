@@ -1,5 +1,6 @@
 Require Import Reals Div2 ConstructiveEpsilon.
 Require Import ssreflect ssrbool eqtype seq.
+Require Import Compactness.
 Require Import Markov Rcomplements Floor Total_sup Sup_seq Lim_seq Derive SF_seq.
 
 
@@ -490,6 +491,10 @@ Qed.
 
 Definition RInt_val (f : R -> R) (a b : R) (n : nat) :=
   ((b-a)/2^n) * foldr Rplus 0 (SF_val_ly f a b n).
+
+Lemma RInt_val_swap (f : R -> R) (a b : R) (n : nat) :
+  RInt_val f a b n = - RInt_val f b a n.
+Admitted.
 
 Lemma RInt_val_correct (f : R -> R) (a b : R) (n : nat) :
   RInt_val f a b n = RiemannInt_SF (sf_SF_val_fun f a b n).
@@ -2594,7 +2599,7 @@ Definition ex_RInt (f : R -> R) (a b : R) :=
     forall (ptd : SF_seq) (H : pointed_subdiv ptd), 
     seq_step (SF_lx ptd) < alpha -> 
     SF_h ptd = Rmin a b -> last (SF_h ptd) (SF_lx ptd) = Rmax a b ->
-    Rabs (I - signe (b-a) * Riemann_sum f ptd) <= eps.
+    Rabs (I - signe (b-a) * Riemann_sum f ptd) < eps.
 
 Lemma ex_RInt_swap :
   forall f a b,
@@ -2612,6 +2617,32 @@ Proof.
   rewrite Rabs_Ropp ; exact: Hex.
 Qed.
 
+Lemma ex_RInt_ub f a b :
+  ex_RInt f a b -> exists M : R, forall t : R,
+    Rmin a b <= t <= Rmax a b -> f t <= M.
+Proof.
+  wlog: a b / (a <= b) => [ Hw | Hab ] Hex.
+    case: (Rle_lt_dec a b) => Hab.
+    by apply Hw.
+    rewrite Rmin_comm Rmax_comm ; 
+    apply Rlt_le in Hab ;
+    apply ex_RInt_swap in Hex ; by apply Hw.
+    case: Hex => If Hex.
+    case: (Hex (mkposreal _ Rlt_0_1)) => {Hex} alpha Hex.
+Admitted.
+Lemma ex_RInt_lb f a b :
+  ex_RInt f a b -> exists M : R, forall t : R,
+    Rmin a b <= t <= Rmax a b -> M <= f t.
+Proof.
+  wlog: a b / (a <= b) => [ Hw | Hab ] Hex.
+    case: (Rle_lt_dec a b) => Hab.
+    by apply Hw.
+    rewrite Rmin_comm Rmax_comm ; 
+    apply Rlt_le in Hab ;
+    apply ex_RInt_swap in Hex ; by apply Hw.
+    case: Hex => If Hex.
+    case: (Hex (mkposreal _ Rlt_0_1)) => {Hex} alpha Hex.
+Admitted.
 
 Lemma ex_RInt_correct_aux_1 (f : R -> R) (a b : R) :
   forall pr : Riemann_integrable f a b,
@@ -3704,52 +3735,49 @@ Qed.
 Lemma ex_RInt_correct_1 (f : R -> R) (a b : R) :
   Riemann_integrable f a b -> ex_RInt f a b.
 Proof.
-  move => pr ; exists (RiemannInt pr) ; apply ex_RInt_correct_aux_1.
+  move => pr ; exists (RiemannInt pr) => eps.
+  set eps2 := pos_div_2 eps ;
+  case: (ex_RInt_correct_aux_1 f a b pr eps2) => alpha Hex.
+  exists alpha ; intros.
+  apply Rle_lt_trans with eps2.
+  by apply Hex.
+  apply Rminus_gt ; simpl ; field_simplify ; 
+  rewrite {2}/Rdiv (Rmult_0_l (/1)) ; apply eps2.
 Qed.
 
 Lemma ex_RInt_correct_aux_2 (f : R -> R) (a b : R) :
-  ex_RInt f a b -> 
-    Rbar_inf_seq (RInt_sup f a b) = Rbar_sup_seq (RInt_inf f a b)
-    /\ is_finite (Rbar_inf_seq (RInt_sup f a b)).
+  forall If, (forall eps : posreal, exists alpha : posreal,
+    forall (ptd : SF_seq) (H : pointed_subdiv ptd) 
+      (Hstep : seq_step (SF_lx ptd) < alpha) 
+      (Ha : SF_h ptd = Rmin a b) (Hb : last (SF_h ptd) (SF_lx ptd) = Rmax a b),
+      Rabs (If - signe (b-a) * Riemann_sum f ptd) < eps)
+      -> is_lim_seq (RInt_val f a b) If.
 Proof.
-  wlog: a b /(a < b) => [Hw | Hab] Hex.
+  wlog: a b /(a < b) => [Hw | Hab] If Hex.
     case: (Rle_lt_dec a b) => Hab.
     case: Hab => Hab.
     by apply Hw.
     
     Focus 2.
-    rewrite -(Rbar_inf_seq_rw (RInt_sup f b a)).
-    rewrite -(Rbar_sup_seq_rw (RInt_inf f b a)).
+    suff H : is_lim_seq (RInt_val f b a) (-If).
+      move => eps ; case: (H eps) => {H} N H ; exists N => n Hn.
+      rewrite RInt_val_swap.
+      replace (- RInt_val f b a n - If) with (- (RInt_val f b a n - - If)) by ring.
+      rewrite Rabs_Ropp ; by apply H.
     apply Hw.
     exact: Hab.
-    by apply ex_RInt_swap.
-    by apply RInt_inf_bound.
-    by apply RInt_sup_bound.
+    move => eps ; case: (Hex eps) => {Hex} alpha Hex ; 
+    exists alpha ; intros.
+    rewrite -(Ropp_minus_distr' a b) Ropp_signe.
+    replace (- If - - signe (b - a) * Riemann_sum f ptd) with
+      (- (If - signe (b - a) * Riemann_sum f ptd)) by ring.
+    rewrite Rabs_Ropp ; apply Hex.
+    exact: H.
+    exact: Hstep.
+    by rewrite Rmin_comm.
+    by rewrite Rmax_comm.
     
-    rewrite Hab.
-    have H : forall n i, nth b (RInt_part b b n) i = b.
-      move => n i ; case: (le_lt_dec (S i) (S (pow2 n))) => Hi.
-      rewrite nth_mkseq.
-      rewrite /Rdiv ; ring.
-      by apply SSR_leq.
-      rewrite nth_default.
-      by [].
-      rewrite size_mkseq ; apply SSR_leq ; by intuition.
-    replace (Rbar_inf_seq (RInt_sup f b b)) with (Finite (f b)).
-    replace (Rbar_sup_seq (RInt_inf f b b)) with (Finite (f b)).
-    rewrite /is_finite ; by intuition.
-    rewrite -(Rbar_sup_seq_rw (fun _ => Finite (f b))).
-    apply sym_equal ; apply Rbar_sup_seq_correct.
-    split => /=.
-    move => _ ; apply Rminus_gt ; ring_simplify ; apply eps.
-    exists O ; apply Rminus_gt ; ring_simplify ; apply eps.
-    move => n ;
-    rewrite /RInt_inf SF_inf_ly ;
-    move: (pow_lt 2 n Rlt_R0_R2) ;
-    move: (H n) => {H} ; 
-    replace (2^n) with (INR (Peano.pred (size (RInt_part b b n)))).
-    elim: (RInt_part b b n) => [ | x0 s IH] Hval /= Hsize.
-    by apply Rlt_irrefl in Hsize.
+    replace If with 0.
 Admitted.
 
 Lemma ex_RInt_correct_2 (f : R -> R) (a b : R) :
@@ -3762,7 +3790,146 @@ Proof.
     apply ex_RInt_swap in Hex ;
     apply RiemannInt_P1 ;
     by apply Hw.
-  apply ex_RInt_correct_aux_2 in Hex.    
+  have : {If : R | forall eps : posreal, exists alpha : posreal,
+    forall (ptd : SF_seq) (H : pointed_subdiv ptd) 
+      (Hstep : seq_step (SF_lx ptd) < alpha) 
+      (Ha : SF_h ptd = Rmin a b) (Hb : last (SF_h ptd) (SF_lx ptd) = Rmax a b),
+      Rabs (If - signe (b-a) * Riemann_sum f ptd) < eps}.
+    exists (Lim_seq (RInt_val f a b)).
+    case: Hex => If Hex.
+    replace (Lim_seq (RInt_val f a b)) with If.
+    exact: Hex.
+    apply sym_equal, is_lim_seq_unique.
+    by apply ex_RInt_correct_aux_2.
+  case => If HIf.
+  set E := fun eps : posreal => 
+    (fun alpha => 0 < alpha <= b-a + 1 /\
+      forall ptd : SF_seq,
+        pointed_subdiv ptd ->
+        seq_step (SF_lx ptd) < alpha ->
+        SF_h ptd = Rmin a b ->
+        last (SF_h ptd) (SF_lx ptd) = Rmax a b ->
+        Rabs (If - signe (b - a) * Riemann_sum f ptd) < eps).
+  have E_bnd : forall eps : posreal, bound (E eps).
+    move => eps ; exists (b-a+1) => x [Hx _] ; by apply Hx.
+  have E_ex : forall eps : posreal, exists x, (E eps x).
+    move => eps ; case: (HIf eps) => {HIf} alpha HIf.
+    exists (Rmin alpha (b-a + 1)) ; split.
+    apply Rmin_case_strong => H.
+    split.
+    by apply alpha.
+    exact: H.
+    split.
+    apply Rplus_le_lt_0_compat.
+    by apply (Rminus_le_0 a b).
+    exact: Rlt_0_1.
+    exact: Rle_refl.
+    intros.
+    apply: HIf.
+    exact: H.
+    move: H0 ; apply Rmin_case_strong.
+    by [].
+    move => Halp Hstep ; by apply Rlt_le_trans with (b-a+1).
+    exact: H1.
+    exact: H2.
+  set alpha := fun eps : posreal => projT1 (completeness (E eps) (E_bnd eps) (E_ex eps)).
+  have Ealpha : forall eps : posreal, (E eps (alpha eps)).
+    revert alpha ; move => /= eps.
+    case: (E_ex eps) => alp H.
+    case: completeness => alpha [ub lub] /= ; split.
+    split.
+    apply Rlt_le_trans with alp.
+    by apply H.
+    by apply ub.
+    apply: lub => x [Hx _] ; by apply Hx.
+    intros.
+    apply Rnot_le_lt ; contradict H1.
+    apply Rle_not_lt.
+    apply: lub => x [Hx1 Hx2].
+    apply Rnot_lt_le ; contradict H1.
+    by apply Rlt_not_le, Hx2.
+  have Hn : forall eps : posreal, {n : nat | (b-a)/2^n < alpha eps}.
+    move => eps.
+    case: (Rle_lt_dec (alpha eps) (b-a)) => H.
+    case: (nfloor_ex ((ln (b-a) - ln (alpha eps))/ln 2)) => [ | n [ _ Hn]].
+    apply Rdiv_le_pos.
+    apply -> Rminus_le_0.
+    apply ln_le.
+    by apply Ealpha.
+    exact: H.
+    apply Rlt_trans with (/2).
+    by apply Rinv_0_lt_compat, Rlt_R0_R2.
+    exact: ln_lt_2.
+    exists (S n).
+    apply Rlt_div in Hn.
+    rewrite -S_INR -ln_pow in Hn.
+    apply Rlt_div.
+    by intuition.
+    apply ln_lt_inv.
+    apply Rlt_le_trans with (2 := H).
+    by apply Ealpha.
+    apply Rmult_lt_0_compat.
+    by apply Ealpha.
+    by intuition.
+    rewrite ln_mult.
+    apply Rminus_gt.
+    apply Rgt_minus in Hn.
+    by replace (ln (alpha eps) + ln (2 ^ S n) - ln (b - a))
+      with (ln (2 ^ S n) - (ln (b - a) - ln (alpha eps))) by ring.
+    by apply Ealpha.
+    by intuition.
+    exact: Rlt_R0_R2.
+    apply Rlt_trans with (/2).
+    by apply Rinv_0_lt_compat, Rlt_R0_R2.
+    exact: ln_lt_2.
+    exists O ; rewrite pow_O /Rdiv Rinv_1 Rmult_1_r ; exact: H.
+
+  move => eps ; set eps2 := pos_div_2 eps ; set eps4 := pos_div_2 eps2.
+  case: (Hn eps4) => {Hn} n Hn.
+  case: (Ealpha eps4) => {HIf} Halpha HIf.
+  
+(* Construire phi *)
+  set phi := sf_SF_val_fun f a b n.
+  exists phi.
+(* Construire psi *)
+  set psi := SF_sup_r (fun t => Rabs (f t - phi t)) a b n.
+  exists psi.
+
+  split.
+  move => t ; rewrite /Rmin /Rmax ; case: Rle_dec => // _ Ht.
+  revert phi psi => /=.
+  rewrite /sf_SF_val_fun /= ; case: Rle_dec => //= _.
+  rewrite SF_sup_fun_rw.
+  case: RInt_part_nat.
+  rename Ht into Ht_ab.
+  case => i [Ht Hi] ; simpl projT1.
+  rewrite /Sup_fct /Lub_Rbar_ne ; 
+  case: ex_lub_Rbar_ne => s.
+  move: (Rlt_le _ _ (Rle_lt_trans _ _ _ (proj1 Ht) (proj2 Ht))).
+  rewrite /Rmin /Rmax ; case: Rle_dec => // _ _.
+  case => ub lub ; simpl projT1.
+  apply Rbar_finite_le.
+  case: s ub lub => [s | | ] ub lub /=.
+  apply ub.
+  exists t ; split.
+  by [].
+  split.
+  by apply Ht.
+  by apply Rlt_le, Ht.
+  case: (ex_RInt_ub f a b Hex) => M HM.
+  case: (ex_RInt_lb f a b Hex) => m Hm.
+  set phi_t := f (a + (2 * INR i + 1) * (b - a) / 2 ^ S n).
+  replace (SF_val_fun _ _ _ _ _) with phi_t.
+  case: (lub (Finite (Rmax (M - phi_t) (phi_t - m)))) => //.
+  move => _ [x [-> Hx]].
+  suff Hx' : a <= x <= b.
+  replace (SF_val_fun _ _ _ _ _) with phi_t.
+  apply Rbar_finite_le.
+  rewrite -(Ropp_minus_distr' _ m).
+  apply Rabs_le_between_Rmax.
+  split ; apply Rplus_le_compat_r.
+  apply Hm ; rewrite /Rmin /Rmax ; case: Rle_dec => //.
+  apply HM ; rewrite /Rmin /Rmax ; case: Rle_dec => //.
 Admitted.
 
 
