@@ -3798,7 +3798,7 @@ Proof.
     by rewrite Rmax_comm.
     
     replace If with 0.
-Admitted.
+Admitted. (** Admitted. *)
 
 Lemma SF_sup_fun_finite f a b n m M :
   (forall t, Rmin a b <= t <= Rmax a b -> m <= f t <= M)
@@ -4038,6 +4038,7 @@ Proof.
   field ; apply Rgt_not_eq ; by intuition.
   exact: Ht_ab.
 (* Partie 2 *)
+(* * SF_lx ptd = RInt_part a b n *)
   have : forall g : R -> R -> R,
     let ptd := SF_seq_f2 g (RInt_part a b n) 0 in
     pointed_subdiv ptd ->
@@ -4113,37 +4114,21 @@ Proof.
   field ; apply Rgt_not_eq ; by intuition.
   move => {HIf} HIf.
   rewrite /Riemann_sum in HIf.
+(* * oublier If *)
   have : forall g1 g2 : R -> R -> R,
-      (forall x y, x <= y -> x <= g1 x y <= y) ->
-      (forall x y, x <= y -> x <= g2 x y <= y) ->
+    let ptd1 := SF_seq_f2 g1 (RInt_part a b n) 0 in
+    let ptd2 := SF_seq_f2 g2 (RInt_part a b n) 0 in
+    pointed_subdiv ptd1 -> pointed_subdiv ptd2 ->
       Rabs
         (RInt_seq (SF_seq_f2 (fun x y => f (g1 x y) - f(g2 x y)) 
           (RInt_part a b n) 0) Rplus Rmult 0) < eps.
-  move => g1 g2 H1 H2.
+  move => g1 g2 ptd1 pdt2 H1 H2.
   replace (RInt_seq _ _ _ _ : R) with 
     (RInt_seq (SF_map f (SF_seq_f2 g1 (RInt_part a b n) 0)) Rplus Rmult 0 -
     RInt_seq (SF_map f (SF_seq_f2 g2 (RInt_part a b n) 0)) Rplus Rmult 0).
   apply HIf.
-  move => i Hi ; rewrite SF_lx_f2 SF_ly_f2.
-  rewrite SF_size_f2 in Hi.
-  replace (head 0 (RInt_part a b n) :: behead (RInt_part a b n))
-    with (RInt_part a b n) by auto.
-  rewrite nth_behead (nth_pairmap 0).
-  apply (H1 (nth 0 (RInt_part a b n) i)).
-  apply (sorted_nth Rle).
-  by apply RInt_part_sort.
-  exact: Hi.
-  apply SSR_leq ; move: Hi ; rewrite size_mkseq ; by intuition.
-  move => i Hi ; rewrite SF_lx_f2 SF_ly_f2.
-  rewrite SF_size_f2 in Hi.
-  replace (head 0 (RInt_part a b n) :: behead (RInt_part a b n))
-    with (RInt_part a b n) by auto.
-  rewrite nth_behead (nth_pairmap 0).
-  apply (H2 (nth 0 (RInt_part a b n) i)).
-  apply (sorted_nth Rle).
-  by apply RInt_part_sort.
-  exact: Hi.
-  apply SSR_leq ; move: Hi ; rewrite size_mkseq ; by intuition.
+  exact: H1.
+  exact: H2.
   rewrite !SF_map_f2.
   elim: (RInt_part a b n) {1 3 5}(0) => /= [ x0 | h0].
   rewrite /RInt_seq /= ; ring.
@@ -4152,13 +4137,15 @@ Proof.
   rewrite !(SF_cons_f2 _ h0) /= ; try by intuition.
   rewrite !RInt_seq_cons /= -IH ; ring.
   move => {HIf} HIf.
+(* * faire rentrer Rabs dans l'intégrale *)
   have : forall g1 g2 : R -> R -> R,
-      (forall x y : R, x <= y -> x <= g1 x y <= y) ->
-      (forall x y : R, x <= y -> x <= g2 x y <= y) ->
-      (RInt_seq
+    let ptd1 := SF_seq_f2 g1 (RInt_part a b n) 0 in
+    let ptd2 := SF_seq_f2 g2 (RInt_part a b n) 0 in
+    pointed_subdiv ptd1 -> pointed_subdiv ptd2 ->
+      RInt_seq
       (SF_seq_f2 (fun x y : R => Rabs (f (g1 x y) - f (g2 x y)))
-      (RInt_part a b n) 0) Rplus Rmult 0) < eps.
-  move => g1 g2 H1 H2.
+      (RInt_part a b n) 0) Rplus Rmult 0 < eps.
+  move => g1 g2 ptd1 ptd2 H1 H2.
   set h1 := fun x y => match Rle_dec (f (g1 x y)) (f (g2 x y)) with
     | left _ => g2 x y | right _ => g1 x y end.
   set h2 := fun x y => match Rle_dec (f (g1 x y)) (f (g2 x y)) with
@@ -4172,12 +4159,30 @@ Proof.
     (SF_seq_f2 (fun x y : R => f (h1 x y) - f (h2 x y)) (RInt_part a b n) 0)
     Rplus Rmult 0)).
   apply HIf.
-    move => x y Hyx ; rewrite /h1 ; case: Rle_dec => _.
-    by apply H2.
-    by apply H1.
-    move => x y Hyx ; rewrite /h2 ; case: Rle_dec => _.
-    by apply H1.
-    by apply H2.
+    revert ptd1 ptd2 H1 H2.
+    elim: (RInt_part a b n) (0) => [z /= _ _ | x0].
+    move => i ; rewrite /SF_size /= => Hi ; by apply lt_n_O in Hi.
+    case => [ | x1 t] /= IH z H1 H2.
+    move => i ; rewrite /SF_size /= => Hi ; by apply lt_n_O in Hi.
+    move: H1 H2 ; rewrite !(SF_cons_f2 _ x0) /= ; try by intuition.
+    move => H1 H2 ; case => [ | i] /= Hi.
+    rewrite /h1 ; case: Rle_dec => //= _.
+    apply (H2 O (lt_O_Sn _)).
+    apply (H1 O (lt_O_Sn _)).
+    apply (IH x0 (ptd_cons _ _ H1) (ptd_cons _ _ H2)).
+    apply lt_S_n, Hi.
+    revert ptd1 ptd2 H1 H2.
+    elim: (RInt_part a b n) (0) => [z /= _ _ | x0].
+    move => i ; rewrite /SF_size /= => Hi ; by apply lt_n_O in Hi.
+    case => [ | x1 t] /= IH z H1 H2.
+    move => i ; rewrite /SF_size /= => Hi ; by apply lt_n_O in Hi.
+    move: H1 H2 ; rewrite !(SF_cons_f2 _ x0) /= ; try by intuition.
+    move => H1 H2 ; case => [ | i] /= Hi.
+    rewrite /h2 ; case: Rle_dec => //= _.
+    apply (H1 O (lt_O_Sn _)).
+    apply (H2 O (lt_O_Sn _)).
+    apply (IH x0 (ptd_cons _ _ H1) (ptd_cons _ _ H2)).
+    apply lt_S_n, Hi.
   elim: (RInt_part a b n) (RInt_part_sort a b n Hab) {2}(0) => [Hsort x0 | x0].
   rewrite /RInt_seq /= ; exact: Rle_refl.
   case => [ | x1 t] IH Hsort z.
@@ -4207,12 +4212,144 @@ Proof.
   by apply Rgt_ge, Rgt_minus, Rnot_le_lt.
   by apply IH.
   move => {HIf} HIf.
+(* * phi (g x y) = f (h x y) *)
   have : forall g : R -> R -> R,
-    (forall x y : R, x <= y -> x <= g x y <= y) ->
+    (forall x y i, (i < size (RInt_part a b n))%nat -> 
+      g x y <> nth 0 (RInt_part a b n) i) ->
+    let ptd := SF_seq_f2 g (RInt_part a b n) 0 in
+    pointed_subdiv ptd ->
     RInt_seq
     (SF_seq_f2 (fun x y : R => Rabs (f (g x y) - phi (g x y)))
     (RInt_part a b n) 0) Rplus Rmult 0 < eps.
-  move => g1 H1.
+  move => g1 Hg1 ptd1 H1.
+  rewrite /phi /sf_SF_val_fun ; case: Rle_dec => //= _.
+  move: (RInt_part_nat a b n) => Hp.
+  set h := fun t => match Rle_dec a t with
+    | right _ => t
+    | left Ha => match Rle_dec t b with
+      | right _ => t
+      | left Hb => match Hp t (conj Ha Hb) with
+        | inleft H => (a + (2 * INR (projT1 H) + 1) * (b - a) / 2 ^ S n)
+        | inright _ => (a + (2 ^ S n - 1) * (b - a) / 2 ^ S n)
+      end
+    end
+  end.
+  set g2 := fun x y => h (g1 x y).
+  set ptd2 := SF_seq_f2 g2 (RInt_part a b n) 0.
+  have H2 : pointed_subdiv ptd2.
+    move => i ; move: (H1 i) => {H1}.
+    rewrite !SF_lx_f2 !SF_ly_f2 !SF_size_f2 size_mkseq.
+    replace (head 0 (RInt_part a b n) :: behead (RInt_part a b n))
+      with (RInt_part a b n) by auto.
+    move => H1 Hi ; move: (H1 Hi) => {H1}.
+    simpl in Hi.
+    rewrite !nth_behead !(nth_pairmap 0).
+    replace (nth 0 (0 :: RInt_part a b n) (S i)) with
+      (nth 0 (RInt_part a b n) i) by auto.
+    rewrite /g2 /h => {h g2 ptd2 ptd1} H1.
+    case: Rle_dec => Ha.
+    case: Rle_dec => Hb.
+    case: Hp => [ [j [Ht Hj]] | Ht] ; simpl projT1.
+    suff Hij : j = i.
+    rewrite Hij in Ht, Hj |- * => {j Hij}.
+    rewrite !nth_mkseq.
+    rewrite S_INR.
+    split ; simpl ; apply Rminus_le_0 ; field_simplify.
+    rewrite -Rdiv_1 ; apply Rdiv_le_pos.
+    rewrite Rplus_comm -Rminus_le_0 ; exact: Hab.
+    apply Rmult_lt_0_compat ; by intuition.
+    apply Rgt_not_eq ; by intuition.
+    rewrite -Rdiv_1 ; apply Rdiv_le_pos.
+    rewrite Rplus_comm -Rminus_le_0 ; exact: Hab.
+    apply Rmult_lt_0_compat ; by intuition.
+    apply Rgt_not_eq ; by intuition.
+    apply SSR_leq ; rewrite size_mkseq in Hi, Hj ; by intuition.
+    apply SSR_leq ; rewrite size_mkseq in Hi, Hj ; by intuition.
+    apply le_antisym ; apply not_lt.
+    have Hij : nth 0 (RInt_part a b n) j < nth 0 (RInt_part a b n) (S i).
+      apply Rle_lt_trans with 
+        (g1 (nth 0 (RInt_part a b n) i) (nth 0 (RInt_part a b n) (S i))).
+      by apply Ht.
+      case: (proj2 H1) => {H1} H1.
+      exact: H1.
+      contradict H1 ; apply (Hg1 _ _ (S i)).
+      rewrite size_mkseq ; by apply lt_n_S.
+    contradict Hij.
+    apply Rle_not_lt, sorted_incr.
+    apply RInt_part_sort, Hab.
+    by [].
+    by intuition.
+    move: (Rle_lt_trans _ _ _ (proj1 H1) (proj2 Ht)) => Hij.
+    contradict Hij.
+    apply Rle_not_lt, sorted_incr.
+    apply RInt_part_sort, Hab.
+    by [].
+    rewrite size_mkseq ; by intuition.
+    suff : i = (pow2 n - 1)%nat.
+    move => ->.
+    rewrite !nth_mkseq.
+    rewrite S_INR.
+    rewrite minus_INR.
+    rewrite pow2_INR.
+    split ; simpl ; apply Rminus_le_0 ; field_simplify.
+    rewrite -Rdiv_1 ; apply Rdiv_le_pos.
+    rewrite Rplus_comm -Rminus_le_0 ; exact: Hab.
+    apply Rmult_lt_0_compat ; by intuition.
+    apply Rgt_not_eq ; by intuition.
+    rewrite -Rdiv_1 ; apply Rdiv_le_pos.
+    rewrite Rplus_comm -Rminus_le_0 ; exact: Hab.
+    apply Rmult_lt_0_compat ; by intuition.
+    apply Rgt_not_eq ; by intuition.
+    apply INR_le ; rewrite pow2_INR /= ; apply pow_R1_Rle.
+    rewrite -{1}(Rplus_0_l 1) ; apply Rplus_le_compat_r, Rle_0_1.
+    apply SSR_leq ; by intuition.
+    apply SSR_leq ; by intuition.
+    apply le_antisym ; apply not_lt.
+    have Hij : nth 0 (RInt_part a b n) i < nth 0 (RInt_part a b n) (pow2 n).
+      apply Rle_lt_trans with 
+        (g1 (nth 0 (RInt_part a b n) i) (nth 0 (RInt_part a b n) (S i))).
+      by apply H1.
+      case: (proj2 Ht) => {Ht} Ht.
+      exact: Ht.
+      contradict Ht ; apply Hg1.
+      rewrite size_mkseq ; by apply lt_n_Sn.
+    contradict Hij.
+    apply Rle_not_lt, sorted_incr.
+    apply RInt_part_sort, Hab.
+    by intuition.
+    rewrite size_mkseq ; by intuition.
+    have Hij : nth 0 (RInt_part a b n) (pow2 n - 1) < nth 0 (RInt_part a b n) (S i).
+      apply Rle_lt_trans with 
+        (g1 (nth 0 (RInt_part a b n) i) (nth 0 (RInt_part a b n) (S i))).
+      by apply Ht.
+      case: (proj2 H1) => {H1} H1.
+      exact: H1.
+      contradict H1 ; apply Hg1.
+      rewrite size_mkseq ; by intuition.
+    contradict Hij.
+    apply Rle_not_lt, sorted_incr.
+    apply RInt_part_sort, Hab.
+    by [].
+    rewrite size_mkseq ; by intuition.
+    exact: H1.
+    exact: H1.
+    apply SSR_leq ; rewrite size_mkseq ; by intuition.
+    apply SSR_leq ; rewrite size_mkseq ; by intuition.
+    move: (HIf g1 g2 H1 H2).
+    replace (SF_seq_f2 (fun x y : R => Rabs (f (g1 x y) - SF_val_fun f a b n (g1 x y)))
+     (RInt_part a b n) 0) with
+     (SF_seq_f2 (fun x y : R => Rabs (f (g1 x y) - f (g2 x y)))
+     (RInt_part a b n) 0).
+    by [].
+    have : forall t, a <= t <= b -> SF_val_fun f a b n t = f (h t).
+      move => t Ht.
+      rewrite /h SF_val_fun_rw.
+      case: Ht => Ha Hb.
+      case: Rle_dec => // Ha'.
+      case: Rle_dec => // Hb'.
+      case: RInt_part_nat => [ [i [Ht Hi]] | Ht] ; 
+      case: Hp {h g2 ptd2 H2} => [ [j [Ht' Hj]] | Ht'] ; simpl projT1.
+      apply (f_equal (fun i => f (a + (2 * INR i + 1) * (b - a) / 2 ^ S n))).
 Admitted.
 
 
