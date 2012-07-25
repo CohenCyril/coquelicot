@@ -4233,6 +4233,7 @@ Lemma RInt_correct (f : R -> R) (a b : R) :
 Proof.
 Admitted. (** Admitted *) (** Admitted *)
 
+
 (** * Riemann integral and derivative *)
 
 Lemma derivable_pt_lim_RInt (f : R -> R) (a : R) (x : R) :
@@ -4242,9 +4243,5 @@ Proof.
   move => Iax Iloc Cx e He ; set eps := mkposreal e He.
 Admitted. (** Admitted *) (** Admitted. *)
 
-Lemma RInt_Derive (f : R -> R) (a b : R) (eps : posreal) :
-  (forall x, Rmin a b - eps <= x <= Rmax a b + eps -> ex_derive f x) ->
-  continuity_pt (Derive f) a -> continuity_pt (Derive f) b ->
-  RInt (Derive f) a b = f b - f a.
-Proof.
-Admitted. (** Admitted. *)
+
+

@@ -289,6 +289,222 @@ apply ex_RInt_correct_1.
 apply RiemannInt_P23 with a;[now apply ex_RInt_correct_2|exact H2].
 Qed.
 
+Lemma RInt_le: forall f g a b,
+    a <= b ->
+   ex_RInt f a b ->  ex_RInt g a b -> 
+   (forall x,  a <= x <= b -> f x <= g x) ->
+   RInt f a b <= RInt g a b.
+intros f g a b H1 If Ig H2.
+assert (Riemann_integrable f a b).
+now apply ex_RInt_correct_2.
+assert (Riemann_integrable g a b).
+now apply ex_RInt_correct_2.
+rewrite (RInt_correct _ _ _ X)(RInt_correct _ _ _ X0).
+apply RiemannInt_P19.
+exact H1.
+intros; apply H2.
+split; left; apply H.
+Qed.
+
+
+Lemma RInt_abs: forall f a b,
+   a <= b -> ex_RInt f a b ->
+   Rabs (RInt f a b) <= RInt (fun t => Rabs (f t)) a b.
+intros f a b H1 If.
+unfold Rabs at 1.
+case (Rcase_abs (RInt f a b)); intros Y.
+rewrite <- RInt_opp.
+apply RInt_le.
+exact H1.
+now apply ex_RInt_opp.
+now apply ex_RInt_abs.
+intros.
+rewrite <- Rabs_Ropp.
+apply RRle_abs.
+apply RInt_le.
+exact H1.
+exact If.
+now apply ex_RInt_abs.
+intros.
+apply RRle_abs.
+Qed.
+
+Lemma RInt_le_const: forall f a b M,
+  ex_RInt f a b ->
+  (forall t, Rmin a b <= t <= Rmax a b -> Rabs (f t) <= M) ->
+  Rabs (RInt f a b) <= Rabs (b-a) * M.
+intros f a b M If H.
+wlog: a b H If / (a <= b) => [Hw | Hab] .
+(* *)
+case (Rle_or_lt a b); intros Hab.
+now apply Hw.
+rewrite <- RInt_swap.
+replace (b-a) with (-(a-b)) by ring.
+rewrite 2! Rabs_Ropp.
+apply Hw.
+intros t Ht; apply H.
+rewrite Rmin_comm Rmax_comm.
+exact Ht.
+apply ex_RInt_swap.
+exact If.
+now left.
+(* *)
+rewrite (Rabs_right (b-a)).
+rewrite Rmult_comm; rewrite <- RInt_const.
+apply Rle_trans with (1:=RInt_abs _ _ _ Hab If).
+apply RInt_le.
+exact Hab.
+now apply ex_RInt_abs.
+apply ex_RInt_correct_1.
+apply continuity_implies_RiemannInt.
+exact Hab.
+intros x Hx eps Heps.
+exists 1; split.
+apply Rlt_0_1.
+intros.
+unfold dist; simpl; unfold R_dist; simpl.
+rewrite /Rminus Rplus_opp_r Rabs_R0.
+exact Heps.
+intros x Hx; apply H.
+rewrite (Rmin_left _ _ Hab).
+now rewrite Rmax_right.
+apply Rle_ge, Rplus_le_reg_l with a.
+now ring_simplify.
+Qed.
+
+
+
+Lemma continuity_RInt: forall f a b,
+  ex_RInt f a b ->
+  (exists eps:posreal, ex_RInt f (b-eps) (b+eps)) ->
+  continuity_pt f b ->
+  continuity_pt (fun x : R => RInt f a x) b.
+Proof.
+intros f a b If (eps,Ifb) Cfb e He.
+destruct (Cfb 1 Rlt_0_1) as (d,(Hd1,Hd2)).
+unfold dist in *; simpl in *; unfold R_dist in *.
+assert (0 < Rabs (f b)+1).
+apply Rlt_le_trans with (0+1).
+rewrite Rplus_0_l; apply Rlt_0_1.
+apply Rplus_le_compat_r, Rabs_pos.
+exists (Rmin d (Rmin eps (e/(Rabs (f b)+1)))) ; split.
+apply Rlt_gt, Rmin_pos.
+exact Hd1.
+apply Rmin_pos.
+apply cond_pos.
+now apply Rdiv_lt_0_compat.
+intros x (Hx1,Hx2).
+assert (ex_RInt f b x).
+case (Rle_or_lt b x); intros Y.
+apply ex_RInt_included1 with (b+eps).
+apply ex_RInt_included2 with (b-eps).
+exact Ifb.
+split; apply Rplus_le_reg_l with (-b); ring_simplify.
+left; apply Ropp_lt_gt_0_contravar, Rlt_gt, cond_pos.
+left; apply cond_pos.
+split.
+exact Y.
+assert (b - eps < x < b+eps).
+apply Rabs_lt_between'.
+apply Rlt_le_trans with (1:=Hx2).
+apply Rle_trans with (1:=Rmin_r _ _).
+apply Rmin_l.
+left; apply H0.
+apply ex_RInt_swap.
+apply ex_RInt_included1 with (b+eps).
+apply ex_RInt_included2 with (b-eps).
+exact Ifb.
+apply Rabs_le_between'.
+left; apply Rlt_le_trans with (1:=Hx2).
+apply Rle_trans with (1:=Rmin_r _ _).
+apply Rmin_l.
+split.
+left; exact Y.
+apply Rplus_le_reg_l with (-b); ring_simplify.
+left; apply cond_pos.
+unfold Rminus; rewrite RInt_swap Rplus_comm.
+rewrite RInt_Chasles.
+apply Rle_lt_trans with (Rabs (x-b)*(Rabs (f b) + 1)).
+apply RInt_le_const.
+exact H0.
+intros t Ht.
+apply Rplus_le_reg_r with (-Rabs (f b)).
+apply Rle_trans with (1:=Rabs_triang_inv _ _).
+ring_simplify.
+case (Req_dec b t); intros Hbt.
+unfold Rminus; rewrite Hbt Rplus_opp_r Rabs_R0.
+left; apply Rlt_0_1.
+left; apply Hd2.
+split.
+now split.
+apply Rle_lt_trans with (Rabs (x-b)).
+apply Rabs_le_between_min_max.
+now rewrite Rmin_comm Rmax_comm.
+apply Rlt_le_trans with (1:=Hx2).
+apply Rmin_l.
+apply Rlt_le_trans with ((e / (Rabs (f b) + 1)) * (Rabs (f b) + 1)).
+apply Rmult_lt_compat_r.
+exact H.
+apply Rlt_le_trans with (1:=Hx2).
+apply Rle_trans with (1:=Rmin_r _ _).
+apply Rmin_r.
+unfold Rdiv; rewrite Rmult_assoc Rinv_l.
+rewrite Rmult_1_r.
+apply Rle_refl.
+apply Rgt_not_eq, Rlt_gt, H.
+now apply ex_RInt_swap.
+now apply ex_RInt_Chasles with b.
+Qed.
+
+
+
+Lemma RInt_Derive (f : R -> R) (a b : R) (eps:posreal):
+  (forall x, Rmin a b -eps <= x <= Rmax a b +eps -> ex_derive f x) -> 
+  (forall x, Rmin a b <= x <= Rmax a b  -> continuity_pt (Derive f) x) ->
+  RInt (Derive f) a b = f b - f a.
+Proof.
+intros Df Cdf.
+wlog: a b Df Cdf /(a <= b) => [Hw | Hab ].
+case (Rle_or_lt a b); intros Hab.
+now apply Hw.
+rewrite <- RInt_swap.
+rewrite Hw; try easy.
+ring.
+now rewrite Rmin_comm Rmax_comm.
+now rewrite Rmin_comm Rmax_comm.
+now left.
+destruct (fn_eq_Derive_eq f (fun x => RInt (Derive f) a x) a b).
+admit.
+admit.
+apply continuity_RInt.
+apply ex_RInt_point.
+admit.
+admit.
+apply continuity_RInt.
+admit.
+admit.
+admit.
+admit.
+intros x Hx.
+eexists.
+apply derivable_pt_lim_RInt.
+admit.
+admit.
+admit.
+intros x Hx.
+apply sym_eq, is_derive_unique.
+apply derivable_pt_lim_RInt.
+admit.
+admit.
+admit.
+rewrite (H a).
+rewrite (H b).
+rewrite RInt_point.
+ring.
+admit.
+admit.
+Qed.
+
 
 Lemma derivable_pt_lim_param_aux : forall f a b x,
   locally (fun x => forall t, Rmin a b <= t <= Rmax a b -> ex_derive (fun u => f u t) x) x ->
@@ -596,89 +812,10 @@ exact Db.
 now apply derivable_pt_lim_RInt.
 Qed.
 
-Lemma RInt_le: forall f g a b,
-    a <= b ->
-   ex_RInt f a b ->  ex_RInt g a b -> 
-   (forall x,  a <= x <= b -> f x <= g x) ->
-   RInt f a b <= RInt g a b.
-intros f g a b H1 If Ig H2.
-assert (Riemann_integrable f a b).
-now apply ex_RInt_correct_2.
-assert (Riemann_integrable g a b).
-now apply ex_RInt_correct_2.
-rewrite (RInt_correct _ _ _ X)(RInt_correct _ _ _ X0).
-apply RiemannInt_P19.
-exact H1.
-intros; apply H2.
-split; left; apply H.
-Qed.
 
 
 
-Lemma RInt_abs: forall f a b,
-   a <= b -> ex_RInt f a b ->
-   Rabs (RInt f a b) <= RInt (fun t => Rabs (f t)) a b.
-intros f a b H1 If.
-unfold Rabs at 1.
-case (Rcase_abs (RInt f a b)); intros Y.
-rewrite <- RInt_opp.
-apply RInt_le.
-exact H1.
-now apply ex_RInt_opp.
-now apply ex_RInt_abs.
-intros.
-rewrite <- Rabs_Ropp.
-apply RRle_abs.
-apply RInt_le.
-exact H1.
-exact If.
-now apply ex_RInt_abs.
-intros.
-apply RRle_abs.
-Qed.
 
-Lemma RInt_le_const: forall f a b M,
-  ex_RInt f a b ->
-  (forall t, Rmin a b <= t <= Rmax a b -> Rabs (f t) <= M) ->
-  Rabs (RInt f a b) <= Rabs (b-a) * M.
-intros f a b M If H.
-wlog: a b H If / (a <= b) => [Hw | Hab] .
-(* *)
-case (Rle_or_lt a b); intros Hab.
-now apply Hw.
-rewrite <- RInt_swap.
-replace (b-a) with (-(a-b)) by ring.
-rewrite 2! Rabs_Ropp.
-apply Hw.
-intros t Ht; apply H.
-rewrite Rmin_comm Rmax_comm.
-exact Ht.
-apply ex_RInt_swap.
-exact If.
-now left.
-(* *)
-rewrite (Rabs_right (b-a)).
-rewrite Rmult_comm; rewrite <- RInt_const.
-apply Rle_trans with (1:=RInt_abs _ _ _ Hab If).
-apply RInt_le.
-exact Hab.
-now apply ex_RInt_abs.
-apply ex_RInt_correct_1.
-apply continuity_implies_RiemannInt.
-exact Hab.
-intros x Hx eps Heps.
-exists 1; split.
-apply Rlt_0_1.
-intros.
-unfold dist; simpl; unfold R_dist; simpl.
-rewrite /Rminus Rplus_opp_r Rabs_R0.
-exact Heps.
-intros x Hx; apply H.
-rewrite (Rmin_left _ _ Hab).
-now rewrite Rmax_right.
-apply Rle_ge, Rplus_le_reg_l with a.
-now ring_simplify.
-Qed.
 
 
 Lemma ex_RInt_cont: forall f a b, (forall x, Rmin a b <= x <= Rmax a b -> continuity_pt f x) -> ex_RInt f a b.

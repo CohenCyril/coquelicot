@@ -407,3 +407,51 @@ simpl.
 intros x.
 now apply Derive_ext.
 Qed.
+
+
+Lemma fn_eq_Derive_eq: forall f g a b, 
+  continuity_pt f a -> continuity_pt f b ->
+  continuity_pt g a -> continuity_pt g b -> 
+  (forall x, a < x < b -> ex_derive f x) ->
+  (forall x, a < x < b -> ex_derive g x) ->
+  (forall x, a < x < b -> Derive f x = Derive g x) ->
+  exists C, forall x, a <= x <= b -> f x = g x + C.
+intros f g a b Cfa Cfb Cga Cgb Df Dg Hfg.
+pose (h := fun x => f x - g x).
+assert  (pr : forall x : R, a < x < b -> derivable_pt h x).
+intros x Hx.
+apply derivable_pt_minus.
+eexists; apply Derive_correct, Df, Hx.
+eexists; apply Derive_correct, Dg, Hx.
+assert (constant_D_eq h (fun x : R => a <= x <= b) (h a)).
+apply null_derivative_loc with (pr:=pr).
+intros x Hx.
+case (proj1 Hx).
+case (proj2 Hx).
+intros Y1 Y2.
+apply derivable_continuous_pt.
+apply pr; now split.
+intros Y1 _; rewrite Y1.
+apply continuity_pt_minus.
+apply Cfb.
+apply Cgb.
+intros Y1; rewrite <- Y1.
+apply continuity_pt_minus.
+apply Cfa.
+apply Cga.
+intros x P.
+apply trans_eq with (Derive h x).
+apply sym_eq, is_derive_unique.
+now destruct (pr x P).
+rewrite Derive_minus.
+rewrite (Hfg _ P).
+ring.
+apply Df; split; apply P.
+apply Dg; split; apply P.
+unfold constant_D_eq in H.
+exists (h a).
+intros x Hx.
+rewrite <- (H _ Hx).
+unfold h; ring.
+Qed.
+
