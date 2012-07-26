@@ -460,7 +460,7 @@ Qed.
 
 Lemma RInt_Derive (f : R -> R) (a b : R) (eps:posreal):
   (forall x, Rmin a b -eps <= x <= Rmax a b +eps -> ex_derive f x) -> 
-  (forall x, Rmin a b <= x <= Rmax a b  -> continuity_pt (Derive f) x) ->
+  (forall x, Rmin a b -eps <= x <= Rmax a b +eps -> continuity_pt (Derive f) x) ->
   RInt (Derive f) a b = f b - f a.
 Proof.
 intros Df Cdf.
@@ -473,36 +473,122 @@ ring.
 now rewrite Rmin_comm Rmax_comm.
 now rewrite Rmin_comm Rmax_comm.
 now left.
+rewrite Rmin_left in Df Cdf; try exact Hab.
+rewrite Rmax_right in Df Cdf; try exact Hab.
+assert (forall x, a -eps <= x <= b +eps -> continuity_pt f x).
+intros x Hx.
+destruct (Df x) as (y,Hy).
+exact Hx.
+apply derivable_continuous_pt.
+now exists y.
+assert (a - eps <= a).
+apply Rplus_le_reg_l with (-a+eps); ring_simplify.
+left; apply cond_pos.
+assert (b <= b+eps).
+apply Rplus_le_reg_l with (-b); ring_simplify.
+left; apply cond_pos.
+assert (ex_RInt (Derive f) (a-eps) (b+eps)).
+apply ex_RInt_correct_1, continuity_implies_RiemannInt.
+apply Rle_trans with (1:=H0), Rle_trans with (1:=Hab); exact H1.
+exact Cdf.
+(* *)
 destruct (fn_eq_Derive_eq f (fun x => RInt (Derive f) a x) a b).
-admit.
-admit.
+apply H.
+split;[exact H0|apply Rle_trans with (1:=Hab); exact H1].
+apply H.
+split;[apply Rle_trans with (1:=H0); exact Hab|exact H1].
 apply continuity_RInt.
 apply ex_RInt_point.
-admit.
-admit.
+exists eps.
+apply ex_RInt_included1 with (b+eps).
+exact H2.
+split.
+apply Rle_trans with (1:=H0).
+apply Rplus_le_reg_l with (-a); ring_simplify.
+left; apply cond_pos.
+apply Rplus_le_compat_r; exact Hab.
+apply Cdf.
+split;[exact H0|apply Rle_trans with (1:=Hab); exact H1].
 apply continuity_RInt.
-admit.
-admit.
-admit.
-admit.
+apply ex_RInt_included1 with (b+eps).
+apply ex_RInt_included2 with (a-eps).
+exact H2.
+split;[exact H0|apply Rle_trans with (1:=Hab); exact H1].
+split;[exact Hab|exact H1].
+exists eps.
+apply ex_RInt_included2 with (a-eps).
+exact H2.
+split.
+apply Rplus_le_compat_r; exact Hab.
+apply Rle_trans with (2:=H1).
+apply Rplus_le_reg_l with (-b+eps); ring_simplify.
+left; apply cond_pos.
+apply Cdf.
+split;[apply Rle_trans with (1:=H0); exact Hab|exact H1].
+intros x Hx; apply Df.
+split.
+apply Rle_trans with (1:=H0); left; apply Hx.
+apply Rle_trans with (2:=H1); left; apply Hx.
 intros x Hx.
 eexists.
 apply derivable_pt_lim_RInt.
-admit.
-admit.
-admit.
+apply ex_RInt_included1 with (b+eps).
+apply ex_RInt_included2 with (a-eps).
+exact H2.
+split;[exact H0|apply Rle_trans with (1:=Hab); exact H1].
+split;[left; apply Hx|apply Rle_trans with (2:=H1);left; apply Hx].
+exists eps.
+apply ex_RInt_included1 with (b+eps).
+apply ex_RInt_included2 with (a-eps).
+exact H2.
+split.
+apply Rplus_le_compat_r; left; apply Hx.
+apply Rle_trans with (2:=H1).
+left; apply Rlt_trans with (2:=proj2 Hx).
+apply Rplus_lt_reg_r with (-x+eps); ring_simplify.
+apply cond_pos.
+split.
+apply Rplus_le_reg_r with (-x+eps); ring_simplify.
+apply Rmult_le_pos.
+left; apply Rlt_0_2.
+left; apply cond_pos.
+apply Rplus_le_compat_r; left; apply Hx.
+apply Cdf.
+split.
+apply Rle_trans with (1:=H0); left; apply Hx.
+apply Rle_trans with (2:=H1); left; apply Hx.
 intros x Hx.
 apply sym_eq, is_derive_unique.
 apply derivable_pt_lim_RInt.
-admit.
-admit.
-admit.
-rewrite (H a).
-rewrite (H b).
+apply ex_RInt_included1 with (b+eps).
+apply ex_RInt_included2 with (a-eps).
+exact H2.
+split;[exact H0| apply Rle_trans with (1:=Hab); exact H1].
+split;[left; apply Hx| apply Rle_trans with (2:=H1); left; apply Hx].
+exists eps.
+apply ex_RInt_included1 with (b+eps).
+apply ex_RInt_included2 with (a-eps).
+exact H2.
+split.
+apply Rplus_le_compat_r; left; apply Hx.
+apply Rle_trans with (2:=H1).
+left; apply Rlt_trans with (2:=proj2 Hx).
+apply Rplus_lt_reg_r with (-x+eps); ring_simplify.
+apply cond_pos.
+split.
+apply Rplus_le_reg_r with (-x+eps); ring_simplify.
+apply Rmult_le_pos.
+left; apply Rlt_0_2.
+left; apply cond_pos.
+apply Rplus_le_compat_r; left; apply Hx.
+apply Cdf.
+split;[apply Rle_trans with (1:=H0); left; apply Hx| apply Rle_trans with (2:=H1);  left; apply Hx].
+rewrite (H3 a).
+rewrite (H3 b).
 rewrite RInt_point.
 ring.
-admit.
-admit.
+split;[apply Hab|apply Rle_refl].
+split;[apply Rle_refl | apply Hab].
 Qed.
 
 
