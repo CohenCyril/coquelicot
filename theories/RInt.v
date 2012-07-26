@@ -3899,7 +3899,7 @@ have H : forall t, a <= t <= b ->
   by apply eps.
   rewrite SF_cons_f2 /= ; last by apply lt_O_Sn.
   rewrite RInt_seq_cons /=.
-  set F0 := fun x => exists t, x1 < t < x2 /\ x = Rabs (f t - phi t) * (x2 - x1).
+  set F0 := fun x => exists t, x1 <= t <= x2 /\ x = Rabs (f t - phi t) * (x2 - x1).
   set set_plus := fun (F : R -> Prop) (G : R -> Prop) (x : R) =>
     exists y, exists z, x = y + z /\ F y /\ G z.
   suff H0 : forall x : R, F x0 [:: x1, x2 & s] x 
@@ -3963,6 +3963,77 @@ have H : forall t, a <= t <= b ->
     apply Rmult_le_compat_r.
     by apply Rlt_le, Rinv_0_lt_compat.
     apply Hb0 ; exists t.
+    split.
+    move: Ht ; rewrite /Rmin /Rmax ; case: Rle_dec (proj1 Hsort) => //.
+    by [].
+    rewrite -H1 Rmult_0_r.
+    apply Rle_trans with (Rabs (f x1 - phi x1) * (x2 - x1)).
+    rewrite -H1 Rmult_0_r ; apply Rle_refl.
+    apply Hb0.
+    exists x1.
+    split.
+    move: (proj1 Hsort) ; by intuition.
+    by [].
+admit.
+    case: (ub (Rabs (f x1 - phi x1))) => //.
+    exists x1 ; split.
+    by [].
+    exact: Rmin_Rmax_l.
+    
+    move => val ; split => Hval.
+    case: Hval => g [Hnth [Hptd [<- Hval]]] {val}.
+    rewrite SF_cons_f2 /=.
+    rewrite RInt_seq_cons /=.
+    exists (Rabs (f (g x1 x2) - phi (g x1 x2)) * (x2 - x1)).
+    exists (RInt_seq
+      (SF_seq_f2 (fun x y : R => Rabs (f (g x y) - phi (g x y))) (x2 :: s) x1)
+      Rplus Rmult 0).
+    split.
+    by [].
+    split.
+    exists (g x1 x2) ; split.
+    exact: (Hptd O (lt_O_Sn _)).
+    by [].
+    exists g.
+    split.
+    move => x y i Hi.
+    apply (Hnth x y (S i)).
+    simpl ; apply lt_n_S, Hi.
+    split.
+    move: Hptd => /=.
+    rewrite SF_cons_f2 /=.
+    apply ptd_cons.
+    apply lt_O_Sn.
+    split.
+    by [].
+    apply Rle_lt_trans with (2 := Hval).
+    rewrite (SF_cons_f2 _ x1) /=.
+    rewrite RInt_seq_cons /=.
+    rewrite -{1}(Rplus_0_l (RInt_seq _ _ _ _)).
+    apply Rplus_le_compat_r.
+    apply Rmult_le_pos.
+    apply Rabs_pos.
+    apply -> Rminus_le_0 ; apply Hsort.
+    apply lt_O_Sn.
+    apply lt_O_Sn.
+    case: Hval => /= y Hy.
+    case: Hy => /= z [-> [F0y Fz]].
+    case: F0y => t [Ht ->].
+    case: Fz => g [Hnth [Hpdt [<- Hval]]].
+    case: Ht ; case => Hx1 ; case => Hx2.
+    set g0 := fun x y => match Req_EM_T x x1 with
+      | left _ => match Req_EM_T y x2 with
+        | left _ => t
+        | right _ => g x y
+      end
+      | right _ => g x y
+    end.
+    exists g0.
+    split.
+    move => {val y z} x y i Hi.
+    rewrite /g0.
+    case: Req_EM_T => Hx1'.
+    case: Req_EM_T => Hx2'.
 Admitted.
 
 
