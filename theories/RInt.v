@@ -4371,14 +4371,4 @@ Proof.
 Admitted. (** Admitted *) (** Admitted *)
 
 
-(** * Riemann integral and derivative *)
-
-Lemma derivable_pt_lim_RInt (f : R -> R) (a : R) (x : R) :
-  ex_RInt f a x -> (exists eps : posreal, ex_RInt f (x - eps) (x + eps)) ->
-  continuity_pt f x -> derivable_pt_lim (fun x => RInt f a x) x (f x).
-Proof.
-  move => Iax Iloc Cx e He ; set eps := mkposreal e He.
-Admitted. (** Admitted *) (** Admitted. *)
-
-
 

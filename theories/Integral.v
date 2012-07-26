@@ -457,6 +457,75 @@ now apply ex_RInt_Chasles with b.
 Qed.
 
 
+(** * Riemann integral and derivative *)
+
+Lemma derivable_pt_lim_RInt (f : R -> R) (a : R) (x : R) :
+  ex_RInt f a x -> (exists eps : posreal, ex_RInt f (x - eps) (x + eps)) ->
+  continuity_pt f x -> derivable_pt_lim (fun x => RInt f a x) x (f x).
+Proof.
+  move => Iax Iloc Cx.
+  apply equiv_deriv_pt_lim_1.
+  intros eps.
+  destruct (Cx eps (cond_pos eps)) as (d,(Hd1,Hd2)).
+  unfold dist in Hd2; simpl in Hd2; unfold R_dist in Hd2.
+  destruct Iloc as (e,He).
+  exists (mkposreal _ (Rmin_stable_in_posreal e (mkposreal _ Hd1))).
+  (* *)
+  simpl; intros y Hy.
+  assert (ex_RInt f x y).
+  assert (x-e <= y <= x+e).
+  apply Rabs_le_between'.
+  left; apply Rlt_le_trans with (1:=Hy); apply Rmin_l.
+  case (Rle_or_lt x y); intros M.
+  apply ex_RInt_included1 with (x+e).
+  apply ex_RInt_included2 with (x-e).
+  exact He.
+  split; apply Rplus_le_reg_r with (-x); ring_simplify.
+  apply Rplus_le_reg_r with e; ring_simplify.
+  left; apply cond_pos.
+  left; apply cond_pos.
+  split;[exact M|apply H].
+  apply ex_RInt_swap.
+  apply ex_RInt_included1 with (x+e).
+  apply ex_RInt_included2 with (x-e).
+  exact He.
+  exact H.
+  split;[left; exact M|idtac].
+  apply Rplus_le_reg_r with (-x); ring_simplify.
+  left; apply cond_pos.
+  assert (ex_RInt f a y).
+  now apply ex_RInt_Chasles with x.
+  (* *)
+  replace (RInt f a y - RInt f a x - f x * (y - x)) with
+    (RInt (fun z => f z - f x) x y).
+  rewrite Rmult_comm.
+  apply RInt_le_const.
+  apply ex_RInt_minus.
+  exact H.
+  apply ex_RInt_const.
+  intros t Ht.
+  case (Req_dec x t); intros Hxt.
+  unfold Rminus; rewrite Hxt Rplus_opp_r Rabs_R0.
+  left; apply cond_pos.
+  left; apply Hd2.
+  split.
+  now split.
+  apply Rle_lt_trans with (Rabs (y - x)).
+  apply Rabs_le_between_min_max.
+  now rewrite Rmin_comm Rmax_comm.
+  apply Rlt_le_trans with (1:=Hy); apply Rmin_r.
+  (* *)
+  rewrite RInt_minus.
+  rewrite RInt_const.
+  rewrite <- (RInt_Chasles f x a y).
+  unfold Rminus; rewrite RInt_swap.
+  ring.
+  now apply ex_RInt_swap.
+  exact H0.
+  exact H.
+  apply ex_RInt_const.
+Qed.
+
 
 Lemma RInt_Derive (f : R -> R) (a b : R) (eps:posreal):
   (forall x, Rmin a b -eps <= x <= Rmax a b +eps -> ex_derive f x) -> 
