@@ -3260,7 +3260,7 @@ Proof.
     by rewrite Rmax_comm.
     
     replace If with 0.
-Admitted. (** Admitted. *)
+Admitted. (* Admitted. *)
 
 Lemma SF_sup_fun_finite f a b n m M :
   (forall t, Rmin a b <= t <= Rmax a b -> m <= f t <= M)
@@ -4125,7 +4125,7 @@ Admitted.
 
 Lemma ex_RInt_cv (f : R -> R) (a b : R) : 
   ex_RInt f a b -> ex_lim_seq (RInt_val f a b).
-Admitted. (** Admitted *)
+Admitted. (* Admitted *)
 
 Definition RInt (f : R -> R) (a b : R) := 
   match Rle_dec a b with
@@ -4136,7 +4136,7 @@ Definition RInt (f : R -> R) (a b : R) :=
 Lemma RInt_correct (f : R -> R) (a b : R) :
   forall pr, RInt f a b = @RiemannInt f a b pr.
 Proof.
-Admitted. (** Admitted *) (** Admitted *)
+Admitted. (* Admitted *) 
 
 
 
