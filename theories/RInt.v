@@ -4185,7 +4185,7 @@ have Hfin' : forall t, is_finite (SF_sup_fun (fun t : R => Rabs (f t - phi t)) a
   
   move: H_F0 (IH x1 (proj2 Hle) (proj2 Hlt) Hfin0).
   
-  move: (F0) (F x1 (x2::s)) 
+  move: (F0 (pos_div_2 eps)) (F x1 (x2::s) (pos_div_2 eps)) 
     (real (Sup_fct (fun t : R => Rabs (f t - phi t)) x1 x2) * (x2 - x1))
     (RInt_seq (SF_seq_f2 (fun x4 y : R =>
       real (Sup_fct (fun t : R => Rabs (f t - phi t)) x4 y)) (x2 :: s) x1)
