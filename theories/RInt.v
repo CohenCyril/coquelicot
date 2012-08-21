@@ -114,7 +114,7 @@ Proof.
 Qed.
 
 Definition RInt_part (a b : R) (n : nat) : seq R := 
-  mkseq (fun i => a + (INR i) * (b - a) / (2^n)) (S (pow2 n)).
+  mkseq (fun i => a + (INR i) * (b - a) / (INR n + 1)) (S (S n)).
 
 Lemma RInt_part_bound (a b : R) (n : nat) : 
   RInt_part a b n = rev (RInt_part b a n).
@@ -123,12 +123,10 @@ Proof.
   move => i Hi ; apply SSR_leq in Hi.
   rewrite nth_rev ?SSR_leq ?SSR_minus ?size_mkseq => //.
   rewrite ?nth_mkseq ?SSR_leq => //.
-  rewrite minus_INR ?S_INR ?pow2_INR => // ; field.
-  apply Rgt_not_eq, pow_lt, Rlt_R0_R2.
-  apply INR_le ; rewrite ?S_INR minus_INR ?S_INR ?pow2_INR => //.
-  ring_simplify ;
-  apply Rplus_le_compat_r ; rewrite -{2}(Rplus_0_r (2^n)) ;
-  apply Rplus_le_compat_l, Ropp_le_cancel ; rewrite Ropp_0 Ropp_involutive ;
+  rewrite minus_INR ?S_INR => // ; field.
+  apply Rgt_not_eq, INRp1_pos.
+  apply INR_le ; rewrite ?S_INR minus_INR ?S_INR => //.
+  apply Rminus_le_0 ; ring_simplify.
   apply pos_INR.
 Qed.
 
@@ -147,23 +145,23 @@ Lemma RInt_part_nat (a b : R) (n : nat) (x : R) : (a <= x <= b) ->
   {i : nat |
   nth 0 (RInt_part a b n) i <= x < nth 0 (RInt_part a b n) (S i) /\
   (S (S i) < size (RInt_part a b n))%nat} +
-  {nth 0 (RInt_part a b n) (pow2 n - 1) <= x <=
-   nth 0 (RInt_part a b n) (pow2 n)}.
+  {nth 0 (RInt_part a b n) (n) <= x <=
+   nth 0 (RInt_part a b n) (S n)}.
 Proof.
   move: (sorted_dec (RInt_part a b n) 0 x) => Hdec Hx.
   have Hs : sorted Rle (RInt_part a b n) ;
     [ apply RInt_part_sort, Rle_trans with (r2 := x) ; intuition 
     | move: (Hdec Hs) => {Hdec Hs} Hdec].
   have Hx' : (head 0 (RInt_part a b n) <= x <= last 0 (RInt_part a b n)).
-    rewrite -nth_last size_mkseq nth_mkseq //= pow2_INR.
-    have: a + 0 * (b - a) / 2 ^ n = a ; 
-    [ field ; apply Rgt_not_eq ; intuition | move => ->] ;
-    have: a + 2^n * (b - a) / 2 ^ n = b ; 
-    [ field ; apply Rgt_not_eq ; intuition | move => ->] ; by [].
+    rewrite -nth_last size_mkseq nth_mkseq ?S_INR //= /Rdiv.
+    ring_simplify (a + 0 * (b - a) * / (INR n + 1)).
+    field_simplify (a + (INR n + 1) * (b - a) * / (INR n + 1)).
+    by rewrite -Rdiv_1.
+    apply Rgt_not_eq, INRp1_pos.
   case: (Hdec Hx') => {Hdec Hx'} [[i Hi]|Hi].
   left ; by exists i.
   right ; rewrite size_mkseq /= in Hi ; intuition.
-  by rewrite -minus_n_O in H2.
+  by rewrite -minus_n_O in H1.
 Qed.
 
 (** ** sequences lx *)
@@ -203,20 +201,21 @@ Proof.
     by apply Hw.
     apply StepFun_P2 ; apply Hw ; by apply Rlt_le, Rnot_le_lt.
   split ; case: (Rle_dec a b) => // {Hw} Hab _.
+  
   have : (a = head 0 (SF_lx (SF_val_seq f a b n))) ; 
   [rewrite SF_lx_f2 /= ; field ; apply Rgt_not_eq ; intuition | move => {2}->].
-  have : (b = last 0 (SF_lx (SF_val_seq f a b n))) ; 
-  [rewrite SF_lx_f2 ;
-    replace (head 0 (RInt_part a b n) :: behead (RInt_part a b n)) 
-    with (RInt_part a b n) by intuition ;
-    rewrite -nth_last size_mkseq nth_mkseq => //= ; rewrite pow2_INR ;
-    field ; apply Rgt_not_eq ; intuition | move => {3} ->].
+  pattern b at 3 ; replace b with (last 0 (SF_lx (SF_val_seq f a b n))).
   replace (RInt_part a b n) 
     with (head 0 (RInt_part a b n) :: behead (RInt_part a b n)) by intuition ;
   rewrite -(SF_lx_f2 (fun x y => f ((x+y)/2))).
   rewrite /SF_val_ly -SF_ly_f2.
   apply (ad_SF_compat (SF_val_seq f a b n)).
   by apply SF_sorted_f2, RInt_part_sort.
+  rewrite SF_lx_f2 ;
+    replace (head 0 (RInt_part a b n) :: behead (RInt_part a b n)) 
+    with (RInt_part a b n) by auto.
+    rewrite -nth_last size_mkseq nth_mkseq ?S_INR //= ;
+    field ; apply Rgt_not_eq, INRp1_pos.
 Qed.
 
 Definition sf_SF_val_fun (f : R -> R) (a b : R) (n : nat) : StepFun a b.
@@ -251,15 +250,15 @@ Qed.
 Lemma SF_val_fun_rw (f : R -> R) (a b : R) (n : nat) (x : R) (Hx : a <= x <= b) :
   SF_val_fun f a b n x = 
     match (RInt_part_nat a b n x Hx) with
-      | inleft H => f (a + (2*INR (projT1 H) + 1) * (b-a) / 2^(S n))
-      | inright _ => f (a + (2^(S n) - 1) * (b-a) / 2^(S n))
+      | inleft H => f (a + (INR (projT1 H) + /2) * (b-a) / (INR n + 1))
+      | inright _ => f (a + (INR n + /2) * (b-a) / (INR n + 1))
     end.
 Proof.
   have Hab : (a <= b) ; [by apply Rle_trans with (1 := proj1 Hx), Hx | ].
   case: RInt_part_nat => {Hx} [ [ i [Hx Hi] ] | Hx] /=.
 (* i < 2^n - 1 *)
   rewrite /SF_val_fun /SF_fun_f2.
-  replace (a + (2 * INR i + 1) * (b - a) / (2 * 2 ^ n)) 
+  replace (a + (INR i + /2) * (b - a) / (INR n+1)) 
     with ((nth 0 (RInt_part a b n) i + nth 0 (RInt_part a b n) (S i)) / 2) ;
     [ | rewrite size_mkseq in Hi ; rewrite ?nth_mkseq ?S_INR ; 
     [field ; apply Rgt_not_eq | apply SSR_leq | apply SSR_leq ] ; intuition].
@@ -283,23 +282,27 @@ Proof.
   contradict Hx0 ; apply Rle_not_lt, Rle_trans with (2 := proj1 Hx), 
   (sorted_head [:: h0, h1 & s] _ (proj2 Hs)) ; simpl; intuition.
 (* i = 2^n - 1 *)
-  replace (a + (2 * 2^n - 1) * (b - a) / (2 * 2 ^ n)) 
-    with ((nth 0 (RInt_part a b n) (pow2 n - 1) + nth 0 (RInt_part a b n) (pow2 n)) / 2) ;
-    [ | rewrite ?nth_mkseq ?minus_INR ?pow2_INR /= ; 
-    [field ; apply Rgt_not_eq | apply pow2_pos | 
+  replace (a + (INR n + /2) * (b - a) / (INR n + 1)) 
+    with ((nth 0 (RInt_part a b n) (n) + nth 0 (RInt_part a b n) (S n)) / 2) ;
+    [ | rewrite ?nth_mkseq ?minus_INR ?S_INR /= ; 
+    [field ; apply Rgt_not_eq | 
     apply SSR_leq | apply SSR_leq ] ; intuition].
-  move: (pow2_pos n) x Hx ; have: (pow2 n = size (RInt_part a b n) - 1)%nat ;
-    [ rewrite size_mkseq ; intuition | move => ->].
+  suff : (1 < size (RInt_part a b n))%nat.
+  move: x Hx ; have: (n = size (RInt_part a b n) - 2)%nat ;
+    [ rewrite size_mkseq ; intuition | ].
+    move => {2 4 8 10}->.
   rewrite /SF_val_fun /SF_fun_f2.
-  case: (RInt_part a b n) (RInt_part_sort a b n Hab) => {a b Hab n} [| h s] Hs /= Hi.
+  case: (RInt_part a b n) (RInt_part_sort a b n Hab) => {a b Hab n} [| h s Hs x Hx /= Hi] .
+  intros _ x Hx Hi.
   by apply lt_n_O in Hi.
-  rewrite -minus_n_O in Hi |- * ; case: s h Hs Hi => [| h0 s] h Hs /= Hi.
-  by apply lt_n_O in Hi.
-  rewrite -minus_n_O ; elim: s h h0 Hs {Hi} => [| h1 s IH] h h0 Hs /= x Hx.
+  case: s h Hs Hi x Hx => [| h0 s] h Hs /= Hi.
+  by apply lt_irrefl in Hi.
+  elim: s h h0 Hs {Hi} => [| h1 s IH] h h0 Hs /= x Hx.
   rewrite /SF_fun /= ; case: Rlt_dec => [Hx0 | _].
   contradict Hx0 ; apply Rle_not_lt, Hx.
   case: Rle_dec => [| Hx0] // ; contradict Hx0 ; apply Hx.
-  rewrite -(IH h0 h1 (proj2 Hs) x Hx).
+  rewrite -minus_n_O in IH.
+  rewrite -(IH h0 h1 (proj2 Hs) x Hx ).
   rewrite /SF_fun /= ; case: Rlt_dec => [ Hx0 | _ ] //.
   contradict Hx0 ; apply Rle_not_lt, Rle_trans with (1 := proj1 Hs), 
   Rle_trans with (2 := proj1 Hx), (sorted_head [:: h0, h1 & s] _ (proj2 Hs)) ;
@@ -307,15 +310,16 @@ Proof.
   case: Rlt_dec => [ Hx0 | _ ] //.
   contradict Hx0 ; apply Rle_not_lt, Rle_trans with (2 := proj1 Hx), 
   (sorted_head [:: h0, h1 & s] _ (proj2 Hs)) ; simpl; intuition.
+  rewrite size_mkseq ; by apply lt_n_S, lt_O_Sn.
 Qed.
 
 Definition RInt_val (f : R -> R) (a b : R) (n : nat) :=
-  ((b-a)/2^n) * foldr Rplus 0 (SF_val_ly f a b n).
+  ((b-a)/(INR n+1)) * foldr Rplus 0 (SF_val_ly f a b n).
 
 Lemma RInt_val_swap (f : R -> R) (a b : R) (n : nat) :
   RInt_val f a b n = - RInt_val f b a n.
 Proof.
-  rewrite /RInt_val /=.
+  rewrite /RInt_val.
   replace (foldr Rplus 0 (SF_val_ly f b a n))
     with (foldr Rplus 0 (SF_val_ly f a b n)).
   field ; apply Rgt_not_eq ; by intuition.
@@ -331,7 +335,7 @@ Lemma RInt_val_correct (f : R -> R) (a b : R) (n : nat) :
   RInt_val f a b n = RiemannInt_SF (sf_SF_val_fun f a b n).
 Proof.
 have H : (forall a b i, (S i < size (RInt_part a b n))%nat -> 
-  nth 0 (RInt_part a b n) (S i) - nth 0 (RInt_part a b n) i = (b-a)/2^n).
+  nth 0 (RInt_part a b n) (S i) - nth 0 (RInt_part a b n) i = (b-a)/(INR n + 1)).
   move => {a b} a b i Hi ; rewrite size_mkseq in Hi ; rewrite ?nth_mkseq ?S_INR.
   field ; apply Rgt_not_eq ; intuition.
   apply SSR_leq ; intuition.
@@ -350,7 +354,7 @@ case: Rle_dec => Hab.
   rewrite (SF_val_ly_bound f a b n) /SF_val_ly.
   case: (RInt_part b a n) (H b a) => [| h s] /=.
   move => _ ; field ; apply Rgt_not_eq ; intuition.
-  rewrite -Rminus_0_l -{4}(Rmult_0_l ((b-a)/2^n)) ;
+  rewrite -Rminus_0_l -{4}(Rmult_0_l ((b-a)/(INR n + 1))) ;
   elim: s {3 4}(0) h => [|h0 s IH] x0 h Hs /=.
   field ; apply Rgt_not_eq ; intuition.
   rewrite rev_cons foldr_rcons (IH) ; move: (Hs O (lt_n_S _ _ (lt_O_Sn _))) => /= Hs'.
@@ -577,8 +581,8 @@ Lemma SF_sup_fun_rw (f : R -> R) (a b : R) (n : nat) (x : R) (Hx : a <= x <= b) 
     match (RInt_part_nat a b n x Hx) with
       | inleft H => Sup_fct f (nth 0 (RInt_part a b n) (projT1 H)) 
           (nth 0 (RInt_part a b n) (S (projT1 H)))
-      | inright _ => Sup_fct f (nth 0 (RInt_part a b n) (pow2 n - 1)) 
-          (nth 0 (RInt_part a b n) (pow2 n))
+      | inright _ => Sup_fct f (nth 0 (RInt_part a b n) (n)) 
+          (nth 0 (RInt_part a b n) (S n))
     end.
 Proof.
   have Hab : (a <= b) ; [by apply Rle_trans with (1 := proj1 Hx), Hx | ].
@@ -605,12 +609,14 @@ Proof.
   contradict Hx0 ; apply Rle_not_lt, Rle_trans with (2 := proj1 Hx), 
   (sorted_head [:: h0, h1 & s] _ (proj2 Hs)) ; simpl; intuition.
 (* i = 2^n - 1 *)
-  move: (pow2_pos n) x Hx ; have: (pow2 n = size (RInt_part a b n) - 1)%nat ;
-    [ rewrite size_mkseq ; intuition | move => ->].
+  move: x Hx.
+  suff : (1 < size (RInt_part a b n))%nat.
+  have: (n = size (RInt_part a b n) - 2)%nat ;
+    [ rewrite size_mkseq ; intuition | move => {3 5 8 10}->].
   case: (RInt_part a b n) (RInt_part_sort a b n Hab) => {a b Hab n} [| h s] Hs /= Hi.
   by apply lt_n_O in Hi.
-  rewrite -minus_n_O in Hi |- * ; case: s h Hs Hi => [| h0 s] h Hs /= Hi.
-  by apply lt_n_O in Hi.
+  case: s h Hs Hi => [| h0 s] h Hs /= Hi.
+  by apply lt_irrefl in Hi.
   rewrite -minus_n_O ; elim: s h h0 Hs {Hi} => [| h1 s IH] h h0 Hs /= x Hx.
   rewrite /SF_fun /= ; case: Rlt_dec => [Hx0 | _].
   contradict Hx0 ; apply Rle_not_lt, Hx.
@@ -623,6 +629,7 @@ Proof.
   case: Rlt_dec => [ Hx0 | _ ] //.
   contradict Hx0 ; apply Rle_not_lt, Rle_trans with (2 := proj1 Hx), 
   (sorted_head [:: h0, h1 & s] _ (proj2 Hs)) ; simpl; intuition.
+  rewrite size_mkseq ; by apply lt_n_S, lt_O_Sn.
 Qed.
 
 Lemma SF_inf_fun_rw (f : R -> R) (a b : R) (n : nat) (x : R) (Hx : a <= x <= b) :
@@ -630,8 +637,8 @@ Lemma SF_inf_fun_rw (f : R -> R) (a b : R) (n : nat) (x : R) (Hx : a <= x <= b) 
     match (RInt_part_nat a b n x Hx) with
       | inleft H => Inf_fct f (nth 0 (RInt_part a b n) (projT1 H)) 
           (nth 0 (RInt_part a b n) (S (projT1 H)))
-      | inright _ => Inf_fct f (nth 0 (RInt_part a b n) (pow2 n - 1)) 
-          (nth 0 (RInt_part a b n) (pow2 n))
+      | inright _ => Inf_fct f (nth 0 (RInt_part a b n) (n)) 
+          (nth 0 (RInt_part a b n) (S n))
     end.
 Proof.
   have Hab : (a <= b) ; [by apply Rle_trans with (1 := proj1 Hx), Hx | ].
@@ -658,12 +665,14 @@ Proof.
   contradict Hx0 ; apply Rle_not_lt, Rle_trans with (2 := proj1 Hx), 
   (sorted_head [:: h0, h1 & s] _ (proj2 Hs)) ; simpl; intuition.
 (* i = 2^n - 1 *)
-  move: (pow2_pos n) x Hx ; have: (pow2 n = size (RInt_part a b n) - 1)%nat ;
-    [ rewrite size_mkseq ; intuition | move => ->].
+  move: x Hx.
+  suff : (1 < size (RInt_part a b n))%nat.
+  have: (n = size (RInt_part a b n) - 2)%nat ;
+    [ rewrite size_mkseq ; intuition | move => {3 5 8 10}->].
   case: (RInt_part a b n) (RInt_part_sort a b n Hab) => {a b Hab n} [| h s] Hs /= Hi.
   by apply lt_n_O in Hi.
-  rewrite -minus_n_O in Hi |- * ; case: s h Hs Hi => [| h0 s] h Hs /= Hi.
-  by apply lt_n_O in Hi.
+  case: s h Hs Hi => [| h0 s] h Hs /= Hi.
+  by apply lt_irrefl in Hi.
   rewrite -minus_n_O ; elim: s h h0 Hs {Hi} => [| h1 s IH] h h0 Hs /= x Hx.
   rewrite /SF_fun /= ; case: Rlt_dec => [Hx0 | _].
   contradict Hx0 ; apply Rle_not_lt, Hx.
@@ -676,6 +685,7 @@ Proof.
   case: Rlt_dec => [ Hx0 | _ ] //.
   contradict Hx0 ; apply Rle_not_lt, Rle_trans with (2 := proj1 Hx), 
   (sorted_head [:: h0, h1 & s] _ (proj2 Hs)) ; simpl; intuition.
+  rewrite size_mkseq ; by apply lt_n_S, lt_O_Sn.
 Qed.
 
 (** ** SF_sup_real is a StepFun *)
@@ -706,7 +716,7 @@ Proof.
   have: a = head 0 (RInt_part a b n) ; 
   [ simpl ; field ; apply Rgt_not_eq ; intuition | move => {2}->].
   have: b = last 0 (RInt_part a b n) ; 
-  [ rewrite -nth_last size_mkseq nth_mkseq //= pow2_INR ; 
+  [ rewrite -nth_last size_mkseq nth_mkseq ?S_INR//= ; 
   field ; apply Rgt_not_eq ; intuition | move => {3}->].
   replace (behead
     (pairmap (fun x y : R => real (Sup_fct f x y)) 0 (RInt_part a b n)))
@@ -787,7 +797,7 @@ Proof.
   have: a = head 0 (RInt_part a b n) ; 
   [ simpl ; field ; apply Rgt_not_eq ; intuition | move => {2}->].
   have: b = last 0 (RInt_part a b n) ; 
-  [ rewrite -nth_last size_mkseq nth_mkseq //= pow2_INR ; 
+  [ rewrite -nth_last size_mkseq nth_mkseq ?S_INR //= ; 
   field ; apply Rgt_not_eq ; intuition | move => {3}->].
   replace (behead
     (pairmap (fun x y : R => real (Inf_fct f x y)) 0 (RInt_part a b n)))
@@ -1048,9 +1058,11 @@ Proof.
   
   case: Hex => If Hex.
   case: (Hex (mkposreal _ Rlt_0_1)) => {Hex} alpha Hex.
-  have Hn : 0 <= Rmax 0 ((ln (b-a) - ln alpha)/ln 2)
-    by apply RmaxLess1.
-  set n := S (nfloor _ Hn).
+  have Hn : 0 <= ((b-a)/alpha).
+    apply Rdiv_le_pos.
+    apply -> Rminus_le_0 ; apply Rlt_le, Hab.
+    by apply alpha.
+  set n := (nfloor _ Hn).
   set ptd := fun (g : R -> R -> R) =>
     SF_seq_f2 g (RInt_part a b n) 0.
   
@@ -1060,12 +1072,12 @@ Proof.
       with (If - signe (b - a) * Riemann_sum f (ptd g)).
   apply Hex.
   exact: Hg.
-  apply Rle_lt_trans with ((b-a)/2^n).
+  apply Rle_lt_trans with ((b-a)/(INR n + 1)).
   clearbody n ; rewrite SF_lx_f2.
   replace (head 0 (RInt_part a b n) :: behead (RInt_part a b n))
     with (RInt_part a b n) by auto.
   suff : forall i, (S i < size (RInt_part a b n))%nat ->
-    nth 0 (RInt_part a b n) (S i) - nth 0 (RInt_part a b n) i = (b-a)/2^n.
+    nth 0 (RInt_part a b n) (S i) - nth 0 (RInt_part a b n) i = (b-a)/(INR n + 1).
   elim: (RInt_part a b n) => [ /= _ | x0].
   apply Rdiv_le_pos ; [ by apply Rlt_le, Rgt_minus | by intuition ].
   case => /= [ | x1 s] IH Hnth.
@@ -1082,30 +1094,19 @@ Proof.
   field ; apply Rgt_not_eq ; by intuition.
   exact: lt_le_weak.
   exact: Hi.
-  apply ln_lt_inv.
-  apply Rdiv_lt_0_compat ; [ by apply Rgt_minus | by intuition ].
-  by apply alpha.
-  rewrite ln_div.
-  replace (ln alpha) with (ln (2^n) + (ln alpha - ln (2^n))) by ring.
-  replace (ln (b-a) - ln (2^n))
-    with ((ln (b-a) - ln alpha) + (ln alpha - ln (2^n))) by ring.
-  apply Rplus_lt_compat_r.
-  rewrite ln_pow.
   apply Rlt_div.
-  by apply Rlt_trans with (2 := ln_lt_2), Rinv_0_lt_compat, Rlt_R0_R2.
-  rewrite /n S_INR /nfloor ; case: nfloor_ex => /= n' Hn'.
-  apply Rle_lt_trans with (2 := proj2 Hn').
-  exact: RmaxLess2.
-  exact: Rlt_R0_R2.
-  exact: Rgt_minus.
-  by intuition.
+  by apply INRp1_pos.
+  rewrite Rmult_comm ; apply Rlt_div.
+  by apply alpha.
+  rewrite /n /nfloor ; case: nfloor_ex => /= n' Hn'.
+  by apply Hn'.
   clearbody n ; rewrite /Rmin ;
   case: Rle_dec (Rlt_le _ _ Hab) => //= _ _ ; field ; apply Rgt_not_eq ;
   by intuition.
   clearbody n ; rewrite /Rmax -nth_last SF_lx_f2.
   replace (head 0 (RInt_part a b n) :: behead (RInt_part a b n))
     with (RInt_part a b n) by auto.
-  rewrite size_mkseq nth_mkseq // ?pow2_INR ;
+  rewrite size_mkseq nth_mkseq ?S_INR // ;
   case: Rle_dec (Rlt_le _ _ Hab) => //= _ _ ; field ; apply Rgt_not_eq ;
   by intuition.
   apply f_equal.
@@ -1122,7 +1123,6 @@ Proof.
     rewrite -Ropp_minus_distr' Rabs_Ropp.
     by apply Hex.
   clearbody n ; move => {Hex} Hex.
-  
   have: forall i, (S i < size (RInt_part a b n))%nat -> 
     exists m, exists M, forall t, 
       nth 0 (RInt_part a b n) i <= t <= nth 0 (RInt_part a b n) (S i)
@@ -1315,10 +1315,11 @@ Proof.
   | apply Rle_trans with (2 := RmaxLess2 _ _)] ;
   apply IH ; by intuition.
   simpl ; field ; apply Rgt_not_eq ; by intuition.
-  rewrite -nth_last size_mkseq nth_mkseq /=.
-  rewrite pow2_INR ; field ; apply Rgt_not_eq ; by intuition.
+  rewrite -nth_last size_mkseq nth_mkseq ?S_INR /=.
+  field ; apply Rgt_not_eq, INRp1_pos.
   by [].
 Qed.
+
 Lemma ex_RInt_ub f a b :
   ex_RInt f a b -> exists M : R, forall t : R,
     Rmin a b <= t <= Rmax a b -> f t <= M.
@@ -2509,9 +2510,11 @@ Proof.
   move => eps.
   case: (Hex eps) => {Hex} alpha Hex.
 (* ** Trouver N *)
-  have HN : 0 <= Rmax 0 ((ln (b-a) - ln alpha)/ln 2) by
-    apply RmaxLess1.
-  set N := S (nfloor _ HN).
+  have HN : 0 <= (b-a)/alpha.
+    apply Rdiv_le_pos.
+    apply -> Rminus_le_0 ; apply Rlt_le, Hab.
+    by apply alpha.
+  set N := (nfloor _ HN).
   exists N => n Hn.
   rewrite -Rabs_Ropp.
   set ptd := SF_seq_f2 (fun x y => (x+y)/2) (RInt_part a b n) 0.
@@ -2522,117 +2525,63 @@ Proof.
   move => i.
   rewrite SF_size_f2 size_mkseq => Hi ; simpl in Hi.
   rewrite SF_lx_f2 SF_ly_f2.
-  replace (nth 0 (head 0 (RInt_part a b n) :: behead (RInt_part a b n)) i)
-    with (nth 0 (RInt_part a b (S n)) (2 * i)).
-  replace (nth 0 (behead (pairmap (fun x y : R => (x + y) / 2) 0 (RInt_part a b n))) i)
-    with (nth 0 (RInt_part a b (S n)) (S (2 * i))).
-  replace (nth 0 (head 0 (RInt_part a b n) :: behead (RInt_part a b n)) (S i))
-    with (nth 0 (RInt_part a b (S n)) (S (S (2 * i)))).
-  split ; apply (sorted_nth Rle).
-  by apply RInt_part_sort, Rlt_le.
-  rewrite size_mkseq /= ; by intuition.
-  by apply RInt_part_sort, Rlt_le.
-  rewrite size_mkseq /= ; by intuition.
-  replace (head 0 (RInt_part a b n) :: behead (RInt_part a b n)) with 
+  replace (head 0 (RInt_part a b n) :: behead (RInt_part a b n)) with
     (RInt_part a b n) by auto.
-  rewrite !nth_mkseq ?S_INR ?plus_INR /=.
-  field ; apply Rgt_not_eq ; by intuition.
-  apply SSR_leq ; by intuition.
-  apply SSR_leq ; by intuition.
   rewrite nth_behead (nth_pairmap 0).
-  replace (nth 0 (0 :: RInt_part a b n) (S i))
-    with (nth 0 (RInt_part a b n) i) by auto.
-  rewrite !nth_mkseq ?S_INR ?plus_INR /=.
-  field ; apply Rgt_not_eq ; by intuition.
-  apply SSR_leq ; by intuition.
-  apply SSR_leq ; by intuition.
-  apply SSR_leq ; by intuition.
-  rewrite size_mkseq ; apply SSR_leq ; by intuition.
-  replace (head 0 (RInt_part a b n) :: behead (RInt_part a b n)) with 
-    (RInt_part a b n) by auto.
-  rewrite !nth_mkseq ?S_INR ?plus_INR /=.
-  field ; apply Rgt_not_eq ; by intuition.
-  apply SSR_leq ; by intuition.
-  apply SSR_leq ; by intuition.
+  replace (nth 0 (0 :: RInt_part a b n) (S i)) with
+    (nth 0 (RInt_part a b n) i) by auto.
+  have : nth 0 (RInt_part a b n) i <= nth 0 (RInt_part a b n) (S i).
+    apply (sorted_nth Rle).
+    by apply RInt_part_sort, Rlt_le.
+    by rewrite size_mkseq.
+  move : (nth 0 (RInt_part a b n) i) (nth 0 (RInt_part a b n) (S i)) => x y Hxy.
+  pattern y at 3 ; replace y with ((y+y)/2) by field.
+  pattern x at 1 ; replace x with ((x+x)/2) by field.
+  split ; apply Rmult_le_compat_r ; by intuition.
+  apply SSR_leq ; rewrite size_mkseq ; by intuition.
+  apply Rle_lt_trans with ((b-a)/(INR n + 1)).
+  suff : forall i, (S i < size (SF_lx ptd))%nat ->
+    nth 0 (SF_lx ptd) (S i) - nth 0 (SF_lx ptd) i = (b-a)/(INR n + 1).
+  elim: (SF_lx ptd) => /= [ | x0].
+  move => _ ; apply Rdiv_le_pos ;
+  [ by apply Rlt_le, Rgt_minus | by apply INRp1_pos].
+  case => /=[ | x1 s] IH Hs.
+  apply Rdiv_le_pos ;
+  [ by apply Rlt_le, Rgt_minus | by apply INRp1_pos].
+  replace (seq_step _) with (Rmax (Rabs (x1 - x0)) (seq_step (x1::s))) by auto.
+  rewrite (Hs _ (lt_n_S _ _ (lt_O_Sn _))) Rabs_right.
+  apply Rmax_lub.
+  by apply Rle_refl.
+  apply IH => i Hi.
+  by apply (Hs _ (lt_n_S _ _ Hi)).
+  apply Rle_ge, Rdiv_le_pos ;
+  [ by apply Rlt_le, Rgt_minus | by apply INRp1_pos].
   rewrite SF_lx_f2.
-  replace (head 0 (RInt_part a b n) :: behead (RInt_part a b n)) with 
-    (RInt_part a b n) by auto.
-  replace (seq_step (RInt_part a b n)) with ((b-a)/2^n).
-  apply Rle_lt_trans with ((b-a)/2^N).
+  replace (head 0%R (RInt_part a b n) :: behead (RInt_part a b n))
+    with (RInt_part a b n) by auto.
+  rewrite size_mkseq => i Hi ; rewrite !nth_mkseq ?S_INR.
+  field ; apply Rgt_not_eq, INRp1_pos.
+  apply SSR_leq ; by intuition.
+  apply SSR_leq ; by intuition.
+  apply Rle_lt_trans with ((b-a)/(INR N + 1)).
   apply Rmult_le_compat_l.
   by apply Rlt_le, Rgt_minus.
   apply Rinv_le_contravar.
-  by intuition.
-  apply Rle_pow.
-  by intuition.
-  exact: Hn.
-  apply ln_lt_inv.
-  apply Rdiv_lt_0_compat.
-  exact: Rgt_minus.
-  by intuition.
-  by apply alpha.
-  rewrite ln_div.
-  rewrite ln_pow.
-  replace (ln alpha)
-    with (INR N * ln 2 + (ln alpha - INR N * ln 2))
-    by ring.
-  replace (ln (b - a) - INR N * ln 2) 
-    with ((ln (b-a) - ln alpha) + (ln alpha - INR N * ln 2))
-    by ring.
-  apply Rplus_lt_compat_r.
+  by apply INRp1_pos.
+  by apply Rplus_le_compat_r, le_INR.
   apply Rlt_div.
-  apply Rlt_trans with (2 := ln_lt_2) ; by intuition.
-  rewrite /N /nfloor S_INR ; case: nfloor_ex => N' HN' /=.
-  apply Rle_lt_trans with (2 := proj2 HN') ; exact: RmaxLess2.
-  exact: Rlt_R0_R2.
-  exact: Rgt_minus.
-  by intuition.
-  suff : forall i, (S i < size (RInt_part a b n))%nat -> 
-    nth 0 (RInt_part a b n) (S i) - nth 0 (RInt_part a b n) i = (b-a)/2^n.
-  suff : (1 < size (RInt_part a b n))%nat.
-  case: (RInt_part a b n) => /= [ | x0].
-  by move/lt_n_O => Hs.
-  case => /= [ | x1 s Hs Hnth].
-  by move/lt_irrefl => Hs.
-  replace (seq_step _) 
-    with (Rmax (Rabs (x1 - x0)) (seq_step (x1::s)))
-    by auto.
-  rewrite (Hnth O Hs) Rabs_right.
-  apply Rle_antisym.
-  exact: RmaxLess1.
-  apply Rmax_lub.
-  exact: Rle_refl.
-  move: (fun i Hi => Hnth (S i) (lt_n_S _ _ (lt_n_S _ _ Hi))) => /=.
-  elim: s x1 {x0 Hnth Hs} => /= [ | x1 s IH] x0 Hnth.
-  apply Rdiv_le_pos.
-  by apply Rlt_le, Rgt_minus.
-  by intuition.
-  replace (seq_step _) 
-    with (Rmax (Rabs (x1 - x0)) (seq_step (x1::s)))
-    by auto.
-  rewrite (Hnth O (lt_O_Sn _)) Rabs_right.
-  apply Rmax_lub.
-  exact: Rle_refl.
-  apply IH => i Hi.
-  exact: (Hnth (S i) (lt_n_S _ _ Hi)).
-  apply Rle_ge, Rdiv_le_pos.
-  by apply Rlt_le, Rgt_minus.
-  by intuition.
-  apply Rle_ge, Rdiv_le_pos.
-  by apply Rlt_le, Rgt_minus.
-  by intuition.
-  rewrite size_mkseq ; apply lt_n_S ; exact: pow2_pos.
-  move => i Hi ; rewrite size_mkseq in Hi ; rewrite !nth_mkseq ?S_INR.
-  field ; apply Rgt_not_eq ; by intuition.
-  apply SSR_leq ; by intuition.
-  apply SSR_leq ; by intuition.
+  by apply INRp1_pos.
+  rewrite Rmult_comm ; apply Rlt_div.
+  by apply alpha.
+  rewrite /N /nfloor ; case: nfloor_ex => N' HN' /=.
+  by apply HN'.
   rewrite /Rmin /= ; case: Rle_dec (Rlt_le _ _ Hab) => // _ _.
-  field ; apply Rgt_not_eq ; by intuition.
+  field ; apply Rgt_not_eq, INRp1_pos.
   rewrite SF_lx_f2 -nth_last.
   replace (head 0 _ :: behead _) with (RInt_part a b n) by auto.
-  rewrite size_mkseq nth_mkseq /=.
-  rewrite pow2_INR /Rmax ; case: Rle_dec (Rlt_le _ _ Hab) => // _ _.
-  field ; apply Rgt_not_eq ; by intuition.
+  rewrite size_mkseq nth_mkseq ?S_INR /=.
+  rewrite /Rmax ; case: Rle_dec (Rlt_le _ _ Hab) => // _ _.
+  field ; apply Rgt_not_eq, INRp1_pos.
   by [].
   rewrite Ropp_minus_distr'.
   apply f_equal.
@@ -2643,7 +2592,7 @@ Proof.
   rewrite /Riemann_sum /RInt_val /RInt_seq /ptd /SF_val_ly.
   rewrite SF_map_f2.
   suff : forall i, (S i < size (RInt_part a b n))%nat -> 
-    nth 0 (RInt_part a b n) (S i) - nth 0 (RInt_part a b n) i = (b-a)/2^n.
+    nth 0 (RInt_part a b n) (S i) - nth 0 (RInt_part a b n) i = (b-a)/(INR n + 1).
   elim : (RInt_part a b n) {5}(0) => /= [ | x1].
   move => _ Hnth ; ring.
   case => /= [ | x2 s] IH x0 Hnth.
@@ -2652,7 +2601,7 @@ Proof.
   ring.
   move => i Hi ; exact: (Hnth (S i) (lt_n_S _ _ Hi)).
   rewrite size_mkseq => i Hi ; rewrite !nth_mkseq ?S_INR.
-  field ; apply Rgt_not_eq ; by intuition.
+  field ; apply Rgt_not_eq, INRp1_pos.
   apply SSR_leq ; by intuition.
   apply SSR_leq ; by intuition.
 Qed.
@@ -2723,41 +2672,20 @@ Proof.
     apply: lub => x [Hx1 Hx2].
     apply Rnot_lt_le ; contradict H1.
     by apply Rlt_not_le, Hx2.
-  have Hn : forall eps : posreal, {n : nat | (b-a)/2^n < alpha eps}.
+  have Hn : forall eps : posreal, {n : nat | (b-a)/(INR n + 1) < alpha eps}.
     move => eps.
-    case: (Rle_lt_dec (alpha eps) (b-a)) => H.
-    case: (nfloor_ex ((ln (b-a) - ln (alpha eps))/ln 2)) => [ | n [ _ Hn]].
-    apply Rdiv_le_pos.
-    apply -> Rminus_le_0.
-    apply ln_le.
-    by apply Ealpha.
-    exact: H.
-    apply Rlt_trans with (/2).
-    by apply Rinv_0_lt_compat, Rlt_R0_R2.
-    exact: ln_lt_2.
-    exists (S n).
-    apply Rlt_div in Hn.
-    rewrite -S_INR -ln_pow in Hn.
+    have Hn : 0 <= (b-a)/(alpha eps).
+      apply Rdiv_le_pos.
+      by apply Rlt_le, Rgt_minus.
+      by apply Ealpha.
+    set n := (nfloor _ Hn).
+    exists n.
     apply Rlt_div.
-    by intuition.
-    apply ln_lt_inv.
-    apply Rlt_le_trans with (2 := H).
+    by apply INRp1_pos.
+    rewrite Rmult_comm ; apply Rlt_div.
     by apply Ealpha.
-    apply Rmult_lt_0_compat.
-    by apply Ealpha.
-    by intuition.
-    rewrite ln_mult.
-    apply Rminus_gt.
-    apply Rgt_minus in Hn.
-    by replace (ln (alpha eps) + ln (2 ^ S n) - ln (b - a))
-      with (ln (2 ^ S n) - (ln (b - a) - ln (alpha eps))) by ring.
-    by apply Ealpha.
-    by intuition.
-    exact: Rlt_R0_R2.
-    apply Rlt_trans with (/2).
-    by apply Rinv_0_lt_compat, Rlt_R0_R2.
-    exact: ln_lt_2.
-    exists O ; rewrite pow_O /Rdiv Rinv_1 Rmult_1_r ; exact: H.
+    rewrite /n /nfloor ; case: nfloor_ex => /= n' Hn'.
+    by apply Hn'.
   
   rewrite /Riemann_integrable.
   suff H : forall eps : posreal,
@@ -2815,8 +2743,8 @@ Proof.
     rewrite /Rmin ; case: Rle_dec (Rlt_le _ _ Hab) => //= _ _ ;
     field ; apply Rgt_not_eq ; by intuition.
     split.
-    rewrite size_compat size_mkseq nth_compat nth_mkseq /=.
-    rewrite pow2_INR /Rmax ; case: Rle_dec (Rlt_le _ _ Hab) => // _ _ ;
+    rewrite size_compat size_mkseq nth_compat nth_mkseq ?S_INR /=.
+    rewrite /Rmax ; case: Rle_dec (Rlt_le _ _ Hab) => // _ _ ;
     field ; apply Rgt_not_eq ; by intuition.
     by [].
     split.
@@ -2871,13 +2799,13 @@ have Hfin : forall i, (S i < size (RInt_part a b n))%nat ->
   rewrite size_mkseq => Hi ;
   rewrite !nth_mkseq.
   rewrite /Sup_fct.
-  have H : (a + INR i * (b - a) / 2 ^ n) <
-    (a + (INR (S i)) * (b - a) / 2 ^ n).
+  have H : (a + INR i * (b - a) / (INR n + 1)) <
+    (a + (INR (S i)) * (b - a) / (INR n + 1)).
     rewrite S_INR ; apply Rminus_gt ; field_simplify.
     rewrite -Rdiv_1 Rplus_comm ; apply Rdiv_lt_0_compat. 
     by apply Rgt_minus.
-    by intuition.
-    apply Rgt_not_eq ; by intuition.
+    by apply INRp1_pos.
+    by apply Rgt_not_eq, INRp1_pos.
   move: (Rlt_not_eq _ _ H) ; case: Req_EM_T => // H0 _.
   move: (ex_Im_fct _ _ _ _) ;
   rewrite /Rmin /Rmax ; 
@@ -2895,16 +2823,16 @@ have Hfin : forall i, (S i < size (RInt_part a b n))%nat ->
   by apply Hm'.
   rewrite /Rmin /Rmax ; case: Rle_dec (Rlt_le _ _ Hab) => // _ _ ; split ;
   apply Rlt_le.
-  replace a with (a + INR O * (b - a) / 2 ^ n) 
-    by (simpl ; field ; apply Rgt_not_eq ; intuition).
+  replace a with (a + INR O * (b - a) / (INR n + 1)) 
+    by (simpl ; field ; apply Rgt_not_eq, INRp1_pos).
   apply Rle_lt_trans with (2 := proj1 Hx).
   apply Rplus_le_compat_l, Rmult_le_compat_r.
   apply Rlt_le, Rinv_0_lt_compat ; by intuition.
   apply Rmult_le_compat_r.
   by apply Rlt_le, Rgt_minus.
   apply le_INR ; by intuition.
-  replace b with (a + INR (pow2 n) * (b - a) / 2 ^ n) 
-    by (rewrite pow2_INR ; field ; apply Rgt_not_eq ; intuition).
+  replace b with (a + INR (S n) * (b - a) / (INR n + 1)) 
+    by (rewrite S_INR ; field ; apply Rgt_not_eq, INRp1_pos).
   apply Rlt_le_trans with (1 := proj2 Hx).
   apply Rplus_le_compat_l, Rmult_le_compat_r.
   apply Rlt_le, Rinv_0_lt_compat ; by intuition.
@@ -2912,9 +2840,9 @@ have Hfin : forall i, (S i < size (RInt_part a b n))%nat ->
   by apply Rlt_le, Rgt_minus.
   apply le_INR ; by intuition.
   case : H1 => y Hy.
-  case: (ub y Hy) => //.
-  by apply SSR_leq.
-  by apply SSR_leq, lt_le_weak.
+  by case: (ub y Hy).
+  apply SSR_leq ; by intuition.
+  apply SSR_leq ; by intuition.
 
 have Hfin' : forall t, is_finite (SF_sup_fun (fun t : R => Rabs (f t - phi t)) a b n t).
   rewrite /SF_sup_fun ; case: Rle_dec (Rlt_le _ _ Hab) => // _ _.
@@ -3016,8 +2944,8 @@ have Hfin' : forall t, is_finite (SF_sup_fun (fun t : R => Rabs (f t - phi t)) a
   exact: Ht_b.
   move => j Hj ; apply (Hi (S j) (lt_n_S _ _ Hj)).
   simpl ; field ; apply Rgt_not_eq ; by intuition.
-  rewrite -nth_last size_mkseq nth_mkseq //= pow2_INR ;
-  field ; apply Rgt_not_eq ; by intuition.
+  rewrite -nth_last size_mkseq nth_mkseq ?S_INR //= ;
+  field ; apply Rgt_not_eq, INRp1_pos.
 
 (* Partie 2 *)
 (* * SF_lx ptd = RInt_part a b n *)
@@ -3030,12 +2958,13 @@ have Hfin' : forall t, is_finite (SF_sup_fun (fun t : R => Rabs (f t - phi t)) a
   exact: Hptd.
   rewrite SF_lx_f2.
   suff : forall i, (S i < size (RInt_part a b n))%nat ->
-    nth 0 (RInt_part a b n) (S i) - nth 0 (RInt_part a b n) i = (b-a)/2^n.
+    nth 0 (RInt_part a b n) (S i) - nth 0 (RInt_part a b n) i = (b-a)/(INR n + 1).
   elim: (RInt_part a b n) => /= [ | h0 t IH].
-  simpl => _ ; rewrite /seq_step /= ; by apply Ealpha.
+  move => _ ; by apply Ealpha.
   case: t IH => /= [ | h1 t] IH Hnth.
-  rewrite /seq_step /= ; by apply Ealpha.
-  rewrite /seq_step /= ; apply (Rmax_case_strong (Rabs (h1 - h0))) => /= _.
+  by apply Ealpha.
+  replace (seq_step _) with (Rmax (Rabs (h1 - h0)) (seq_step (h1::t))) by auto.
+  apply (Rmax_case_strong (Rabs (h1 - h0))) => /= _.
   rewrite (Hnth O (lt_n_S _ _ (lt_O_Sn _))).
   rewrite Rabs_right.
   exact: Hn.
@@ -3054,7 +2983,8 @@ have Hfin' : forall t, is_finite (SF_sup_fun (fun t : R => Rabs (f t - phi t)) a
   replace (head 0 (RInt_part a b n) :: behead (RInt_part a b n))
     with (RInt_part a b n) by auto.
   rewrite size_mkseq nth_mkseq.
-  simpl ; rewrite pow2_INR /Rmax ; case: Rle_dec (Rlt_le _ _ Hab) => //= _ _ ;
+  simpl ssrnat.predn ; rewrite S_INR /Rmax ;
+  case: Rle_dec (Rlt_le _ _ Hab) => //= _ _ ;
   field ; apply Rgt_not_eq ; by intuition.
   simpl ; apply SSR_leq, le_refl.
   move => {HIf} HIf.
@@ -3196,8 +3126,8 @@ have Hfin' : forall t, is_finite (SF_sup_fun (fun t : R => Rabs (f t - phi t)) a
     | left Ha => match Rle_dec t b with
       | right _ => t
       | left Hb => match Hp t (conj Ha Hb) with
-        | inleft H => (a + (2 * INR (projT1 H) + 1) * (b - a) / 2 ^ S n)
-        | inright _ => (a + (2 ^ S n - 1) * (b - a) / 2 ^ S n)
+        | inleft H => (a + (INR (projT1 H) + /2) * (b - a) / (INR n + 1))
+        | inright _ => (a + (INR n + /2) * (b - a) / (INR n + 1))
       end
     end
   end.
@@ -3224,10 +3154,12 @@ have Hfin' : forall t, is_finite (SF_sup_fun (fun t : R => Rabs (f t - phi t)) a
     split ; simpl ; apply Rminus_le_0 ; field_simplify.
     rewrite -Rdiv_1 ; apply Rdiv_le_pos.
     rewrite Rplus_comm -Rminus_le_0 ; exact: (Rlt_le _ _ Hab).
+    replace (2 * INR n + 2) with (2 * (INR n + 1)) by field.
     apply Rmult_lt_0_compat ; by intuition.
     apply Rgt_not_eq ; by intuition.
     rewrite -Rdiv_1 ; apply Rdiv_le_pos.
     rewrite Rplus_comm -Rminus_le_0 ; exact: (Rlt_le _ _ Hab).
+    replace (2 * INR n + 2) with (2 * (INR n + 1)) by field.
     apply Rmult_lt_0_compat ; by intuition.
     apply Rgt_not_eq ; by intuition.
     apply SSR_leq ; rewrite size_mkseq in Hi, Hj ; by intuition.
@@ -3253,27 +3185,24 @@ have Hfin' : forall t, is_finite (SF_sup_fun (fun t : R => Rabs (f t - phi t)) a
     apply RInt_part_sort, Rlt_le, Hab.
     by [].
     rewrite size_mkseq ; by intuition.
-    suff : i = (pow2 n - 1)%nat.
+    suff : i = n.
     move => ->.
-    rewrite !nth_mkseq.
-    rewrite S_INR.
-    rewrite minus_INR.
-    rewrite pow2_INR.
+    rewrite !nth_mkseq ?S_INR.
     split ; simpl ; apply Rminus_le_0 ; field_simplify.
     rewrite -Rdiv_1 ; apply Rdiv_le_pos.
     rewrite Rplus_comm -Rminus_le_0 ; exact: (Rlt_le _ _ Hab).
+    replace (2 * INR n + 2) with (2 * (INR n + 1)) by ring.
     apply Rmult_lt_0_compat ; by intuition.
     apply Rgt_not_eq ; by intuition.
     rewrite -Rdiv_1 ; apply Rdiv_le_pos.
     rewrite Rplus_comm -Rminus_le_0 ; exact: (Rlt_le _ _ Hab).
+    replace (2 * INR n + 2) with (2 * (INR n + 1)) by ring.
     apply Rmult_lt_0_compat ; by intuition.
     apply Rgt_not_eq ; by intuition.
-    apply INR_le ; rewrite pow2_INR /= ; apply pow_R1_Rle.
-    rewrite -{1}(Rplus_0_l 1) ; apply Rplus_le_compat_r, Rle_0_1.
     apply SSR_leq ; by intuition.
     apply SSR_leq ; by intuition.
     apply le_antisym ; apply not_lt.
-    have Hij : nth 0 (RInt_part a b n) i < nth 0 (RInt_part a b n) (pow2 n).
+    have Hij : nth 0 (RInt_part a b n) i < nth 0 (RInt_part a b n) (S n).
       apply Rle_lt_trans with 
         (g1 (nth 0 (RInt_part a b n) i) (nth 0 (RInt_part a b n) (S i))).
       by apply H1.
@@ -3287,7 +3216,7 @@ have Hfin' : forall t, is_finite (SF_sup_fun (fun t : R => Rabs (f t - phi t)) a
     apply RInt_part_sort, Rlt_le , Hab.
     by intuition.
     rewrite size_mkseq ; by intuition.
-    have Hij : nth 0 (RInt_part a b n) (pow2 n - 1) < nth 0 (RInt_part a b n) (S i).
+    have Hij : nth 0 (RInt_part a b n) (n) < nth 0 (RInt_part a b n) (S i).
       apply Rle_lt_trans with 
         (g1 (nth 0 (RInt_part a b n) i) (nth 0 (RInt_part a b n) (S i))).
       by apply Ht.
@@ -3319,7 +3248,7 @@ have Hfin' : forall t, is_finite (SF_sup_fun (fun t : R => Rabs (f t - phi t)) a
       case: Rle_dec => // Hb'.
       case: RInt_part_nat => [ [i [Ht Hi]] | Ht] ; 
       case: Hp {h g2 ptd2 H2} => [ [j [Ht' Hj]] | Ht'] ; simpl projT1.
-      apply (f_equal (fun i => f (a + (2 * INR i + 1) * (b - a) / 2 ^ S n))).
+      apply (f_equal (fun i => f (a + (INR i + /2) * (b - a) / (INR n + 1)))).
       apply le_antisym ; apply not_lt.
       move: (Rle_lt_trans _ _ _ (proj1 Ht) (proj2 Ht')) => Hij ;
       contradict Hij.
@@ -3333,7 +3262,7 @@ have Hfin' : forall t, is_finite (SF_sup_fun (fun t : R => Rabs (f t - phi t)) a
       by apply RInt_part_sort, Rlt_le.
       by [].
       by intuition.
-      absurd (i < pow2 n - 1)%nat.
+      absurd (i < n)%nat.
       move: (Rle_lt_trans _ _ _ (proj1 Ht') (proj2 Ht)) => Hij ; 
       contradict Hij.
       apply Rle_not_lt, sorted_incr.
@@ -3341,7 +3270,7 @@ have Hfin' : forall t, is_finite (SF_sup_fun (fun t : R => Rabs (f t - phi t)) a
       by [].
       rewrite size_mkseq ; by intuition.
       rewrite size_mkseq in Hi ; by intuition.
-      absurd (j < pow2 n - 1)%nat.
+      absurd (j < n)%nat.
       move: (Rle_lt_trans _ _ _ (proj1 Ht) (proj2 Ht')) => Hij ; 
       contradict Hij.
       apply Rle_not_lt, sorted_incr.
@@ -3354,16 +3283,14 @@ have Hfin' : forall t, is_finite (SF_sup_fun (fun t : R => Rabs (f t - phi t)) a
   have : forall i, (i < size (RInt_part a b n))%nat ->
     a <= nth 0 (RInt_part a b n) i <= b.
     move => i ; rewrite size_mkseq => Hi ; rewrite nth_mkseq.
-    pattern b at 3 ; replace b with (a + 2^n * (b - a) / 2 ^ n) by 
+    pattern b at 3 ; replace b with (a + (INR n + 1) * (b - a) / (INR n + 1)) by 
       (field ; apply Rgt_not_eq ; intuition).
-    pattern a at 1 ; replace a with (a + 0 * (b - a) / 2 ^ n) by 
+    pattern a at 1 ; replace a with (a + 0 * (b - a) / (INR n + 1)) by 
       (field ; apply Rgt_not_eq ; intuition).
     apply Rgt_minus in Hab.
     split ; apply Rplus_le_compat_l ; repeat apply Rmult_le_compat_r ;
     try by intuition.
-    apply Rlt_le ; by intuition.
-    apply Rlt_le ; by intuition.
-    rewrite -pow2_INR ; apply le_INR ; by intuition.
+    rewrite -S_INR ; apply le_INR ; by intuition.
     by apply SSR_leq.
     revert ptd1 H1 ;
     elim: (RInt_part a b n) {4 5}(0) => [ z ptd1 H1 Hnth | x0 ].

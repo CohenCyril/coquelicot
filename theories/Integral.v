@@ -76,53 +76,33 @@ clear H.
 apply Lim_seq_ext => n.
 rewrite /RInt /RInt_val.
 apply f_equal.
-rewrite /SF_val_ly /=.
-change 0 with (INR 0) at 2 4.
-rewrite -(minus_diag (pow2 n)).
-generalize (le_refl (pow2 n)).
-generalize (pow2 n) at 1 4 6 7 9 11 12.
-elim => [|m IHm].
-easy.
-intros H.
-rewrite minus_Sn_m //.
-simpl.
-rewrite IHm.
-2: now apply le_Sn_le.
-rewrite Heq //.
-rewrite minus_INR //.
-rewrite minus_INR.
-2: now apply le_Sn_le.
-replace (INR m) with (INR m + 1 - 1) by ring.
-rewrite -S_INR.
-rewrite pow2_INR.
-replace ((a + (2 ^ n - INR (S m)) * (b - a) / 2 ^ n + (a + (2 ^ n - (INR (S m) - 1)) * (b - a) / 2 ^ n)) / 2)
-  with (a + (b - a) * ((2 * (2 ^ n - INR (S m)) + 1) / (2 * 2 ^ n))).
-pattern a at 1 ; replace a with (a + (b - a) * 0) by ring.
-pattern b at 4 ; replace b with (a + (b - a) * 1) by ring.
-assert (Hminus: forall x y, x <= y -> 0 <= y - x).
-intros x y Hxy.
-apply Rplus_le_reg_r with x.
-now ring_simplify.
-change (2 * 2 ^ n) with (2 ^ (S n)).
-rewrite -pow2_INR -minus_INR // -(mult_INR 2) -(plus_INR _ 1).
-split ; apply Rplus_le_compat_l ; apply Rmult_le_compat_l.
-now apply Hminus.
-apply Rdiv_le_pos.
-apply pos_INR.
-apply pow_lt, Rlt_R0_R2.
-now apply Hminus.
-apply Rmult_le_reg_r with (2 ^ (S n)).
-apply pow_lt, Rlt_R0_R2.
-rewrite Rmult_assoc Rinv_l.
-rewrite Rmult_1_l Rmult_1_r -pow2_INR.
-apply le_INR.
-simpl pow2.
-clear -H ; omega.
-apply pow_nonzero.
-now apply (IZR_neq 2 0).
-field.
-apply pow_nonzero.
-now apply (IZR_neq 2 0).
+rewrite /SF_val_ly.
+move: Heq.
+pattern b at 1 ; replace b with (seq.last 0 (RInt_part a b n)).
+pattern a at 1 ; replace a with (seq.head 0 (RInt_part a b n)).
+move: (RInt_part_sort a b n Hab).
+elim: (RInt_part a b n) => [ | x0].
+by [].
+case => /= [ | x1 s] IH Hs Heq.
+by [].
+apply f_equal2.
+apply Heq ; split.
+pattern x0 at 1 ; replace x0 with ((x0+x0)/2) by field.
+apply Rmult_le_compat_r ; by intuition.
+apply Rle_trans with x1.
+pattern x1 at 2 ; replace x1 with ((x1+x1)/2) by field.
+apply Rmult_le_compat_r ; by intuition.
+apply (SF_seq.sorted_last (seq.Cons _ x1 s) O (proj2 Hs) (lt_O_Sn _) 0).
+apply IH.
+by apply Hs.
+move => x Hx ; apply: Heq ; split.
+apply Rle_trans with (2 := proj1 Hx) ; by apply Hs.
+by apply Hx.
+simpl ; field ; by apply Rgt_not_eq, INRp1_pos.
+rewrite -seq.nth_last seq.size_mkseq seq.nth_mkseq.
+simpl ssrnat.predn ; rewrite S_INR ;
+field ; by apply Rgt_not_eq, INRp1_pos.
+by [].
 Qed.
 
 Lemma ex_RInt_const :
@@ -171,8 +151,8 @@ intros a b.
 rewrite -Lim_seq_scal.
 apply Lim_seq_ext => n.
 unfold RInt_val.
-replace (l * ((b - a) / 2 ^ n * seq.foldr Rplus 0 (SF_val_ly f a b n)))
-  with ((b - a) / 2 ^ n * (l * seq.foldr Rplus 0 (SF_val_ly f a b n))) by ring.
+replace (l * ((b - a) / (INR n + 1) * seq.foldr Rplus 0 (SF_val_ly f a b n)))
+  with ((b - a) / (INR n + 1) * (l * seq.foldr Rplus 0 (SF_val_ly f a b n))) by ring.
 apply f_equal.
 unfold SF_val_ly.
 apply eq_sym.

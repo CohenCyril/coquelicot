@@ -2,6 +2,15 @@ Require Import Reals.
 
 Open Scope R_scope.
 
+(** * INR *)
+Lemma INRp1_pos : forall n, 0 < INR n + 1.
+Proof.
+intros N.
+rewrite <- S_INR.
+apply lt_0_INR.
+apply lt_0_Sn.
+Qed.
+
 (** * Operations on Rdiv *)
 
 Lemma Rdiv_1 : forall x : R, x = x/1.
