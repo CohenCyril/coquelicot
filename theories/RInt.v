@@ -588,7 +588,7 @@ Proof.
   have Hab : (a <= b) ; [by apply Rle_trans with (1 := proj1 Hx), Hx | ].
   rewrite /SF_sup_fun /SF_sup_seq ; case: Rle_dec => // _.
   case: RInt_part_nat => {Hx} [ [ i [Hx Hi] ] | Hx] ; simpl projT1.
-(* i < 2^n - 1 *)
+(* i < n *)
   case: (RInt_part a b n) (RInt_part_sort a b n Hab) i Hi x Hx => {a b Hab n} [| h s] Hs /= i Hi.
     by apply lt_n_O in Hi.
   case: (s) Hs (i) (lt_S_n _ _ Hi) => {s i Hi} [| h0 s] Hs /= i Hi.
@@ -608,7 +608,7 @@ Proof.
   case: Rlt_dec => [ Hx0 | _ ] //.
   contradict Hx0 ; apply Rle_not_lt, Rle_trans with (2 := proj1 Hx), 
   (sorted_head [:: h0, h1 & s] _ (proj2 Hs)) ; simpl; intuition.
-(* i = 2^n - 1 *)
+(* i = n *)
   move: x Hx.
   suff : (1 < size (RInt_part a b n))%nat.
   have: (n = size (RInt_part a b n) - 2)%nat ;
@@ -644,7 +644,7 @@ Proof.
   have Hab : (a <= b) ; [by apply Rle_trans with (1 := proj1 Hx), Hx | ].
   rewrite /SF_inf_fun /SF_inf_seq ; case: Rle_dec => // _.
   case: RInt_part_nat => {Hx} [ [ i [Hx Hi] ] | Hx] ; simpl projT1.
-(* i < 2^n - 1 *)
+(* i < n *)
   case: (RInt_part a b n) (RInt_part_sort a b n Hab) i Hi x Hx => {a b Hab n} [| h s] Hs /= i Hi.
     by apply lt_n_O in Hi.
   case: (s) Hs (i) (lt_S_n _ _ Hi) => {s i Hi} [| h0 s] Hs /= i Hi.
@@ -664,7 +664,7 @@ Proof.
   case: Rlt_dec => [ Hx0 | _ ] //.
   contradict Hx0 ; apply Rle_not_lt, Rle_trans with (2 := proj1 Hx), 
   (sorted_head [:: h0, h1 & s] _ (proj2 Hs)) ; simpl; intuition.
-(* i = 2^n - 1 *)
+(* i = n *)
   move: x Hx.
   suff : (1 < size (RInt_part a b n))%nat.
   have: (n = size (RInt_part a b n) - 2)%nat ;
