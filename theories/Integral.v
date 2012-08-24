@@ -9,25 +9,57 @@ Lemma ex_RInt_ext :
   ex_RInt f a b -> ex_RInt g a b.
 Proof.
 intros f g a b Heq If.
-apply ex_RInt_correct_1.
-apply Riemann_integrable_ext with (1 := Heq).
-now apply ex_RInt_correct_2.
+case: If => If Hex ; exists If => eps.
+case: (Hex eps) => {Hex} alpha Hex ;
+exists alpha => ptd Hptd Hstep Hhead Hlast.
+replace (Riemann_sum g ptd) with (Riemann_sum f ptd).
+by apply Hex.
+move: (Rmin a b) (Rmax a b) Heq Hhead Hlast Hptd.
+apply SF_seq.SF_cons_ind with (s := ptd)
+  => /= [x0 | [x0 y0] s IH] /= a' b' Heq Hhead Hlast Hptd.
+reflexivity.
+rewrite !Riemann_sum_cons /= ; apply f_equal2.
+rewrite Heq.
+reflexivity.
+rewrite -Hhead -Hlast ; split.
+by apply (Hptd O (lt_O_Sn _)).
+apply Rle_trans with (SF_seq.SF_h s).
+by apply (Hptd O (lt_O_Sn _)).
+apply (SF_seq.sorted_last (seq.Cons _ (SF_seq.SF_h s) (seq.unzip1 (SF_seq.SF_t s))) O)
+  with (x0 := 0).
+apply ptd_sort, ptd_cons with (1 := Hptd).
+by apply lt_O_Sn.
+apply (IH (SF_seq.SF_h s) b').
+move => x Hx ; apply Heq ; split.
+apply Rle_trans with (SF_seq.SF_h s).
+rewrite -Hhead ; by apply (ptd_sort _ Hptd).
+by apply Hx.
+by apply Hx.
+reflexivity.
+by apply Hlast.
+by apply ptd_cons with (1 := Hptd).
 Qed.
 
 Lemma ex_RInt_point :
   forall f a, ex_RInt f a a.
 Proof.
 intros f a.
-apply ex_RInt_correct_1.
-apply RiemannInt_P7.
+exists 0 => eps ; exists (mkposreal _ Rlt_0_1) => ptd _ _ _ _.
+rewrite Rminus_eq0 /signe.
+case: Rle_dec (Rle_refl 0) => // H _.
+case: Rle_lt_or_eq_dec (Rle_not_lt _ _ H) => // _ _.
+rewrite Rmult_0_l Rminus_0_r Rabs_R0.
+by apply eps.
 Qed.
 
 Lemma RInt_point :
   forall f a, RInt f a a = 0.
 Proof.
 intros f a.
-rewrite -(RiemannInt_P9 (RiemannInt_P7 f a)).
-apply RInt_correct.
+rewrite -(Lim_seq_const 0).
+rewrite /RInt ; case: Rle_dec (Rle_refl a) => // _ _ ;
+apply Lim_seq_ext.
+move => n ; rewrite /RInt_val ; field ; apply Rgt_not_eq, INRp1_pos.
 Qed.
 
 Lemma RInt_swap :
@@ -109,15 +141,48 @@ Lemma ex_RInt_const :
   forall v a b, ex_RInt (fun _ => v) a b.
 Proof.
 intros f a b.
-apply ex_RInt_correct_1.
-apply Riemann_integrable_const.
+wlog: a b /(a < b) => [Hw | Hab].
+  case: (Rle_lt_dec a b) => Hab.
+  case: Hab => Hab.
+  by apply Hw.
+  rewrite Hab ; by apply ex_RInt_point.
+  by apply ex_RInt_swap, Hw.
+exists (f * (b-a)) => eps ; exists (mkposreal _ Rlt_0_1) => ptd _ _.
+rewrite /Rmin /Rmax ; case: Rle_dec (Rlt_le _ _ Hab) => // _ _.
+rewrite /signe ; case: Rle_dec (Rlt_le _ _ (Rgt_minus _ _ Hab)) => // H _ ;
+case: Rle_lt_or_eq_dec (Rlt_not_eq _ _ (Rgt_minus _ _ Hab)) => // {H} _ _ ;
+rewrite Rmult_1_l => Ha Hb.
+replace (Riemann_sum _ _) with (f * (b-a)).
+rewrite Rminus_eq0 Rabs_R0 ; by apply eps.
+rewrite -Ha -Hb => {Ha Hb} ;
+apply SF_seq.SF_cons_ind with (s := ptd) => {ptd} [ x0 | [x0 y0] s IH] /= .
+rewrite /Riemann_sum /SF_seq.RInt_seq /= ; ring.
+rewrite Riemann_sum_cons /= -IH /= ; ring.
 Qed.
 
 Lemma RInt_const (a b c : R) :
   RInt (fun _ => c) a b = c * (b-a).
 Proof.
-rewrite (RInt_correct _ _ _ (Riemann_integrable_const _ _ _)).
-apply RiemannInt_const.
+wlog: a b /(a <= b) => [Hw | Hab].
+  case: (Rle_lt_dec a b) => Hab.
+  by apply Hw.
+  rewrite -RInt_swap Hw.
+  ring.
+  by apply Rlt_le.
+rewrite /RInt ; case: Rle_dec => // _.
+rewrite -(Lim_seq_const (c * (b-a))).
+apply Lim_seq_ext => n.
+rewrite /RInt_val.
+replace (seq.foldr _ 0 _) with (c * (INR n + 1)).
+field ; apply Rgt_not_eq, INRp1_pos.
+rewrite /SF_val_ly -S_INR.
+replace (S n) with (Peano.pred (seq.size (RInt_part a b n))).
+elim: (RInt_part a b n) => [ | x0] /=.
+ring.
+case => [ | x1 s] ; rewrite ?(S_INR (seq.size s)) => /= IH.
+ring.
+rewrite -IH /= ; ring.
+by rewrite seq.size_mkseq.
 Qed.
 
 Lemma ex_RInt_abs :
