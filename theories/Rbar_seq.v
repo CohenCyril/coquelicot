@@ -911,6 +911,25 @@ Proof.
   by rewrite H.
 Qed.
 
+Lemma Rbar_ex_lim_seq_dec (u : nat -> Rbar) :
+  {Rbar_ex_lim_seq u} + {~Rbar_ex_lim_seq u}.
+Proof.
+  case: (Rbar_eq_dec (Rbar_limsup_seq u) (Rbar_liminf_seq u)) ;
+  rewrite /Rbar_limsup_seq ;
+  case: Rbar_ex_limsup_seq => /= ls Hs ;
+  rewrite /Rbar_liminf_seq ;
+  case: Rbar_ex_liminf_seq => /= li Hi Heq.
+  left.
+  rewrite Heq in Hs => {ls Heq}.
+  exists li ; by apply Rbar_is_limsup_liminf_lim.
+  right ; contradict Heq.
+  case: Heq => l Hl.
+  set Hs0 := Rbar_is_lim_limsup u l Hl.
+  set Hi0 := Rbar_is_lim_liminf u l Hl.
+  rewrite (Rbar_is_limsup_eq u u ls l) => //.
+  rewrite (Rbar_is_liminf_eq u u li l) => //.
+Qed.
+
 (** ** Limit and opposite *)
 
 Lemma Rbar_is_lim_seq_opp (u : nat -> Rbar) l : 

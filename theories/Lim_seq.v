@@ -25,6 +25,32 @@ Proof.
   case: (Rbar_plus _ _) => //= ; field.
 Qed.
 
+Lemma ex_lim_seq_dec (u : nat -> R) :
+  {ex_lim_seq u} + {~ex_lim_seq u}.
+Proof.
+  case: (Rbar_ex_lim_seq_dec (fun n => Finite (u n))) => H.
+  apply Rbar_ex_lim_is_lim in H.
+  case: (Rbar_lim_seq (fun n : nat => Finite (u n))) H => [l | | ] H.
+  left ; exists l ; by apply is_lim_seq_correct.
+  right => H0.
+  case: H0 => l Hl.
+  apply is_lim_seq_correct in Hl.
+  absurd (p_infty = (Finite l)) => //.
+  apply Rbar_is_lim_limsup in H ;
+  apply Rbar_is_lim_limsup in Hl ;
+  rewrite (Rbar_is_limsup_eq _ _ p_infty (Finite l) _ H Hl) => //.
+  right => H0.
+  case: H0 => l Hl.
+  apply is_lim_seq_correct in Hl.
+  absurd (m_infty = (Finite l)) => //.
+  apply Rbar_is_lim_limsup in H ;
+  apply Rbar_is_lim_limsup in Hl ;
+  rewrite (Rbar_is_limsup_eq _ _ m_infty (Finite l) _ H Hl) => //.
+  right ; contradict H.
+  case: H => l Hl.
+  exists (Finite l) ; by apply is_lim_seq_correct.
+Qed.
+
 (** ** Correction of Lim_seq *)
 
 Lemma is_lim_seq_unique (u : nat -> R) :

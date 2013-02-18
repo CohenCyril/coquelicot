@@ -260,24 +260,25 @@ Definition CV_circle (a : nat -> R) : Rbar :=
 
 Lemma CV_circle_carac (a : nat -> R) (x : R) :
   Rbar_lt (Finite (Rabs x)) (CV_circle a)
-    -> ~ ~ ex_pseries a x.
+    -> ex_pseries a x.
 Proof.
-  move => Ha ; contradict Ha.
-  apply Rbar_le_not_lt.
-  rewrite /CV_circle /Lub_Rbar_ne.
-  case: ex_lub_Rbar_ne => l /= [ub lub].
-  apply: lub => r Hr.
-  apply Rbar_finite_le.
-  apply Rnot_lt_le ; contradict Ha.
-  apply CV_circle_pty2.
-  move: (Hr).
-  apply CV_circle_pty1.
-  split.
-  by apply Rabs_pos.
-  by apply Rlt_le.
+  move => Ha.
+  have H : ~ ~ ex_pseries a x.
+    contradict Ha.
+    apply Rbar_le_not_lt.
+    rewrite /CV_circle /Lub_Rbar_ne.
+    case: ex_lub_Rbar_ne => l /= [ub lub].
+    apply: lub => r Hr.
+    apply Rbar_finite_le.
+    apply Rnot_lt_le ; contradict Ha.
+    apply CV_circle_pty2.
+    move: (Hr).
+    apply CV_circle_pty1.
+    split.
+    by apply Rabs_pos.
+    by apply Rlt_le.
+  by case: (ex_lim_seq_dec (sum_f_R0 (fun k : nat => a k * x ^ k))).
 Qed.
-
-(** Todo: find a better definition for the convergence circle. *)
 
 (** ** Convergence criterion *)
 
@@ -312,6 +313,18 @@ Proof.
   by apply H.
   move => s Hs ; exists s ; by apply is_pseries_equiv.
 Qed.
+
+Lemma DAlembert_CV_circle_neq_0 (a : nat -> R) (l : R) :
+  (forall n:nat, a n <> 0) -> l <> 0 ->
+  is_lim_seq (fun n:nat => Rabs (a (S n) / a n)) l ->
+  CV_circle a = Finite (/l).
+Proof.
+Admitted. (** Admitted *)
+Lemma DAlembert_CV_circle_eq_0 (a : nat -> R) :
+  (forall n:nat, a n <> 0) -> 
+  is_lim_seq (fun n:nat => Rabs (a (S n) / a n)) 0 ->
+  CV_circle a = p_infty.
+Admitted. (** Admitted *)
 
 (** Comming soon
   - convergence circle *)
