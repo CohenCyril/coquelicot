@@ -261,6 +261,29 @@ Proof.
   by [].
 Qed.
 
+Lemma is_lim_seq_decr (u : nat -> R) (l : R) :
+  is_lim_seq u l -> is_lim_seq (fun n => match n with | O => 0 | S n => u n end) l.
+Proof.
+  move => Hu eps.
+  case: (Hu eps) => {Hu} N Hu.
+  exists (S N) ;
+  case => [ | n] Hn.
+  by apply le_Sn_0 in Hn.
+  by apply Hu, le_S_n.
+Qed.
+Lemma ex_lim_seq_decr (u : nat -> R) :
+  ex_lim_seq u -> ex_lim_seq (fun n => match n with | O => 0 | S n => u n end).
+Proof.
+  move => [l Hu].
+  exists l ; by apply is_lim_seq_decr.
+Qed.
+Lemma Lim_seq_decr (u : nat -> R) :
+  Lim_seq (fun n => match n with | O => 0 | S n => u n end) = Lim_seq u.
+Proof.
+  rewrite -Lim_seq_incr.
+  by apply Lim_seq_ext.
+Qed.
+
 (** * Operations *)
 (** ** Linear combination *)
 
