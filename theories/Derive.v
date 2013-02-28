@@ -310,6 +310,28 @@ apply (f_equal (fun v => v / _)).
 ring.
 Qed.
 
+Lemma is_derive_mult (f g : R -> R) (x : R) (d1 d2 : R) :
+  is_derive f x d1 -> is_derive g x d2
+    -> is_derive (fun x => f x * g x) x (d1 * g x + f x * d2).
+Proof.
+  exact: derivable_pt_lim_mult.
+Qed.
+Lemma ex_derive_mult (f g : R -> R) (x : R) :
+  ex_derive f x -> ex_derive g x
+    -> ex_derive (fun x => f x * g x) x.
+Proof.
+  move => [d1 H1] [d2 H2].
+  exists (d1 * g x + f x * d2) ; exact: is_derive_mult.
+Qed.
+Lemma Derive_mult (f g : R -> R) (x : R) :
+  ex_derive f x -> ex_derive g x
+    -> Derive (fun x => f x * g x) x = Derive f x * g x + f x * Derive g x.
+Proof.
+  move => H1 H2.
+  apply is_derive_unique.
+  apply is_derive_mult ; exact: Derive_correct.
+Qed.
+
 Lemma ex_derive_comp (f g : R -> R) (x : R) :
   ex_derive f (g x) -> ex_derive g x -> ex_derive (fun x => f (g x)) x.
 Proof.
@@ -342,6 +364,31 @@ apply IHn => k Hk.
 apply H.
 now apply le_S.
 now apply H.
+Qed.
+
+Lemma is_derive_pow (f : R -> R) (n : nat) (x : R) (l : R) :
+  is_derive f x l -> is_derive (fun x => (f x)^n) x (INR n * l * (f x)^(pred n)).
+Proof.
+  move => H.
+  rewrite (Rmult_comm _ l) Rmult_assoc Rmult_comm.
+  apply (derivable_pt_lim_comp f (fun x => x^n)).
+  by apply H.
+  by apply derivable_pt_lim_pow.
+Qed.
+Lemma ex_derive_pow (f : R -> R) (n : nat) (x : R) :
+  ex_derive f x -> ex_derive (fun x => (f x)^n) x.
+Proof.
+  case => l H.
+  exists (INR n * l * (f x)^(pred n)).
+  by apply is_derive_pow.
+Qed.
+Lemma Derive_pow (f : R -> R) (n : nat) (x : R) :
+  ex_derive f x -> Derive (fun x => (f x)^n) x = (INR n * Derive f x * (f x)^(pred n)).
+Proof.
+  move => H.
+  apply is_derive_unique.
+  apply is_derive_pow.
+  by apply Derive_correct.
 Qed.
 
 (** * Iterated differential *)
