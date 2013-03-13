@@ -1,4 +1,4 @@
-Require Import Reals Even Div2 ssreflect.
+Require Import Reals Even Div2 MinMax ssreflect.
 Require Import Lim_seq Floor Rcomplements Rbar_theory Sup_seq Total_sup.
 Require Import Lim_fct Derive RInt.
 
@@ -79,6 +79,309 @@ Definition Rbar_min (x y : Rbar) :=
     | right _ => y
   end.
 
+Lemma ex_sqrt (x : R) : {l : R | (l^2 = x /\ 0 <= l) \/ (x < 0 /\ l = 0)}.
+Proof.
+  case: (total_order_T x 0) => Hx0.
+  case: Hx0 => Hx0.
+  exists 0 ; by right.
+  exists 0 ; left ; rewrite Hx0 /= ; split ; [ ring | by apply Rle_refl ].
+  wlog: x Hx0 / (x < 1) => [Hw | Hx1].
+    case: (total_order_T 1 x) => Hx1.
+    case: Hx1 => Hx1.
+    case: (Hw (/x)) => {Hw} [ | | l Hw].
+    by apply Rlt_gt, Rinv_0_lt_compat.
+    by rewrite -(Rmult_1_l (/x)) -Rdiv_lt_1.
+    exists (/l) ; case: Hw => Hw.
+    left ; rewrite -Rinv_pow.
+    split.
+    rewrite (proj1 Hw) Rinv_involutive.
+    by [].
+    by apply Rgt_not_eq, Rlt_gt.
+    apply Rlt_le, Rinv_0_lt_compat.
+    case: Hw => Hw ; case => Hw0.
+    by [].
+    contradict Hw0 ; apply sym_not_eq.
+    contradict Hw ; rewrite Hw pow_ne_zero.
+    by apply Rlt_not_eq, Rinv_0_lt_compat.
+    by [].
+    case: Hw => Hw Hw0.
+    contradict Hw ; rewrite Hw pow_ne_zero.
+    by apply Rlt_not_eq, Rinv_0_lt_compat.
+    by [].
+    case: Hw => Hw _.
+    by apply Rinv_0_lt_compat, Rlt_le, Rle_not_lt in Hx0.
+    exists 1 ; left.
+    rewrite -Hx1 ; split ; [ring | exact: Rle_0_1].
+    by apply Hw.
+  
+  set Xn := fix f n := match n with
+    | O => (0,1)
+    | S n => let a := fst (f n) in
+             let b := snd (f n) in
+             let c := (a+b)/2 in
+             match (Rlt_dec (c^2) x) with
+               | left _ => (c,b)
+               | right _ => (a,c)
+             end
+  end.
+  have H : forall n, snd (Xn n) = fst (Xn n) + /2^n.
+    elim => /= [ | n ->].
+    field.
+    case: Rlt_dec => /= _ ; field ;
+    apply Rgt_not_eq, Rlt_gt, pow_lt, Rlt_R0_R2.
+  have H0 : (forall n m, (n <= m)%nat -> fst (Xn n) <= fst (Xn m)) 
+         /\ (forall n m, (n <= m)%nat -> snd (Xn m) <= snd (Xn n)).
+    suff H0 : forall n,
+      fst (Xn n) <= fst (Xn (S n)) /\ snd (Xn (S n)) <= snd (Xn n).
+      split ; move => n m ; elim: m n => [ | m IH] n Hn.
+      rewrite (le_n_0_eq _ Hn) ; by apply Rle_refl.
+      apply le_lt_eq_dec in Hn ; case: Hn => [Hn | <-].
+      apply Rle_trans with (fst (Xn m)).
+      by apply IH, lt_n_Sm_le.
+      by apply H0.
+      by apply Rle_refl.
+      rewrite (le_n_0_eq _ Hn) ; by apply Rle_refl.
+      apply le_lt_eq_dec in Hn ; case: Hn => [Hn | <-].
+      apply Rle_trans with (snd (Xn m)).
+      by apply H0.
+      by apply IH, lt_n_Sm_le.
+      by apply Rle_refl.
+    elim => [ | n IH] /=.
+    case: Rlt_dec => /= _ ; rewrite Rplus_0_l /Rdiv Rmult_1_l ; split ;
+    try by intuition.
+    apply Rlt_le, Rlt_Rminus ; field_simplify ;
+    rewrite -Rdiv_1  /Rdiv Rmult_1_l ; by intuition.
+    rewrite -/(Xn (S _)) ; case: Rlt_dec => /= _ ; rewrite -/(Xn (S _)) H ;
+    split ; try by intuition.
+    apply Rlt_le, Rlt_Rminus ; field_simplify.
+    rewrite -Rdiv_1 /Rdiv Rmult_1_l -/(pow _ (S (S n))).
+    apply Rinv_0_lt_compat, pow_lt, Rlt_R0_R2.
+    apply Rgt_not_eq, Rlt_gt, pow_lt, Rlt_R0_R2.
+    apply Rlt_le, Rlt_Rminus ; field_simplify.
+    rewrite -Rdiv_1 /Rdiv Rmult_1_l -/(pow _ (S (S n))).
+    apply Rinv_0_lt_compat, pow_lt, Rlt_R0_R2.
+    apply Rgt_not_eq, Rlt_gt, pow_lt, Rlt_R0_R2.
+  
+  exists (Lim_seq (fun n => fst (Xn n))) ; left.
+  have H1 : forall (u : nat -> R) (l : R), is_lim_seq u l -> 
+    is_lim_seq (fun n => (u n) ^ 2) (l ^ 2).
+    move => u l Hu eps.
+    case: (Hu (mkposreal _ Rlt_0_1)) => N0 H1.
+    have : forall n : nat, (N0 <= n)%nat -> Rabs (u n) < Rabs l + 1.
+    move => n Hn.
+    replace (Rabs (u n)) with (Rabs l + (Rabs (u n) - Rabs l)) by ring.
+    apply Rplus_lt_compat_l.
+    apply Rle_lt_trans with (1 := Rabs_triang_inv _ _).
+    by apply H1.
+    move => {H1} H2.
+    case: (fun He => Hu (mkposreal (eps/(2 * Rabs l + 1)) He)) 
+      => [ | {Hu} He N1 Hu] ; simpl in Hu.
+      apply Rdiv_lt_0_compat.
+      by apply eps.
+      apply Rplus_le_lt_0_compat.
+      apply Rmult_le_pos.
+      by apply Rlt_le, Rlt_R0_R2.
+      by apply Rabs_pos.
+      by apply Rlt_0_1.
+    exists (N0 + N1)%nat => n Hn.
+    replace (u n ^ 2 - l ^ 2) 
+      with ((u n - l) * (u n + l)) by (simpl ; ring).
+    rewrite Rabs_mult.
+    replace (pos eps) with ((eps / (2 * Rabs l + 1)) * ((Rabs l + 1) + Rabs l)).
+    apply Rmult_le_0_lt_compat.
+    by apply Rabs_pos.
+    by apply Rabs_pos.
+    apply Hu ; by intuition.
+    apply Rle_lt_trans with (1 := Rabs_triang _ _).
+    apply Rplus_lt_compat_r.
+    apply H2 ; by intuition.
+    field ; apply Rgt_not_eq, Rlt_gt.
+    apply Rplus_le_lt_0_compat.
+    apply Rmult_le_pos.
+    by apply Rlt_le, Rlt_R0_R2.
+    by apply Rabs_pos.
+    by apply Rlt_0_1.
+  have H2 : is_lim_seq (fun n : nat => fst (Xn n)) (Lim_seq (fun n : nat => fst (Xn n))).
+    apply Lim_seq_correct.
+    apply ex_lim_seq_cauchy_corr => eps.
+    have : exists N, forall n, (N <= n)%nat -> /2^n < eps.
+    case: (fun H => pow_lt_1_zero (/2) H eps (cond_pos eps)) => [ | N H2].
+    rewrite Rabs_pos_eq.
+    apply Rlt_Rminus ; rewrite {1}(double_var 1) /Rdiv Rmult_1_l ;
+    ring_simplify ; by intuition.
+    apply Rlt_le ; by intuition.
+    exists N => n Hn ;
+    replace (/2^n) with (Rabs ((/2)^n)).
+    apply H2, Hn.
+    rewrite Rinv_pow.
+    apply Rabs_pos_eq.
+    apply pow_le, Rlt_le ; by intuition.
+    apply Rgt_not_eq, Rlt_gt, Rlt_R0_R2.
+    case => N H2.
+    exists N => n m Hn Hm.
+    apply Rle_lt_trans with (/2^(min n m)).
+    wlog : n m Hn Hm / (m < n)%nat => [ Hw | Hnm ].
+    case: (le_lt_dec m n) => Hnm.
+    apply le_lt_eq_dec in Hnm ; case: Hnm => Hnm.
+    by apply Hw.
+    rewrite Hnm Rminus_eq0 Rabs_R0.
+    apply Rlt_le, Rinv_0_lt_compat, pow_lt, Rlt_R0_R2.
+    rewrite -Ropp_minus_distr' Rabs_Ropp min_comm.
+    by apply Hw.
+    case: (min_spec n m) ; case => H3 H4.
+    by apply lt_le_weak, le_not_lt in H3.
+    rewrite H4.
+    clear H3 H4 Hn Hm.
+    rewrite Rabs_pos_eq.
+    replace (/ 2 ^ m) with ((snd (Xn m)) - (fst (Xn m))).
+    apply Rplus_le_compat_r.
+    apply Rle_trans with ((snd (Xn n))).
+    rewrite H ; apply Rlt_le, Rlt_Rminus ; ring_simplify ;
+    apply Rinv_0_lt_compat, pow_lt, Rlt_R0_R2.
+    by apply H0, lt_le_weak.
+    rewrite H ; ring.
+    rewrite -(Rminus_eq0 (fst (Xn m))) ; apply Rplus_le_compat_r.
+    by apply H0, lt_le_weak.
+    
+    case: (min_spec n m) ; case => H3 H4.
+    rewrite H4 ; by apply H2.
+    rewrite H4 ; by apply H2.
+    
+    move: (H1 _ _ H2) => {H1} H1.
+    move: (Lim_seq (fun n : nat => fst (Xn n))) H1 H2 => l H1 H2.
+    apply is_lim_seq_unique in H1.
+    rewrite -H1 ; split.
+    apply is_lim_seq_unique => eps.
+    have : exists N, 2/2^N + /4^N < eps.
+    case: (fun H => pow_lt_1_zero (/4) H (eps/2) (is_pos_div_2 eps)) => [ | N0 H3].
+    rewrite Rabs_pos_eq.
+    apply Rlt_Rminus ; field_simplify ; rewrite -Rdiv_1 ;
+    apply Rdiv_lt_0_compat ;
+    [apply Rplus_lt_0_compat | apply Rmult_lt_0_compat ] ; by intuition.
+    apply Rlt_le, Rinv_0_lt_compat ; apply Rmult_lt_0_compat ; apply Rlt_R0_R2.
+    case: (fun H => pow_lt_1_zero (/2) H (eps/2) (is_pos_div_2 eps)) => [ | N1 H4].
+    rewrite Rabs_pos_eq.
+    apply Rlt_Rminus ; field_simplify ; rewrite -Rdiv_1 /Rdiv Rmult_1_l ; by intuition.
+    by intuition.
+    
+    set N := (N0+S N1)%nat ; exists N ;
+    replace (/4^N) with (Rabs ((/4)^N)) ;
+    try replace (2/2^N) with (Rabs (2*(/2)^N)).
+    rewrite (double_var eps).
+    apply Rplus_lt_compat.
+    rewrite /N -plus_n_Sm /= ; (field_simplify (2 * (/ 2 * (/ 2) ^ (N0 + N1)))) ;
+    rewrite -Rdiv_1.
+    by apply H4, le_plus_r.
+    by apply H3, le_plus_l.
+    rewrite -Rinv_pow.
+    apply Rabs_pos_eq.
+    apply Rlt_le, Rdiv_lt_0_compat.
+    apply Rlt_R0_R2.
+    apply pow_lt, Rlt_R0_R2.
+    apply Rgt_not_eq, Rlt_gt, Rlt_R0_R2.
+    rewrite Rinv_pow.
+    apply Rabs_pos_eq.
+    apply Rlt_le, pow_lt, Rinv_0_lt_compat, Rmult_lt_0_compat ; by apply Rlt_R0_R2.
+    apply Rgt_not_eq, Rlt_gt, Rmult_lt_0_compat ; by apply Rlt_R0_R2.
+    rewrite -Rinv_pow.
+    apply Rabs_pos_eq.
+    apply Rlt_le, Rdiv_lt_0_compat.
+    apply Rlt_R0_R2.
+    apply pow_lt, Rlt_R0_R2.
+    apply Rgt_not_eq, Rlt_gt, Rlt_R0_R2.
+    
+    case => N H3.
+    exists N => n Hn.
+    apply Rle_lt_trans with (2 := H3).
+    rewrite -Ropp_minus_distr' Rabs_Ropp.
+    apply Rabs_le_between'.
+    split.
+    apply Rle_trans with (fst (Xn n) ^ 2).
+    apply Rlt_le, Rlt_Rminus ; ring_simplify.
+    rewrite /Rdiv ?Rinv_pow.
+    apply Rplus_lt_0_compat.
+    apply Rmult_lt_0_compat.
+    by apply Rlt_R0_R2.
+    apply pow_lt, Rinv_0_lt_compat ; apply Rlt_R0_R2.
+    apply pow_lt, Rinv_0_lt_compat, Rmult_lt_0_compat ; apply Rlt_R0_R2.
+    apply Rgt_not_eq, Rlt_gt, Rmult_lt_0_compat ; apply Rlt_R0_R2.
+    apply Rgt_not_eq, Rlt_gt ; apply Rlt_R0_R2.
+    
+    elim: (n) => [ | m IH] /= ; rewrite -?/(pow _ 2).
+    simpl ; rewrite Rmult_0_l ; by apply Rlt_le.
+    case: Rlt_dec => /= ; by intuition.
+    apply Rle_trans with ((snd (Xn n))^2).
+    elim: (n) => [ | m IH] /= ; rewrite -?/(pow _ 2).
+    simpl ; rewrite ?Rmult_1_l ; by apply Rlt_le.
+    case: Rlt_dec => H4 /= ; rewrite -/(pow _ 2).
+    by [].
+    by apply Rnot_lt_le.
+    rewrite H.
+    replace ((fst (Xn n) + / 2 ^ n) ^ 2) with 
+      (fst (Xn n) ^ 2 + (2 * fst (Xn n) / 2 ^ n + / 4 ^ n)).
+      apply Rplus_le_compat_l.
+      apply Rplus_le_compat.
+      apply Rmult_le_compat.
+      apply Rmult_le_pos.
+      apply Rlt_le, Rlt_R0_R2.
+      replace 0 with (fst (Xn O)) by auto.
+      apply H0, le_O_n.
+      apply Rlt_le, Rinv_0_lt_compat, pow_lt, Rlt_R0_R2.
+      rewrite -{2}(Rmult_1_r 2) ; apply Rmult_le_compat_l.
+      apply Rlt_le, Rlt_R0_R2.
+      replace 1 with (snd (Xn O)) by auto.
+      apply Rle_trans with (snd (Xn n)).
+      rewrite H ; apply Rlt_le, Rlt_Rminus ; ring_simplify ;
+      apply Rinv_0_lt_compat, pow_lt, Rlt_R0_R2.
+      apply H0, le_O_n.
+      apply Rle_Rinv.
+      apply pow_lt, Rlt_R0_R2.
+      apply pow_lt, Rlt_R0_R2.
+      apply Rle_pow ; by intuition.
+      apply Rle_Rinv.
+      apply pow_lt, Rmult_lt_0_compat ; apply Rlt_R0_R2.
+      apply pow_lt, Rmult_lt_0_compat ; apply Rlt_R0_R2.
+      apply Rle_pow ; try by intuition.
+      rewrite -{1}(Rmult_1_l 1) ; apply Rmult_le_compat ; by intuition.
+      apply Rminus_diag_uniq ; simpl ; ring_simplify.
+      rewrite /Rdiv ; ring_simplify ; rewrite Rplus_comm.
+      apply Rminus_diag_eq.
+      rewrite ?Rinv_pow.
+      elim: (n) => /= [ | m ->] ; field.
+      apply Rgt_not_eq, Rlt_gt, Rlt_R0_R2.
+      apply Rgt_not_eq, Rlt_gt, Rmult_lt_0_compat ; apply Rlt_R0_R2.
+      apply is_lim_seq_le with (2 := is_lim_seq_const 0) (3 := H2).
+      move => n ; replace 0 with (fst (Xn O)) by auto.
+      apply H0, le_O_n.
+Qed.
+Definition sqrt (x : R) := projT1 (ex_sqrt x).
+
+Lemma sqrt_pos (x : R) : 0 <= sqrt x.
+Proof.
+  rewrite /sqrt ; case: ex_sqrt => l ;
+  case => Hl /=.
+  by apply Hl.
+  rewrite (proj2 Hl) ; by apply Rle_refl.
+Qed.
+Lemma sqrt_pos_lt (x : R) : (0 < x) -> 0 < sqrt x.
+Proof.
+  rewrite /sqrt ; case: ex_sqrt => l ;
+  case => Hl /= Hx.
+  case: Hl => Hl ; case => H.
+  by apply H.
+  apply Rlt_not_eq in Hx ; contradict Hx.
+  rewrite -Hl -H ; simpl ; ring.
+  apply Rlt_le, Rle_not_lt in Hx ; by intuition.
+Qed.
+
+Lemma sqrt_sqrt (x : R) : (0 <= x) -> sqrt x * sqrt x = x.
+Proof.
+  rewrite /sqrt ; case: ex_sqrt => l ;
+  case ; case => Hl H /= Hx.
+  rewrite -Hl /= ; ring.
+  by apply Rle_not_lt in Hx.
+Qed.
+
 (** * Sequence of functions *)
 
 (** ** Definitions *)
@@ -150,10 +453,10 @@ Lemma CVU_limits (fn : nat -> R -> R) (D : R -> Prop) (x : R) :
     /\ ex_lim (fun y => Lim_seq (fun n => fn n y)) x
     /\ Lim_seq (fun n => Lim (fn n) x) = Lim (fun y => Lim_seq (fun n => fn n y)) x.
 Admitted. (** Admitted *)
-Lemma CVU_cont (fn : nat -> R -> R) (D : R -> Prop) :
-  CVU_dom fn D
+Lemma CVU_cont (fn : nat -> R -> R) (f : R -> R) (D : R -> Prop) :
+  CVU_dom fn D -> (forall x, D x -> is_lim_seq (fun n => fn n x) (f x))
   -> (forall n, forall x, D x -> continuity_pt (fn n) x)
-  -> forall x, D x -> continuity_pt (fun y => Lim_seq (fun n => fn n y)) x.
+  -> forall x, D x -> continuity_pt f x.
 Admitted. (** Admitted *)
 Lemma CVU_Nint (fn Fn : nat -> R -> R) (F : R -> R) (a b : R) (Hab : a < b) :
   CVU_dom fn (fun x => a <= x <= b)
@@ -178,7 +481,279 @@ Lemma CVU_Derive (fn : nat -> R -> R) (a b : R) (Hab : a < b) :
     /\ (forall x, a <= x <= b -> ex_derive (fun y => Lim_seq (fun n => fn n y)) x)
     /\ (forall x, a <= x <= b -> continuity_pt (Derive (fun y => Lim_seq (fun n => fn n y))) x)
     /\ (forall x, a <= x <= b -> Derive (fun y => Lim_seq (fun n => fn n y)) x = Lim_seq (fun n => Derive (fn n) x)).
-Admitted. (** Admitted. *)
+Proof.
+  move => HexDf HcDf [x0 [Hx0 Hexf]] HcvuDf.
+  have H : CVU_cauchy fn (fun x => a <= x <= b).
+    move => eps /=.
+    apply ex_lim_seq_cauchy_corr in Hexf.
+    case: (Hexf (pos_div_2 eps)) => /= {Hexf} Nf Hexf.
+    have He : 0 < eps / (2 * (b-a)) ; [ | set e := mkposreal _ He].
+      apply Rdiv_lt_0_compat.
+      by apply eps.
+      apply Rmult_lt_0_compat.
+      by apply Rlt_R0_R2.
+      by rewrite -Rlt_Rminus.
+    apply CVU_dom_cauchy in HcvuDf.
+    case: (HcvuDf e) => {HcvuDf} Ndf HcvuDf.
+    exists (Nf + Ndf)%nat => n m x Hx Hn Hm.
+    replace (fn n x - fn m x) 
+      with ((fn n x0 - fn m x0) + ((fn n x - fn m x) - (fn n x0 - fn m x0)))
+      by ring.
+    rewrite (double_var eps).
+    apply Rle_lt_trans with (1 := Rabs_triang _ _), Rplus_lt_compat.
+    apply Hexf ; apply le_trans with (Nf + Ndf)%nat ; by intuition.
+    case: (MVT (fun y => fn n y - fn m y) x0 x).
+    move => y Hy ; apply ex_derive_minus ; apply HexDf ; split ; apply Rlt_le.
+    apply Rle_lt_trans with (2 := proj1 Hy) ;
+    apply Rmin_case ; [by apply Hx0 | by apply Hx].
+    apply Rlt_le_trans with (1 := proj2 Hy) ;
+    apply Rmax_case ; [by apply Hx0 | by apply Hx].
+    apply Rle_lt_trans with (2 := proj1 Hy) ;
+    apply Rmin_case ; [by apply Hx0 | by apply Hx].
+    apply Rlt_le_trans with (1 := proj2 Hy) ;
+    apply Rmax_case ; [by apply Hx0 | by apply Hx].
+    move => y Hy ; apply derivable_continuous_pt ;
+    exists (Derive (fun y => fn n y - fn m y) y) ;
+    apply Derive_correct, ex_derive_minus ; apply HexDf ; split.
+    apply Rle_trans with (2 := proj1 Hy) ;
+    apply Rmin_case ; [by apply Hx0 | by apply Hx].
+    apply Rle_trans with (1 := proj2 Hy) ;
+    apply Rmax_case ; [by apply Hx0 | by apply Hx].
+    apply Rle_trans with (2 := proj1 Hy) ;
+    apply Rmin_case ; [by apply Hx0 | by apply Hx].
+    apply Rle_trans with (1 := proj2 Hy) ;
+    apply Rmax_case ; [by apply Hx0 | by apply Hx].
+    move => cn [Hcn ->].
+    rewrite Rabs_mult.
+    case: (Req_dec x x0) => Hxx0.
+    rewrite Hxx0 Rminus_eq0 Rabs_R0 Rmult_0_r ; by apply is_pos_div_2.
+    apply Rlt_le_trans with (e * Rabs (x - x0)).
+    apply Rmult_lt_compat_r.
+    apply Rabs_pos_lt.
+    by apply Rminus_eq_contra.
+    rewrite Derive_minus.
+    apply HcvuDf.
+    split.
+    apply Rle_trans with (2 := proj1 Hcn) ;
+    apply Rmin_case ; [by apply Hx0 | by apply Hx].
+    apply Rle_trans with (1 := proj2 Hcn) ;
+    apply Rmax_case ; [by apply Hx0 | by apply Hx].
+    apply le_trans with (Nf + Ndf)%nat ; by intuition.
+    apply le_trans with (Nf + Ndf)%nat ; by intuition.
+    apply HexDf ; split.
+    apply Rle_trans with (2 := proj1 Hcn) ;
+    apply Rmin_case ; [by apply Hx0 | by apply Hx].
+    apply Rle_trans with (1 := proj2 Hcn) ;
+    apply Rmax_case ; [by apply Hx0 | by apply Hx].
+    apply HexDf ; split.
+    apply Rle_trans with (2 := proj1 Hcn) ;
+    apply Rmin_case ; [by apply Hx0 | by apply Hx].
+    apply Rle_trans with (1 := proj2 Hcn) ;
+    apply Rmax_case ; [by apply Hx0 | by apply Hx].
+    rewrite /e /=.
+    rewrite Rdiv_le_1 ; field_simplify ; rewrite -?Rdiv_1.
+    rewrite -Rdiv_le_1.
+    rewrite /Rabs ; case: Rcase_abs => H.
+    rewrite Ropp_minus_distr' ; apply Rplus_le_compat.
+    by apply Hx0.
+    by apply Ropp_le_contravar, Hx.
+    apply Rplus_le_compat.
+    by apply Hx.
+    by apply Ropp_le_contravar, Hx0.
+    by rewrite -Rlt_Rminus.
+    split ; apply Rgt_not_eq, Rlt_gt.
+    by rewrite -Rlt_Rminus.
+    by apply eps.
+    by apply is_pos_div_2.
+
+  split.
+  by apply CVU_dom_cauchy.
+  set f := (fun y : R => Lim_seq (fun n : nat => fn n y)).
+  set rn := fun x1 n x => match (Req_EM_T x1 x) with
+    | left _ => (Derive (fn n) x1)
+    | right _ => (fn n x - fn n x1)/(x - x1)
+  end.
+  set r := fun x1 x => match (Req_EM_T x1 x) with
+    | left _ => Lim_seq (fun n => Derive (fn n) x1)
+    | right _ => (f x - f x1)/(x - x1)
+  end.
+  
+  have Crn : forall x1 n, a <= x1 <= b ->
+    continuity_pt (rn x1 n) x1.
+    move => x1 n Hx1 e He.
+    move: (HexDf n x1 Hx1) => {HexDf} Hdf.
+    apply Derive_correct in Hdf.
+    case: (Hdf e He) ; case => {Hdf} /= [d Hd] Hdf.
+    exists d ; rewrite /D_x /R_dist /no_cond /rn /= ; split.
+    exact: Hd.
+    move => y [[_ Hy] Hy0].
+    case: Req_EM_T => // H1 ;
+    case: Req_EM_T => // H0.
+    set h := (y - x1).
+    replace y with (x1 + h) by (rewrite /h ; ring).
+    apply Hdf.
+    by apply Rminus_eq_contra, sym_not_eq.
+    exact: Hy0.
+  have Hcs : forall x1 x, a <= x1 <= b -> a <= x <= b 
+    -> is_lim_seq (fun n => rn x1 n x) (r x1 x).
+    move => x1 x Hx1 Hx.
+    rewrite /rn /r.
+    case: Req_EM_T => Hxx1.
+    apply Lim_seq_correct.
+    apply (CVU_CVS_dom (fun n x1 => Derive (fn n) x1) (fun x => a <= x <= b)).
+    exact: HcvuDf.
+    exact: Hx1.
+    apply is_lim_seq_div.
+    by apply Rminus_eq_contra, sym_not_eq.
+    apply is_lim_seq_minus.
+    apply Lim_seq_correct.
+    apply (CVU_CVS_dom fn (fun x => a <= x <= b)).
+    by apply CVU_dom_cauchy.
+    exact: Hx.
+    apply Lim_seq_correct.
+    apply (CVU_CVS_dom fn (fun x => a <= x <= b)).
+    by apply CVU_dom_cauchy.
+    exact: Hx1.
+    apply is_lim_seq_const.
+  
+  suff Cr : forall x1, a <= x1 <= b -> continuity_pt (r x1) x1.
+
+have Hrw : forall x : R,
+  a <= x <= b -> Derive f x = Lim_seq (fun n : nat => Derive (fn n) x).
+  move => x1 Hx1.
+  apply is_derive_unique => e He.
+  case: (Cr x1 Hx1 e He) => {Cr} d [Hd Cr].
+  exists (mkposreal d Hd) => /= h Hh Hhd.
+  set y := (x1 + h).
+  replace h with (y - x1) by (rewrite /y ; ring).
+  have Hy : x1 <> y.
+    rewrite /y ;
+      apply Rminus_not_eq_right ; by (ring_simplify (x1+h-x1)).
+  have Hyd : Rabs (y - x1) < d.
+      rewrite /y ; by (ring_simplify (x1+h-x1)).
+  move: (Cr y (conj (conj I Hy) Hyd)).
+  rewrite /dist /= /R_dist /r.
+  case: Req_EM_T => // _.
+  by case: Req_EM_T (refl_equal x1) => //.
+
+    split.
+    move => x1 Hx1.
+    exists (r x1 x1) => e He.
+    case: (Cr x1 Hx1 e He) => {Cr} d [Hd Cr].
+    exists (mkposreal d Hd) => /= h Hh Hhd.
+    set y := (x1 + h).
+    replace h with (y - x1) by (rewrite /y ; ring).
+    have Hy : x1 <> y.
+      rewrite /y ;
+      apply Rminus_not_eq_right ; by (ring_simplify (x1+h-x1)).
+    have Hyd : Rabs (y - x1) < d.
+      rewrite /y ; by (ring_simplify (x1+h-x1)).
+    move: (Cr y (conj (conj I Hy) Hyd)).
+    rewrite /dist /= /R_dist /r.
+    by case: Req_EM_T.
+  split.
+
+  apply CVU_cont with (fun n x => Derive (fn n) x).
+  exact: HcvuDf.
+  move => x1 Hx1.
+  rewrite (Hrw x1 Hx1).
+  apply Lim_seq_correct.
+  apply (CVU_CVS_dom (fun n x => Derive (fn n) x) (fun x => a <= x <= b) HcvuDf x1 Hx1).
+  by apply HcDf.
+  
+  exact: Hrw.
+  
+  move => x1 Hx1.
+  apply (CVU_cont (fun n x => rn x1 n x) _ (fun x => a <= x <= b)).
+  
+Focus 2.
+  move => x Hx ; by apply Hcs.
+Focus 2.
+  move => n x Hx.
+  case: (Req_EM_T x1 x) => H0.
+  rewrite H0 => {x1 Hx1 H0}.
+  by apply Crn.
+  move: x Hx H0.
+  have H0 : forall x, a <= x <= b -> x1 <> x -> 
+    continuity_pt (fun x2 : R => (fn n x2 - fn n x1) / (x2 - x1)) x.
+    move => x Hx Hx2.
+    apply continuity_pt_div.
+    apply continuity_pt_minus.
+    apply derivable_continuous_pt ; exists (Derive (fn n) x) ;
+    by apply Derive_correct, HexDf.
+    by apply continuity_pt_const.
+    apply continuity_pt_minus.
+    apply derivable_continuous_pt, derivable_pt_id.
+    by apply continuity_pt_const.
+    by apply Rminus_eq_contra, sym_not_eq.
+  move => x Hx Hx2 e He.
+  case: (H0 x Hx Hx2 e He) => {H0} d [Hd H0].
+  exists (Rmin d (Rabs (x-x1))) ; split.
+  apply Rmin_case.
+  by apply Hd.
+  apply Rabs_pos_lt ; by apply Rminus_eq_contra, sym_not_eq.
+  move => y [[_ Hy] Hyd].
+  rewrite /rn.
+  case: Req_EM_T => // H1.
+  rewrite H1 in Hyd ; contradict Hyd.
+  apply Rle_not_lt ; rewrite /= /R_dist.
+  rewrite -Ropp_minus_distr' Rabs_Ropp.
+  apply Rmin_r.
+  case: Req_EM_T => // _.
+  apply H0 ; split => //.
+  apply Rlt_le_trans with (1 := Hyd).
+  apply Rmin_l.
+Focus 2.
+  by apply Hx1.
+  
+  apply CVU_dom_cauchy in HcvuDf.
+  apply CVU_dom_cauchy => eps.
+  case: (HcvuDf eps) => {HcvuDf} /= N Hcvu.
+  exists N => n m x Hx Hn Hm.
+  rewrite /rn.
+  case: Req_EM_T => H0.
+  rewrite H0.
+  by apply Hcvu.
+  replace ((fn n x - fn n x1) / (x - x1) - (fn m x - fn m x1) / (x - x1))
+    with ( ((fn n x - fn m x) - (fn n x1 - fn m x1))/(x - x1))
+    by (field ; by apply Rminus_eq_contra, sym_not_eq).
+  case: (MVT (fun x => fn n x - fn m x) x1 x).
+  move => y Hy.
+  apply ex_derive_minus ; apply HexDf.
+  split ; apply Rlt_le.
+  apply Rle_lt_trans with (2 := proj1 Hy) ; apply Rmin_case ; by intuition.
+  apply Rlt_le_trans with (1 := proj2 Hy) ; apply Rmax_case ; by intuition.
+  split ; apply Rlt_le.
+  apply Rle_lt_trans with (2 := proj1 Hy) ; apply Rmin_case ; by intuition.
+  apply Rlt_le_trans with (1 := proj2 Hy) ; apply Rmax_case ; by intuition.
+  move => y Hy.
+  apply continuity_pt_minus ; apply derivable_continuous_pt.
+  exists (Derive (fn n) y) ; apply Derive_correct, HexDf.
+  split.
+  apply Rle_trans with (2 := proj1 Hy) ; apply Rmin_case ; by intuition.
+  apply Rle_trans with (1 := proj2 Hy) ; apply Rmax_case ; by intuition.
+  exists (Derive (fn m) y) ; apply Derive_correct, HexDf.
+  split.
+  apply Rle_trans with (2 := proj1 Hy) ; apply Rmin_case ; by intuition.
+  apply Rle_trans with (1 := proj2 Hy) ; apply Rmax_case ; by intuition.
+  move => c [Hc ->].
+  field_simplify (Derive (fun x2 : R => fn n x2 - fn m x2) c * (x - x1) / (x - x1)).
+  rewrite -Rdiv_1.
+  rewrite Derive_minus.
+  apply Hcvu => //.
+  split.
+  apply Rle_trans with (2 := proj1 Hc) ; apply Rmin_case ; by intuition.
+  apply Rle_trans with (1 := proj2 Hc) ; apply Rmax_case ; by intuition.
+  apply HexDf.
+  split.
+  apply Rle_trans with (2 := proj1 Hc) ; apply Rmin_case ; by intuition.
+  apply Rle_trans with (1 := proj2 Hc) ; apply Rmax_case ; by intuition.
+  apply HexDf.
+  split.
+  apply Rle_trans with (2 := proj1 Hc) ; apply Rmin_case ; by intuition.
+  apply Rle_trans with (1 := proj2 Hc) ; apply Rmax_case ; by intuition.
+  by apply Rminus_eq_contra, sym_not_eq.
+Qed.
 
 (** * Series *)
 (** todo: move to Series.v *)
@@ -520,7 +1095,6 @@ Proof.
   apply cauchy_abs.
   by apply Cauchy_ex_series.
 Qed.
-
 (** Comparison *)
 
 Lemma Comp_ex_series (a b : nat -> R) :
@@ -570,22 +1144,56 @@ Lemma DAlembert_ex_series (a : nat -> R) (k : R) :
       -> ex_series (fun n => Rabs (a n)).
 Proof.
   move => Hk Ha H.
-  apply ex_series_equiv_1.
-  apply Alembert_C5 with k.
-  split.
-  apply Rnot_lt_le => Hk0.
-  apply Ropp_0_gt_lt_contravar in Hk0.
-  case: (H (mkposreal _ Hk0)) => /= {H} N H.
-  move: (H N (le_refl _)).
-  apply Rle_not_lt.
-  apply Rle_trans with (2 := Rle_abs _).
-  apply Rminus_le_0 ; ring_simplify.
-  apply Rabs_pos.
-  by apply Hk.
-  move => n ; by apply Rabs_no_R0, Ha.
-  move => e He ; case: (H (mkposreal _ He)) => /= {H} N H ; exists N => n Hn.
-  rewrite -Rabs_div // Rabs_Rabsolu.
-  by apply H.
+  have : exists N, forall n, (N <= n)%nat -> Rabs (a (S n) / a n) <= (k+1)/2.
+    case: (fun He => H (mkposreal ((1-k)/2) He)).
+      move: (fun He => is_pos_div_2 (mkposreal (1-k) He)) => /= He ;
+      apply: He.
+      by apply -> Rlt_Rminus.
+    move => {H} /= Hk1 N H.
+    exists N => n Hn.
+    move: (H n Hn) => {H} H.
+    apply Rabs_lt_between' in H ; case: H => _ H ; 
+    field_simplify in H ; rewrite -Rdiv_1 in H ; by apply Rlt_le.
+  case => {H} N H.
+  apply ex_series_decal_n with N.
+  apply Comp_ex_series with (fun n => Rabs (a N) * ((k+1)/2)^n).
+  move => n ; split.
+  by apply Rabs_pos.
+  rewrite Rmult_comm ; apply Rle_div.
+  by apply Rabs_pos_lt.
+  rewrite -Rabs_div.
+  elim: n => [ | n IH].
+  rewrite plus_0_r /Rdiv Rinv_r.
+  rewrite Rabs_R1 ; by apply Rle_refl.
+  by apply Ha.
+  replace (Rabs (a (N + S n)%nat / a N)) 
+    with (Rabs (a (S (N + n))/a (N+n)%nat) * Rabs (a (N + n)%nat / a N)).
+  simpl ; apply Rmult_le_compat.
+  by apply Rabs_pos.
+  by apply Rabs_pos.
+  apply H, le_plus_l.
+  by apply IH.
+  rewrite -Rabs_mult ; apply f_equal.
+  rewrite plus_n_Sm ; field ; split ; by apply Ha.
+  by apply Ha.
+  apply ex_series_scal.
+  set k0 := ((k + 1) / 2).
+  apply ex_lim_seq_ext with (fun N => / (1 - k0) * (1 - k0 ^ S N)).
+  move => n ; rewrite tech3.
+  by apply Rmult_comm.
+  apply Rlt_not_eq.
+  replace 1 with ((1+1)/2) by field ; rewrite /k0.
+  apply Rmult_lt_compat_r ; by intuition.
+  apply ex_lim_seq_scal.
+  exists (1-0).
+  apply is_lim_seq_minus.
+  by apply is_lim_seq_const.
+  simpl ; rewrite -(Rmult_0_r k0) ; apply is_lim_seq_scal.
+  apply (is_lim_seq_geom k0).
+  rewrite Rabs_pos_eq.
+  replace 1 with ((1+1)/2) by field ; rewrite /k0.
+  apply Rmult_lt_compat_r ; by intuition.
+  apply Rle_trans with (2 := H N (le_refl _)) ; by apply Rabs_pos.
 Qed.
 
 Lemma DAlembert_not_ex_series (a : nat -> R) (l : R) :
@@ -2396,13 +3004,12 @@ Proof.
     apply pow_nonzero, Ropp_neq_0_compat, R1_neq_R0.
     apply Rinv_neq_0_compat, Rmult_integral_contrapositive_currified ;
     apply INR_fact_neq_0.
-
   apply Abs_ex_series.
   apply DAlembert_crit with 0.
   by apply H.
   move => eps.
   have H0 : 0 <= /(sqrt eps).
-    apply Rlt_le, Rinv_0_lt_compat, sqrt_lt_R0, eps.
+    apply Rlt_le, Rinv_0_lt_compat, sqrt_pos_lt, eps.
   set N := nfloor (/(sqrt eps)) H0.
   exists N => k Hk.
   rewrite Rminus_0_r Rabs_Rabsolu Rabs_div.
@@ -2416,27 +3023,27 @@ Proof.
   rewrite Rinv_mult_distr.
   rewrite -(sqrt_sqrt eps (Rlt_le _ _ (cond_pos eps))).
   apply Rmult_gt_0_lt_compat ; try by intuition.
-  apply sqrt_lt_R0, eps.
+  apply sqrt_pos_lt, eps.
   rewrite -(Rinv_involutive (sqrt eps)).
   apply Rinv_lt_contravar.
   apply Rmult_lt_0_compat ; try by intuition.
-  apply Rinv_0_lt_compat, sqrt_lt_R0, eps.
+  apply Rinv_0_lt_compat, sqrt_pos_lt, eps.
   apply Rlt_le_trans with (INR (S N)).
   rewrite /N /nfloor in Hk |- * ;
   case: nfloor_ex Hk => {N} /= N HN Hk ; rewrite -/(INR (S N)) S_INR.
   by apply HN.
   by apply le_INR, le_n_S.
-  apply Rgt_not_eq, sqrt_lt_R0, eps.
+  apply Rgt_not_eq, sqrt_pos_lt, eps.
   rewrite -(Rinv_involutive (sqrt eps)).
   apply Rinv_lt_contravar.
   apply Rmult_lt_0_compat ; try by intuition.
-  apply Rinv_0_lt_compat, sqrt_lt_R0, eps.
+  apply Rinv_0_lt_compat, sqrt_pos_lt, eps.
   apply Rlt_le_trans with (INR (S N)).
   rewrite /N /nfloor in Hk |- * ;
   case: nfloor_ex Hk => {N} /= N HN Hk ; rewrite -/(INR (S N)) S_INR.
   by apply HN.
   apply le_INR, le_n_S ; by intuition.
-  apply Rgt_not_eq, sqrt_lt_R0, eps.
+  apply Rgt_not_eq, sqrt_pos_lt, eps.
   apply Rgt_not_eq ; by intuition.
   apply Rgt_not_eq ; by intuition.
   repeat split.
@@ -2449,7 +3056,7 @@ Proof.
   apply Rmult_integral_contrapositive_currified ; apply INR_fact_neq_0.
   by apply H.
   by left.
-  Qed.
+Qed.
 
 Lemma CV_Bessel1 (n : nat) :
   CV_circle (Bessel1_seq n) = p_infty.
@@ -2517,7 +3124,6 @@ Focus 2. (* ex_pseries (PS_incr_n (Bessel1_seq n) n) (x / 2) *)
   rewrite  -plus_INR -?S_INR ; repeat split ;
   try by [apply INR_fact_neq_0 | apply not_0_INR, sym_not_eq, O_S].
 Qed.
-
 Lemma Bessel1_equality_2 (n : nat) (x : R) : x <> 0
   -> Bessel1 (n+1)%nat x = INR n * Bessel1 n x / x - Derive (Bessel1 n) x.
 Proof.
@@ -2589,7 +3195,7 @@ Proof.
   repeat split ;
   try by [exact: INR_fact_neq_0 | apply not_0_INR, not_eq_sym, O_S].
 Qed.
-
+Print Assumptions Bessel1_equality_2.
 
 (* Fonctions de Bessel du premier ordre (cf: wikipédia)
   - résoudre égalités avec dérivées *)

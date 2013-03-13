@@ -502,3 +502,46 @@ rewrite <- (H _ Hx).
 unfold h; ring.
 Qed.
 
+(** * Mean value theorem *)
+Lemma MVT (f : R -> R) (a b : R) :
+  let a0 := Rmin a b in
+  let b0 := Rmax a b in
+  (forall x, a0 < x < b0 -> ex_derive f x)
+  -> (forall x, a0 <= x <= b0 -> continuity_pt f x)
+  -> exists c, a0 <= c <= b0 /\ f b - f a = Derive f c * (b - a).
+Proof.
+  move => a0 b0 Hd Hf.
+  case: (Req_dec a0 b0) => Hab.
+  exists a0 ; split.
+  split ; by apply Req_le.
+  replace b with a.
+  ring.
+  move: Hab ; rewrite /a0 /b0 /Rmin /Rmax ; by case: Rle_dec => Hab.
+  have pr1 : forall c:R, a0 < c < b0 -> derivable_pt f c.
+    move => x Hx ; exists (Derive f x).
+    by apply Derive_correct, Hd.
+  have pr2 : forall c:R, a0 < c < b0 -> derivable_pt id c.
+    move => x Hx ; exists 1.
+    by apply derivable_pt_lim_id.
+  case: (MVT f id a0 b0 pr1 pr2).
+  apply Rnot_le_lt ; contradict Hab ; apply Rle_antisym.
+  by apply Rcomplements.Rmin_Rmax.
+  by apply Hab.
+  by apply Hf.
+  move => x Hx ; apply derivable_continuous, derivable_id.
+  move => /= c [Hc H].
+  exists c ; split.
+  split ; by apply Rlt_le, Hc.
+  replace (Derive f c) with (derive_pt f c (pr1 c Hc)).
+  move: H ; rewrite {1 2}/id /a0 /b0 /Rmin /Rmax ; 
+  case: Rle_dec => Hab0 H.
+  rewrite Rmult_comm H -(pr_nu _ _ (derivable_pt_id _)) derive_pt_id.
+  ring.
+  replace (derive_pt f c (pr1 c Hc) * (b - a))
+    with (-((a - b) * derive_pt f c (pr1 c Hc)))
+    by ring.
+  rewrite H -(pr_nu _ _ (derivable_pt_id _)) derive_pt_id.
+  ring.
+  case: (pr1 c Hc) => /= l Hl.
+  apply sym_eq, is_derive_unique, Hl.
+Qed.
