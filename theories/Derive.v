@@ -2,6 +2,7 @@ Require Import Reals.
 Require Import ssreflect.
 Require Import Lim_seq Lim_fct.
 Require Import Locally.
+Require Import Rcomplements.
 Open Scope R_scope.
 
 (** * Derive *)
@@ -455,6 +456,99 @@ intros x.
 now apply Derive_ext.
 Qed.
 
+Lemma Derive_n_scal (f : R -> R) (a : R) (n : nat) (x : R) :
+  (forall k, (k < n)%nat -> locally (ex_derive (Derive_n f k)) (a * x)) ->
+  locally (fun x => Derive_n (fun y => f (a * y)) n x  = (a ^ n * Derive_n f n (a*x))) x.
+Proof.
+  elim: n x => /= [ | n IH] x Hf.
+  apply locally_forall => y ; ring.
+  case: (IH x) => [ | {IH} r IH].
+  move => k Hk ; apply Hf.
+  apply lt_trans with (1 := Hk), lt_n_Sn.
+  
+  case: (Hf n (lt_n_Sn _)) => {Hf} r0 Hf.
+  have Hr : 0 < Rmin r r0 / Rmax 1 (Rabs a).
+    apply Rmult_lt_0_compat.
+    apply Rmin_case ; [by apply r | by apply r0].
+    apply Rinv_0_lt_compat, Rlt_le_trans with (2 := Rmax_l _ _), Rlt_0_1.
+  set r1 := (mkposreal _ Hr).
+  exists r1 => y Hy /=.
+  
+  rewrite -(Derive_ext_loc (fun x => a ^ n * Derive_n f n (a * x))).
+  rewrite Derive_scal.
+  rewrite Derive_comp.
+  rewrite (Derive_ext (Rmult a) (fun x => a * x)) => //.
+  rewrite Derive_scal.
+  rewrite Derive_id.
+  ring.
+
+  apply Hf.
+  replace (a * y - (a * x))
+    with (a*(y-x))
+    by ring.
+    rewrite Rabs_mult.
+    apply Rle_lt_trans with (Rmax 1 (Rabs a) * Rabs (y - x)).
+    apply Rmult_le_compat_r.
+    by apply Rabs_pos.
+    apply Rmax_r.
+    apply Rlt_le_trans with (2 := Rmin_r r r0).
+    replace (Rmin r r0)
+      with (Rmax 1 (Rabs a) * (Rmin r r0 / Rmax 1 (Rabs a))).
+    apply Rmult_lt_compat_l.
+    apply Rlt_le_trans with (2 := Rmax_l _ _), Rlt_0_1.
+    exact: Hy.
+    field ; apply Rgt_not_eq, Rlt_gt.
+    apply Rlt_le_trans with (2 := Rmax_l _ _), Rlt_0_1.
+    
+  apply (ex_derive_ext (fun x => a * x) (Rmult a)) => //.
+  apply ex_derive_scal.
+  apply ex_derive_id.
+  
+  have : Rabs (y - x) < r.
+    apply Rlt_le_trans with (1 := Hy) ; simpl.
+    apply Rle_trans with (2 := Rmin_l r r0).
+    rewrite {2}(Rdiv_1 (Rmin _ _)).
+    apply Rmult_le_compat_l.
+    apply Rmin_case ; apply Rlt_le ; [by apply r | by apply r0].
+    apply Rle_Rinv.
+    apply Rlt_0_1.
+    apply Rlt_le_trans with (2 := Rmax_l _ _), Rlt_0_1.
+    apply Rmax_l.
+  move => {Hy} Hy.
+  have H : 0 < Rmin ((x+r)-y) (y-(x-r)).
+    apply Rmin_case.
+    apply Rlt_Rminus.
+    by apply Rabs_lt_between'.
+    apply Rlt_Rminus.
+    by apply Rabs_lt_between'.
+  set r2 := mkposreal _ H.
+  exists r2 => /= z Hz.
+  apply sym_eq, IH.
+  apply Rabs_lt_between' ; apply Rabs_lt_between' in Hz.
+  rewrite Rplus_min_distr_l /Rminus -Rmax_opp_Rmin Rplus_max_distr_l in Hz.
+  ring_simplify (y + - (x + r + - y)) (y + - (y + - (x + - r))) 
+    (y + (x + r + - y)) (y + (y + - (x + - r))) in Hz.
+  split.
+  apply Rle_lt_trans with (2 := proj1 Hz), Rmax_r.
+  apply Rlt_le_trans with (1 := proj2 Hz), Rmin_l.
+Qed.
+
+Lemma Derive_n_opp (f : R -> R) (a : R) (n : nat) (x : R) :
+  (forall k, (k < n)%nat -> locally (ex_derive (Derive_n f k)) (- x)) ->
+  locally (fun x => Derive_n (fun y => f (- y)) n x  = ((-1) ^ n * Derive_n f n (-x))) x.
+Proof.
+  move => Hf.
+  case: (Derive_n_scal f (-1) n x) => [ | r H].
+  move => k Hk.
+  replace (-1 * x) with (-x) by ring.
+  by apply Hf.
+  exists r => y Hy.
+  rewrite (Derive_n_ext (fun y0 : R => f (- y0)) (fun y0 : R => f (-1 * y0))).
+  rewrite H.
+  by ring_simplify (-1 * y).
+  exact: Hy.
+  move => t ; by ring_simplify (-1 * t).
+Qed.
 
 Lemma fn_eq_Derive_eq: forall f g a b, 
   continuity_pt f a -> continuity_pt f b ->

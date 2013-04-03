@@ -740,6 +740,21 @@ Proof.
   exact: is_lim_seq_opp.
   reflexivity.
 Qed.
+Lemma ex_lim_seq_minus (u v : nat -> R) :
+  ex_lim_seq u -> ex_lim_seq v 
+    -> ex_lim_seq (fun n => u n - v n).
+Proof.
+  case => l1 H1 [l2 H2].
+  exists (l1 - l2).
+  by apply is_lim_seq_minus.
+Qed.
+Lemma Lim_seq_minus (u v : nat -> R) :
+  ex_lim_seq u -> ex_lim_seq v ->
+    Lim_seq (fun n => u n - v n) = Lim_seq u - Lim_seq v.
+Proof.
+  move => H1 H2.
+  apply is_lim_seq_unique, is_lim_seq_minus ; by apply Lim_seq_correct.
+Qed.
 
 (** ** Absolute value *)
 
