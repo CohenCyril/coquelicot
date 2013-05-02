@@ -1651,9 +1651,3 @@ Ltac auto_derive :=
     refine (eq_ind _ (derivable_pt_lim _ _) (H _) _ _) ;
     clear H
   end.
-
-Goal forall f x, derivable_pt_lim (fun y => f (2 * y) + RInt (fun z => z) 0 y + 2 * y) x 0.
-intros f x.
-auto_derive.
-2: ring_simplify.
-Abort.

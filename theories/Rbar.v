@@ -1,6 +1,6 @@
 Require Import Reals.
 Require Import ssreflect.
-Require Import Rcomplements.
+Require Import Rcomplements Floor.
 
 Open Scope R_scope.
 
@@ -41,12 +41,15 @@ Definition Rbar_ge x y := (Rbar_le y x).
 
 (** ** Operations *)
 
+(** Additive *)
+
 Definition Rbar_opp (x : Rbar) :=
   match x with
     | Finite x => Finite (-x)
     | p_infty => m_infty
     | m_infty => p_infty
   end.
+
 Definition Rbar_plus (x y : Rbar) :=
   match x,y with
     | p_infty, m_infty | m_infty, p_infty => Finite 0
@@ -54,14 +57,115 @@ Definition Rbar_plus (x y : Rbar) :=
     | m_infty, _ | _, m_infty => m_infty
     | Finite x', Finite y' => Finite (x'+y')
   end.
-Definition Rbar_div_pos (x : Rbar) (y : posreal) :=
+Definition is_Rbar_plus ( x y z : Rbar) : Prop :=
+  match x,y, z with
+    | p_infty, m_infty, _ | m_infty, p_infty, _ => False
+    | p_infty, _, p_infty | _, p_infty, p_infty => True
+    | m_infty, _, m_infty | _, m_infty, m_infty => True
+    | Finite x, Finite y, Finite z => x + y = z
+    | _, _, _ => False
+  end.
+Lemma Rbar_plus_correct (x y z : Rbar) :
+  is_Rbar_plus x y z -> Rbar_plus x y = z.
+Proof.
+  case: x => [x | | ] ; case: y => [y | | ] ; case: z => [z | | ] //=.
+  by move => ->.
+Qed.
+
+Definition Rbar_minus (x y : Rbar) := Rbar_plus x (Rbar_opp y).
+Definition is_Rbar_minus (x y z : Rbar) : Prop :=
+  is_Rbar_plus x (Rbar_opp y) z.
+
+(** Multiplicative *)
+
+Definition Rbar_inv (x : Rbar) : Rbar :=
   match x with
-    | Finite x => Finite (x/y)
-    | _ => x
+    | Finite x => Finite (/x)
+    | _ => Finite 0
+  end.
+
+Definition Rbar_mult (x y : Rbar) : Rbar :=
+  match x with
+    | Finite x => match y with
+      | Finite y => Finite (x*y)
+      | p_infty => match (Rle_dec 0 x) with
+        | left _ => p_infty
+        | right _ => m_infty
+      end
+      | m_infty => match (Rle_dec 0 x) with
+        | left _ => m_infty
+        | right _ => p_infty
+      end
+    end
+    | p_infty => match y with
+      | Finite y => match (Rle_dec 0 y) with
+        | left _ => p_infty
+        | right _ => m_infty
+      end
+      | p_infty => p_infty
+      | m_infty => m_infty
+    end
+    | m_infty => match y with
+      | Finite y => match (Rle_dec 0 y) with
+        | left _ => m_infty
+        | right _ => p_infty
+      end
+      | p_infty => m_infty
+      | m_infty => p_infty
+    end
+  end.
+Definition is_Rbar_mult (x y z : Rbar) : Prop :=
+  match x with
+    | Finite x => match y with
+      | Finite y => match z with | Finite z => x*y = z | _ => False end
+      | p_infty => match z with | p_infty => 0 < x | m_infty => x < 0 | _ => False end
+      | m_infty => match z with | p_infty => x < 0 | m_infty => 0 < x | _ => False end
+    end
+    | p_infty => match y with
+      | Finite y => match z with | p_infty => 0 < y | m_infty => y < 0 | _ => False end
+      | p_infty => match z with | p_infty => True | _ => False end
+      | m_infty => match z with | m_infty => True | _ => False end
+    end
+    | m_infty => match y with
+      | Finite y =>  match z with | m_infty => 0 < y | p_infty => y < 0 | _ => False end
+      | p_infty => match z with | m_infty => True | _ => False end
+      | m_infty => match z with | p_infty => True | _ => False end
+    end
   end.
 Definition Rbar_mult_pos (x : Rbar) (y : posreal) :=
   match x with
     | Finite x => Finite (x*y)
+    | _ => x
+  end.
+
+Lemma Rbar_mult_correct (x y z : Rbar) :
+  is_Rbar_mult x y z -> Rbar_mult x y = z.
+Proof.
+  case: x => [x | | ] ; case: y => [y | | ] ; case: z => [z | | ] //= Hm ;
+  try case: Rle_dec => // Hp.
+  by rewrite Hm.
+  contradict Hp ; by apply Rlt_le.
+  by apply Rle_not_lt in Hp.
+  by apply Rle_not_lt in Hp.
+  contradict Hp ; by apply Rlt_le.
+  contradict Hp ; by apply Rlt_le.
+  by apply Rle_not_lt in Hp.
+  by apply Rle_not_lt in Hp.
+  contradict Hp ; by apply Rlt_le.
+Qed.
+Lemma Rbar_mult_pos_correct (x : Rbar) (y : posreal) (z : Rbar) :
+  is_Rbar_mult x (Finite y) z -> Rbar_mult_pos x y = z.
+Proof.
+  case: x => [x | | ] ; case: z => [z | | ] //= Hm ;
+  try case: Rle_dec => // Hp.
+  by rewrite Hm.
+  contradict Hm ; apply Rle_not_lt, Rlt_le, y.
+  contradict Hm ; apply Rle_not_lt, Rlt_le, y.
+Qed.
+
+Definition Rbar_div_pos (x : Rbar) (y : posreal) :=
+  match x with
+    | Finite x => Finite (x/y)
     | _ => x
   end.
 
@@ -430,3 +534,156 @@ Proof.
   left ; by apply Rbar_mult_pos_lt with z.
   right ; by apply Rbar_mult_pos_eq with z.
 Qed.
+
+(** * Rbar_min *)
+
+Definition Rbar_min (x y : Rbar) :=
+  match (Rbar_le_dec x y) with
+    | left _ => x
+    | right _ => y
+  end.
+
+(** * Rbar_locally *)
+
+Definition Rbar_locally (P : R -> Prop) (a : Rbar) :=
+  match a with
+    | Finite a => exists delta : posreal, forall x, Rabs (x-a) < delta -> P x
+    | p_infty => exists M : R, forall x, M < x -> P x
+    | m_infty => exists M : R, forall x, x < M -> P x
+  end.
+
+Lemma Rbar_locally_forall (P : R -> Prop) (a : Rbar) :
+  (forall x, P x) -> Rbar_locally P a.
+Proof.
+  case: a => [a | | ] H ;
+  exists (mkposreal _ Rlt_0_1) => /= x _ ; by apply H.
+Qed.
+
+Lemma Rbar_locally_imply (P Q : R -> Prop) (a : Rbar) :
+  Rbar_locally (fun x => P x -> Q x) a -> Rbar_locally P a
+    -> Rbar_locally Q a.
+Proof.
+  case: a => /= [a | | ] [d0 Hpq] [d1 Hp].
+  have Hd : 0 < Rmin d0 d1.
+    apply Rmin_case ; [by apply d0 | by apply d1].
+  exists (mkposreal (Rmin d0 d1) Hd) => /= x H.
+  apply: Hpq.
+  apply Rlt_le_trans with (1 := H), Rmin_l.
+  apply: Hp.
+  apply Rlt_le_trans with (1 := H), Rmin_r.
+  exists (Rmax d0 d1) => /= x H.
+  apply: Hpq.
+  apply Rle_lt_trans with (2 := H), Rmax_l.
+  apply: Hp.
+  apply Rle_lt_trans with (2 := H), Rmax_r.
+  exists (Rmin d0 d1) => /= x H.
+  apply: Hpq.
+  apply Rlt_le_trans with (1 := H), Rmin_l.
+  apply: Hp.
+  apply Rlt_le_trans with (1 := H), Rmin_r.
+Qed.
+
+Lemma Rbar_locally_and (P Q : R -> Prop) (a : Rbar) :
+  Rbar_locally P a -> Rbar_locally Q a
+    -> Rbar_locally (fun x => P x /\ Q x) a.
+Proof.
+  case: a => /= [a | | ] [d0 Hp] [d1 Hq].
+  have Hd : 0 < Rmin d0 d1.
+    apply Rmin_case ; [by apply d0 | by apply d1].
+  exists (mkposreal (Rmin d0 d1) Hd) => /= x H ; split.
+  apply: Hp.
+  apply Rlt_le_trans with (1 := H), Rmin_l.
+  apply: Hq.
+  apply Rlt_le_trans with (1 := H), Rmin_r.
+  exists (Rmax d0 d1) => /= x H ; split.
+  apply: Hp.
+  apply Rle_lt_trans with (2 := H), Rmax_l.
+  apply: Hq.
+  apply Rle_lt_trans with (2 := H), Rmax_r.
+  exists (Rmin d0 d1) => /= x H ; split.
+  apply: Hp.
+  apply Rlt_le_trans with (1 := H), Rmin_l.
+  apply: Hq.
+  apply Rlt_le_trans with (1 := H), Rmin_r.
+Qed.
+
+Lemma Rbar_locally_and_1 (P Q : R -> Prop) (a : Rbar) :
+  Rbar_locally (fun x => P x /\ Q x) a 
+    -> Rbar_locally P a.
+Proof.
+  case: a => /= [a | | ] [d0 Hp] ;
+  exists d0 => H ; by apply Hp.
+Qed.
+
+Lemma Rbar_locally_and_2 (P Q : R -> Prop) (a : Rbar) :
+  Rbar_locally (fun x => P x /\ Q x) a 
+    -> Rbar_locally Q a.
+Proof.
+  case: a => /= [a | | ] [d0 Hp] ;
+  exists d0 => H ; by apply Hp.
+Qed.
+
+Lemma Rbar_locally_or_1 (P Q : R -> Prop) (a : Rbar) :
+  Rbar_locally P a -> Rbar_locally (fun x => P x \/ Q x) a.
+Proof.
+  apply Rbar_locally_imply, Rbar_locally_forall => x Hx.
+  by left.
+Qed.
+
+Lemma Rbar_locally_or_2 (P Q : R -> Prop) (a : Rbar) :
+  Rbar_locally Q a -> Rbar_locally (fun x => P x \/ Q x) a.
+Proof.
+  apply Rbar_locally_imply, Rbar_locally_forall => x Hx.
+  by right.
+Qed.
+
+(** A particular subsequence *)
+
+Definition Rbar_loc_seq (x : Rbar) (n : nat) := match x with
+    | Finite x => x + / (INR n + 1)
+    | p_infty => INR n
+    | m_infty => - INR n
+  end.
+
+Lemma Rbar_loc_seq_carac (P : R -> Prop) (x : Rbar) :
+  Rbar_locally P x 
+    -> (exists N, forall n, (N <= n)%nat -> P (Rbar_loc_seq x n)).
+Proof.
+  case: x => /= [x | | ] [delta Hp].
+(* x \in R *)
+  case: (nfloor_ex (/delta)) => [ | N [_ HN]].
+  by apply Rlt_le, Rinv_0_lt_compat, delta.
+  exists N => n Hn.
+  apply Hp.
+  ring_simplify (x + / (INR n + 1) - x).
+  rewrite Rabs_pos_eq.
+  rewrite -(Rinv_involutive delta).
+  apply Rinv_lt_contravar.
+  apply Rmult_lt_0_compat.
+  apply Rinv_0_lt_compat.
+  by apply delta.
+  exact: INRp1_pos.
+  apply Rlt_le_trans with (1 := HN).
+  by apply Rplus_le_compat_r, le_INR.
+  by apply Rgt_not_eq, delta.
+  by apply Rlt_le, RinvN_pos.
+(* x = p_infty *)
+  case: (nfloor_ex (Rmax 0 delta)) => [ | N [_ HN]].
+  by apply Rmax_l.
+  exists (S N) => n Hn.
+  apply Hp.
+  apply Rle_lt_trans with (1 := Rmax_r 0 _).
+  apply Rlt_le_trans with (1 := HN).
+  rewrite -S_INR ; by apply le_INR.
+(* x = m_infty *)
+  case: (nfloor_ex (Rmax 0 (-delta))) => [ | N [_ HN]].
+  by apply Rmax_l.
+  exists (S N) => n Hn.
+  apply Hp.
+  rewrite -(Ropp_involutive delta).
+  apply Ropp_lt_contravar.
+  apply Rle_lt_trans with (1 := Rmax_r 0 _).
+  apply Rlt_le_trans with (1 := HN).
+  rewrite -S_INR ; by apply le_INR.
+Qed.
+

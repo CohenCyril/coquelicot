@@ -128,7 +128,7 @@ Proof.
     rewrite H2 ; clear H2.
   apply (Rle_lt_trans _ eps2).
   rewrite Rabs_div.
-  apply (Rle_div _ _ (Rabs (x + h - x))).
+  apply (Rle_div_l _ _ (Rabs (x + h - x))).
   apply Rabs_pos_lt.
   rewrite H1 ;
     apply H.

@@ -1,4 +1,5 @@
 Require Import Reals.
+Require Import Even Div2.
 
 Open Scope R_scope.
 
@@ -12,14 +13,17 @@ apply lt_0_Sn.
 Qed.
 
 (** * Operations on Rdiv *)
+(** Rewritings *)
 
-Lemma Rdiv_1 : forall x : R, x = x/1.
+Lemma Rdiv_1 : forall x : R, x = x / 1.
 Proof.
   intros.
-  field.
+  unfold Rdiv ;
+  rewrite Rinv_1, Rmult_1_r.
+  reflexivity.
 Qed.
 
-Lemma Rdiv_plus : forall a b c d : R, b <> 0 -> d <> 0 -> a/b+c/d = (a*d + c*b)/(b*d).
+Lemma Rdiv_plus : forall a b c d : R, b <> 0 -> d <> 0 -> a / b + c / d = (a * d + c * b) / (b * d).
 Proof.
   intros.
   field.
@@ -37,88 +41,137 @@ Proof.
   apply H.
 Qed.
 
-Lemma Rle_div : forall a b c, c>0 -> (a / c <= b <-> a <= b*c).
-Proof.
-  unfold Rdiv.
-  split.
-  intros.
-  rewrite <-(Rmult_1_r a).
-  rewrite <-(Rinv_l c).
-  rewrite <-Rmult_assoc.
-  apply Rmult_le_compat_r.
-  apply Rlt_le.
-  apply H.
-  apply H0.
-  apply Rgt_not_eq.
-  apply H.
+(** Order *)
 
-  intros.
-  rewrite <-(Rmult_1_r b).
-  rewrite <-(Rinv_r c).
-  rewrite <-Rmult_assoc.
+Lemma Rle_div_l : forall a b c, c > 0 -> (a / c <= b <-> a <= b * c).
+Proof.
+  split ; intros.
+  replace a with ((a/c) * c) by (field ; apply Rgt_not_eq, H).
   apply Rmult_le_compat_r.
-  apply Rlt_le.
-  apply Rinv_0_lt_compat.
-  apply H.
+  apply Rlt_le, H.
   apply H0.
-  apply Rgt_not_eq.
-  apply H.
+
+  replace b with ((b*c)/c)  by (field ; apply Rgt_not_eq, H).
+  apply Rmult_le_compat_r.
+  apply Rlt_le, Rinv_0_lt_compat, H.
+  apply H0.
 Qed.
 
-Lemma Rle_div2 : forall a b c, c>0 -> (a * c <= b <-> a <= b/c).
+Lemma Rle_div_r : forall a b c, c > 0 -> (a * c <= b <-> a <= b / c).
 Proof.
-  unfold Rdiv.
-  split.
-  intros.
-  rewrite <-(Rmult_1_r a).
-  rewrite <-(Rinv_r c).
-  rewrite <-Rmult_assoc.
+  split ; intros.
+  replace a with ((a * c) / c) by (field ; apply Rgt_not_eq, H).
   apply Rmult_le_compat_r.
-  apply Rlt_le.
-  apply Rinv_0_lt_compat.
-  apply H.
+  apply Rlt_le, Rinv_0_lt_compat, H.
   apply H0.
-  apply Rgt_not_eq.
-  apply H.
 
-  intros.
-  rewrite <-(Rmult_1_r b).
-  rewrite <-(Rinv_l c).
-  rewrite <-Rmult_assoc.
+  replace b with ((b / c) * c)  by (field ; apply Rgt_not_eq, H).
   apply Rmult_le_compat_r.
-  apply Rlt_le.
-  apply H.
+  apply Rlt_le, H.
   apply H0.
-  apply Rgt_not_eq.
-  apply H.
 Qed.
 
+Lemma Rlt_div_l : forall a b c, c > 0 -> (a / c < b <-> a < b*c).
+Proof.
+  split ; intros.
+  replace a with ((a/c) * c) by (field ; apply Rgt_not_eq, H).
+  apply Rmult_lt_compat_r.
+  apply H.
+  apply H0.
+
+  replace b with ((b*c)/c)  by (field ; apply Rgt_not_eq, H).
+  apply Rmult_lt_compat_r.
+  apply Rinv_0_lt_compat, H.
+  apply H0.
+Qed.
+
+Lemma Rlt_div_r : forall a b c, c > 0 -> (a * c < b <-> a < b / c).
+Proof.
+  split ; intros.
+  replace a with ((a * c) / c) by (field ; apply Rgt_not_eq, H).
+  apply Rmult_lt_compat_r.
+  apply Rinv_0_lt_compat, H.
+  apply H0.
+
+  replace b with ((b / c) * c)  by (field ; apply Rgt_not_eq, H).
+  apply Rmult_lt_compat_r.
+  apply H.
+  apply H0.
+Qed.
+
+Lemma Rdiv_lt_0_compat : forall r1 r2 : R, 0 < r1 -> 0 < r2 -> 0 < r1 / r2.
+Proof.
+  intros r1 r2 H1 H2.
+  apply Rlt_div_r.
+  apply H2.
+  rewrite Rmult_0_l.
+  apply H1.
+Qed.
+
+Lemma Rdiv_le_0_compat : forall r1 r2 : R, 0 <= r1 -> 0 < r2 -> 0 <= r1 / r2.
+Proof.
+ intros.
+ apply Rle_div_r.
+ apply H0.
+ rewrite Rmult_0_l.
+ apply H.
+Qed.
+
+Lemma Rdiv_lt_1 : forall r1 r2, 0 < r2 -> (r1 < r2 <-> r1 / r2 < 1).
+Proof.
+  intros.
+  pattern r2 at 1.
+  rewrite <- (Rmult_1_l r2).
+  split ; apply Rlt_div_l ; apply H.
+Qed.
+
+Lemma Rdiv_le_1 : forall r1 r2, 0 < r2 -> (r1 <= r2 <-> r1/r2 <= 1).
+Proof.
+  intros.
+  pattern r2 at 1.
+  rewrite <- (Rmult_1_l r2).
+  split ; apply Rle_div_l ; apply H.
+Qed.
+
+(** * Rmult *)
+
+
+Lemma Rmult_le_reg_r : forall r r1 r2 : R, 0 < r -> r1 * r <= r2 * r -> r1 <= r2.
+Proof.
+  intros.
+  apply (Rmult_le_reg_l r).
+  apply H.
+  repeat rewrite (Rmult_comm r).
+  apply H0.
+Qed.
+
+Lemma Rle_mult_Rlt : forall c a b : R, 0 < b -> c < 1 -> a <= b*c -> a < b.
+Proof.
+  intros.
+  apply Rle_lt_trans with (1 := H1).
+  pattern b at 2 ; rewrite <-(Rmult_1_r b).
+  apply Rmult_lt_compat_l ; auto.
+Qed.
+
+Lemma Rmult_le_0_r : forall a b, a <= 0 -> 0 <= b -> a * b <= 0.
+Proof.
+  intros ;
+  rewrite <-(Rmult_0_r a) ;
+  apply (Rmult_le_compat_neg_l a 0 b) with (1 := H) ; auto.
+Qed.
+
+Lemma Rmult_le_0_l : forall a b, 0 <= a -> b <= 0 -> a * b <= 0.
+Proof.
+  intros ; rewrite Rmult_comm ; apply Rmult_le_0_r ; auto.
+Qed.
 
 (** * Operations on Rminus *)
+(** Rewritings *)
+
 Lemma Rminus_eq0 : forall r : R, r-r = 0.
 Proof.
   intros.
   ring.
-Qed.
-
-
-Lemma Rle_minus2 : forall a b c,(a - c <= b <-> a <= b+c).
-Proof.
-  unfold Rminus.
-  split.
-  intros.
-  rewrite <-(Rplus_0_r a).
-  rewrite <-(Rplus_opp_l c).
-  rewrite <- Rplus_assoc.
-  apply Rplus_le_compat_r.
-  apply H.
-
-  intros.
-  rewrite <-(Rplus_0_r b).
-  rewrite <-(Rplus_opp_r c).
-  rewrite <-Rplus_assoc.
-  apply Rplus_le_compat_r.
-  apply H.
 Qed.
 
 Lemma Rdiv_minus_distr : forall a b c, b <> 0 -> a/b-c = (a-b*c)/b.
@@ -126,115 +179,6 @@ Proof.
     intros.
     field.
     apply H.
-Qed.
-
-Lemma Rlt_div : forall a b c, c>0 -> (a / c < b <-> a < b*c).
-Proof.
-  unfold Rdiv.
-  split.
-  intros.
-  rewrite <-(Rmult_1_r a).
-  rewrite <-(Rinv_l c).
-  rewrite <-Rmult_assoc.
-  apply Rmult_lt_compat_r.
-  apply H.
-  apply H0.
-  apply Rgt_not_eq.
-  apply H.
-
-  intros.
-  rewrite <-(Rmult_1_r b).
-  rewrite <-(Rinv_r c).
-  rewrite <-Rmult_assoc.
-  apply Rmult_lt_compat_r.
-  apply Rinv_0_lt_compat.
-  apply H.
-  apply H0.
-  apply Rgt_not_eq.
-  apply H.
-Qed.
-
-Lemma Rdiv_lt_mult : forall a b c, b > 0 -> (a < b * c <-> a / b < c).
-Proof.
-  split.
-
-  intros.
-  rewrite <-(Rmult_1_r c).
-  rewrite (Rinv_r_sym b).
-  rewrite <-Rmult_assoc.
-  apply Rmult_lt_compat_r.
-  apply Rinv_0_lt_compat.
-  apply Rgt_lt.
-  apply H.
-  rewrite Rmult_comm.
-  apply H0.
-  apply Rgt_not_eq.
-  apply H.
-
-  intros.
-  rewrite <-(Rmult_1_r a).
-  rewrite (Rinv_l_sym b).
-  rewrite <-Rmult_assoc.
-  rewrite (Rmult_comm b c).
-  apply Rmult_lt_compat_r.
-  apply Rgt_lt.
-  apply H.
-  apply H0.
-  apply Rgt_not_eq.
-  apply H.
-Qed.
-
-Lemma Rdiv_lt_0_compat : forall r1 r2 : R, 0 < r1 -> 0 < r2 -> 0 < r1 / r2.
-Proof.
-  intros r1 r2 H1 H2.
-  unfold Rdiv.
-  apply Rmult_lt_0_compat.
-  apply H1.
-  apply Rinv_0_lt_compat.
-  apply H2.
-Qed.
-
-Lemma Rdiv_le_pos : forall r1 r2 : R, 0 <= r1 -> 0 < r2 -> 0 <= r1 / r2.
-Proof.
- intros.
- unfold Rdiv.
- apply Rmult_le_pos.
- apply H.
- apply Rlt_le.
- apply Rinv_0_lt_compat.
- apply H0.
-Qed.
-
-Lemma Rdiv_lt_1 : forall r1 r2, 0 < r2 -> (r1 < r2 <-> r1 / r2 < 1).
-Proof.
-  split.
-  intros.
-  unfold Rdiv.
-  rewrite (Rinv_r_sym r2).
-  apply Rmult_lt_compat_r.
-  apply Rinv_0_lt_compat.
-  apply H.
-  apply H0.
-  apply Rgt_not_eq.
-  apply H.
-
-  intros.
-  apply (Rmult_lt_reg_l (/r2)).
-  apply Rinv_0_lt_compat.
-  apply H.
-  repeat rewrite (Rmult_comm (/r2)).
-  rewrite <- Rinv_r_sym.
-  apply H0.
-  apply Rgt_not_eq.
-  apply H.
-Qed.
-Lemma Rdiv_le_1 : forall r1 r2, 0 < r2 -> (r1 <= r2 <-> r1/r2 <= 1).
-Proof.
-  split ; intro H0 ; destruct H0.
-  left ; rewrite <- Rdiv_lt_1 ; auto.
-  rewrite H0 ; right ; field ; apply Rgt_not_eq, H.
-  left ; rewrite Rdiv_lt_1 ; auto.
-  rewrite <- (Rmult_1_l r2), <- H0 ; right ; field ; apply Rgt_not_eq, H.
 Qed.
 
 Lemma Rmult_minus_distr_r: forall r1 r2 r3 : R, (r1 - r2) * r3 = r1 * r3 - r2 * r3.
@@ -245,10 +189,15 @@ Proof.
   apply Rmult_plus_distr_r.
 Qed.
 
-Lemma Rminus_eq_compat_l : forall r r1 r2 : R, r1 = r2 -> r - r1 = r - r2.
+Lemma Rminus_eq_compat_l : forall r r1 r2 : R, r1 = r2 <-> r - r1 = r - r2.
 Proof.
-  intros.
-  unfold Rminus.
+  split ; intros.
+  apply Rplus_eq_compat_l.
+  rewrite H.
+  reflexivity.
+
+  replace r1 with (r-(r-r1)) by ring.
+  replace r2 with (r-(r-r2)) by ring.
   apply Rplus_eq_compat_l.
   rewrite H.
   reflexivity.
@@ -270,43 +219,103 @@ Proof.
   apply Ropp_plus_distr.
 Qed.
 
+(** Order *)
+
+Lemma Rle_minus_l : forall a b c,(a - c <= b <-> a <= b + c).
+Proof.
+  split ; intros.
+  replace a with ((a-c)+c) by ring.
+  apply Rplus_le_compat_r.
+  apply H.
+
+  replace b with ((b+c)-c) by ring.
+  apply Rplus_le_compat_r.
+  apply H.
+Qed.
+
+Lemma Rlt_minus_r : forall a b c,(a < b - c <-> a + c < b).
+Proof.
+  split ; intros.
+  replace b with ((b-c)+c) by ring.
+  apply Rplus_lt_compat_r.
+  apply H.
+
+  replace a with ((a+c)-c) by ring.
+  apply Rplus_lt_compat_r.
+  apply H.
+Qed.
+
+Lemma Rlt_minus_l : forall a b c,(a - c < b <-> a < b + c).
+Proof.
+  split ; intros.
+  replace a with ((a-c)+c) by ring.
+  apply Rplus_lt_compat_r.
+  apply H.
+
+  replace b with ((b+c)-c) by ring.
+  apply Rplus_lt_compat_r.
+  apply H.
+Qed.
+
+Lemma Rle_minus_r : forall a b c,(a <= b - c <-> a + c <= b).
+Proof.
+  split ; intros.
+  replace b with ((b-c)+c) by ring.
+  apply Rplus_le_compat_r.
+  apply H.
+
+  replace a with ((a+c)-c) by ring.
+  apply Rplus_le_compat_r.
+  apply H.
+Qed.
+
 Lemma Rminus_le_0 : forall a b, a <= b <-> 0 <= b - a.
 Proof.
-  split.
   intros.
-  rewrite <- (Rminus_eq0 a).
-  apply Rplus_le_compat_r.
-  apply H.
-
-  intros.
-  rewrite <- (Rplus_0_r a).
-  rewrite <- (Rplus_0_r b).
-  rewrite <- (Rplus_opp_l a).
-  repeat rewrite <- Rplus_assoc.
-  apply Rplus_le_compat_r.
-  rewrite Rplus_opp_r.
-  apply H.
+  pattern a at 1.
+  rewrite <- (Rplus_0_l a).
+  split ; apply Rle_minus_r.
 Qed.
 
-Lemma Rminus_gt_0 : forall a b, a > b <-> 0 > b - a.
+Lemma Rminus_lt_0 : forall a b, a < b <-> 0 < b - a.
 Proof.
-  split.
+Proof.
   intros.
-  rewrite <- (Rminus_eq0 a).
-  apply Rplus_lt_compat_r.
-  apply H.
-
-  intros.
-  rewrite <- (Rplus_0_r a).
-  rewrite <- (Rplus_0_r b).
-  rewrite <- (Rplus_opp_l a).
-  repeat rewrite <- Rplus_assoc.
-  apply Rplus_lt_compat_r.
-  rewrite Rplus_opp_r.
-  apply H.
+  pattern a at 1.
+  rewrite <- (Rplus_0_l a).
+  split ; apply Rlt_minus_r.
 Qed.
 
-(** * Rewriting Rmin and Rmax *)
+(** * Rplus *)
+(** Sums *)
+
+Lemma sum_f_rw (a : nat -> R) (n m : nat) :
+  (n < m)%nat -> sum_f (S n) m a = sum_f_R0 a m - sum_f_R0 a n.
+Proof.
+  intro Hnm ; unfold sum_f.
+  revert  a n Hnm.
+  induction m ; intros a n Hnm.
+  apply lt_n_O in Hnm ; intuition.
+  rewrite (decomp_sum _ _ (lt_O_Sn _)) ; simpl.
+  revert Hnm ;
+  destruct n ; intro Hnm.
+  rewrite <- minus_n_O ; simpl ; ring_simplify.
+  clear Hnm IHm.
+  induction m ; simpl.
+  reflexivity.
+  rewrite <- plus_n_Sm, plus_0_r, IHm ; reflexivity.
+  rewrite (decomp_sum _ _ (lt_O_Sn _)) ; simpl ; ring_simplify.
+  apply lt_S_n in Hnm.
+  rewrite <- (IHm _ _ Hnm).
+  clear IHm.
+  induction (m - S n)%nat ; simpl.
+  reflexivity.
+  rewrite <- plus_n_Sm, IHn0 ; reflexivity.
+Qed.
+
+
+(** * Rmin and Rmax *)
+(** Rewritings *)
 
 Lemma Rplus_max_distr_l :
   forall a b c, a + Rmax b c = Rmax (a + b) (a + c).
@@ -347,6 +356,8 @@ intros a b c.
 rewrite <- 3!(Rplus_comm a).
 apply Rplus_min_distr_l.
 Qed.
+
+(** Order *)
 
 Lemma Rmax_le_compat : forall a b c d, a <= b -> c <= d -> Rmax a c <= Rmax b d.
 Proof.
@@ -415,7 +426,7 @@ Qed.
 Lemma Rplus_le_Rmax : forall a b : R, a + b <= 2*Rmax a b.
 Proof.
   intros.
-  rewrite double.
+  rewrite RIneq.double.
   destruct (Rle_lt_dec a b).
   rewrite Rmax_right.
   apply Rplus_le_compat_r.
@@ -452,6 +463,7 @@ Qed.
 
 
 (** * Rabs *)
+(** Rewritings *)
 
 Lemma Rabs_div : forall a b : R, b <> 0 -> Rabs (a/b) = (Rabs a) / (Rabs b).
 Proof.
@@ -462,6 +474,19 @@ Proof.
   reflexivity.
   apply H.
 Qed.
+
+Lemma Rabs_eq_0 : forall x, Rabs x = 0 -> x = 0.
+Proof.
+  intros.
+  unfold Rabs in H.
+  destruct Rcase_abs.
+  rewrite <- (Ropp_involutive x).
+  apply Ropp_eq_0_compat.
+  apply H.
+  apply H.
+Qed.
+
+(** Order *)
 
 Lemma Rabs_le_between : forall x y, (Rabs x <= y <-> -y <= x <= y).
 Proof.
@@ -615,16 +640,6 @@ Proof.
   apply Hx.
 Qed.
 
-Lemma Rabs_eq_0 : forall x, Rabs x = 0 -> x = 0.
-Proof.
-  intros.
-  unfold Rabs in H.
-  destruct Rcase_abs.
-  rewrite <- (Ropp_involutive x).
-  apply Ropp_eq_0_compat.
-  apply H.
-  apply H.
-Qed.
 
 Lemma Rabs_maj2 : forall x, -x <= Rabs x.
 Proof.
@@ -633,38 +648,6 @@ Proof.
   apply Rle_abs.
 Qed.
 
-
-
-(** * Rmult *)
-
-
-Lemma Rmult_le_reg_r : forall r r1 r2 : R, 0 < r -> r1 * r <= r2 * r -> r1 <= r2.
-Proof.
-  intros.
-  apply (Rmult_le_reg_l r).
-  apply H.
-  repeat rewrite (Rmult_comm r).
-  apply H0.
-Qed.
-
-Lemma Rle_mult_Rlt : forall c a b : R, 0 < b -> c < 1 -> a <= b*c -> a < b.
-Proof.
-  intros.
-  apply Rle_lt_trans with (1 := H1).
-  pattern b at 2 ; rewrite <-(Rmult_1_r b).
-  apply Rmult_lt_compat_l ; auto.
-Qed.
-
-Lemma Rmult_le_0_r : forall a b, a <= 0 -> 0 <= b -> a * b <= 0.
-Proof.
-  intros ;
-  rewrite <-(Rmult_0_r a) ;
-  apply (Rmult_le_compat_neg_l a 0 b) with (1 := H) ; auto.
-Qed.
-Lemma Rmult_le_0_l : forall a b, 0 <= a -> b <= 0 -> a * b <= 0.
-Proof.
-  intros ; rewrite Rmult_comm ; apply Rmult_le_0_r ; auto.
-Qed.
 
 (** * Order *)
 
@@ -707,6 +690,42 @@ Proof.
 Qed.
 Definition pos_div_2 (eps : posreal) := mkposreal _ (is_pos_div_2 eps).
 
+(** * Integers *)
+
+Definition Zpow (x : R) (n : Z) : R :=
+  match n with
+    | Z0 => 1
+    | Zpos p => x ^ (nat_of_P p)
+    | Zneg p => / x ^ (nat_of_P p)
+  end.
+
+
+Fixpoint is_even (n : nat) :=
+  match n with
+    | O => 1
+    | 1%nat => 0
+    | S (S n) => is_even n
+  end.
+Definition is_odd (n : nat) := is_even (S n).
+
+Lemma is_even_simplify (n : nat) :
+  is_even n = match (even_odd_dec n) with
+    | left _ => 1
+    | right _ => 0
+  end.
+Proof.
+  revert n.
+  apply ind_0_1_SS.
+  reflexivity.
+  reflexivity.
+  intros n.
+  destruct (even_odd_dec (S (S n))) as [H|H] ; 
+  destruct (even_odd_dec n) as [H0|H0] ; simpl ; auto.
+  apply even_S, odd_S in H0.
+  apply not_even_and_odd in H ; intuition.
+  apply odd_S, even_S in H0.
+  apply not_even_and_odd in H ; intuition.
+Qed.
 
 (** * Operations on the Riemann integral *)
 

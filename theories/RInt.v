@@ -137,7 +137,7 @@ Proof.
   [ |apply SSR_leq ; intuition | apply SSR_leq ; intuition ].
   apply Rminus_le_0 ; field_simplify ; 
   [| apply Rgt_not_eq ; intuition] ; rewrite -?Rdiv_1 ;
-  apply Rdiv_le_pos ; intuition.
+  apply Rdiv_le_0_compat ; intuition.
   rewrite Rplus_comm ; by apply (proj1 (Rminus_le_0 _ _)).
 Qed.
 
@@ -1059,7 +1059,7 @@ Proof.
   case: Hex => If Hex.
   case: (Hex (mkposreal _ Rlt_0_1)) => {Hex} alpha Hex.
   have Hn : 0 <= ((b-a)/alpha).
-    apply Rdiv_le_pos.
+    apply Rdiv_le_0_compat.
     apply -> Rminus_le_0 ; apply Rlt_le, Hab.
     by apply alpha.
   set n := (nfloor _ Hn).
@@ -1079,24 +1079,24 @@ Proof.
   suff : forall i, (S i < size (RInt_part a b n))%nat ->
     nth 0 (RInt_part a b n) (S i) - nth 0 (RInt_part a b n) i = (b-a)/(INR n + 1).
   elim: (RInt_part a b n) => [ /= _ | x0].
-  apply Rdiv_le_pos ; [ by apply Rlt_le, Rgt_minus | by intuition ].
+  apply Rdiv_le_0_compat ; [ by apply Rlt_le, Rgt_minus | by intuition ].
   case => /= [ | x1 s] IH Hnth.
-  apply Rdiv_le_pos ; [ by apply Rlt_le, Rgt_minus | by intuition ].
+  apply Rdiv_le_0_compat ; [ by apply Rlt_le, Rgt_minus | by intuition ].
   replace (seq_step _)
     with (Rmax (Rabs (x1 - x0)) (seq_step (x1 :: s))) by auto.
   apply Rmax_case_strong => _.
   rewrite (Hnth O (lt_n_S _ _ (lt_O_Sn _))) Rabs_right.
   exact: Rle_refl.
-  apply Rle_ge, Rdiv_le_pos ; [ by apply Rlt_le, Rgt_minus | by intuition ].
+  apply Rle_ge, Rdiv_le_0_compat ; [ by apply Rlt_le, Rgt_minus | by intuition ].
   apply IH => i Hi ; exact: (Hnth (S i) (lt_n_S _ _ Hi)).
   rewrite size_mkseq => i Hi ;
   rewrite ?nth_mkseq ?SSR_leq ?S_INR.
   field ; apply Rgt_not_eq ; by intuition.
   exact: lt_le_weak.
   exact: Hi.
-  apply Rlt_div.
+  apply Rlt_div_l.
   by apply INRp1_pos.
-  rewrite Rmult_comm ; apply Rlt_div.
+  rewrite Rmult_comm ; apply Rlt_div_l.
   by apply alpha.
   rewrite /n /nfloor ; case: nfloor_ex => /= n' Hn'.
   by apply Hn'.
@@ -1229,12 +1229,12 @@ Proof.
     by [].
     apply SSR_leq ; by intuition.
   move: (Hex' _ _ Ht Hg) ; split.
-  apply Rle_div.
+  apply Rle_div_l.
   by apply Rgt_minus, Hlt.
-  by apply Rle_minus2, Hex'0.
-  apply Rle_div2.
+  by apply Rle_minus_l, Hex'0.
+  apply Rle_div_r.
   by apply Rgt_minus, Hlt.
-  apply Rle_minus2 ; rewrite /Rminus Ropp_involutive ; by apply Hex'0.
+  apply Rle_minus_l ; rewrite /Rminus Ropp_involutive ; by apply Hex'0.
   apply IH.
   by apply Hlt.
   case: Hex => m [M Hex].
@@ -2511,7 +2511,7 @@ Proof.
   case: (Hex eps) => {Hex} alpha Hex.
 (* ** Trouver N *)
   have HN : 0 <= (b-a)/alpha.
-    apply Rdiv_le_pos.
+    apply Rdiv_le_0_compat.
     apply -> Rminus_le_0 ; apply Rlt_le, Hab.
     by apply alpha.
   set N := (nfloor _ HN).
@@ -2543,10 +2543,10 @@ Proof.
   suff : forall i, (S i < size (SF_lx ptd))%nat ->
     nth 0 (SF_lx ptd) (S i) - nth 0 (SF_lx ptd) i = (b-a)/(INR n + 1).
   elim: (SF_lx ptd) => /= [ | x0].
-  move => _ ; apply Rdiv_le_pos ;
+  move => _ ; apply Rdiv_le_0_compat ;
   [ by apply Rlt_le, Rgt_minus | by apply INRp1_pos].
   case => /=[ | x1 s] IH Hs.
-  apply Rdiv_le_pos ;
+  apply Rdiv_le_0_compat ;
   [ by apply Rlt_le, Rgt_minus | by apply INRp1_pos].
   replace (seq_step _) with (Rmax (Rabs (x1 - x0)) (seq_step (x1::s))) by auto.
   rewrite (Hs _ (lt_n_S _ _ (lt_O_Sn _))) Rabs_right.
@@ -2554,7 +2554,7 @@ Proof.
   by apply Rle_refl.
   apply IH => i Hi.
   by apply (Hs _ (lt_n_S _ _ Hi)).
-  apply Rle_ge, Rdiv_le_pos ;
+  apply Rle_ge, Rdiv_le_0_compat ;
   [ by apply Rlt_le, Rgt_minus | by apply INRp1_pos].
   rewrite SF_lx_f2.
   replace (head 0%R (RInt_part a b n) :: behead (RInt_part a b n))
@@ -2569,9 +2569,9 @@ Proof.
   apply Rinv_le_contravar.
   by apply INRp1_pos.
   by apply Rplus_le_compat_r, le_INR.
-  apply Rlt_div.
+  apply Rlt_div_l.
   by apply INRp1_pos.
-  rewrite Rmult_comm ; apply Rlt_div.
+  rewrite Rmult_comm ; apply Rlt_div_l.
   by apply alpha.
   rewrite /N /nfloor ; case: nfloor_ex => N' HN' /=.
   by apply HN'.
@@ -2675,14 +2675,14 @@ Proof.
   have Hn : forall eps : posreal, {n : nat | (b-a)/(INR n + 1) < alpha eps}.
     move => eps.
     have Hn : 0 <= (b-a)/(alpha eps).
-      apply Rdiv_le_pos.
+      apply Rdiv_le_0_compat.
       by apply Rlt_le, Rgt_minus.
       by apply Ealpha.
     set n := (nfloor _ Hn).
     exists n.
-    apply Rlt_div.
+    apply Rlt_div_l.
     by apply INRp1_pos.
-    rewrite Rmult_comm ; apply Rlt_div.
+    rewrite Rmult_comm ; apply Rlt_div_l.
     by apply Ealpha.
     rewrite /n /nfloor ; case: nfloor_ex => /= n' Hn'.
     by apply Hn'.
@@ -2968,7 +2968,7 @@ have Hfin' : forall t, is_finite (SF_sup_fun (fun t : R => Rabs (f t - phi t)) a
   rewrite (Hnth O (lt_n_S _ _ (lt_O_Sn _))).
   rewrite Rabs_right.
   exact: Hn.
-  apply Rle_ge, Rdiv_le_pos.
+  apply Rle_ge, Rdiv_le_0_compat.
   by apply Rlt_le, Rgt_minus.
   by intuition.
   apply IH => i Hi.
@@ -3152,12 +3152,12 @@ have Hfin' : forall t, is_finite (SF_sup_fun (fun t : R => Rabs (f t - phi t)) a
     rewrite !nth_mkseq.
     rewrite S_INR.
     split ; simpl ; apply Rminus_le_0 ; field_simplify.
-    rewrite -Rdiv_1 ; apply Rdiv_le_pos.
+    rewrite -Rdiv_1 ; apply Rdiv_le_0_compat.
     rewrite Rplus_comm -Rminus_le_0 ; exact: (Rlt_le _ _ Hab).
     replace (2 * INR n + 2) with (2 * (INR n + 1)) by field.
     apply Rmult_lt_0_compat ; by intuition.
     apply Rgt_not_eq ; by intuition.
-    rewrite -Rdiv_1 ; apply Rdiv_le_pos.
+    rewrite -Rdiv_1 ; apply Rdiv_le_0_compat.
     rewrite Rplus_comm -Rminus_le_0 ; exact: (Rlt_le _ _ Hab).
     replace (2 * INR n + 2) with (2 * (INR n + 1)) by field.
     apply Rmult_lt_0_compat ; by intuition.
@@ -3189,12 +3189,12 @@ have Hfin' : forall t, is_finite (SF_sup_fun (fun t : R => Rabs (f t - phi t)) a
     move => ->.
     rewrite !nth_mkseq ?S_INR.
     split ; simpl ; apply Rminus_le_0 ; field_simplify.
-    rewrite -Rdiv_1 ; apply Rdiv_le_pos.
+    rewrite -Rdiv_1 ; apply Rdiv_le_0_compat.
     rewrite Rplus_comm -Rminus_le_0 ; exact: (Rlt_le _ _ Hab).
     replace (2 * INR n + 2) with (2 * (INR n + 1)) by ring.
     apply Rmult_lt_0_compat ; by intuition.
     apply Rgt_not_eq ; by intuition.
-    rewrite -Rdiv_1 ; apply Rdiv_le_pos.
+    rewrite -Rdiv_1 ; apply Rdiv_le_0_compat.
     rewrite Rplus_comm -Rminus_le_0 ; exact: (Rlt_le _ _ Hab).
     replace (2 * INR n + 2) with (2 * (INR n + 1)) by ring.
     apply Rmult_lt_0_compat ; by intuition.

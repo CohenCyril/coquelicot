@@ -1,6 +1,6 @@
 Require Import Reals Markov.
 Require Import ssreflect.
-Require Import Rbar Rbar_bound Rcomplements.
+Require Import Rbar Rbar_bound Rcomplements Floor.
 
 (** * Sup of a sequence *)
 
@@ -559,8 +559,6 @@ Proof.
   case (Rbar_ex_limsup_seq v) => l2 Hl2 /= ; by apply (Rbar_is_limsup_eq u v).
 Qed.
 
-
-
 Lemma Rbar_limsup_seq_shift: forall u k,
    (Rbar_limsup_seq u  = Rbar_limsup_seq (fun n => u (n+k)%nat)).
 intros u k.
@@ -612,7 +610,7 @@ Qed.
 
 
 
-Lemma Rbar_limsup_seq_eq_ge: forall u v,
+Lemma Rbar_limsup_seq_ext_loc : forall u v,
   (exists N, forall n, (N <= n)%nat -> (u n) = (v n)) -> Rbar_limsup_seq u = Rbar_limsup_seq v.
 intros u v (N,H).
 rewrite (Rbar_limsup_seq_shift u N). 
@@ -823,7 +821,7 @@ apply: (Rbar_is_liminf_eq _ _ _ _ _ H Hy).
 easy.
 Qed.
 
-Lemma Rbar_liminf_seq_eq_ge: forall u v,
+Lemma Rbar_liminf_seq_ext_loc : forall u v,
   (exists N, forall n, (N <= n)%nat -> (u n) = (v n)) -> Rbar_liminf_seq u = Rbar_liminf_seq v.
 intros u v (N,H).
 rewrite (Rbar_liminf_seq_shift u N). 
@@ -930,7 +928,59 @@ Proof.
   rewrite (Rbar_is_liminf_eq u u li l) => //.
 Qed.
 
-(** ** Limit and opposite *)
+(** ** Operations *)
+
+(** Extentionality *)
+
+Lemma Rbar_is_lim_seq_ext_loc (u v : nat -> Rbar) (l : Rbar) :
+  (exists N, forall n, (N <= n)%nat -> (u n) = (v n)) 
+  -> Rbar_is_lim_seq u l -> Rbar_is_lim_seq v l.
+Proof.
+  case: l => [l | | ] [N1 Heq] Hu M ;
+  case: (Hu M) => {Hu} N2 Hu ; exists (N1 + N2)%nat => n Hn ;
+  rewrite -Heq ; intuition ; apply Hu ; intuition.
+Qed.
+Lemma Rbar_ex_lim_seq_ext_loc (u v : nat -> Rbar) :
+  (exists N, forall n, (N <= n)%nat -> (u n) = (v n)) 
+  -> Rbar_ex_lim_seq u -> Rbar_ex_lim_seq v.
+Proof.
+  move => Heq [l Hu] ; exists l ; by apply Rbar_is_lim_seq_ext_loc with u.
+Qed.
+Lemma Rbar_lim_seq_ext_loc : forall u v,
+  (exists N, forall n, (N <= n)%nat -> (u n) = (v n))
+    -> Rbar_lim_seq u = Rbar_lim_seq v.
+Proof.
+  intros.
+  rewrite /Rbar_lim_seq.
+  apply (f_equal (fun x => Rbar_div_pos x _)).
+  apply f_equal2.
+  by apply Rbar_limsup_seq_ext_loc.
+  by apply Rbar_liminf_seq_ext_loc.
+Qed.
+
+Lemma Rbar_is_lim_seq_ext (u v : nat -> Rbar) (l : Rbar) :
+  (forall n, (u n) = (v n)) 
+  -> Rbar_is_lim_seq u l -> Rbar_is_lim_seq v l.
+Proof.
+  move => Heq Hu ; apply Rbar_is_lim_seq_ext_loc with u.
+  by exists O.
+  by [].
+Qed.
+Lemma Rbar_ex_lim_seq_ext (u v : nat -> Rbar) :
+  (forall n, (u n) = (v n)) 
+  -> Rbar_ex_lim_seq u -> Rbar_ex_lim_seq v.
+Proof.
+  move => Heq [l Hu] ; exists l ; by apply Rbar_is_lim_seq_ext with u.
+Qed.
+Lemma Rbar_lim_seq_ext : forall u v,
+  (forall n, (u n) = (v n)) -> Rbar_lim_seq u = Rbar_lim_seq v.
+Proof.
+  intros.
+  apply Rbar_lim_seq_ext_loc.
+  by exists O.
+Qed.
+
+(** Additive *)
 
 Lemma Rbar_is_lim_seq_opp (u : nat -> Rbar) l : 
   Rbar_is_lim_seq u l <-> Rbar_is_lim_seq (fun n => Rbar_opp (u n)) (Rbar_opp l).
@@ -956,3 +1006,461 @@ Proof.
   case: (Hl (-e)) => {Hl} N Hl ; exists N => n Hn ;
   apply Rbar_opp_lt ; rewrite /= ?Rbar_opp_involutive ; by apply Hl.
 Qed.
+Lemma Rbar_ex_lim_seq_opp (u : nat -> Rbar) :
+  Rbar_ex_lim_seq u <-> Rbar_ex_lim_seq (fun n => Rbar_opp (u n)).
+Proof.
+  split ; case => l Hu ; exists (Rbar_opp l).
+  by apply -> Rbar_is_lim_seq_opp.
+  apply Rbar_is_lim_seq_opp ; by rewrite Rbar_opp_involutive.
+Qed.
+Lemma Rbar_lim_seq_opp (u : nat -> Rbar) :
+  Rbar_lim_seq (fun n => Rbar_opp (u n)) = Rbar_opp (Rbar_lim_seq u).
+Proof.
+  rewrite /Rbar_lim_seq.
+  replace (Rbar_limsup_seq (fun n : nat => Rbar_opp (u n)))
+    with (Rbar_opp (Rbar_liminf_seq u)).
+  replace (Rbar_liminf_seq (fun n : nat => Rbar_opp (u n)))
+    with (Rbar_opp (Rbar_limsup_seq u)).
+  case: (Rbar_limsup_seq u) => [ls | | ] ;
+  case: (Rbar_liminf_seq u) => [li | | ] //= ;
+  apply f_equal ; field.
+
+  rewrite /Rbar_limsup_seq ; case: Rbar_ex_limsup_seq ; case => [ls | | ] Hls ;
+  rewrite /Rbar_liminf_seq ; case: Rbar_ex_liminf_seq ; case => [li | | ] Hli //=.
+  apply f_equal, Rle_antisym ; apply le_epsilon => e He ;
+  set eps := mkposreal e He ; apply Rlt_le.
+  case: (Hls (pos_div_2 eps)) ; case => {Hls} N Hls _.
+  case: (Hli (pos_div_2 eps)) => {Hli} _ Hli.
+  case: (Hli N) => {Hli} n [Hn Hli].
+  replace (-ls) with (-(ls + eps/2) + eps/2) by ring.
+  replace (li + e) with ((li + eps/2) + eps/2) by (simpl ; field).
+  apply Rplus_lt_compat_r, (Rbar_lt_trans (Finite _) (Rbar_opp (u n)) (Finite _)).
+  apply <- (Rbar_opp_lt (Finite (ls + eps/2))).
+  by apply Hls.
+  by apply Hli.
+  case: (Hls (pos_div_2 eps)) => {Hls} _ Hls.
+  case: (Hli (pos_div_2 eps)) ; case => {Hli} N Hli _.
+  case: (Hls N) => {Hls} n [Hn Hls].
+  replace (li) with ((li - eps/2) + eps/2) by ring.
+  replace (-ls + e) with (-(ls - eps/2) + eps/2) by (simpl ; field).
+  apply Rplus_lt_compat_r, (Rbar_lt_trans (Finite _) (Rbar_opp (u n)) (Finite _)).
+  by apply Hli.
+  apply <- (Rbar_opp_lt (u n) (Finite (ls - eps / 2))).
+  by apply Hls.
+  
+  case: (Hls (mkposreal _ Rlt_0_1)) => {Hls} _ Hls.
+  case: (Hli (-(ls - 1))) => {Hli} N Hli.
+  case: (Hls N) => {Hls} n [Hn Hls].
+  contradict Hls.
+  by apply Rbar_le_not_lt, Rbar_lt_le, Rbar_opp_lt, Hli.
+  
+  case: (Hls (mkposreal _ Rlt_0_1)) ; case => {Hls} N Hls _.
+  case: (Hli (-(ls + 1)) N) => {Hli} n [Hn Hli].
+  contradict Hli.
+  by apply Rbar_le_not_lt, Rbar_lt_le, (Rbar_opp_lt (Finite _) (u n)), Hls.
+  
+  case: (Hli (mkposreal _ Rlt_0_1)) ; case => {Hli} N Hli _.
+  case: (Hls (-(li - 1)) N) => {Hls} n [Hn Hls].
+  contradict Hls.
+  apply Rbar_le_not_lt, Rbar_lt_le, Rbar_opp_lt.
+  rewrite (Rbar_opp_involutive (Finite _)).
+  by apply Hli.
+  
+  case: (Hli 0) => {Hli} N Hli.
+  case: (Hls 0 N) => {Hls} n [Hn Hls].
+  contradict Hls.
+  apply Rbar_le_not_lt, Rbar_lt_le, Rbar_opp_lt.
+  rewrite /= Ropp_0.
+  by apply Hli.
+  
+  case: (Hls (-(li + 1))) => {Hls} N Hls.
+  case: (Hli (mkposreal _ Rlt_0_1)) => {Hli} _ Hli.
+  case: (Hli N) => {Hli} n [Hn Hli].
+  contradict Hli.
+  apply Rbar_le_not_lt, Rbar_lt_le, Rbar_opp_lt.
+  rewrite Rbar_opp_involutive.
+  by apply Hls.
+  
+  case: (Hls 0) => {Hls} N Hls.
+  case: (Hli 0 N) => {Hli} n [Hn Hli].
+  contradict Hli.
+  apply Rbar_le_not_lt, Rbar_lt_le, Rbar_opp_lt.
+  rewrite /= Ropp_0 Rbar_opp_involutive.
+  by apply Hls.
+  
+  rewrite /Rbar_liminf_seq ; case: Rbar_ex_liminf_seq ; case => [li | | ] Hli ;
+  rewrite /Rbar_limsup_seq ; case: Rbar_ex_limsup_seq ; case => [ls | | ] Hls //=.
+  apply f_equal, Rle_antisym ; apply le_epsilon => e He ;
+  set eps := mkposreal e He ; apply Rlt_le.
+  case: (Hls (pos_div_2 eps)) ; case => {Hls} N Hls _.
+  case: (Hli (pos_div_2 eps)) => {Hli} _ Hli.
+  case: (Hli N) => {Hli} n [Hn Hli].
+  replace (-li) with (-(li + eps/2) + eps/2) by ring.
+  replace (ls + e) with ((ls + eps/2) + eps/2) by (simpl ; field).
+  apply Rplus_lt_compat_r, (Rbar_lt_trans (Finite _) (Rbar_opp (u n)) (Finite _)).
+  apply <- (Rbar_opp_lt (Finite (li + eps/2))).
+  by apply Hli.
+  by apply Hls.
+  case: (Hls (pos_div_2 eps)) => {Hls} _ Hls.
+  case: (Hli (pos_div_2 eps)) ; case => {Hli} N Hli _.
+  case: (Hls N) => {Hls} n [Hn Hls].
+  replace (ls) with ((ls - eps/2) + eps/2) by ring.
+  replace (-li + e) with (-(li - eps/2) + eps/2) by (simpl ; field).
+  apply Rplus_lt_compat_r, (Rbar_lt_trans (Finite _) (Rbar_opp (u n)) (Finite _)).
+  by apply Hls.
+  apply <- (Rbar_opp_lt (u n) (Finite (li - eps / 2))).
+  by apply Hli.
+  
+  case: (Hli (mkposreal _ Rlt_0_1)) ; case => {Hli} N Hli _.
+  case: (Hls (-(li - 1)) N) => {Hls} n [Hn Hls].
+  contradict Hls.
+  by apply Rbar_le_not_lt, Rbar_lt_le, (Rbar_opp_lt (u n) (Finite _)), Hli.
+  
+  case: (Hli (mkposreal _ Rlt_0_1)) => {Hli} _ Hli.
+  case: (Hls (-(li + 1))) => {Hls} N Hls.
+  case: (Hli N) => {Hli} n [Hn Hli].
+  contradict Hli.
+  by apply Rbar_le_not_lt, Rbar_lt_le, Rbar_opp_lt, Hls.
+  
+  case: (Hls (mkposreal _ Rlt_0_1)) => {Hls} _ Hls.
+  case: (Hli (-(ls - 1))) => {Hli} N Hli.
+  case: (Hls N) => {Hls} n [Hn Hls].
+  contradict Hls.
+  apply Rbar_le_not_lt, Rbar_lt_le, Rbar_opp_lt.
+  rewrite Rbar_opp_involutive.
+  by apply Hli.
+  
+  case: (Hli 0) => {Hli} N Hli.
+  case: (Hls 0 N) => {Hls} n [Hn Hls].
+  contradict Hls.
+  apply Rbar_le_not_lt, Rbar_lt_le, Rbar_opp_lt.
+  rewrite /= Ropp_0 Rbar_opp_involutive.
+  by apply Hli.
+  
+  case: (Hls (mkposreal _ Rlt_0_1)) ; case => {Hls} N Hls _.
+  case: (Hli (-(ls + 1)) N) => {Hli} n [Hn Hli].
+  contradict Hli.
+  apply Rbar_le_not_lt, Rbar_lt_le, Rbar_opp_lt.
+  rewrite (Rbar_opp_involutive (Finite _)).
+  by apply Hls.
+  
+  case: (Hls 0) => {Hls} N Hls.
+  case: (Hli 0 N) => {Hli} n [Hn Hli].
+  contradict Hli.
+  apply Rbar_le_not_lt, Rbar_lt_le, Rbar_opp_lt.
+  rewrite /= Ropp_0.
+  by apply Hls.
+Qed.
+
+Lemma Rbar_is_lim_seq_plus (u v : nat -> Rbar) (lu lv l : Rbar) :
+  Rbar_is_lim_seq u lu -> Rbar_is_lim_seq v lv
+  -> is_Rbar_plus lu lv l
+  -> Rbar_is_lim_seq (fun n => Rbar_plus (u n) (v n)) l.
+Proof.
+  case: lu => [lu | | ] ; case: lv => [lv | | ] ;
+  case: l => [l | | ] // Hu Hv Hp ; simpl in Hp.
+
+  move => eps.
+  case: (Hu (pos_div_2 eps)) => {Hu} N1 Hu.
+  case: (Hv (pos_div_2 eps)) => {Hv} N2 Hv.
+  exists (N1 + N2)%nat => n Hn.
+  case : (u n) (v n) (Hu n (le_trans _ _ _ (le_plus_l _ _) Hn))
+    (Hv n (le_trans _ _ _ (le_plus_r _ _) Hn)) => {u v Hu Hv}
+    [un | | ] ; case => [vu | | ] //= Hu Hv.
+  rewrite -Hp ; 
+  replace (lu + lv - eps) with ((lu - eps / 2) + (lv - eps / 2)) by field ;
+  replace (lu + lv + eps) with ((lu + eps / 2) + (lv + eps / 2)) by field.
+  split ; apply Rplus_lt_compat ; by intuition.
+  by case: Hu.
+  by case: Hu.
+  
+  move => M.
+  case: (Hu (mkposreal _ Rlt_0_1)) => {Hu} N1 Hu.
+  case: (Hv (M - (lu - 1))) => {Hv} N2 Hv.
+  exists (N1 + N2)%nat => n Hn.
+  case : (u n) (v n) (Hu n (le_trans _ _ _ (le_plus_l _ _) Hn))
+    (Hv n (le_trans _ _ _ (le_plus_r _ _) Hn)) => {u v Hu Hv}
+    [un | | ] ; case => [vn | | ] //= Hu Hv.
+  replace M with ((lu - 1) + (M - (lu - 1))) by ring.
+  apply Rplus_lt_compat ; by intuition.
+  by case: Hu.
+  by case: Hu.
+  
+  move => M.
+  case: (Hu (mkposreal _ Rlt_0_1)) => {Hu} N1 Hu.
+  case: (Hv (M - (lu + 1))) => {Hv} N2 Hv.
+  exists (N1 + N2)%nat => n Hn.
+  case : (u n) (v n) (Hu n (le_trans _ _ _ (le_plus_l _ _) Hn))
+    (Hv n (le_trans _ _ _ (le_plus_r _ _) Hn)) => {u v Hu Hv}
+    [un | | ] ; case => [vn | | ] //= Hu Hv.
+  replace M with ((lu + 1) + (M - (lu + 1))) by ring.
+  apply Rplus_lt_compat ; by intuition.
+  by case: Hu.
+  by case: Hu.
+  
+  move => M.
+  case: (Hv (mkposreal _ Rlt_0_1)) => {Hv} N2 Hv.
+  case: (Hu (M - (lv - 1))) => {Hu} N1 Hu.
+  exists (N1 + N2)%nat => n Hn.
+  case : (u n) (v n) (Hu n (le_trans _ _ _ (le_plus_l _ _) Hn))
+    (Hv n (le_trans _ _ _ (le_plus_r _ _) Hn)) => {u v Hu Hv}
+    [un | | ] ; case => [vn | | ] //= Hu Hv.
+  replace M with ((M - (lv - 1)) + (lv - 1)) by ring.
+  apply Rplus_lt_compat ; by intuition.
+  by case: Hv.
+  by case: Hv.
+  
+  move => M.
+  case: (Hu (M/2)) => {Hu} N1 Hu.
+  case: (Hv (M /2)) => {Hv} N2 Hv.
+  exists (N1 + N2)%nat => n Hn.
+  case : (u n) (v n) (Hu n (le_trans _ _ _ (le_plus_l _ _) Hn))
+    (Hv n (le_trans _ _ _ (le_plus_r _ _) Hn)) => {u v Hu Hv}
+    [un | | ] ; case => [vn | | ] //= Hu Hv.
+  replace M with (M/2 + M/2) by field.
+  apply Rplus_lt_compat ; by intuition.
+  
+  move => M.
+  case: (Hv (mkposreal _ Rlt_0_1)) => {Hv} N2 Hv.
+  case: (Hu (M - (lv + 1))) => {Hu} N1 Hu.
+  exists (N1 + N2)%nat => n Hn.
+  case : (u n) (v n) (Hu n (le_trans _ _ _ (le_plus_l _ _) Hn))
+    (Hv n (le_trans _ _ _ (le_plus_r _ _) Hn)) => {u v Hu Hv}
+    [un | | ] ; case => [vn | | ] //= Hu Hv.
+  replace M with ((M - (lv + 1)) + (lv + 1)) by ring.
+  apply Rplus_lt_compat ; by intuition.
+  by case: Hv.
+  by case: Hv.
+
+  move => M.
+  case: (Hu (M/2)) => {Hu} N1 Hu.
+  case: (Hv (M /2)) => {Hv} N2 Hv.
+  exists (N1 + N2)%nat => n Hn.
+  case : (u n) (v n) (Hu n (le_trans _ _ _ (le_plus_l _ _) Hn))
+    (Hv n (le_trans _ _ _ (le_plus_r _ _) Hn)) => {u v Hu Hv}
+    [un | | ] ; case => [vn | | ] //= Hu Hv.
+  replace M with (M/2 + M/2) by field.
+  apply Rplus_lt_compat ; by intuition.
+Qed.
+Lemma Rbar_lim_seq_plus (u v : nat -> Rbar) :
+  Rbar_ex_lim_seq u -> Rbar_ex_lim_seq v
+  -> (exists l, is_Rbar_plus (Rbar_lim_seq u) (Rbar_lim_seq v) l)
+  -> Rbar_lim_seq (fun n => Rbar_plus (u n) (v n)) = Rbar_plus (Rbar_lim_seq u) (Rbar_lim_seq v).
+Proof.
+  move/Rbar_ex_lim_is_lim => Hu.
+  move/Rbar_ex_lim_is_lim => Hv.
+  case => l Hp.
+  rewrite (Rbar_plus_correct _ _ _ Hp).
+  apply Rbar_is_lim_correct.
+  eapply Rbar_is_lim_seq_plus.
+  by apply Hu.
+  by apply Hv.
+  by apply Hp.
+Qed.
+
+Lemma is_Rbar_plus_coeh (x y z : Rbar) :
+  (forall (u v : nat -> R), Rbar_is_lim_seq (fun n => Finite (u n)) x
+    -> Rbar_is_lim_seq (fun n => Finite (v n)) y
+    -> Rbar_is_lim_seq (fun n => Finite (u n + v n)) z)
+    <-> is_Rbar_plus x y z.
+Proof.
+split.
+  move => Huv.
+  set x_seq := fun (x : Rbar) (n : nat) => match x with 
+    | Finite x => x
+    | p_infty => INR n
+    | m_infty => - INR n
+  end.
+  
+  move: (Huv (x_seq x) (x_seq y)) => H.
+  have Hx : forall x, Rbar_is_lim_seq (fun n => Finite (x_seq x n)) x.
+    case => [l | | ] /= eps.
+    exists O => _ _.
+    rewrite -Rabs_lt_between' Rminus_eq0 Rabs_R0 ; by apply eps.
+    exists (S (nfloor (Rmax 0 eps) (Rmax_l _ _))) => n Hn.
+    apply Rlt_le_trans with (2 := le_INR _ _ Hn).
+    rewrite /nfloor S_INR ; case: nfloor_ex => /= N HN.
+    apply Rle_lt_trans with (2 := proj2 HN).
+    by apply Rmax_r.
+    exists (S (nfloor (Rmax 0 (-eps)) (Rmax_l _ _))) => n Hn.
+    apply Ropp_lt_cancel ; rewrite Ropp_involutive.
+    apply Rlt_le_trans with (2 := le_INR _ _ Hn).
+    rewrite /nfloor S_INR ; case: nfloor_ex => /= N HN.
+    apply Rle_lt_trans with (2 := proj2 HN).
+    by apply Rmax_r.
+  move: (H (Hx x)) => {H} H.
+  move: (H (Hx y)) => {H} H.
+
+  case: x y Huv H => [x | | ] ; case => [y | | ] Huv /= H.
+(* x \in R *)
+(* * y \in R *)
+  case: z Huv H => [z | | ] Huv /= H.
+  apply Req_lt_aux => eps.
+  case: (H eps) => {H} N H.
+  by apply Rabs_lt_between', (H N).
+  case: (H (x+y)) => {H} N H.
+  move: (H N (le_refl _)) => {H} H.
+  by apply Rlt_irrefl in H.
+  case: (H (x+y)) => {H} N H.
+  move: (H N (le_refl _)) => {H} H.
+  by apply Rlt_irrefl in H.
+(* * y = p_infty *)
+  case: z Huv H => [z | | ] Huv /= H.
+  case: (H (mkposreal _ Rlt_0_1)) => /= {H} N H.
+  case: (H (S (nfloor1 (Rmax 1 (z+1-x)) _)+N)%nat (le_plus_r _ _)) => [ | Hn _].
+  by apply Rlt_le_trans with (1 := Rlt_0_1), Rmax_l.
+  apply Rle_not_lt.
+  rewrite (Rplus_comm x).
+  apply Rle_minus_l.
+  apply Rle_trans with (2 := le_INR _ _ (le_plus_l _ _)).
+  rewrite /nfloor1 S_INR ; case: nfloor1_ex => /= n Hn'.
+  apply Rle_trans with (2 := proj2 Hn').
+  by apply Rmax_r.
+  by [].
+  case: (H x) => {H} N H.
+  move: (H N (le_refl _)) ; apply Rle_not_lt, Rminus_le_0 ; ring_simplify.
+  apply (le_INR O), le_O_n.
+(* * y = m_infty *)
+  case: z Huv H => [z | | ] Huv /= H.
+  case: (H (mkposreal _ Rlt_0_1)) => /= {H} N H.
+  case: (H _ (le_plus_r (S (nfloor (Rmax 0 (x-(z-1))) (Rmax_l _ _))) N))
+    => {H} H _ ; move: H ; apply Rle_not_lt.
+  apply Rle_minus_l.
+  rewrite Rplus_comm.
+  apply Rle_minus_l.
+  apply Rle_trans with (1 := Rmax_r 0 _).
+  apply Rle_trans with (2 := le_INR _ _ (le_plus_l _ _)).
+  rewrite S_INR.
+  rewrite /nfloor ; case: nfloor_ex => /= n Hn.
+  apply Rlt_le, Hn.
+  case: (H x) => {H} N H.
+  move: (H N (le_refl _)) ; apply Rle_not_lt, Rminus_le_0 ; ring_simplify.
+  apply (le_INR O), le_O_n.
+  by [].
+(* x = p_infty *)
+(* * y \in R *)
+  case: z Huv H => [z | | ] Huv /= H.
+  case: (H (mkposreal _ Rlt_0_1)) => /= {H} N H.
+  case: (H (S (nfloor1 (Rmax 1 (z+1-y)) _)+N)%nat (le_plus_r _ _)) => [ | Hn _].
+  by apply Rlt_le_trans with (1 := Rlt_0_1), Rmax_l.
+  apply Rle_not_lt.
+  apply Rle_minus_l.
+  apply Rle_trans with (2 := le_INR _ _ (le_plus_l _ _)).
+  rewrite /nfloor1 S_INR ; case: nfloor1_ex => /= n Hn'.
+  apply Rle_trans with (2 := proj2 Hn').
+  by apply Rmax_r.
+  by [].
+  case: (H y) => {H} N H.
+  move: (H N (le_refl _)) ; apply Rle_not_lt, Rminus_le_0 ; ring_simplify.
+  apply (le_INR O), le_O_n.
+(* * y = p_infty *)
+  case: z Huv H => [z | | ] Huv /= H.
+  case: (H (mkposreal _ Rlt_0_1)) => /= {H} N H.
+  case: (H _ (le_plus_r (S (nfloor (Rmax 0 ((z+1)/2)) (Rmax_l _ _))) N))
+    => {H} _ ; apply Rle_not_lt.
+  rewrite -plus_INR ?plus_Sn_m S_INR -plus_n_Sm S_INR.
+  ring_simplify ((nfloor (Rmax 0 ((z + 1) / 2)) (Rmax_l 0 ((z + 1) / 2))) + N +
+   ((nfloor (Rmax 0 ((z + 1) / 2)) (Rmax_l 0 ((z + 1) / 2))) + N))%nat.
+  rewrite -?S_INR -2?plus_Sn_m.
+  apply Rle_trans with (2 := le_INR _ _ (le_plus_l _ _)).
+  rewrite ?S_INR.
+  rewrite /nfloor ; case: nfloor_ex => n Hn.
+  simpl projT1.
+  rewrite mult_INR /= .
+  replace (2 * INR n + 1 + 1) with ((INR n + 1) * 2) by ring.
+  apply Rle_div_l.
+  by apply Rlt_R0_R2.
+  apply Rle_trans with (1 := Rmax_r 0 _).
+  by apply Rlt_le, Hn.
+  by [].
+  case: (H (0+0)) => {H} N H.
+  move: (H N (le_refl _)) ; apply Rle_not_lt, Rplus_le_compat ;
+  apply (le_INR O), le_O_n.
+(* * y = m_infty *)
+  case: z Huv H => [z | | ] Huv /= H.
+  case: (H (mkposreal _ Rlt_0_1)) => /= {H} N H.
+  case: (H N (le_refl _)) ; ring_simplify (INR N + - INR N) => {H N} H _.
+  apply Rlt_minus_l in H ; rewrite Rplus_0_l in H.
+  move: (fun H => Huv (fun n => INR n + 2) (x_seq m_infty) H (Hx m_infty)) => {Huv} Huv.
+  have Hu : Rbar_is_lim_seq (fun n : nat => Finite (INR n + 2)) p_infty.
+    move => /= M.
+    exists ((nfloor (Rmax 0 M) (Rmax_l _ _))) => n Hn.
+    apply Rle_lt_trans with (1 := Rmax_r 0 M).
+    apply Rlt_le_trans with (INR (nfloor (Rmax 0 M) (Rmax_l 0 M)) + 1).
+    rewrite /nfloor ; case: nfloor_ex => /= N HN.
+    by apply HN.
+    apply Rle_minus_r ; ring_simplify.
+    rewrite -S_INR ; by intuition.
+  move: (Huv Hu) => {Huv Hu} Hu.
+  case: (Hu (mkposreal _ Rlt_0_1)) => /= {Hu} N Hu.
+  case: (Hu N (le_refl _)) => _.
+  apply Rle_not_lt.
+  apply -> Rle_minus_r.
+  ring_simplify.
+  by apply Rlt_le.
+  case: (H 0) => {H} N H.
+  move: (H N (le_refl _)) => {H} ; apply Rle_not_lt ; ring_simplify.
+  by apply Rle_refl.
+  case: (H 0) => {H} N H.
+  move: (H N (le_refl _)) => {H} ; apply Rle_not_lt ; ring_simplify.
+  by apply Rle_refl.
+(* x = m_infty *)
+(* * y \in R *)
+  case: z Huv H => [z | | ] Huv /= H.
+admit.
+  case: (H y) => {H} N H.
+  move: (H N (le_refl _)) ; apply Rle_not_lt, Rminus_le_0 ; ring_simplify.
+  apply (le_INR O), le_O_n.
+  case: (H y) => {H} N H.
+  by [].
+(* * y = p_infty *)
+  case: z Huv H => [z | | ] Huv /= H.
+admit.
+  case: (H 0) => {H} N H.
+  move: (H N (le_refl _)) => {H} ; apply Rle_not_lt ; ring_simplify.
+  by apply Rle_refl.
+  case: (H 0) => {H} N H.
+  move: (H N (le_refl _)) => {H} ; apply Rle_not_lt ; ring_simplify.
+  by apply Rle_refl.
+(* * y = m_infty *)
+  case: z Huv H => [z | | ] Huv /= H.
+admit.
+  case: (H (0+0)) => {H} N H.
+  move: (H N (le_refl _)) ; apply Rle_not_lt, Rplus_le_compat ;
+  apply Ropp_le_cancel ; rewrite Ropp_0 Ropp_involutive ; apply (le_INR O), le_O_n.
+  by [].
+
+intros.
+  eapply (Rbar_is_lim_seq_plus (fun n => Finite (u n)) (fun n => Finite (v n))).
+  by apply H0.
+  by apply H1.
+  by apply H.
+Qed.
+
+Lemma Rbar_is_lim_seq_minus (u v : nat -> Rbar) (lu lv l : Rbar) :
+  Rbar_is_lim_seq u lu -> Rbar_is_lim_seq v lv
+  -> is_Rbar_minus lu lv l
+  -> Rbar_is_lim_seq (fun n => Rbar_minus (u n) (v n)) l.
+Proof.
+  move => Hu Hv Hm.
+  eapply Rbar_is_lim_seq_plus.
+  by apply Hu.
+  apply -> Rbar_is_lim_seq_opp.
+  by apply Hv.
+  by apply Hm.
+Qed.
+Lemma Rbar_lim_seq_minus (u v : nat -> Rbar) :
+  Rbar_ex_lim_seq u -> Rbar_ex_lim_seq v
+  -> (exists l, is_Rbar_minus (Rbar_lim_seq u) (Rbar_lim_seq v) l)
+  -> Rbar_lim_seq (fun n => Rbar_minus (u n) (v n)) = Rbar_minus (Rbar_lim_seq u) (Rbar_lim_seq v).
+Proof.
+  move => Hu Hv Hm.
+  rewrite /Rbar_minus -(Rbar_lim_seq_opp v).
+  apply (Rbar_lim_seq_plus u (fun n => Rbar_opp (v n))).
+  by apply Hu.
+  by apply -> Rbar_ex_lim_seq_opp.
+  by rewrite Rbar_lim_seq_opp.
+Qed.
+
+(** Multiplicative *)
+

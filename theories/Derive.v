@@ -5,14 +5,13 @@ Require Import Locally.
 Require Import Rcomplements.
 Open Scope R_scope.
 
-(** * Derive *)
-
-Definition Derive (f : R -> R) (x : R) := Lim (fun h => (f (x+h) - f x)/h) 0.
+(** * Definitions *)
 
 Notation is_derive f x l := (derivable_pt_lim f x l).
 Definition ex_derive f x := exists l, is_derive f x l.
+Definition Derive (f : R -> R) (x : R) := Lim (fun h => (f (x+h) - f x)/h) 0.
 
-(** ** Compute Derive *)
+(** Derive is correct *)
 
 Lemma is_derive_unique f x l :
   is_derive f x l -> Derive f x = l.
@@ -37,7 +36,28 @@ Proof.
   apply is_derive_unique, H.
 Qed.
 
-(** ** Extensionality *)
+Lemma ex_derive_equiv_0 (f : R -> R) (x : R) :
+  ex_derive f x -> derivable_pt f x.
+Proof.
+  move => Hf.
+  apply Derive_correct in Hf.
+  by exists (Derive f x).
+Qed.
+Lemma ex_derive_equiv_1 (f : R -> R) (x : R) :
+  derivable_pt f x -> ex_derive f x.
+Proof.
+  case => l Hf.
+  by exists l.
+Qed.
+
+Lemma Derive_equiv (f : R -> R) (x : R) (pr : derivable_pt f x) :
+  derive_pt f x pr = Derive f x.
+Proof.
+  apply sym_eq, is_derive_unique.
+  by case: pr => /= l Hf.
+Qed.
+
+(** Extensionality *)
 
 Lemma is_derive_ext_loc :
   forall f g x l,
@@ -53,6 +73,113 @@ exists d => y Hy H Zy.
 rewrite -Hfg // -(locally_singleton _ _ Heq).
 exact: H.
 Qed.
+Lemma ex_derive_ext_loc :
+  forall f g x,
+  locally (fun t => f t = g t) x ->
+  ex_derive f x -> ex_derive g x.
+Proof.
+intros f g x Hfg (l,Hf).
+exists l.
+apply: is_derive_ext_loc Hfg Hf.
+Qed.
+Lemma Derive_ext_loc :
+  forall f g x,
+  locally (fun t => f t = g t) x ->
+  Derive f x = Derive g x.
+Proof.
+intros f g x Hfg.
+unfold Derive, Lim, Lim_seq.
+apply Rmult_eq_compat_r, f_equal.
+rewrite 2!Sup_seq.LimInf_seq_correct 2!Sup_seq.LimSup_seq_correct.
+apply f_equal2.
+apply Rbar_seq.Rbar_limsup_seq_ext_loc.
+destruct Hfg as (e, He).
+exists (Zabs_nat (up (/e))).
+intros n Hn.
+rewrite He.
+rewrite He.
+easy.
+rewrite /Rminus Rplus_opp_r Rabs_R0; apply cond_pos.
+(* *)
+assert (0 < /e)%R.
+apply Rinv_0_lt_compat, cond_pos.
+assert (0 < IZR (up (/ e))).
+apply Rlt_trans with (1:=H).
+apply archimed.
+assert (0 < n)%nat.
+apply lt_le_trans with (2:=Hn).
+apply INR_lt.
+simpl.
+rewrite INR_IZR_INZ inj_Zabs_nat.
+rewrite Zabs_eq.
+exact H0.
+apply le_IZR.
+simpl; now left.
+replace (x + (0 + / INR n) - x) with (/ INR n) by ring.
+rewrite Rabs_right.
+rewrite <- (Rinv_involutive e).
+apply Rinv_lt_contravar.
+apply Rmult_lt_0_compat.
+exact H.
+now apply lt_0_INR.
+apply Rlt_le_trans with (IZR (up (/e))).
+apply archimed.
+apply Rle_trans with (INR (Zabs_nat (up (/ e)))).
+right; rewrite INR_IZR_INZ.
+rewrite inj_Zabs_nat.
+apply f_equal.
+apply sym_eq, Zabs_eq.
+apply le_IZR.
+simpl; now left.
+now apply le_INR.
+apply sym_not_eq, Rlt_not_eq, cond_pos.
+apply Rle_ge; left; apply Rinv_0_lt_compat.
+now apply lt_0_INR.
+
+apply Rbar_seq.Rbar_liminf_seq_ext_loc.
+destruct Hfg as (e, He).
+exists (Zabs_nat (up (/e))).
+intros n Hn.
+rewrite He.
+rewrite He.
+easy.
+rewrite /Rminus Rplus_opp_r Rabs_R0; apply cond_pos.
+(* *)
+assert (0 < /e)%R.
+apply Rinv_0_lt_compat, cond_pos.
+assert (0 < IZR (up (/ e))).
+apply Rlt_trans with (1:=H).
+apply archimed.
+assert (0 < n)%nat.
+apply lt_le_trans with (2:=Hn).
+apply INR_lt.
+simpl.
+rewrite INR_IZR_INZ inj_Zabs_nat.
+rewrite Zabs_eq.
+exact H0.
+apply le_IZR.
+simpl; now left.
+replace (x + (0 + / INR n) - x) with (/ INR n) by ring.
+rewrite Rabs_right.
+rewrite <- (Rinv_involutive e).
+apply Rinv_lt_contravar.
+apply Rmult_lt_0_compat.
+exact H.
+now apply lt_0_INR.
+apply Rlt_le_trans with (IZR (up (/e))).
+apply archimed.
+apply Rle_trans with (INR (Zabs_nat (up (/ e)))).
+right; rewrite INR_IZR_INZ.
+rewrite inj_Zabs_nat.
+apply f_equal.
+apply sym_eq, Zabs_eq.
+apply le_IZR.
+simpl; now left.
+now apply le_INR.
+apply sym_not_eq, Rlt_not_eq, cond_pos.
+apply Rle_ge; left; apply Rinv_0_lt_compat.
+now apply lt_0_INR.
+Qed.
 
 Lemma is_derive_ext :
   forall f g x l,
@@ -63,17 +190,6 @@ intros f g x l Heq.
 apply is_derive_ext_loc.
 now apply locally_forall.
 Qed.
-
-Lemma ex_derive_ext_loc :
-  forall f g x,
-  locally (fun t => f t = g t) x ->
-  ex_derive f x -> ex_derive g x.
-Proof.
-intros f g x Hfg (l,Hf).
-exists l.
-apply: is_derive_ext_loc Hfg Hf.
-Qed.
-
 Lemma ex_derive_ext :
   forall f g x,
   (forall t, f t = g t) ->
@@ -83,106 +199,6 @@ intros f g x Heq.
 apply ex_derive_ext_loc.
 now apply locally_forall.
 Qed.
-
-Lemma Derive_ext_loc :
-  forall f g x,
-  locally (fun t => f t = g t) x ->
-  Derive f x = Derive g x.
-Proof.
-intros f g x Hfg.
-unfold Derive, Lim, Lim_seq.Lim_seq.
-apply Rmult_eq_compat_r, f_equal.
-rewrite 2!Sup_seq.LimInf_seq_correct 2!Sup_seq.LimSup_seq_correct.
-apply f_equal2.
-apply Rbar_seq.Rbar_limsup_seq_eq_ge.
-destruct Hfg as (e, He).
-exists (Zabs_nat (up (/e))).
-intros n Hn.
-rewrite He.
-rewrite He.
-easy.
-rewrite /Rminus Rplus_opp_r Rabs_R0; apply cond_pos.
-(* *)
-assert (0 < /e)%R.
-apply Rinv_0_lt_compat, cond_pos.
-assert (0 < IZR (up (/ e))).
-apply Rlt_trans with (1:=H).
-apply archimed.
-assert (0 < n)%nat.
-apply lt_le_trans with (2:=Hn).
-apply INR_lt.
-simpl.
-rewrite INR_IZR_INZ inj_Zabs_nat.
-rewrite Zabs_eq.
-exact H0.
-apply le_IZR.
-simpl; now left.
-replace (x + (0 + / INR n) - x) with (/ INR n) by ring.
-rewrite Rabs_right.
-rewrite <- (Rinv_involutive e).
-apply Rinv_lt_contravar.
-apply Rmult_lt_0_compat.
-exact H.
-now apply lt_0_INR.
-apply Rlt_le_trans with (IZR (up (/e))).
-apply archimed.
-apply Rle_trans with (INR (Zabs_nat (up (/ e)))).
-right; rewrite INR_IZR_INZ.
-rewrite inj_Zabs_nat.
-apply f_equal.
-apply sym_eq, Zabs_eq.
-apply le_IZR.
-simpl; now left.
-now apply le_INR.
-apply sym_not_eq, Rlt_not_eq, cond_pos.
-apply Rle_ge; left; apply Rinv_0_lt_compat.
-now apply lt_0_INR.
-
-apply Rbar_seq.Rbar_liminf_seq_eq_ge.
-destruct Hfg as (e, He).
-exists (Zabs_nat (up (/e))).
-intros n Hn.
-rewrite He.
-rewrite He.
-easy.
-rewrite /Rminus Rplus_opp_r Rabs_R0; apply cond_pos.
-(* *)
-assert (0 < /e)%R.
-apply Rinv_0_lt_compat, cond_pos.
-assert (0 < IZR (up (/ e))).
-apply Rlt_trans with (1:=H).
-apply archimed.
-assert (0 < n)%nat.
-apply lt_le_trans with (2:=Hn).
-apply INR_lt.
-simpl.
-rewrite INR_IZR_INZ inj_Zabs_nat.
-rewrite Zabs_eq.
-exact H0.
-apply le_IZR.
-simpl; now left.
-replace (x + (0 + / INR n) - x) with (/ INR n) by ring.
-rewrite Rabs_right.
-rewrite <- (Rinv_involutive e).
-apply Rinv_lt_contravar.
-apply Rmult_lt_0_compat.
-exact H.
-now apply lt_0_INR.
-apply Rlt_le_trans with (IZR (up (/e))).
-apply archimed.
-apply Rle_trans with (INR (Zabs_nat (up (/ e)))).
-right; rewrite INR_IZR_INZ.
-rewrite inj_Zabs_nat.
-apply f_equal.
-apply sym_eq, Zabs_eq.
-apply le_IZR.
-simpl; now left.
-now apply le_INR.
-apply sym_not_eq, Rlt_not_eq, cond_pos.
-apply Rle_ge; left; apply Rinv_0_lt_compat.
-now apply lt_0_INR.
-Qed.
-
 Lemma Derive_ext :
   forall f g x,
   (forall t, f t = g t) ->
@@ -194,6 +210,7 @@ now apply locally_forall.
 Qed.
 
 (** * Operations *)
+(** Constant functions *)
 
 Lemma ex_derive_const :
   forall a x, ex_derive (fun _ => a) x.
@@ -202,7 +219,6 @@ intros x.
 exists 0.
 apply derivable_pt_lim_const.
 Qed.
-
 Lemma Derive_const :
   forall a x,
   Derive (fun _ => a) x = 0.
@@ -212,6 +228,8 @@ apply is_derive_unique.
 apply derivable_pt_lim_const.
 Qed.
 
+(** Identity function *)
+
 Lemma ex_derive_id :
   forall x, ex_derive id x.
 Proof.
@@ -219,7 +237,6 @@ intros x.
 exists 1.
 apply derivable_pt_lim_id.
 Qed.
-
 Lemma Derive_id :
   forall x,
   Derive id x = 1.
@@ -229,6 +246,8 @@ apply is_derive_unique.
 apply derivable_pt_lim_id.
 Qed.
 
+(** Opposite of functions *)
+
 Lemma ex_derive_opp :
   forall f x, ex_derive f x ->
   ex_derive (fun x => - f x) x.
@@ -237,7 +256,6 @@ intros f x (df,Df).
 exists (-df).
 now apply derivable_pt_lim_opp.
 Qed.
-
 Lemma Derive_opp :
   forall f x,
   Derive (fun x => - f x) x = - Derive f x.
@@ -251,6 +269,8 @@ apply (f_equal (fun v => v / _)).
 ring.
 Qed.
 
+(** Addition of functions *)
+
 Lemma ex_derive_plus :
   forall f g x, ex_derive f x -> ex_derive g x ->
   ex_derive (fun x => f x + g x) x.
@@ -259,7 +279,6 @@ intros f g x (df,Df) (dg,Dg).
 exists (df + dg).
 now apply derivable_pt_lim_plus.
 Qed.
-
 Lemma Derive_plus :
   forall f g x, ex_derive f x -> ex_derive g x ->
   Derive (fun x => f x + g x) x = Derive f x + Derive g x.
@@ -270,6 +289,40 @@ apply derivable_pt_lim_plus ;
   now apply Derive_correct.
 Qed.
 
+Lemma is_derive_sum (f : nat -> R -> R) (n : nat) (x : R) (l : nat -> R) :
+  (forall k, (k <= n)%nat -> is_derive (f k) x (l k))
+  -> is_derive (fun y => sum_f_R0 (fun k => f k y) n) x (sum_f_R0 l n).
+Proof.
+  elim: n => /= [ | n IH] Hf.
+  by apply (Hf O).
+  apply derivable_pt_lim_plus.
+  apply IH => k Hk.
+  by apply Hf, le_trans with (1 := Hk), le_n_Sn.
+  by apply Hf.
+Qed.
+Lemma ex_derive_sum (f : nat -> R -> R) (n : nat) (x : R) :
+  (forall k, (k <= n)%nat -> ex_derive (f k) x)
+  -> ex_derive (fun y => sum_f_R0 (fun k => f k y) n) x.
+Proof.
+  elim: n => /= [ | n IH] Hf.
+  by apply (Hf O).
+  apply ex_derive_plus.
+  apply IH => k Hk.
+  by apply Hf, le_trans with (1 := Hk), le_n_Sn.
+  by apply Hf.
+Qed.
+Lemma Derive_sum (f : nat -> R -> R) (n : nat) (x : R) :
+  (forall k, (k <= n)%nat -> ex_derive (f k) x)
+  -> Derive (fun y => sum_f_R0 (fun k => f k y) n) x = (sum_f_R0 (fun k => Derive (f k) x) n).
+Proof.
+  move => Hf.
+  apply is_derive_unique, is_derive_sum.
+  move => k Hk.
+  by apply Derive_correct, Hf.
+Qed.
+
+(** Difference of functions *)
+
 Lemma ex_derive_minus :
   forall f g x, ex_derive f x -> ex_derive g x ->
   ex_derive (fun x => f x - g x) x.
@@ -278,7 +331,6 @@ intros f g x (df,Df) (dg,Dg).
 exists (df - dg).
 now apply derivable_pt_lim_minus.
 Qed.
-
 Lemma Derive_minus :
   forall f g x, ex_derive f x -> ex_derive g x ->
   Derive (fun x => f x - g x) x = Derive f x - Derive g x.
@@ -289,6 +341,8 @@ apply derivable_pt_lim_minus ;
   now apply Derive_correct.
 Qed.
 
+(** Multiplication of functions *)
+
 Lemma ex_derive_scal :
   forall f k x, ex_derive f x ->
   ex_derive (fun x => k * f x) x.
@@ -297,7 +351,6 @@ intros f k x (df,Df).
 exists (k * df).
 now apply derivable_pt_lim_scal.
 Qed.
-
 Lemma Derive_scal :
   forall f k x,
   Derive (fun x => k * f x) x = k * Derive f x.
@@ -311,18 +364,12 @@ apply (f_equal (fun v => v / _)).
 ring.
 Qed.
 
-Lemma is_derive_mult (f g : R -> R) (x : R) (d1 d2 : R) :
-  is_derive f x d1 -> is_derive g x d2
-    -> is_derive (fun x => f x * g x) x (d1 * g x + f x * d2).
-Proof.
-  exact: derivable_pt_lim_mult.
-Qed.
 Lemma ex_derive_mult (f g : R -> R) (x : R) :
   ex_derive f x -> ex_derive g x
     -> ex_derive (fun x => f x * g x) x.
 Proof.
   move => [d1 H1] [d2 H2].
-  exists (d1 * g x + f x * d2) ; exact: is_derive_mult.
+  exists (d1 * g x + f x * d2) ; exact: derivable_pt_lim_mult.
 Qed.
 Lemma Derive_mult (f g : R -> R) (x : R) :
   ex_derive f x -> ex_derive g x
@@ -330,41 +377,7 @@ Lemma Derive_mult (f g : R -> R) (x : R) :
 Proof.
   move => H1 H2.
   apply is_derive_unique.
-  apply is_derive_mult ; exact: Derive_correct.
-Qed.
-
-Lemma ex_derive_comp (f g : R -> R) (x : R) :
-  ex_derive f (g x) -> ex_derive g x -> ex_derive (fun x => f (g x)) x.
-Proof.
-intros (df,Df) (dg,Dg).
-exists (df * dg).
-now apply derivable_pt_lim_comp.
-Qed.
-
-Lemma Derive_comp (f g : R -> R) (x : R) :
-  ex_derive f (g x) -> ex_derive g x -> Derive (fun x => f (g x)) x = Derive f (g x) * Derive g x.
-Proof.
-intros Df Dg.
-apply is_derive_unique.
-apply derivable_pt_lim_comp ;
-  now apply Derive_correct.
-Qed.
-
-Lemma derivable_pt_lim_sum_f_R0 f d n x :
-  (forall k, (k <= n)%nat -> derivable_pt_lim (fun u => f k u) x (d k)) ->
-  derivable_pt_lim (fun u => sum_f_R0 (fun k => f k u) n) x (sum_f_R0 d n).
-Proof.
-induction n.
-intros H.
-simpl.
-now apply H.
-intros H.
-simpl.
-apply derivable_pt_lim_plus with (f2 := (fun u => f (S n) u)).
-apply IHn => k Hk.
-apply H.
-now apply le_S.
-now apply H.
+  apply derivable_pt_lim_mult ; exact: Derive_correct.
 Qed.
 
 Lemma is_derive_pow (f : R -> R) (n : nat) (x : R) (l : R) :
@@ -392,212 +405,29 @@ Proof.
   by apply Derive_correct.
 Qed.
 
-(** * Iterated differential *)
+(** Composition of functions *)
 
-Fixpoint Derive_n (f : R -> R) (n : nat) x :=
-  match n with
-    | O => f x
-    | S n => Derive (Derive_n f n) x
-  end.
-
-Definition ex_derive_n f n x :=
-  match n with
-  | O => True
-  | S n => ex_derive (Derive_n f n) x
-  end.
-
-Definition is_derive_n f n x l :=
-  match n with
-  | O => f x = l
-  | S n => is_derive (Derive_n f n) x l
-  end.
-
-Lemma is_derive_n_unique f n x l :
-  is_derive_n f n x l -> Derive_n f n x = l.
+Lemma ex_derive_comp (f g : R -> R) (x : R) :
+  ex_derive f (g x) -> ex_derive g x 
+    -> ex_derive (fun x => f (g x)) x.
 Proof.
-  case n.
-  easy.
-  simpl; intros n0 H.
-  now apply is_derive_unique.
+intros (df,Df) (dg,Dg).
+exists (df * dg).
+now apply derivable_pt_lim_comp.
 Qed.
-
-Lemma Derive_n_ext_loc :
-  forall f g n x,
-  locally (fun t => f t = g t) x ->
-  Derive_n f n x = Derive_n g n x.
+Lemma Derive_comp (f g : R -> R) (x : R) :
+  ex_derive f (g x) -> ex_derive g x 
+    -> Derive (fun x => f (g x)) x = Derive f (g x) * Derive g x.
 Proof.
-intros f g n x Heq.
-pattern x ; apply locally_singleton.
-induction n.
-exact Heq.
-apply: locally_impl_strong IHn.
-apply: locally_align Heq => d Heq y Hy IHn.
-now apply Derive_ext_loc.
-Qed.
-
-Lemma Derive_n_ext :
-  forall f g n x,
-  (forall t, f t = g t) ->
-  Derive_n f n x = Derive_n g n x.
-Proof.
-intros f g n x Heq.
-apply Derive_n_ext_loc.
-now apply locally_forall.
-Qed.
-
-Lemma Derive_n_comp: forall f n m x,
-  Derive_n (Derive_n f m) n x = Derive_n f (n+m) x.
-Proof.
-intros f n m.
-induction n.
-now simpl.
-simpl.
-intros x.
-now apply Derive_ext.
-Qed.
-
-Lemma Derive_n_scal (f : R -> R) (a : R) (n : nat) (x : R) :
-  (forall k, (k < n)%nat -> locally (ex_derive (Derive_n f k)) (a * x)) ->
-  locally (fun x => Derive_n (fun y => f (a * y)) n x  = (a ^ n * Derive_n f n (a*x))) x.
-Proof.
-  elim: n x => /= [ | n IH] x Hf.
-  apply locally_forall => y ; ring.
-  case: (IH x) => [ | {IH} r IH].
-  move => k Hk ; apply Hf.
-  apply lt_trans with (1 := Hk), lt_n_Sn.
-  
-  case: (Hf n (lt_n_Sn _)) => {Hf} r0 Hf.
-  have Hr : 0 < Rmin r r0 / Rmax 1 (Rabs a).
-    apply Rmult_lt_0_compat.
-    apply Rmin_case ; [by apply r | by apply r0].
-    apply Rinv_0_lt_compat, Rlt_le_trans with (2 := Rmax_l _ _), Rlt_0_1.
-  set r1 := (mkposreal _ Hr).
-  exists r1 => y Hy /=.
-  
-  rewrite -(Derive_ext_loc (fun x => a ^ n * Derive_n f n (a * x))).
-  rewrite Derive_scal.
-  rewrite Derive_comp.
-  rewrite (Derive_ext (Rmult a) (fun x => a * x)) => //.
-  rewrite Derive_scal.
-  rewrite Derive_id.
-  ring.
-
-  apply Hf.
-  replace (a * y - (a * x))
-    with (a*(y-x))
-    by ring.
-    rewrite Rabs_mult.
-    apply Rle_lt_trans with (Rmax 1 (Rabs a) * Rabs (y - x)).
-    apply Rmult_le_compat_r.
-    by apply Rabs_pos.
-    apply Rmax_r.
-    apply Rlt_le_trans with (2 := Rmin_r r r0).
-    replace (Rmin r r0)
-      with (Rmax 1 (Rabs a) * (Rmin r r0 / Rmax 1 (Rabs a))).
-    apply Rmult_lt_compat_l.
-    apply Rlt_le_trans with (2 := Rmax_l _ _), Rlt_0_1.
-    exact: Hy.
-    field ; apply Rgt_not_eq, Rlt_gt.
-    apply Rlt_le_trans with (2 := Rmax_l _ _), Rlt_0_1.
-    
-  apply (ex_derive_ext (fun x => a * x) (Rmult a)) => //.
-  apply ex_derive_scal.
-  apply ex_derive_id.
-  
-  have : Rabs (y - x) < r.
-    apply Rlt_le_trans with (1 := Hy) ; simpl.
-    apply Rle_trans with (2 := Rmin_l r r0).
-    rewrite {2}(Rdiv_1 (Rmin _ _)).
-    apply Rmult_le_compat_l.
-    apply Rmin_case ; apply Rlt_le ; [by apply r | by apply r0].
-    apply Rle_Rinv.
-    apply Rlt_0_1.
-    apply Rlt_le_trans with (2 := Rmax_l _ _), Rlt_0_1.
-    apply Rmax_l.
-  move => {Hy} Hy.
-  have H : 0 < Rmin ((x+r)-y) (y-(x-r)).
-    apply Rmin_case.
-    apply Rlt_Rminus.
-    by apply Rabs_lt_between'.
-    apply Rlt_Rminus.
-    by apply Rabs_lt_between'.
-  set r2 := mkposreal _ H.
-  exists r2 => /= z Hz.
-  apply sym_eq, IH.
-  apply Rabs_lt_between' ; apply Rabs_lt_between' in Hz.
-  rewrite Rplus_min_distr_l /Rminus -Rmax_opp_Rmin Rplus_max_distr_l in Hz.
-  ring_simplify (y + - (x + r + - y)) (y + - (y + - (x + - r))) 
-    (y + (x + r + - y)) (y + (y + - (x + - r))) in Hz.
-  split.
-  apply Rle_lt_trans with (2 := proj1 Hz), Rmax_r.
-  apply Rlt_le_trans with (1 := proj2 Hz), Rmin_l.
-Qed.
-
-Lemma Derive_n_opp (f : R -> R) (a : R) (n : nat) (x : R) :
-  (forall k, (k < n)%nat -> locally (ex_derive (Derive_n f k)) (- x)) ->
-  locally (fun x => Derive_n (fun y => f (- y)) n x  = ((-1) ^ n * Derive_n f n (-x))) x.
-Proof.
-  move => Hf.
-  case: (Derive_n_scal f (-1) n x) => [ | r H].
-  move => k Hk.
-  replace (-1 * x) with (-x) by ring.
-  by apply Hf.
-  exists r => y Hy.
-  rewrite (Derive_n_ext (fun y0 : R => f (- y0)) (fun y0 : R => f (-1 * y0))).
-  rewrite H.
-  by ring_simplify (-1 * y).
-  exact: Hy.
-  move => t ; by ring_simplify (-1 * t).
-Qed.
-
-Lemma fn_eq_Derive_eq: forall f g a b, 
-  continuity_pt f a -> continuity_pt f b ->
-  continuity_pt g a -> continuity_pt g b -> 
-  (forall x, a < x < b -> ex_derive f x) ->
-  (forall x, a < x < b -> ex_derive g x) ->
-  (forall x, a < x < b -> Derive f x = Derive g x) ->
-  exists C, forall x, a <= x <= b -> f x = g x + C.
-intros f g a b Cfa Cfb Cga Cgb Df Dg Hfg.
-pose (h := fun x => f x - g x).
-assert  (pr : forall x : R, a < x < b -> derivable_pt h x).
-intros x Hx.
-apply derivable_pt_minus.
-eexists; apply Derive_correct, Df, Hx.
-eexists; apply Derive_correct, Dg, Hx.
-assert (constant_D_eq h (fun x : R => a <= x <= b) (h a)).
-apply null_derivative_loc with (pr:=pr).
-intros x Hx.
-case (proj1 Hx).
-case (proj2 Hx).
-intros Y1 Y2.
-apply derivable_continuous_pt.
-apply pr; now split.
-intros Y1 _; rewrite Y1.
-apply continuity_pt_minus.
-apply Cfb.
-apply Cgb.
-intros Y1; rewrite <- Y1.
-apply continuity_pt_minus.
-apply Cfa.
-apply Cga.
-intros x P.
-apply trans_eq with (Derive h x).
-apply sym_eq, is_derive_unique.
-now destruct (pr x P).
-rewrite Derive_minus.
-rewrite (Hfg _ P).
-ring.
-apply Df; split; apply P.
-apply Dg; split; apply P.
-unfold constant_D_eq in H.
-exists (h a).
-intros x Hx.
-rewrite <- (H _ Hx).
-unfold h; ring.
+intros Df Dg.
+apply is_derive_unique.
+apply derivable_pt_lim_comp ;
+  now apply Derive_correct.
 Qed.
 
 (** * Mean value theorem *)
-Lemma MVT (f : R -> R) (a b : R) :
+
+Lemma MVT_gen (f : R -> R) (a b : R) :
   let a0 := Rmin a b in
   let b0 := Rmax a b in
   (forall x, a0 < x < b0 -> ex_derive f x)
@@ -638,4 +468,464 @@ Proof.
   ring.
   case: (pr1 c Hc) => /= l Hl.
   apply sym_eq, is_derive_unique, Hl.
+Qed.
+
+(** * Newton integration *)
+
+Lemma fn_eq_Derive_eq: forall f g a b, 
+  continuity_pt f a -> continuity_pt f b ->
+  continuity_pt g a -> continuity_pt g b -> 
+  (forall x, a < x < b -> ex_derive f x) ->
+  (forall x, a < x < b -> ex_derive g x) ->
+  (forall x, a < x < b -> Derive f x = Derive g x) ->
+  exists C, forall x, a <= x <= b -> f x = g x + C.
+Proof.
+intros f g a b Cfa Cfb Cga Cgb Df Dg Hfg.
+pose (h := fun x => f x - g x).
+assert  (pr : forall x : R, a < x < b -> derivable_pt h x).
+intros x Hx.
+apply derivable_pt_minus.
+eexists; apply Derive_correct, Df, Hx.
+eexists; apply Derive_correct, Dg, Hx.
+assert (constant_D_eq h (fun x : R => a <= x <= b) (h a)).
+apply null_derivative_loc with (pr:=pr).
+intros x Hx.
+case (proj1 Hx).
+case (proj2 Hx).
+intros Y1 Y2.
+apply derivable_continuous_pt.
+apply pr; now split.
+intros Y1 _; rewrite Y1.
+apply continuity_pt_minus.
+apply Cfb.
+apply Cgb.
+intros Y1; rewrite <- Y1.
+apply continuity_pt_minus.
+apply Cfa.
+apply Cga.
+intros x P.
+apply trans_eq with (Derive h x).
+apply sym_eq, is_derive_unique.
+now destruct (pr x P).
+rewrite Derive_minus.
+rewrite (Hfg _ P).
+ring.
+apply Df; split; apply P.
+apply Dg; split; apply P.
+unfold constant_D_eq in H.
+exists (h a).
+intros x Hx.
+rewrite <- (H _ Hx).
+unfold h; ring.
+Qed.
+
+(** * Iterated differential *)
+
+(** ** Definition *)
+
+Fixpoint Derive_n (f : R -> R) (n : nat) x :=
+  match n with
+    | O => f x
+    | S n => Derive (Derive_n f n) x
+  end.
+
+Definition ex_derive_n f n x :=
+  match n with
+  | O => True
+  | S n => ex_derive (Derive_n f n) x
+  end.
+
+Definition is_derive_n f n x l :=
+  match n with
+  | O => f x = l
+  | S n => is_derive (Derive_n f n) x l
+  end.
+
+Lemma is_derive_n_unique f n x l :
+  is_derive_n f n x l -> Derive_n f n x = l.
+Proof.
+  case n.
+  easy.
+  simpl; intros n0 H.
+  now apply is_derive_unique.
+Qed.
+Lemma Derive_n_correct f n x :
+  ex_derive_n f n x -> is_derive_n f n x (Derive_n f n x).
+Proof.
+  case: n => /= [ | n] Hf.
+  by [].
+  by apply Derive_correct.
+Qed.
+
+(** Extentionality *)
+
+Lemma Derive_n_ext_loc :
+  forall f g n x,
+  locally (fun t => f t = g t) x ->
+  Derive_n f n x = Derive_n g n x.
+Proof.
+intros f g n x Heq.
+pattern x ; apply locally_singleton.
+induction n.
+exact Heq.
+apply: locally_impl_strong IHn.
+apply: locally_align Heq => d Heq y Hy IHn.
+now apply Derive_ext_loc.
+Qed.
+Lemma ex_derive_n_ext_loc :
+  forall f g n x,
+  locally (fun t => f t = g t) x ->
+  ex_derive_n f n x -> ex_derive_n g n x.
+Proof.
+intros f g n x Heq.
+case: n => /= [ | n].
+by [].
+apply ex_derive_ext_loc.
+move: Heq.
+apply: locally_impl_strong.
+apply locally_forall.
+by apply Derive_n_ext_loc.
+Qed.
+Lemma is_derive_n_ext_loc :
+  forall f g n x l,
+  locally (fun t => f t = g t) x ->
+  is_derive_n f n x l -> is_derive_n g n x l.
+Proof.
+  intros f g n x l Heq.
+  case: n => /= [ | n].
+  move => <- ; apply sym_eq ;
+  pattern x ; by apply locally_singleton.
+  apply is_derive_ext_loc.
+  move: Heq ; apply: locally_impl_strong.
+  apply locally_forall.
+  by apply Derive_n_ext_loc.
+Qed.
+
+Lemma Derive_n_ext :
+  forall f g n x,
+  (forall t, f t = g t) ->
+  Derive_n f n x = Derive_n g n x.
+Proof.
+intros f g n x Heq.
+apply Derive_n_ext_loc.
+now apply locally_forall.
+Qed.
+Lemma ex_derive_n_ext :
+  forall f g n x,
+  (forall t, f t = g t) ->
+  ex_derive_n f n x -> ex_derive_n g n x.
+Proof.
+intros f g n x Heq.
+apply ex_derive_n_ext_loc.
+now apply locally_forall.
+Qed.
+Lemma is_derive_n_ext :
+  forall f g n x l,
+  (forall t, f t = g t) ->
+  is_derive_n f n x l -> is_derive_n g n x l.
+Proof.
+intros f g n x l Heq.
+apply is_derive_n_ext_loc.
+now apply locally_forall.
+Qed.
+
+Lemma Derive_n_comp: forall f n m x,
+  Derive_n (Derive_n f m) n x = Derive_n f (n+m) x.
+Proof.
+intros f n m.
+induction n.
+now simpl.
+simpl.
+intros x.
+now apply Derive_ext.
+Qed.
+
+(** ** Operations *)
+(** Addition of functions *)
+
+Lemma Derive_n_plus (f g : R -> R) (n : nat) (x : R) :
+  locally (fun y => forall k, (k <= n)%nat -> ex_derive_n f k y) x ->
+  locally (fun y => forall k, (k <= n)%nat -> ex_derive_n g k y) x ->
+  Derive_n (fun x => f x + g x) n x = Derive_n f n x + Derive_n g n x.
+Proof.
+  elim: n x => /= [ | n IH] x [rf Hf] [rg Hg].
+  by [].
+  rewrite -Derive_plus.
+  apply Derive_ext_loc.
+  set r := (mkposreal _ (Rmin_stable_in_posreal rf rg)) ;
+  exists r => y Hy.
+  apply Rabs_lt_between' in Hy.
+  case: Hy ; move/Rlt_Rminus => Hy1 ; move/Rlt_Rminus => Hy2.
+  set r0 := mkposreal _ (Rmin_pos _ _ Hy1 Hy2).
+  apply IH ;
+  exists r0 => z Hz k Hk.
+  apply Hf.
+  apply Rabs_lt_between' in Hz.
+  rewrite /Rminus -Rmax_opp_Rmin Rplus_max_distr_l (Rplus_min_distr_l y) in Hz.
+  case: Hz ; move => Hz1 Hz2.
+  apply Rle_lt_trans with (1 := Rmax_l _ _) in Hz1 ; ring_simplify in Hz1.
+  apply Rlt_le_trans with (2 := Rmin_r _ _) in Hz2 ; ring_simplify in Hz2.
+  have Hz := (conj Hz1 Hz2) => {Hz1 Hz2}.
+  apply Rabs_lt_between' in Hz.
+  apply Rlt_le_trans with (1 := Hz) => /= ; by apply Rmin_l.
+  by apply le_trans with (1 := Hk), le_n_Sn.
+  apply Hg.
+  apply Rabs_lt_between' in Hz.
+  rewrite /Rminus -Rmax_opp_Rmin Rplus_max_distr_l (Rplus_min_distr_l y) in Hz.
+  case: Hz ; move => Hz1 Hz2.
+  apply Rle_lt_trans with (1 := Rmax_l _ _) in Hz1 ; ring_simplify in Hz1.
+  apply Rlt_le_trans with (2 := Rmin_r _ _) in Hz2 ; ring_simplify in Hz2.
+  have Hz := (conj Hz1 Hz2) => {Hz1 Hz2}.
+  apply Rabs_lt_between' in Hz.
+  apply Rlt_le_trans with (1 := Hz) => /= ; by apply Rmin_r.
+  by apply le_trans with (1 := Hk), le_n_Sn.
+  apply Hf with (k := (S n)).
+  rewrite Rminus_eq0 Rabs_R0 ; by apply rf.
+  by apply le_refl.
+  apply Hg with (k := S n).
+  rewrite Rminus_eq0 Rabs_R0 ; by apply rg.
+  by apply le_refl.  
+Qed.
+Lemma ex_derive_n_plus (f g : R -> R) (n : nat) (x : R) :
+  locally (fun y => forall k, (k <= n)%nat -> ex_derive_n f k y) x ->
+  locally (fun y => forall k, (k <= n)%nat -> ex_derive_n g k y) x ->
+  ex_derive_n (fun x => f x + g x) n x.
+Proof.
+  case: n x => /= [ | n] x Hf Hg.
+  by [].
+  apply ex_derive_ext_loc with (fun y => Derive_n f n y + Derive_n g n y).
+  move: Hf ; apply locally_impl_strong.
+  move: Hg ; apply locally_impl_strong.
+  apply locally_forall => y Hg Hf.
+  apply sym_eq, Derive_n_plus.
+  move: Hf ; apply locally_impl, locally_forall ; by intuition.
+  move: Hg ; apply locally_impl, locally_forall ; by intuition.
+  apply ex_derive_plus.
+  apply locally_singleton ; move: Hf ; apply locally_impl, locally_forall => y Hy.
+  by apply (Hy (S n)).
+  apply locally_singleton ; move: Hg ; apply locally_impl, locally_forall => y Hy.
+  by apply (Hy (S n)).
+Qed.
+Lemma is_derive_n_plus (f g : R -> R) (n : nat) (x lf lg l : R) :
+  locally (fun y => forall k, (k <= n)%nat -> ex_derive_n f k y) x ->
+  locally (fun y => forall k, (k <= n)%nat -> ex_derive_n g k y) x ->
+  is_derive_n f n x lf -> is_derive_n g n x lg ->
+  l = lf + lg ->
+  is_derive_n (fun x => f x + g x) n x l.
+Proof.
+  case: n x lf lg l => /= [ | n] x lf lg l Hfn Hgn Hf Hg ->.
+  by rewrite Hf Hg.
+  apply is_derive_ext_loc with (fun y => Derive_n f n y + Derive_n g n y).
+  move: Hfn ; apply locally_impl_strong.
+  move: Hgn ; apply locally_impl_strong.
+  apply locally_forall => y Hgn Hfn.
+  apply sym_eq, Derive_n_plus.
+  move: Hfn ; apply locally_impl, locally_forall ; by intuition.
+  move: Hgn ; apply locally_impl, locally_forall ; by intuition.
+  by apply derivable_pt_lim_plus.
+Qed.
+
+(** Multiplication *)
+
+Lemma Derive_n_scal (f : R -> R) (n : nat) (a x : R) :
+  Derive_n (fun y => a * f y) n x = a * Derive_n f n x.
+Proof.
+  elim: n x => /= [ | n IH] x.
+  by [].
+  rewrite -Derive_scal.
+  by apply Derive_ext.
+Qed.
+Lemma ex_derive_n_scal (f : R -> R) (n : nat) (a x : R) :
+  ex_derive_n f n x -> ex_derive_n (fun y => a * f y) n x.
+Proof.
+  case: n x => /= [ | n] x Hf.
+  by [].
+  apply ex_derive_ext with (fun y => a * Derive_n f n y).
+  move => t ; by rewrite Derive_n_scal.
+  by apply ex_derive_scal.
+Qed.
+Lemma is_derive_n_scal (f : R -> R) (n : nat) (a x l : R) :
+  is_derive_n f n x l -> is_derive_n (fun y => a * f y) n x (a * l).
+Proof.
+  case: n x => /= [ | n] x Hf.
+  by rewrite Hf.
+  apply is_derive_ext with (fun y => a * Derive_n f n y).
+  move => t ; by rewrite Derive_n_scal.
+  by apply derivable_pt_lim_scal.
+Qed.
+
+(** Simpl cases for Composition of functions *)
+
+Lemma Derive_n_comp_scal (f : R -> R) (a : R) (n : nat) (x : R) :
+  locally (fun x => forall k, (k <= n)%nat -> ex_derive_n f k x) (a * x) ->
+  Derive_n (fun y => f (a * y)) n x  = (a ^ n * Derive_n f n (a * x)).
+Proof.
+  case: (Req_dec a 0) => [ -> _ | Ha] /=.
+  rewrite Rmult_0_l.
+  elim: n x => [ | n IH] x /= ; rewrite ?Rmult_0_l.
+  ring.
+  rewrite (Derive_ext _ _ _ IH).
+  by apply Derive_const.
+
+  move => Hf.
+  apply (locally_singleton (fun x => Derive_n (fun y : R => f (a * y)) n x = a ^ n * Derive_n f n (a * x))).
+  elim: n Hf => [ | n IH] Hf.
+  apply locally_forall => /= y ; ring.
+
+  case: IH => [ | r IH].
+  case: Hf => r0 Hf.
+  exists r0 => y Hy k Hk ; by intuition.
+  case: Hf => r0 Hf.
+  have Hr1 : 0 < Rmin (r0 / (Rabs a)) r.
+    apply Rmin_case.
+    apply Rdiv_lt_0_compat.
+    by apply r0.
+    by apply Rabs_pos_lt.
+    by apply r.
+  set r1 := mkposreal _ Hr1.
+  exists r1 => y Hy /=.
+  rewrite (Derive_ext_loc _ (fun y => a ^ n * Derive_n f n (a * y))).
+  rewrite Derive_scal.
+  rewrite (Rmult_comm a (a^n)) Rmult_assoc.
+  apply f_equal.
+  rewrite Derive_comp.
+  rewrite (Derive_ext (Rmult a) (fun x => a * x)) => //.
+  rewrite Derive_scal Derive_id ; ring.
+  apply Hf with (k := S n).
+  rewrite -Rmult_minus_distr_l Rabs_mult.
+  apply Rlt_le_trans with (Rabs a * r1).
+  apply Rmult_lt_compat_l.
+  by apply Rabs_pos_lt.
+  by apply Hy.
+  rewrite Rmult_comm ; apply Rle_div_r.
+  by apply Rabs_pos_lt.
+  rewrite /r1 ; by apply Rmin_l.
+  by apply lt_n_Sn.
+  apply ex_derive_ext with (2 := ex_derive_scal id a y (ex_derive_id _)).
+  by [].
+  apply Rabs_lt_between' in Hy.
+  case: Hy => Hy1 Hy2.
+  apply Rlt_Rminus in Hy1.
+  apply Rlt_Rminus in Hy2.
+  have Hy : 0 < Rmin (y - (x - r1)) (x + r1 - y).
+  by apply Rmin_case.
+  exists (mkposreal (Rmin (y - (x - r1)) (x + r1 - y)) Hy).
+  set r2 := Rmin (y - (x - r1)) (x + r1 - y).
+  move => t Ht.
+  apply IH.
+  apply Rabs_lt_between'.
+  apply Rabs_lt_between' in Ht.
+  simpl in Ht.
+  split.
+  apply Rle_lt_trans with (2 := proj1 Ht).
+  rewrite /r2 ; apply Rle_trans with (y-(y-(x-r1))).
+  ring_simplify ; apply Rplus_le_compat_l, Ropp_le_contravar.
+  rewrite /r1 ; apply Rmin_r.
+  apply Rplus_le_compat_l, Ropp_le_contravar, Rmin_l.
+  apply Rlt_le_trans with (1 := proj2 Ht).
+  rewrite /r2 ; apply Rle_trans with (y+((x+r1)-y)).
+  apply Rplus_le_compat_l, Rmin_r.
+  ring_simplify ; apply Rplus_le_compat_l.
+  rewrite /r1 ; apply Rmin_r.
+Qed.
+Lemma ex_derive_n_comp_scal (f : R -> R) (a : R) (n : nat) (x : R) :
+  locally (fun x => forall k, (k <= n)%nat -> ex_derive_n f k x) (a * x)
+  -> ex_derive_n (fun y => f (a * y)) n x.
+Proof.
+  case: n f x => /= [ | n] f x Hf.
+  by [].
+  
+  case: (Req_dec a 0) => Ha.
+  rewrite Ha => {a Ha Hf}.
+  apply ex_derive_ext with (fun _ => Derive_n (fun y : R => f (0 * y)) n 0).
+  elim: n => /= [ | n IH] t.
+  by rewrite ?Rmult_0_l.
+  rewrite -?(Derive_ext _ _ _ IH).
+  by rewrite ?Derive_const.
+  by apply ex_derive_const.
+  
+  apply ex_derive_ext_loc with (fun x => a^n * Derive_n f n (a * x)).
+  case: Hf => r Hf.
+  have Hr0 : 0 < r / Rabs a.
+    apply Rdiv_lt_0_compat.
+    by apply r.
+    by apply Rabs_pos_lt.
+  exists (mkposreal _ Hr0) => /= y Hy.
+  apply eq_sym, Derive_n_comp_scal.
+  have : Rabs (a*y - a*x) < r.
+    rewrite -Rmult_minus_distr_l Rabs_mult.
+    replace (pos r) with (Rabs a * (r / Rabs a))
+      by (field ; by apply Rgt_not_eq, Rabs_pos_lt).
+    apply Rmult_lt_compat_l.
+    by apply Rabs_pos_lt.
+    by apply Hy.
+    move => {Hy} Hy.
+  apply Rabs_lt_between' in Hy ; case: Hy => Hy1 Hy2.
+  apply Rlt_Rminus in Hy1.
+  apply Rlt_Rminus in Hy2.
+  exists (mkposreal _ (Rmin_pos _ _ Hy1 Hy2)) => /= z Hz k Hk.
+  apply Rabs_lt_between' in Hz ; case: Hz => Hz1 Hz2.
+  rewrite /Rminus -Rmax_opp_Rmin in Hz1.
+  rewrite Rplus_min_distr_l in Hz2.
+  apply Rlt_le_trans with (2 := Rmin_r _ _) in Hz2.
+  ring_simplify in Hz2.
+  rewrite Rplus_max_distr_l in Hz1.
+  apply Rle_lt_trans with (1 := Rmax_l _ _) in Hz1.
+  ring_simplify in Hz1.
+  apply Hf.
+  apply Rabs_lt_between' ; by split.
+  by intuition.
+  apply ex_derive_scal.
+  apply ex_derive_comp.
+  apply locally_singleton in Hf.
+  by apply Hf with (k := S n).
+  apply ex_derive_ext with (2 := ex_derive_scal id a x (ex_derive_id _)).
+  by [].
+Qed.
+Lemma is_derive_n_comp_scal (f : R -> R) (a : R) (n : nat) (x l : R) :
+  locally (fun x => forall k, (k <= n)%nat -> ex_derive_n f k x) (a * x)
+  -> is_derive_n f n (a * x) l
+  -> is_derive_n (fun y => f (a * y)) n x (a ^ n * l).
+Proof.
+  case: n => /= [ | n] Hfn Hf.
+  by rewrite Rmult_1_l.
+  apply is_derive_unique in Hf.
+  rewrite -Hf.
+  rewrite -(Derive_n_comp_scal f a (S n) x) => //.
+  apply Derive_correct.
+  by apply (ex_derive_n_comp_scal f a (S n) x).
+Qed.
+
+Lemma Derive_n_comp_opp (f : R -> R) (n : nat) (x : R) :
+  locally (fun y => (forall k, (k <= n)%nat -> ex_derive_n f k y)) (- x) ->
+  Derive_n (fun y => f (- y)) n x  = ((-1) ^ n * Derive_n f n (-x)).
+Proof.
+  move => Hf.
+  rewrite -(Derive_n_ext (fun y : R => f (-1 * y))).
+  rewrite (Derive_n_comp_scal f (-1) n x).
+  by replace (-1*x) with (-x) by ring.
+  by replace (-1*x) with (-x) by ring.
+  move => t ; by replace (-1*t) with (-t) by ring.
+Qed.
+Lemma ex_derive_n_comp_opp (f : R -> R) (n : nat) (x : R) :
+  locally (fun y => (forall k, (k <= n)%nat -> ex_derive_n f k y)) (- x) ->
+  ex_derive_n (fun y => f (- y)) n x.
+Proof.
+  move => Hf.
+  apply (ex_derive_n_ext (fun y : R => f (-1 * y))).
+  move => t ; by ring_simplify (-1*t).
+  apply (ex_derive_n_comp_scal f (-1) n x).
+  by replace (-1*x) with (-x) by ring.
+Qed.
+Lemma is_derive_n_comp_opp (f : R -> R) (n : nat) (x l : R) :
+  locally (fun y => (forall k, (k <= n)%nat -> ex_derive_n f k y)) (- x) ->
+  is_derive_n f n (-x) l ->
+  is_derive_n (fun y => f (- y)) n x ((-1)^n * l).
+Proof.
+  move => Hfn Hf.
+  apply (is_derive_n_ext (fun y : R => f (-1 * y))).
+  move => t ; by ring_simplify (-1*t).
+  apply (is_derive_n_comp_scal f (-1) n x).
+  by replace (-1*x) with (-x) by ring.
+  by replace (-1*x) with (-x) by ring.
 Qed.

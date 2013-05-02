@@ -1,109 +1,6 @@
 Require Import Reals ssreflect.
 Require Import Rbar Rcomplements.
 
-(** * A general definition for Locally and Dence *)
-(** ** Rbar_locally *)
-Definition Rbar_locally (P : R -> Prop) (a : Rbar) :=
-  match a with
-    | Finite a => exists delta : posreal, forall x, Rabs (x-a) < delta -> P x
-    | p_infty => exists M : R, forall x, M < x -> P x
-    | m_infty => exists M : R, forall x, x < M -> P x
-  end.
-
-Lemma Rbar_locally_forall (P : R -> Prop) (a : Rbar) :
-  (forall x, P x) -> Rbar_locally P a.
-Proof.
-  case: a => [a | | ] H ;
-  exists (mkposreal _ Rlt_0_1) => /= x _ ; by apply H.
-Qed.
-
-Lemma Rbar_locally_imply (P Q : R -> Prop) (a : Rbar) :
-  Rbar_locally (fun x => P x -> Q x) a -> Rbar_locally P a
-    -> Rbar_locally Q a.
-Proof.
-  case: a => /= [a | | ] [d0 Hpq] [d1 Hp].
-  have Hd : 0 < Rmin d0 d1.
-    apply Rmin_case ; [by apply d0 | by apply d1].
-  exists (mkposreal (Rmin d0 d1) Hd) => /= x H.
-  apply: Hpq.
-  apply Rlt_le_trans with (1 := H), Rmin_l.
-  apply: Hp.
-  apply Rlt_le_trans with (1 := H), Rmin_r.
-  exists (Rmax d0 d1) => /= x H.
-  apply: Hpq.
-  apply Rle_lt_trans with (2 := H), Rmax_l.
-  apply: Hp.
-  apply Rle_lt_trans with (2 := H), Rmax_r.
-  exists (Rmin d0 d1) => /= x H.
-  apply: Hpq.
-  apply Rlt_le_trans with (1 := H), Rmin_l.
-  apply: Hp.
-  apply Rlt_le_trans with (1 := H), Rmin_r.
-Qed.
-
-Lemma Rbar_locally_and (P Q : R -> Prop) (a : Rbar) :
-  Rbar_locally P a -> Rbar_locally Q a
-    -> Rbar_locally (fun x => P x /\ Q x) a.
-Proof.
-  case: a => /= [a | | ] [d0 Hp] [d1 Hq].
-  have Hd : 0 < Rmin d0 d1.
-    apply Rmin_case ; [by apply d0 | by apply d1].
-  exists (mkposreal (Rmin d0 d1) Hd) => /= x H ; split.
-  apply: Hp.
-  apply Rlt_le_trans with (1 := H), Rmin_l.
-  apply: Hq.
-  apply Rlt_le_trans with (1 := H), Rmin_r.
-  exists (Rmax d0 d1) => /= x H ; split.
-  apply: Hp.
-  apply Rle_lt_trans with (2 := H), Rmax_l.
-  apply: Hq.
-  apply Rle_lt_trans with (2 := H), Rmax_r.
-  exists (Rmin d0 d1) => /= x H ; split.
-  apply: Hp.
-  apply Rlt_le_trans with (1 := H), Rmin_l.
-  apply: Hq.
-  apply Rlt_le_trans with (1 := H), Rmin_r.
-Qed.
-
-Lemma Rbar_locally_and_1 (P Q : R -> Prop) (a : Rbar) :
-  Rbar_locally (fun x => P x /\ Q x) a 
-    -> Rbar_locally P a.
-Proof.
-  case: a => /= [a | | ] [d0 Hp] ;
-  exists d0 => H ; by apply Hp.
-Qed.
-
-Lemma Rbar_locally_and_2 (P Q : R -> Prop) (a : Rbar) :
-  Rbar_locally (fun x => P x /\ Q x) a 
-    -> Rbar_locally Q a.
-Proof.
-  case: a => /= [a | | ] [d0 Hp] ;
-  exists d0 => H ; by apply Hp.
-Qed.
-
-Lemma Rbar_locally_or_1 (P Q : R -> Prop) (a : Rbar) :
-  Rbar_locally P a -> Rbar_locally (fun x => P x \/ Q x) a.
-Proof.
-  apply Rbar_locally_imply, Rbar_locally_forall => x Hx.
-  by left.
-Qed.
-
-Lemma Rbar_locally_or_2 (P Q : R -> Prop) (a : Rbar) :
-  Rbar_locally Q a -> Rbar_locally (fun x => P x \/ Q x) a.
-Proof.
-  apply Rbar_locally_imply, Rbar_locally_forall => x Hx.
-  by right.
-Qed.
-
-(** ** adhenrence *)
-
-Definition Rbar_adh (P : R -> Prop) (a : Rbar) :=
-  match a with
-    | Finite a => forall delta : posreal, exists x, Rabs (x-a) < delta /\ P x
-    | p_infty => forall M : R, exists x, M < x /\ P x
-    | m_infty => forall M : R, exists x, x < M /\ P x
-  end.
-
 (** * Definitions of equivalent and preponderant *)
 
 Definition is_prepond (f : R -> R) (a : Rbar) (g : R -> R) :=
@@ -497,7 +394,7 @@ Proof.
   replace (/ g x - / f x) 
     with ((f x - g x) / (f x * g x)).
   rewrite Rabs_div ?Rabs_Rinv ?Rabs_mult //.
-  apply Rle_div.
+  apply Rle_div_l.
   apply Rmult_lt_0_compat ; by apply Rabs_pos_lt.
   field_simplify ; rewrite -?Rdiv_1.
   by [].

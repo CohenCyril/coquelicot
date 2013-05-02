@@ -892,7 +892,7 @@ replace (sum_f_R0 (fun m : nat => C (S k) m *
   (sum_f_R0 (fun m : nat => C k m * (u - x) ^ m  * (v - y) ^ (k - m) *
     ((u - x) * partial_derive (S m) (k - m) f (x + z * (u - x)) (y + z * (v - y)) +
      (v - y) * partial_derive m (S (k - m)) f (x + z * (u - x)) (y + z * (v - y)))) k).
-apply derivable_pt_lim_sum_f_R0 => p Hp.
+apply is_derive_sum => p Hp.
 apply is_derive_ext with (fun u0 => C k p * (u - x) ^ p * (v - y) ^ (k - p) * partial_derive p (k - p) f (x + u0 * (u - x)) (y + u0 * (v - y))).
 intros w.
 ring.
