@@ -574,7 +574,7 @@ Proof.
     apply H0 ; rewrite /Boule Rminus_0_r Rabs_R0 ; by apply r.
 
   have H2 : is_lim_seq (fun n => Series (fun k => An (n + k)%nat)) 0.
-    apply is_lim_seq_incr.
+    apply is_lim_seq_incr_1.
     apply is_lim_seq_ext with (fun n => Series An - sum_f_R0 An n).
     move => n ; rewrite (Series_decal_n An (S n)) /=.
     ring.

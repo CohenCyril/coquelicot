@@ -15,6 +15,7 @@ Definition real (x : Rbar) :=
     | Finite x => x
     | _ => 0
   end.
+Coercion Finite : R >-> Rbar.
 
 Definition is_finite (x : Rbar) := Finite (real x) = x.
 Lemma is_finite_correct (x : Rbar) :
@@ -40,8 +41,7 @@ Definition Rbar_le x y := (Rbar_lt x y \/ x = y).
 Definition Rbar_ge x y := (Rbar_le y x).
 
 (** ** Operations *)
-
-(** Additive *)
+(** *** Additive *)
 
 Definition Rbar_opp (x : Rbar) :=
   match x with
@@ -76,7 +76,7 @@ Definition Rbar_minus (x y : Rbar) := Rbar_plus x (Rbar_opp y).
 Definition is_Rbar_minus (x y z : Rbar) : Prop :=
   is_Rbar_plus x (Rbar_opp y) z.
 
-(** Multiplicative *)
+(** *** Multiplicative *)
 
 Definition Rbar_inv (x : Rbar) : Rbar :=
   match x with
@@ -163,13 +163,20 @@ Proof.
   contradict Hm ; apply Rle_not_lt, Rlt_le, y.
 Qed.
 
+
+Definition Rbar_div (x y : Rbar) : Rbar :=
+  Rbar_mult x (Rbar_inv y).
+Definition is_Rbar_div (x y z : Rbar) : Prop :=
+  is_Rbar_mult x (Rbar_inv y) z.
 Definition Rbar_div_pos (x : Rbar) (y : posreal) :=
   match x with
     | Finite x => Finite (x/y)
     | _ => x
   end.
 
-(** * Compatibility with Real numbers *)
+(** * Compatibility with real numbers *)
+(** For equality and order.
+The compatibility of addition and multiplication is proved in Rbar_seq *)
 
 Lemma Rbar_finite_eq (x y : R) :
   Finite x = Finite y <-> x = y.
@@ -178,11 +185,16 @@ Proof.
   apply Rle_antisym ; apply Rnot_lt_le ; intro.
   assert (Rbar_lt (Finite y) (Finite x)).
   simpl ; apply H0.
-  rewrite H in H1 ; simpl in H1 ; revert H1 ; apply Rlt_irrefl.
+  rewrite H in H1 ; simpl in H1 ; by apply Rlt_irrefl in H1.
   assert (Rbar_lt (Finite x) (Finite y)).
   simpl ; apply H0.
-  rewrite H in H1 ; simpl in H1 ; revert H1 ; apply Rlt_irrefl.
+  rewrite H in H1 ; simpl in H1 ; by apply Rlt_irrefl in H1.
   rewrite H ; reflexivity.
+Qed.
+Lemma Rbar_finite_neq (x y : R) :
+  Finite x <> Finite y <-> x <> y.
+Proof.
+  split => H ; contradict H ; by apply Rbar_finite_eq.
 Qed.
 Lemma Rbar_finite_lt (x y : R) :
   Rbar_lt (Finite x) (Finite y) <-> x < y.
@@ -216,7 +228,9 @@ Proof.
   right ; apply sym_eq, (Rbar_finite_eq _ _), H.
 Qed.
 
-(** * Decidability *)
+(** * Properties of order *)
+(** Many usual properties on real numbers' order are also true for extended real numbers. *)
+(** ** Decidability *)
 
 Lemma Rbar_total_order (x y : Rbar) :
   {Rbar_lt x y} + {x = y} + {Rbar_gt x y}.
@@ -279,7 +293,7 @@ Proof.
   right ; auto.
 Qed.
 
-(** * Positive and negative propositions *)
+(** ** Positive and negative propositions *)
 
 Lemma Rbar_lt_not_eq (x y : Rbar) :
   Rbar_lt x y -> x<>y.
@@ -333,8 +347,8 @@ Proof.
   intros ; left ; apply H.
 Qed.
 
+(** ** Transitivity *)
 
-(** * Transitivity *)
 Lemma Rbar_lt_trans (x y z : Rbar) :
   Rbar_lt x y -> Rbar_lt y z -> Rbar_lt x z.
 Proof.
@@ -428,6 +442,61 @@ Qed.
 
 (** ** Rbar_plus *)
 
+(** the predicate *)
+
+Lemma is_Rbar_plus_comm (x y z : Rbar) :
+  is_Rbar_plus x y z <-> is_Rbar_plus y x z.
+Proof.
+  case: x => [x | | ] ;
+  case: y => [y | | ] ;
+  case: z => [z | | ] //=.
+  by rewrite Rplus_comm.
+Qed.
+
+Lemma is_Rbar_plus_p :
+  is_Rbar_plus p_infty p_infty p_infty.
+Proof.
+  by simpl.
+Qed.
+
+Lemma is_Rbar_plus_p_f (x : R) :
+  is_Rbar_plus p_infty (Finite x) p_infty.
+Proof.
+  by simpl.
+Qed.
+Lemma is_Rbar_plus_f_p (x : R) :
+  is_Rbar_plus (Finite x) p_infty p_infty.
+Proof.
+  by simpl.
+Qed.
+
+Lemma is_Rbar_plus_0_r (x : Rbar) :
+  is_Rbar_plus x (Finite 0) x.
+Proof.
+  case: x => [x | | ] //=.
+  by apply Rplus_0_r.
+Qed.
+
+Lemma is_Rbar_plus_0_l (y : Rbar) :
+  is_Rbar_plus (Finite 0) y y.
+Proof.
+  rewrite is_Rbar_plus_comm ; by apply is_Rbar_plus_0_r.
+Qed.
+
+Lemma is_Rbar_plus_opp (x y z : Rbar) :
+  is_Rbar_plus (Rbar_opp x) (Rbar_opp y) (Rbar_opp z)
+    <-> is_Rbar_plus x y z.
+Proof.
+  case: x => [x | | ] ;
+  case: y => [y | | ] ;
+  case: z => [z | | ] //=.
+  rewrite -Ropp_plus_distr ; split => H.
+  by rewrite -(Ropp_involutive z) -H Ropp_involutive.
+  by rewrite H.
+Qed.
+
+(** the function *)
+
 Lemma Rbar_plus_0_r (x : Rbar) : Rbar_plus x (Finite 0) = x.
 Proof.
   case: x => //= ; intuition.
@@ -473,7 +542,100 @@ Proof.
   apply Rbar_plus_le_lt_compat => // ; by right.
 Qed.
 
-(** ** Rbar_div_pos *)
+(** ** Rbar_minus *)
+
+(** the predicate *)
+
+Lemma is_Rbar_minus_f_p (x : R) :
+  is_Rbar_minus (Finite x) p_infty m_infty.
+Proof.
+  by simpl.
+Qed.
+
+Lemma is_Rbar_minus_0_r (x : Rbar) :
+  is_Rbar_minus x (Finite 0) x.
+Proof.
+  case: x => [x | | ] //=.
+  apply Rminus_0_r.
+Qed.
+Lemma is_Rbar_minus_0_l (x : Rbar) :
+  is_Rbar_minus (Finite 0) x (Rbar_opp x).
+Proof.
+  case: x => [x | | ] //=.
+  apply Rminus_0_l.
+Qed.
+
+
+(** ** Rbar_mult *)
+
+(** the predicate *)
+
+Lemma is_Rbar_mult_comm (x y z : Rbar) :
+  is_Rbar_mult x y z <-> is_Rbar_mult y x z.
+Proof.
+  case: x => [x | | ] ;
+  case: y => [y | | ] ;
+  case: z => [z | | ] //=.
+  by rewrite Rmult_comm.
+Qed.
+
+Lemma is_Rbar_mult_pos_p (x : Rbar) :
+  Rbar_lt (Finite 0) x -> is_Rbar_mult x p_infty p_infty.
+Proof.
+  case: x => [x | | ] //=.
+Qed.
+
+Lemma is_Rbar_mult_opp_l (x y z : Rbar) :
+  is_Rbar_mult x (Rbar_opp y) (Rbar_opp z) <-> is_Rbar_mult x y z.
+Proof.
+  case: x => [x | | ] ;
+  case: y => [y | | ] ;
+  case: z => [z | | ] //=.
+  rewrite Ropp_mult_distr_r_reverse ; split => H.
+  by rewrite -(Ropp_involutive z) -H Ropp_involutive.
+  by rewrite H.
+  split => H ; apply Ropp_lt_cancel ;
+  by rewrite Ropp_0 1?Ropp_involutive.
+  split => H ; apply Ropp_lt_cancel ;
+  by rewrite Ropp_0 1?Ropp_involutive.
+  split => H ; apply Ropp_lt_cancel ;
+  by rewrite Ropp_0 1?Ropp_involutive.
+  split => H ; apply Ropp_lt_cancel ;
+  by rewrite Ropp_0 1?Ropp_involutive.
+Qed.
+Lemma is_Rbar_mult_opp_r (x y z : Rbar) :
+  is_Rbar_mult (Rbar_opp x) y (Rbar_opp z) <-> is_Rbar_mult x y z.
+Proof.
+  rewrite ?(is_Rbar_mult_comm _ y).
+  by apply is_Rbar_mult_opp_l.
+Qed.
+Lemma is_Rbar_mult_opp (x y z : Rbar) :
+  is_Rbar_mult (Rbar_opp x) (Rbar_opp y) z <-> is_Rbar_mult x y z.
+Proof.
+  by rewrite -is_Rbar_mult_opp_l Rbar_opp_involutive is_Rbar_mult_opp_r.
+Qed.
+
+(** ** Rbar_div *)
+
+(** the predicate *)
+
+Lemma is_Rbar_div_f (x y : R) :
+  is_Rbar_div (Finite x) (Finite y) (Finite (x/y)).
+Proof.
+  by simpl.
+Qed.
+Lemma is_Rbar_div_f_p (x : R) :
+  is_Rbar_div (Finite x) p_infty (Finite 0).
+Proof.
+  simpl ; ring.
+Qed.
+Lemma is_Rbar_div_f_m (x : R) :
+  is_Rbar_div (Finite x) m_infty (Finite 0).
+Proof.
+  simpl ; ring.
+Qed.
+
+(** Rbar_div_pos *)
 
 Lemma Rbar_div_pos_eq (x y : Rbar) (z : posreal) :
   x = y <-> (Rbar_div_pos x z) = (Rbar_div_pos y z).
@@ -535,7 +697,9 @@ Proof.
   right ; by apply Rbar_mult_pos_eq with z.
 Qed.
 
-(** * Rbar_min *)
+(** * Complements *)
+
+(** ** Rbar_min *)
 
 Definition Rbar_min (x y : Rbar) :=
   match (Rbar_le_dec x y) with
@@ -543,7 +707,22 @@ Definition Rbar_min (x y : Rbar) :=
     | right _ => y
   end.
 
-(** * Rbar_locally *)
+(** ** Rbar_abs *)
+
+Definition Rbar_abs (x : Rbar) :=
+  match x with
+    | Finite x => Finite (Rabs x)
+    | _ => p_infty
+  end.
+
+Lemma Rbar_abs_lt_between (x y : Rbar) : 
+  Rbar_lt (Rbar_abs x) y <-> (Rbar_lt (Rbar_opp y) x /\ Rbar_lt x y).
+Proof.
+  case: x => [x | | ] ; case: y => [y | | ] /= ; try by intuition.
+  by apply Rabs_lt_between.
+Qed.
+
+(** ** Rbar_locally *)
 
 Definition Rbar_locally (P : R -> Prop) (a : Rbar) :=
   match a with
@@ -637,7 +816,7 @@ Proof.
   by right.
 Qed.
 
-(** A particular subsequence *)
+(** ** A particular subsequence *)
 
 Definition Rbar_loc_seq (x : Rbar) (n : nat) := match x with
     | Finite x => x + / (INR n + 1)
@@ -686,4 +865,3 @@ Proof.
   apply Rlt_le_trans with (1 := HN).
   rewrite -S_INR ; by apply le_INR.
 Qed.
-

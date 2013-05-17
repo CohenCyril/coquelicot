@@ -57,6 +57,15 @@ Proof.
   by case: pr => /= l Hf.
 Qed.
 
+(** A tactic to simplify interactive proofs of differentiability *)
+
+Ltac search_derive := let l := fresh "l" in
+evar (l : R) ;
+match goal with
+  | |- Derive _ _ = ?lu => apply is_derive_unique ; replace lu with l ; [ | unfold l]
+  | |- derivable_pt_lim _ _ ?lu => replace lu with l ; [ | unfold l]
+end.
+
 (** Extensionality *)
 
 Lemma is_derive_ext_loc :

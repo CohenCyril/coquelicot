@@ -19,9 +19,8 @@ Definition Lim_gen (f : R -> R) (x : Rbar) :=
 Lemma is_lim_gen_uniq (f : R -> R) (x l : Rbar) :
   is_lim_gen f x l -> Lim_gen f x = l.
 Proof.
-  case: l => [l | | ] /= H ; apply Rbar_is_lim_correct => M ;
+  case: l => [l | | ] /= H ; apply Rbar_is_lim_seq_uniq => M ;
   case: (Rbar_loc_seq_carac _ _ (H M)) => {H} N H ; exists N => //=.
-  move => n Hn ; by apply Rabs_lt_between', H.
 Qed.
 Lemma is_lim_gen_correct (f : R -> R) (x : Rbar) :
   ex_lim_gen f x -> is_lim_gen f x (Lim_gen f x).

@@ -103,7 +103,7 @@ Proof.
   elim => [ | n IH].
   simpl ; ring.
   simpl ; rewrite -IH ; ring.
-  by apply is_lim_seq_scal.
+  by apply is_lim_seq_scal with l.
 Qed.
 Lemma ex_series_scal (c : R) (a : nat -> R) :
   ex_series a -> ex_series (fun n => c * a n).
@@ -279,7 +279,7 @@ Lemma Series_decal_1_aux (a : nat -> R) :
 Proof.
   move => Ha.
   rewrite /Series.
-  rewrite -Lim_seq_incr.
+  rewrite -Lim_seq_incr_1.
   apply Lim_seq_ext => n.
   rewrite decomp_sum /=.
   rewrite Ha ; by apply Rplus_0_l.
@@ -434,12 +434,13 @@ Proof.
   exists (1-0).
   apply is_lim_seq_minus.
   by apply is_lim_seq_const.
-  simpl ; rewrite -(Rmult_0_r k0) ; apply is_lim_seq_scal.
+  simpl ; eapply is_lim_seq_scal.
   apply (is_lim_seq_geom k0).
   rewrite Rabs_pos_eq.
   replace 1 with ((1+1)/2) by field ; rewrite /k0.
   apply Rmult_lt_compat_r ; by intuition.
   apply Rle_trans with (2 := H N (le_refl _)) ; by apply Rabs_pos.
+  ring.
 Qed.
 
 Lemma DAlembert_not_ex_series (a : nat -> R) (l : R) :
@@ -484,11 +485,11 @@ Proof.
   have : Finite 0 = p_infty.
     rewrite -(Rbar_lim_seq_geom_p k Hk1).
     apply sym_equal.
-    apply Rbar_is_lim_correct, is_lim_seq_correct.
+    apply Rbar_is_lim_seq_uniq, is_lim_seq_correct.
     apply is_lim_seq_ext with (fun n => / Rabs (a N) * (Rabs (a N) * k ^ n)).
     move => n ; field ; by apply Rabs_no_R0.
     rewrite -(Rmult_0_r (/Rabs (a N))).
-    apply is_lim_seq_scal.
+    apply is_lim_seq_scal with 0.
     apply is_lim_seq_le_le with (fun _ => 0) (fun n => Rabs (a (n + N)%nat)).
     move => n ; split.
     apply Rmult_le_pos.
@@ -498,5 +499,6 @@ Proof.
     by apply H.
     by apply is_lim_seq_const.
     by apply Ha0.
+  by [].
   by [].
 Qed.

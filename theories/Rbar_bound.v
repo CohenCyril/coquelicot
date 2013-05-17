@@ -1,12 +1,13 @@
 Require Import Reals Decidable Rbar Markov Floor Rcomplements.
-(* Require Import ssreflect. *)
 
-(** * Upper bound *)
+(** * Upper and lower bounds *)
+
+(** ** Upper bound *)
 
 Definition Rbar_is_upper_bound (E : Rbar -> Prop) (l : Rbar) :=
   forall x, E x -> Rbar_le x l.
 
-(** ** Specific upper bounds *)
+(** Specific upper bounds *)
 
 Lemma Rbar_ub_p_infty (E : Rbar -> Prop) :
   Rbar_is_upper_bound E p_infty.
@@ -33,7 +34,7 @@ Proof.
   destruct (H _ Hx) as [H0|H0] ; simpl in H0 ; intuition.
 Qed.
 
-(** ** Decidability *)
+(** Decidability *)
 
 Lemma Rbar_ub_dec (E : Rbar -> Prop) (Hp : ~ E p_infty) :
   {M : R | Rbar_is_upper_bound E (Finite M)} 
@@ -89,7 +90,7 @@ Proof.
   intro n ; apply Rlt_dec.
 Qed.
 
-(** ** Order *)
+(** Order *)
 
 Lemma Rbar_is_ub_subset (E1 E2 : Rbar -> Prop) (l : Rbar) :
   (forall x, E1 x -> E2 x) -> (Rbar_is_upper_bound E2 l) -> (Rbar_is_upper_bound E1 l).
@@ -97,12 +98,12 @@ Proof.
   intros Hs Hl x Ex ; apply Hl, Hs ; auto.
 Qed.
 
-(** * Lower bound *)
+(** ** Lower bound *)
 
 Definition Rbar_is_lower_bound (E : Rbar -> Prop) (l : Rbar) :=
   forall x, E x -> Rbar_le l x.
 
-(** ** lower and upper bound *)
+(** Equivalence with upper bound *)
 
 Lemma Rbar_ub_lb (E : Rbar -> Prop) (l : Rbar) :
   Rbar_is_upper_bound (fun x => E (Rbar_opp x)) (Rbar_opp l) 
@@ -176,7 +177,7 @@ Proof.
   apply Rbar_le_antisym ; [apply Hu | apply Hl] ; auto.
 Qed.
 
-(** ** Particular lower bounds *)
+(** Particular lower bounds *)
 
 Lemma Rbar_lb_p_infty (E : Rbar -> Prop) :
   Rbar_is_lower_bound E p_infty -> (forall x, E x -> x = p_infty).
@@ -204,10 +205,11 @@ Proof.
   right ; auto.
 Qed.
 
-(** ** Decidability *)
+(** Decidability *)
 
 Lemma Rbar_lb_dec (E : Rbar -> Prop) (Hm : ~ E m_infty) :
-  {M : R | Rbar_is_lower_bound E (Finite M)} + {(forall M, ~Rbar_is_lower_bound E (Finite M))}.
+  {M : R | Rbar_is_lower_bound E (Finite M)}
+    + {(forall M, ~Rbar_is_lower_bound E (Finite M))}.
 Proof.
   destruct (Rbar_ub_dec (fun x => E (Rbar_opp x)) Hm) as [(M, H)|H].
   left ; exists (-M).
@@ -216,7 +218,7 @@ Proof.
   apply (Rbar_ub_lb E (Finite M)) ; auto.
 Qed.
 
-(** ** Order *)
+(** Order *)
 
 Lemma Rbar_is_lb_subset (E1 E2 : Rbar -> Prop) (l : Rbar) :
   (forall x, E1 x -> E2 x) -> (Rbar_is_lower_bound E2 l) -> (Rbar_is_lower_bound E1 l).
@@ -224,7 +226,9 @@ Proof.
   intros Hs Hl x Ex ; apply Hl, Hs ; auto.
 Qed.
 
-(** * Lower upper bound *)
+(** * Least upper bound and Greatest lower bound *)
+
+(** ** Least Upper Bound *)
 
 Definition Rbar_is_lub (E : Rbar -> Prop) (l : Rbar) :=
   Rbar_is_upper_bound E l /\ 
@@ -272,7 +276,8 @@ Qed.
 Definition Rbar_lub_ne (E : Rbar -> Prop) (Hp : {E p_infty} + {~ E p_infty}) 
   (Hex : exists x, E (Finite x)) := projT1 (Rbar_ex_lub_ne E Hp Hex).
 
-(** ** Order *)
+(** Order *)
+
 Lemma Rbar_is_lub_subset (E1 E2 : Rbar -> Prop) (l1 l2 : Rbar) :
   (forall x, E1 x -> E2 x) -> (Rbar_is_lub E1 l1) -> (Rbar_is_lub E2 l2)
   -> Rbar_le l1 l2.
@@ -311,13 +316,14 @@ Proof.
   intro Hs ; apply Rbar_le_antisym ; apply Rbar_lub_subset ; intros x H ; apply Hs ; auto.
 Qed.
 
-(** * Greater lower bound *)
+(** ** Greatest Lower Bound *)
 
 Definition Rbar_is_glb (E : Rbar -> Prop) (l : Rbar) :=
   Rbar_is_lower_bound E l /\ 
     (forall b : Rbar, Rbar_is_lower_bound E b -> Rbar_le b l).
 
-(** ** glb and lub *)
+(** Equivalents between LUB and GLB *)
+
 Lemma Rbar_lub_glb (E : Rbar -> Prop) (l : Rbar) :
   Rbar_is_lub (fun x => E (Rbar_opp x)) (Rbar_opp l) 
     <-> Rbar_is_glb E l.
@@ -344,7 +350,7 @@ Proof.
   rewrite Rbar_opp_involutive ; auto.
 Qed.
 
-(** ** The Rbar_glb function *)
+(** The Rbar_glb function *)
 
 Lemma Rbar_ex_glb_ne (E : Rbar -> Prop) : {E m_infty} + {~ E m_infty} -> 
   (exists x, E (Finite x)) -> {l : Rbar | Rbar_is_glb E l}.
@@ -359,7 +365,7 @@ Qed.
 Definition Rbar_glb_ne (E : Rbar -> Prop) (Hp : {E m_infty} + {~ E m_infty}) 
   (Hex : exists x, E (Finite x)) := projT1 (Rbar_ex_glb_ne E Hp Hex).
 
-(** ** Order *)
+(** Order *)
 
 Lemma Rbar_is_glb_subset (E1 E2 : Rbar -> Prop) (l1 l2 : Rbar) :
   (forall x, E2 x -> E1 x) -> (Rbar_is_glb E1 l1) -> (Rbar_is_glb E2 l2)
@@ -399,7 +405,7 @@ Proof.
   intros Hs ; apply Rbar_le_antisym ; apply Rbar_glb_subset ; intros x H ; apply Hs ; auto.
 Qed.
 
-(** * Other lemmas about lub and glb *)
+(** Other lemmas about lub and glb *)
 
 Lemma Rbar_glb_le_lub (E : Rbar -> Prop) Hp Hm Hex1 Hex2 :
   Rbar_le (Rbar_glb_ne E Hm Hex1) (Rbar_lub_ne E Hp Hex2).

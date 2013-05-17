@@ -379,7 +379,7 @@ Lemma DAlembert_ex_pseries_aux (a : nat -> R) (x k : R) :
     <-> is_lim_seq (fun n => Rabs ((a (S n) * x^(S n)) / (a n * x ^ n))) (Rabs x * k)).
 Proof.
   move => Hx Ha ; split => H.
-  apply (fun Heq => is_lim_seq_ext _ _ _ Heq (is_lim_seq_scal _ _ _ H)).
+  apply is_lim_seq_ext with (fun n => Rabs x * Rabs (a (S n) / a n)).
   move => n ; rewrite ?Rabs_div => //=.
   rewrite ?Rabs_mult.
   field.
@@ -387,6 +387,7 @@ Proof.
   by apply pow_nonzero.
   apply Rmult_integral_contrapositive_currified => //.
   by apply pow_nonzero.
+  apply is_lim_seq_scal with k => //.
   replace k with (/ (Rabs x) * ((Rabs x)*k)) by (field ; by apply Rabs_no_R0).
   apply (is_lim_seq_ext ((fun n : nat => / Rabs x * Rabs (a (S n) * x ^ S n / (a n * x ^ n)) ))).
   move => n ; rewrite ?Rabs_div => //=.
@@ -396,7 +397,7 @@ Proof.
   by apply pow_nonzero.
   apply Rmult_integral_contrapositive_currified => //.
   by apply pow_nonzero.
-  by apply is_lim_seq_scal.
+  eapply is_lim_seq_scal => //.
 Qed.
 
 Lemma DAlembert_crit (a : nat -> R) (x:R) l :
@@ -814,7 +815,7 @@ Proof.
   elim => [ | n IH].
   simpl ; rewrite /PS_scal ; ring.
   simpl ; rewrite -IH /PS_scal ; ring.
-  by apply is_lim_seq_scal.
+  by eapply is_lim_seq_scal.
 Qed.
 Lemma ex_pseries_scal (c : R) (a : nat -> R) (x : R) :
   ex_pseries a x -> ex_pseries (PS_scal c a) x.
@@ -864,8 +865,8 @@ Lemma is_pseries_incr_1 (a : nat -> R) (x l : R) :
   is_pseries a x l -> is_pseries (PS_incr_1 a) x (x * l).
 Proof.
   move => Ha.
-  move: (is_lim_seq_scal _ x l Ha) => {Ha} Ha.
-  apply is_lim_seq_incr.
+  move: (is_lim_seq_scal _ x l _ Ha (refl_equal _)) => {Ha} Ha.
+  apply is_lim_seq_incr_1.
   apply is_lim_seq_ext with (2 := Ha).
   case.
   simpl ; ring.
@@ -883,7 +884,7 @@ Lemma PSeries_incr_1 a x :
 Proof.
   rewrite -Lim_seq_scal.
   unfold PSeries.
-  rewrite -(Lim_seq_incr (sum_f_R0 (fun k : nat => PS_incr_1 a k * x ^ k))) /=.
+  rewrite -(Lim_seq_incr_1 (sum_f_R0 (fun k : nat => PS_incr_1 a k * x ^ k))) /=.
   apply Lim_seq_ext.
   case.
   simpl ; ring.
@@ -1136,7 +1137,7 @@ rewrite /is_pseries.
   rewrite ?double_S in Hn ; apply le_n_S, IH.
   by apply le_S_n, le_S_n.
 (* a(2k+1)x^(2k+1) *)
-  apply is_lim_seq_scal.
+  apply is_lim_seq_scal with l2 => //.
   move => eps ; case: (H2 eps) => {H1 H2} N H2.
   exists (S (double N)) => n Hn.
   case: n Hn => [ | n] Hn.
@@ -1508,7 +1509,7 @@ Proof.
           Derive (fun y : R => sum_f_R0 (fun k : nat => a k * y ^ k) n) x)).
   move: H ; apply is_derive_ext => t.
   by apply Lim_seq_ext.
-  rewrite -Lim_seq_incr.
+  rewrite -Lim_seq_incr_1.
   apply Lim_seq_ext => n.
   apply is_derive_unique, Idn.
   by apply lt_O_Sn.
@@ -1728,8 +1729,8 @@ Proof.
     exact: H.
     apply pow_lt, Rle_lt_trans with (Rabs x), Hx ; by apply Rabs_pos.
     apply Rlt_le, Rdiv_lt_0_compat ; by apply H0.
-    rewrite -(Rmult_0_r r) ; apply is_lim_seq_scal.
-    apply (is_lim_seq_incr (fun n => / INR n)).
+    rewrite -(Rmult_0_r r) ; apply is_lim_seq_scal with 0 => //.
+    apply (is_lim_seq_incr_1 (fun n => / INR n)).
     apply is_lim_seq_inv_n.
     apply Rnot_lt_le in H ; case: H => H.
     contradict H.
@@ -1741,7 +1742,7 @@ Proof.
     apply is_lim_seq_ext with (fun _ => 0).
     move => n ; rewrite /Rdiv ; ring.
     exact: is_lim_seq_const.
-    apply is_lim_seq_incr in H.
+    apply is_lim_seq_incr_1 in H.
     case: (H eps) => {H} N H.
     exists N => n Hn.
     apply Rle_lt_trans with (2 := H n Hn).

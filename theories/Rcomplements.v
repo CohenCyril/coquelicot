@@ -12,6 +12,13 @@ apply lt_0_INR.
 apply lt_0_Sn.
 Qed.
 
+Lemma Rlt_nat (x : R) : (exists n : nat, x = INR (S n)) -> 0 < x.
+Proof.
+  intro H ; destruct H.
+  rewrite H, S_INR.
+  apply INRp1_pos.
+Qed.
+
 (** * Operations on Rdiv *)
 (** Rewritings *)
 
