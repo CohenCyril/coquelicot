@@ -163,3 +163,95 @@ Proof.
   apply (Rbar_is_liminf_eq (fun n : nat => Finite (u n)) (fun n : nat => Finite (v n))) 
   => // n ; by rewrite Heq.
 Qed.
+
+(** * LimSup, LimInf and Rbar_opp *)
+
+Lemma is_limsup_seq_opp (u : nat -> R) (l : Rbar) :
+  is_LimInf_seq u l -> is_LimSup_seq (fun n => - u n) (Rbar_opp l).
+Proof.
+  case: l => [l | | ] /= Hu.
+  
+  move => eps ; case: (Hu eps) => {Hu} Hu [N Hu'] ; split.
+  clear N Hu' => N.
+  case: (Hu N) => {Hu} n [Hn Hu].
+  exists n ; split.
+  by [].
+  rewrite /Rminus -Ropp_plus_distr.
+  by apply Ropp_lt_contravar.
+  exists N => n Hn.
+  rewrite -(Ropp_involutive eps) -Ropp_plus_distr.
+  by apply Ropp_lt_contravar, Hu'.
+  
+  move => M.
+  case: (Hu (-M)) => N {Hu} Hu.
+  exists N => n Hn.
+  apply Ropp_lt_cancel ; rewrite Ropp_involutive.
+  by apply Hu.
+  
+  move => M N.
+  case: (Hu (-M) N) => {Hu} n [Hn Hu].
+  exists n ; split.
+  by [].
+  apply Ropp_lt_cancel ; by rewrite Ropp_involutive.
+Qed.
+Lemma LimSup_seq_opp (u : nat -> R) :
+  LimSup_seq (fun n => - u n) = Rbar_opp (LimInf_seq u).
+Proof.
+  rewrite /LimInf_seq ; case: ex_LimInf_seq => /= li Hli.
+  apply is_limsup_seq_opp in Hli.
+  rewrite /LimSup_seq ; case: ex_LimSup_seq => /= ls Hls.
+  by apply (is_LimSup_seq_eq (fun n : nat => - u n) (fun n : nat => - u n)).
+Qed.
+
+Lemma is_liminf_seq_opp (u : nat -> R) (l : Rbar) :
+  is_LimSup_seq u l -> is_LimInf_seq (fun n => - u n) (Rbar_opp l).
+Proof.
+  case: l => [l | | ] /= Hu.
+  
+  move => eps ; case: (Hu eps) => {Hu} Hu [N Hu'] ; split.
+  clear N Hu' => N.
+  case: (Hu N) => {Hu} n [Hn Hu].
+  exists n ; split.
+  by [].
+  rewrite -(Ropp_involutive eps) -Ropp_plus_distr.
+  by apply Ropp_lt_contravar.
+  exists N => n Hn.
+  rewrite /Rminus -Ropp_plus_distr.
+  by apply Ropp_lt_contravar, Hu'.
+  
+  move => M N.
+  case: (Hu (-M) N) => {Hu} n [Hn Hu].
+  exists n ; split.
+  by [].
+  apply Ropp_lt_cancel ; by rewrite Ropp_involutive.
+
+  move => M.
+  case: (Hu (-M)) => N {Hu} Hu.
+  exists N => n Hn.
+  apply Ropp_lt_cancel ; rewrite Ropp_involutive.
+  by apply Hu.
+Qed.
+Lemma LimInf_seq_opp (u : nat -> R) :
+  LimInf_seq (fun n => - u n) = Rbar_opp (LimSup_seq u).
+Proof.
+  rewrite /LimInf_seq ; case: ex_LimInf_seq => /= li Hli.
+  rewrite /LimSup_seq ; case: ex_LimSup_seq => /= ls Hls.
+  apply is_liminf_seq_opp in Hls.
+  by apply (is_LimInf_seq_eq (fun n : nat => - u n) (fun n : nat => - u n)).
+Qed.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

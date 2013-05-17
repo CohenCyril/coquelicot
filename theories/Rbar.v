@@ -89,17 +89,17 @@ Definition Rbar_mult (x y : Rbar) : Rbar :=
     | Finite x => match y with
       | Finite y => Finite (x*y)
       | p_infty => match (Rle_dec 0 x) with
-        | left _ => p_infty
+        | left H => match (Rle_lt_or_eq_dec _ _ H) with | left _ => p_infty | right _ => 0 end
         | right _ => m_infty
       end
       | m_infty => match (Rle_dec 0 x) with
-        | left _ => m_infty
+        | left H => match (Rle_lt_or_eq_dec _ _ H) with | left _ => m_infty | right _ => 0 end
         | right _ => p_infty
       end
     end
     | p_infty => match y with
       | Finite y => match (Rle_dec 0 y) with
-        | left _ => p_infty
+        | left H => match (Rle_lt_or_eq_dec _ _ H) with | left _ => p_infty | right _ => 0 end
         | right _ => m_infty
       end
       | p_infty => p_infty
@@ -107,7 +107,7 @@ Definition Rbar_mult (x y : Rbar) : Rbar :=
     end
     | m_infty => match y with
       | Finite y => match (Rle_dec 0 y) with
-        | left _ => m_infty
+        | left H => match (Rle_lt_or_eq_dec _ _ H) with | left _ => m_infty | right _ => 0 end
         | right _ => p_infty
       end
       | p_infty => m_infty
@@ -142,16 +142,24 @@ Lemma Rbar_mult_correct (x y z : Rbar) :
   is_Rbar_mult x y z -> Rbar_mult x y = z.
 Proof.
   case: x => [x | | ] ; case: y => [y | | ] ; case: z => [z | | ] //= Hm ;
-  try case: Rle_dec => // Hp.
+  try case: Rle_dec => // H.
   by rewrite Hm.
-  contradict Hp ; by apply Rlt_le.
-  by apply Rle_not_lt in Hp.
-  by apply Rle_not_lt in Hp.
-  contradict Hp ; by apply Rlt_le.
-  contradict Hp ; by apply Rlt_le.
-  by apply Rle_not_lt in Hp.
-  by apply Rle_not_lt in Hp.
-  contradict Hp ; by apply Rlt_le.
+  case: Rle_lt_or_eq_dec => // H0.
+  by apply Rlt_not_eq in Hm.
+  by apply Rlt_le in Hm.
+  by apply Rlt_not_le in Hm.
+  by apply Rlt_not_le in Hm.
+  case: Rle_lt_or_eq_dec => // H0.
+  by apply Rlt_not_eq in Hm.
+  by apply Rlt_le in Hm.
+  case: Rle_lt_or_eq_dec => // H0.
+  by apply Rlt_not_eq in Hm.
+  by apply Rlt_le in Hm.
+  by apply Rlt_not_le in Hm.
+  by apply Rlt_not_le in Hm.
+  case: Rle_lt_or_eq_dec => // H0.
+  by apply Rlt_not_eq in Hm.
+  by apply Rlt_le in Hm.
 Qed.
 Lemma Rbar_mult_pos_correct (x : Rbar) (y : posreal) (z : Rbar) :
   is_Rbar_mult x (Finite y) z -> Rbar_mult_pos x y = z.
