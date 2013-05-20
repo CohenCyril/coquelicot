@@ -97,97 +97,17 @@ Lemma Derive_ext_loc :
   Derive f x = Derive g x.
 Proof.
 intros f g x Hfg.
-unfold Derive, Lim, Lim_seq.
-apply Rmult_eq_compat_r, f_equal.
-rewrite 2!Sup_seq.LimInf_seq_correct 2!Sup_seq.LimSup_seq_correct.
-apply f_equal2.
-apply Rbar_seq.Rbar_limsup_seq_ext_loc.
-destruct Hfg as (e, He).
-exists (Zabs_nat (up (/e))).
-intros n Hn.
-rewrite He.
-rewrite He.
-easy.
-rewrite /Rminus Rplus_opp_r Rabs_R0; apply cond_pos.
-(* *)
-assert (0 < /e)%R.
-apply Rinv_0_lt_compat, cond_pos.
-assert (0 < IZR (up (/ e))).
-apply Rlt_trans with (1:=H).
-apply archimed.
-assert (0 < n)%nat.
-apply lt_le_trans with (2:=Hn).
-apply INR_lt.
-simpl.
-rewrite INR_IZR_INZ inj_Zabs_nat.
-rewrite Zabs_eq.
-exact H0.
-apply le_IZR.
-simpl; now left.
-replace (x + (0 + / INR n) - x) with (/ INR n) by ring.
-rewrite Rabs_right.
-rewrite <- (Rinv_involutive e).
-apply Rinv_lt_contravar.
-apply Rmult_lt_0_compat.
-exact H.
-now apply lt_0_INR.
-apply Rlt_le_trans with (IZR (up (/e))).
-apply archimed.
-apply Rle_trans with (INR (Zabs_nat (up (/ e)))).
-right; rewrite INR_IZR_INZ.
-rewrite inj_Zabs_nat.
-apply f_equal.
-apply sym_eq, Zabs_eq.
-apply le_IZR.
-simpl; now left.
-now apply le_INR.
-apply sym_not_eq, Rlt_not_eq, cond_pos.
-apply Rle_ge; left; apply Rinv_0_lt_compat.
-now apply lt_0_INR.
-
-apply Rbar_seq.Rbar_liminf_seq_ext_loc.
-destruct Hfg as (e, He).
-exists (Zabs_nat (up (/e))).
-intros n Hn.
-rewrite He.
-rewrite He.
-easy.
-rewrite /Rminus Rplus_opp_r Rabs_R0; apply cond_pos.
-(* *)
-assert (0 < /e)%R.
-apply Rinv_0_lt_compat, cond_pos.
-assert (0 < IZR (up (/ e))).
-apply Rlt_trans with (1:=H).
-apply archimed.
-assert (0 < n)%nat.
-apply lt_le_trans with (2:=Hn).
-apply INR_lt.
-simpl.
-rewrite INR_IZR_INZ inj_Zabs_nat.
-rewrite Zabs_eq.
-exact H0.
-apply le_IZR.
-simpl; now left.
-replace (x + (0 + / INR n) - x) with (/ INR n) by ring.
-rewrite Rabs_right.
-rewrite <- (Rinv_involutive e).
-apply Rinv_lt_contravar.
-apply Rmult_lt_0_compat.
-exact H.
-now apply lt_0_INR.
-apply Rlt_le_trans with (IZR (up (/e))).
-apply archimed.
-apply Rle_trans with (INR (Zabs_nat (up (/ e)))).
-right; rewrite INR_IZR_INZ.
-rewrite inj_Zabs_nat.
-apply f_equal.
-apply sym_eq, Zabs_eq.
-apply le_IZR.
-simpl; now left.
-now apply le_INR.
-apply sym_not_eq, Rlt_not_eq, cond_pos.
-apply Rle_ge; left; apply Rinv_0_lt_compat.
-now apply lt_0_INR.
+rewrite /Derive /Lim.
+apply f_equal, Lim_seq_ext_loc.
+apply (Rbar.Rbar_loc_seq_carac (fun h => (f (x + h) - f x) / h =
+  (g (x + h) - g x) / h) (Rbar.Finite 0)) => /=.
+case: Hfg => delta Hfg.
+exists delta => h Hh.
+rewrite ?Hfg.
+reflexivity.
+rewrite Rminus_eq0 Rabs_R0 ; by apply delta.
+ring_simplify (x + h - x).
+by rewrite Rminus_0_r in Hh.
 Qed.
 
 Lemma is_derive_ext :
@@ -271,8 +191,10 @@ Lemma Derive_opp :
 Proof.
 intros f x.
 unfold Derive, Lim.
+rewrite /Rbar.Rbar_loc_seq.
+rewrite -Rbar.Rbar_opp_real.
 rewrite -Lim_seq_opp.
-apply Lim_seq_ext => n.
+apply f_equal, Lim_seq_ext => n.
 rewrite -Ropp_mult_distr_l_reverse.
 apply (f_equal (fun v => v / _)).
 ring.
@@ -366,8 +288,21 @@ Lemma Derive_scal :
 Proof.
 intros f k x.
 unfold Derive, Lim.
+have H : (forall x, k * Rbar.real x = Rbar.real (Rbar.Rbar_mult (Rbar.Finite k) x)).
+  case: (Req_dec k 0) => [-> | Hk].
+  case => [l | | ] //= ; rewrite Rmult_0_l.
+  case: Rle_dec (Rle_refl 0) => //= H _.
+  case: Rle_lt_or_eq_dec (Rlt_irrefl 0) => //= _ _.
+  case: Rle_dec (Rle_refl 0) => //= H _.
+  case: Rle_lt_or_eq_dec (Rlt_irrefl 0) => //= _ _.
+  case => [l | | ] //= ; rewrite Rmult_0_r.
+  case: Rle_dec => //= H.
+  case: Rle_lt_or_eq_dec => //=.
+  case: Rle_dec => //= H.
+  case: Rle_lt_or_eq_dec => //=.
+rewrite H.
 rewrite -Lim_seq_scal.
-apply Lim_seq_ext => n.
+apply f_equal, Lim_seq_ext => n.
 rewrite -Rmult_assoc.
 apply (f_equal (fun v => v / _)).
 ring.

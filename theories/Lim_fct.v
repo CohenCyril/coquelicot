@@ -1,11 +1,10 @@
-Require Import Reals.
+Require Import Reals Rbar_theory.
 Require Import Lim_seq ssreflect.
 Require Import Locally.
 Open Scope R_scope.
 
 (** * Limit *)
-
-Definition Lim (f : R -> R) (x : R) := Lim_seq (fun n => f (x+/INR n)).
+Definition Lim (f : R -> R) (x : R) := real (Lim_seq (fun n => f (Rbar_loc_seq x n))).
 
 Definition is_lim f x l :=
   forall eps : posreal, locally (fun y => y <> x -> Rabs (f y - l) < eps) x.
@@ -55,23 +54,28 @@ Lemma is_lim_unique f x l :
 Proof.
   intros.
   unfold Lim.
-  apply is_lim_seq_unique.
+  rewrite (is_lim_seq_unique _ l) //.
   apply (is_lim_comp_seq f x l H).
   exists 1%nat ; intros ; apply Rgt_not_eq, Rlt_gt ;
   pattern x at 1 ; rewrite <- Rplus_0_r ; apply Rplus_lt_compat_l.
-  apply Rinv_0_lt_compat, lt_0_INR, le_S_gt, H0.
-  apply (is_lim_seq_plus (fun n => x) (fun n => /INR n) x 0).
+  apply Rinv_0_lt_compat, Rcomplements.INRp1_pos.
+  rewrite -{2}(Rplus_0_r x).
+  apply (is_lim_seq_plus (fun n => x) (fun n => /(INR n+1)) x 0).
   apply is_lim_seq_const.
-  apply is_lim_seq_inv_n.
-  ring.
+  replace (Finite 0) with (Rbar_inv p_infty) by auto.
+  apply is_lim_seq_inv => //.
+  apply (is_lim_seq_plus _ _ p_infty (Finite 1)) => //.
+  apply Rbar_is_lim_seq_id.
+  apply is_lim_seq_const.
+  simpl ; ring.
 Qed.
 Lemma Lim_correct f x :
   ex_lim f x -> is_lim f x (Lim f x).
 Proof.
   intros (l,H).
-  cut (Lim f x = l).
-    intros ; rewrite H0 ; apply H.
-  apply is_lim_unique, H.
+  replace (Lim f x) with l.
+    apply H.
+  apply sym_eq, is_lim_unique, H.
 Qed.
 
 (** * Operations *)
@@ -146,3 +150,4 @@ Proof.
   apply H.
   apply H0.
 Qed.
+

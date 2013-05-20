@@ -1,4 +1,4 @@
-Require Import Reals ssreflect.
+Require Import Reals ssreflect Rbar_theory.
 Require Import Rcomplements Locally.
 Require Import Lim_seq Sup_seq Lim_fct Derive Series.
 
@@ -9,12 +9,12 @@ Open Scope R_scope.
 (** ** Definitions *)
 
 Definition CVS_dom (fn : nat -> R -> R) (D : R -> Prop) :=
-  forall x : R, D x -> ex_lim_seq (fun n => fn n x).
+  forall x : R, D x -> ex_f_lim_seq (fun n => fn n x).
 
 Definition CVU_dom (fn : nat -> R -> R) (D : R -> Prop) :=
   forall eps : posreal, exists N : nat, 
   forall (n : nat) (x : R), D x -> (N <= n)%nat
-    -> Rabs (fn n x - (Lim_seq (fun n => fn n x))) < eps.
+    -> Rabs ((fn n x) - real (Lim_seq (fun n => fn n x))) < (eps).
 Definition CVU_cauchy (fn : nat -> R -> R) (D : R -> Prop) :=
   forall eps : posreal, exists N : nat, 
   forall (n m : nat) (x : R), D x -> (N <= n)%nat -> (N <= m)%nat
@@ -23,7 +23,7 @@ Definition CVU_cauchy (fn : nat -> R -> R) (D : R -> Prop) :=
 (** equivalences with standard library *)
 
 Lemma CVU_dom_equiv (fn : nat -> R -> R) (f : R -> R) (x : R) (r : posreal) :
-  (forall y, (Boule x r y) -> f y = Lim_seq (fun n => fn n y)) ->
+  (forall y, (Boule x r y) -> (Finite (f y)) = Lim_seq (fun n => fn n y)) ->
   (CVU fn f x r <-> CVU_dom fn (Boule x r)).
 Proof.
   split ; move => Hcvu.
@@ -37,14 +37,16 @@ Proof.
   case: (Hcvu e He) => {Hcvu} N Hcvu.
   exists N => n y Hy Hn.
   rewrite (is_lim_seq_unique (fun n0 : nat => fn n0 y) _ (Hf y Hy)).
-  rewrite -Ropp_minus_distr' Rabs_Ropp.
+  simpl.
+  rewrite -/(Rminus (fn n y) (f y)) -Ropp_minus_distr' Rabs_Ropp.
   by apply Hcvu.
   
   move => e He ; set eps := mkposreal e He.
   case: (Hcvu eps) => {Hcvu} N Hcvu.
   exists N => n y Hn Hy.
-  rewrite -Ropp_minus_distr' Rabs_Ropp (H y Hy).
-  by apply Hcvu.
+  move: (Hcvu n y Hy Hn).
+  rewrite -(H y Hy) /=.
+  by rewrite -Ropp_minus_distr' Rabs_Ropp.
 Qed.
 
 (** Various inclusions and equivalence between definitions *)
@@ -53,7 +55,7 @@ Lemma CVU_CVS_dom (fn : nat -> R -> R) (D : R -> Prop) :
   CVU_dom fn D -> CVS_dom fn D.
 Proof.
   move => Hcvu x Hx.
-  exists (Lim_seq (fun n => fn n x)) => eps.
+  exists (real (Lim_seq (fun n => fn n x))) => eps.
   case: (Hcvu eps) => {Hcvu} N Hcvu.
   exists N => n Hn.
   by apply Hcvu.
@@ -67,8 +69,8 @@ Proof.
   exists N => n m x Hx Hn Hm.
   rewrite (double_var eps).
   replace (fn n x - fn m x) 
-    with ((fn n x - Lim_seq (fun n0 : nat => fn n0 x))
-      - (fn m x - Lim_seq (fun n0 : nat => fn n0 x)))
+    with ((fn n x - real (Lim_seq (fun n0 : nat => fn n0 x)))
+      - (fn m x - real (Lim_seq (fun n0 : nat => fn n0 x))))
     by ring.
   apply Rle_lt_trans with (1 := Rabs_triang _ _) ; rewrite Rabs_Ropp.
   apply Rplus_lt_compat ; by apply H.
@@ -183,12 +185,12 @@ Lemma CVU_limits_open (fn : nat -> R -> R) (D : R -> Prop) :
   is_open D
   -> CVU_dom fn D
   -> (forall x n, D x -> ex_lim (fn n) x)
-  -> forall x, D x -> ex_lim_seq (fun n => Lim (fn n) x) 
-    /\ ex_lim (fun y => Lim_seq (fun n => fn n y)) x
-    /\ Lim_seq (fun n => Lim (fn n) x) = Lim (fun y => Lim_seq (fun n => fn n y)) x.
+  -> forall x, D x -> ex_f_lim_seq (fun n => Lim (fn n) x) 
+    /\ ex_lim (fun y => real (Lim_seq (fun n => fn n y))) x
+    /\ real (Lim_seq (fun n => Lim (fn n) x)) = Lim (fun y => real (Lim_seq (fun n => fn n y))) x.
 Proof.
   move => Ho Hfn Hex x Hx.
-  have H : ex_lim_seq (fun n : nat => Lim (fn n) x).
+  have H : ex_f_lim_seq (fun n : nat => Lim (fn n) x).
     apply CVU_dom_cauchy in Hfn.
     apply ex_lim_seq_cauchy_corr => eps.
     case: (Hfn (pos_div_2 eps)) => {Hfn} /= N Hfn.
@@ -256,9 +258,9 @@ Proof.
     by apply Hfn.
   split.
   exact: H.
-  apply Lim_seq_correct in H.
-  move: (Lim_seq (fun n : nat => Lim (fn n) x)) H => l H.
-  have H0 : is_lim (fun y : R => Lim_seq (fun n : nat => fn n y)) x l.
+  apply Lim_seq_correct' in H.
+  move: (real (Lim_seq (fun n : nat => Lim (fn n) x))) H => l H.
+  have H0 : is_lim (fun y : R => real (Lim_seq (fun n : nat => fn n y))) x l.
     move => eps.
     case: (Hfn (pos_div_2 (pos_div_2 eps))) => {Hfn} /= n1 Hfn.
     case: (H (pos_div_2 (pos_div_2 eps))) => {H} /= n2 H.
@@ -272,9 +274,9 @@ Proof.
     have Hd : 0 < Rmin d0 d1.
       apply Rmin_case ; [by apply d0 | by apply d1].
     exists (mkposreal _ Hd) => /= y Hy Hxy.
-    replace (Lim_seq (fun n0 : nat => fn n0 y) - l)
+    replace (real (Lim_seq (fun n0 : nat => fn n0 y)) - l)
       with ((Lim (fn n) x - l)
-            - (fn n y - Lim_seq (fun n : nat => fn n y))
+            - (fn n y - real (Lim_seq (fun n : nat => fn n y)))
             + (fn n y - Lim (fn n) x))
       by ring.
     rewrite (double_var eps) ;
@@ -295,7 +297,7 @@ Lemma CVU_cont_open (fn : nat -> R -> R) (D : R -> Prop) :
   is_open D ->
   CVU_dom fn D ->
   (forall n, forall x, D x -> continuity_pt (fn n) x)
-    -> forall x, D x -> continuity_pt (fun y => Lim_seq (fun n => fn n y)) x.
+    -> forall x, D x -> continuity_pt (fun y => real (Lim_seq (fun n => fn n y))) x.
 Proof.
   move => Ho Hfn Hc x Hx.
   case: (fun H => CVU_limits_open fn D Ho Hfn H x Hx) 
@@ -353,7 +355,7 @@ Lemma CVU_Derive (fn : nat -> R -> R) (D : R -> Prop) :
   -> (forall n x, D x -> continuity_pt (Derive (fn n)) x)
   -> CVU_dom (fun n x => Derive (fn n) x) D
   -> (forall x , D x ->
-       (is_derive (fun y => Lim_seq (fun n => fn n y)) x (Lim_seq (fun n => Derive (fn n) x)))).
+       (is_derive (fun y => real (Lim_seq (fun n => fn n y))) x (real (Lim_seq (fun n => Derive (fn n) x))))).
 Proof.
   move => Ho Hc Hfn Edn Cdn Hdn.
   
@@ -472,9 +474,9 @@ Proof.
   case: (CVU_limits_open (rn x) _ (Ho' x Hx) (Hrn x Hx) (Lrn x Hx) 0) => [ | H [H0 H1]].
   by rewrite Rplus_0_r.
   
-  have : ex_derive (fun y : R => Lim_seq (fun n : nat => fn n y)) x
-    /\ Derive (fun y : R => Lim_seq (fun n : nat => fn n y)) x
-      = (Lim_seq (fun n : nat => Derive (fn n) x)).
+  have : ex_derive (fun y : R => real (Lim_seq (fun n : nat => fn n y))) x
+    /\ Derive (fun y : R => real (Lim_seq (fun n : nat => fn n y))) x
+      = real (Lim_seq (fun n : nat => Derive (fn n) x)).
   
   split.
   case: H0 => df H0.
@@ -484,8 +486,13 @@ Proof.
   have H2 : 0 < Rmin delta dx.
     apply Rmin_case ; [by apply delta | by apply dx].
   exists (mkposreal _ H2) => /= h Hh0 Hh.
+  replace (real (Lim_seq (fun n : nat => fn n (x + h))) -
+    real (Lim_seq (fun n : nat => fn n x))) with
+    (real (Rbar_minus (Lim_seq (fun n : nat => fn n (x + h))) (Lim_seq (fun n : nat => fn n x)))).
   rewrite -Lim_seq_minus.
-  rewrite /Rdiv (Rmult_comm _ (/h)) -Lim_seq_scal.
+  replace (real (Lim_seq (fun n : nat => fn n (x + h) - fn n x)) / h)
+  with (real (Rbar_mult (/h) (Lim_seq (fun n : nat => fn n (x + h) - fn n x)))).
+  rewrite -Lim_seq_scal.
   replace (Lim_seq (fun n : nat => / h * (fn n (x + h) - fn n x)))
     with (Lim_seq (fun n : nat => rn x n h)).
   apply H0.
@@ -493,14 +500,47 @@ Proof.
   exact: Hh0.
   apply Lim_seq_ext => n.
   rewrite /rn /Rdiv ; case: Req_EM_T => // _ ; exact: Rmult_comm.
-  apply CVU_CVS_dom with D.
+  case: (Lim_seq (fun n : nat => fn n (x + h) - fn n x))
+    => [l | | ] //=.
+    by field.
+    rewrite /Rdiv Rmult_0_l.
+    case: Rle_dec => // Hh1.
+    case: Rle_lt_or_eq_dec => //.
+    rewrite /Rdiv Rmult_0_l.
+    case: Rle_dec => // Hh1.
+    case: Rle_lt_or_eq_dec => //.
+  
+  apply ex_f_lim_seq_correct, CVU_CVS_dom with D.
   exact: Hfn.
   apply Ho.
   ring_simplify (x + h - x) ; apply Rlt_le_trans with (1 := Hh), Rmin_r.
-  apply CVU_CVS_dom with D.
+  apply ex_f_lim_seq_correct, CVU_CVS_dom with D.
   exact: Hfn.
   apply Ho.
   rewrite Rminus_eq0 Rabs_R0 ; by apply dx.
+  apply (CVU_CVS_dom fn D) in Hfn ; rewrite /CVS_dom in Hfn.
+  move: (fun H => Lim_seq_correct' _ (Hfn (x+h) (Ho _ H))) => F.
+  move: (fun H => Lim_seq_correct' _ (Hfn (x) (Ho _ H))) => F0.
+  rewrite (is_lim_seq_unique _ (real (Lim_seq (fun n : nat => fn n (x + h))))).
+  rewrite (is_lim_seq_unique  (fun n : nat => fn n (x)) (real (Lim_seq (fun n : nat => fn n (x))))).
+  exists (real (Lim_seq (fun n : nat => fn n (x + h)))
+    - real (Lim_seq (fun n : nat => fn n x))) ; by simpl.
+  apply F0.
+  rewrite Rminus_eq0 Rabs_R0 ; by apply dx.
+  apply F.
+  ring_simplify (x + h - x).
+  apply Rlt_le_trans with (1 := Hh), Rmin_r.
+  apply (CVU_CVS_dom fn D) in Hfn ; rewrite /CVS_dom in Hfn.
+  move: (fun H => Lim_seq_correct' _ (Hfn (x+h) (Ho _ H))) => F.
+  move: (fun H => Lim_seq_correct' _ (Hfn (x) (Ho _ H))) => F0.
+  rewrite (is_lim_seq_unique _ (real (Lim_seq (fun n : nat => fn n (x + h))))).
+  rewrite (is_lim_seq_unique  (fun n : nat => fn n (x)) (real (Lim_seq (fun n : nat => fn n (x))))).
+  by [].
+  apply F0.
+  rewrite Rminus_eq0 Rabs_R0 ; by apply dx.
+  apply F.
+  ring_simplify (x + h - x).
+  apply Rlt_le_trans with (1 := Hh), Rmin_r.
   
   rewrite /Derive.
   replace (Lim_seq (fun n : nat => Lim (fun h : R => (fn n (x + h) - fn n x) / h) 0))
@@ -514,8 +554,13 @@ Proof.
   have H2 : 0 < Rmin delta dx.
     apply Rmin_case ; [by apply delta | by apply dx].
   exists (mkposreal _ H2) => /= h Hh0 Hh.
+  replace (real (Lim_seq (fun n : nat => fn n (x + h))) -
+    real (Lim_seq (fun n : nat => fn n x))) with
+    (real (Rbar_minus (Lim_seq (fun n : nat => fn n (x + h))) (Lim_seq (fun n : nat => fn n x)))).
   rewrite -Lim_seq_minus.
-  rewrite /Rdiv (Rmult_comm _ (/h)) -Lim_seq_scal.
+  replace (real (Lim_seq (fun n : nat => fn n (x + h) - fn n x)) / h)
+  with (real (Rbar_mult (/h) (Lim_seq (fun n : nat => fn n (x + h) - fn n x)))).
+  rewrite -Lim_seq_scal.
   replace (Lim_seq (fun n : nat => / h * (fn n (x + h) - fn n x)))
     with (Lim_seq (fun n : nat => rn x n h)).
   apply H0.
@@ -523,15 +568,51 @@ Proof.
   exact: Hh.
   apply Lim_seq_ext => n.
   rewrite /rn /Rdiv ; case: Req_EM_T => // _ ; exact: Rmult_comm.
-  apply CVU_CVS_dom with D.
+  case: (Lim_seq (fun n : nat => fn n (x + h) - fn n x))
+    => [l | | ] //=.
+    by field.
+    rewrite /Rdiv Rmult_0_l.
+    case: Rle_dec => // Hh1.
+    case: Rle_lt_or_eq_dec => //.
+    rewrite /Rdiv Rmult_0_l.
+    case: Rle_dec => // Hh1.
+    case: Rle_lt_or_eq_dec => //.
+  
+  apply ex_f_lim_seq_correct, CVU_CVS_dom with D.
   exact: Hfn.
   apply Ho.
   ring_simplify (x + h - x) ; rewrite -(Rminus_0_r h) ;
   apply Rlt_le_trans with (1 := Hh0), Rmin_r.
-  apply CVU_CVS_dom with D.
+  apply ex_f_lim_seq_correct, CVU_CVS_dom with D.
   exact: Hfn.
   apply Ho.
   rewrite Rminus_eq0 Rabs_R0 ; by apply dx.
+  apply (CVU_CVS_dom fn D) in Hfn ; rewrite /CVS_dom in Hfn.
+  move: (fun H => Lim_seq_correct' _ (Hfn (x+h) (Ho _ H))) => F.
+  move: (fun H => Lim_seq_correct' _ (Hfn (x) (Ho _ H))) => F0.
+  rewrite (is_lim_seq_unique _ (real (Lim_seq (fun n : nat => fn n (x + h))))).
+  rewrite (is_lim_seq_unique  (fun n : nat => fn n (x)) (real (Lim_seq (fun n : nat => fn n (x))))).
+  exists (real (Lim_seq (fun n : nat => fn n (x + h)))
+    - real (Lim_seq (fun n : nat => fn n x))) ; by simpl.
+  apply F0.
+  rewrite Rminus_eq0 Rabs_R0 ; by apply dx.
+  apply F.
+  ring_simplify (x + h - x).
+  rewrite Rminus_0_r in Hh0.
+  apply Rlt_le_trans with (1 := Hh0), Rmin_r.
+  apply (CVU_CVS_dom fn D) in Hfn ; rewrite /CVS_dom in Hfn.
+  move: (fun H => Lim_seq_correct' _ (Hfn (x+h) (Ho _ H))) => F.
+  move: (fun H => Lim_seq_correct' _ (Hfn (x) (Ho _ H))) => F0.
+  rewrite (is_lim_seq_unique _ (real (Lim_seq (fun n : nat => fn n (x + h))))).
+  rewrite (is_lim_seq_unique  (fun n : nat => fn n (x)) (real (Lim_seq (fun n : nat => fn n (x))))).
+  by [].
+  apply F0.
+  rewrite Rminus_eq0 Rabs_R0 ; by apply dx.
+  apply F.
+  ring_simplify (x + h - x).
+  rewrite Rminus_0_r in Hh0.
+  apply Rlt_le_trans with (1 := Hh0), Rmin_r.
+
   apply Lim_seq_ext => n.
   apply sym_eq, is_lim_unique.
   have Hx' : D (x + 0).
@@ -572,7 +653,7 @@ Proof.
     apply Rle_trans with (Rabs (fn (S n) 0)).
     by apply Rabs_pos.
     apply H0 ; rewrite /Boule Rminus_0_r Rabs_R0 ; by apply r.
-
+  
   have H2 : is_lim_seq (fun n => Series (fun k => An (n + k)%nat)) 0.
     apply is_lim_seq_incr_1.
     apply is_lim_seq_ext with (fun n => Series An - sum_f_R0 An n).
@@ -580,16 +661,27 @@ Proof.
     ring.
     by apply lt_O_Sn.
     by apply H1.
-    apply is_lim_seq_plus with (Series An) (-Series An).
+    replace (Finite 0) with (Rbar_plus (Series An) (- Series An))
+      by (simpl ; apply Rbar_finite_eq ; ring).
+    apply (is_lim_seq_plus _ _ (Series An) (-Series An)).
     by apply is_lim_seq_const.
+    replace (Finite (-Series An)) with (Rbar_opp (Series An))
+      by (simpl ; apply Rbar_finite_eq ; ring).
     apply is_lim_seq_opp.
     rewrite /Series ;
     apply (is_lim_seq_ext (sum_f_R0 (fun k => An k))).
     elim => /= [ | n IH].
     by [].
     by rewrite IH.
-    apply Lim_seq_correct, H1.
-    ring.
+    apply Lim_seq_correct', H1.
+    simpl ; ring.
+  
+  have H3 : forall y, Boule 0 r y -> ex_series (fun n => Rabs (fn n y)).
+  move => y Hy.
+  move: H1 ; apply Comp_ex_series.
+  move => n ; split.
+  by apply Rabs_pos.
+  by apply H0.
 
   apply Rminus_lt_0 in Hx.
   set r0 := mkposreal _ Hx.
@@ -605,186 +697,34 @@ Proof.
 
   apply Rle_trans with (2 := Rle_abs _).
   apply Rle_trans with (Series (fun k : nat => Rabs (fn (S (n + k)) y))).
-  apply Rabs_le_between ; rewrite -Lim_seq_opp /Series ; split.
-
-  apply is_lim_seq_le with 
-    (fun n0 : nat => - sum_f_R0 (fun k : nat => Rabs (fn (S (n + k)) y)) n0)
-    (sum_f_R0 (fun k : nat => fn (S (n + k)) y)).
-  elim => /= [ | k IH].
-  apply Ropp_le_cancel ; rewrite Ropp_involutive.
-  by apply Rabs_maj2.
-  rewrite Ropp_plus_distr ; apply Rplus_le_compat.
-  by apply IH.
-  apply Ropp_le_cancel ; rewrite Ropp_involutive.
-  by apply Rabs_maj2.
-  apply Lim_seq_correct, ex_lim_seq_opp.
-  apply Comp_ex_series with (fun k => An (S (n + k))).
+  apply Series_Rabs.
+  apply ex_series_ext with (fun n0 : nat => Rabs (fn (S (n) + n0)%nat y)).
+    move => n0 ; by rewrite plus_Sn_m.
+  apply (ex_series_decal_n (fun n => Rabs (fn n y))).
+  apply H3.
+  rewrite /Boule /= in Hy |- *.
+  apply Rle_lt_trans with (1 := Rabs_triang_inv _ _) in Hy.
+  rewrite /Rminus ?(Rplus_comm _ (-Rabs x)) in Hy.
+  apply Rplus_lt_reg_r in Hy.
+  by rewrite Rminus_0_r.
+  apply Series_compar.
   move => k ; split.
   by apply Rabs_pos.
-  apply H0 ; rewrite /Boule ?Rminus_0_r /r0 /= in Hy |- *.
-  apply Rabs_lt_between.
-  apply Rabs_lt_between' in Hy.
-  split.
-  apply Rle_lt_trans with (2 := proj1 Hy).
-  apply Rminus_le_0 ; ring_simplify.
-  rewrite Rplus_comm -{2}(Ropp_involutive x).
-  apply -> Rminus_le_0.
-  apply Rabs_maj2.
-  apply Rlt_le_trans with (1 := proj2 Hy).
-  apply Rminus_le_0 ; ring_simplify.
-  rewrite Rplus_comm.
-  apply -> Rminus_le_0.
-  apply Rle_abs.
-  by apply (ex_series_decal_n An (S n)).
-  apply Lim_seq_correct.
-  apply Abs_ex_series.
-  apply Comp_ex_series with (fun k => An (S (n + k))).
-  move => k ; split.
-  by apply Rabs_pos.
-  apply H0 ; rewrite /Boule ?Rminus_0_r /r0 /= in Hy |- *.
-  apply Rabs_lt_between.
-  apply Rabs_lt_between' in Hy.
-  split.
-  apply Rle_lt_trans with (2 := proj1 Hy).
-  apply Rminus_le_0 ; ring_simplify.
-  rewrite Rplus_comm -{2}(Ropp_involutive x).
-  apply -> Rminus_le_0.
-  apply Rabs_maj2.
-  apply Rlt_le_trans with (1 := proj2 Hy).
-  apply Rminus_le_0 ; ring_simplify.
-  rewrite Rplus_comm.
-  apply -> Rminus_le_0.
-  apply Rle_abs.
-  by apply (ex_series_decal_n An (S n)).
-  
-  apply is_lim_seq_le with 
-    (sum_f_R0 (fun k : nat => fn (S (n + k)) y))
-    (sum_f_R0 (fun k : nat => Rabs (fn (S (n + k)) y))).
-  elim => /= [ | k IH].
-  by apply Rle_abs.
-  apply Rplus_le_compat.
-  by apply IH.
-  apply Rle_abs.
-  apply Lim_seq_correct.
-  apply Abs_ex_series.
-  apply Comp_ex_series with (fun k => An (S (n + k))).
-  move => k ; split.
-  by apply Rabs_pos.
-  apply H0 ; rewrite /Boule ?Rminus_0_r /r0 /= in Hy |- *.
-  apply Rabs_lt_between.
-  apply Rabs_lt_between' in Hy.
-  split.
-  apply Rle_lt_trans with (2 := proj1 Hy).
-  apply Rminus_le_0 ; ring_simplify.
-  rewrite Rplus_comm -{2}(Ropp_involutive x).
-  apply -> Rminus_le_0.
-  apply Rabs_maj2.
-  apply Rlt_le_trans with (1 := proj2 Hy).
-  apply Rminus_le_0 ; ring_simplify.
-  rewrite Rplus_comm.
-  apply -> Rminus_le_0.
-  apply Rle_abs.
-  by apply (ex_series_decal_n An (S n)).
-  apply (is_lim_seq_ext (sum_f_R0 (fun k : nat => Rabs (fn (S (n + k)) y)))).
-  by [].
-  apply Lim_seq_correct.
-  apply (Comp_ex_series) with (fun k => An (S (n + k))).
-  move => k ; split.
-  by apply Rabs_pos.
-  apply H0 ; rewrite /Boule ?Rminus_0_r /r0 /= in Hy |- *.
-  apply Rabs_lt_between.
-  apply Rabs_lt_between' in Hy.
-  split.
-  apply Rle_lt_trans with (2 := proj1 Hy).
-  apply Rminus_le_0 ; ring_simplify.
-  rewrite Rplus_comm -{2}(Ropp_involutive x).
-  apply -> Rminus_le_0.
-  apply Rabs_maj2.
-  apply Rlt_le_trans with (1 := proj2 Hy).
-  apply Rminus_le_0 ; ring_simplify.
-  rewrite Rplus_comm.
-  apply -> Rminus_le_0.
-  apply Rle_abs.
-  by apply (ex_series_decal_n An (S n)).
-  
-  apply is_lim_seq_le with 
-    (sum_f_R0 (fun k : nat => Rabs (fn (S (n + k)) y)))
-    (sum_f_R0 (fun k : nat => An (S (n + k)))).
-  elim => /= [ | k IH].
   apply H0.
-  rewrite /Boule ?Rminus_0_r /r0 /= in Hy |- *.
-  apply Rabs_lt_between.
-  apply Rabs_lt_between' in Hy.
-  split.
-  apply Rle_lt_trans with (2 := proj1 Hy).
-  apply Rminus_le_0 ; ring_simplify.
-  rewrite Rplus_comm -{2}(Ropp_involutive x).
-  apply -> Rminus_le_0.
-  apply Rabs_maj2.
-  apply Rlt_le_trans with (1 := proj2 Hy).
-  apply Rminus_le_0 ; ring_simplify.
-  rewrite Rplus_comm.
-  apply -> Rminus_le_0.
-  apply Rle_abs.
-  apply Rplus_le_compat.
-  by apply IH.
-  apply H0.
-  rewrite /Boule ?Rminus_0_r /r0 /= in Hy |- *.
-  apply Rabs_lt_between.
-  apply Rabs_lt_between' in Hy.
-  split.
-  apply Rle_lt_trans with (2 := proj1 Hy).
-  apply Rminus_le_0 ; ring_simplify.
-  rewrite Rplus_comm -{2}(Ropp_involutive x).
-  apply -> Rminus_le_0.
-  apply Rabs_maj2.
-  apply Rlt_le_trans with (1 := proj2 Hy).
-  apply Rminus_le_0 ; ring_simplify.
-  rewrite Rplus_comm.
-  apply -> Rminus_le_0.
-  apply Rle_abs.
-  
-  apply Lim_seq_correct.
-  apply (Comp_ex_series) with (fun k => An (S (n + k))).
-  move => k ; split.
-  by apply Rabs_pos.
-  apply H0 ; rewrite /Boule ?Rminus_0_r /r0 /= in Hy |- *.
-  apply Rabs_lt_between.
-  apply Rabs_lt_between' in Hy.
-  split.
-  apply Rle_lt_trans with (2 := proj1 Hy).
-  apply Rminus_le_0 ; ring_simplify.
-  rewrite Rplus_comm -{2}(Ropp_involutive x).
-  apply -> Rminus_le_0.
-  apply Rabs_maj2.
-  apply Rlt_le_trans with (1 := proj2 Hy).
-  apply Rminus_le_0 ; ring_simplify.
-  rewrite Rplus_comm.
-  apply -> Rminus_le_0.
-  apply Rle_abs.
-  by apply (ex_series_decal_n An (S n)).
-  
-  apply Lim_seq_correct.
-  by apply (ex_series_decal_n An (S n)).
+  rewrite /Boule /= in Hy |- *.
+  apply Rle_lt_trans with (1 := Rabs_triang_inv _ _) in Hy.
+  rewrite /Rminus ?(Rplus_comm _ (-Rabs x)) in Hy.
+  apply Rplus_lt_reg_r in Hy.
+  by rewrite Rminus_0_r.
+  apply ex_series_ext with (fun k : nat => An (S n + k)%nat).
+  move => k ; by rewrite plus_Sn_m.
+  by apply ex_series_decal_n.
   by apply lt_O_Sn.
-  
-  apply Abs_ex_series.
-  apply (Comp_ex_series) with An.
-  move => k ; split.
-  by apply Rabs_pos.
-  apply H0 ; rewrite /Boule ?Rminus_0_r /r0 /= in Hy |- *.
-  apply Rabs_lt_between.
-  apply Rabs_lt_between' in Hy.
-  split.
-  apply Rle_lt_trans with (2 := proj1 Hy).
-  apply Rminus_le_0 ; ring_simplify.
-  rewrite Rplus_comm -{2}(Ropp_involutive x).
-  apply -> Rminus_le_0.
-  apply Rabs_maj2.
-  apply Rlt_le_trans with (1 := proj2 Hy).
-  apply Rminus_le_0 ; ring_simplify.
-  rewrite Rplus_comm.
-  apply -> Rminus_le_0.
-  apply Rle_abs.
-  by apply H1.
+  apply ex_series_Rabs.
+  apply H3.
+  rewrite /Boule /= in Hy |- *.
+  apply Rle_lt_trans with (1 := Rabs_triang_inv _ _) in Hy.
+  rewrite /Rminus ?(Rplus_comm _ (-Rabs x)) in Hy.
+  apply Rplus_lt_reg_r in Hy.
+  by rewrite Rminus_0_r.
 Qed.

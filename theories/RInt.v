@@ -2619,11 +2619,12 @@ Proof.
     apply RiemannInt_P1 ;
     by apply Hw.
   have : {If : R | is_RInt f a b If}.
-    exists (Lim_seq (RInt_val f a b)).
+    exists (real (Lim_seq (RInt_val f a b))).
     case: Hex => If Hex.
-    replace (Lim_seq (RInt_val f a b)) with If.
+    replace (real (Lim_seq (RInt_val f a b))) with If.
     exact: Hex.
-    apply sym_equal, is_lim_seq_unique.
+    replace If with (real (Finite If)) by auto.
+    apply f_equal, sym_equal, is_lim_seq_unique.
     by apply ex_RInt_correct_aux_2.
   case => If HIf.
   set E := fun eps : posreal => 
@@ -3703,8 +3704,8 @@ Qed.
 
 Definition RInt (f : R -> R) (a b : R) := 
   match Rle_dec a b with
-    | left _ => Lim_seq (RInt_val f a b)
-    | right _ => -Lim_seq (RInt_val f b a)
+    | left _ => real (Lim_seq (RInt_val f a b))
+    | right _ => - real (Lim_seq (RInt_val f b a))
   end.
 
 Lemma RInt_correct (f : R -> R) (a b : R) :
@@ -3720,7 +3721,8 @@ Proof.
     case: Rle_dec (Rlt_le _ _ Hab) (Rlt_not_le _ _ Hab) => // _ _ _ _.
     by move => ->.
   move => pr ; rewrite /RInt ; case: Rle_dec => // _.
-  apply is_lim_seq_unique.
+  replace (RiemannInt pr) with (real (Finite (RiemannInt pr))) by auto.
+  apply f_equal, is_lim_seq_unique.
   apply ex_RInt_correct_aux_2.
   exact: ex_RInt_correct_aux_1.
 Qed.

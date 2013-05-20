@@ -56,9 +56,10 @@ Lemma RInt_point :
   forall f a, RInt f a a = 0.
 Proof.
 intros f a.
+replace 0 with (Rbar.real (Rbar.Finite 0)) by auto.
 rewrite -(Lim_seq_const 0).
 rewrite /RInt ; case: Rle_dec (Rle_refl a) => // _ _ ;
-apply Lim_seq_ext.
+apply f_equal, Lim_seq_ext.
 move => n ; rewrite /RInt_val ; field ; apply Rgt_not_eq, INRp1_pos.
 Qed.
 
@@ -105,7 +106,7 @@ unfold RInt.
 destruct (Rle_dec a b) as [Hab|Hab].
 clear H.
 2: easy.
-apply Lim_seq_ext => n.
+apply f_equal, Lim_seq_ext => n.
 rewrite /RInt /RInt_val.
 apply f_equal.
 rewrite /SF_val_ly.
@@ -170,8 +171,9 @@ wlog: a b /(a <= b) => [Hw | Hab].
   ring.
   by apply Rlt_le.
 rewrite /RInt ; case: Rle_dec => // _.
+replace (c * (b - a)) with (Rbar.real (Rbar.Finite (c * (b - a)))) by auto.
 rewrite -(Lim_seq_const (c * (b-a))).
-apply Lim_seq_ext => n.
+apply f_equal, Lim_seq_ext => n.
 rewrite /RInt_val.
 replace (seq.foldr _ 0 _) with (c * (INR n + 1)).
 field ; apply Rgt_not_eq, INRp1_pos.
@@ -211,7 +213,7 @@ Lemma RInt_scal :
 Proof.
 intros f l.
 (* *)
-assert (forall a b, Lim_seq (RInt_val (fun x : R => l * f x) a b) = l * Lim_seq (RInt_val f a b)).
+assert (forall a b, Lim_seq (RInt_val (fun x : R => l * f x) a b) = Rbar.Rbar_mult (Rbar.Finite l) (Lim_seq (RInt_val f a b))).
 intros a b.
 rewrite -Lim_seq_scal.
 apply Lim_seq_ext => n.
@@ -233,10 +235,31 @@ apply Rmult_plus_distr_l.
 (* *)
 intros a b.
 unfold RInt.
+have H0 : (forall x, l * Rbar.real x = Rbar.real (Rbar.Rbar_mult (Rbar.Finite l) x)).
+  case: (Req_dec l 0) => [-> | Hk].
+  case => [x | | ] //= ; rewrite Rmult_0_l.
+  case: Rle_dec (Rle_refl 0) => //= H0 _.
+  case: Rle_lt_or_eq_dec (Rlt_irrefl 0) => //= _ _.
+  case: Rle_dec (Rle_refl 0) => //= H0 _.
+  case: Rle_lt_or_eq_dec (Rlt_irrefl 0) => //= _ _.
+  case => [x | | ] //= ; rewrite Rmult_0_r.
+  case: Rle_dec => //= H0.
+  case: Rle_lt_or_eq_dec => //=.
+  case: Rle_dec => //= H0.
+  case: Rle_lt_or_eq_dec => //=.
+
 case Rle_dec => _.
-apply H.
-rewrite H.
-apply eq_sym, Ropp_mult_distr_r_reverse.
+by rewrite H0 H.
+rewrite -?Rbar.Rbar_opp_real H0 H.
+apply f_equal.
+case: (Lim_seq (RInt_val f b a)) => [x | | ] /=.
+apply f_equal ; ring.
+case: Rle_dec => // H1.
+case: Rle_lt_or_eq_dec => H2 //=.
+by rewrite Ropp_0.
+case: Rle_dec => // H1.
+case: Rle_lt_or_eq_dec => H2 //=.
+by rewrite Ropp_0.
 Qed.
 
 Lemma ex_RInt_opp :

@@ -13,6 +13,8 @@ Definition is_lim_seq (u : nat -> R) (l : Rbar) :=
   end.
 Definition ex_lim_seq (u : nat -> R) :=
   exists l, is_lim_seq u l.
+Definition ex_f_lim_seq (u : nat -> R) :=
+  exists l : R, is_lim_seq u l.
 Definition Lim_seq (u : nat -> R) : Rbar := 
   Rbar_div_pos (Rbar_plus (LimSup_seq u) (LimInf_seq u))
     {| pos := 2; cond_pos := Rlt_R0_R2 |}.
@@ -28,6 +30,12 @@ Proof.
   rewrite /Lim_seq /Rbar_lim_seq.
   rewrite (LimSup_seq_correct u) (LimInf_seq_correct u) /= ;
   case: (Rbar_plus _ _) => //= ; field.
+Qed.
+Lemma ex_f_lim_seq_correct (u : nat -> R) :
+  ex_f_lim_seq u -> ex_lim_seq u.
+Proof.
+  case => l Hl.
+  by exists l.
 Qed.
 
 Lemma ex_lim_seq_dec (u : nat -> R) :
@@ -52,6 +60,15 @@ Proof.
     intros ; rewrite H0 ; apply H.
   apply is_lim_seq_unique, H.
 Qed.
+Lemma Lim_seq_correct' (u : nat -> R) :
+  ex_f_lim_seq u -> is_lim_seq u (real (Lim_seq u)).
+Proof.
+  intros (l,H).
+  cut (real (Lim_seq u) = l).
+    intros ; rewrite H0 ; apply H.
+  replace l with (real l) by auto.
+  apply f_equal, is_lim_seq_unique, H.
+Qed.
 
 (** ** Cauchy criterium *)
 
@@ -59,22 +76,19 @@ Definition ex_lim_seq_cauchy (u : nat -> R) :=
   forall eps : posreal, exists N : nat, forall n m,
     (N <= n)%nat -> (N <= m)%nat -> Rabs (u n - u m) < eps.
 Lemma ex_lim_seq_cauchy_corr (u : nat -> R) :
-  (ex_lim_seq u /\ is_finite (Lim_seq u)) <-> ex_lim_seq_cauchy u.
+  (ex_f_lim_seq u) <-> ex_lim_seq_cauchy u.
 Proof.
   split => Hcv.
   
-  case: Hcv => H Hl.
-  apply Lim_seq_correct in H.
-  case: (Lim_seq u) H Hl => [l | | ] // H Hl eps.
-
-  case: (H (pos_div_2 eps)) => /= {H} N H.
+  apply Lim_seq_correct' in Hcv.
+  move => eps.
+  
+  case: (Hcv (pos_div_2 eps)) => /= {Hcv} N H.
   exists N => n m Hn Hm.
-  replace (u n - u m) with ((u n - l) - (u m - l)) by ring.
+  replace (u n - u m) with ((u n - (real (Lim_seq u))) - (u m - (real (Lim_seq u)))) by ring.
   apply Rle_lt_trans with (1 := Rabs_triang _ _).
   rewrite Rabs_Ropp (double_var eps).
-  apply Rplus_lt_compat ; by apply H.
-
-  
+  apply Rplus_lt_compat ; by apply H.  
   
   have H : (Rbar_ex_lim_seq (fun n => Finite (u n))).
   have H : Rbar_limsup_seq (fun n => Finite (u n)) = Rbar_liminf_seq (fun n => Finite (u n)).
@@ -134,24 +148,8 @@ Proof.
   rewrite /Rbar_limsup_seq ; by case: Rbar_ex_limsup_seq.
   rewrite H ; rewrite /Rbar_liminf_seq ; by case: Rbar_ex_liminf_seq.
   case: H => l H ; replace (Lim_seq u) with l.
-  split.
-  exists l ; case: l H => [l | | ] H.
+  exists (real l) ; case: l H => [l | | ] H.
   by apply is_lim_seq_correct in H.
-  case: (Hcv (mkposreal 1 Rlt_0_1)) => /= {Hcv} Ncv Hcv.
-  move: (fun n Hn => Hcv n Ncv Hn (le_refl _)) ; rewrite /R_dist => {Hcv} Hcv.
-  case: (H (u Ncv + 1)) => {H} /= N H.
-  move: (Hcv (Ncv + N)%nat (le_plus_l _ _)) => {Hcv} Hcv.
-  apply Rabs_lt_between' in Hcv.
-  have : False => // ; move: (proj2 Hcv) ; 
-  by apply Rle_not_lt, Rlt_le, H, le_plus_r.
-  case: (Hcv (mkposreal 1 Rlt_0_1)) => {Hcv} /= Ncv Hcv.
-  move: (fun n Hn => Hcv n Ncv Hn (le_refl _)) ; rewrite /R_dist => {Hcv} Hcv.
-  case: (H (u Ncv - 1)) => {H} /= N H.
-  move: (Hcv (Ncv + N)%nat (le_plus_l _ _)) => {Hcv} Hcv.
-  apply Rabs_lt_between' in Hcv.
-  have : False => // ; move: (proj1 Hcv) ; 
-  by apply Rle_not_lt, Rlt_le, H, le_plus_r.
-  case: l H => [l | | ] H //=.
   case: (Hcv (mkposreal 1 Rlt_0_1)) => /= {Hcv} Ncv Hcv.
   move: (fun n Hn => Hcv n Ncv Hn (le_refl _)) ; rewrite /R_dist => {Hcv} Hcv.
   case: (H (u Ncv + 1)) => {H} /= N H.
@@ -207,6 +205,40 @@ Proof.
 Qed.
 
 (** Extentionality *)
+
+Lemma is_lim_seq_ext_loc : forall u v l, 
+  (exists N, forall n, (N <= n)%nat -> u n = v n) 
+    -> is_lim_seq u l -> is_lim_seq v l.
+Proof.
+  intros.
+  apply (Rbar_is_lim_seq_ext_loc (fun n => Finite (u n)) (fun n => Finite (v n))).
+  case: H => N H.
+  exists N => n Hn ; by apply Rbar_finite_eq, H.
+  apply H0.
+Qed.
+Lemma ex_lim_seq_ext_loc : forall u v, 
+  (exists N, forall n, (N <= n)%nat -> u n = v n) -> ex_lim_seq u -> ex_lim_seq v.
+Proof.
+  move => u v H [l H0].
+  exists l ; by apply is_lim_seq_ext_loc with u.
+Qed.
+Lemma Lim_seq_ext_loc :  forall u v, 
+  (exists N, forall n, (N <= n)%nat -> u n = v n) -> 
+  Lim_seq u = Lim_seq v.
+Proof.
+  intros.
+  rewrite /Lim_seq.
+  apply (f_equal (fun x => Rbar_div_pos x _)).
+  case: H => N H.
+  apply f_equal2.
+  rewrite ?LimSup_seq_correct.
+  apply Rbar_limsup_seq_ext_loc.
+  exists N => n Hn ; by apply Rbar_finite_eq, H.
+  rewrite ?LimInf_seq_correct.
+  apply Rbar_liminf_seq_ext_loc.
+  exists N => n Hn ; by apply Rbar_finite_eq, H.
+Qed.
+
 
 Lemma is_lim_seq_ext : forall u v l, 
   (forall n, u n = v n) -> is_lim_seq u l -> is_lim_seq v l.
@@ -1038,10 +1070,13 @@ Proof.
   suff Ev : ex_lim_seq v /\ is_finite (Lim_seq v).
     split ; try by case: Ev.
   split ; try by case: Eu.
-  rewrite -(proj2 Eu) -(proj2 Ev).
-  apply Rbar_finite_eq, Rminus_diag_uniq_sym.
-  rewrite -Lim_seq_minus //.
-  by apply is_lim_seq_unique.
+  apply is_lim_seq_unique in H0.
+  rewrite Lim_seq_minus in H0 ; try by intuition.
+  rewrite -(proj2 Eu) -(proj2 Ev) /= in H0 |- *.
+  apply Rbar_finite_eq in H0 ; apply Rbar_finite_eq.
+  by apply sym_eq, Rminus_diag_uniq, H0.
+  exists (Rbar_minus (Lim_seq v) (Lim_seq u)).
+  by rewrite -(proj2 Eu) -(proj2 Ev).
   apply ex_lim_seq_decr with (u O) => //.
   move => n ; apply Rle_trans with (2 := H _).
   elim: n => [ | n IH].
@@ -1066,7 +1101,6 @@ Proof.
   rewrite -plus_n_Sm ; by apply Rle_trans with (1 := Hv _).
 Qed.
 
-
 (** ** Particular limits *)
 
 (** Inverse sequence *)
@@ -1074,22 +1108,9 @@ Qed.
 Lemma is_lim_seq_inv_n :
   is_lim_seq (fun n => /INR n) 0.
 Proof.
-  intros eps.
-  assert (He : 0 <= /eps) ; 
-    [apply Rlt_le, Rinv_0_lt_compat, eps|].
-  destruct (nfloor_ex _ He) as (N,HN).
-  exists (S N) ; intros.
-  assert (Rw : (pos eps) = INR n * (eps / INR n)) ; 
-    [field ; apply Rgt_not_eq, Rlt_gt, lt_0_INR, lt_le_trans with (2 := H), lt_O_Sn 
-    | rewrite Rw ; clear Rw].
-  assert (Rw : Rabs (/ INR n - 0) = /eps * (eps/INR n)) ; 
-    [rewrite Rminus_0_r Rabs_right ; intuition ; field ; split ; 
-    [ apply Rgt_not_eq ; intuition | apply Rgt_not_eq, eps ]
-    | rewrite Rw ; clear Rw ].
-  apply Rmult_lt_compat_r.
-  unfold Rdiv ; apply Rmult_lt_0_compat ; intuition ; apply eps.
-  apply Rlt_le_trans with (1 := proj2 HN).
-  rewrite <- S_INR ; apply le_INR, H.
+  replace (Finite 0) with (Rbar_inv p_infty) by auto.
+  apply is_lim_seq_inv => //.
+  apply Rbar_is_lim_seq_id.
 Qed.
 Lemma ex_lim_seq_inv_n :
   ex_lim_seq (fun n => /INR n).
@@ -1127,8 +1148,8 @@ Proof.
   by apply is_lim_seq_geom.
 Qed.
 
-Lemma Rbar_is_lim_seq_geom_p (q : R) :
-  1 < q -> Rbar_is_lim_seq (fun n => Finite (q ^ n)) p_infty.
+Lemma is_lim_seq_geom_p (q : R) :
+  1 < q -> is_lim_seq (fun n => q ^ n) p_infty.
 Proof.
   move => Hq M /=.
   case: (fun Hq => Pow_x_infinity q Hq (M+1)) => [ | N H].
@@ -1140,21 +1161,21 @@ Proof.
   by apply Rge_le, H.
   by apply pow_le, Rlt_le, Rlt_trans with (1 := Rlt_0_1).
 Qed.
-Lemma Rbar_ex_lim_seq_geom_p (q : R) :
-  1 < q -> Rbar_ex_lim_seq (fun n => Finite (q ^ n)).
+Lemma ex_lim_seq_geom_p (q : R) :
+  1 < q -> ex_lim_seq (fun n => q ^ n).
 Proof.
-  move => Hq ; exists p_infty ; by apply Rbar_is_lim_seq_geom_p.
+  move => Hq ; exists p_infty ; by apply is_lim_seq_geom_p.
 Qed.
-Lemma Rbar_lim_seq_geom_p (q : R) :
-  1 < q -> Rbar_lim_seq (fun n => Finite (q ^ n)) = p_infty.
+Lemma Lim_seq_geom_p (q : R) :
+  1 < q -> Lim_seq (fun n => q ^ n) = p_infty.
 Proof.
   intros.
-  apply Rbar_is_lim_seq_uniq.
-  by apply Rbar_is_lim_seq_geom_p.
+  apply is_lim_seq_unique.
+  by apply is_lim_seq_geom_p.
 Qed.
 
-Lemma Rbar_ex_lim_seq_geom_m (q : R) :
-  q <= -1 -> ~ Rbar_ex_lim_seq (fun n => Finite (q ^ n)).
+Lemma ex_lim_seq_geom_m (q : R) :
+  q <= -1 -> ~ ex_lim_seq (fun n => q ^ n).
 Proof.
   move => Hq ; case ; case => [l | | ] /= H.
   case: Hq => Hq.
@@ -1264,10 +1285,13 @@ Proof.
   apply Rbar_is_limsup_liminf_lim.
   rewrite /Rbar_limsup_seq ; by case: Rbar_ex_limsup_seq.
   rewrite H ; rewrite /Rbar_liminf_seq ; by case: Rbar_ex_liminf_seq.
-  exists (Lim_seq u).
-  case: H ; case => [l | | ] H.
-  apply is_lim_seq_correct in H.
-  rewrite (is_lim_seq_unique _ _ H) => e He.
+  have : ex_lim_seq (fun n : nat => u n).
+    case: H => l H ; exists l ; by apply is_lim_seq_correct.
+  move => {H} H.
+  apply Lim_seq_correct in H.
+  exists (real (Lim_seq (fun n : nat => u n))).
+  case: (Lim_seq (fun n : nat => u n)) H => [l | | ] /= H.
+  move => e He.
   by apply (H (mkposreal e He)).
   case: (Hcv 1 Rlt_0_1) => {Hcv} Ncv Hcv.
   move: (fun n Hn => Hcv n Ncv Hn (le_refl _)) ; rewrite /R_dist => {Hcv} Hcv.
