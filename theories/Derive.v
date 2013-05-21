@@ -1,4 +1,4 @@
-Require Import Reals.
+Require Import Reals Rbar_theory.
 Require Import ssreflect.
 Require Import Lim_seq Lim_fct.
 Require Import Locally.
@@ -9,7 +9,7 @@ Open Scope R_scope.
 
 Notation is_derive f x l := (derivable_pt_lim f x l).
 Definition ex_derive f x := exists l, is_derive f x l.
-Definition Derive (f : R -> R) (x : R) := Lim (fun h => (f (x+h) - f x)/h) 0.
+Definition Derive (f : R -> R) (x : R) := real (Lim (fun h => (f (x+h) - f x)/h) 0).
 
 (** Derive is correct *)
 
@@ -19,7 +19,7 @@ Proof.
   intros.
   apply (uniqueness_step1 f x).
   apply is_lim_Coq_0.
-  apply Lim_correct.
+  apply Lim_correct'.
   exists l.
   apply is_lim_Coq_1.
   

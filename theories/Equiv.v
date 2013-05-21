@@ -24,8 +24,14 @@ Proof.
     by apply Rlt_R0_R2.
   move: (Rbar_locally_and _ _ _ H H0) => {H H0} H.
   case: a {Hf} H => [a | | ] /= [delta H].
-  case: (H a).
-  rewrite Rminus_eq0 Rabs_R0 ; by apply delta.
+  case: (H (a + delta / 2)).
+  ring_simplify (a + delta / 2 - a).
+  rewrite Rabs_pos_eq.
+  apply Rminus_lt_0 ; field_simplify ; rewrite -Rdiv_1.
+  by apply is_pos_div_2.
+  by apply Rlt_le, is_pos_div_2.
+  apply Rgt_not_eq, Rminus_lt_0 ; field_simplify ; rewrite -Rdiv_1.
+  by apply is_pos_div_2.
   by [].
   case: (H (delta+1)).
   by apply Rlt_plus_1.

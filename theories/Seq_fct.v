@@ -184,13 +184,14 @@ Definition is_connex (D : R -> Prop) :=
 Lemma CVU_limits_open (fn : nat -> R -> R) (D : R -> Prop) :
   is_open D
   -> CVU_dom fn D
-  -> (forall x n, D x -> ex_lim (fn n) x)
-  -> forall x, D x -> ex_f_lim_seq (fun n => Lim (fn n) x) 
-    /\ ex_lim (fun y => real (Lim_seq (fun n => fn n y))) x
-    /\ real (Lim_seq (fun n => Lim (fn n) x)) = Lim (fun y => real (Lim_seq (fun n => fn n y))) x.
+  -> (forall x n, D x -> ex_f_lim (fn n) x)
+  -> forall x, D x -> ex_f_lim_seq (fun n => real (Lim (fn n) x)) 
+    /\ ex_f_lim (fun y => real (Lim_seq (fun n => fn n y))) x
+    /\ real (Lim_seq (fun n => real (Lim (fn n) x)))
+      = real (Lim (fun y => real (Lim_seq (fun n => fn n y))) x).
 Proof.
   move => Ho Hfn Hex x Hx.
-  have H : ex_f_lim_seq (fun n : nat => Lim (fn n) x).
+  have H : ex_f_lim_seq (fun n : nat => real (Lim (fn n) x)).
     apply CVU_dom_cauchy in Hfn.
     apply ex_lim_seq_cauchy_corr => eps.
     case: (Hfn (pos_div_2 eps)) => {Hfn} /= N Hfn.
@@ -259,7 +260,7 @@ Proof.
   split.
   exact: H.
   apply Lim_seq_correct' in H.
-  move: (real (Lim_seq (fun n : nat => Lim (fn n) x))) H => l H.
+  move: (real (Lim_seq (fun n : nat => real (Lim (fn n) x)))) H => l H.
   have H0 : is_lim (fun y : R => real (Lim_seq (fun n : nat => fn n y))) x l.
     move => eps.
     case: (Hfn (pos_div_2 (pos_div_2 eps))) => {Hfn} /= n1 Hfn.
@@ -268,16 +269,16 @@ Proof.
     move: (fun y Hy => Hfn n y Hy (le_plus_l _ _)) => {Hfn} Hfn.
     move: (H n (le_plus_r _ _)) => {H} H.
     move: (Hex x n Hx) => {Hex} Hex.
-    apply Lim_correct in Hex.
+    apply Lim_correct' in Hex.
     case: (Hex (pos_div_2 eps)) => {Hex} /= d1 Hex.
     case: (Ho x Hx) => {Ho} /= d0 Ho.
     have Hd : 0 < Rmin d0 d1.
       apply Rmin_case ; [by apply d0 | by apply d1].
     exists (mkposreal _ Hd) => /= y Hy Hxy.
     replace (real (Lim_seq (fun n0 : nat => fn n0 y)) - l)
-      with ((Lim (fn n) x - l)
+      with ((real (Lim (fn n) x) - l)
             - (fn n y - real (Lim_seq (fun n : nat => fn n y)))
-            + (fn n y - Lim (fn n) x))
+            + (fn n y - real (Lim (fn n) x)))
       by ring.
     rewrite (double_var eps) ;
     apply Rle_lt_trans with (1 := Rabs_triang _ _), Rplus_lt_compat.
@@ -291,7 +292,8 @@ Proof.
     exact: Hxy.
   split.
   by exists l.
-  by apply sym_eq, is_lim_unique.
+  replace l with (real l) by auto.
+  by apply sym_eq, (f_equal real), is_lim_unique.
 Qed.
 Lemma CVU_cont_open (fn : nat -> R -> R) (D : R -> Prop) :
   is_open D ->
@@ -311,9 +313,9 @@ Proof.
   exact: I.
   by apply sym_not_eq, Hxy.
   exact: Hy.
-  apply Lim_correct in Hex_f.
+  apply Lim_correct' in Hex_f.
   rewrite -Heq in Hex_f => {Heq}.
-  replace (Lim_seq (fun n : nat => Lim (fn n) x))
+  replace (Lim_seq (fun n : nat => real (Lim (fn n) x)))
     with (Lim_seq (fun n : nat => (fn n) x)) in Hex_f.
   move => e He.
   case: (Hex_f (mkposreal e He)) => {Hex_f} /= delta Hex_f.
@@ -323,7 +325,8 @@ Proof.
   exact: Hy.
   by apply sym_not_eq.
   apply Lim_seq_ext => n.
-  apply sym_eq, is_lim_unique.
+  replace (fn n x) with (real (fn n x)) by auto.
+  apply sym_eq, f_equal, is_lim_unique.
   move => eps.
   case: (Hc n x Hx eps (cond_pos eps)) => {Hc} d [Hd Hc].
   exists (mkposreal d Hd) => /= y Hy Hxy.
@@ -355,7 +358,8 @@ Lemma CVU_Derive (fn : nat -> R -> R) (D : R -> Prop) :
   -> (forall n x, D x -> continuity_pt (Derive (fn n)) x)
   -> CVU_dom (fun n x => Derive (fn n) x) D
   -> (forall x , D x ->
-       (is_derive (fun y => real (Lim_seq (fun n => fn n y))) x (real (Lim_seq (fun n => Derive (fn n) x))))).
+       (is_derive (fun y => real (Lim_seq (fun n => fn n y))) x
+         (real (Lim_seq (fun n => Derive (fn n) x))))).
 Proof.
   move => Ho Hc Hfn Edn Cdn Hdn.
   
@@ -466,7 +470,7 @@ Proof.
     by apply Hz.
 
   have Lrn : forall x, D x -> (forall (y : R) (n : nat),
-    (fun h : R => D (x + h)) y -> ex_lim (rn x n) y).
+    (fun h : R => D (x + h)) y -> ex_f_lim (rn x n) y).
     intros ; exists (rn x n y) ; by intuition.
   
   move => x Hx.
@@ -543,12 +547,12 @@ Proof.
   apply Rlt_le_trans with (1 := Hh), Rmin_r.
   
   rewrite /Derive.
-  replace (Lim_seq (fun n : nat => Lim (fun h : R => (fn n (x + h) - fn n x) / h) 0))
-    with (Lim_seq (fun n : nat => Lim (rn x n) 0)).
+  replace (Lim_seq (fun n : nat => real (Lim (fun h : R => (fn n (x + h) - fn n x) / h) 0)))
+    with (Lim_seq (fun n : nat => real (Lim (rn x n) 0))).
   rewrite H1.
   case: H0 => drn H0.
   rewrite (is_lim_unique _ _ _ H0).
-  apply is_lim_unique => eps.
+  apply f_equal, is_lim_unique => eps.
   case: (H0 eps) => {H0} delta H0.
   case: (Ho x Hx) => {Ho} dx Ho.
   have H2 : 0 < Rmin delta dx.
@@ -614,7 +618,7 @@ Proof.
   apply Rlt_le_trans with (1 := Hh0), Rmin_r.
 
   apply Lim_seq_ext => n.
-  apply sym_eq, is_lim_unique.
+  apply sym_eq, f_equal, is_lim_unique.
   have Hx' : D (x + 0).
     by rewrite Rplus_0_r.
   rewrite (is_lim_unique _ _ _ (Crn x Hx n 0 Hx')).

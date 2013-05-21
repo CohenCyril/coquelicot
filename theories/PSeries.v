@@ -1751,7 +1751,10 @@ Proof.
     apply Rlt_le, Rdiv_lt_0_compat ; by apply H0.
     rewrite -(Rmult_0_r r) ; apply (is_lim_seq_scal _ _ 0) => //.
     apply (is_lim_seq_incr_1 (fun n => / INR n)).
-    apply is_lim_seq_inv_n.
+    replace (Finite 0) with (Rbar_inv p_infty) by auto.
+    apply is_lim_seq_inv.
+    by apply is_lim_seq_id.
+    by [].
     apply Rnot_lt_le in H ; case: H => H.
     contradict H.
     apply Rle_not_lt.

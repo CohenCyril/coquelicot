@@ -1024,26 +1024,24 @@ Proof.
   apply is_lim_seq_const.
 Qed.
 
-(** Inverse sequence *)
+(** Identity sequence *)
 
-Lemma is_lim_seq_inv_n :
-  is_lim_seq (fun n => /INR n) 0.
+Lemma is_lim_seq_id :
+  is_lim_seq INR p_infty.
 Proof.
-  replace (Finite 0) with (Rbar_inv p_infty) by auto.
-  apply is_lim_seq_inv => //.
   apply Rbar_is_lim_seq_id.
 Qed.
-Lemma ex_lim_seq_inv_n :
-  ex_lim_seq (fun n => /INR n).
+Lemma ex_lim_seq_id :
+  ex_lim_seq INR.
 Proof.
-  exists 0 ; by apply is_lim_seq_inv_n.
+  exists p_infty ; by apply is_lim_seq_id.
 Qed.
-Lemma Lim_seq_inv_n (a : R) :
-  Lim_seq (fun n => /INR n) = 0.
+Lemma Lim_seq_id :
+  Lim_seq INR = p_infty.
 Proof.
   intros.
   apply is_lim_seq_unique.
-  apply is_lim_seq_inv_n.
+  apply is_lim_seq_id.
 Qed.
 
 (** Absolute value *)
@@ -1207,6 +1205,34 @@ Proof.
   apply is_lim_seq_Un_cv, continuity_seq.
   apply Cf.
   by apply is_lim_seq_Un_cv.
+Qed.
+
+(** Rbar_loc_seq is a good sequence *)
+
+Lemma is_lim_seq_Rbar_loc_seq (x : Rbar) :
+  is_lim_seq (Rbar_loc_seq x) x.
+Proof.
+  case: x => [x | | ].
+  evar (l : Rbar).
+  pattern (Finite x) at 2.
+  replace (Finite x) with l.
+  apply is_lim_seq_plus.
+  by apply is_lim_seq_const.
+  apply is_lim_seq_inv.
+  apply is_lim_seq_plus.
+  by apply is_lim_seq_id.
+  by apply is_lim_seq_const.
+  by [].
+  by [].
+  by [].
+  rewrite /l /= ; by apply Rbar_finite_eq, Rplus_0_r.
+  apply is_lim_seq_id.
+  evar (l : Rbar).
+  pattern m_infty at 2.
+  replace m_infty with l.
+  apply is_lim_seq_opp.
+  by apply is_lim_seq_id.
+  by [].
 Qed.
 
 (** * A new theorem R_complete *)

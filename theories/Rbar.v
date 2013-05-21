@@ -734,7 +734,8 @@ Qed.
 
 Definition Rbar_locally (P : R -> Prop) (a : Rbar) :=
   match a with
-    | Finite a => exists delta : posreal, forall x, Rabs (x-a) < delta -> P x
+    | Finite a => exists delta : posreal, 
+	forall x, Rabs (x-a) < delta -> x <> a -> P x
     | p_infty => exists M : R, forall x, M < x -> P x
     | m_infty => exists M : R, forall x, x < M -> P x
   end.
@@ -743,7 +744,7 @@ Lemma Rbar_locally_forall (P : R -> Prop) (a : Rbar) :
   (forall x, P x) -> Rbar_locally P a.
 Proof.
   case: a => [a | | ] H ;
-  exists (mkposreal _ Rlt_0_1) => /= x _ ; by apply H.
+  exists (mkposreal _ Rlt_0_1) => /= x _ ; by intuition.
 Qed.
 
 Lemma Rbar_locally_imply (P Q : R -> Prop) (a : Rbar) :
@@ -753,11 +754,13 @@ Proof.
   case: a => /= [a | | ] [d0 Hpq] [d1 Hp].
   have Hd : 0 < Rmin d0 d1.
     apply Rmin_case ; [by apply d0 | by apply d1].
-  exists (mkposreal (Rmin d0 d1) Hd) => /= x H.
+  exists (mkposreal (Rmin d0 d1) Hd) => /= x H Hxa.
   apply: Hpq.
   apply Rlt_le_trans with (1 := H), Rmin_l.
+  apply: Hxa.
   apply: Hp.
   apply Rlt_le_trans with (1 := H), Rmin_r.
+  apply: Hxa.
   exists (Rmax d0 d1) => /= x H.
   apply: Hpq.
   apply Rle_lt_trans with (2 := H), Rmax_l.
@@ -777,11 +780,13 @@ Proof.
   case: a => /= [a | | ] [d0 Hp] [d1 Hq].
   have Hd : 0 < Rmin d0 d1.
     apply Rmin_case ; [by apply d0 | by apply d1].
-  exists (mkposreal (Rmin d0 d1) Hd) => /= x H ; split.
+  exists (mkposreal (Rmin d0 d1) Hd) => /= x H Hxa ; split.
   apply: Hp.
   apply Rlt_le_trans with (1 := H), Rmin_l.
+  apply: Hxa.
   apply: Hq.
   apply Rlt_le_trans with (1 := H), Rmin_r.
+  apply: Hxa.
   exists (Rmax d0 d1) => /= x H ; split.
   apply: Hp.
   apply Rle_lt_trans with (2 := H), Rmax_l.
@@ -854,6 +859,9 @@ Proof.
   by apply Rplus_le_compat_r, le_INR.
   by apply Rgt_not_eq, delta.
   by apply Rlt_le, RinvN_pos.
+  apply Rgt_not_eq, Rminus_lt_0.
+  ring_simplify.
+  by apply RinvN_pos.
 (* x = p_infty *)
   case: (nfloor_ex (Rmax 0 delta)) => [ | N [_ HN]].
   by apply Rmax_l.
