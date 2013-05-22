@@ -623,6 +623,15 @@ Proof.
   by rewrite -is_Rbar_mult_opp_l Rbar_opp_involutive is_Rbar_mult_opp_r.
 Qed.
 
+(** the function *)
+
+Lemma Rbar_mult_comm (x y : Rbar) :
+  Rbar_mult x y = Rbar_mult y x.
+Proof.
+  case: x => [x | | ] ; case: y => [y | | ] //=.
+  by apply Rbar_finite_eq, Rmult_comm.
+Qed.
+
 (** ** Rbar_div *)
 
 (** the predicate *)

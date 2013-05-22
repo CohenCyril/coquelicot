@@ -274,6 +274,37 @@ Qed.
 
 (** Multiplication of functions *)
 
+Lemma derivable_pt_lim_inv (f : R -> R) (x l : R) :
+  is_derive f x l -> f x <> 0
+    -> is_derive (fun y => / f y) x (-l/(f x)^2).
+Proof.
+  move => Hf Hl.
+  search_derive.
+  apply is_derive_ext with (fun y => 1/f y).
+  move => t ; by rewrite /Rdiv Rmult_1_l.
+  apply derivable_pt_lim_div.
+  apply derivable_pt_lim_const.
+  apply Hf.
+  apply Hl.
+  rewrite /Rsqr ; by field.
+Qed.
+Lemma ex_derive_inv (f : R -> R) (x : R) :
+  ex_derive f x -> f x <> 0
+    -> ex_derive (fun y => / f y) x.
+Proof.
+  case => l Hf Hl.
+  exists (-l/(f x)^2).
+  by apply derivable_pt_lim_inv.
+Qed.
+Lemma Derive_inv  (f : R -> R) (x : R) :
+  ex_derive f x -> f x <> 0
+    -> Derive (fun y => / f y) x = - Derive f x / (f x) ^ 2.
+Proof.
+  move/Derive_correct => Hf Hl.
+  apply is_derive_unique.
+  by apply derivable_pt_lim_inv.
+Qed.
+
 Lemma ex_derive_scal :
   forall f k x, ex_derive f x ->
   ex_derive (fun x => k * f x) x.
