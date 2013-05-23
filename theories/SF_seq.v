@@ -1,11 +1,12 @@
 Require Import Reals.
 Require Import ssreflect seq.
+Require Import ssrbool.
 
 Open Scope R_scope.
 
 (** * more in sdtlib and ssreflect *)
 (** Notations *)
-Lemma SSR_leq (n m : nat) : ssrbool.is_true (ssrnat.leq n m) <-> (n <= m)%nat.
+Lemma SSR_leq (n m : nat) : is_true (ssrnat.leq n m) <-> (n <= m)%nat.
 Proof.
   set H := (@ssrnat.leP n m) ; case: H => H //=.
 Qed.
@@ -641,12 +642,12 @@ Proof.
 Qed.
 
 Lemma SF_size_f1 {T : Type} (f1 : R -> T) P x0 :
-  SF_size (SF_seq_f1 f1 P x0) = pred (size P).
+  SF_size (SF_seq_f1 f1 P x0) = Peano.pred (size P).
 Proof.
   case: P => [| h P] //= ; by rewrite /SF_size /= size_pairmap.
 Qed.
 Lemma SF_size_f2 {T : Type} (f2 : R -> R -> T) P x0 :
-  SF_size (SF_seq_f2 f2 P x0) = pred (size P).
+  SF_size (SF_seq_f2 f2 P x0) = Peano.pred (size P).
 Proof.
   case: P => [| h P] //= ; by rewrite /SF_size /= size_pairmap.
 Qed.

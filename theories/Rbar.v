@@ -756,6 +756,25 @@ Proof.
   exists (mkposreal _ Rlt_0_1) => /= x _ ; by intuition.
 Qed.
 
+Lemma Rbar_locally_const (a : Rbar) (P : Prop) :
+  Rbar_locally (fun _ => P) a -> P.
+Proof.
+  case: a => [a | | ] [d H].
+  apply (H (a+d/2)).
+  ring_simplify (a + d / 2 - a).
+  rewrite Rabs_pos_eq.
+  apply Rminus_lt_0.
+  field_simplify ; rewrite -Rdiv_1.
+  by apply is_pos_div_2.
+  apply Rlt_le, is_pos_div_2.
+  apply Rgt_not_eq, Rminus_lt_0 ; ring_simplify.
+  by apply is_pos_div_2.
+  apply (H (d+1)).
+  by apply Rlt_plus_1.
+  apply (H (d-1)).
+  by apply Rlt_minus_l, Rlt_plus_1.
+Qed.
+
 Lemma Rbar_locally_imply (P Q : R -> Prop) (a : Rbar) :
   Rbar_locally (fun x => P x -> Q x) a -> Rbar_locally P a
     -> Rbar_locally Q a.

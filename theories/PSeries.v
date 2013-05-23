@@ -1,4 +1,4 @@
-Require Import Reals Even Div2 MinMax ssreflect.
+Require Import Reals Even Div2 ssreflect.
 Require Import Lim_seq Floor Rcomplements Rbar_theory Sup_seq Total_sup.
 Require Import Lim_fct Derive Differential RInt Taylor Locally Seq_fct Series.
 

@@ -69,7 +69,7 @@ apply Rlt_eps2_eps.
 apply cond_pos.
 intros u v.
 unfold P.
-edestruct (Rlt_dec _ _) ; [left|right] ; eassumption.
+edestruct (Rlt_dec (Rabs (f u v - f x y)) (pos_div_2 eps)) ; [left|right] ; eassumption.
 Qed.
 
 Lemma uniform_continuity_2d_1d :
@@ -136,7 +136,7 @@ apply Rlt_eps2_eps.
 apply cond_pos.
 intros u v.
 unfold P.
-edestruct (Rlt_dec _ _) ; [left|right] ; eassumption.
+edestruct (Rlt_dec (Rabs (f u v - f x c)) (pos_div_2 eps)) ; [left|right] ; eassumption.
 Qed.
 
 Lemma uniform_continuity_2d_1d' :

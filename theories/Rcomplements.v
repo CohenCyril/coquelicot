@@ -19,6 +19,31 @@ Proof.
   apply INRp1_pos.
 Qed.
 
+Lemma Rle_pow_lin (a : R) (n : nat) :
+  0 <= a -> 1 + INR n * a <= (1 + a) ^ n.
+Proof.
+  intro Ha.
+  induction n.
+  apply Req_le ; simpl ; ring.
+  rewrite S_INR.
+  replace (1 + (INR n + 1) * a) with ((1 + INR n * a) + a) by ring.
+  apply Rle_trans with ((1 + a) ^ n + a).
+  apply Rplus_le_compat_r.
+  exact IHn.
+  replace ((1+a)^(S n)) with ((1+a)^n + a * (1+a)^n) by (simpl ; ring).
+  apply Rplus_le_compat_l.
+  pattern a at 1.
+  rewrite <- (Rmult_1_r a).
+  apply Rmult_le_compat_l.
+  exact Ha.
+  clear IHn.
+  apply pow_R1_Rle.
+  pattern 1 at 1.
+  rewrite <- (Rplus_0_r 1).
+  apply Rplus_le_compat_l.
+  exact Ha.
+Qed.
+
 (** * Operations on Rdiv *)
 (** Rewritings *)
 
