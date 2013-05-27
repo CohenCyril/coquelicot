@@ -108,12 +108,48 @@ Proof.
   by apply Hf.
 Qed.
 
+Lemma equiv_sym (f g : R -> R) (a : Rbar) :
+  is_equiv f g a -> is_equiv g f a.
+Proof.
+  intros H.
+  apply (prepond_rw_l _ _ (fun x : R => f x - g x) _ H).
+  move => eps ; move: (H eps).
+  apply Rbar_locally_imply, Rbar_locally_forall => x Hx.
+  by rewrite -Rabs_Ropp Ropp_minus_distr'.
+Qed.
+
+
 Lemma prepond_rw_r (f g1 g2 : R -> R) (a : Rbar) :
   is_equiv g1 g2 a -> (is_prepond f a g1 <-> is_prepond f a g2).
 Proof.
-  intros Hg ; split => Hf eps.
+  assert (forall g1 g2,  is_equiv g1 g2 a -> is_prepond f a g2 -> is_prepond f a g1).
+  clear g1 g2; intros g1 g2 Hg Hf eps.
   rewrite /is_equiv in Hg.
-Admitted. (** Admitted *)
+  rewrite /is_prepond in Hg Hf.
+  specialize (Hg (mkposreal _ Rlt_0_1)); simpl in Hg.
+  specialize (Hf (pos_div_2 eps)).
+  apply Rbar_locally_imply with (2:=Hf).
+  apply Rbar_locally_imply with (2:=Hg).
+  apply Rbar_locally_forall.
+  intros x H1 H2.
+  replace (g1 x) with (-(g2 x - g1 x) + g2 x) by ring.
+  apply Rle_trans with (1:=Rabs_triang _ _).
+  rewrite Rabs_Ropp.
+  apply Rle_trans with (1 * Rabs (g2 x)+ Rabs (g2 x)).
+  now apply Rplus_le_compat_r.
+  apply Rle_trans with (2*Rabs (g2 x));[right; ring|idtac].
+  apply Rle_trans with (2*(pos_div_2 eps * Rabs (f x))).
+  apply Rmult_le_compat_l.
+  left; apply Rlt_0_2.
+  apply H2.
+  right; unfold pos_div_2; simpl; field.
+  intros H'; split.
+  apply H.
+  now apply equiv_sym.
+  now apply H.
+Qed.
+
+
 
 (** ** Be equivalent is a relation of equivalence *)
 
@@ -128,15 +164,7 @@ Proof.
   by apply Rabs_pos.
 Qed.
 
-Lemma equiv_sym (f g : R -> R) (a : Rbar) :
-  is_equiv f g a -> is_equiv g f a.
-Proof.
-  intros H.
-  apply (prepond_rw_l _ _ (fun x : R => f x - g x) _ H).
-  move => eps ; move: (H eps).
-  apply Rbar_locally_imply, Rbar_locally_forall => x Hx.
-  by rewrite -Rabs_Ropp Ropp_minus_distr'.
-Qed.
+
 
 Lemma equiv_trans (f g h : R -> R) (a : Rbar) :
   is_equiv f g a -> is_equiv g h a -> is_equiv f h a.

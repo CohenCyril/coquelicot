@@ -339,13 +339,13 @@ Qed.
   -> (forall x, a <= x <= b -> is_derive F x (Lim_seq (fun n => fn n x))) -> (F a = 0)
   -> CVU_dom Fn (fun x => a <= x <= b) 
     /\ (forall x, a <= x <= b -> Lim_seq (fun n => Fn n x) = F x).
-Admitted. (** Admitted *)
+
 Lemma CVU_Rint (fn : nat -> R -> R) (a b : R) (Hab : a < b) :
   CVU_dom fn (fun x => a <= x <= b)
   -> (forall n, forall x, a <= x <= b -> continuity_pt (fn n) x)
   -> CVU_dom (fun n x => RInt (fn n) a x) (fun x => a <= x <= b) 
     /\ (forall x, a <= x <= b -> Lim_seq (fun n => RInt (fn n) a x) = RInt (fun y => Lim_seq (fun n => fn n y)) a x).
-Admitted. (** Admitted *)*)
+*)
 Lemma CVU_Derive (fn : nat -> R -> R) (D : R -> Prop) :
   is_open D -> is_connex D
   -> CVU_dom fn D
