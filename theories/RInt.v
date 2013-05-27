@@ -121,11 +121,13 @@ Lemma RInt_part_bound (a b : R) (n : nat) :
 Proof.
   apply (@eq_from_nth R 0) ; rewrite ?size_rev ?size_mkseq => // ;
   move => i Hi ; apply SSR_leq in Hi.
-  rewrite nth_rev ?SSR_leq ?SSR_minus ?size_mkseq => //.
-  rewrite ?nth_mkseq ?SSR_leq => //.
+  rewrite nth_rev ?SSR_minus ?size_mkseq.
+  2: now apply SSR_leq.
+  rewrite ?nth_mkseq.
+  3: now apply SSR_leq.
   rewrite minus_INR ?S_INR => // ; field.
   apply Rgt_not_eq, INRp1_pos.
-  apply INR_le ; rewrite ?S_INR minus_INR ?S_INR => //.
+  apply SSR_leq, INR_le ; rewrite ?S_INR minus_INR ?S_INR => //.
   apply Rminus_le_0 ; ring_simplify.
   apply pos_INR.
 Qed.
@@ -1089,8 +1091,8 @@ Proof.
   exact: Rle_refl.
   apply Rle_ge, Rdiv_le_0_compat ; [ by apply Rlt_le, Rgt_minus | by intuition ].
   apply IH => i Hi ; exact: (Hnth (S i) (lt_n_S _ _ Hi)).
-  rewrite size_mkseq => i Hi ;
-  rewrite ?nth_mkseq ?SSR_leq ?S_INR.
+  rewrite size_mkseq => i Hi.
+  rewrite ?nth_mkseq ?S_INR ; try apply SSR_leq.
   field ; apply Rgt_not_eq ; by intuition.
   exact: lt_le_weak.
   exact: Hi.
@@ -1130,8 +1132,8 @@ Proof.
     move => i ; revert ptd Hex.
     have : sorted Rlt (RInt_part a b n).
       apply sorted_nth => j Hj x0.
-      rewrite size_mkseq /= in Hj ;
-      rewrite ?nth_mkseq ?S_INR ?SSR_leq /=.
+      rewrite size_mkseq /= in Hj.
+      rewrite ?nth_mkseq ?S_INR /= ; try apply SSR_leq.
       apply Rminus_gt ; field_simplify.
       rewrite Rplus_comm -Rdiv_1 ; apply Rdiv_lt_0_compat.
       exact: Rgt_minus.
