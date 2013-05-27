@@ -5,7 +5,7 @@ Open Scope R_scope.
 
 (** * more in sdtlib and ssreflect *)
 (** Notations *)
-Lemma SSR_leq (n m : nat) : ssrbool.is_true (ssrnat.leq n m) <-> (n <= m)%nat.
+Lemma SSR_leq (n m : nat) : is_true (ssrnat.leq n m) <-> (n <= m)%nat.
 Proof.
   set H := (@ssrnat.leP n m) ; case: H => H //=.
 Qed.

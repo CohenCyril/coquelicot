@@ -1,6 +1,6 @@
 Require Import Reals.
-Require Import ssreflect ssrbool seq.
 Require Import Rcomplements Locally Derive RInt Differential Integral Continuity.
+Require Import ssreflect ssrbool seq Datatypes.
 
 Fixpoint Rn n T :=
   match n with
@@ -277,11 +277,11 @@ move: H1.
 replace (orb (ssrnat.eqn n 0) (is_const e1 n)) with
   (orb (ssrnat.eqn n 0) (andb (negb (ssrnat.eqn n 0)) (is_const e1 n))).
 move /ssrbool.orP => [H1|].
-rewrite 2!set_set_nth.
+rewrite set_set_nth (set_set_nth 0 l n x2).
 rewrite -ssrnat.eqnE H1.
 now rewrite (IHe2 n H2 l x1 x2).
 move /ssrbool.andP => [H1 H3].
-rewrite 2!set_set_nth.
+rewrite set_set_nth (set_set_nth 0 l n x2).
 rewrite -ssrnat.eqnE (ssrbool.negbTE H1).
 rewrite (IHe2 n H2 l x1 x2).
 now apply IHe1.
@@ -535,9 +535,11 @@ apply filter_uniq.
 apply iota_uniq.
 Qed.
 
-(*Lemma index_not_const_correct :
+Canonical ssrnat.nat_eqType.
+
+Lemma index_not_const_correct :
   forall n l (k : nat),
-  not (in_mem k (mem (T:=ssrnat.nat_eqType) (uniq_index_not_const l n))) ->
+  not (in_mem k (mem (index_not_const l n))) ->
   is_const (nth (Cst 0) l k) n = true.
 Proof.
 intros n l k.
@@ -552,7 +554,7 @@ rewrite nth_default //.
 revert E.
 rewrite ssrnat.ltnNge.
 now case ssrnat.leq.
-Qed.*)
+Qed.
 
 Lemma interp_AppExt_set_nth_not_const :
   forall k f le l n x,
@@ -563,8 +565,8 @@ Proof.
 intros k f le l n x.
 simpl.
 apply apply_ext => m _.
-(*generalize (index_not_const_correct n le m).
-induction (index_not_const le n).
+generalize (index_not_const_correct n le m).
+induction (index_not_const le n) as [|t s IHs].
 simpl => Hp.
 case (ssrnat.leqP (size le) m) => Hs.
 rewrite 2?nth_default ?size_map //.
@@ -580,8 +582,7 @@ case (ssrnat.leqP (size le) t) => Hs.
 now rewrite 2?nth_default ?size_map.
 now rewrite (nth_map (Cst 0)).
 simpl.
-apply IHs.*)
-admit.
+apply IHs.
 Qed.
 
 Fixpoint D (e : expr) n {struct e} : expr * domain :=
@@ -743,7 +744,7 @@ move: (Dle v1 n l).
 case (D (nth (Cst 0) le v1)) => /= [d1 d2] Dle1.
 case (ssrnat.leqP (size le) v2) => Hv2.
 rewrite nth_default ?size_map //.
-now intros (_&_&_&F).
+now intros (_&_&_&F&_).
 rewrite (nth_map (Cst 0)) //.
 move: (Dle v2 n l).
 case (D (nth (Cst 0) le v2)) => /= [d3 d4] Dle2 {Dle} [[H1 H2] [H3 [H4 [H5 _]]]].
@@ -768,7 +769,7 @@ rewrite -ssrnat.eqnE.
 case E: (ssrnat.eqn p v1) => //.
 case E': (ssrnat.eqn p v2) => //.
 now rewrite (ssrnat.eqnP E').
-rewrite /Derive_Rn -(is_derive_unique _ _ _ (Derive_correct _ _ H1')).
+rewrite /Derive_Rn.
 rewrite -(nth_map (Cst 0) 0 (interp l) Hv1).
 rewrite -(nth_map (Cst 0) 0 (interp l) Hv2).
 rewrite -(Derive_ext (fun x => g x (nth 0 (map (interp l) le) v2))).
@@ -1431,7 +1432,7 @@ have: (foldr (fun d acc => interp_domain l d /\ acc) True (foldr f nil ld)).
 by move: (foldr f nil ld) H' => [|h [|s]].
 clear H'.
 revert H.
-induction ld => H.
+induction ld as [|t] => H.
 easy.
 simpl in H |- *.
 destruct H as (Ha,Hb).
