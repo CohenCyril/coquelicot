@@ -1,6 +1,6 @@
 Require Import Reals Rbar_theory Rcomplements.
 Require Import Lim_seq ssreflect.
-Require Import Locally.
+Require Import Locally Total_sup.
 Open Scope R_scope.
 
 (** * Limit *)
@@ -328,6 +328,23 @@ Proof.
   by apply Hf.
 Qed.
 
+
+Lemma is_lim_le_le_loc (f g h : R -> R) (x : Rbar) (l : R) :
+  is_lim f x l -> is_lim g x l
+  -> Rbar_locally (fun y => f y <= h y <= g y) x
+  -> is_lim h x l.
+Proof.
+  move => /= Hf Hg H eps.
+  move: H ; apply Rbar_locally_imply.
+  move: (Hg eps) => {Hg} ; apply Rbar_locally_imply.
+  move: (Hf eps) => {Hf} ; apply Rbar_locally_imply.
+  apply Rbar_locally_forall => y Hf Hg H.
+  apply Rabs_lt_between' ; split.
+  apply Rlt_le_trans with (2 := proj1 H).
+  by apply Rabs_lt_between', Hf.
+  apply Rle_lt_trans with (1 := proj2 H).
+  by apply Rabs_lt_between', Hg.
+Qed.
 
 (** Composition *)
 
@@ -1216,6 +1233,592 @@ Proof.
   move => Hf.
   apply is_lim_unique.
   by apply is_lim_continuity.
+Qed.
+
+(** Generalized intermediate value theorem *)
+
+Lemma IVT_gen (f : R -> R) (a b y : R) :
+  continuity f -> a < b
+  -> f a < y < f b
+  -> { x : R | a < x < b /\ f x = y }.
+Proof.
+  intros Hf Hab H.
+  case (IVT (fun x => f x - y) a b).
+  apply continuity_minus.
+  exact Hf.
+  apply continuity_const.
+  intros _ _ ; reflexivity.
+  exact Hab.
+  apply Rlt_minus_l ; rewrite Rplus_0_l ; apply H.
+  apply Rlt_minus_r ; rewrite Rplus_0_l ; apply H.
+  intros x [Hx Hfx].
+  apply Rminus_diag_uniq in Hfx.
+  exists x ; split.
+  destruct Hx.
+  split.
+  apply Rle_lt_or_eq_dec in H0 ; destruct H0.
+  exact r.
+  rewrite <- e in Hfx ; contradict Hfx.
+  apply Rlt_not_eq, H.
+  apply Rle_lt_or_eq_dec in H1 ; destruct H1.
+  exact r.
+  rewrite e in Hfx ; contradict Hfx.
+  apply Rgt_not_eq, H.
+  exact Hfx.
+Qed.
+
+Lemma IVT_Rbar_gen (f : R -> R) (a b la lb : Rbar) (y : R) :
+  is_lim f a la -> is_lim f b lb
+  -> (forall (x : R), Rbar_lt a x -> Rbar_lt x b -> continuity_pt f x)
+  -> (forall (x y : R), Rbar_lt a x -> x < y -> Rbar_lt y b -> f x < f y)
+  -> Rbar_lt a b
+  -> Rbar_lt la y /\ Rbar_lt y lb
+  -> {x : R | Rbar_lt a x /\ Rbar_lt x b /\ f x = y}.
+Proof.
+  move => Hfa Hfb Cf Crf Hab Hy.
+  
+  suff Hex : (exists x : R, Rbar_lt a x /\ Rbar_lt x b /\ f x <= y).
+  suff Hbound : bound (fun x => Rbar_lt a x /\ Rbar_lt x b /\ f x <= y).
+  case: (completeness _ Hbound Hex) => x [Hub Hlub].
+  exists x.
+
+  have Hax : Rbar_lt a x.
+    case Ha : a Hab Hfa Hub => [a' | | ] // Hab Hfa Hub.
+    case Hla : la Hy Hfa => [la' | | ] [Hy _] Hfa //.
+    apply Rminus_lt_0 in Hy.
+    case: (Hfa (mkposreal _ Hy)) => //= delta {Hfa} Hfa.
+    case Hb : b Hab Hub => [b' | | ] //= Hab Hub.
+    apply Rlt_le_trans with (Rmin (a' + delta / 2) ((a'+b')/2)).
+    apply Rmin_case.
+    apply Rminus_lt_0 ; ring_simplify ; by apply is_pos_div_2.
+    pattern a' at 1 ; replace a' with ((a'+a')/2) by field.
+    apply Rmult_lt_compat_r ; intuition.
+    apply Hub.
+    repeat split.
+    apply Rmin_case.
+    apply Rminus_lt_0 ; ring_simplify ; by apply is_pos_div_2.
+    pattern a' at 1 ; replace a' with ((a'+a')/2) by field.
+    apply Rmult_lt_compat_r ; intuition.
+    apply Rle_lt_trans with (1 := Rmin_r _ _).
+    pattern b' at 2 ; replace b' with ((b'+b')/2) by field.
+    apply Rmult_lt_compat_r ; intuition.
+    apply Rlt_le, (Rplus_lt_reg_r (-la')).
+    rewrite ?(Rplus_comm (-la')).
+    apply Rle_lt_trans with (1 := Rle_abs _).
+    apply Hfa.
+    rewrite /Rminus (Rplus_min_distr_r (-a')).
+    ring_simplify (a' + delta / 2 + - a').
+    field_simplify ((a' + b') / 2 + - a').
+    rewrite Rabs_pos_eq.
+    apply Rle_lt_trans with (1 := Rmin_l _ _).
+    apply Rminus_lt_0 ; field_simplify ; rewrite -Rdiv_1 ; by apply is_pos_div_2.
+    apply Rmin_case.
+    apply Rlt_le ; by apply is_pos_div_2.
+    apply Rdiv_le_0_compat.
+    rewrite Rplus_comm Rle_minus_r Rplus_0_l.
+    by apply Rlt_le.
+    by apply Rlt_0_2.
+    apply Rgt_not_eq.
+    apply Rmin_case.
+    apply Rminus_lt_0 ; ring_simplify ; by apply is_pos_div_2.
+    pattern a' at 2 ; replace a' with ((a'+a')/2) by field.
+    apply Rmult_lt_compat_r ; intuition.
+    apply Rlt_le_trans with (a' + delta / 2).
+    apply Rminus_lt_0 ; ring_simplify ; by apply is_pos_div_2.
+    apply Hub.
+    repeat split.
+    apply Rminus_lt_0 ; ring_simplify ; by apply is_pos_div_2.
+    apply Rlt_le, (Rplus_lt_reg_r (-la')).
+    rewrite ?(Rplus_comm (-la')).
+    apply Rle_lt_trans with (1 := Rle_abs _).
+    apply Hfa.
+    ring_simplify (a' + delta / 2 - a').
+    rewrite Rabs_pos_eq.
+    apply Rminus_lt_0 ; field_simplify ; rewrite -Rdiv_1 ; by apply is_pos_div_2.
+    apply Rlt_le ; by apply is_pos_div_2.
+    apply Rgt_not_eq.
+    apply Rminus_lt_0 ; ring_simplify ; by apply is_pos_div_2.
+    case: (Hfa y) => {Hfa} delta Hfa.
+    case Hb : b Hab Hub => [b' | | ] //= Hab Hub.
+    apply Rlt_le_trans with (Rmin (a' + delta / 2) ((a'+b')/2)).
+    apply Rmin_case.
+    apply Rminus_lt_0 ; ring_simplify ; by apply is_pos_div_2.
+    pattern a' at 1 ; replace a' with ((a'+a')/2) by field.
+    apply Rmult_lt_compat_r ; intuition.
+    apply Hub.
+    repeat split.
+    apply Rmin_case.
+    apply Rminus_lt_0 ; ring_simplify ; by apply is_pos_div_2.
+    pattern a' at 1 ; replace a' with ((a'+a')/2) by field.
+    apply Rmult_lt_compat_r ; intuition.
+    apply Rle_lt_trans with (1 := Rmin_r _ _).
+    pattern b' at 2 ; replace b' with ((b'+b')/2) by field.
+    apply Rmult_lt_compat_r ; intuition.
+    apply Rlt_le, Hfa.
+    rewrite /Rminus (Rplus_min_distr_r (-a')).
+    ring_simplify (a' + delta / 2 + - a').
+    field_simplify ((a' + b') / 2 + - a').
+    rewrite Rabs_pos_eq.
+    apply Rle_lt_trans with (1 := Rmin_l _ _).
+    apply Rminus_lt_0 ; field_simplify ; rewrite -Rdiv_1 ; by apply is_pos_div_2.
+    apply Rmin_case.
+    apply Rlt_le ; by apply is_pos_div_2.
+    apply Rdiv_le_0_compat.
+    rewrite Rplus_comm Rle_minus_r Rplus_0_l.
+    by apply Rlt_le.
+    by apply Rlt_0_2.
+    apply Rgt_not_eq.
+    apply Rmin_case.
+    apply Rminus_lt_0 ; ring_simplify ; by apply is_pos_div_2.
+    pattern a' at 2 ; replace a' with ((a'+a')/2) by field.
+    apply Rmult_lt_compat_r ; intuition.
+    apply Rlt_le_trans with (a' + delta / 2).
+    apply Rminus_lt_0 ; ring_simplify ; by apply is_pos_div_2.
+    apply Hub.
+    repeat split.
+    apply Rminus_lt_0 ; ring_simplify ; by apply is_pos_div_2.
+    apply Rlt_le, Hfa.
+    ring_simplify (a' + delta / 2 - a').
+    rewrite Rabs_pos_eq.
+    apply Rminus_lt_0 ; field_simplify ; rewrite -Rdiv_1 ; by apply is_pos_div_2.
+    apply Rlt_le ; by apply is_pos_div_2.
+    apply Rgt_not_eq.
+    apply Rminus_lt_0 ; ring_simplify ; by apply is_pos_div_2.
+  split => //.
+  have Hxb : Rbar_lt x b.
+    case Hb : b Crf Hab Hfb Hlub => [b' | | ] // Crf Hab Hfb Hlub.
+    case Hlb : lb Hy Hfb => [lb' | | ] [_ Hy] Hfb //.
+    apply Rminus_lt_0 in Hy.
+    case: (Hfb (mkposreal _ Hy)) => //= delta {Hfb} Hfb.
+    case Ha : a Crf Hab Hlub => [a' | | ] //= Crf Hab Hlub.
+    apply Rle_lt_trans with (Rmax (b' - delta / 2) ((a'+b')/2)).
+    apply: Hlub => z Hz.
+    suff H : f z <= f (Rmax (b' - delta / 2) ((a' + b') / 2)).
+      apply Rnot_lt_le ; contradict H ; apply Rlt_not_le.
+      apply: Crf.
+      apply Rlt_le_trans with (2 := Rmax_r _ _).
+      pattern a' at 1 ; replace a' with ((a'+a') / 2) by field.
+      apply Rmult_lt_compat_r ; intuition.
+      by apply H.
+      by apply Hz.
+    apply Rlt_le.
+    apply Rle_lt_trans with y.
+    by apply Hz.
+    apply Rplus_lt_reg_r with (-lb').
+    apply Ropp_lt_cancel.
+    apply Rle_lt_trans with (1 := Rle_abs _).
+    rewrite Rabs_Ropp Ropp_plus_distr Ropp_involutive Rplus_comm.
+    apply Hfb.
+    rewrite /Rminus Rplus_max_distr_r.
+    ring_simplify (b' + - (delta / 2) + - b').
+    field_simplify ((a' + b') / 2 + - b').
+    replace ((a' - b') / 2) with (-((b'-a')/2)) by field.
+    rewrite Rmax_opp_Rmin Rabs_Ropp Rabs_pos_eq.
+    apply Rle_lt_trans with (1 := Rmin_l _ _).
+    apply Rminus_lt_0 ; field_simplify ; rewrite -Rdiv_1 ;
+    by apply is_pos_div_2.
+    apply Rlt_le, Rmin_case.
+    by apply is_pos_div_2.
+    apply Rdiv_lt_0_compat.
+    by apply -> Rminus_lt_0.
+    by apply Rlt_0_2.
+    apply Rlt_not_eq.
+    apply Rmax_case.
+    apply Rminus_lt_0 ; field_simplify ; rewrite -Rdiv_1 ;
+    by apply is_pos_div_2.
+    pattern b' at 2 ; replace b' with ((b'+b')/2) by field.
+    apply Rmult_lt_compat_r ; intuition.
+    apply Rmax_case.
+    apply Rminus_lt_0 ; field_simplify ; rewrite -Rdiv_1 ;
+    by apply is_pos_div_2.
+    pattern b' at 2 ; replace b' with ((b'+b')/2) by field.
+    apply Rmult_lt_compat_r ; intuition.
+    apply Rle_lt_trans with (b' - delta / 2).
+    apply: Hlub => z Hz.
+    suff H : f z <= f (b' - delta / 2).
+      apply Rnot_lt_le ; contradict H ; apply Rlt_not_le.
+      apply: Crf.
+      by [].
+      by apply H.
+      by apply Hz.
+    apply Rlt_le.
+    apply Rle_lt_trans with y.
+    by apply Hz.
+    apply Rplus_lt_reg_r with (-lb').
+    apply Ropp_lt_cancel.
+    apply Rle_lt_trans with (1 := Rle_abs _).
+    rewrite Rabs_Ropp Ropp_plus_distr Ropp_involutive Rplus_comm.
+    apply Hfb.
+    ring_simplify (b' - (delta / 2) - b').
+    rewrite Rabs_Ropp Rabs_pos_eq.
+    apply Rminus_lt_0 ; field_simplify ; rewrite -Rdiv_1 ;
+    by apply is_pos_div_2.
+    apply Rlt_le, is_pos_div_2.
+    apply Rlt_not_eq.
+    apply Rminus_lt_0 ; field_simplify ; rewrite -Rdiv_1 ;
+    by apply is_pos_div_2.
+    apply Rminus_lt_0 ; field_simplify ; rewrite -Rdiv_1 ;
+    by apply is_pos_div_2.
+    case: (Hfb y) => //= delta {Hfb} Hfb.
+    case Ha : a Crf Hab Hlub => [a' | | ] //= Crf Hab Hlub.
+    apply Rle_lt_trans with (Rmax (b' - delta / 2) ((a'+b')/2)).
+    apply: Hlub => z Hz.
+    suff H : f z <= f (Rmax (b' - delta / 2) ((a' + b') / 2)).
+      apply Rnot_lt_le ; contradict H ; apply Rlt_not_le.
+      apply: Crf.
+      apply Rlt_le_trans with (2 := Rmax_r _ _).
+      pattern a' at 1 ; replace a' with ((a'+a') / 2) by field.
+      apply Rmult_lt_compat_r ; intuition.
+      by apply H.
+      by apply Hz.
+    apply Rlt_le.
+    apply Rle_lt_trans with y.
+    by apply Hz.
+    apply Hfb.
+    rewrite /Rminus Rplus_max_distr_r.
+    ring_simplify (b' + - (delta / 2) + - b').
+    field_simplify ((a' + b') / 2 + - b').
+    replace ((a' - b') / 2) with (-((b'-a')/2)) by field.
+    rewrite Rmax_opp_Rmin Rabs_Ropp Rabs_pos_eq.
+    apply Rle_lt_trans with (1 := Rmin_l _ _).
+    apply Rminus_lt_0 ; field_simplify ; rewrite -Rdiv_1 ;
+    by apply is_pos_div_2.
+    apply Rlt_le, Rmin_case.
+    by apply is_pos_div_2.
+    apply Rdiv_lt_0_compat.
+    by apply -> Rminus_lt_0.
+    by apply Rlt_0_2.
+    apply Rlt_not_eq.
+    apply Rmax_case.
+    apply Rminus_lt_0 ; field_simplify ; rewrite -Rdiv_1 ;
+    by apply is_pos_div_2.
+    pattern b' at 2 ; replace b' with ((b'+b')/2) by field.
+    apply Rmult_lt_compat_r ; intuition.
+    apply Rmax_case.
+    apply Rminus_lt_0 ; field_simplify ; rewrite -Rdiv_1 ;
+    by apply is_pos_div_2.
+    pattern b' at 2 ; replace b' with ((b'+b')/2) by field.
+    apply Rmult_lt_compat_r ; intuition.
+    apply Rle_lt_trans with (b' - delta / 2).
+    apply: Hlub => z Hz.
+    suff H : f z <= f (b' - delta / 2).
+      apply Rnot_lt_le ; contradict H ; apply Rlt_not_le.
+      apply: Crf.
+      by [].
+      by apply H.
+      by apply Hz.
+    apply Rlt_le.
+    apply Rle_lt_trans with y.
+    by apply Hz.
+    apply Hfb.
+    ring_simplify (b' - (delta / 2) - b').
+    rewrite Rabs_Ropp Rabs_pos_eq.
+    apply Rminus_lt_0 ; field_simplify ; rewrite -Rdiv_1 ;
+    by apply is_pos_div_2.
+    apply Rlt_le, is_pos_div_2.
+    apply Rlt_not_eq.
+    apply Rminus_lt_0 ; field_simplify ; rewrite -Rdiv_1 ;
+    by apply is_pos_div_2.
+    apply Rminus_lt_0 ; field_simplify ; rewrite -Rdiv_1 ;
+    by apply is_pos_div_2.
+    by case Ha : a Hab.
+  split => //.
+  move: (Cf _ Hax Hxb) => Hfx.
+  apply is_lim_continuity in Hfx.
+  apply Rle_antisym.
+  apply Rnot_lt_le => H.
+  apply Rminus_lt_0 in H.
+  case: (Hfx (mkposreal _ H)) => {Hfx} /= delta Hfx.
+  apply Rminus_lt_0 in H.
+  case Ha : a Hlub Crf Hax => [a' | | ] Hlub Crf //= Hax.
+  absurd (Rmax (x - delta / 2) ((x+a')/2) < x).
+  apply Rle_not_lt.
+  apply Hlub => z Hz.
+  suff H0 : f z <= f (Rmax (x - delta / 2) ((x + a') / 2)).
+    apply Rnot_lt_le ; contradict H0 ; apply Rlt_not_le.
+    apply: Crf.
+    apply Rlt_le_trans with (2 := Rmax_r _ _).
+    pattern a' at 1 ; replace a' with ((a'+a') / 2) by field.
+    apply Rmult_lt_compat_r ; intuition.
+    by apply H0.
+    by apply Hz.
+  apply Rlt_le, Rle_lt_trans with y.
+  by apply Hz.
+  apply Rplus_lt_reg_r with (-(f x)).
+  apply Ropp_lt_cancel.
+  apply Rle_lt_trans with (1 := Rle_abs _).
+  rewrite Rabs_Ropp Ropp_plus_distr Ropp_involutive Rplus_comm.
+  apply Hfx.
+  rewrite /Rminus Rplus_max_distr_r.
+  ring_simplify (x + - (delta / 2) + - x).
+  field_simplify ((x + a') / 2 + - x).
+  replace ((-x+a') / 2) with (-((x-a')/2)) by field.
+  rewrite Rmax_opp_Rmin Rabs_Ropp Rabs_pos_eq.
+  apply Rle_lt_trans with (1 := Rmin_l _ _).
+  apply Rminus_lt_0 ; field_simplify ; rewrite -Rdiv_1 ;
+  by apply is_pos_div_2.
+  apply Rlt_le, Rmin_case.
+  by apply is_pos_div_2.
+  apply Rdiv_lt_0_compat.
+  by apply -> Rminus_lt_0.
+  by apply Rlt_0_2.
+  apply Rlt_not_eq.
+  apply Rmax_case.
+  apply Rminus_lt_0 ; field_simplify ; rewrite -Rdiv_1 ;
+  by apply is_pos_div_2.
+  pattern x at 2 ; replace x with ((x+x)/2) by field.
+  apply Rmult_lt_compat_r ; intuition.
+  apply Rmax_case.
+  apply Rminus_lt_0 ; field_simplify ; rewrite -Rdiv_1 ;
+  by apply is_pos_div_2.
+  pattern x at 2 ; replace x with ((x+x)/2) by field.
+  apply Rmult_lt_compat_r ; intuition.
+  absurd ((x - delta / 2) < x).
+  apply Rle_not_lt.
+  apply Hlub => z Hz.
+  suff H0 : f z <= f (x - delta / 2).
+    apply Rnot_lt_le ; contradict H0 ; apply Rlt_not_le.
+    apply: Crf.
+    by [].
+    by apply H0.
+    by apply Hz.
+  apply Rlt_le, Rle_lt_trans with y.
+  by apply Hz.
+  apply Rplus_lt_reg_r with (-(f x)).
+  apply Ropp_lt_cancel.
+  apply Rle_lt_trans with (1 := Rle_abs _).
+  rewrite Rabs_Ropp Ropp_plus_distr Ropp_involutive Rplus_comm.
+  apply Hfx.
+  ring_simplify (x - (delta / 2) - x).
+  rewrite Rabs_Ropp Rabs_pos_eq.
+  apply Rminus_lt_0 ; field_simplify ; rewrite -Rdiv_1 ;
+  by apply is_pos_div_2.
+  apply Rlt_le, is_pos_div_2.
+  apply Rlt_not_eq.
+  apply Rminus_lt_0 ; field_simplify ; rewrite -Rdiv_1 ;
+  by apply is_pos_div_2.
+  apply Rminus_lt_0 ; field_simplify ; rewrite -Rdiv_1 ;
+  by apply is_pos_div_2.
+
+  apply Rnot_lt_le => H.
+  apply Rminus_lt_0 in H.
+  case: (Hfx (mkposreal _ H)) => {Hfx} /= delta Hfx.
+  apply Rminus_lt_0 in H.
+  case Hb : b Hub Crf Hxb => [b' | | ] Hub Crf //= Hxb.
+  absurd (x < Rmin (x + delta / 2) ((x+b')/2)).
+  apply Rle_not_lt.
+  apply Hub ; repeat split.
+  apply Rbar_lt_trans with x.
+  by apply Hax.
+  rewrite /Rmin ; case: Rle_dec => H0.
+  apply Rminus_lt_0 ; ring_simplify ; by apply is_pos_div_2.
+  pattern x at 1 ; replace x with ((x+x)/2) by field.
+  apply Rmult_lt_compat_r ; intuition.
+  apply Rle_lt_trans with (1 := Rmin_r _ _).
+  pattern b' at 2 ; replace b' with ((b'+b')/2) by field.
+  apply Rmult_lt_compat_r ; intuition.
+  apply Rlt_le, Rplus_lt_reg_r with (-(f x)).
+  rewrite ?(Rplus_comm ((- f x))).
+  apply Rle_lt_trans with (1 := Rle_abs _).
+  apply Hfx.
+  rewrite /Rminus Rplus_min_distr_r.
+  ring_simplify (x + delta / 2 + - x).
+  field_simplify ((x + b') / 2 + - x).
+  rewrite Rabs_pos_eq.
+  apply Rle_lt_trans with (1 := Rmin_l _ _).
+  apply Rminus_lt_0 ; field_simplify ; rewrite -Rdiv_1 ; by apply is_pos_div_2.
+  apply Rmin_case.
+  by apply Rlt_le, is_pos_div_2.
+  apply Rlt_le, Rdiv_lt_0_compat.
+  by rewrite Rplus_comm -Rminus_lt_0.
+  by apply Rlt_0_2.
+  apply Rgt_not_eq.
+  apply Rmin_case.
+  apply Rminus_lt_0 ; ring_simplify ; by apply is_pos_div_2.
+  pattern x at 2 ; replace x with ((x+x)/2) by field.
+  apply Rmult_lt_compat_r ; intuition.
+  apply Rmin_case.
+  apply Rminus_lt_0 ; ring_simplify ; by apply is_pos_div_2.
+  pattern x at 1 ; replace x with ((x+x)/2) by field.
+  apply Rmult_lt_compat_r ; intuition.
+  absurd (x < (x + delta / 2)).
+  apply Rle_not_lt.
+  apply Hub ; repeat split.
+  apply Rbar_lt_trans with x.
+  by apply Hax.
+  apply Rminus_lt_0 ; ring_simplify ; by apply is_pos_div_2.
+  apply Rlt_le, Rplus_lt_reg_r with (-(f x)).
+  rewrite ?(Rplus_comm ((- f x))).
+  apply Rle_lt_trans with (1 := Rle_abs _).
+  apply Hfx.
+  ring_simplify (x + delta / 2 - x).
+  rewrite Rabs_pos_eq.
+  apply Rminus_lt_0 ; field_simplify ; rewrite -Rdiv_1 ; by apply is_pos_div_2.
+  by apply Rlt_le, is_pos_div_2.
+  apply Rgt_not_eq.
+  apply Rminus_lt_0 ; ring_simplify ; by apply is_pos_div_2.
+  apply Rminus_lt_0 ; ring_simplify ; by apply is_pos_div_2.
+  case Hb : b Hab Hfb Crf => [b' | | ] Hab Hfb Crf // ; try by case Ha : a Hab.
+  exists b' => z Hz.
+  apply Rlt_le, Hz.
+  case Hlb : lb Hy Hfb => [lb' | | ] [_ Hy] Hfb //.
+  apply Rminus_lt_0 in Hy.
+  case: (Hfb (mkposreal _ Hy)) => {Hfb} /= d Hfb.
+  case Ha: a Hab Crf => [a' | | ] //= Hab Crf.
+  exists (Rmax (d+1) (a'+ 1)) => z Hz.
+  suff H : f z <= f (Rmax (d + 1) (a' + 1)).
+    apply Rnot_lt_le ; contradict H ; apply Rlt_not_le.
+    apply: Crf.
+    apply Rlt_le_trans with (2 := Rmax_r _ _).
+    apply Rminus_lt_0 ; ring_simplify ; by apply Rlt_0_1.
+    by apply H.
+    by [].
+  apply Rlt_le, Rle_lt_trans with y.
+  by apply Hz.
+  apply Rplus_lt_reg_r with (- lb').
+  apply Ropp_lt_cancel.
+  apply Rle_lt_trans with (1 := Rle_abs _).
+  rewrite Rabs_Ropp Ropp_plus_distr Ropp_involutive Rplus_comm.
+  apply Hfb.
+  apply Rlt_le_trans with (2 := Rmax_l _ _).
+  apply Rminus_lt_0 ; ring_simplify ; by apply Rlt_0_1.
+  exists (d+1) => z Hz.
+  suff H : f z <= f (d + 1).
+    apply Rnot_lt_le ; contradict H ; apply Rlt_not_le.
+    apply: Crf.
+    by [].
+    by apply H.
+    by [].
+  apply Rlt_le, Rle_lt_trans with y.
+  by apply Hz.
+  apply Rplus_lt_reg_r with (- lb').
+  apply Ropp_lt_cancel.
+  apply Rle_lt_trans with (1 := Rle_abs _).
+  rewrite Rabs_Ropp Ropp_plus_distr Ropp_involutive Rplus_comm.
+  apply Hfb.
+  apply Rminus_lt_0 ; ring_simplify ; by apply Rlt_0_1.
+  case: (Hfb y) => {Hfb} /= d Hfb.
+  case Ha: a Hab Crf => [a' | | ] //= Hab Crf.
+  exists (Rmax (d+1) (a'+ 1)) => z Hz.
+  suff H : f z <= f (Rmax (d + 1) (a' + 1)).
+    apply Rnot_lt_le ; contradict H ; apply Rlt_not_le.
+    apply: Crf.
+    apply Rlt_le_trans with (2 := Rmax_r _ _).
+    apply Rminus_lt_0 ; ring_simplify ; by apply Rlt_0_1.
+    by apply H.
+    by [].
+  apply Rlt_le, Rle_lt_trans with y.
+  by apply Hz.
+  apply Hfb.
+  apply Rlt_le_trans with (2 := Rmax_l _ _).
+  apply Rminus_lt_0 ; ring_simplify ; by apply Rlt_0_1.
+  exists (d+1) => z Hz.
+  suff H : f z <= f (d + 1).
+    apply Rnot_lt_le ; contradict H ; apply Rlt_not_le.
+    apply: Crf.
+    by [].
+    by apply H.
+    by [].
+  apply Rlt_le, Rle_lt_trans with y.
+  by apply Hz.
+  apply Hfb.
+  apply Rminus_lt_0 ; ring_simplify ; by apply Rlt_0_1.
+  
+  case Hla: la Hy Hfa => [la' | | ] [Hy _] Hfa //.
+  apply Rminus_lt_0 in Hy ;
+  move: (Hfa (mkposreal _ Hy)) => {Hfa} Hfa ; simpl in Hfa.
+  have : Rbar_locally (fun y0 : R => f y0 < y) a.
+  move: Hfa ; apply Rbar_locally_imply, Rbar_locally_forall => z Hz.
+  apply (Rplus_lt_reg_r (-la')).
+  rewrite ?(Rplus_comm (-la')).
+  apply Rle_lt_trans with (1 := Rle_abs _).
+  apply Hz.
+  move => {Hfa} Hfa.
+  case Ha : a Hab Hfa => [a' | | ] Hab [d Hfa] // ;
+  case Hb : b Hab => [b' | | ] Hab //.
+  exists (Rmin (a'+d/2) ((a'+b')/2)) ; repeat split.
+  apply Rmin_case.
+  apply Rminus_lt_0 ; ring_simplify ; by apply is_pos_div_2.
+  pattern a' at 1 ; replace a' with ((a'+a')/2) by field.
+  apply Rmult_lt_compat_r ; intuition.
+  apply Rle_lt_trans with (1 := Rmin_r _ _).
+  pattern b' at 2 ; replace b' with ((b'+b')/2) by field.
+  apply Rmult_lt_compat_r ; intuition.
+  apply Rlt_le, Hfa.
+  rewrite Rabs_pos_eq.
+  apply Rle_lt_trans with (1 := Rplus_le_compat_r _ _ _ (Rmin_l _ _)).
+  apply Rminus_lt_0 ; field_simplify ; rewrite -Rdiv_1 ; by apply is_pos_div_2.
+  apply Rmin_case ; field_simplify ; rewrite -Rdiv_1.
+  apply Rlt_le, is_pos_div_2.
+  apply Rlt_le, Rdiv_lt_0_compat, Rlt_0_2.
+  by rewrite Rplus_comm -Rminus_lt_0.
+  apply Rgt_not_eq, Rminus_lt_0, Rmin_case ;
+  field_simplify ; rewrite -Rdiv_1.
+  by apply is_pos_div_2.
+  apply Rdiv_lt_0_compat, Rlt_0_2.
+  by rewrite Rplus_comm -Rminus_lt_0.
+  exists (a'+d/2) ; repeat split.
+  apply Rminus_lt_0 ; ring_simplify ; by apply is_pos_div_2.
+  apply Rlt_le, Hfa.
+  rewrite Rabs_pos_eq.
+  apply Rminus_lt_0 ; field_simplify ; rewrite -Rdiv_1 ; by apply is_pos_div_2.
+  ring_simplify.
+  apply Rlt_le, is_pos_div_2.
+  apply Rgt_not_eq, Rminus_lt_0 ;
+  field_simplify ; rewrite -Rdiv_1.
+  by apply is_pos_div_2.
+  exists (Rmin (d-1) (b'-1)) ; repeat split.
+  apply Rle_lt_trans with (1 := Rmin_r _ _).
+  apply Rminus_lt_0 ; ring_simplify ; apply Rlt_0_1.
+  apply Rlt_le, Hfa.
+  apply Rle_lt_trans with (1 := Rmin_l _ _).
+  apply Rminus_lt_0 ; ring_simplify ; apply Rlt_0_1.
+  exists ((d-1)) ; repeat split.
+  apply Rlt_le, Hfa.
+  apply Rminus_lt_0 ; ring_simplify ; apply Rlt_0_1.
+  move: (Hfa y) => {Hfa} Hfa.
+  case Ha : a Hab Hfa => [a' | | ] Hab [d Hfa] // ;
+  case Hb : b Hab => [b' | | ] Hab //.
+  exists (Rmin (a'+d/2) ((a'+b')/2)) ; repeat split.
+  apply Rmin_case.
+  apply Rminus_lt_0 ; ring_simplify ; by apply is_pos_div_2.
+  pattern a' at 1 ; replace a' with ((a'+a')/2) by field.
+  apply Rmult_lt_compat_r ; intuition.
+  apply Rle_lt_trans with (1 := Rmin_r _ _).
+  pattern b' at 2 ; replace b' with ((b'+b')/2) by field.
+  apply Rmult_lt_compat_r ; intuition.
+  apply Rlt_le, Hfa.
+  rewrite Rabs_pos_eq.
+  apply Rle_lt_trans with (1 := Rplus_le_compat_r _ _ _ (Rmin_l _ _)).
+  apply Rminus_lt_0 ; field_simplify ; rewrite -Rdiv_1 ; by apply is_pos_div_2.
+  apply Rmin_case ; field_simplify ; rewrite -Rdiv_1.
+  apply Rlt_le, is_pos_div_2.
+  apply Rlt_le, Rdiv_lt_0_compat, Rlt_0_2.
+  by rewrite Rplus_comm -Rminus_lt_0.
+  apply Rgt_not_eq, Rminus_lt_0, Rmin_case ;
+  field_simplify ; rewrite -Rdiv_1.
+  by apply is_pos_div_2.
+  apply Rdiv_lt_0_compat, Rlt_0_2.
+  by rewrite Rplus_comm -Rminus_lt_0.
+  exists (a'+d/2) ; repeat split.
+  apply Rminus_lt_0 ; ring_simplify ; by apply is_pos_div_2.
+  apply Rlt_le, Hfa.
+  rewrite Rabs_pos_eq.
+  apply Rminus_lt_0 ; field_simplify ; rewrite -Rdiv_1 ; by apply is_pos_div_2.
+  ring_simplify.
+  apply Rlt_le, is_pos_div_2.
+  apply Rgt_not_eq, Rminus_lt_0 ;
+  field_simplify ; rewrite -Rdiv_1.
+  by apply is_pos_div_2.
+  exists (Rmin (d-1) (b'-1)) ; repeat split.
+  apply Rle_lt_trans with (1 := Rmin_r _ _).
+  apply Rminus_lt_0 ; ring_simplify ; apply Rlt_0_1.
+  apply Rlt_le, Hfa.
+  apply Rle_lt_trans with (1 := Rmin_l _ _).
+  apply Rminus_lt_0 ; ring_simplify ; apply Rlt_0_1.
+  exists ((d-1)) ; repeat split.
+  apply Rlt_le, Hfa.
+  apply Rminus_lt_0 ; ring_simplify ; apply Rlt_0_1.
 Qed.
 
 (** Exponential functions *)
