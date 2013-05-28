@@ -1821,7 +1821,22 @@ Proof.
   apply Rminus_lt_0 ; ring_simplify ; apply Rlt_0_1.
 Qed.
 
-(** Exponential functions *)
+(** Square root function *)
+
+Lemma is_lim_sqrt_p : is_lim sqrt p_infty p_infty.
+Proof.
+  move => M.
+  exists ((Rmax 0 M)²) => x Hx.
+  apply Rle_lt_trans with (1 := Rmax_r 0 M).
+  rewrite -(sqrt_Rsqr (Rmax 0 M)).
+  apply sqrt_lt_1_alt.
+  split.
+  apply Rle_0_sqr.
+  by apply Hx.
+  apply Rmax_l.
+Qed.
+
+(** Exponential function *)
 
 Lemma Rle_exp (x : R) (n : nat) :
   0 <= x -> sum_f_R0 (fun k => x^k / INR (fact k)) n <= exp x.
@@ -1984,4 +1999,60 @@ Proof.
   by apply Rbar_locally_forall.
   by [].
   simpl ; by rewrite Ropp_0.
+Qed.
+
+Lemma is_lim_exp_aux3 : is_lim (fun y => (exp y - 1) / y) 0 1.
+Proof.
+  move => eps.
+  case: (derivable_pt_lim_exp_0 eps (cond_pos eps)) => delta H.
+  exists delta => y Hy Hy0.
+  rewrite Rminus_0_r in Hy.
+  move: (H y Hy0 Hy).
+  by rewrite Rplus_0_l exp_0.
+Qed.
+
+(** natural logarithm *)
+
+Lemma is_lim_ln_p : is_lim (fun y => ln y) p_infty p_infty.
+Proof.
+  move => M.
+  exists (exp M) => x Hx.
+  rewrite -(ln_exp M).
+  apply ln_increasing.
+  apply exp_pos.
+  by apply Hx.
+Qed.
+
+(** Our limits is not addapted for partial function *)
+Lemma is_lim_ln_0 : is_lim (fun y => ln (Rabs y)) 0 m_infty.
+Proof.
+  move => eps.
+  exists (mkposreal (exp eps) (exp_pos _)) => x /= Hx Hx0.
+  rewrite -(ln_exp eps).
+  apply ln_increasing.
+  by apply Rabs_pos_lt.
+  rewrite Rminus_0_r in Hx.
+  by apply Hx.
+Qed.
+
+Lemma is_lim_ln_aux2 : is_lim (fun y => ln (1+y) / y) 0 1.
+Proof.
+  move => eps.
+  case: (derivable_pt_lim_ln 1 (Rlt_0_1) eps (cond_pos eps)) => delta H.
+  exists delta => y Hy Hy0.
+  rewrite Rminus_0_r in Hy.
+  move: (H y Hy0 Hy).
+  by rewrite ln_1 Rinv_1 Rminus_0_r.
+Qed.
+
+(** the function sin x / x *)
+
+Lemma is_lim_sin_aux : is_lim (fun x => sin x / x) 0 1.
+Proof.
+  move => eps.
+  case: (derivable_pt_lim_sin_0 eps (cond_pos eps)) => delta H.
+  exists delta => y Hy Hy0.
+  rewrite Rminus_0_r in Hy.
+  move: (H y Hy0 Hy).
+  by rewrite Rplus_0_l sin_0 Rminus_0_r.
 Qed.
