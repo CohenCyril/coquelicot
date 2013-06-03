@@ -1,4 +1,4 @@
-Require Import Reals.
+Require Import Reals Rbar_theory.
 Require Import ssreflect.
 Require Import Lim_seq Lim_fct.
 Require Import Locally.
@@ -9,7 +9,7 @@ Open Scope R_scope.
 
 Notation is_derive f x l := (derivable_pt_lim f x l).
 Definition ex_derive f x := exists l, is_derive f x l.
-Definition Derive (f : R -> R) (x : R) := Lim (fun h => (f (x+h) - f x)/h) 0.
+Definition Derive (f : R -> R) (x : R) := real (Lim (fun h => (f (x+h) - f x)/h) 0).
 
 (** Derive is correct *)
 
@@ -19,7 +19,7 @@ Proof.
   intros.
   apply (uniqueness_step1 f x).
   apply is_lim_Coq_0.
-  apply Lim_correct.
+  apply Lim_correct'.
   exists l.
   apply is_lim_Coq_1.
   
@@ -97,97 +97,17 @@ Lemma Derive_ext_loc :
   Derive f x = Derive g x.
 Proof.
 intros f g x Hfg.
-unfold Derive, Lim, Lim_seq.
-apply Rmult_eq_compat_r, f_equal.
-rewrite 2!Sup_seq.LimInf_seq_correct 2!Sup_seq.LimSup_seq_correct.
-apply f_equal2.
-apply Rbar_seq.Rbar_limsup_seq_ext_loc.
-destruct Hfg as (e, He).
-exists (Zabs_nat (up (/e))).
-intros n Hn.
-rewrite He.
-rewrite He.
-easy.
-rewrite /Rminus Rplus_opp_r Rabs_R0; apply cond_pos.
-(* *)
-assert (0 < /e)%R.
-apply Rinv_0_lt_compat, cond_pos.
-assert (0 < IZR (up (/ e))).
-apply Rlt_trans with (1:=H).
-apply archimed.
-assert (0 < n)%nat.
-apply lt_le_trans with (2:=Hn).
-apply INR_lt.
-simpl.
-rewrite INR_IZR_INZ inj_Zabs_nat.
-rewrite Zabs_eq.
-exact H0.
-apply le_IZR.
-simpl; now left.
-replace (x + (0 + / INR n) - x) with (/ INR n) by ring.
-rewrite Rabs_right.
-rewrite <- (Rinv_involutive e).
-apply Rinv_lt_contravar.
-apply Rmult_lt_0_compat.
-exact H.
-now apply lt_0_INR.
-apply Rlt_le_trans with (IZR (up (/e))).
-apply archimed.
-apply Rle_trans with (INR (Zabs_nat (up (/ e)))).
-right; rewrite INR_IZR_INZ.
-rewrite inj_Zabs_nat.
-apply f_equal.
-apply sym_eq, Zabs_eq.
-apply le_IZR.
-simpl; now left.
-now apply le_INR.
-apply sym_not_eq, Rlt_not_eq, cond_pos.
-apply Rle_ge; left; apply Rinv_0_lt_compat.
-now apply lt_0_INR.
-
-apply Rbar_seq.Rbar_liminf_seq_ext_loc.
-destruct Hfg as (e, He).
-exists (Zabs_nat (up (/e))).
-intros n Hn.
-rewrite He.
-rewrite He.
-easy.
-rewrite /Rminus Rplus_opp_r Rabs_R0; apply cond_pos.
-(* *)
-assert (0 < /e)%R.
-apply Rinv_0_lt_compat, cond_pos.
-assert (0 < IZR (up (/ e))).
-apply Rlt_trans with (1:=H).
-apply archimed.
-assert (0 < n)%nat.
-apply lt_le_trans with (2:=Hn).
-apply INR_lt.
-simpl.
-rewrite INR_IZR_INZ inj_Zabs_nat.
-rewrite Zabs_eq.
-exact H0.
-apply le_IZR.
-simpl; now left.
-replace (x + (0 + / INR n) - x) with (/ INR n) by ring.
-rewrite Rabs_right.
-rewrite <- (Rinv_involutive e).
-apply Rinv_lt_contravar.
-apply Rmult_lt_0_compat.
-exact H.
-now apply lt_0_INR.
-apply Rlt_le_trans with (IZR (up (/e))).
-apply archimed.
-apply Rle_trans with (INR (Zabs_nat (up (/ e)))).
-right; rewrite INR_IZR_INZ.
-rewrite inj_Zabs_nat.
-apply f_equal.
-apply sym_eq, Zabs_eq.
-apply le_IZR.
-simpl; now left.
-now apply le_INR.
-apply sym_not_eq, Rlt_not_eq, cond_pos.
-apply Rle_ge; left; apply Rinv_0_lt_compat.
-now apply lt_0_INR.
+rewrite /Derive /Lim.
+apply f_equal, Lim_seq_ext_loc.
+apply (Rbar.Rbar_loc_seq_carac (fun h => (f (x + h) - f x) / h =
+  (g (x + h) - g x) / h) (Rbar.Finite 0)) => /=.
+case: Hfg => delta Hfg.
+exists delta => h Hh.
+rewrite ?Hfg.
+reflexivity.
+rewrite Rminus_eq0 Rabs_R0 ; by apply delta.
+ring_simplify (x + h - x).
+by rewrite Rminus_0_r in Hh.
 Qed.
 
 Lemma is_derive_ext :
@@ -271,8 +191,10 @@ Lemma Derive_opp :
 Proof.
 intros f x.
 unfold Derive, Lim.
+rewrite /Rbar.Rbar_loc_seq.
+rewrite -Rbar.Rbar_opp_real.
 rewrite -Lim_seq_opp.
-apply Lim_seq_ext => n.
+apply f_equal, Lim_seq_ext => n.
 rewrite -Ropp_mult_distr_l_reverse.
 apply (f_equal (fun v => v / _)).
 ring.
@@ -352,6 +274,37 @@ Qed.
 
 (** Multiplication of functions *)
 
+Lemma derivable_pt_lim_inv (f : R -> R) (x l : R) :
+  is_derive f x l -> f x <> 0
+    -> is_derive (fun y => / f y) x (-l/(f x)^2).
+Proof.
+  move => Hf Hl.
+  search_derive.
+  apply is_derive_ext with (fun y => 1/f y).
+  move => t ; by rewrite /Rdiv Rmult_1_l.
+  apply derivable_pt_lim_div.
+  apply derivable_pt_lim_const.
+  apply Hf.
+  apply Hl.
+  rewrite /Rsqr ; by field.
+Qed.
+Lemma ex_derive_inv (f : R -> R) (x : R) :
+  ex_derive f x -> f x <> 0
+    -> ex_derive (fun y => / f y) x.
+Proof.
+  case => l Hf Hl.
+  exists (-l/(f x)^2).
+  by apply derivable_pt_lim_inv.
+Qed.
+Lemma Derive_inv  (f : R -> R) (x : R) :
+  ex_derive f x -> f x <> 0
+    -> Derive (fun y => / f y) x = - Derive f x / (f x) ^ 2.
+Proof.
+  move/Derive_correct => Hf Hl.
+  apply is_derive_unique.
+  by apply derivable_pt_lim_inv.
+Qed.
+
 Lemma ex_derive_scal :
   forall f k x, ex_derive f x ->
   ex_derive (fun x => k * f x) x.
@@ -366,8 +319,21 @@ Lemma Derive_scal :
 Proof.
 intros f k x.
 unfold Derive, Lim.
+have H : (forall x, k * Rbar.real x = Rbar.real (Rbar.Rbar_mult (Rbar.Finite k) x)).
+  case: (Req_dec k 0) => [-> | Hk].
+  case => [l | | ] //= ; rewrite Rmult_0_l.
+  case: Rle_dec (Rle_refl 0) => //= H _.
+  case: Rle_lt_or_eq_dec (Rlt_irrefl 0) => //= _ _.
+  case: Rle_dec (Rle_refl 0) => //= H _.
+  case: Rle_lt_or_eq_dec (Rlt_irrefl 0) => //= _ _.
+  case => [l | | ] //= ; rewrite Rmult_0_r.
+  case: Rle_dec => //= H.
+  case: Rle_lt_or_eq_dec => //=.
+  case: Rle_dec => //= H.
+  case: Rle_lt_or_eq_dec => //=.
+rewrite H.
 rewrite -Lim_seq_scal.
-apply Lim_seq_ext => n.
+apply f_equal, Lim_seq_ext => n.
 rewrite -Rmult_assoc.
 apply (f_equal (fun v => v / _)).
 ring.
@@ -937,4 +903,111 @@ Proof.
   apply (is_derive_n_comp_scal f (-1) n x).
   by replace (-1*x) with (-x) by ring.
   by replace (-1*x) with (-x) by ring.
+Qed.
+
+(** * Limits using differentials *)
+(** a usual limit with natural logarithm *)
+
+Lemma is_lim_ln_aux1 : is_lim (fun y => ln y / y) p_infty 0.
+Proof.
+  have H : forall x, 0 < x -> ln x < x.
+    move => x Hx.
+    apply Rminus_lt_0.
+    apply Rlt_le_trans with (1 := Rlt_0_1).
+    have H : forall x, 0 < x -> derivable_pt_lim (fun y => y - ln y) x ((x - 1) / x).
+      move => z Hz.
+      evar (l : R).
+      replace ((z - 1) / z) with l.
+      apply derivable_pt_lim_minus.
+      apply derivable_pt_lim_id.
+      apply derivable_pt_lim_ln.
+      by apply Hz.
+      rewrite /l ; field.
+      by apply Rgt_not_eq.
+    case: (Derive.MVT_gen (fun y => y - ln y) 1 x).
+    move => y Hy ; exists ((y-1)/y) ; apply H.
+    apply Rlt_trans with (2 := proj1 Hy).
+    apply Rmin_case.
+    apply Rlt_0_1.
+    by apply Hx.
+    move => y Hy.
+    apply derivable_continuous_pt.
+    exists ((y-1)/y) ; apply H.
+    apply Rlt_le_trans with (2 := proj1 Hy).
+    apply Rmin_case.
+    apply Rlt_0_1.
+    by apply Hx.
+    move => c [Hc H0].
+    replace 1 with (1 - ln 1) by (rewrite ln_1 Rminus_0_r //).
+    apply Rminus_le_0.
+    rewrite H0.
+    rewrite (is_derive_unique _ _ ((c-1)/c)).
+    move: Hc ; rewrite /Rmin /Rmax ; case: Rle_dec => H1 Hc.
+    apply Rmult_le_pos.
+    apply Rdiv_le_0_compat.
+    apply -> Rminus_le_0 ; apply Hc.
+    apply Rlt_le_trans with (1 := Rlt_0_1).
+    by apply Hc.
+    apply -> Rminus_le_0 ; apply H1.
+    apply Rnot_le_lt in H1.
+    replace ((c - 1) / c * (x - 1)) with ((1-c) * (1-x) / c).
+    apply Rdiv_le_0_compat.
+    apply Rmult_le_pos.
+    apply -> Rminus_le_0 ; apply Hc.
+    apply -> Rminus_le_0 ; apply Rlt_le, H1.
+    apply Rlt_le_trans with (1 := Hx).
+    by apply Hc.
+    field.
+    apply Rgt_not_eq.
+    apply Rlt_le_trans with (1 := Hx).
+    by apply Hc.
+    apply H.
+    apply Rlt_le_trans with (2 := proj1 Hc).
+    apply Rmin_case.
+    apply Rlt_0_1.
+    apply Hx.
+  search_lim.
+  apply (is_lim_le_le_loc (fun _ => 0) (fun y => 2/sqrt y)).
+  apply is_lim_const.
+  search_lim.
+  apply is_lim_div.
+  apply is_lim_const.
+  apply is_lim_sqrt_p.
+  by [].
+  by [].
+  simpl ; by rewrite Rmult_0_r.
+  exists 1 => x Hx.
+  split.
+  apply Rdiv_le_0_compat.
+  rewrite -ln_1.
+  apply ln_le.
+  apply Rlt_0_1.
+  by apply Rlt_le.
+  by apply Rlt_trans with (1 := Rlt_0_1).
+  replace (ln _) with (2 * ln (sqrt x)).
+  rewrite /Rdiv Rmult_assoc.
+  apply Rmult_le_compat_l.
+  apply Rlt_le, Rlt_0_2.
+  apply Rle_div_l.
+  by apply Rlt_trans with (1 := Rlt_0_1).
+  rewrite -{3}(sqrt_sqrt x).
+  field_simplify ; rewrite -?Rdiv_1.
+  apply Rlt_le, H.
+  apply sqrt_lt_R0.
+  by apply Rlt_trans with (1 := Rlt_0_1).
+  apply Rgt_not_eq.
+  apply sqrt_lt_R0.
+  by apply Rlt_trans with (1 := Rlt_0_1).
+  apply Rlt_le.
+  by apply Rlt_trans with (1 := Rlt_0_1).
+  replace 2 with (INR 2) by (simpl ; ring).
+  rewrite -ln_pow.
+  rewrite /= Rmult_1_r.
+  rewrite sqrt_sqrt.
+  by [].
+  apply Rlt_le.
+  by apply Rlt_trans with (1 := Rlt_0_1).
+  apply sqrt_lt_R0.
+  by apply Rlt_trans with (1 := Rlt_0_1).
+  by [].
 Qed.

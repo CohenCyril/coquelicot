@@ -2,95 +2,6 @@ Require Import Reals Div2 ConstructiveEpsilon.
 Require Import ssreflect ssrbool eqtype seq.
 Require Import Markov Rcomplements Floor Total_sup Sup_seq Lim_seq Derive SF_seq.
 
-(** * SF_seq and StepFun *)
-
-Lemma StepFun_bound {a b : R} (f : StepFun a b) :
-  exists s : R, forall x, Rmin a b <= x <= Rmax a b -> f x <= s.
-Proof.
-  case: f => /= f [lx [ly [Hsort [Hhead [Hlast [Hsize Hval]]]]]];
-  rename a into a0 ; rename b into b0 ; set a := Rmin a0 b0 ; set b := Rmax a0 b0 ;
-  set Rl_max := fun x0 => fix f l := match l with 
-    | RList.nil => x0 
-    | RList.cons h t => Rmax h (f t)
-  end ;
-  set f_lx := (fix app l := match l with
-    | RList.nil => RList.nil
-    | RList.cons h t => RList.cons (f h) (app t)
-  end) lx ;
-  set M_f_lx := Rl_max (f 0) f_lx ;
-  set M_ly := Rl_max 0 ly.
-  exists (Rmax M_f_lx M_ly) => x [Hx Hx'].
-  rewrite /M_f_lx /f_lx ;
-  case: lx Hsort Hhead Hlast Hsize Hval {f_lx M_f_lx}.
-(* lx = [::] *)
-  move => _ _ _ H ; contradict H ; apply O_S.
-  move => h l ; case: l h.
-(* lx = [:: h] *)
-  move => h _ Ha Hb _ _ ; simpl in Ha, Hb.
-  rewrite /a -Ha in Hx ; rewrite /b -Hb in Hx'.
-  rewrite (Rle_antisym _ _ Hx Hx') /= ; apply Rle_trans with (2 := RmaxLess1 _ _) ; 
-  apply RmaxLess1.
-(* lx = [:: h,h'::l] *)
-  move => h l h' Hsort Hhead Hlast Hsize Hval.
-  apply Rle_lt_or_eq_dec in Hx' ; case: Hx' => Hx'.
-  have H : exists i : nat, (i < S (Rlength l))%nat /\
-    (pos_Rl (RList.cons h' (RList.cons h l)) i) <= x 
-    < (pos_Rl (RList.cons h' (RList.cons h l)) (S i)).
-    rewrite /a -Hhead in Hx ; rewrite /b -Hlast in Hx'.
-    elim: l h' h Hx Hx' Hsort {Hhead Hlast Hsize Hval} => [| h'' l IH] h' h Hx Hx' Hsort ; simpl in Hx, Hsort.
-    case: (Rlt_le_dec x h) => H.
-    exists O ; intuition.
-    exists O => /= ; intuition.
-    case: (Rlt_le_dec x h) => H.
-    exists O => /= ; intuition.
-    have H0 : ordered_Rlist (RList.cons h (RList.cons h'' l)).
-    move => i Hi ; apply (Hsort (S i)) => /= ; apply lt_n_S, Hi.
-    case: (IH _ _ H Hx' H0) => {IH} i Hi.
-    exists (S i) ; split.
-    simpl ; apply lt_n_S, Hi => /=.
-    apply Hi.
-  case: H => i [Hi [Ht Ht']].
-  apply Rle_lt_or_eq_dec in Ht ; case: Ht => Ht.
-  rewrite (Hval i Hi x).
-  apply Rle_trans with (2 := RmaxLess2 _ _).
-  rewrite /M_ly ; case: (ly).
-  apply Rle_refl.
-  move => y ly' ; elim: ly' (i) y.
-  move => i0 y ; case: i0 => //=.
-  apply RmaxLess1.
-  move => _; apply RmaxLess2.
-  move => y ly' IH i0 y' ; case: i0.
-  apply RmaxLess1.
-  move => n ; apply Rle_trans with (1 := IH n y) ; apply RmaxLess2.
-  split => //.
-  rewrite -Ht ; apply Rle_trans with (2 := RmaxLess1 _ _).
-  case: (i).
-  apply RmaxLess1.
-  move => n ; elim: n (h) (h') (l).
-  move => h0 h'0 l0 ; apply Rle_trans with (2 := RmaxLess2 _ _), RmaxLess1.
-  move => n IH h0 h'0 l0.
-  case: l0.
-  apply Rle_trans with (2 := RmaxLess2 _ _), RmaxLess2.
-  move => h''0 l0 ; apply Rle_trans with (1 := IH h''0 h0 l0), RmaxLess2.
-  rewrite Hx' /b -Hlast.
-  apply Rle_trans with (2 := RmaxLess1 _ _).
-  elim: (l) (h') (h) => [| h''0 l0 IH] h'0 h0.
-  apply Rle_trans with (2 := RmaxLess2 _ _), RmaxLess1.
-  apply Rle_trans with (1 := IH h0 h''0), RmaxLess2.
-Qed.
-
-Lemma Riemann_integrable_bound (f : R -> R) (a b : R) :
-  Riemann_integrable f a b -> exists s : R, forall x, Rmin a b <= x <= Rmax a b -> f x <= s.
-Proof.
-  move => pr ;
-  case (pr (mkposreal _ Rlt_0_1)) => {pr} phi [psi [pr _]] ;
-  case: (StepFun_bound phi) => M_phi H_phi ;
-  case: (StepFun_bound psi) => M_psi H_psi ;
-  exists (M_psi + M_phi) => x Hx.
-  apply Rle_trans with (2 := Rplus_le_compat _ _ _ _ (H_psi _ Hx) (H_phi _ Hx)).
-  have: (f x = (f x - phi x) + phi x) ; first by ring.
-  move => -> ; apply Rplus_le_compat_r, Rle_trans with (1 := Rle_abs _), pr, Hx.
-Qed.
 
 (** * Build sequences *)
 
@@ -2621,11 +2532,12 @@ Proof.
     apply RiemannInt_P1 ;
     by apply Hw.
   have : {If : R | is_RInt f a b If}.
-    exists (Lim_seq (RInt_val f a b)).
+    exists (real (Lim_seq (RInt_val f a b))).
     case: Hex => If Hex.
-    replace (Lim_seq (RInt_val f a b)) with If.
+    replace (real (Lim_seq (RInt_val f a b))) with If.
     exact: Hex.
-    apply sym_equal, is_lim_seq_unique.
+    replace If with (real (Finite If)) by auto.
+    apply f_equal, sym_equal, is_lim_seq_unique.
     by apply ex_RInt_correct_aux_2.
   case => If HIf.
   set E := fun eps : posreal => 
@@ -3705,8 +3617,8 @@ Qed.
 
 Definition RInt (f : R -> R) (a b : R) := 
   match Rle_dec a b with
-    | left _ => Lim_seq (RInt_val f a b)
-    | right _ => -Lim_seq (RInt_val f b a)
+    | left _ => real (Lim_seq (RInt_val f a b))
+    | right _ => - real (Lim_seq (RInt_val f b a))
   end.
 
 Lemma RInt_correct (f : R -> R) (a b : R) :
@@ -3722,7 +3634,8 @@ Proof.
     case: Rle_dec (Rlt_le _ _ Hab) (Rlt_not_le _ _ Hab) => // _ _ _ _.
     by move => ->.
   move => pr ; rewrite /RInt ; case: Rle_dec => // _.
-  apply is_lim_seq_unique.
+  replace (RiemannInt pr) with (real (Finite (RiemannInt pr))) by auto.
+  apply f_equal, is_lim_seq_unique.
   apply ex_RInt_correct_aux_2.
   exact: ex_RInt_correct_aux_1.
 Qed.

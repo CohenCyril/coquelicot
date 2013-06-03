@@ -3,20 +3,48 @@ Require Import Rcomplements.
 Require Import Lim_seq Rbar_theory.
 
 (** * Series *)
-(** todo: move to Series.v *)
 (** ** Definitions *)
 
 Definition is_series (a : nat -> R) (l : R) :=
   is_lim_seq (sum_f_R0 (fun k => a k)) l.
 Definition ex_series (a : nat -> R) :=
-  ex_lim_seq (sum_f_R0 (fun k => a k)).
+  ex_f_lim_seq (sum_f_R0 (fun k => a k)).
 Definition Series (a : nat -> R) : R :=
-  Lim_seq (sum_f_R0 (fun k => a k)).
+  real (Lim_seq (sum_f_R0 (fun k => a k))).
 
 Lemma ex_series_dec (a : nat -> R) :
   {ex_series a} + {~ex_series a}.
 Proof.
-  by apply ex_lim_seq_dec.
+  case: (ex_lim_seq_dec (sum_f_R0 (fun k => a k))) => H.
+  apply Lim_seq_correct in H.
+  case: (Lim_seq (sum_f_R0 (fun k : nat => a k))) H => [l | | ] H.
+  left ; by exists l.
+  right ; case => l H0.
+  absurd (p_infty = Finite l) => //.
+  rewrite -(is_lim_seq_unique _ _ H).
+  by apply is_lim_seq_unique.
+  right ; case => l H0.
+  absurd (m_infty = Finite l) => //.
+  rewrite -(is_lim_seq_unique _ _ H).
+  by apply is_lim_seq_unique.
+  right ; case => l.
+  contradict H.
+  by exists l.
+Qed.
+
+Lemma is_series_unique (a : nat -> R) (l : R) :
+  is_series a l -> Series a = l.
+Proof.
+  move => Ha.
+  replace l with (real (Finite l)) by auto.
+  apply (f_equal real).
+  by apply is_lim_seq_unique.
+Qed.
+Lemma Series_correct (a : nat -> R) :
+  ex_series a -> is_series a (Series a).
+Proof.
+  case => l Ha.
+  by rewrite (is_series_unique a l).
 Qed.
 
 Lemma is_series_equiv (a : nat -> R) (l : R) :
@@ -40,14 +68,19 @@ Lemma ex_series_equiv_0 (a : nat -> R) :
   ex_series a -> { l:R | Un_cv (fun N:nat => sum_f_R0 a N) l }.
 Proof.
   move => H ;
-  exists (Series a) ;
-  apply Lim_seq_correct in H.
+  exists (Series a) ; case: H => l H.
+  replace (Series a) with l.
   move => e He ; set eps := mkposreal e He.
   case: (H eps) => /= {H} N H.
   exists N => n Hn.
   replace (sum_f_R0 a n) with (sum_f_R0 (fun k : nat => a k) n)
     by (elim: (n) => //= k -> //).
   by apply (H n Hn).
+  apply sym_eq.
+  rewrite /Series.
+  replace l with (real (Finite l)) by auto.
+  apply f_equal.
+  by apply is_lim_seq_unique.
 Qed.
 Lemma ex_series_equiv_1 (a : nat -> R) :
   { l:R | Un_cv (fun N:nat => sum_f_R0 a N) l } -> ex_series a.
@@ -70,8 +103,8 @@ Lemma is_series_ext (a b : nat -> R) (l : R) :
   (forall n, a n = b n) -> (is_series a l) 
     -> is_series b l.
 Proof.
-  move => Heq Ha.
-  apply is_lim_seq_ext with (2 := Ha).
+  move => Heq.
+  apply is_lim_seq_ext.
   elim => /= [ | n IH] .
   by rewrite Heq.
   by rewrite IH Heq.
@@ -87,6 +120,7 @@ Lemma Series_ext (a b : nat -> R) :
   (forall n, a n = b n) -> Series a = Series b.
 Proof.
   move => Heq.
+  apply (f_equal real).
   apply Lim_seq_ext.
   elim => /= [ | n IH] .
   by rewrite Heq.
@@ -103,7 +137,9 @@ Proof.
   elim => [ | n IH].
   simpl ; ring.
   simpl ; rewrite -IH ; ring.
-  by apply is_lim_seq_scal with l.
+  apply (is_lim_seq_scal _ c l).
+  by apply Ha.
+  by simpl.
 Qed.
 Lemma ex_series_scal (c : R) (a : nat -> R) :
   ex_series a -> ex_series (fun n => c * a n).
@@ -115,8 +151,22 @@ Qed.
 Lemma Series_scal (c : R) (a : nat -> R) :
   Series (fun n => c * a n) = c * Series a.
 Proof.
-  rewrite -Lim_seq_scal.
-  apply Lim_seq_ext.
+  rewrite /Series.
+  have H0 : (forall x, c * Rbar.real x = Rbar.real (Rbar.Rbar_mult (Rbar.Finite c) x)).
+  case: (Req_dec c 0) => [-> | Hk].
+  case => [x | | ] //= ; rewrite Rmult_0_l.
+  case: Rle_dec (Rle_refl 0) => //= H0 _.
+  case: Rle_lt_or_eq_dec (Rlt_irrefl 0) => //= _ _.
+  case: Rle_dec (Rle_refl 0) => //= H0 _.
+  case: Rle_lt_or_eq_dec (Rlt_irrefl 0) => //= _ _.
+  case => [x | | ] //= ; rewrite Rmult_0_r.
+  case: Rle_dec => //= H0.
+  case: Rle_lt_or_eq_dec => //=.
+  case: Rle_dec => //= H0.
+  case: Rle_lt_or_eq_dec => //=.
+
+  rewrite H0 -(Lim_seq_scal _ c).
+  apply f_equal, Lim_seq_ext.
   elim => [ | n IH].
   simpl ; ring.
   simpl ; rewrite IH ; ring.
@@ -134,7 +184,7 @@ Proof.
   elim => [ | n IH].
   simpl ; ring.
   simpl ; rewrite -IH ; ring.
-  by apply is_lim_seq_plus with la lb.
+  by apply (is_lim_seq_plus _ _ la lb).
 Qed.
 Lemma ex_series_plus (a b : nat -> R) :
   ex_series a -> ex_series b
@@ -149,8 +199,9 @@ Lemma Series_plus (a b : nat -> R) :
     -> Series (fun n => a n + b n) = Series a + Series b.
 Proof.
   intros Ha Hb.
-  apply is_lim_seq_unique, is_series_plus ;
-  by apply Lim_seq_correct.
+  replace (Series a + Series b) with (real (Series a + Series b)) by auto.
+  apply (f_equal real), is_lim_seq_unique, is_series_plus ;
+  by apply Series_correct.
 Qed.
 
 (** Coming soon:
@@ -254,24 +305,24 @@ Lemma Series_decal_1 (a : nat -> R) :
   ex_series a -> Series a = a O + Series (fun k => a (S k)).
 Proof.
   move => Ha.
-  apply is_lim_seq_unique.
+  apply is_series_unique.
   rewrite Rplus_comm.
   apply is_series_decr_1 ;
   ring_simplify (Series (fun k : nat => a (S k)) + a 0%nat - a 0%nat).
-  by apply Lim_seq_correct, (ex_series_decal_1 a).
+  by apply Series_correct, (ex_series_decal_1 a).
 Qed.
 Lemma Series_decal_n (a : nat -> R) (n : nat) :
   (0 < n)%nat -> ex_series a 
     -> Series a = sum_f_R0 a (pred n)  + Series (fun k => a (n + k)%nat).
 Proof.
   move => Hn Ha.
-  apply is_lim_seq_unique.
+  apply is_series_unique.
   rewrite Rplus_comm.
   apply is_series_decr_n with n.
   by [].
   ring_simplify (Series (fun k : nat => a (n+ k)%nat) + sum_f_R0 a (pred n) -
    sum_f_R0 a (pred n)).
-  by apply Lim_seq_correct, (ex_series_decal_n a).
+  by apply Series_correct, (ex_series_decal_n a).
 Qed.
 
 Lemma Series_decal_1_aux (a : nat -> R) :
@@ -280,7 +331,7 @@ Proof.
   move => Ha.
   rewrite /Series.
   rewrite -Lim_seq_incr_1.
-  apply Lim_seq_ext => n.
+  apply f_equal, Lim_seq_ext => n.
   rewrite decomp_sum /=.
   rewrite Ha ; by apply Rplus_0_l.
   by apply lt_O_Sn.
@@ -333,7 +384,7 @@ Qed.
 (** #Absolute convergence imply convergence#
 %$\sum | a_n |$ converge $\Rightarrow \sum a_n$ is convergent% *)
 
-Lemma Abs_ex_series (a : nat -> R) :
+Lemma ex_series_Rabs (a : nat -> R) :
   ex_series (fun n => Rabs (a n)) -> ex_series a.
 Proof.
   move => H.
@@ -341,6 +392,31 @@ Proof.
   apply cauchy_abs.
   by apply Cauchy_ex_series.
 Qed.
+
+Lemma Series_Rabs (a : nat -> R) :
+  ex_series (fun n => Rabs (a n)) ->
+    Rabs (Series a) <= Series (fun n => Rabs (a n)).
+Proof.
+  move => Hra.
+  have Ha := (ex_series_Rabs a Hra).
+  case: Hra => lra Hra.
+  case: Ha => la Ha.
+  rewrite /is_series in Hra Ha.
+  rewrite /Series /=.
+  replace (Lim_seq (sum_f_R0 (fun k : nat => a k))) with (Finite la).
+  replace (Lim_seq (sum_f_R0 (fun k : nat => Rabs (a k)))) with (Finite lra).
+  simpl.
+  apply is_lim_seq_abs in Ha.
+  apply Rbar_finite_le, (fun H => is_lim_seq_le _ _ _ _ H Ha Hra).
+  elim => [ | n IH] /=.
+  by apply Rle_refl.
+  apply Rle_trans with (1 := Rabs_triang _ _).
+  apply Rplus_le_compat_r.
+  by apply IH.
+  by apply sym_eq, is_lim_seq_unique.
+  by apply sym_eq, is_lim_seq_unique.
+Qed.
+
 (** Comparison *)
 
 Lemma Comp_ex_series (a b : nat -> R) :
@@ -380,6 +456,24 @@ Proof.
   apply Rplus_le_le_0_compat.
   exact: IH.
   by apply H.
+Qed.
+
+Lemma Series_compar (a b : nat -> R) :
+  (forall n : nat, 0 <= a n <= b n) -> 
+   ex_series b -> Series a <= Series b.
+Proof.
+  move => Hn Hb.
+  have Ha := (Comp_ex_series _ _ Hn Hb).
+  apply Lim_seq_correct' in Ha.
+  apply Lim_seq_correct' in Hb.
+  rewrite /Series.
+  apply Rbar_finite_le.
+  move: Ha Hb ; apply is_lim_seq_le.
+  elim => [ | n IH] /=.
+  by apply Hn.
+  apply Rplus_le_compat.
+  by apply IH.
+  by apply Hn.
 Qed.
 
 (** D'Alembert criterium *)
@@ -424,23 +518,25 @@ Proof.
   by apply Ha.
   apply ex_series_scal.
   set k0 := ((k + 1) / 2).
-  apply ex_lim_seq_ext with (fun N => / (1 - k0) * (1 - k0 ^ S N)).
+  exists (/(1-k0) * (1-k0*0)).
+  apply (is_lim_seq_ext (fun N => / (1 - k0) * (1 - k0 ^ S N)) (sum_f_R0 (fun k1 : nat => k0 ^ k1))).
   move => n ; rewrite tech3.
   by apply Rmult_comm.
   apply Rlt_not_eq.
   replace 1 with ((1+1)/2) by field ; rewrite /k0.
   apply Rmult_lt_compat_r ; by intuition.
-  apply ex_lim_seq_scal.
-  exists (1-0).
-  apply is_lim_seq_minus.
+  apply (is_lim_seq_scal (fun N0 => (1 - k0 ^ S N0)) (/ (1 - k0)) (Finite (1-k0*0))).
+  apply (is_lim_seq_minus _ _ (Finite 1) (Finite (k0*0))).
   by apply is_lim_seq_const.
-  simpl ; eapply is_lim_seq_scal.
+  simpl pow ; apply (is_lim_seq_scal _ _ (Finite 0)).
   apply (is_lim_seq_geom k0).
   rewrite Rabs_pos_eq.
   replace 1 with ((1+1)/2) by field ; rewrite /k0.
   apply Rmult_lt_compat_r ; by intuition.
   apply Rle_trans with (2 := H N (le_refl _)) ; by apply Rabs_pos.
-  ring.
+  simpl ; ring.
+  simpl ; ring.
+  simpl ; ring.
 Qed.
 
 Lemma DAlembert_not_ex_series (a : nat -> R) (l : R) :
@@ -483,13 +579,13 @@ Proof.
     by apply IH.
   move => {H} H.
   have : Finite 0 = p_infty.
-    rewrite -(Rbar_lim_seq_geom_p k Hk1).
+    rewrite -(Lim_seq_geom_p k Hk1).
     apply sym_equal.
-    apply Rbar_is_lim_seq_uniq, is_lim_seq_correct.
+    apply is_lim_seq_unique.
     apply is_lim_seq_ext with (fun n => / Rabs (a N) * (Rabs (a N) * k ^ n)).
     move => n ; field ; by apply Rabs_no_R0.
     rewrite -(Rmult_0_r (/Rabs (a N))).
-    apply is_lim_seq_scal with 0.
+    apply (is_lim_seq_scal _ _ (Finite 0)).
     apply is_lim_seq_le_le with (fun _ => 0) (fun n => Rabs (a (n + N)%nat)).
     move => n ; split.
     apply Rmult_le_pos.
@@ -501,4 +597,50 @@ Proof.
     by apply Ha0.
   by [].
   by [].
+Qed.
+
+(** * Particular series *)
+
+Lemma is_series_geom (q : R) :
+  Rabs q < 1 -> is_series (fun n => q ^ n) (/ (1-q)).
+Proof.
+  move => Hq.
+  apply is_lim_seq_ext with (fun n => (1-q^(S n)) / (1-q)).
+  move => n.
+  rewrite tech3.
+  reflexivity.
+  apply Rlt_not_eq.
+  apply Rle_lt_trans with (2 := Hq).
+  apply Rle_abs.
+  evar (l : Rbar).
+  replace (Finite (/(1-q))) with l.
+  apply is_lim_seq_mult.
+  apply is_lim_seq_minus.
+  by apply is_lim_seq_const.
+  apply (is_lim_seq_incr_1 (fun n => q^n)).
+  by apply is_lim_seq_geom.
+  by simpl.
+  by apply is_lim_seq_const.
+  by simpl.
+  rewrite /l /=.
+  apply Rbar_finite_eq.
+  field.
+  apply Rminus_eq_contra.
+  apply Rgt_not_eq.
+  apply Rle_lt_trans with (2 := Hq).
+  apply Rle_abs.
+Qed.
+Lemma ex_series_geom (q : R) :
+  Rabs q < 1 -> ex_series (fun n => q ^ n).
+Proof.
+  move => Hq.
+  exists (/(1-q)).
+  by apply is_series_geom.
+Qed.
+Lemma Series_geom (q : R) :
+  Rabs q < 1 -> Series (fun n => q ^ n) = / (1-q).
+Proof.
+  move => Hq.
+  apply is_series_unique.
+  by apply is_series_geom.
 Qed.

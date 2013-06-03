@@ -1792,7 +1792,7 @@ Proof.
     try by case: Rle_dec.
     apply f_equal ; ring.
     case: Rle_dec => //= Hu'.
-    case: Hu' => Hu'.
+    case: Rle_lt_or_eq_dec => {Hu'} Hu'.
     apply Ropp_lt_contravar in Hu' ;
     rewrite Ropp_involutive Ropp_0 in Hu' ;
     apply Rlt_not_le in Hu'.
@@ -1802,9 +1802,13 @@ Proof.
     by rewrite -Hu' in Hu.
     apply Rnot_le_lt, Ropp_lt_contravar, Rlt_le in Hu' ;
     rewrite Ropp_involutive Ropp_0 in Hu'.
-    by case: Rle_dec.
+    case: Rle_dec => // Hu''.
+    case: Rle_lt_or_eq_dec => {Hu''} Hu'' //.
+    apply sym_equal in Hu''.
+    by apply Rbar_finite_eq in Hu''.
+    
     case: Rle_dec => //= Hu'.
-    case: Hu' => Hu'.
+    case: Rle_lt_or_eq_dec => {Hu'} Hu'.
     apply Ropp_lt_contravar in Hu' ;
     rewrite Ropp_involutive Ropp_0 in Hu' ;
     apply Rlt_not_le in Hu'.
@@ -1814,7 +1818,16 @@ Proof.
     by rewrite -Hu' in Hu.
     apply Rnot_le_lt, Ropp_lt_contravar, Rlt_le in Hu' ;
     rewrite Ropp_involutive Ropp_0 in Hu'.
-    by case: Rle_dec.
+    case: Rle_dec => // Hu''.
+    apply Rbar_finite_neq, sym_not_eq in Hu.
+    case: Rle_lt_or_eq_dec => //.
+    case: Rle_dec => //= Hu'.
+    case: Rle_lt_or_eq_dec => {Hu'} // Hu'.
+    by rewrite /= Ropp_0.
+    case: Rle_dec => //= Hu'.
+    case: Rle_lt_or_eq_dec => {Hu'} // Hu'.
+    by rewrite /= Ropp_0.
+ 
     case: lu Hu Hlu' {Hlu Huv} => [lu | | ] //= Hu Hlu.
     case: (Hu (mkposreal (-lu / 2) _)) => [ | {Hu} Hlu' N Hu].
     apply Rdiv_lt_0_compat.
@@ -1887,8 +1900,11 @@ Proof.
     exists N => n Hn ; case: (u n) (v n) (Hv n Hn) => [un | | ] ; case => [vn | | ] //= {Hv} Hv ;
     try by case: Rle_dec.
     apply f_equal ; ring.
+    case: Rle_dec => //= Hv' ; case: Rle_lt_or_eq_dec => //= {Hv'} ; by rewrite Ropp_0.
+    case: Rle_dec => //= Hv' ; case: Rle_lt_or_eq_dec => //= {Hv'} ; by rewrite Ropp_0.
+    
     case: Rle_dec => //= Hv'.
-    case: Hv' => Hv'.
+    case: Rle_lt_or_eq_dec => {Hv'} // Hv'.
     apply Ropp_lt_contravar in Hv' ;
     rewrite Ropp_involutive Ropp_0 in Hv' ;
     apply Rlt_not_le in Hv'.
@@ -1898,19 +1914,23 @@ Proof.
     by rewrite -Hv' in Hv.
     apply Rnot_le_lt, Ropp_lt_contravar, Rlt_le in Hv' ;
     rewrite Ropp_involutive Ropp_0 in Hv'.
-    by case: Rle_dec.
+    case: Rle_dec => Hv'' //.
+    apply sym_not_eq, Rbar_finite_neq in Hv.
+    case: Rle_lt_or_eq_dec => {Hv''} Hv'' //.
     case: Rle_dec => //= Hv'.
-    case: Hv' => Hv'.
+    case: Rle_lt_or_eq_dec => {Hv'} Hv'.
     apply Ropp_lt_contravar in Hv' ;
     rewrite Ropp_involutive Ropp_0 in Hv' ;
     apply Rlt_not_le in Hv'.
-    by case: Rle_dec.
-    apply Ropp_eq_compat in Hv' ;
-    rewrite Ropp_involutive Ropp_0 in Hv' ;
-    by rewrite -Hv' in Hv.
+    case: Rle_dec => Hv'' //.
+    apply sym_equal in Hv'.
+    by apply Rbar_finite_neq, (Ropp_neq_0_compat vn) in Hv.
     apply Rnot_le_lt, Ropp_lt_contravar, Rlt_le in Hv' ;
     rewrite Ropp_involutive Ropp_0 in Hv'.
-    by case: Rle_dec.
+    case: Rle_dec => // Hv''.
+    apply Rbar_finite_neq, sym_not_eq in Hv.
+    case: Rle_lt_or_eq_dec => //.
+
     case: lv Hv Hlv' {Hlv Huv} => [lv | | ] //= Hv Hlv.
     case: (Hv (mkposreal (-lv / 2) _)) => [ | {Hv} Hlv' N Hv].
     apply Rdiv_lt_0_compat.
@@ -2013,9 +2033,12 @@ Proof.
   exact: Hu.
   exact: Hv.
   field ; by apply Rgt_not_eq.
-  have: 0 <= un.
-  by apply Rlt_le, Rlt_trans with (lu/2).
-  case: Rle_dec => //.
+  have H0 : 0 < un.
+  by apply Rlt_trans with (lu/2).
+  move: (Rlt_le _ _ H0).
+  case: Rle_dec => // H1 _.
+  move: (Rlt_not_eq _ _ H0).
+  case: Rle_lt_or_eq_dec => // {H0}.
   by apply Rlt_le, Rle_not_lt in Hl.
   (* lu = lv = p_infty *)
   move => M.
@@ -2031,12 +2054,18 @@ Proof.
   exact: Rmax_l.
   exact: Hu.
   exact: Hv.
-  have: 0 <= un.
-  by apply Rlt_le, Rlt_trans with (1 := Rlt_0_1).
-  by case: Rle_dec.
-  have: 0 <= vn.
-  by apply Rlt_le, Rle_lt_trans with (2 := Hv), Rmax_l.
-  by case: Rle_dec.
+  have Hu0 : 0 < un.
+  by apply Rlt_trans with (1 := Rlt_0_1).
+  move: (Rlt_le _ _ Hu0).
+  case: Rle_dec  => // Hu1 _.
+  move: (Rlt_not_eq _ _ Hu0).
+  case: Rle_lt_or_eq_dec => //.
+  have Hv0: 0 < vn.
+  by apply Rle_lt_trans with (2 := Hv), Rmax_l.
+  move: (Rlt_le _ _ Hv0).
+  case: Rle_dec  => // Hv1 _.
+  move: (Rlt_not_eq _ _ Hv0).
+  case: Rle_lt_or_eq_dec => //.
 Qed.
 Lemma Rbar_lim_seq_mult (u v : nat -> Rbar) :
   Rbar_ex_lim_seq u -> Rbar_ex_lim_seq v

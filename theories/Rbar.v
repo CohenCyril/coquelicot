@@ -89,17 +89,17 @@ Definition Rbar_mult (x y : Rbar) : Rbar :=
     | Finite x => match y with
       | Finite y => Finite (x*y)
       | p_infty => match (Rle_dec 0 x) with
-        | left _ => p_infty
+        | left H => match (Rle_lt_or_eq_dec _ _ H) with | left _ => p_infty | right _ => 0 end
         | right _ => m_infty
       end
       | m_infty => match (Rle_dec 0 x) with
-        | left _ => m_infty
+        | left H => match (Rle_lt_or_eq_dec _ _ H) with | left _ => m_infty | right _ => 0 end
         | right _ => p_infty
       end
     end
     | p_infty => match y with
       | Finite y => match (Rle_dec 0 y) with
-        | left _ => p_infty
+        | left H => match (Rle_lt_or_eq_dec _ _ H) with | left _ => p_infty | right _ => 0 end
         | right _ => m_infty
       end
       | p_infty => p_infty
@@ -107,7 +107,7 @@ Definition Rbar_mult (x y : Rbar) : Rbar :=
     end
     | m_infty => match y with
       | Finite y => match (Rle_dec 0 y) with
-        | left _ => m_infty
+        | left H => match (Rle_lt_or_eq_dec _ _ H) with | left _ => m_infty | right _ => 0 end
         | right _ => p_infty
       end
       | p_infty => m_infty
@@ -142,16 +142,24 @@ Lemma Rbar_mult_correct (x y z : Rbar) :
   is_Rbar_mult x y z -> Rbar_mult x y = z.
 Proof.
   case: x => [x | | ] ; case: y => [y | | ] ; case: z => [z | | ] //= Hm ;
-  try case: Rle_dec => // Hp.
+  try case: Rle_dec => // H.
   by rewrite Hm.
-  contradict Hp ; by apply Rlt_le.
-  by apply Rle_not_lt in Hp.
-  by apply Rle_not_lt in Hp.
-  contradict Hp ; by apply Rlt_le.
-  contradict Hp ; by apply Rlt_le.
-  by apply Rle_not_lt in Hp.
-  by apply Rle_not_lt in Hp.
-  contradict Hp ; by apply Rlt_le.
+  case: Rle_lt_or_eq_dec => // H0.
+  by apply Rlt_not_eq in Hm.
+  by apply Rlt_le in Hm.
+  by apply Rlt_not_le in Hm.
+  by apply Rlt_not_le in Hm.
+  case: Rle_lt_or_eq_dec => // H0.
+  by apply Rlt_not_eq in Hm.
+  by apply Rlt_le in Hm.
+  case: Rle_lt_or_eq_dec => // H0.
+  by apply Rlt_not_eq in Hm.
+  by apply Rlt_le in Hm.
+  by apply Rlt_not_le in Hm.
+  by apply Rlt_not_le in Hm.
+  case: Rle_lt_or_eq_dec => // H0.
+  by apply Rlt_not_eq in Hm.
+  by apply Rlt_le in Hm.
 Qed.
 Lemma Rbar_mult_pos_correct (x : Rbar) (y : posreal) (z : Rbar) :
   is_Rbar_mult x (Finite y) z -> Rbar_mult_pos x y = z.
@@ -615,6 +623,15 @@ Proof.
   by rewrite -is_Rbar_mult_opp_l Rbar_opp_involutive is_Rbar_mult_opp_r.
 Qed.
 
+(** the function *)
+
+Lemma Rbar_mult_comm (x y : Rbar) :
+  Rbar_mult x y = Rbar_mult y x.
+Proof.
+  case: x => [x | | ] ; case: y => [y | | ] //=.
+  by apply Rbar_finite_eq, Rmult_comm.
+Qed.
+
 (** ** Rbar_div *)
 
 (** the predicate *)
@@ -726,7 +743,8 @@ Qed.
 
 Definition Rbar_locally (P : R -> Prop) (a : Rbar) :=
   match a with
-    | Finite a => exists delta : posreal, forall x, Rabs (x-a) < delta -> P x
+    | Finite a => exists delta : posreal, 
+	forall x, Rabs (x-a) < delta -> x <> a -> P x
     | p_infty => exists M : R, forall x, M < x -> P x
     | m_infty => exists M : R, forall x, x < M -> P x
   end.
@@ -735,7 +753,26 @@ Lemma Rbar_locally_forall (P : R -> Prop) (a : Rbar) :
   (forall x, P x) -> Rbar_locally P a.
 Proof.
   case: a => [a | | ] H ;
-  exists (mkposreal _ Rlt_0_1) => /= x _ ; by apply H.
+  exists (mkposreal _ Rlt_0_1) => /= x _ ; by intuition.
+Qed.
+
+Lemma Rbar_locally_const (a : Rbar) (P : Prop) :
+  Rbar_locally (fun _ => P) a -> P.
+Proof.
+  case: a => [a | | ] [d H].
+  apply (H (a+d/2)).
+  ring_simplify (a + d / 2 - a).
+  rewrite Rabs_pos_eq.
+  apply Rminus_lt_0.
+  field_simplify ; rewrite -Rdiv_1.
+  by apply is_pos_div_2.
+  apply Rlt_le, is_pos_div_2.
+  apply Rgt_not_eq, Rminus_lt_0 ; ring_simplify.
+  by apply is_pos_div_2.
+  apply (H (d+1)).
+  by apply Rlt_plus_1.
+  apply (H (d-1)).
+  by apply Rlt_minus_l, Rlt_plus_1.
 Qed.
 
 Lemma Rbar_locally_imply (P Q : R -> Prop) (a : Rbar) :
@@ -745,11 +782,13 @@ Proof.
   case: a => /= [a | | ] [d0 Hpq] [d1 Hp].
   have Hd : 0 < Rmin d0 d1.
     apply Rmin_case ; [by apply d0 | by apply d1].
-  exists (mkposreal (Rmin d0 d1) Hd) => /= x H.
+  exists (mkposreal (Rmin d0 d1) Hd) => /= x H Hxa.
   apply: Hpq.
   apply Rlt_le_trans with (1 := H), Rmin_l.
+  apply: Hxa.
   apply: Hp.
   apply Rlt_le_trans with (1 := H), Rmin_r.
+  apply: Hxa.
   exists (Rmax d0 d1) => /= x H.
   apply: Hpq.
   apply Rle_lt_trans with (2 := H), Rmax_l.
@@ -769,11 +808,13 @@ Proof.
   case: a => /= [a | | ] [d0 Hp] [d1 Hq].
   have Hd : 0 < Rmin d0 d1.
     apply Rmin_case ; [by apply d0 | by apply d1].
-  exists (mkposreal (Rmin d0 d1) Hd) => /= x H ; split.
+  exists (mkposreal (Rmin d0 d1) Hd) => /= x H Hxa ; split.
   apply: Hp.
   apply Rlt_le_trans with (1 := H), Rmin_l.
+  apply: Hxa.
   apply: Hq.
   apply Rlt_le_trans with (1 := H), Rmin_r.
+  apply: Hxa.
   exists (Rmax d0 d1) => /= x H ; split.
   apply: Hp.
   apply Rle_lt_trans with (2 := H), Rmax_l.
@@ -846,6 +887,9 @@ Proof.
   by apply Rplus_le_compat_r, le_INR.
   by apply Rgt_not_eq, delta.
   by apply Rlt_le, RinvN_pos.
+  apply Rgt_not_eq, Rminus_lt_0.
+  ring_simplify.
+  by apply RinvN_pos.
 (* x = p_infty *)
   case: (nfloor_ex (Rmax 0 delta)) => [ | N [_ HN]].
   by apply Rmax_l.

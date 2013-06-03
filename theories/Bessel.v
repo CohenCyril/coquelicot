@@ -17,7 +17,7 @@ Proof.
     apply pow_nonzero, Ropp_neq_0_compat, R1_neq_R0.
     apply Rinv_neq_0_compat, Rmult_integral_contrapositive_currified ;
     apply INR_fact_neq_0.
-  apply Abs_ex_series.
+  apply ex_series_Rabs.
   apply DAlembert_crit with 0.
   by apply H.
   move => eps.
@@ -210,10 +210,10 @@ Proof.
   apply f_equal.
   rewrite -PSeries_incr_1 -PSeries_scal -PSeries_plus.
 Focus 2.
-  apply ex_pseries_incr_1 ; apply Abs_ex_series ; apply CV_circle_carac.
+  apply ex_pseries_incr_1 ; apply ex_series_Rabs ; apply CV_circle_carac.
   by rewrite ?PS_derive_circle CV_Bessel1.
 Focus 2.
-  apply Abs_ex_series, CV_circle_carac ;
+  apply ex_series_Rabs, CV_circle_carac ;
   by rewrite ?PS_derive_circle CV_Bessel1.
   apply PSeries_ext ; case => /= [ | k] ;
   rewrite /PS_plus /PS_incr_1 /PS_scal /PS_derive /Bessel1_seq.
@@ -235,10 +235,10 @@ Focus 2.
   apply f_equal.
   rewrite -PSeries_incr_1 -?PSeries_scal -PSeries_plus.
 Focus 2.
-  apply ex_pseries_incr_1, Abs_ex_series, CV_circle_carac ;
+  apply ex_pseries_incr_1, ex_series_Rabs, CV_circle_carac ;
   by rewrite ?PS_derive_circle CV_Bessel1.
 Focus 2.
-  apply ex_pseries_scal, Abs_ex_series, CV_circle_carac ;
+  apply ex_pseries_scal, ex_series_Rabs, CV_circle_carac ;
   by rewrite ?PS_derive_circle CV_Bessel1.
   apply PSeries_ext ; case => /= [ | k] ;
   rewrite /PS_plus /PS_incr_1 /PS_scal /PS_derive /Bessel1_seq.
@@ -262,10 +262,10 @@ Focus 2.
   apply f_equal.
   rewrite -PSeries_incr_1 -?PSeries_scal -PSeries_plus.
 Focus 2.
-  apply ex_pseries_incr_1, Abs_ex_series, CV_circle_carac ;
+  apply ex_pseries_incr_1, ex_series_Rabs, CV_circle_carac ;
   by rewrite ?PS_derive_circle CV_Bessel1.
 Focus 2.
-  apply ex_pseries_scal, Abs_ex_series, CV_circle_carac ;
+  apply ex_pseries_scal, ex_series_Rabs, CV_circle_carac ;
   by rewrite ?PS_derive_circle CV_Bessel1.
   apply PSeries_ext ; case => /= [ | k] ;
   rewrite /PS_plus /PS_incr_1 /PS_scal /PS_derive /Bessel1_seq.
