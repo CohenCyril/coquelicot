@@ -1,7 +1,155 @@
 Require Import Reals.
 Require Import ssreflect.
-Require Import Rcomplements Derive RInt Differential Locally.
+Require Import Rcomplements Rbar_theory Derive SF_seq RInt Differential Locally.
 Require Import Continuity Lim_seq.
+
+
+Lemma is_RInt_point (f : R -> R) (a : R) :
+  is_RInt f a a 0.
+Proof.
+  move => eps ; exists (mkposreal _ Rlt_0_1) => ptd _ _ _ _.
+  rewrite Rminus_eq0 /signe.
+  case: Rle_dec (Rle_refl 0) => // H _.
+  case: Rle_lt_or_eq_dec (Rle_not_lt _ _ H) => // _ _.
+  rewrite Rmult_0_l Rminus_0_r Rabs_R0.
+  by apply eps.
+Qed.
+
+Lemma ex_RInt_point :
+  forall f a, ex_RInt f a a.
+Proof.
+intros f a.
+exists 0 ; by apply is_RInt_point.
+Qed.
+
+Lemma RInt_point :
+  forall f a, RInt f a a = 0.
+Proof.
+intros f a.
+replace 0 with (Rbar.real (Rbar.Finite 0)) by auto.
+rewrite -(Lim_seq_const 0).
+rewrite /RInt ; case: Rle_dec (Rle_refl a) => // _ _ ;
+apply f_equal, Lim_seq_ext.
+move => n ; rewrite /RInt_val ; field ; apply Rgt_not_eq, INRp1_pos.
+Qed.
+
+(** ** Swap bounds *)
+
+Lemma RInt_swap :
+  forall f a b,
+  - RInt f a b = RInt f b a.
+Proof.
+intros f a b.
+destruct (Req_dec a b) as [Hab|Hab].
+rewrite Hab.
+rewrite RInt_point.
+apply Ropp_0.
+unfold RInt.
+destruct (Rle_dec a b) as [H|H].
+destruct (Rle_dec b a) as [H'|H'].
+elim Hab.
+now apply Rle_antisym.
+apply refl_equal.
+apply Rnot_le_lt in H.
+destruct (Rle_dec b a) as [H'|H'].
+apply Ropp_involutive.
+elim H'.
+now apply Rlt_le.
+Qed.
+
+(** * Unicity *)
+
+Lemma is_RInt_unique (f : R -> R) (a b l : R) :
+  is_RInt f a b l -> RInt f a b = l.
+Proof.
+  wlog : a b l /(a < b) => [Hw | Hab].
+    case: (Rlt_le_dec a b) => Hab.
+    by apply Hw.
+    case: Hab => [Hab | -> {b}] Hf.
+    rewrite -RInt_swap.
+    rewrite -(Ropp_involutive l).
+    apply Ropp_eq_compat.
+    apply Hw.
+    by apply Hab.
+    apply is_RInt_swap.
+    by rewrite Ropp_involutive.
+    rewrite RInt_point.
+    apply Req_lt_aux => eps.
+    rewrite Rminus_0_l Rabs_Ropp.
+    case: (Hf eps) => {Hf} alpha Hf.
+    set ptd := SF_seq_f2 (fun x y => (x + y) / 2) (RInt_part a a O) 0.
+    replace l with (l - signe (a - a) * Riemann_sum f ptd).
+    apply Hf.
+    rewrite /ptd => i ;
+    rewrite SF_size_f2 SF_lx_f2 ;
+    move => /= Hi.
+    case: i Hi => [ | i] //= Hi.
+    split ; apply Req_le ; field.
+    by apply lt_S_n, lt_n_0 in Hi.
+    rewrite /seq_step SF_lx_f2 /=.
+    replace (a + 1 * (a - a) / (0 + 1) - (a + 0 * (a - a) / (0 + 1))) with 0 by field.
+    rewrite Rabs_R0.
+    rewrite /Rmax ; case: Rle_dec (Rle_refl 0) => // _ _.
+    by apply alpha.
+    rewrite /ptd /=.
+    rewrite /Rmin ; case: Rle_dec (Rle_refl a) => // _ _.
+    field.
+    rewrite SF_lx_f2 /=.
+    rewrite /Rmax ; case: Rle_dec (Rle_refl a) => // _ _.
+    field.
+    apply Rminus_diag_uniq ; ring_simplify.
+    apply Rmult_eq_0_compat_r.
+    apply Ropp_eq_0_compat.
+    rewrite Rminus_eq0.
+    rewrite /signe.
+    case: Rle_dec (Rle_refl 0) => // H _.
+    case: Rle_lt_or_eq_dec (Rlt_irrefl 0) => //.
+  move => Hf.
+  rewrite /RInt.
+  case: Rle_dec (Rlt_le _ _ Hab) => // _ _.
+  rewrite (is_lim_seq_unique _ l) => //.
+  by apply ex_RInt_correct_aux_2.
+Qed.
+
+(** * Operations *)
+
+
+(** ** Extentionality *)
+
+Lemma is_RInt_ext (f g : R -> R) (a b l : R) :
+  (forall x, Rmin a b <= x <= Rmax a b -> f x = g x) ->
+  is_RInt f a b l -> is_RInt g a b l.
+Proof.
+  move => Heq Hex eps.
+case: (Hex eps) => {Hex} alpha Hex ;
+exists alpha => ptd Hptd Hstep Hhead Hlast.
+replace (Riemann_sum g ptd) with (Riemann_sum f ptd).
+by apply Hex.
+move: (Rmin a b) (Rmax a b) Heq Hhead Hlast Hptd.
+apply SF_seq.SF_cons_ind with (s := ptd)
+  => /= [x0 | [x0 y0] s IH] /= a' b' Heq Hhead Hlast Hptd.
+reflexivity.
+rewrite !Riemann_sum_cons /= ; apply f_equal2.
+rewrite Heq.
+reflexivity.
+rewrite -Hhead -Hlast ; split.
+by apply (Hptd O (lt_O_Sn _)).
+apply Rle_trans with (SF_seq.SF_h s).
+by apply (Hptd O (lt_O_Sn _)).
+apply (SF_seq.sorted_last (seq.Cons _ (SF_seq.SF_h s) (seq.unzip1 (SF_seq.SF_t s))) O)
+  with (x0 := 0).
+apply ptd_sort, ptd_cons with (1 := Hptd).
+by apply lt_O_Sn.
+apply (IH (SF_seq.SF_h s) b').
+move => x Hx ; apply Heq ; split.
+apply Rle_trans with (SF_seq.SF_h s).
+rewrite -Hhead ; by apply (ptd_sort _ Hptd).
+by apply Hx.
+by apply Hx.
+reflexivity.
+by apply Hlast.
+by apply ptd_cons with (1 := Hptd).
+Qed.
 
 Lemma ex_RInt_ext :
   forall f g a b,
@@ -38,51 +186,6 @@ by apply Hx.
 reflexivity.
 by apply Hlast.
 by apply ptd_cons with (1 := Hptd).
-Qed.
-
-Lemma ex_RInt_point :
-  forall f a, ex_RInt f a a.
-Proof.
-intros f a.
-exists 0 => eps ; exists (mkposreal _ Rlt_0_1) => ptd _ _ _ _.
-rewrite Rminus_eq0 /signe.
-case: Rle_dec (Rle_refl 0) => // H _.
-case: Rle_lt_or_eq_dec (Rle_not_lt _ _ H) => // _ _.
-rewrite Rmult_0_l Rminus_0_r Rabs_R0.
-by apply eps.
-Qed.
-
-Lemma RInt_point :
-  forall f a, RInt f a a = 0.
-Proof.
-intros f a.
-replace 0 with (Rbar.real (Rbar.Finite 0)) by auto.
-rewrite -(Lim_seq_const 0).
-rewrite /RInt ; case: Rle_dec (Rle_refl a) => // _ _ ;
-apply f_equal, Lim_seq_ext.
-move => n ; rewrite /RInt_val ; field ; apply Rgt_not_eq, INRp1_pos.
-Qed.
-
-Lemma RInt_swap :
-  forall f a b,
-  - RInt f a b = RInt f b a.
-Proof.
-intros f a b.
-destruct (Req_dec a b) as [Hab|Hab].
-rewrite Hab.
-rewrite RInt_point.
-apply Ropp_0.
-unfold RInt.
-destruct (Rle_dec a b) as [H|H].
-destruct (Rle_dec b a) as [H'|H'].
-elim Hab.
-now apply Rle_antisym.
-apply refl_equal.
-apply Rnot_le_lt in H.
-destruct (Rle_dec b a) as [H'|H'].
-apply Ropp_involutive.
-elim H'.
-now apply Rlt_le.
 Qed.
 
 Lemma RInt_ext :
@@ -138,27 +241,38 @@ field ; by apply Rgt_not_eq, INRp1_pos.
 by [].
 Qed.
 
-Lemma ex_RInt_const :
-  forall v a b, ex_RInt (fun _ => v) a b.
+(** ** Constant functions *)
+
+Lemma is_RInt_const (v a b : R) :
+  is_RInt (fun _ => v) a b (v * (b - a)).
 Proof.
-intros f a b.
 wlog: a b /(a < b) => [Hw | Hab].
   case: (Rle_lt_dec a b) => Hab.
   case: Hab => Hab.
   by apply Hw.
-  rewrite Hab ; by apply ex_RInt_point.
-  by apply ex_RInt_swap, Hw.
-exists (f * (b-a)) => eps ; exists (mkposreal _ Rlt_0_1) => ptd _ _.
+  rewrite Hab ; rewrite Rminus_eq0 Rmult_0_r.
+  by apply is_RInt_point.
+  apply is_RInt_swap.
+  replace (- (v * (b - a))) with (v * (a - b)) by ring.
+  by apply Hw.
+move => eps ; exists (mkposreal _ Rlt_0_1) => ptd _ _.
 rewrite /Rmin /Rmax ; case: Rle_dec (Rlt_le _ _ Hab) => // _ _.
 rewrite /signe ; case: Rle_dec (Rlt_le _ _ (Rgt_minus _ _ Hab)) => // H _ ;
 case: Rle_lt_or_eq_dec (Rlt_not_eq _ _ (Rgt_minus _ _ Hab)) => // {H} _ _ ;
 rewrite Rmult_1_l => Ha Hb.
-replace (Riemann_sum _ _) with (f * (b-a)).
+replace (Riemann_sum _ _) with (v * (b-a)).
 rewrite Rminus_eq0 Rabs_R0 ; by apply eps.
 rewrite -Ha -Hb => {Ha Hb} ;
 apply SF_seq.SF_cons_ind with (s := ptd) => {ptd} [ x0 | [x0 y0] s IH] /= .
 rewrite /Riemann_sum /SF_seq.RInt_seq /= ; ring.
 rewrite Riemann_sum_cons /= -IH /= ; ring.
+Qed.
+
+Lemma ex_RInt_const :
+  forall v a b, ex_RInt (fun _ => v) a b.
+Proof.
+intros f a b.
+exists (f * (b-a)) ; by apply is_RInt_const.
 Qed.
 
 Lemma RInt_const (a b c : R) :
@@ -186,6 +300,8 @@ ring.
 rewrite -IH /= ; ring.
 by rewrite seq.size_mkseq.
 Qed.
+
+(** ** Absolute value *)
 
 Lemma ex_RInt_abs :
   forall f a b, ex_RInt f a b ->
