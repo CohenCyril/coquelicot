@@ -380,6 +380,37 @@ Proof.
   by apply Derive_correct.
 Qed.
 
+(** Inverse function *)
+
+Lemma derivable_pt_lim_Rinv (x : R) :
+  x <> 0
+    -> is_derive (fun y => / y) x (-/x^2).
+Proof.
+  move => Hf.
+  search_derive.
+  apply derivable_pt_lim_inv.
+  apply derivable_pt_lim_id.
+  by [].
+  simpl ; by field.
+Qed.
+Lemma ex_derive_Rinv (x : R) :
+  x <> 0
+    -> ex_derive (fun y => / y) x.
+Proof.
+  move => Hf.
+  exists (-/x^2).
+  by apply derivable_pt_lim_Rinv.
+Qed.
+Lemma Derive_Rinv (x : R) :
+  x <> 0
+    -> Derive (fun y => / y) x = - / x ^ 2.
+Proof.
+  move => Hl.
+  apply is_derive_unique.
+  by apply derivable_pt_lim_Rinv.
+Qed.
+
+
 (** Composition of functions *)
 
 Lemma ex_derive_comp (f g : R -> R) (x : R) :

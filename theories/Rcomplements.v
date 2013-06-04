@@ -389,6 +389,19 @@ rewrite <- 3!(Rplus_comm a).
 apply Rplus_min_distr_l.
 Qed.
 
+Lemma Rmin_assoc : forall x y z, Rmin x (Rmin y z) =
+  Rmin (Rmin x y) z.
+intros x y z; unfold Rmin.
+destruct (Rle_dec y z);
+destruct (Rle_dec x y);
+destruct (Rle_dec x z);
+destruct (Rle_dec y z) ; try intuition.
+contradict n.
+apply Rle_trans with y ; auto.
+contradict r.
+apply Rlt_not_le, Rlt_trans with y ; apply Rnot_le_lt ; auto.
+Qed.
+
 (** Order *)
 
 Lemma Rmax_le_compat : forall a b c d, a <= b -> c <= d -> Rmax a c <= Rmax b d.
