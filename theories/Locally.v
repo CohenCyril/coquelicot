@@ -1,6 +1,6 @@
 Require Import Reals.
 Require Import ssreflect.
-Require Import Rcomplements.
+Require Import Rcomplements Rbar_theory.
 Require Import List.
 
 Open Scope R_scope.
@@ -330,27 +330,34 @@ Qed.
 
 (** * intervals *)
 
-Lemma locally_intervals (P : R -> Prop) (x : R) :
-  locally P x 
-    <-> (exists (a : R), exists b : R, a < x < b 
-        /\ (forall y, a < y < b -> P y)).
+Lemma locally_interval (P : R -> Prop) (x : R) (a b : Rbar) :
+  Rbar_lt a x -> Rbar_lt x b 
+  -> (forall (y : R), Rbar_lt a y -> Rbar_lt y b -> P y)
+    -> locally P x.
 Proof.
-  split => [[eps H] | [a [b [H H0]]]].
-  exists (x - eps) ; exists (x + eps) ; split.
-  split ; apply Rminus_lt_0 ; ring_simplify ; by apply eps.
-  move => y ; move/Rabs_lt_between' => H0.
-  by apply H.
-  suff H1 : 0 < Rmin (x - a) (b - x).
-  exists (mkposreal _ H1) => /= y ; move/Rabs_lt_between' => Hy.
-  apply H0 ; split.
-  apply Rle_lt_trans with (2 := proj1 Hy).
-  pattern a at 1 ; replace a with (x - (x-a)) by ring.
-  by apply Rplus_le_compat_l, Ropp_le_contravar, Rmin_l.
-  apply Rlt_le_trans with (1 := proj2 Hy).
-  pattern b at 2 ; replace b with (x + (b - x)) by ring.
-  by apply Rplus_le_compat_l, Rmin_r.
-  apply Rmin_case ; apply -> Rminus_lt_0 ; by case: H.
+  move => Hax Hxb Hp.
+  case: (Rbar_lt_locally _ _ _ Hax Hxb) => d Hd.
+  exists d => y Hy.
+  apply Hp ; by apply Hd.
 Qed.
+
+(** * continuity *)
+
+Lemma locally_comp (P : R -> Prop) (f : R -> R) (x : R) :
+  locally P (f x) -> continuity_pt f x 
+  -> locally (fun x => P (f x)) x.
+Proof.
+  move => Hp Hf.
+  case: Hp => eps Hp.
+  case: (Hf eps) => {Hf} [ | d [Hd Hf]].
+  by apply eps.
+  exists (mkposreal _ Hd) => /= y Hy.
+  apply Hp.
+  case: (Req_dec x y) => [<- | Hxy].
+  rewrite Rminus_eq0 Rabs_R0 ; apply eps.
+  apply Hf ; repeat split ; intuition.
+Qed.
+
 
 (** * locally in Set *)
 

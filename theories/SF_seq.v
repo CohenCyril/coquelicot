@@ -275,6 +275,14 @@ Proof.
   apply (Hrcons (mkSF_seq sh st) t) => //.
 Qed.
 
+Lemma SF_cons_rcons {T : Type} (h : R*T) (s : @SF_seq T) (l : R*T) :
+  SF_cons h (SF_rcons s l) = SF_rcons (SF_cons h s) l.
+Proof.
+  case: h => hx hy ;
+  case: l => lx ly ;
+  case: s => sh st //.
+Qed.
+
 Lemma SF_lx_nil {T : Type} (x0 : R) :
   SF_lx (@SF_nil T x0) = [:: x0].
 Proof.
@@ -450,6 +458,18 @@ Lemma SF_map_cons {T T0 : Type} (f : T -> T0) (h : R*T) (s : SF_seq) :
   SF_map f (SF_cons h s) = SF_cons (fst h, f (snd h)) (SF_map f s).
 Proof.
   case: s => sh ; elim => // h st ; rewrite /SF_map => //.
+Qed.
+
+Lemma SF_map_rcons {T T0 : Type} (f : T -> T0) (s : SF_seq) (h : R*T) : 
+  SF_map f (SF_rcons s h) = SF_rcons (SF_map f s) (fst h, f (snd h)).
+Proof.
+  move: h ; apply SF_cons_ind with (s := s) => {s} [x0 | h0 s IH] //= h.
+  rewrite SF_map_cons.
+  replace (SF_rcons (SF_cons h0 s) h) with
+    (SF_cons h0 (SF_rcons s h)) by auto.
+  rewrite SF_map_cons.
+  rewrite IH.
+  auto.
 Qed.
 
 Lemma SF_map_lx {T T0 : Type} (f : T -> T0) (s : SF_seq) : 

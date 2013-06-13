@@ -389,9 +389,72 @@ rewrite <- 3!(Rplus_comm a).
 apply Rplus_min_distr_l.
 Qed.
 
+Lemma Rmult_max_distr_l :
+  forall a b c, 0 <= a -> a * Rmax b c = Rmax (a * b) (a * c).
+Proof.
+intros a b c Ha.
+destruct Ha as [Ha|Ha].
+unfold Rmax.
+case Rle_dec ; intros H.
+apply (Rmult_le_compat_l _ _ _ (Rlt_le _ _ Ha)) in H.
+case Rle_dec ; intuition.
+apply Rnot_le_lt, (Rmult_lt_compat_l _ _ _ Ha), Rlt_not_le in H.
+case Rle_dec ; intuition.
+rewrite <- Ha  ; clear a Ha.
+repeat rewrite Rmult_0_l.
+unfold Rmax ; assert (H := Rle_refl 0).
+case Rle_dec ; intuition.
+Qed.
+
+Lemma Rmult_max_distr_r :
+  forall a b c, 0 <= a -> Rmax b c * a = Rmax (b * a) (c * a).
+Proof.
+intros a b c.
+rewrite <- 3!(Rmult_comm a).
+apply Rmult_max_distr_l.
+Qed.
+
+Lemma Rmult_min_distr_l :
+  forall a b c, 0 <= a -> a * Rmin b c = Rmin (a * b) (a * c).
+Proof.
+intros a b c Ha.
+destruct Ha as [Ha|Ha].
+unfold Rmin.
+case Rle_dec ; intros H.
+apply (Rmult_le_compat_l _ _ _ (Rlt_le _ _ Ha)) in H.
+case Rle_dec ; intuition.
+apply Rnot_le_lt, (Rmult_lt_compat_l _ _ _ Ha), Rlt_not_le in H.
+case Rle_dec ; intuition.
+rewrite <- Ha  ; clear a Ha.
+repeat rewrite Rmult_0_l.
+unfold Rmin ; assert (H := Rle_refl 0).
+case Rle_dec ; intuition.
+Qed.
+
+Lemma Rmult_min_distr_r :
+  forall a b c, 0 <= a -> Rmin b c * a = Rmin (b * a) (c * a).
+Proof.
+intros a b c.
+rewrite <- 3!(Rmult_comm a).
+apply Rmult_min_distr_l.
+Qed.
+
 Lemma Rmin_assoc : forall x y z, Rmin x (Rmin y z) =
   Rmin (Rmin x y) z.
 intros x y z; unfold Rmin.
+destruct (Rle_dec y z);
+destruct (Rle_dec x y);
+destruct (Rle_dec x z);
+destruct (Rle_dec y z) ; try intuition.
+contradict n.
+apply Rle_trans with y ; auto.
+contradict r.
+apply Rlt_not_le, Rlt_trans with y ; apply Rnot_le_lt ; auto.
+Qed.
+
+Lemma Rmax_assoc : forall x y z, Rmax x (Rmax y z) =
+  Rmax (Rmax x y) z.
+intros x y z; unfold Rmax.
 destruct (Rle_dec y z);
 destruct (Rle_dec x y);
 destruct (Rle_dec x z);
@@ -442,6 +505,17 @@ Proof.
   apply Rlt_le.
   apply H.
 Qed.
+Lemma Rmin_opp_Rmax : forall a b, Rmin (-a) (-b) = - Rmax a b.
+Proof.
+  intros.
+  rewrite Rmax_comm.
+  unfold Rmin ; case Rle_dec ; intro Hab.
+  apply Ropp_le_cancel in Hab.
+  unfold Rmax ; case Rle_dec ; intuition.
+  apply Rnot_le_lt, Ropp_lt_cancel, Rlt_not_le in Hab.
+  unfold Rmax ; case Rle_dec ; intuition.
+Qed.
+
 
 Lemma Rmax_mult : forall a b c, 0 <= c -> Rmax a b * c = Rmax (a * c) (b * c).
 Proof.

@@ -724,6 +724,70 @@ Definition Rbar_min (x y : Rbar) :=
     | right _ => y
   end.
 
+Lemma Rbar_lt_locally (a b : Rbar) (x : R) :
+  Rbar_lt a x -> Rbar_lt x b ->
+  exists delta : posreal, 
+    forall y, Rabs (y - x) < delta -> Rbar_lt a y /\ Rbar_lt y b.
+Proof.
+  move => Hax Hxb.
+  case Hd_val : (Rbar_min (Rbar_minus x a) (Rbar_minus b x)) => [d | | ] //.
+(* d \in R *)
+  have Hd : 0 < d.
+    replace d with (real d) by auto.
+    rewrite -Hd_val.
+    case: a b Hax Hxb Hd_val => [a | | ] ;
+    case => [b | | ] //= Hax Hxb ;
+    rewrite /Rbar_min ; case: Rbar_le_dec => //= H Hd_val.
+    by apply (Rminus_lt_0 a).
+    by apply (Rminus_lt_0 x).
+    by apply (Rminus_lt_0 a).
+    by apply (Rminus_lt_0 x).
+  exists (mkposreal _ Hd) => y Hy ; simpl in Hy.
+  case: a b Hax Hxb Hd_val => [a | | ] ;
+  case => [b | | ] //= Hax Hxb Hd_val ; split => //.
+  apply Rplus_lt_reg_r with (-x) ;
+  rewrite -(Rplus_comm y).
+  replace (-x+a) with (-(x-a)) by ring.
+  apply (Rabs_lt_between (y - x)).
+  apply Rlt_le_trans with (1 := Hy), Rbar_finite_le.
+  rewrite -Hd_val /Rbar_min ; case: Rbar_le_dec => // H.
+  by right.
+  by apply Rbar_lt_le, Rbar_not_le_lt.
+  apply Rplus_lt_reg_r with (-x).
+  rewrite ?(Rplus_comm (-x)).
+  apply (Rabs_lt_between (y - x)).
+  apply Rlt_le_trans with (1 := Hy), Rbar_finite_le.
+  rewrite -Hd_val /Rbar_min ; case: Rbar_le_dec => // H.
+  by right.
+  apply Rplus_lt_reg_r with (-x).
+  rewrite -(Rplus_comm y).
+  replace (-x+a) with (-(x-a)) by ring.
+  apply (Rabs_lt_between (y - x)).
+  apply Rlt_le_trans with (1 := Hy), Rbar_finite_le.
+  rewrite -Hd_val /Rbar_min ; case: Rbar_le_dec => // H.
+  by right.
+  by apply Rbar_lt_le, Rbar_not_le_lt.
+  apply Rplus_lt_reg_r with (-x).
+  rewrite ?(Rplus_comm (-x)).
+  apply (Rabs_lt_between (y - x)).
+  apply Rlt_le_trans with (1 := Hy), Rbar_finite_le.
+  rewrite -Hd_val /Rbar_min ; case: Rbar_le_dec => // H.
+  by right.
+(* d = p_infty *)
+  exists (mkposreal _ Rlt_0_1) => y Hy ; simpl in Hy.
+  case: a b Hax Hxb Hd_val => [a | | ] ;
+  case => [b | | ] //= Hax Hxb ;
+  rewrite /Rbar_min ; case: Rbar_le_dec => //= H Hd_val ;
+  try apply Rbar_not_le_lt in H.
+  by [].
+  by case: H.
+(* d = m_infty *)
+  case: a b Hax Hxb Hd_val => [a | | ] ;
+  case => [b | | ] //= Hax Hxb ;
+  rewrite /Rbar_min ; case: Rbar_le_dec => //= H Hd_val ;
+  try apply Rbar_not_le_lt in H.
+Qed.
+
 (** ** Rbar_abs *)
 
 Definition Rbar_abs (x : Rbar) :=

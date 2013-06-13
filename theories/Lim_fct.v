@@ -533,7 +533,7 @@ Proof.
   by apply Lim_correct.
   by apply H1.
 Qed.
-Lemma Lim_comp (f g : R -> R) (x : R) : 
+Lemma Lim_comp (f g : R -> R) (x : Rbar) : 
   ex_lim f (Lim g x) -> ex_lim g x -> Rbar_locally (fun y => Finite (g y) <> Lim g x) x
     -> Lim (fun x => f (g x)) x = Lim f (Lim g x).
 Proof.
@@ -543,6 +543,53 @@ Proof.
   by apply Lim_correct.
   by apply Lim_correct.
   by apply H1.
+Qed.
+
+(** Identity *)
+
+Lemma is_lim_id (x : Rbar) :
+  is_lim (fun y => y) x x.
+Proof.
+  case: x => [x | | ] /=.
+  move => eps.
+  by exists eps.
+  move => M ; by exists M.
+  move => M ; by exists M.
+Qed.
+Lemma ex_lim_id (x : Rbar) :
+  ex_lim (fun y => y) x.
+Proof.
+  exists x.
+  by apply is_lim_id.
+Qed.
+Lemma Lim_id (x : Rbar) :
+  Lim (fun y => y) x = x.
+Proof.
+  apply is_lim_unique.
+  by apply is_lim_id.
+Qed.
+
+(** Constant *)
+
+Lemma is_lim_const (a : R) (x : Rbar) :
+  is_lim (fun _ => a) x a.
+Proof.
+  case: x => [x | | ] /= eps ; exists (mkposreal _ Rlt_0_1) => /= ;
+  intros ;
+  rewrite Rminus_eq0 Rabs_R0 ;
+  by apply eps.
+Qed.
+Lemma ex_lim_const (a : R) (x : Rbar) :
+  ex_lim (fun _ => a) x.
+Proof.
+  exists a.
+  by apply is_lim_const.
+Qed.
+Lemma Lim_const (a : R) (x : Rbar) :
+  Lim (fun _ => a) x = a.
+Proof.
+  apply is_lim_unique.
+  by apply is_lim_const.
 Qed.
 
 (** Additive *)
@@ -1115,6 +1162,69 @@ Proof.
   by rewrite (Rbar_mult_correct _ _ _ Hl).
 Qed.
 
+Lemma is_lim_scal_l (f : R -> R) (a : R) (x l : Rbar) :
+  is_lim f x l -> is_lim (fun y => a * f y) x (Rbar_mult a l).
+Proof.
+  move => Hf.
+  case: (Req_dec 0 a) => [<- {a} | Ha].
+  replace (Rbar_mult 0 l) with (Finite 0).
+  apply is_lim_ext with (fun _ => 0).
+  move => y ; by rewrite Rmult_0_l.
+  by apply is_lim_const.
+  case: l {Hf} => [l | | ] //=.
+  by rewrite Rmult_0_l.
+  case: Rle_dec (Rle_refl 0) => //= H _.
+  case: Rle_lt_or_eq_dec (Rlt_irrefl 0) => //.
+  case: Rle_dec (Rle_refl 0) => //= H _.
+  case: Rle_lt_or_eq_dec (Rlt_irrefl 0) => //.
+  
+  apply is_lim_mult.
+  by apply is_lim_const.
+  by apply Hf.
+  case: l {Hf} => [l | | ] //= ;
+  case: Rle_dec => // H.
+  case: Rle_lt_or_eq_dec => //.
+  by apply Rnot_le_lt.
+  case: Rle_lt_or_eq_dec => //.
+  by apply Rnot_le_lt.
+Qed.
+Lemma ex_lim_scal_l (f : R -> R) (a : R) (x : Rbar) :
+  ex_lim f x -> ex_lim (fun y => a * f y) x.
+Proof.
+  case => l Hf.
+  exists (Rbar_mult a l).
+  by apply is_lim_scal_l.
+Qed.
+Lemma Lim_scal_l (f : R -> R) (a : R) (x : Rbar) :
+  Lim (fun y => a * f y) x = Rbar_mult a (Lim f x).
+Proof.
+  apply Lim_seq_scal.
+Qed.
+
+Lemma is_lim_scal_r (f : R -> R) (a : R) (x l : Rbar) :
+  is_lim f x l -> is_lim (fun y => f y * a) x (Rbar_mult l a).
+Proof.
+  move => Hf.
+  rewrite Rbar_mult_comm.
+  apply is_lim_ext with (fun y => a * f y).
+  move => y ; by apply Rmult_comm.
+  by apply is_lim_scal_l.
+Qed.
+Lemma ex_lim_scal_r (f : R -> R) (a : R) (x : Rbar) :
+  ex_lim f x -> ex_lim (fun y => f y * a) x.
+Proof.
+  case => l Hf.
+  exists (Rbar_mult l a).
+  by apply is_lim_scal_r.
+Qed.
+Lemma Lim_scal_r (f : R -> R) (a : R) (x : Rbar) :
+  Lim (fun y => f y * a) x = Rbar_mult (Lim f x) a.
+Proof.
+  rewrite Rbar_mult_comm -Lim_seq_scal.
+  apply Lim_seq_ext.
+  move => y ; by apply Rmult_comm.
+Qed.
+
 Lemma is_lim_div (f g : R -> R) (x lf lg : Rbar) :
   is_lim f x lf -> is_lim g x lg -> lg <> 0
   -> is_Rbar_div lf lg (Rbar_div lf lg)
@@ -1164,47 +1274,56 @@ Qed.
 
 (** * Particular limits *)
 
-Lemma is_lim_id (x : Rbar) :
-  is_lim (fun y => y) x x.
+Lemma is_lim_comp_lin (f : R -> R) (a b : R) (x l : Rbar) :
+  is_lim f (Rbar_plus (Rbar_mult a x) b) l -> a <> 0
+  -> is_lim (fun y => f (a * y + b)) x l.
 Proof.
-  case: x => [x | | ] /=.
-  move => eps.
-  by exists eps.
-  move => M ; by exists M.
-  move => M ; by exists M.
+  move => Hf Ha.
+  apply is_lim_comp with (Rbar_plus (Rbar_mult a x) b).
+  by apply Hf.
+  search_lim.
+  apply is_lim_plus.
+  apply is_lim_scal_l.
+  apply is_lim_id.
+  apply is_lim_const.
+  case: (Rbar_mult a x) => //.
+  by [].
+  case: x {Hf} => [x | | ] //=.
+  exists (mkposreal _ Rlt_0_1) => y _ Hy.
+  apply Rbar_finite_neq, Rminus_not_eq ; ring_simplify (a * y + b - (a * x + b)).
+  rewrite -Rmult_minus_distr_l.
+  apply Rmult_integral_contrapositive ; split.
+  by [].
+  by apply Rminus_eq_contra.
+  exists 0 => x Hx.
+  apply sym_not_eq in Ha.
+  case: Rle_dec => // H.
+  case: Rle_lt_or_eq_dec => //.
+  exists 0 => x Hx.
+  apply sym_not_eq in Ha.
+  case: Rle_dec => // H.
+  case: Rle_lt_or_eq_dec => //.
 Qed.
-Lemma ex_lim_id (x : Rbar) :
-  ex_lim (fun y => y) x.
+Lemma ex_lim_comp_lin (f : R -> R) (a b : R) (x : Rbar) :
+  ex_lim f (Rbar_plus (Rbar_mult a x) b)
+  -> ex_lim (fun y => f (a * y + b)) x.
 Proof.
-  exists x.
-  by apply is_lim_id.
+  case => l Hf.
+  case: (Req_dec a 0) => [-> {a Hf} | Ha].
+  apply ex_lim_ext with (fun _ => f b).
+  move => y ; by rewrite Rmult_0_l Rplus_0_l.
+  by apply ex_lim_const.
+  exists l ; by apply is_lim_comp_lin.
 Qed.
-Lemma Lim_id (x : Rbar) :
-  Lim (fun y => y) x = x.
+Lemma Lim_comp_lin (f : R -> R) (a b : R) (x : Rbar) :
+  ex_lim f (Rbar_plus (Rbar_mult a x) b) -> a <> 0 -> 
+  Lim (fun y => f (a * y + b)) x = Lim f (Rbar_plus (Rbar_mult a x) b).
 Proof.
+  move => Hf Ha.
   apply is_lim_unique.
-  by apply is_lim_id.
-Qed.
-
-Lemma is_lim_const (a : R) (x : Rbar) :
-  is_lim (fun _ => a) x a.
-Proof.
-  case: x => [x | | ] /= eps ; exists (mkposreal _ Rlt_0_1) => /= ;
-  intros ;
-  rewrite Rminus_eq0 Rabs_R0 ;
-  by apply eps.
-Qed.
-Lemma ex_lim_const (a : R) (x : Rbar) :
-  ex_lim (fun _ => a) x.
-Proof.
-  exists a.
-  by apply is_lim_const.
-Qed.
-Lemma Lim_const (a : R) (x : Rbar) :
-  Lim (fun _ => a) x = a.
-Proof.
-  apply is_lim_unique.
-  by apply is_lim_const.
+  apply is_lim_comp_lin.
+  by apply Lim_correct.
+  exact: Ha.
 Qed.
 
 Lemma is_lim_continuity (f : R -> R) (x : R) :
@@ -1238,33 +1357,55 @@ Qed.
 (** Generalized intermediate value theorem *)
 
 Lemma IVT_gen (f : R -> R) (a b y : R) :
-  continuity f -> a < b
-  -> f a < y < f b
-  -> { x : R | a < x < b /\ f x = y }.
+  continuity f 
+  -> Rmin (f a) (f b) <= y <= Rmax (f a) (f b)
+  -> { x : R | Rmin a b <= x <= Rmax a b /\ f x = y }.
 Proof.
-  intros Hf Hab H.
+  case: (Req_EM_T a b) => [ <- {b} | Hab].
+    rewrite /Rmin /Rmax ; case: Rle_dec (Rle_refl a) (Rle_refl (f a)) ;
+    case: Rle_dec => // _ _ _ _ Cf Hy.
+    exists a ; split.
+    split ; by apply Rle_refl.
+    apply Rle_antisym ; by apply Hy.
+  wlog: a b Hab / (a < b) => [Hw | {Hab} Hab].
+    case: (Rle_lt_dec a b) => Hab'.
+    case: (Rle_lt_or_eq_dec _ _ Hab') => {Hab'} // Hab'.
+    by apply Hw.
+    rewrite (Rmin_comm (f a)) (Rmin_comm a) (Rmax_comm (f a)) (Rmax_comm a) ;
+    apply Hw => //.
+    by apply Rlt_not_eq.
+  rewrite /(Rmin a) /(Rmax a) ; case: Rle_dec (Rlt_le _ _ Hab) => // _ _.
+  wlog: f y / (f a <= f b) => [Hw |].
+    case: (Rle_lt_dec (f a) (f b)) => Hf' Hf Hy.
+    by apply Hw.
+    case: (Hw (fun y => - f y) (- y)).
+    by apply Ropp_le_contravar, Rlt_le.
+    by apply continuity_opp.
+    rewrite Rmin_opp_Rmax Rmax_opp_Rmin ;
+    split ; apply Ropp_le_contravar, Hy.
+    move => x [Hx Hfx].
+    exists x ; intuition.
+    by rewrite -(Ropp_involutive y) -Hfx Ropp_involutive.
+  rewrite /Rmin /Rmax ; case: Rle_dec =>  // _ _.
+  wlog: y / (f a < y < f b) => [Hw Hf Hy | Hy Hf _].
+    case: Hy => Hay Hyb.
+    case: (Rle_lt_or_eq_dec _ _ Hay) => {Hay} [Hay | <- ].
+    case: (Rle_lt_or_eq_dec _ _ Hyb) => {Hyb} [Hyb | -> ].
+    apply Hw ; intuition.
+    exists b ; intuition.
+    exists a ; intuition.
+
   case (IVT (fun x => f x - y) a b).
   apply continuity_minus.
   exact Hf.
   apply continuity_const.
   intros _ _ ; reflexivity.
   exact Hab.
-  apply Rlt_minus_l ; rewrite Rplus_0_l ; apply H.
-  apply Rlt_minus_r ; rewrite Rplus_0_l ; apply H.
+  apply Rlt_minus_l ; rewrite Rplus_0_l ; apply Hy.
+  apply Rlt_minus_r ; rewrite Rplus_0_l ; apply Hy.
   intros x [Hx Hfx].
   apply Rminus_diag_uniq in Hfx.
-  exists x ; split.
-  destruct Hx.
-  split.
-  apply Rle_lt_or_eq_dec in H0 ; destruct H0.
-  exact r.
-  rewrite <- e in Hfx ; contradict Hfx.
-  apply Rlt_not_eq, H.
-  apply Rle_lt_or_eq_dec in H1 ; destruct H1.
-  exact r.
-  rewrite e in Hfx ; contradict Hfx.
-  apply Rgt_not_eq, H.
-  exact Hfx.
+  by exists x.
 Qed.
 
 Lemma IVT_Rbar_gen (f : R -> R) (a b la lb : Rbar) (y : R) :
@@ -1820,6 +1961,233 @@ Proof.
   apply Rlt_le, Hfa.
   apply Rminus_lt_0 ; ring_simplify ; apply Rlt_0_1.
 Qed.
+
+(* Lemma IVT_Rbar_gen (f : R -> R) (a b la lb : Rbar) (y : R) :
+  is_lim f a la -> is_lim f b lb
+  -> (forall (x : R), Rbar_lt a x -> Rbar_lt x b -> continuity_pt f x)
+  -> Rbar_lt a b
+  -> Rbar_lt la y /\ Rbar_lt y lb
+  -> {x : R | Rbar_lt a x /\ Rbar_lt x b /\ f x = y}.
+Proof.
+  move => Hfa Hfb Cf Hab Hy.
+  have Hex_fe : forall (x : R), Rbar_lt a x -> (exists x0 x1 : R, Rbar_lt a x1 /\ x1 <= x /\ x0 = f x1).
+    move => x Hx ; exists (f x) ; exists x ; intuition.
+  set f0 := fun (x : R) => match (Rbar_lt_dec a x) with
+    | left H => (Lub_Rbar_ne (fun y => exists x0 : R, Rbar_lt a x0 /\ x0 <= x /\ y = f x0) (Hex_fe x H))
+    | right _ => f x
+  end.
+  
+  have Hf0 : forall (x : R), Rbar_lt a x -> Rbar_lt x b -> is_finite (f0 x).
+    move => x Hax Hxb ; rewrite /f0.
+    case: Rbar_lt_dec => // {Hax} Hax.
+    rewrite /Lub_Rbar_ne ; case: ex_lub_Rbar_ne ;
+    case => [fx | | ] [Hub Hlub] //=.
+    case: la Hfa Hy => [la | | ] Hfa Hy ; 
+    revert f0 ;
+    case: a Cf Hab Hex_fe Hax Hub Hlub Hfa => [a | | ] Cf Hab Hex_fe Hax Hub Hlub Hfa f0 ; try by intuition.
+    case: (Hfa (mkposreal _ Rlt_0_1)) => /= {Hfa} d Hfa.
+    case: (Rlt_le_dec x (a + d)) => Hxb'.
+    case: (Hlub (la + 1)) => // _ [x0 [H0 [H1 ->]]].
+    apply Rbar_finite_le, Rlt_le, Rabs_lt_between'.
+    apply Hfa.
+    rewrite Rabs_pos_eq.
+    apply Rlt_minus_l.
+    rewrite Rplus_comm.
+    by apply Rle_lt_trans with x.
+    by apply Rlt_le, (Rminus_lt_0 a).
+    by apply Rgt_not_eq.
+    case: (continuity_ab_maj f (a + d) x Hxb').
+    move => c Hc.
+    apply Cf.
+    apply Rlt_le_trans with (2 := proj1 Hc).
+    apply Rminus_lt_0 ; ring_simplify ; by apply d.
+    by apply Rbar_le_lt_trans with (1 := proj2 (Rbar_finite_le _ _) (proj2 Hc)).
+    move => x0 [Hfx0 Hx0].
+    case: (Hlub (Rmax (la + 1) (f x0))) => // _ [z [H0 [H1 ->]]].
+    apply Rbar_finite_le.
+    case: (Rle_lt_dec (a + d) z) => Hz.
+    apply Rle_trans with (2 := Rmax_r _ _).
+    apply Hfx0 ; by split.
+    apply Rle_trans with (2 := Rmax_l _ _), Rlt_le, Rabs_lt_between'.
+    apply Hfa.
+    rewrite Rabs_pos_eq.
+    apply Rlt_minus_l ; by rewrite Rplus_comm.
+    by apply Rlt_le, (Rminus_lt_0 a).
+    by apply Rgt_not_eq.
+    case: (Hfa (mkposreal _ Rlt_0_1)) => /= {Hfa} d Hfa.
+    case: (Rlt_le_dec x d) => Hxb'.
+    case: (Hlub (la + 1)) => // _ [x0 [H0 [H1 ->]]].
+    apply Rbar_finite_le, Rlt_le, Rabs_lt_between'.
+    apply Hfa.
+    by apply Rle_lt_trans with x.
+    case: (continuity_ab_maj f d x Hxb').
+    move => c Hc.
+    apply Cf.
+    by [].
+    by apply Rbar_le_lt_trans with (1 := proj2 (Rbar_finite_le _ _) (proj2 Hc)).
+    move => x0 [Hfx0 Hx0].
+    case: (Hlub (Rmax (la + 1) (f x0))) => // _ [z [H0 [H1 ->]]].
+    apply Rbar_finite_le.
+    case: (Rle_lt_dec d z) => Hz.
+    apply Rle_trans with (2 := Rmax_r _ _).
+    apply Hfx0 ; by split.
+    apply Rle_trans with (2 := Rmax_l _ _), Rlt_le, Rabs_lt_between'.
+    by apply Hfa.
+    case: (Hfa 0) => {Hfa} d Hfa.
+    case: (Rlt_le_dec x (a + d)) => Hxb'.
+    case: (Hlub 0) => // _ [x0 [H0 [H1 ->]]].
+    apply Rbar_finite_le, Rlt_le.
+    apply Hfa.
+    rewrite Rabs_pos_eq.
+    apply Rlt_minus_l.
+    rewrite Rplus_comm.
+    by apply Rle_lt_trans with x.
+    by apply Rlt_le, (Rminus_lt_0 a).
+    by apply Rgt_not_eq.
+    case: (continuity_ab_maj f (a + d) x Hxb').
+    move => c Hc.
+    apply Cf.
+    apply Rlt_le_trans with (2 := proj1 Hc).
+    apply Rminus_lt_0 ; ring_simplify ; by apply d.
+    by apply Rbar_le_lt_trans with (1 := proj2 (Rbar_finite_le _ _) (proj2 Hc)).
+    move => x0 [Hfx0 Hx0].
+    case: (Hlub (Rmax 0 (f x0))) => // _ [z [H0 [H1 ->]]].
+    apply Rbar_finite_le.
+    case: (Rle_lt_dec (a + d) z) => Hz.
+    apply Rle_trans with (2 := Rmax_r _ _).
+    apply Hfx0 ; by split.
+    apply Rle_trans with (2 := Rmax_l _ _), Rlt_le.
+    apply Hfa.
+    rewrite Rabs_pos_eq.
+    apply Rlt_minus_l ; by rewrite Rplus_comm.
+    by apply Rlt_le, (Rminus_lt_0 a).
+    by apply Rgt_not_eq.
+    case: (Hfa 0) => /= {Hfa} d Hfa.
+    case: (Rlt_le_dec x d) => Hxb'.
+    case: (Hlub 0) => // _ [x0 [H0 [H1 ->]]].
+    apply Rbar_finite_le, Rlt_le.
+    apply Hfa.
+    by apply Rle_lt_trans with x.
+    case: (continuity_ab_maj f d x Hxb').
+    move => c Hc.
+    apply Cf.
+    by [].
+    by apply Rbar_le_lt_trans with (1 := proj2 (Rbar_finite_le _ _) (proj2 Hc)).
+    move => x0 [Hfx0 Hx0].
+    case: (Hlub (Rmax 0 (f x0))) => // _ [z [H0 [H1 ->]]].
+    apply Rbar_finite_le.
+    case: (Rle_lt_dec d z) => Hz.
+    apply Rle_trans with (2 := Rmax_r _ _).
+    apply Hfx0 ; by split.
+    apply Rle_trans with (2 := Rmax_l _ _), Rlt_le.
+    by apply Hfa.
+    case: la Hfa Hy => [la | | ] Hfa Hy ; 
+    revert f0 ;
+    case: a Cf Hab Hex_fe Hax Hub Hlub Hfa => [a | | ] Cf Hab Hex_fe Hax Hub Hlub Hfa f0 ; try by intuition.
+    case: (Hfa (mkposreal _ Rlt_0_1)) => /= {Hfa} d Hfa.
+    case: (Rlt_le_dec x (a + d)) => Hxb'.
+    case: (Hlub (la + 1)) => // _ [x0 [H0 [H1 ->]]].
+    apply Rbar_finite_le, Rlt_le, Rabs_lt_between'.
+    apply Hfa.
+    rewrite Rabs_pos_eq.
+    apply Rlt_minus_l.
+    rewrite Rplus_comm.
+    by apply Rle_lt_trans with x.
+    by apply Rlt_le, (Rminus_lt_0 a).
+    by apply Rgt_not_eq.
+    case: (continuity_ab_maj f (a + d) x Hxb').
+    move => c Hc.
+    apply Cf.
+    apply Rlt_le_trans with (2 := proj1 Hc).
+    apply Rminus_lt_0 ; ring_simplify ; by apply d.
+    by apply Rbar_le_lt_trans with (1 := proj2 (Rbar_finite_le _ _) (proj2 Hc)).
+    move => x0 [Hfx0 Hx0].
+    case: (Hlub (Rmax (la + 1) (f x0))) => // _ [z [H0 [H1 ->]]].
+    apply Rbar_finite_le.
+    case: (Rle_lt_dec (a + d) z) => Hz.
+    apply Rle_trans with (2 := Rmax_r _ _).
+    apply Hfx0 ; by split.
+    apply Rle_trans with (2 := Rmax_l _ _), Rlt_le, Rabs_lt_between'.
+    apply Hfa.
+    rewrite Rabs_pos_eq.
+    apply Rlt_minus_l ; by rewrite Rplus_comm.
+    by apply Rlt_le, (Rminus_lt_0 a).
+    by apply Rgt_not_eq.
+    case: (Hfa (mkposreal _ Rlt_0_1)) => /= {Hfa} d Hfa.
+    case: (Rlt_le_dec x d) => Hxb'.
+    case: (Hlub (la + 1)) => // _ [x0 [H0 [H1 ->]]].
+    apply Rbar_finite_le, Rlt_le, Rabs_lt_between'.
+    apply Hfa.
+    by apply Rle_lt_trans with x.
+    case: (continuity_ab_maj f d x Hxb').
+    move => c Hc.
+    apply Cf.
+    by [].
+    by apply Rbar_le_lt_trans with (1 := proj2 (Rbar_finite_le _ _) (proj2 Hc)).
+    move => x0 [Hfx0 Hx0].
+    case: (Hlub (Rmax (la + 1) (f x0))) => // _ [z [H0 [H1 ->]]].
+    apply Rbar_finite_le.
+    case: (Rle_lt_dec d z) => Hz.
+    apply Rle_trans with (2 := Rmax_r _ _).
+    apply Hfx0 ; by split.
+    apply Rle_trans with (2 := Rmax_l _ _), Rlt_le, Rabs_lt_between'.
+    by apply Hfa.
+    case: (Hfa 0) => {Hfa} d Hfa.
+    case: (Rlt_le_dec x (a + d)) => Hxb'.
+    case: (Hlub 0) => // _ [x0 [H0 [H1 ->]]].
+    apply Rbar_finite_le, Rlt_le.
+    apply Hfa.
+    rewrite Rabs_pos_eq.
+    apply Rlt_minus_l.
+    rewrite Rplus_comm.
+    by apply Rle_lt_trans with x.
+    by apply Rlt_le, (Rminus_lt_0 a).
+    by apply Rgt_not_eq.
+    case: (continuity_ab_maj f (a + d) x Hxb').
+    move => c Hc.
+    apply Cf.
+    apply Rlt_le_trans with (2 := proj1 Hc).
+    apply Rminus_lt_0 ; ring_simplify ; by apply d.
+    by apply Rbar_le_lt_trans with (1 := proj2 (Rbar_finite_le _ _) (proj2 Hc)).
+    move => x0 [Hfx0 Hx0].
+    case: (Hlub (Rmax 0 (f x0))) => // _ [z [H0 [H1 ->]]].
+    apply Rbar_finite_le.
+    case: (Rle_lt_dec (a + d) z) => Hz.
+    apply Rle_trans with (2 := Rmax_r _ _).
+    apply Hfx0 ; by split.
+    apply Rle_trans with (2 := Rmax_l _ _), Rlt_le.
+    apply Hfa.
+    rewrite Rabs_pos_eq.
+    apply Rlt_minus_l ; by rewrite Rplus_comm.
+    by apply Rlt_le, (Rminus_lt_0 a).
+    by apply Rgt_not_eq.
+    case: (Hfa 0) => /= {Hfa} d Hfa.
+    case: (Rlt_le_dec x d) => Hxb'.
+    case: (Hlub 0) => // _ [x0 [H0 [H1 ->]]].
+    apply Rbar_finite_le, Rlt_le.
+    apply Hfa.
+    by apply Rle_lt_trans with x.
+    case: (continuity_ab_maj f d x Hxb').
+    move => c Hc.
+    apply Cf.
+    by [].
+    by apply Rbar_le_lt_trans with (1 := proj2 (Rbar_finite_le _ _) (proj2 Hc)).
+    move => x0 [Hfx0 Hx0].
+    case: (Hlub (Rmax 0 (f x0))) => // _ [z [H0 [H1 ->]]].
+    apply Rbar_finite_le.
+    case: (Rle_lt_dec d z) => Hz.
+    apply Rle_trans with (2 := Rmax_r _ _).
+    apply Hfx0 ; by split.
+    apply Rle_trans with (2 := Rmax_l _ _), Rlt_le.
+    by apply Hfa.
+    
+  have Hff0 : forall (x : R), f x <= f0 x.
+    admit.
+       
+    case: (continuity_ab_maj f (a + d) x)
+  have Hf0_a : is_lim f0 a la.
+    case Hla : la => [l | | ] /= eps.
+Qed. *)
 
 (** Square root function *)
 

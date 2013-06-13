@@ -835,6 +835,24 @@ Proof.
   apply SF_cons_dec with (s := ptd) => {ptd} [ x1 | [x1 y1] ptd ] //=.
 Qed. 
 
+Lemma Riemann_sum_rcons (f : R -> R) ptd l0 :
+  Riemann_sum f (SF_rcons ptd l0) =
+    Riemann_sum f ptd + f (snd l0) * (fst l0 - last (SF_h ptd) (SF_lx ptd)).
+Proof.
+  rewrite /Riemann_sum /RInt_seq.
+  case: l0 => x0 y0.
+  apply SF_rcons_dec with (s := ptd) => {ptd} [ x1 | ptd [x1 y1]].
+  simpl ; ring.
+  rewrite ?SF_map_rcons /=.
+  rewrite pairmap_rcons foldr_rcons /=.
+  rewrite unzip1_rcons last_rcons /=.
+  elim: (pairmap (fun x y : R * R => snd y * (fst y - fst x)) (SF_h ptd, 0)
+    (rcons [seq (fst x, f (snd x)) | x <- SF_t ptd] (x1, f y1))) (f y0 * (x0 - x1)) {1 3}(0)
+     => /= [ | h s IH] a b.
+  by apply Rplus_comm.
+  rewrite IH ; ring.
+Qed.
+
 Lemma pointed_pty2 f ptd : SF_sorted Rle ptd ->
   SF_h ptd = last (SF_h ptd) (SF_lx ptd) -> Riemann_sum f ptd = 0.
 Proof.

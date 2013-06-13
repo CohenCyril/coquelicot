@@ -189,6 +189,27 @@ Qed.
 
 (** ** Extentionality *)
 
+Lemma continuity_pt_ext_loc :
+  forall f g x,
+  (locally (fun x => f x = g x) x) ->
+  continuity_pt f x -> continuity_pt g x.
+Proof.
+intros f g x Heq Cf eps Heps.
+destruct (Cf eps Heps) as (d,(Hd1,Hd2)).
+case: Heq => d0 Heq.
+exists (Rmin d d0).
+split.
+apply Rmin_case.
+exact Hd1.
+by apply d0.
+intros u Hu.
+rewrite -2?Heq.
+apply Hd2 ; intuition.
+apply Rlt_le_trans with (1 := H0), Rmin_l.
+rewrite Rminus_eq0 Rabs_R0 ; by apply d0.
+apply Rlt_le_trans with (1 := proj2 Hu), Rmin_r.
+Qed.
+
 Lemma continuity_pt_ext :
   forall f g x,
   (forall x, f x = g x) ->
