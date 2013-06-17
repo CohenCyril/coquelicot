@@ -1,4 +1,4 @@
-Require Import Reals.
+Require Import Reals ssreflect.
 Require Import Even Div2.
 
 Open Scope R_scope.
@@ -15,7 +15,7 @@ Qed.
 Lemma Rlt_nat (x : R) : (exists n : nat, x = INR (S n)) -> 0 < x.
 Proof.
   intro H ; destruct H.
-  rewrite H, S_INR.
+  rewrite H S_INR.
   apply INRp1_pos.
 Qed.
 
@@ -51,7 +51,7 @@ Lemma Rdiv_1 : forall x : R, x = x / 1.
 Proof.
   intros.
   unfold Rdiv ;
-  rewrite Rinv_1, Rmult_1_r.
+  rewrite Rinv_1 Rmult_1_r.
   reflexivity.
 Qed.
 
@@ -345,6 +345,126 @@ Proof.
   rewrite <- plus_n_Sm, IHn0 ; reflexivity.
 Qed.
 
+Lemma sum_f_rw_0 (u : nat -> R) (n : nat) :
+  sum_f O n u = sum_f_R0 u n.
+Proof.
+  rewrite /sum_f -minus_n_O.
+  elim: n => [ | n IH] //.
+  rewrite /sum_f_R0 -/sum_f_R0 //.
+  by rewrite plus_0_r IH.
+Qed.
+
+Lemma sum_f_n_Sm (u : nat -> R) (n m : nat) :
+  (n <= m)%nat -> sum_f n (S m) u = sum_f n m u + u (S m).
+Proof.
+  move => H.
+  rewrite /sum_f -minus_Sn_m // /sum_f_R0 -/sum_f_R0.
+  rewrite plus_Sn_m.
+  by rewrite NPeano.Nat.sub_add.
+Qed.
+Lemma sum_f_u_Sk (u : nat -> R) (n m : nat) :
+  (n <= m)%nat -> sum_f (S n) (S m) u = sum_f n m (fun k => u (S k)).
+Proof.
+  move => H ; rewrite /sum_f.
+  simpl minus.
+  elim: (m - n)%nat => [ | k IH] //=.
+  rewrite IH ; repeat apply f_equal.
+  by rewrite plus_n_Sm.
+Qed.
+Lemma sum_f_u_add (u : nat -> R) (p n m : nat) :
+  (n <= m)%nat -> sum_f (n + p)%nat (m + p)%nat u = sum_f n m (fun k => u (k + p)%nat).
+Proof.
+  move => H ; rewrite /sum_f.
+  rewrite ?(plus_comm _ p) -minus_plus_simpl_l_reverse.
+  elim: (m - n)%nat => [ | k IH] //=.
+  by rewrite plus_comm.
+  rewrite IH ; repeat apply f_equal.
+  ring.
+Qed.
+
+
+Lemma sum_f_Sn_m (u : nat -> R) (n m : nat) :
+  (n < m)%nat -> sum_f (S n) m u = sum_f n m u - u n.
+Proof.
+  move => H.
+  elim: m n H => [ | m IH] // n H.
+  by apply lt_n_O in H.
+  rewrite sum_f_u_Sk ; try by intuition.
+  rewrite sum_f_n_Sm ; try by intuition.
+  replace (sum_f n m u + u (S m) - u n)
+    with ((sum_f n m u - u n) + u (S m)) by ring.
+  apply lt_n_Sm_le, le_lt_eq_dec in H.
+  case: H => [ H | -> {n} ] //.
+  rewrite -IH => //.
+  rewrite /sum_f ; simpl.
+  rewrite NPeano.Nat.sub_succ_r.
+  apply lt_minus_O_lt in H.
+  rewrite -{3}(NPeano.Nat.sub_add n m) ; try by intuition.
+  case: (m-n)%nat H => {IH} [ | k] //= H.
+  by apply lt_n_O in H.
+  apply (f_equal (fun y => y + _)).
+  elim: k {H} => [ | k IH] //.
+  rewrite /sum_f_R0 -/sum_f_R0 IH ; repeat apply f_equal ; intuition.
+  rewrite /sum_f minus_diag /= ; ring.
+Qed.
+
+Lemma sum_f_R0_skip (u : nat -> R) (n : nat) :
+  sum_f_R0 (fun k => u (n - k)%nat) n = sum_f_R0 u n.
+Proof.
+  suff H : forall n m, (n < m)%nat 
+    -> sum_f n m (fun k => u ((m - k) + n)%nat) = sum_f n m u.
+  
+  case: n => [ | n] //.
+  move: (H _ _ (lt_O_Sn n)) => {H} H.
+  rewrite /sum_f in H.
+  transitivity (sum_f_R0 (fun x : nat => u (S n - (x + 0) + 0)%nat) (S n - 0)).
+    replace (S n - 0)%nat with (S n) by auto.
+    elim: {2 4}(S n) => [ | m IH] //.
+    simpl ; by rewrite plus_0_r.
+    rewrite /sum_f_R0 -/sum_f_R0 -IH.
+    apply f_equal.
+    by rewrite ?plus_0_r.
+  rewrite H.
+  replace (S n - 0)%nat with (S n) by auto.
+  elim: (S n) => [ | m IH] //.
+  rewrite /sum_f_R0 -/sum_f_R0 -IH.
+  apply f_equal.
+  by rewrite plus_0_r.
+  
+  move => {n} n m H.
+  elim: m u H => [ | m IH] u H //.
+  apply lt_n_Sm_le, le_lt_eq_dec in H ; case: H IH => [H IH | -> _ {n}] //.
+  rewrite sum_f_n_Sm ; try by intuition.
+  replace (sum_f n (S m) u) with (sum_f n (S m) u - u n + u n) by ring.
+  rewrite -sum_f_Sn_m ; try by intuition.
+  rewrite sum_f_u_Sk ; try by intuition.
+  rewrite -(IH (fun k => u (S k))) => {IH} ; try by intuition.
+  apply f_equal2.
+  rewrite /sum_f.
+  elim: {1 3 4}(m - n)%nat (le_refl (m-n)%nat) => [ | k IH] // Hk ;
+  rewrite /sum_f_R0 -/sum_f_R0.
+  apply f_equal.
+  rewrite plus_0_l NPeano.Nat.sub_add ; intuition.
+  rewrite IH ; try by intuition.
+  by rewrite minus_diag plus_0_l.
+  
+  rewrite /sum_f.
+  rewrite -minus_Sn_m ; try by intuition.
+  rewrite minus_diag.
+  rewrite /sum_f_R0 -/sum_f_R0.
+  replace (1+m)%nat with (S m) by ring.
+  rewrite plus_0_l minus_diag NPeano.Nat.sub_add ; intuition.
+Qed.
+
+Lemma sum_f_chasles (u : nat -> R) (n m k : nat) :
+  (n < m)%nat -> (m < k)%nat ->
+  sum_f (S n) k u = sum_f (S n) m u + sum_f (S m) k u.
+Proof.
+  move => Hnm Hmk.
+  rewrite ?sum_f_rw //.
+  ring.
+  by apply lt_trans with m.
+Qed.
 
 (** * Rmin and Rmax *)
 (** Rewritings *)
@@ -1023,7 +1143,7 @@ Qed.
 Lemma ln_pow x n : 0 < x -> ln (x^n) = INR n * ln x.
   intro Hx ;
   induction n as [ | n IH].
-  rewrite pow_O, ln_1 ; simpl ; ring.
+  rewrite pow_O ln_1 ; simpl ; ring.
   rewrite S_INR ; simpl ; rewrite ln_mult ; try intuition.
   rewrite IH ; ring.
 Qed.

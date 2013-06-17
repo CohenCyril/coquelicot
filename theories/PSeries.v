@@ -167,7 +167,7 @@ Proof.
     move => y Hy ; rewrite /CV_circle_set /=.
   set l := (Rabs (y / r)).
   have : ex_series (fun n => M * l ^ n).
-  apply ex_series_scal.
+  apply ex_series_scal_l.
   apply ex_series_geom.
   rewrite /l Rabs_Rabsolu Rabs_div.
   apply Rlt_div_l.
@@ -797,56 +797,104 @@ Qed.
 
 (** Scalar multiplication *)
 
-Definition PS_scal (c : R) (a : nat -> R) (n : nat) : R :=
+Definition PS_scal_l (c : R) (a : nat -> R) (n : nat) : R :=
   c * a n.
-Lemma is_pseries_scal (c : R) (a : nat -> R) (x l : R) :
-  is_pseries a x l -> is_pseries (PS_scal c a) x (c * l).
+Lemma is_pseries_scal_l (c : R) (a : nat -> R) (x l : R) :
+  is_pseries a x l -> is_pseries (PS_scal_l c a) x (c * l).
 Proof.
   move => Ha.
   apply is_lim_seq_ext with (fun n => c * (sum_f_R0 (fun k => a k * x ^ k) n)).
   elim => [ | n IH].
-  simpl ; rewrite /PS_scal ; ring.
-  simpl ; rewrite -IH /PS_scal ; ring.
+  simpl ; rewrite /PS_scal_l; ring.
+  simpl ; rewrite -IH /PS_scal_l ; ring.
   evar (l0 : Rbar) ; replace (Finite (c * l)) with l0.
   apply is_lim_seq_scal.
   by apply Ha.
   by simpl.
   by simpl.
 Qed.
-Lemma ex_pseries_scal (c : R) (a : nat -> R) (x : R) :
-  ex_pseries a x -> ex_pseries (PS_scal c a) x.
+Lemma ex_pseries_scal_l (c : R) (a : nat -> R) (x : R) :
+  ex_pseries a x -> ex_pseries (PS_scal_l c a) x.
 Proof.
   move => [l Ha].
   exists (c * l).
-  by apply is_pseries_scal.
+  by apply is_pseries_scal_l.
 Qed.
-Lemma PSeries_scal (c : R) (a : nat -> R) (x : R) :
-  PSeries (PS_scal c a) x = c * PSeries a x.
+Lemma PSeries_scal_l (c : R) (a : nat -> R) (x : R) :
+  PSeries (PS_scal_l c a) x = c * PSeries a x.
 Proof.
-  rewrite -Series_scal.
+  rewrite -Series_scal_l.
   apply Series_ext.
   move => n /=.
   apply Rmult_assoc.
 Qed.
 
-Lemma CV_circle_set_scal (c : R) (a : nat -> R) (x : R) :
+Lemma CV_circle_set_scal_l (c : R) (a : nat -> R) (x : R) :
   (CV_circle_set a x) 
-  -> (CV_circle_set (PS_scal c a) x).
+  -> (CV_circle_set (PS_scal_l c a) x).
 Proof.
   move => Ha.
   apply ex_series_ext with (fun n => Rabs c * Rabs (a n * x ^ n)).
   move => n ; rewrite -Rabs_mult ; apply f_equal ;
-  by rewrite /PS_scal /= Rmult_assoc.
-  by apply ex_series_scal, Ha.
+  by rewrite /PS_scal_l /= Rmult_assoc.
+  by apply ex_series_scal_l, Ha.
 Qed.
-Lemma CV_circle_scal (c : R) (a : nat -> R) :
-  Rbar_le (CV_circle a) (CV_circle (PS_scal c a)).
+
+Lemma CV_circle_scal_l (c : R) (a : nat -> R) :
+  Rbar_le (CV_circle a) (CV_circle (PS_scal_l c a)).
 Proof.
   rewrite /CV_circle /Lub_Rbar_ne ;
   case: ex_lub_Rbar_ne => la [ub_a lub_a] ;
   case: ex_lub_Rbar_ne => lc [ub_c lub_c] /=.
   apply lub_a => x Hx.
-  by apply ub_c, CV_circle_set_scal.
+  by apply ub_c, CV_circle_set_scal_l.
+Qed.
+
+Definition PS_scal_r (c : R) (a : nat -> R) (n : nat) : R :=
+  a n * c.
+Lemma is_pseries_scal_r (c : R) (a : nat -> R) (x l : R) :
+  is_pseries a x l -> is_pseries (PS_scal_r c a) x (l * c).
+Proof.
+  move => Ha.
+  apply is_pseries_ext with (PS_scal_l c a).
+  move => n ; apply Rmult_comm.
+  rewrite Rmult_comm.
+  by apply is_pseries_scal_l.
+Qed.
+Lemma ex_pseries_scal_r (c : R) (a : nat -> R) (x : R) :
+  ex_pseries a x -> ex_pseries (PS_scal_r c a) x.
+Proof.
+  move => [l Ha].
+  exists (l * c).
+  by apply is_pseries_scal_r.
+Qed.
+Lemma PSeries_scal_r (c : R) (a : nat -> R) (x : R) :
+  PSeries (PS_scal_r c a) x = PSeries a x * c.
+Proof.
+  rewrite -Series_scal_r.
+  apply Series_ext.
+  move => n /=.
+  rewrite /PS_scal_r ; ring.
+Qed.
+
+Lemma CV_circle_set_scal_r (c : R) (a : nat -> R) (x : R) :
+  (CV_circle_set a x) 
+  -> (CV_circle_set (PS_scal_r c a) x).
+Proof.
+  move => Ha.
+  apply ex_series_ext with (fun n => Rabs c * Rabs (a n * x ^ n)).
+  move => n ; rewrite -Rabs_mult ; apply f_equal ;
+  rewrite /PS_scal_r /= ; ring.
+  by apply ex_series_scal_l, Ha.
+Qed.
+Lemma CV_circle_scal_r (c : R) (a : nat -> R) :
+  Rbar_le (CV_circle a) (CV_circle (PS_scal_r c a)).
+Proof.
+  rewrite /CV_circle /Lub_Rbar_ne ;
+  case: ex_lub_Rbar_ne => la [ub_a lub_a] ;
+  case: ex_lub_Rbar_ne => lc [ub_c lub_c] /=.
+  apply lub_a => x Hx.
+  by apply ub_c, CV_circle_set_scal_r.
 Qed.
 
 (** Multiplication and division by a variable *)
@@ -879,7 +927,7 @@ Qed.
 Lemma PSeries_incr_1 a x :
   PSeries (PS_incr_1 a) x = x * PSeries a x.
 Proof.
-  rewrite -Series_scal.
+  rewrite -Series_scal_l.
   unfold PSeries, Series.
   rewrite -(Lim_seq_incr_1 (sum_f_R0 (fun k : nat => PS_incr_1 a k * x ^ k))) /=.
   apply f_equal, Lim_seq_ext.
@@ -1074,6 +1122,30 @@ Proof.
   apply Ha ; by intuition.
   move => k Hk.
   apply Ha ; by intuition.
+Qed.
+
+Definition PS_mult (a b : nat -> R) n :=
+  sum_f_R0 (fun k => a k * b (n - k)%nat) n.
+
+Lemma is_pseries_mult (a b : nat -> R) (x la lb : R) :
+  is_pseries a x la -> is_pseries b x lb 
+  -> Rbar_lt (Rabs x) (CV_circle a) -> Rbar_lt (Rabs x) (CV_circle b)
+  -> is_pseries (PS_mult a b) x (la * lb).
+Proof.
+  move => Hla Hlb Ha Hb.
+  apply is_series_ext with (fun n => sum_f_R0 (fun k => (fun l => a l * x ^ l) k * (fun l => b l * x ^ l) (n - k)%nat) n).
+  move => n.
+  rewrite Rmult_comm.
+  rewrite scal_sum.
+  apply sum_eq => i Hi.
+  rewrite -{4}(NPeano.Nat.sub_add _ _ Hi).
+  rewrite pow_add.
+  ring.
+  apply (is_series_mult (fun l => a l * x ^ l) (fun l => b l * x ^ l)).
+  by apply Hla.
+  by apply Hlb.
+  by apply CV_circle_carac.
+  by apply CV_circle_carac.
 Qed.
 
 (** Sums on even and odd *)

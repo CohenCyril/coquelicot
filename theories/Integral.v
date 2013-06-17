@@ -151,6 +151,33 @@ Proof.
   by apply ex_RInt_correct_aux_2.
 Qed.
 
+Ltac search_RInt := let l := fresh "l" in
+evar (l : R) ;
+match goal with
+  | |- RInt _ _ _ = ?lu => apply is_RInt_unique ; replace lu with l ; [ | unfold l]
+  | |- is_RInt _ _ _ ?lu => replace lu with l ; [ | unfold l]
+end.
+
+Lemma ex_RInt_cont: forall f a b, (forall x, Rmin a b <= x <= Rmax a b -> continuity_pt f x) 
+  -> ex_RInt f a b.
+intros f a b H.
+wlog: a b H / (a <= b) => [Hw | Hab].
+case (Rle_or_lt a b); intros H'.
+now apply Hw.
+apply ex_RInt_swap.
+apply Hw; try easy.
+intros x; rewrite Rmin_comm Rmax_comm.
+apply H.
+now left.
+apply ex_RInt_correct_1.
+apply continuity_implies_RiemannInt.
+exact Hab.
+intros; apply H.
+rewrite Rmin_left; try exact Hab.
+now rewrite Rmax_right.
+Qed. 
+
+
 (** * Operations *)
 
 (** ** Extentionality *)
@@ -918,6 +945,7 @@ Lemma RInt_le: forall f g a b,
    ex_RInt f a b ->  ex_RInt g a b -> 
    (forall x,  a <= x <= b -> f x <= g x) ->
    RInt f a b <= RInt g a b.
+Proof.
 intros f g a b H1 If Ig H2.
 assert (Riemann_integrable f a b).
 now apply ex_RInt_correct_2.
@@ -928,6 +956,20 @@ apply RiemannInt_P19.
 exact H1.
 intros; apply H2.
 split; left; apply H.
+Qed.
+
+Lemma is_RInt_le: forall f g a b If Ig,
+  a <= b ->
+   is_RInt f a b If ->  is_RInt g a b Ig -> 
+   (forall x,  a <= x <= b -> f x <= g x) ->
+   If <= Ig.
+Proof.
+intros f g a b If Ig Hab Hf Hg Heq.
+rewrite -(is_RInt_unique _ _ _ _ Hf).
+rewrite -(is_RInt_unique _ _ _ _ Hg).
+apply RInt_le => //.
+by exists If.
+by exists Ig.
 Qed.
 
 (** ** Absolute value *)
@@ -1012,85 +1054,83 @@ Qed.
 Lemma continuity_RInt: forall f a b,
   ex_RInt f a b ->
   (exists eps:posreal, ex_RInt f (b-eps) (b+eps)) ->
-  continuity_pt f b ->
   continuity_pt (fun x : R => RInt f a x) b.
 Proof.
-intros f a b If (eps,Ifb) Cfb e He.
-destruct (Cfb 1 Rlt_0_1) as (d,(Hd1,Hd2)).
-unfold dist in *; simpl in *; unfold R_dist in *.
-assert (0 < Rabs (f b)+1).
-apply Rlt_le_trans with (0+1).
-rewrite Rplus_0_l; apply Rlt_0_1.
-apply Rplus_le_compat_r, Rabs_pos.
-exists (Rmin d (Rmin eps (e/(Rabs (f b)+1)))) ; split.
-apply Rlt_gt, Rmin_pos.
-exact Hd1.
-apply Rmin_pos.
-apply cond_pos.
-now apply Rdiv_lt_0_compat.
+intros f a b If (eps,Ifb) e He.
+have : exists M : R, 
+  forall x, b - eps <= x <= b + eps -> Rabs (f x) <= M.
+  case: (ex_RInt_bounded _ _ _ Ifb) => m ; case => M H.
+  exists (Rmax M (-m)) => x Hx.
+  apply Rabs_le_between_Rmax.
+  apply H.
+  split.
+  apply Rle_trans with (2 := proj1 Hx), Rmin_l.
+  apply Rle_trans with (1 := proj2 Hx), Rmax_r.
+case => M HM.
+have Hd : 0 < Rmin eps (e / (M + 1)).
+  apply Rmin_case.
+  by apply eps.
+  apply Rdiv_lt_0_compat.
+  by apply He.
+  apply Rle_lt_0_plus_1.
+  apply Rle_trans with (1 := Rabs_pos (f b)).
+  apply HM.
+  split ; apply Rminus_le_0 ; ring_simplify ; apply Rlt_le, eps.
+set d := mkposreal _ Hd.
+exists d.
+
+split.
+by apply d.
 intros x (Hx1,Hx2).
 assert (ex_RInt f b x).
 case (Rle_or_lt b x); intros Y.
 apply ex_RInt_included1 with (b+eps).
 apply ex_RInt_included2 with (b-eps).
 exact Ifb.
-split; apply Rplus_le_reg_l with (-b); ring_simplify.
-left; apply Ropp_lt_gt_0_contravar, Rlt_gt, cond_pos.
-left; apply cond_pos.
+split ; apply Rminus_le_0 ; ring_simplify ; apply Rlt_le, eps.
 split.
 exact Y.
 assert (b - eps < x < b+eps).
 apply Rabs_lt_between'.
 apply Rlt_le_trans with (1:=Hx2).
-apply Rle_trans with (1:=Rmin_r _ _).
 apply Rmin_l.
-left; apply H0.
+left; apply H.
 apply ex_RInt_swap.
 apply ex_RInt_included1 with (b+eps).
 apply ex_RInt_included2 with (b-eps).
 exact Ifb.
 apply Rabs_le_between'.
 left; apply Rlt_le_trans with (1:=Hx2).
-apply Rle_trans with (1:=Rmin_r _ _).
 apply Rmin_l.
 split.
 left; exact Y.
 apply Rplus_le_reg_l with (-b); ring_simplify.
 left; apply cond_pos.
+simpl ; unfold R_dist.
 unfold Rminus; rewrite RInt_swap Rplus_comm.
 rewrite RInt_Chasles.
-apply Rle_lt_trans with (Rabs (x-b)*(Rabs (f b) + 1)).
+apply Rle_lt_trans with (Rabs (x-b)*(M+1)).
 apply RInt_le_const.
-exact H0.
+exact H.
 intros t Ht.
-apply Rplus_le_reg_r with (-Rabs (f b)).
-apply Rle_trans with (1:=Rabs_triang_inv _ _).
-ring_simplify.
-case (Req_dec b t); intros Hbt.
-unfold Rminus; rewrite Hbt Rplus_opp_r Rabs_R0.
-left; apply Rlt_0_1.
-left; apply Hd2.
-split.
-now split.
-apply Rle_lt_trans with (Rabs (x-b)).
+apply Rle_trans with M.
+apply HM.
+apply Rabs_le_between'.
+apply Rle_trans with (Rabs (x-b)).
 apply Rabs_le_between_min_max.
 now rewrite Rmin_comm Rmax_comm.
+apply Rlt_le, Rlt_le_trans with (1 := Hx2), Rmin_l.
+apply Rminus_le_0 ; ring_simplify ; apply Rle_0_1.
+apply Rlt_div_r.
+apply Rle_lt_0_plus_1.
+apply Rle_trans with (1 := Rabs_pos (f b)).
+apply HM.
+split ; apply Rminus_le_0 ; ring_simplify ; apply Rlt_le, eps.
 apply Rlt_le_trans with (1:=Hx2).
-apply Rmin_l.
-apply Rlt_le_trans with ((e / (Rabs (f b) + 1)) * (Rabs (f b) + 1)).
-apply Rmult_lt_compat_r.
-exact H.
-apply Rlt_le_trans with (1:=Hx2).
-apply Rle_trans with (1:=Rmin_r _ _).
 apply Rmin_r.
-unfold Rdiv; rewrite Rmult_assoc Rinv_l.
-rewrite Rmult_1_r.
-apply Rle_refl.
-apply Rgt_not_eq, Rlt_gt, H.
 now apply ex_RInt_swap.
 now apply ex_RInt_Chasles with b.
 Qed.
-
 
 (** * Riemann integral and derivative *)
 
@@ -1162,9 +1202,9 @@ Proof.
 Qed.
 
 
-Lemma RInt_Derive (f : R -> R) (a b : R) (eps:posreal):
-  (forall x, Rmin a b -eps <= x <= Rmax a b +eps -> ex_derive f x) -> 
-  (forall x, Rmin a b -eps <= x <= Rmax a b +eps -> continuity_pt (Derive f) x) ->
+Lemma RInt_Derive (f : R -> R) (a b : R):
+  (forall x, Rmin a b <= x <= Rmax a b -> ex_derive f x) -> 
+  (forall x, Rmin a b <= x <= Rmax a b -> continuity_pt (Derive f) x) ->
   RInt (Derive f) a b = f b - f a.
 Proof.
 intros Df Cdf.
@@ -1179,122 +1219,95 @@ now rewrite Rmin_comm Rmax_comm.
 now left.
 rewrite Rmin_left in Df Cdf; try exact Hab.
 rewrite Rmax_right in Df Cdf; try exact Hab.
-assert (forall x, a -eps <= x <= b +eps -> continuity_pt f x).
-intros x Hx.
+
+wlog : f Df Cdf /((forall x, ex_derive f x) /\ (forall x, continuity_pt (Derive f) x))
+  => [Hw | {Df Cdf} [Df Cdf]].
+  rewrite -?(extension_C1_ext f a b) ; try (apply Rbar_finite_le ; intuition).
+  rewrite -(RInt_ext (Derive (extension_C1 f a b))).
+  apply Hw.
+  move => x Hx.
+  apply extension_C1_ex_derive.
+  by apply Rbar_finite_le.
+  move => y Hay Hyb.
+  apply Df ; split ; by apply Rbar_finite_le.
+  move => y Hy.
+  apply extension_C1_Derive_cont.
+  by apply Rbar_finite_le.
+  move => x Hax Hxb ; split.
+  apply Df ; split ; by apply Rbar_finite_le.
+  apply Cdf ; split ; by apply Rbar_finite_le.
+  split => x.
+  apply extension_C1_ex_derive.
+  by apply Rbar_finite_le.
+  move => y Hay Hyb.
+  apply Df ; split ; by apply Rbar_finite_le.
+  apply extension_C1_Derive_cont.
+  by apply Rbar_finite_le.
+  move => y Hay Hyb ; split.
+  apply Df ; split ; by apply Rbar_finite_le.
+  apply Cdf ; split ; by apply Rbar_finite_le.
+  rewrite /Rmin /Rmax ; case: Rle_dec => // _ x Hx.
+  apply is_derive_unique, extension_C1_is_derive.
+  by apply Rbar_finite_le, Hx.
+  by apply Rbar_finite_le, Hx.
+  apply Derive_correct.
+  by apply Df.
+
+assert (forall x, continuity_pt f x).
+intros x.
 destruct (Df x) as (y,Hy).
-exact Hx.
 apply derivable_continuous_pt.
 now exists y.
-assert (a - eps <= a).
-apply Rplus_le_reg_l with (-a+eps); ring_simplify.
-left; apply cond_pos.
-assert (b <= b+eps).
-apply Rplus_le_reg_l with (-b); ring_simplify.
-left; apply cond_pos.
-assert (ex_RInt (Derive f) (a-eps) (b+eps)).
-apply ex_RInt_correct_1, continuity_implies_RiemannInt.
-apply Rle_trans with (1:=H0), Rle_trans with (1:=Hab); exact H1.
-exact Cdf.
 (* *)
 destruct (fn_eq_Derive_eq f (fun x => RInt (Derive f) a x) a b).
 apply H.
-split;[exact H0|apply Rle_trans with (1:=Hab); exact H1].
 apply H.
-split;[apply Rle_trans with (1:=H0); exact Hab|exact H1].
 apply continuity_RInt.
 apply ex_RInt_point.
-exists eps.
-apply ex_RInt_included1 with (b+eps).
-exact H2.
-split.
-apply Rle_trans with (1:=H0).
-apply Rplus_le_reg_l with (-a); ring_simplify.
-left; apply cond_pos.
-apply Rplus_le_compat_r; exact Hab.
-apply Cdf.
-split;[exact H0|apply Rle_trans with (1:=Hab); exact H1].
+exists (mkposreal _ Rlt_0_1).
+by apply ex_RInt_cont.
 apply continuity_RInt.
-apply ex_RInt_included1 with (b+eps).
-apply ex_RInt_included2 with (a-eps).
-exact H2.
-split;[exact H0|apply Rle_trans with (1:=Hab); exact H1].
-split;[exact Hab|exact H1].
-exists eps.
-apply ex_RInt_included2 with (a-eps).
-exact H2.
-split.
-apply Rplus_le_compat_r; exact Hab.
-apply Rle_trans with (2:=H1).
-apply Rplus_le_reg_l with (-b+eps); ring_simplify.
-left; apply cond_pos.
-apply Cdf.
-split;[apply Rle_trans with (1:=H0); exact Hab|exact H1].
+by apply ex_RInt_cont.
+exists (mkposreal _ Rlt_0_1).
+by apply ex_RInt_cont.
 intros x Hx; apply Df.
-split.
-apply Rle_trans with (1:=H0); left; apply Hx.
-apply Rle_trans with (2:=H1); left; apply Hx.
 intros x Hx.
 eexists.
 apply derivable_pt_lim_RInt.
-apply ex_RInt_included1 with (b+eps).
-apply ex_RInt_included2 with (a-eps).
-exact H2.
-split;[exact H0|apply Rle_trans with (1:=Hab); exact H1].
-split;[left; apply Hx|apply Rle_trans with (2:=H1);left; apply Hx].
-exists eps.
-apply ex_RInt_included1 with (b+eps).
-apply ex_RInt_included2 with (a-eps).
-exact H2.
-split.
-apply Rplus_le_compat_r; left; apply Hx.
-apply Rle_trans with (2:=H1).
-left; apply Rlt_trans with (2:=proj2 Hx).
-apply Rplus_lt_reg_r with (-x+eps); ring_simplify.
-apply cond_pos.
-split.
-apply Rplus_le_reg_r with (-x+eps); ring_simplify.
-apply Rmult_le_pos.
-left; apply Rlt_0_2.
-left; apply cond_pos.
-apply Rplus_le_compat_r; left; apply Hx.
+by apply ex_RInt_cont.
+exists (mkposreal _ Rlt_0_1).
+by apply ex_RInt_cont.
 apply Cdf.
-split.
-apply Rle_trans with (1:=H0); left; apply Hx.
-apply Rle_trans with (2:=H1); left; apply Hx.
 intros x Hx.
 apply sym_eq, is_derive_unique.
 apply derivable_pt_lim_RInt.
-apply ex_RInt_included1 with (b+eps).
-apply ex_RInt_included2 with (a-eps).
-exact H2.
-split;[exact H0| apply Rle_trans with (1:=Hab); exact H1].
-split;[left; apply Hx| apply Rle_trans with (2:=H1); left; apply Hx].
-exists eps.
-apply ex_RInt_included1 with (b+eps).
-apply ex_RInt_included2 with (a-eps).
-exact H2.
-split.
-apply Rplus_le_compat_r; left; apply Hx.
-apply Rle_trans with (2:=H1).
-left; apply Rlt_trans with (2:=proj2 Hx).
-apply Rplus_lt_reg_r with (-x+eps); ring_simplify.
-apply cond_pos.
-split.
-apply Rplus_le_reg_r with (-x+eps); ring_simplify.
-apply Rmult_le_pos.
-left; apply Rlt_0_2.
-left; apply cond_pos.
-apply Rplus_le_compat_r; left; apply Hx.
+by apply ex_RInt_cont.
+exists (mkposreal _ Rlt_0_1).
+by apply ex_RInt_cont.
 apply Cdf.
-split;[apply Rle_trans with (1:=H0); left; apply Hx| apply Rle_trans with (2:=H1);  left; apply Hx].
-rewrite (H3 a).
-rewrite (H3 b).
+rewrite (H0 a).
+rewrite (H0 b).
 rewrite RInt_point.
 ring.
 split;[apply Hab|apply Rle_refl].
 split;[apply Rle_refl | apply Hab].
 Qed.
 
+
+Lemma is_RInt_Derive (f : R -> R) (a b : R) :
+  (forall x, Rmin a b  <= x <= Rmax a b  -> ex_derive f x) -> 
+  (forall x, Rmin a b  <= x <= Rmax a b  -> continuity_pt (Derive f) x) ->
+  is_RInt (Derive f) a b (f b - f a).
+Proof.
+  move => Df Cdf.
+  rewrite -(RInt_Derive _ _ _ Df Cdf).
+  suff : ex_RInt (Derive f) a b.
+    case => l H.
+    by rewrite (is_RInt_unique _ _ _ _ H).
+  apply ex_RInt_cont.
+  move => x Hx.
+  by apply Cdf.
+Qed.
 
 Lemma derivable_pt_lim_param_aux : forall f a b x,
   locally (fun x => forall t, Rmin a b <= t <= Rmax a b -> ex_derive (fun u => f u t) x) x ->
@@ -1607,25 +1620,6 @@ Qed.
 
 
 
-
-Lemma ex_RInt_cont: forall f a b, (forall x, Rmin a b <= x <= Rmax a b -> continuity_pt f x) 
-  -> ex_RInt f a b.
-intros f a b H.
-wlog: a b H / (a <= b) => [Hw | Hab].
-case (Rle_or_lt a b); intros H'.
-now apply Hw.
-apply ex_RInt_swap.
-apply Hw; try easy.
-intros x; rewrite Rmin_comm Rmax_comm.
-apply H.
-now left.
-apply ex_RInt_correct_1.
-apply continuity_implies_RiemannInt.
-exact Hab.
-intros; apply H.
-rewrite Rmin_left; try exact Hab.
-now rewrite Rmax_right.
-Qed. 
 
 Lemma derivable_pt_lim_RInt_param_bound_comp_aux1: forall f a x,
   (exists eps:posreal, locally (fun y => ex_RInt (fun t => f y t) (a x - eps) (a x + eps)) x) ->
@@ -2207,12 +2201,10 @@ Proof.
   by apply H0.
   exists (mkposreal _ Rlt_0_1) => /=.
   by apply H0.
-  by apply H.
   apply continuity_RInt.
   by apply H0.
   exists (mkposreal _ Rlt_0_1) => /=.
   by apply H0.
-  by apply H.
   apply (continuity_pt_comp g).
   apply derivable_continuous_pt.
   exists (Derive g a) ; apply Derive_correct.
@@ -2223,7 +2215,6 @@ Proof.
   exists (mkposreal _ Rlt_0_1) => /=.
   apply ex_RInt_cont => x Hx.
   by apply Hf.
-  by apply Hf.
   apply (continuity_pt_comp g).
   apply derivable_continuous_pt.
   exists (Derive g b) ; apply Derive_correct.
@@ -2233,7 +2224,6 @@ Proof.
   by apply Hf.
   exists (mkposreal _ Rlt_0_1) => /=.
   apply ex_RInt_cont => x Hx.
-  by apply Hf.
   by apply Hf.
   move => x Hx.
   evar (l : R) ; exists l ; unfold l.

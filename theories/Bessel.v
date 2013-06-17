@@ -208,7 +208,7 @@ Proof.
     with (4 * y^2 * ((-1) * PSeries (Bessel1_seq 0) (y ^ 2)))
     by (simpl ; field).
   apply f_equal.
-  rewrite -PSeries_incr_1 -PSeries_scal -PSeries_plus.
+  rewrite -PSeries_incr_1 -PSeries_scal_l -PSeries_plus.
 Focus 2.
   apply ex_pseries_incr_1 ; apply ex_series_Rabs ; apply CV_circle_carac.
   by rewrite ?PS_derive_circle CV_Bessel1.
@@ -216,7 +216,7 @@ Focus 2.
   apply ex_series_Rabs, CV_circle_carac ;
   by rewrite ?PS_derive_circle CV_Bessel1.
   apply PSeries_ext ; case => /= [ | k] ;
-  rewrite /PS_plus /PS_incr_1 /PS_scal /PS_derive /Bessel1_seq.
+  rewrite /PS_plus /PS_incr_1 /PS_scal_l /PS_derive /Bessel1_seq.
   simpl ; field.
   rewrite -?plus_n_Sm plus_0_l /fact -/(fact _) ?mult_INR ?(S_INR _) ;
   simpl ; field ; rewrite -?(S_INR _).
@@ -233,15 +233,15 @@ Focus 2.
     with (4 * y^3 * ((-1) * PSeries (Bessel1_seq 1) (y ^ 2)))
     by (simpl ; field).
   apply f_equal.
-  rewrite -PSeries_incr_1 -?PSeries_scal -PSeries_plus.
+  rewrite -PSeries_incr_1 -?PSeries_scal_l -PSeries_plus.
 Focus 2.
   apply ex_pseries_incr_1, ex_series_Rabs, CV_circle_carac ;
   by rewrite ?PS_derive_circle CV_Bessel1.
 Focus 2.
-  apply ex_pseries_scal, ex_series_Rabs, CV_circle_carac ;
+  apply ex_pseries_scal_l, ex_series_Rabs, CV_circle_carac ;
   by rewrite ?PS_derive_circle CV_Bessel1.
   apply PSeries_ext ; case => /= [ | k] ;
-  rewrite /PS_plus /PS_incr_1 /PS_scal /PS_derive /Bessel1_seq.
+  rewrite /PS_plus /PS_incr_1 /PS_scal_l /PS_derive /Bessel1_seq.
   simpl ; field.
   rewrite -?plus_n_Sm ?plus_Sn_m plus_0_l /fact -/fact ?mult_INR ?(S_INR _) ;
   simpl ; field ; rewrite -?(S_INR _).
@@ -260,15 +260,15 @@ Focus 2.
     with (4 * y^4 * y^n * ((-1) * PSeries (Bessel1_seq (S (S n))) (y ^ 2)))
     by (simpl ; field).
   apply f_equal.
-  rewrite -PSeries_incr_1 -?PSeries_scal -PSeries_plus.
+  rewrite -PSeries_incr_1 -?PSeries_scal_l -PSeries_plus.
 Focus 2.
   apply ex_pseries_incr_1, ex_series_Rabs, CV_circle_carac ;
   by rewrite ?PS_derive_circle CV_Bessel1.
 Focus 2.
-  apply ex_pseries_scal, ex_series_Rabs, CV_circle_carac ;
+  apply ex_pseries_scal_l, ex_series_Rabs, CV_circle_carac ;
   by rewrite ?PS_derive_circle CV_Bessel1.
   apply PSeries_ext ; case => /= [ | k] ;
-  rewrite /PS_plus /PS_incr_1 /PS_scal /PS_derive /Bessel1_seq.
+  rewrite /PS_plus /PS_incr_1 /PS_scal_l /PS_derive /Bessel1_seq.
   rewrite -?plus_n_Sm ?plus_Sn_m plus_0_r /fact -/fact ?mult_INR ?(S_INR _) ;
   simpl ; field ; rewrite -?(S_INR _).
   repeat split ;
@@ -297,14 +297,14 @@ Proof.
     with ((x/2)^n * ((INR n + 1) * PSeries (Bessel1_seq (S n)) ((x / 2) ^ 2)))
     by (simpl ; field ; exact: Hx).
   apply f_equal.
-  rewrite -PSeries_incr_1 -PSeries_scal -PSeries_plus.
+  rewrite -PSeries_incr_1 -PSeries_scal_l -PSeries_plus.
 Focus 2. (* ex_pseries (PS_incr_1 (Bessel1_seq (S (S n))) (S (S n))) (x / 2) *)
   by apply ex_pseries_incr_1, ex_Bessel1.
 Focus 2. (* ex_pseries (PS_incr_n (Bessel1_seq n) n) (x / 2) *)
   by apply ex_Bessel1.
   apply PSeries_ext => k.
 (* egalité *)
-  rewrite /PS_plus /PS_scal /PS_incr_1 /Bessel1_seq ;
+  rewrite /PS_plus /PS_scal_l /PS_incr_1 /Bessel1_seq ;
   case: k => [ | k] ;
   rewrite ?plus_0_r -?plus_n_Sm ?plus_Sn_m 
     /fact -/fact ?mult_INR ?S_INR ?plus_INR /=.
@@ -331,9 +331,9 @@ Proof.
     with (y * ((-1) * PSeries (PS_derive (Bessel1_seq 0)) (y ^ 2)))
     by (simpl ; unfold y ; field => //).
   apply f_equal.
-  rewrite -PSeries_scal.
+  rewrite -PSeries_scal_l.
   apply PSeries_ext => k.
-  rewrite /Bessel1_seq /PS_scal /PS_derive plus_0_l.
+  rewrite /Bessel1_seq /PS_scal_l /PS_derive plus_0_l.
   replace (1+k)%nat with (S k) by ring.
   rewrite /fact -/fact mult_INR /pow -/pow.
   field ; split.
@@ -348,9 +348,9 @@ Proof.
     with (y^2 * y^n * (((-1)* PSeries (PS_derive (Bessel1_seq (S n))) (y ^ 2))))
     by (unfold y ; field => //).
   apply f_equal.
-  rewrite -PSeries_scal.
+  rewrite -PSeries_scal_l.
   apply PSeries_ext => k.
-  rewrite /Bessel1_seq /PS_scal /PS_derive -?plus_n_Sm ?plus_Sn_m.
+  rewrite /Bessel1_seq /PS_scal_l /PS_derive -?plus_n_Sm ?plus_Sn_m.
   rewrite /pow -/pow /fact -/fact ?mult_INR ?S_INR plus_INR.
   field.
   rewrite -plus_INR -?S_INR.

@@ -225,7 +225,7 @@ Proof.
   apply is_lim_seq_subseq.
   by apply Hphi.
   by apply Lim_seq_correct.
-Qed. 
+Qed.
 
 Lemma is_lim_seq_incr_1 (u : nat -> R) (l : Rbar) :
   is_lim_seq u l <-> is_lim_seq (fun n => u (S n)) l.

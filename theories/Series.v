@@ -47,6 +47,13 @@ Proof.
   by rewrite (is_series_unique a l).
 Qed.
 
+Ltac search_series := let l := fresh "l" in
+evar (l : R) ;
+match goal with
+  | |- Series _ = ?lu => apply is_series_unique ; replace lu with l ; [ | unfold l]
+  | |- is_series _ ?lu => replace lu with l ; [ | unfold l]
+end.
+
 Lemma is_series_equiv (a : nat -> R) (l : R) :
   is_series a l <-> infinite_sum a l.
 Proof.
@@ -95,8 +102,6 @@ Proof.
   by apply (H n Hn).
 Qed.
 
-(** ** Operations *)
-
 (** Extentionality *)
 
 Lemma is_series_ext (a b : nat -> R) (l : R) :
@@ -126,86 +131,6 @@ Proof.
   by rewrite Heq.
   by rewrite IH Heq.
 Qed.
-
-(** Multiplication by a scalar *)
-
-Lemma is_series_scal (c : R) (a : nat -> R) (l : R) :
-  is_series a l -> is_series (fun n => c * a n) (c * l).
-Proof.
-  move => Ha.
-  apply is_lim_seq_ext with (fun n => c * (sum_f_R0 (fun k => a k) n)).
-  elim => [ | n IH].
-  simpl ; ring.
-  simpl ; rewrite -IH ; ring.
-  apply (is_lim_seq_scal _ c l).
-  by apply Ha.
-  by simpl.
-Qed.
-Lemma ex_series_scal (c : R) (a : nat -> R) :
-  ex_series a -> ex_series (fun n => c * a n).
-Proof.
-  move => [l Ha].
-  exists (c * l).
-  by apply is_series_scal.
-Qed.
-Lemma Series_scal (c : R) (a : nat -> R) :
-  Series (fun n => c * a n) = c * Series a.
-Proof.
-  rewrite /Series.
-  have H0 : (forall x, c * Rbar.real x = Rbar.real (Rbar.Rbar_mult (Rbar.Finite c) x)).
-  case: (Req_dec c 0) => [-> | Hk].
-  case => [x | | ] //= ; rewrite Rmult_0_l.
-  case: Rle_dec (Rle_refl 0) => //= H0 _.
-  case: Rle_lt_or_eq_dec (Rlt_irrefl 0) => //= _ _.
-  case: Rle_dec (Rle_refl 0) => //= H0 _.
-  case: Rle_lt_or_eq_dec (Rlt_irrefl 0) => //= _ _.
-  case => [x | | ] //= ; rewrite Rmult_0_r.
-  case: Rle_dec => //= H0.
-  case: Rle_lt_or_eq_dec => //=.
-  case: Rle_dec => //= H0.
-  case: Rle_lt_or_eq_dec => //=.
-
-  rewrite H0 -(Lim_seq_scal _ c).
-  apply f_equal, Lim_seq_ext.
-  elim => [ | n IH].
-  simpl ; ring.
-  simpl ; rewrite IH ; ring.
-Qed.
-
-(** Addition of two power series *)
-
-Lemma is_series_plus (a b : nat -> R) (la lb : R) :
-  is_series a la -> is_series b lb
-    -> is_series (fun n => a n + b n) (la + lb).
-Proof.
-  move => Ha Hb.
-  apply is_lim_seq_ext 
-    with (fun n => (sum_f_R0 (fun k => a k) n) + (sum_f_R0 (fun k => b k) n)).
-  elim => [ | n IH].
-  simpl ; ring.
-  simpl ; rewrite -IH ; ring.
-  by apply (is_lim_seq_plus _ _ la lb).
-Qed.
-Lemma ex_series_plus (a b : nat -> R) :
-  ex_series a -> ex_series b
-    -> ex_series (fun n => a n + b n).
-Proof.
-  move => [la Ha] [lb Hb].
-  exists (la + lb).
-  by apply is_series_plus.
-Qed.
-Lemma Series_plus (a b : nat -> R) :
-  ex_series a -> ex_series b
-    -> Series (fun n => a n + b n) = Series a + Series b.
-Proof.
-  intros Ha Hb.
-  replace (Series a + Series b) with (real (Series a + Series b)) by auto.
-  apply (f_equal real), is_lim_seq_unique, is_series_plus ;
-  by apply Series_correct.
-Qed.
-
-(** Coming soon:
-  - multiplication *)
 
 (** Index offset *)
 
@@ -476,6 +401,405 @@ Proof.
   by apply Hn.
 Qed.
 
+
+(** ** Operations *)
+
+(** Additive *)
+
+Lemma is_series_opp (a : nat -> R) (la : R) :
+  is_series a la
+    -> is_series (fun n => - a n) (- la).
+Proof.
+  move => Ha.
+  apply is_lim_seq_ext 
+    with (fun n => - (sum_f_R0 (fun k => a k) n)).
+  elim => [ | n IH].
+  simpl ; ring.
+  simpl ; rewrite -IH ; ring.
+  search_lim_seq.
+  apply is_lim_seq_opp.
+  by apply Ha.
+  by simpl.
+Qed.
+Lemma ex_series_opp (a : nat -> R) :
+  ex_series a 
+    -> ex_series (fun n => - a n).
+Proof.
+  move => [la Ha].
+  exists (-la).
+  by apply is_series_opp.
+Qed.
+Lemma Series_opp (a b : nat -> R) :
+  Series (fun n => - a n) = - Series a.
+Proof.
+  rewrite /Series
+    (Lim_seq_ext (sum_f_R0 (fun k : nat => - a k)) (fun n => - (sum_f_R0 (fun k => a k) n))).
+  rewrite Lim_seq_opp.
+  by rewrite Rbar_opp_real.
+  elim => [ | n IH].
+  simpl ; ring.
+  simpl ; rewrite IH ; ring.
+Qed.
+
+Lemma is_series_plus (a b : nat -> R) (la lb : R) :
+  is_series a la -> is_series b lb
+    -> is_series (fun n => a n + b n) (la + lb).
+Proof.
+  move => Ha Hb.
+  apply is_lim_seq_ext 
+    with (fun n => (sum_f_R0 (fun k => a k) n) + (sum_f_R0 (fun k => b k) n)).
+  elim => [ | n IH].
+  simpl ; ring.
+  simpl ; rewrite -IH ; ring.
+  by apply (is_lim_seq_plus _ _ la lb).
+Qed.
+Lemma ex_series_plus (a b : nat -> R) :
+  ex_series a -> ex_series b
+    -> ex_series (fun n => a n + b n).
+Proof.
+  move => [la Ha] [lb Hb].
+  exists (la + lb).
+  by apply is_series_plus.
+Qed.
+Lemma Series_plus (a b : nat -> R) :
+  ex_series a -> ex_series b
+    -> Series (fun n => a n + b n) = Series a + Series b.
+Proof.
+  intros Ha Hb.
+  replace (Series a + Series b) with (real (Series a + Series b)) by auto.
+  apply (f_equal real), is_lim_seq_unique, is_series_plus ;
+  by apply Series_correct.
+Qed.
+
+Lemma is_series_minus (a b : nat -> R) (la lb : R) :
+  is_series a la -> is_series b lb
+    -> is_series (fun n => a n - b n) (la - lb).
+Proof.
+  move => Ha Hb.
+  apply is_series_plus => //.
+  apply is_series_opp => //.
+Qed.
+Lemma ex_series_minus (a b : nat -> R) :
+  ex_series a -> ex_series b
+    -> ex_series (fun n => a n - b n).
+Proof.
+  move => Ha Hb.
+  apply ex_series_plus => //.
+  apply ex_series_opp => //.
+Qed.
+Lemma Series_minus (a b : nat -> R) :
+  ex_series a -> ex_series b
+    -> Series (fun n => a n - b n) = Series a - Series b.
+Proof.
+  intros Ha Hb.
+  rewrite Series_plus => //.
+  rewrite Series_opp => //.
+  by apply ex_series_opp.
+Qed.
+
+(** Multiplication by a scalar *)
+
+Lemma is_series_scal_l (c : R) (a : nat -> R) (l : R) :
+  is_series a l -> is_series (fun n => c * a n) (c * l).
+Proof.
+  move => Ha.
+  apply is_lim_seq_ext with (fun n => c * (sum_f_R0 (fun k => a k) n)).
+  elim => [ | n IH].
+  simpl ; ring.
+  simpl ; rewrite -IH ; ring.
+  apply (is_lim_seq_scal _ c l).
+  by apply Ha.
+  by simpl.
+Qed.
+Lemma ex_series_scal_l (c : R) (a : nat -> R) :
+  ex_series a -> ex_series (fun n => c * a n).
+Proof.
+  move => [l Ha].
+  exists (c * l).
+  by apply is_series_scal_l.
+Qed.
+Lemma Series_scal_l (c : R) (a : nat -> R) :
+  Series (fun n => c * a n) = c * Series a.
+Proof.
+  rewrite /Series.
+  have H0 : (forall x, c * Rbar.real x = Rbar.real (Rbar.Rbar_mult (Rbar.Finite c) x)).
+  case: (Req_dec c 0) => [-> | Hk].
+  case => [x | | ] //= ; rewrite Rmult_0_l.
+  case: Rle_dec (Rle_refl 0) => //= H0 _.
+  case: Rle_lt_or_eq_dec (Rlt_irrefl 0) => //= _ _.
+  case: Rle_dec (Rle_refl 0) => //= H0 _.
+  case: Rle_lt_or_eq_dec (Rlt_irrefl 0) => //= _ _.
+  case => [x | | ] //= ; rewrite Rmult_0_r.
+  case: Rle_dec => //= H0.
+  case: Rle_lt_or_eq_dec => //=.
+  case: Rle_dec => //= H0.
+  case: Rle_lt_or_eq_dec => //=.
+
+  rewrite H0 -(Lim_seq_scal _ c).
+  apply f_equal, Lim_seq_ext.
+  elim => [ | n IH].
+  simpl ; ring.
+  simpl ; rewrite IH ; ring.
+Qed.
+
+Lemma is_series_scal_r (c : R) (a : nat -> R) (l : R) :
+  is_series a l -> is_series (fun n => a n * c) (l * c).
+Proof.
+  move => Ha.
+  rewrite Rmult_comm.
+  apply is_series_ext with (fun n : nat => c * a n).
+  move => n ; apply Rmult_comm.
+  by apply is_series_scal_l.
+Qed.
+Lemma ex_series_scal_r (c : R) (a : nat -> R) :
+  ex_series a -> ex_series (fun n => a n * c).
+Proof.
+  move => [l Ha].
+  exists (l * c).
+  by apply is_series_scal_r.
+Qed.
+Lemma Series_scal_r (c : R) (a : nat -> R) :
+  Series (fun n => a n * c) = Series a * c.
+Proof.
+  rewrite Rmult_comm -Series_scal_l.
+  apply Series_ext.
+  move => n ; apply Rmult_comm.
+Qed.
+
+Lemma is_series_mult_pos (a b : nat -> R) (la lb : R) :
+  is_series a la -> is_series b lb ->
+  (forall n, 0 <= a n) -> (forall n, 0 <= b n)
+  -> is_series (fun n => sum_f_R0 (fun k => a k * b (n - k)%nat) n) (la * lb).
+Proof.
+  move => Hla Hlb Ha Hb.
+  
+  have H0 : forall n, 
+    sum_f_R0 (fun k : nat => sum_f_R0 (fun p : nat => a p * b (k - p)%nat) k) n
+      <= sum_f_R0 a n * sum_f_R0 b n.
+    case => [ | n].
+    simpl ; apply Rle_refl.
+    rewrite (cauchy_finite a b (S n) (lt_O_Sn n)).
+    apply Rminus_le_0 ; ring_simplify.
+    apply cond_pos_sum => m.
+    apply cond_pos_sum => k.
+    by apply Rmult_le_pos.
+  have H1 : forall n, sum_f_R0 a n * sum_f_R0 b n
+    <= sum_f_R0 (fun k : nat => sum_f_R0 (fun p : nat => a p * b (k - p)%nat) k) ((2*n)%nat).
+    case => [ /= | n].
+    by apply Rle_refl.
+    rewrite (cauchy_finite a b (S n) (lt_O_Sn n)).
+    rewrite Rplus_comm ; apply Rle_minus_r.
+    replace (pred (S n)) with n by auto.
+    replace (2 * S n)%nat with (S n + S n)%nat by ring.
+    rewrite -sum_f_rw.
+    rewrite /sum_f.
+    simpl minus at 4.
+    rewrite NPeano.Nat.add_sub.
+    replace (pred (S n)) with n by auto.
+    elim: {1 5 8}n (le_refl n) => [ | m IH] Hm ; rewrite /sum_f_R0 -/sum_f_R0.
+    rewrite -minus_n_O plus_0_l ; simpl pred.
+    rewrite -?sum_f_rw_0.
+    replace (sum_f 0 (S (S n)) (fun p : nat => a p * b (S (S n) - p)%nat)) 
+      with ((sum_f 0 (S (S n)) (fun p : nat => a p * b (S (S n) - p)%nat) -
+        (fun p : nat => a p * b (S (S n) - p)%nat) 0%nat)
+        + a O * b (S (S n))) by (rewrite -minus_n_O ; ring).
+    rewrite -(sum_f_Sn_m _ O (S (S n))) ; [ | by apply lt_O_Sn].
+    rewrite sum_f_u_Sk ; [ | by apply le_O_n].
+    rewrite sum_f_n_Sm ; [ | by apply le_O_n].
+    apply Rle_trans with (sum_f 0 n (fun l0 : nat => a (S (l0 + 0)) * b (S n - l0)%nat) +
+      a (S (S n)) * b (S (S n) - S (S n))%nat + a 0%nat * b (S (S n))).
+      apply Rminus_le_0 ; ring_simplify.
+      apply Rplus_le_le_0_compat ; by apply Rmult_le_pos.
+      repeat apply Rplus_le_compat_r.
+      apply Req_le.
+      rewrite ?sum_f_rw_0.
+      elim: {1 4 6}n (le_refl n) => [ | k IH] Hk // ;
+      rewrite /sum_f_R0 -/sum_f_R0.
+      rewrite IH ; try by intuition.
+      apply f_equal.
+      by rewrite plus_0_r /=.
+    apply Rplus_le_compat.
+    apply IH ; intuition.
+    rewrite -?sum_f_rw_0.
+    rewrite NPeano.Nat.sub_succ_l ; try by intuition.
+    replace (pred (S (n - S m))) with (n - S m)%nat by auto.
+    rewrite plus_Sn_m -?plus_n_Sm.
+    replace (sum_f 0 (S (S (S (m + n))))
+      (fun p : nat => a p * b (S (S (S (m + n))) - p)%nat))
+      with (sum_f 1 (S (S (S (m + n))))
+      (fun p : nat => a p * b (S (S (S (m + n))) - p)%nat) + a O * b (S (S (S (m + n))))).
+    rewrite -(Rplus_0_r (sum_f O _ _)).
+    apply Rplus_le_compat.
+    rewrite (sum_f_chasles _ O (S m) (S (S (S (m + n))))) ; try by intuition.
+    rewrite -(Rplus_0_l (sum_f O _ _)).
+    apply Rplus_le_compat.
+    rewrite /sum_f.
+    elim: (S m - 1)%nat => {IH} [ | k IH] ; rewrite /sum_f_R0 -/sum_f_R0 //.
+    by apply Rmult_le_pos.
+    apply Rplus_le_le_0_compat.
+    by apply IH.
+    by apply Rmult_le_pos.
+    replace (S (S m)) with (1 + S m)%nat by ring.
+    replace (S (S (S (m + n)))) with (S (S n) + S m )%nat by ring.
+    rewrite sum_f_u_add.
+    rewrite (sum_f_chasles _ O (S (n - S m)) (S (S n))) ; try by intuition.
+    rewrite -(Rplus_0_r (sum_f O _ _)).
+    apply Rplus_le_compat.
+    rewrite sum_f_u_Sk.
+    rewrite ?sum_f_rw_0.
+    apply Req_le.
+    elim: (n - S m)%nat => {IH} [ | k IH] ; rewrite /sum_f_R0 -/sum_f_R0 //.
+    apply f_equal2 ; apply f_equal ; intuition.
+    rewrite IH ; apply f_equal, f_equal2 ; apply f_equal.
+    ring.
+    rewrite ?(plus_comm _ (S m)) -minus_plus_simpl_l_reverse //=.
+    apply le_O_n.
+    rewrite /sum_f.
+    elim: (S (S n) - S (S (n - S m)))%nat => {IH} [ | k IH] ;
+    rewrite /sum_f_R0 -/sum_f_R0 //.
+    by apply Rmult_le_pos.
+    apply Rplus_le_le_0_compat => // ; by apply Rmult_le_pos.
+    by apply le_n_S, le_O_n.
+    by apply Rmult_le_pos.
+    rewrite sum_f_Sn_m -?minus_n_O ; try by intuition.
+    ring.
+    elim: n => [ | n IH] //.
+    rewrite -plus_n_Sm plus_Sn_m.
+    apply lt_n_S ; intuition.
+    have H2 : forall n, sum_f_R0 a (Div2.div2 n)%nat * sum_f_R0 b (Div2.div2 n)%nat <=
+      sum_f_R0
+      (fun k : nat => sum_f_R0 (fun p : nat => a p * b (k - p)%nat) k)
+      n.
+      move => n.
+      case: (even_odd_cor n) => k ; case => -> {n}.
+      rewrite div2_double.
+      by apply H1.
+      rewrite div2_S_double.
+      apply Rle_trans with (1 := H1 _).
+      apply Rminus_le_0 ; rewrite -sum_f_rw ; try by intuition.
+      rewrite /sum_f minus_diag /sum_f_R0 -/sum_f_R0.
+      apply cond_pos_sum => l ; by apply Rmult_le_pos.
+      
+
+    rewrite /is_series.
+    apply is_lim_seq_le_le with (u := fun n => sum_f_R0 a (Div2.div2 n) * sum_f_R0 b (Div2.div2 n)) 
+    (w := fun n => sum_f_R0 a n * sum_f_R0 b n).
+    by split.
+    replace (Finite (la * lb)) with (Rbar_mult la lb) by auto.
+    suff H : is_lim_seq
+      (fun n : nat => sum_f_R0 a n * sum_f_R0 b n)
+      (Rbar_mult la lb).
+    move => eps.
+    case: (H eps) => {H} N H.
+    exists (S (2 * N))%nat => n Hn.
+    apply H.
+    apply le_double.
+    apply le_S_n.
+    apply le_trans with (1 := Hn).
+    apply (Div2.ind_0_1_SS (fun n => (n <= S (2 * Div2.div2 n))%nat)).
+    by apply le_O_n.
+    by apply le_refl.
+    move => k Hk.
+    replace (Div2.div2 (S (S k))) with (S (Div2.div2 k)) by auto.
+    replace (2 * S (Div2.div2 k))%nat with (S (S (2 * Div2.div2 k))) by ring.
+    by repeat apply le_n_S.
+    
+    apply is_lim_seq_mult.
+    by apply Hla.
+    by apply Hlb.
+    by [].
+    replace (Finite (la * lb)) with (Rbar_mult la lb) by auto.
+    apply is_lim_seq_mult.
+    by apply Hla.
+    by apply Hlb.
+    by [].
+Qed.
+
+Lemma is_series_mult (a b : nat -> R) (la lb : R) :
+  is_series a la -> is_series b lb
+  -> ex_series (fun n => Rabs (a n)) -> ex_series (fun n => Rabs (b n))
+  -> is_series (fun n => sum_f_R0 (fun k => a k * b (n - k)%nat) n) (la * lb).
+Proof.
+  move => Hla Hlb Ha Hb.
+  
+  set ap := fun n => (a n + Rabs (a n)) / 2.
+  set am := fun n => - (a n - Rabs (a n)) / 2.
+  set bp := fun n => (b n + Rabs (b n)) / 2.
+  set bm := fun n => - (b n - Rabs (b n)) / 2.
+  
+  have Hap : forall n, 0 <= ap n.
+    move => n ; apply Rdiv_le_0_compat.
+    rewrite Rplus_comm ; apply Rle_minus_l ; rewrite Rminus_0_l.
+    apply Rabs_maj2.
+    by apply Rlt_0_2.
+  have Sap : ex_series ap.
+    apply ex_series_scal_r.
+    apply ex_series_plus => //.
+    by exists la.
+  have Ham : forall n, 0 <= am n.
+    move => n ; apply Rdiv_le_0_compat.
+    rewrite Ropp_minus_distr'.
+    apply (Rminus_le_0 (a _)).
+    by apply Rle_abs.
+    by apply Rlt_0_2.
+  have Sam : ex_series am.
+    apply ex_series_scal_r.
+    apply ex_series_opp.
+    apply ex_series_minus => //.
+    by exists la.
+  have Hbp : forall n, 0 <= bp n.
+    move => n ; apply Rdiv_le_0_compat.
+    rewrite Rplus_comm ; apply Rle_minus_l ; rewrite Rminus_0_l.
+    apply Rabs_maj2.
+    by apply Rlt_0_2.
+  have Sbp : ex_series bp.
+    apply ex_series_scal_r.
+    apply ex_series_plus => //.
+    by exists lb.
+  have Hbm : forall n, 0 <= bm n.
+    move => n ; apply Rdiv_le_0_compat.
+    rewrite Ropp_minus_distr'.
+    apply (Rminus_le_0 (b _)).
+    by apply Rle_abs.
+    by apply Rlt_0_2.
+  have Sbm : ex_series bm.
+    apply ex_series_scal_r.
+    apply ex_series_opp.
+    apply ex_series_minus => //.
+    by exists lb.
+    
+  
+  apply is_series_ext with (fun n => sum_f_R0 (fun k : nat => ap k * bp (n - k)%nat) n
+    - sum_f_R0 (fun k : nat => am k * bp (n - k)%nat) n
+    - sum_f_R0 (fun k : nat => ap k * bm (n - k)%nat) n
+    + sum_f_R0 (fun k : nat => am k * bm (n - k)%nat) n).
+  move => n.
+  rewrite -?minus_sum -plus_sum.
+  apply sum_eq => k _.
+  rewrite /ap /am /bp /bm ; field.
+  search_series.
+  apply is_series_plus.
+  apply is_series_minus.
+  apply is_series_minus.
+  apply is_series_mult_pos => // ; by apply Series_correct.
+  apply is_series_mult_pos => // ; by apply Series_correct.
+  apply is_series_mult_pos => // ; by apply Series_correct.
+  apply is_series_mult_pos => // ; by apply Series_correct.
+  replace (la) with (Series ap - Series am).
+  replace (lb) with (Series bp - Series bm).
+  ring.
+  rewrite -Series_minus // -(is_series_unique _ _ Hlb) ; apply Series_ext => n.
+  rewrite /ap /am /bp /bm ; field.
+  rewrite -Series_minus // -(is_series_unique _ _ Hla) ; apply Series_ext => n.
+  rewrite /ap /am /bp /bm ; field.
+Qed.
+
+(** Coming soon:
+  - multiplication *)
+
+
+
+(** * Particular series *)
 (** D'Alembert criterium *)
 
 Lemma DAlembert_ex_series (a : nat -> R) (k : R) :
@@ -516,7 +840,7 @@ Proof.
   rewrite -Rabs_mult ; apply f_equal.
   rewrite plus_n_Sm ; field ; split ; by apply Ha.
   by apply Ha.
-  apply ex_series_scal.
+  apply ex_series_scal_l.
   set k0 := ((k + 1) / 2).
   exists (/(1-k0) * (1-k0*0)).
   apply (is_lim_seq_ext (fun N => / (1 - k0) * (1 - k0 ^ S N)) (sum_f_R0 (fun k1 : nat => k0 ^ k1))).
@@ -599,7 +923,7 @@ Proof.
   by [].
 Qed.
 
-(** * Particular series *)
+(** Geometric series *)
 
 Lemma is_series_geom (q : R) :
   Rabs q < 1 -> is_series (fun n => q ^ n) (/ (1-q)).
