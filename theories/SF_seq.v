@@ -82,6 +82,67 @@ Proof.
   case: (IHs t) => {IHs} _ IHs.
   apply: IHs => i Hi x0 ; apply: (H (S i)) ; simpl ; apply lt_n_S, Hi.
 Qed.
+Lemma sorted_cat  {T : Type} (Ord : T -> T -> Prop) (s1 s2 : seq T) x0 :
+  sorted Ord s1 -> sorted Ord s2 -> Ord (last x0 s1)  (head x0 s2)
+  -> sorted Ord (s1 ++ s2).
+Proof.
+  move/sorted_nth => H1.
+  move/sorted_nth => H2 H0.
+  apply sorted_nth => i Hi => x1.
+  rewrite ?nth_cat.
+  rewrite ?SSR_minus.
+  case: (le_dec (S i) (size s1)) => Hi0.
+  move: (proj2 (SSR_leq _ _) Hi0) ;
+  case: (ssrnat.leq (S i) (size s1)) => // _.
+  case: (le_dec (S (S i)) (size s1)) => Hi1.
+  move: (proj2 (SSR_leq _ _) Hi1) ;
+  case: (ssrnat.leq (S (S i)) (size s1)) => // _.
+  apply H1 ; intuition.
+  have : ~ (ssrnat.leq (S (S i)) (size s1)).
+  contradict Hi1 ; by apply SSR_leq.
+  case: (ssrnat.leq (S (S i)) (size s1)) => // _.
+  suff Hi' : i = Peano.pred (size s1).
+  rewrite Hi' nth_last.
+  replace (S (Peano.pred (size s1)) - size s1)%nat with O.
+  rewrite nth0.
+  apply not_le in Hi1.
+  case: (s1) H0 Hi Hi' Hi0 Hi1 => [ | x2 s1'] //= H0 Hi Hi' Hi0 Hi1.
+  by apply le_Sn_O in Hi0.
+  case: (s2) H0 Hi0 Hi => [ | x3 s2'] //= H0 Hi0 Hi.
+  rewrite cats0 /= in Hi.
+  rewrite Hi' in Hi.
+  by apply lt_irrefl in Hi.
+  case: (s1) Hi0 => //= [ | x2 s0] Hi0.
+  by apply le_Sn_O in Hi0.
+  by rewrite minus_diag.
+  apply sym_eq, le_antisym.
+  apply NPeano.Nat.le_pred_le_succ.
+  apply not_le in Hi1.
+  by apply lt_n_Sm_le.
+  replace i with (Peano.pred (S i)) by auto.
+  by apply le_pred.
+  have : ~ (ssrnat.leq (S i) (size s1)).
+  contradict Hi0 ; by apply SSR_leq.
+  case: (ssrnat.leq (S i) (size s1)) => // _.
+  have : ~ssrnat.leq (S (S i)) (size s1).
+  contradict Hi0.
+  apply SSR_leq in Hi0.
+  intuition.
+  case: (ssrnat.leq (S (S i)) (size s1)) => // _.
+  replace (S i - size s1)%nat with (S (i - size s1)).
+  apply H2.
+  rewrite size_cat in Hi.
+  apply not_le in Hi0.
+  elim: (size s1) i Hi Hi0 => [ | n IH] /= i Hi Hi0.
+  rewrite -minus_n_O.
+  unfold ssrnat.addn, ssrnat.addn_rec in Hi.
+  by rewrite plus_0_l in Hi.
+  case: i Hi Hi0 => [ | i] /= Hi Hi0.
+  by apply lt_S_n, lt_n_O in Hi0.
+  apply IH ; by intuition.
+  apply not_le in Hi0.
+  rewrite minus_Sn_m ; by intuition.
+Qed.
 (* head, last, behead and belast *)
 Lemma head_rcons {T : Type} (x0 : T) (s : seq T) (t : T) : head x0 (rcons s t) = head t s.
 Proof.

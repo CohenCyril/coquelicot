@@ -405,6 +405,28 @@ Proof.
   by apply Derive_correct.
 Qed.
 
+Lemma ex_derive_div (f g : R -> R) (x : R) :
+  ex_derive f x -> ex_derive g x -> g x <> 0
+    -> ex_derive (fun y => f y / g y) x.
+Proof.
+  move => Hf Hg Hl.
+  apply ex_derive_mult.
+  apply Hf.
+  by apply ex_derive_inv.
+Qed.
+Lemma Derive_div (f g : R -> R) (x : R) :
+  ex_derive f x -> ex_derive g x -> g x <> 0
+    -> Derive (fun y => f y / g y) x = (Derive f x * g x - f x * Derive g x) / (g x) ^ 2.
+Proof.
+  move => Hf Hg Hl.
+  search_derive.
+  apply derivable_pt_lim_div.
+  by apply Derive_correct.
+  by apply Derive_correct.
+  by apply Hl.
+  rewrite /Rsqr ; by field.
+Qed.
+
 (** Inverse function *)
 
 Lemma derivable_pt_lim_Rinv (x : R) :
