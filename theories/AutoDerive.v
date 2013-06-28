@@ -13,7 +13,9 @@ Inductive bop :=
   | Emult.
 
 Inductive uop :=
-  | Eopp.
+  | Eopp
+  | Einv
+  | Efct : forall (f f' : R -> R) (df : R -> Prop), (forall x, df x -> is_derive f x (f' x)) -> uop.
 
 Inductive expr :=
   | Var : nat -> expr
@@ -104,13 +106,14 @@ Fixpoint interp (l : seq R) (e : expr) : R :=
   | Subst e1 e2 => interp (set_nth R0 l 0 (interp l e2)) e1
   | Cst c => c
   | Binary o e1 e2 => match o with Eplus => Rplus | Emult => Rmult end (interp l e1) (interp l e2)
-  | Unary o e => match o with Eopp => Ropp end (interp l e)
+  | Unary o e => match o with Eopp => Ropp | Einv => Rinv | Efct f f' df H => f end (interp l e)
   | Int e1 e2 e3 => RInt (fun x => interp (x :: l) e1) (interp l e2) (interp l e3)
   end.
 
 Inductive domain :=
   | Never : domain
   | Always : domain
+  | Partial : (R -> Prop) -> expr -> domain
   | Derivable : nat -> forall k, Rn k R -> seq expr -> domain
   | Derivable2 : nat -> nat -> forall k, Rn k R -> seq expr -> domain
   | Continuous : nat -> expr -> domain
@@ -130,6 +133,7 @@ Section DomainInduction.
 Hypothesis P : domain -> Prop.
 Hypothesis P_Never : P Never.
 Hypothesis P_Always : P Always.
+Hypothesis P_Partial : forall p e, P (Partial p e).
 Hypothesis P_Derivable : forall n k f le, P (Derivable n k f le).
 Hypothesis P_Derivable2 : forall m n k f le, P (Derivable2 m n k f le).
 Hypothesis P_Continuous : forall n e, P (Continuous n e).
@@ -148,6 +152,7 @@ Fixpoint domain_ind' (d : domain) : P d :=
   match d return P d with
   | Never => P_Never
   | Always => P_Always
+  | Partial d e => P_Partial d e
   | Derivable n k f le => P_Derivable n k f le
   | Derivable2 m n k f le => P_Derivable2 m n k f le
   | Continuous n e => P_Continuous n e
@@ -191,6 +196,7 @@ Fixpoint interp_domain (l : seq R) (d : domain) : Prop :=
   match d with
   | Never => False
   | Always => True
+  | Partial p e => p (interp l e)
   | Derivable n k f le => ex_derive_Rn k f n (nth 0 (map (interp l) le))
   | Derivable2 m n k f le =>
     let le' := map (interp l) le in
@@ -406,6 +412,8 @@ intros l1 l2 b Hl.
 revert l1 l2 Hl.
 induction b using domain_ind' ; try easy ;
   simpl => l1 l2 Hl.
+(* *)
+by rewrite (interp_ext _ _ _ Hl).
 (* *)
 now rewrite -(eq_map (fun e => interp_ext _ _ e Hl)).
 (* *)
@@ -623,6 +631,8 @@ Fixpoint D (e : expr) n {struct e} : expr * domain :=
     let '(a,b) := D e n in
     match u with
     | Eopp => (Unary Eopp a, b)
+    | Einv => (Binary Emult (Unary Eopp a) (Unary Einv (Binary Emult e e)), And (b:: (Partial (fun x => x <> 0) e) :: nil))
+    | Efct f f' df H => (Binary Emult a (AppExt 1 f' [:: e]), And (b :: (Partial df e) :: nil)  )
     end
   | Int f e1 e2 =>
     let '(a1,b1) := D e1 n in
@@ -882,6 +892,20 @@ simpl.
 intros H.
 apply derivable_pt_lim_opp.
 now apply IHe.
+simpl.
+intros (H,(H0,_)).
+rewrite -{2}(Rmult_1_r (interp l e)).
+rewrite -(interp_set_nth n l e) in H0 |-*.
+apply derivable_pt_lim_inv.
+now apply IHe.
+exact H0.
+simpl.
+intros f f' df Df (H,(H0,_)).
+rewrite -(interp_set_nth n l e) in H0 |-*.
+rewrite Rmult_comm.
+apply derivable_pt_lim_comp.
+now apply IHe.
+now apply Df.
 
 (* Int *)
 simpl => l n.
@@ -1444,6 +1468,9 @@ now intros _ (H,_).
 (* . *)
 exact (fun H1 H2 => conj (H1 l I) (IHld Hb H2)).
 (* . *)
+intros df e H1 (H2,H3).
+exact (conj (H1 l H2) (IHld Hb H3)).
+(* . *)
 intros n k f' le H1 (H2,H3).
 exact (conj (H1 l H2) (IHld Hb H3)).
 (* . *)
@@ -1564,6 +1591,20 @@ exists (mkposreal _ Rlt_0_1) => u v Hu Hv.
 now apply H.
 Qed.
 
+Class UnaryDiff f := {UnaryDiff_f' : R -> R ; UnaryDiff_df : R -> Prop ;
+   UnaryDiff_H : forall x, UnaryDiff_df x -> is_derive f x (UnaryDiff_f' x)}.
+Global Instance UnaryDiff_exp : UnaryDiff exp.
+Proof.
+  exists exp (fun _ => True).
+  move => x _ ; by apply derivable_pt_lim_exp.
+Defined.
+Global Instance UnaryDiff_pow : forall n : nat, UnaryDiff (fun x => pow x n).
+Proof.
+  intro n.
+  exists (fun x => INR n * x ^ (Peano.pred n)) (fun _ => True).
+  move => x _ ; by apply derivable_pt_lim_pow.
+Defined.
+
 Definition var : nat -> R.
 exact (fun _ => R0).
 Qed.
@@ -1605,18 +1646,39 @@ Ltac reify fct nb :=
     let a' := reify a nb in
     let b' := reify b nb in
     reify_helper a' b' (Binary Emult a' b') fct
+  | Rinv ?a =>
+    let a' := reify a nb in
+    match a' with
+    | Cst _ => constr:(Cst fct)
+    | _ => constr:(Unary Einv a')
+    end
+  | Rdiv ?a ?b =>
+    let a' := reify a nb in
+    let b' := reify b nb in
+    reify_helper a' b' (Binary Emult a' (Unary Einv b')) fct
   | RInt ?f ?a ?b =>
     let f := eval cbv beta in (f (var (S nb))) in
     let f' := reify f (S nb) in
     let a' := reify a nb in
     let b' := reify b nb in
     constr:(Int f' a' b')
+  | pow ?f ?n =>
+      reify ((fun x => pow x n) f) nb
   | appcontext [var ?i] =>
-    match reify_aux fct (Nil expr) O with
-    | (?f,?le,?k) => constr:(AppExt k f le)
+    match fct with
+    | ?f ?a =>
+      let e := reify a nb in
+      let ud := constr:(_ : UnaryDiff f) in
+      constr:(Unary (Efct f (@UnaryDiff_f' f ud) (@UnaryDiff_df f ud) (@UnaryDiff_H f ud)) e)
+    | _ =>
+      match reify_aux fct (Nil expr) O with
+      | (?f,?le,?k) => constr:(AppExt k f le)
+      end
     end
   | _ => constr:(Cst fct)
   end.
+
+
 
 Lemma auto_derive_helper :
   forall (e : expr) l n,
@@ -1652,3 +1714,4 @@ Ltac auto_derive :=
     refine (eq_ind _ (derivable_pt_lim _ _) (H _) _ _) ;
     clear H
   end.
+
