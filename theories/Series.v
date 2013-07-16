@@ -507,7 +507,7 @@ Proof.
   elim => [ | n IH].
   simpl ; ring.
   simpl ; rewrite -IH ; ring.
-  apply (is_lim_seq_scal _ c l).
+  apply (is_lim_seq_scal_l _ c l).
   by apply Ha.
   by simpl.
 Qed.
@@ -535,7 +535,7 @@ Proof.
   case: Rle_dec => //= H0.
   case: Rle_lt_or_eq_dec => //=.
 
-  rewrite H0 -(Lim_seq_scal _ c).
+  rewrite H0 -(Lim_seq_scal_l _ c).
   apply f_equal, Lim_seq_ext.
   elim => [ | n IH].
   simpl ; ring.
@@ -849,10 +849,10 @@ Proof.
   apply Rlt_not_eq.
   replace 1 with ((1+1)/2) by field ; rewrite /k0.
   apply Rmult_lt_compat_r ; by intuition.
-  apply (is_lim_seq_scal (fun N0 => (1 - k0 ^ S N0)) (/ (1 - k0)) (Finite (1-k0*0))).
+  apply (is_lim_seq_scal_l (fun N0 => (1 - k0 ^ S N0)) (/ (1 - k0)) (Finite (1-k0*0))).
   apply (is_lim_seq_minus _ _ (Finite 1) (Finite (k0*0))).
   by apply is_lim_seq_const.
-  simpl pow ; apply (is_lim_seq_scal _ _ (Finite 0)).
+  simpl pow ; apply (is_lim_seq_scal_l _ _ (Finite 0)).
   apply (is_lim_seq_geom k0).
   rewrite Rabs_pos_eq.
   replace 1 with ((1+1)/2) by field ; rewrite /k0.
@@ -909,7 +909,7 @@ Proof.
     apply is_lim_seq_ext with (fun n => / Rabs (a N) * (Rabs (a N) * k ^ n)).
     move => n ; field ; by apply Rabs_no_R0.
     rewrite -(Rmult_0_r (/Rabs (a N))).
-    apply (is_lim_seq_scal _ _ (Finite 0)).
+    apply (is_lim_seq_scal_l _ _ (Finite 0)).
     apply is_lim_seq_le_le with (fun _ => 0) (fun n => Rabs (a (n + N)%nat)).
     move => n ; split.
     apply Rmult_le_pos.

@@ -1,6 +1,6 @@
 Require Import Reals Div2 ConstructiveEpsilon.
 Require Import ssreflect ssrbool eqtype seq.
-Require Import Markov Rcomplements Floor Total_sup Sup_seq Lim_seq Derive SF_seq.
+Require Import Markov Rcomplements Total_sup Sup_seq Lim_seq Derive SF_seq.
 
 
 (** * Build sequences *)
@@ -792,32 +792,6 @@ Proof.
   apply Rle_trans with x1 ; [apply (Hptd O) | apply (Hptd 1%nat)] ; 
   rewrite ?SF_size_cons ; repeat apply lt_n_S ; apply lt_O_Sn.
   apply IH, (ptd_cons (x0,y0)) => //.
-Qed.
-
-Definition signe (x : R) :=
-  match Rle_dec 0 x with
-    | left H => match Rle_lt_or_eq_dec _ _ H with
-        | left _ => 1
-        | right _ => 0
-      end
-    | right _ => -1
-  end.
-Lemma Ropp_signe (x : R) : signe (-x) = - signe x.
-Proof.
-  rewrite /signe ; 
-  case: Rle_dec => H ; case: Rle_dec => H0.
-  have: ~ (0 < - x).
-    apply Rle_not_lt, Ropp_le_cancel ; intuition.
-  have: ~ (0 < x).
-    apply Rle_not_lt, Ropp_le_cancel ; rewrite Ropp_0 ; intuition.
-  case: Rle_lt_or_eq_dec => // ; case: Rle_lt_or_eq_dec => // ; intuition.
-  have: ~ (0 = - x).
-    contradict H0 ; apply Ropp_le_cancel ; rewrite -H0 ; intuition.
-  case: Rle_lt_or_eq_dec => // ; intuition.
-  have: ~ (0 = x).
-    contradict H ; rewrite -H ; intuition.
-  case: Rle_lt_or_eq_dec => // ; intuition.
-  contradict H0 ; apply Ropp_le_cancel, Rlt_le, Rnot_le_lt ; intuition.
 Qed.
 
 Definition seq_step (s : seq R) := 

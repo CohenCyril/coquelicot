@@ -1,9 +1,83 @@
 Require Import Reals ssreflect.
 Require Import Even Div2.
+Require Import seq.
 
 Open Scope R_scope.
 
+(** * Integer part *)
+(** ** to Z *)
+
+Lemma floor_ex : forall x : R, {n : Z | IZR n <= x < IZR n + 1}.
+Proof.
+  intros.
+  exists (up (x-1)) ; split.
+  assert (Rw : x = 1 + (x-1)) ; [ring | rewrite {2}Rw => {Rw}].
+  assert (Rw :IZR (up (x - 1))  = (IZR (up (x - 1)) - (x - 1)) + (x-1)) ; 
+    [ring | rewrite Rw ; clear Rw].
+  apply Rplus_le_compat_r, (proj2 (archimed _)).
+  assert (Rw : x = (x-1) + 1) ; [ring | rewrite {1}Rw ; clear Rw].
+  apply Rplus_lt_compat_r, (proj1 (archimed _)).
+Qed.
+Definition floor x := projT1 (floor_ex x).
+
+Lemma floor1_ex : forall x : R, {n : Z | IZR n < x <= IZR n + 1}.
+Proof.
+  intros.
+  destruct (floor_ex x) as (n,(Hn1,Hn2)).
+  destruct (Rle_lt_or_eq_dec (IZR n) x Hn1).
+  exists n ; split.
+  apply r.
+  apply Rlt_le, Hn2.
+  exists (Zpred n) ; rewrite <- e ; split.
+  apply IZR_lt, Zlt_pred.
+  rewrite <- (succ_IZR), <-Zsucc_pred ; apply Rle_refl.
+Qed.
+Definition floor1 x := projT1 (floor1_ex x).
+
+(** ** to nat *)
+
+Lemma nfloor_ex : forall x : R, 0 <= x -> {n : nat | INR n <= x < INR n + 1}.
+Proof.
+  intros.
+  destruct (floor_ex x) as (m,Hm).
+  destruct (Z_lt_le_dec m 0) as [z|z].
+  apply Zlt_le_succ in z.
+  contradict z.
+  apply Zlt_not_le.
+  apply lt_IZR.
+  apply Rle_lt_trans with (1 := H).
+  rewrite succ_IZR ; apply Hm.
+  destruct m.
+  exists O ; apply Hm.
+  exists (nat_of_P p).
+  rewrite INR_IZR_INZ.
+  rewrite <- Zpos_eq_Z_of_nat_o_nat_of_P.
+  apply Hm.
+  contradict z.
+  apply Zlt_not_le.
+  apply Zlt_neg_0.
+Qed.
+Definition nfloor x pr := projT1 (nfloor_ex x pr).
+
+Lemma nfloor1_ex : forall x : R, 0 < x -> {n : nat | INR n < x <= INR n + 1}.
+Proof.
+  intros.
+  destruct (nfloor_ex x (Rlt_le _ _ H)) as (n,(Hn1,Hn2)).
+  destruct (Rle_lt_or_eq_dec (INR n) x Hn1).
+  exists n ; split.
+  apply r.
+  apply Rlt_le, Hn2.
+  destruct n.
+  contradict H.
+  rewrite <- e ; simpl ; apply Rlt_irrefl.
+  exists n ; rewrite <- e ; split.
+  apply lt_INR, lt_n_Sn.
+  rewrite <- (S_INR) ; apply Rle_refl.
+Qed.
+Definition nfloor1 x pr := projT1 (nfloor1_ex x pr).
+
 (** * INR *)
+
 Lemma INRp1_pos : forall n, 0 < INR n + 1.
 Proof.
 intros N.
@@ -964,6 +1038,294 @@ Proof.
   apply not_even_and_odd in H ; intuition.
   apply odd_S, even_S in H0.
   apply not_even_and_odd in H ; intuition.
+Qed.
+
+(** * The signe function *)
+
+Definition signe (x : R) :=
+  match Rle_dec 0 x with
+    | left H => match Rle_lt_or_eq_dec _ _ H with
+        | left _ => 1
+        | right _ => 0
+      end
+    | right _ => -1
+  end.
+
+Lemma Ropp_signe (x : R) : signe (-x) = - signe x.
+Proof.
+  rewrite /signe ; 
+  case: Rle_dec => H ; case: Rle_dec => H0.
+  have: ~ (0 < - x).
+    apply Rle_not_lt, Ropp_le_cancel ; intuition.
+  have: ~ (0 < x).
+    apply Rle_not_lt, Ropp_le_cancel ; rewrite Ropp_0 ; intuition.
+  case: Rle_lt_or_eq_dec => // ; case: Rle_lt_or_eq_dec => // ; intuition.
+  have: ~ (0 = - x).
+    contradict H0 ; apply Ropp_le_cancel ; rewrite -H0 ; intuition.
+  case: Rle_lt_or_eq_dec => // ; intuition.
+  have: ~ (0 = x).
+    contradict H ; rewrite -H ; intuition.
+  case: Rle_lt_or_eq_dec => // ; intuition.
+  contradict H0 ; apply Ropp_le_cancel, Rlt_le, Rnot_le_lt ; intuition.
+Qed.
+
+Lemma signe_0_lt (x : R) : 0 < x <-> signe x = 1.
+Proof.
+  split ; rewrite /signe => Hx.
+  case: Rle_dec (Rlt_le _ _ Hx) => // Hx0 _.
+  case: Rle_lt_or_eq_dec (Rlt_not_eq _ _ Hx) => // Hx0 _.
+  case: Rle_dec Hx => // Hx.
+  case: Rle_lt_or_eq_dec => // Hx0.
+  rewrite {1}Hx0 => ->.
+  by apply Rlt_0_1.
+  apply Rnot_le_lt in Hx => Hx0.
+  rewrite -(Rmult_1_l x) -Hx0.
+  ring_simplify.
+  by apply Ropp_0_gt_lt_contravar.
+Qed.
+
+Lemma signe_lt_0 (x : R) : x < 0 <-> signe x = -1.
+Proof.
+  rewrite -(Ropp_involutive x) Ropp_signe Ropp_involutive ; split => Hx.
+  apply f_equal.
+  apply signe_0_lt.
+  by apply Ropp_0_gt_lt_contravar.
+  apply (f_equal Ropp) in Hx ; rewrite ?Ropp_involutive in Hx.
+  apply signe_0_lt in Hx.
+  apply Ropp_lt_cancel ; by rewrite Ropp_0.
+Qed.
+
+Lemma signe_carac (x y : R) : (x * y > 0 \/ (x = 0 /\ y = 0)) -> signe x = signe y.
+Proof.
+  case => Hxy.
+  wlog : x y Hxy / (0 < x) => [Hw | Hx].
+    case: (Rle_lt_dec 0 x) => Hx.
+    case: Hx => Hx.
+    by apply Hw.
+    rewrite -Hx Rmult_0_l in Hxy.
+    by apply Rlt_irrefl in Hxy.
+  rewrite -(Ropp_involutive (signe x)) -(Ropp_involutive (signe y)).
+  rewrite -(Ropp_signe x) -(Ropp_signe y).
+  apply f_equal, Hw.
+  by ring_simplify.
+  by apply Ropp_0_gt_lt_contravar.
+  have Hy : 0 < y.
+  apply Rnot_le_lt ; 
+  contradict Hxy ;
+  apply Rle_not_lt.
+  rewrite -(Rmult_0_r x).
+  apply Rmult_le_compat_l.
+  by apply Rlt_le.
+  by [].
+  rewrite /signe.
+  case: Rle_dec (Rlt_le _ _ Hx) => // Hx0 _.
+  case: Rle_dec (Rlt_le _ _ Hy) => // Hy0 _.
+  case: Rle_lt_or_eq_dec (Rlt_not_eq _ _ Hx) => // _ _.
+  case: Rle_lt_or_eq_dec (Rlt_not_eq _ _ Hy) => // _ _.
+  case: Hxy => -> ->.
+  by [].
+Qed.
+
+Lemma signe_mult (x y : R) : signe (x * y) = signe x * signe y.
+Proof.
+  wlog: x / (0 < x) => [Hw | Hx].
+    case: (Rle_lt_dec 0 x) => Hx.
+    case: Hx => Hx.
+    by apply Hw.
+    rewrite -Hx Rmult_0_l.
+    rewrite {1 2}/signe.
+    case: Rle_dec (Rle_refl 0) => // H _.
+    case: Rle_lt_or_eq_dec (Rlt_irrefl 0) => // _ _.
+    by rewrite Rmult_0_l.
+    rewrite -(Ropp_involutive x).
+    rewrite Ropp_signe Ropp_mult_distr_l_reverse Ropp_signe Hw.
+    ring.
+    by apply Ropp_0_gt_lt_contravar.
+  wlog: y / (0 < y) => [Hw | Hy].
+    case: (Rle_lt_dec 0 y) => Hy.
+    case: Hy => Hy.
+    by apply Hw.
+    rewrite -Hy Rmult_0_r.
+    rewrite {1 3}/signe.
+    case: Rle_dec (Rle_refl 0) => // H _.
+    case: Rle_lt_or_eq_dec (Rlt_irrefl 0) => // _ _.
+    by rewrite Rmult_0_r.
+    rewrite -(Ropp_involutive y).
+    rewrite Ropp_signe Ropp_mult_distr_r_reverse Ropp_signe Hw.
+    ring.
+    by apply Ropp_0_gt_lt_contravar.
+  have Hxy : 0 < x * y.
+    by apply Rmult_lt_0_compat.
+  rewrite ?(proj1 (signe_0_lt _)) //.
+  by rewrite Rmult_1_l.
+Qed.
+
+Lemma sum_INR : forall n, sum_f_R0 INR n = INR n * (INR n + 1) / 2.
+Proof.
+  elim => [ | n IH] ; rewrite /sum_f_R0 -/sum_f_R0 ?S_INR /=.
+  rewrite /Rdiv ; ring.
+  rewrite IH ; field.
+Qed.
+
+(** * Finite subdivision *)
+
+Lemma interval_finite_subdiv (a b : R) (eps : posreal) : (a <= b) ->
+  {l : seq R | head 0 l = a /\ last 0 l = b /\
+    forall i, (S i < size l)%nat -> nth 0 l i < nth 0 l (S i) <= nth 0 l i + eps}.
+Proof.
+  move => Hab.
+  suff Hn : 0 <= (b - a) / eps.
+  set n : nat := nfloor ((b - a) / eps) Hn.
+  
+  case: (Req_EM_T (INR n) ((b - a) / eps)) => Hdec.
+
+  set l : seq R := mkseq (fun k => a + INR k * eps) (S n).
+  exists l.
+  split.
+  simpl ; rewrite /Rdiv ; ring.
+  split.
+  replace b with (a + INR n * eps).
+  simpl.
+  rewrite (last_map (fun k => a + INR k * eps) _ O) /=.
+  rewrite (last_nth O) size_iota /=.
+  case H : n => [ | m].
+  by simpl.
+  by rewrite /nth -/(nth _ _ m) nth_iota.
+  rewrite Hdec ; field.
+  by apply Rgt_not_eq, eps.
+  move => i Hi ;
+  rewrite size_mkseq in Hi.
+  split.
+  rewrite ?nth_mkseq //.
+  rewrite S_INR Rminus_lt_0 ; ring_simplify.
+  by apply eps.
+  elim: (S n) (S i) Hi => /= [ | m IH] ;
+  case => /= [ | j] Hj //.
+  by apply lt_irrefl in Hj.
+  by apply lt_n_O in Hj.
+  by apply IH, lt_S_n.
+  elim: (S n) (S i) Hi => /= [ | m IH] ;
+  case => /= [ | j] Hj //.
+  by apply lt_n_O in Hj.
+  by apply IH, lt_S_n.
+  rewrite ?nth_mkseq //.
+  rewrite S_INR Rminus_le_0 ; ring_simplify.
+  by apply Rle_refl.
+  elim: (S n) (S i) Hi => /= [ | m IH] ;
+  case => /= [ | j] Hj //.
+  by apply lt_n_O in Hj.
+  by apply IH, lt_S_n.
+  elim: (S n) (S i) Hi => /= [ | m IH] ;
+  case => /= [ | j] Hj //.
+  by apply lt_n_O in Hj.
+  by apply lt_n_O in Hj.
+  by apply IH, lt_S_n.
+  
+  set l : seq R := rcons (mkseq (fun k => a + INR k * eps) (S n)) b.
+  exists l.
+  split.
+  simpl ; rewrite /Rdiv ; ring.
+  split.
+  simpl ; by rewrite last_rcons.
+  move => i Hi ;
+  rewrite size_rcons size_mkseq in Hi ;
+  apply lt_n_Sm_le, le_S_n in Hi.
+  split.
+  rewrite ?nth_rcons size_mkseq.
+  have H : ssrnat.leq (S i) (S n) = true.
+    apply le_n_S in Hi ;
+    elim: (S i) (S n) Hi => //= j IH ;
+    case => //= [ | m] Hi.
+    by apply le_Sn_O in Hi.
+    apply IH ; by apply le_S_n.
+  case: (ssrnat.leq (S i) (S n)) (H) => // _.
+  case H0 : (ssrnat.leq (S (S i)) (S n)) => //.
+  rewrite ?nth_mkseq //.
+  rewrite S_INR Rminus_lt_0 ; ring_simplify.
+  by apply eps.
+  apply (f_equal negb) in H0 ; simpl in H0.
+  rewrite -ssrnat.leqNgt in H0.
+  case H1 : (@eqtype.eq_op ssrnat.nat_eqType (S i) (S n)) => //.
+  rewrite ssrnat.eqSS /= in H1.
+  replace i with n.
+  rewrite nth_mkseq => //.
+  move: Hdec ; rewrite /n /nfloor.
+  case: nfloor_ex => {n Hn l Hi H H0 H1} n Hn /= Hdec.
+  rewrite Rplus_comm ; apply Rlt_minus_r.
+  apply Rlt_div_r.
+  by apply eps.
+  case: Hn => Hn _ ; case: Hn => // Hn.
+  elim: n i H1 {Hi H H0 l Hdec} => [ | n IH] ;
+  case => [ | i] // H.
+  apply f_equal, IH ; intuition.
+  by rewrite ssrnat.eqn_leq H H0 in H1.
+
+  rewrite ?nth_rcons size_mkseq.
+  have H : ssrnat.leq (S i) (S n) = true.
+    apply le_n_S in Hi ;
+    elim: (S i) (S n) Hi => //= j IH ;
+    case => //= [ | m] Hi.
+    by apply le_Sn_O in Hi.
+    apply IH ; by apply le_S_n.
+  case: (ssrnat.leq (S i) (S n)) (H) => // _.
+  case H0 : (ssrnat.leq (S (S i)) (S n)) => //.
+  rewrite ?nth_mkseq //.
+  rewrite S_INR Rminus_le_0 ; ring_simplify.
+  by apply Rle_refl.
+  apply (f_equal negb) in H0 ; simpl in H0.
+  rewrite -ssrnat.leqNgt in H0.
+  case H1 : (@eqtype.eq_op ssrnat.nat_eqType (S i) (S n)) => //.
+  rewrite ssrnat.eqSS /= in H1.
+  replace i with n.
+  rewrite nth_mkseq => //.
+  move: Hdec ;
+  rewrite /n /nfloor.
+  case: nfloor_ex => {n Hn l Hi H H0 H1} n Hn /= Hdec.
+  rewrite Rplus_assoc Rplus_comm ; apply Rle_minus_l.
+  replace (INR n * eps + eps) with ((INR n + 1) * eps) by ring.
+  apply Rle_div_l.
+  by apply eps.
+  by apply Rlt_le, Hn.
+  elim: n i H1 {Hi H H0 l Hdec} => [ | n IH] ;
+  case => [ | i] // H.
+  apply f_equal, IH ; intuition.
+  by rewrite ssrnat.eqn_leq H H0 in H1.
+  apply Rdiv_le_0_compat.
+  by apply Rminus_le_0 in Hab.
+  by apply eps.
+Qed.
+
+Lemma interval_finite_subdiv_between (a b : R) (eps : posreal) (Hab : a <= b) :
+  let l := projT1 (interval_finite_subdiv a b eps Hab) in
+  forall i, (i < size l)%nat -> a <= nth 0 l i <= b.
+Proof.
+  case: interval_finite_subdiv => l Hl /= i Hi.
+  case: Hl => <- ; case => <- Hl.
+  move: (fun i Hi => proj1 (Hl i Hi)) => {Hl} Hl.
+  rewrite -nth0 (last_nth 0).
+
+  suff : forall n m, (n <= m)%nat -> (m < size l)%nat
+    -> nth 0 l n <= nth 0 l m.
+  move => {Hl} Hl ; split.
+  apply Hl ; by intuition.
+  case: l Hi Hl => /= [ | x0 l] Hi Hl.
+  by apply lt_n_O in Hi.
+  apply Hl ; by intuition.
+  
+  elim: l Hl {i Hi} => [ | x0 l IH] Hl n m Hnm Hm.
+  by apply lt_n_O in Hm.
+  case: n m Hnm Hm => [ | n] m //= Hnm Hm.
+  clear Hnm ; elim: m Hm => {IH} /= [ | m IH] Hm.
+  by apply Rle_refl.
+  apply Rle_trans with (nth 0 (x0 :: l) m).
+  apply IH ; intuition.
+  by apply Rlt_le, Hl.
+  case: m Hnm Hm => /= [ | m] Hnm Hm.
+  by apply le_Sn_O in Hnm.
+  apply IH ; try by intuition.
+  move => i Hi.
+  apply (Hl (S i)).
+  by apply lt_n_S.
 Qed.
 
 (** * Operations on the Riemann integral *)

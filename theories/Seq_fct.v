@@ -349,7 +349,8 @@ Lemma CVU_Rint (fn : nat -> R -> R) (a b : R) (Hab : a < b) :
   CVU_dom fn (fun x => a <= x <= b)
   -> (forall n, forall x, a <= x <= b -> continuity_pt (fn n) x)
   -> CVU_dom (fun n x => RInt (fn n) a x) (fun x => a <= x <= b) 
-    /\ (forall x, a <= x <= b -> Lim_seq (fun n => RInt (fn n) a x) = RInt (fun y => Lim_seq (fun n => fn n y)) a x).
+    /\ (forall x, a <= x <= b -> 
+  Lim_seq (fun n => RInt (fn n) a x) = RInt (fun y => Lim_seq (fun n => fn n y)) a x).
 *)
 Lemma CVU_Derive (fn : nat -> R -> R) (D : R -> Prop) :
   is_open D -> is_connex D
@@ -496,7 +497,7 @@ Proof.
   rewrite -Lim_seq_minus.
   replace (real (Lim_seq (fun n : nat => fn n (x + h) - fn n x)) / h)
   with (real (Rbar_mult (/h) (Lim_seq (fun n : nat => fn n (x + h) - fn n x)))).
-  rewrite -Lim_seq_scal.
+  rewrite -Lim_seq_scal_l.
   replace (Lim_seq (fun n : nat => / h * (fn n (x + h) - fn n x)))
     with (Lim_seq (fun n : nat => rn x n h)).
   apply H0.
@@ -564,7 +565,7 @@ Proof.
   rewrite -Lim_seq_minus.
   replace (real (Lim_seq (fun n : nat => fn n (x + h) - fn n x)) / h)
   with (real (Rbar_mult (/h) (Lim_seq (fun n : nat => fn n (x + h) - fn n x)))).
-  rewrite -Lim_seq_scal.
+  rewrite -Lim_seq_scal_l.
   replace (Lim_seq (fun n : nat => / h * (fn n (x + h) - fn n x)))
     with (Lim_seq (fun n : nat => rn x n h)).
   apply H0.
@@ -631,6 +632,160 @@ Proof.
   case => H2 H3.
   rewrite -H3.
   by apply Derive_correct.
+Qed.
+
+(** ** Dini theorem *)
+
+Lemma Dini_1 (fn : nat -> R -> R) (a b : R) :
+  a < b -> CVS_dom fn (fun x => a <= x <= b)
+  -> (forall (n : nat) (x : R), a <= x <= b -> continuity_pt (fn n) x)
+  -> (forall (x : R), a <= x <= b -> continuity_pt (fun y => Lim_seq (fun n => fn n y)) x)
+  -> (forall (n : nat) (x y : R), a <= x -> x <= y -> y <= b -> fn n x <= fn n y)
+  -> CVU_dom fn (fun x => a <= x <= b).
+Proof.
+  set AB := fun x => a <= x <= b.
+  set f : R -> R := (fun y : R => Lim_seq (fun n : nat => fn n y)).
+  move => Hab Hcvs Cfn Cf Hfn.
+  
+  have CUf : uniform_continuity f AB.
+    apply Heine.
+    by apply compact_P3.
+    by apply Cf.
+  suff H : forall eps : posreal, exists N : nat,
+    forall (n : nat) (x : R), AB x ->
+    (N <= n)%nat -> Rabs (fn n x - Lim_seq (fun n0 : nat => fn n0 x)) < 5 * eps.
+    move => eps.
+    replace (pos eps) with (5 * (eps / 5)) by field.
+    suff He : 0 < eps / 5.
+    by apply (H (mkposreal _ He)).
+    apply Rdiv_lt_0_compat.
+    by apply eps.
+    repeat (apply Rplus_lt_0_compat || apply Rmult_lt_0_compat) ; apply Rlt_0_1.
+
+  move => eps.
+  case: (CUf eps) => {CUf} eta CUf.
+  move: (interval_finite_subdiv_between  a b (pos_div_2 eta) (Rlt_le _ _ Hab)).
+  case: (interval_finite_subdiv a b (pos_div_2 eta) (Rlt_le _ _ Hab)) =>
+    a_ Ha_ /= Ha_0.
+  have : exists N, forall n i, (N <= n)%nat -> (i < seq.size a_)%nat 
+    -> Rabs (fn n (seq.nth 0 a_ i) - f (seq.nth 0 a_ i)) < eps.
+    case: a_ Ha_ Ha_0 => [ | a0 a_] Ha_ /= Ha_0.
+    contradict Hab.
+    rewrite -(proj1 Ha_) -(proj1 (proj2 Ha_)).
+    by apply Rlt_irrefl.
+    elim: (a_) (a0) Ha_0 => /= [ | x1 l IH] x0 Hl.
+    move: (Hcvs x0 (Hl O (lt_n_Sn _))) ;
+    move/Lim_seq_correct' => {Hcvs} Hcvs.
+    case: (Hcvs eps) => {Hcvs} N Hcvs.
+    exists N => n i Hn Hi.
+    case: i Hi => /= [ | i] Hi.
+    by apply Hcvs.
+    by apply lt_S_n, lt_n_O in Hi.
+    case: (IH x1).
+    move => i Hi.
+    by apply (Hl (S i)), lt_n_S.
+    move => N0 HN0.
+    move: (Hcvs x0 (Hl O (lt_O_Sn _))) ;
+    move/Lim_seq_correct' => {Hcvs} Hcvs.
+    case: (Hcvs eps) => {Hcvs} N Hcvs.
+    exists (N + N0)%nat => n i Hn Hi.
+    case: i Hi => /= [ | i ] Hi.
+    apply Hcvs ; by intuition.
+    apply HN0 ; by intuition.
+  case => N HN.
+  exists N => n x Hx Hn.
+  have : exists i, (S i < seq.size a_)%nat /\ seq.nth 0 a_ i <= x <= seq.nth 0 a_ (S i).
+    case: a_ Ha_ Ha_0 {HN} => [ | a0 a_] Ha_ /= Ha_0.
+    contradict Hab.
+    rewrite -(proj1 Ha_) -(proj1 (proj2 Ha_)).
+    by apply Rlt_irrefl.
+    case: a_ Ha_ Ha_0 => [ | a1 a_] Ha_ /= Ha_0.
+    contradict Hab.
+    rewrite -(proj1 Ha_) -(proj1 (proj2 Ha_)).
+    by apply Rlt_irrefl.
+    rewrite -(proj1 Ha_) in AB Hcvs CUf Hx Hab Cfn Cf Hfn Ha_0 |- * ; case: Ha_ => {a} _ Ha_.
+    rewrite -(proj1 Ha_) in AB Hcvs CUf Hx Hab Cfn Cf Hfn Ha_0 |- * ; case: Ha_ => {b} _ Ha_.
+    clear Hcvs CUf ;
+    revert AB Hx ;
+    elim: (a_) (a0) (a1) => /= [ | x2 l IH] x0 x1 Hx.
+    exists O ; split => /=.
+    by apply lt_n_Sn.
+    by apply Hx.
+    case: (Rlt_le_dec x x1) => Hx'.
+    exists O ; split => /=.
+    by apply lt_n_S, lt_O_Sn.
+    split ; intuition.
+    case: (IH x1 x2).
+    by intuition.
+    move => i [Hi Hx0].
+    exists (S i) ; by intuition.
+  case => i [Hi Hx'].
+  replace (fn n x - Lim_seq (fun n0 : nat => fn n0 x))
+    with ((f (seq.nth 0 a_ i) - f x) + (fn n x - f (seq.nth 0 a_ i)))
+    by (rewrite /f ; ring).
+  replace (5 * eps) with (eps + 4 * eps) by ring.
+  apply Rle_lt_trans with (1 := Rabs_triang _ _).
+  apply Rplus_lt_compat.
+  apply CUf.
+  apply Ha_0 ; by intuition.
+  by apply Hx.
+  rewrite -Rabs_Ropp Ropp_minus_distr' Rabs_pos_eq.
+  apply Rle_lt_trans with (seq.nth 0 a_ (S i) - seq.nth 0 a_ i).
+  apply Rplus_le_compat_r.
+  by apply Hx'.
+  apply Rle_lt_trans with (eta/2).
+  apply Rle_minus_l.
+  rewrite Rplus_comm.
+  by apply Ha_.
+  apply Rminus_lt_0 ; field_simplify ; rewrite -Rdiv_1.
+  by apply is_pos_div_2.
+  apply Rle_minus_r ; rewrite Rplus_0_l.
+  by apply Hx'.
+  replace (fn n x - f (seq.nth 0 a_ i))
+    with ((fn n (seq.nth 0 a_ i) - f (seq.nth 0 a_ i)) + (fn n x - fn n (seq.nth 0 a_ i)))
+    by ring.
+  replace (4 * eps) with (eps + 3 * eps) by ring.
+  apply Rle_lt_trans with (1 := Rabs_triang _ _).
+  apply Rplus_lt_compat.
+  apply HN ; by intuition.
+  rewrite Rabs_pos_eq.
+  apply Rle_lt_trans with (fn n (seq.nth 0 a_ (S i)) - fn n (seq.nth 0 a_ i)).
+  apply Rplus_le_compat_r.
+  apply Hfn.
+  by apply Hx.
+  by apply Hx'.
+  by apply Ha_0.
+  replace (fn n (seq.nth 0 a_ (S i)) - fn n (seq.nth 0 a_ i))
+    with ((fn n (seq.nth 0 a_ (S i)) - f (seq.nth 0 a_ (S i)))
+      - (fn n (seq.nth 0 a_ i) - f (seq.nth 0 a_ i))
+      + (f (seq.nth 0 a_ (S i)) - f (seq.nth 0 a_ i)))
+    by ring.
+  replace (3 * eps) with ((eps + eps) + eps) by ring.
+  apply Rle_lt_trans with (1 := Rle_abs _).
+  apply Rle_lt_trans with (1 := Rabs_triang _ _).
+  apply Rplus_lt_compat.
+  apply Rle_lt_trans with (1 := Rabs_triang _ _).
+  apply Rplus_lt_compat.
+  apply HN ; by intuition.
+  rewrite Rabs_Ropp.
+  apply HN ; by intuition.
+  apply CUf.
+  apply Ha_0 ; by intuition.
+  apply Ha_0 ; by intuition.
+  rewrite Rabs_pos_eq.
+  apply Rle_lt_trans with (eta/2).
+  apply Rle_minus_l.
+  rewrite Rplus_comm.
+  by apply Ha_.
+  apply Rminus_lt_0 ; field_simplify ; rewrite -Rdiv_1.
+  by apply is_pos_div_2.
+  apply Rle_minus_r ; rewrite Rplus_0_l.
+  apply Rle_trans with x ; apply Hx'.
+  apply Rle_minus_r ; rewrite Rplus_0_l.
+  apply Hfn.
+  apply Ha_0 ; by intuition.
+  by apply Hx'.
+  by apply Hx.
 Qed.
 
 (** ** Series of functions *)

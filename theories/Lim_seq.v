@@ -1,4 +1,4 @@
-Require Import Reals Rcomplements Markov Floor.
+Require Import Reals Rcomplements Markov.
 Require Import Sup_seq Rbar_theory Total_sup ssreflect.
 Open Scope R_scope.
 
@@ -546,7 +546,7 @@ Proof.
   by apply Hu.
 Qed.
 
-Lemma is_lim_seq_scal (u : nat -> R) (a : R) (lu : Rbar) :
+Lemma is_lim_seq_scal_l (u : nat -> R) (a : R) (lu : Rbar) :
   is_lim_seq u lu -> is_Rbar_mult a lu (Rbar_mult a lu) ->
     is_lim_seq (fun n => a * u n) (Rbar_mult a lu).
 Proof.
@@ -557,7 +557,7 @@ Proof.
   by apply Hu.
   by apply Hl.
 Qed.
-Lemma ex_lim_seq_scal (u : nat -> R) (a : R) :
+Lemma ex_lim_seq_scal_l (u : nat -> R) (a : R) :
   ex_lim_seq u -> ex_lim_seq (fun n => a * u n).
 Proof.
   move => [l H].
@@ -567,7 +567,7 @@ Proof.
   move => n ; rewrite Ha ; by rewrite Rmult_0_l.
   by apply is_lim_seq_correct, Rbar_is_lim_seq_const.
   exists (Rbar_mult a l).
-  eapply is_lim_seq_scal.
+  eapply is_lim_seq_scal_l.
   apply H.
   apply sym_not_eq in Ha.
   case: (l) => [x | | ] //= ; case: Rle_dec => // Hx.
@@ -576,7 +576,7 @@ Proof.
   by case: Rle_lt_or_eq_dec.
   by apply Rnot_le_lt.
 Qed.
-Lemma Lim_seq_scal (u : nat -> R) (a : R) : 
+Lemma Lim_seq_scal_l (u : nat -> R) (a : R) : 
   Lim_seq (fun n => a * u n) = Rbar_mult a (Lim_seq u).
 Proof.
   case: (Req_dec a 0) => [ -> | Ha].
@@ -680,6 +680,32 @@ Proof.
   replace M with (a*(M/a)).
   by apply Rmult_lt_compat_l, Hls.
   field ; by apply Rgt_not_eq.
+Qed.
+Lemma is_lim_seq_scal_r (u : nat -> R) (a : R) (lu : Rbar) :
+  is_lim_seq u lu -> is_Rbar_mult lu a (Rbar_mult lu a) ->
+    is_lim_seq (fun n => u n * a) (Rbar_mult lu a).
+Proof.
+  move => Hu Hl.
+  apply is_lim_seq_ext with ((fun n : nat => a * u n)) ; try by intuition.
+  rewrite Rbar_mult_comm.
+  apply is_lim_seq_scal_l.
+  by apply Hu.
+  rewrite Rbar_mult_comm.
+  by apply is_Rbar_mult_comm.
+Qed.
+Lemma ex_lim_seq_scal_r (u : nat -> R) (a : R) :
+  ex_lim_seq u -> ex_lim_seq (fun n => u n * a).
+Proof.
+  move => Hu.
+  apply ex_lim_seq_ext with ((fun n : nat => a * u n)) ; try by intuition.
+  apply ex_lim_seq_scal_l.
+  by apply Hu.
+Qed.
+Lemma Lim_seq_scal_r (u : nat -> R) (a : R) : 
+  Lim_seq (fun n => u n * a) = Rbar_mult (Lim_seq u) a.
+Proof.
+  rewrite Rbar_mult_comm -Lim_seq_scal_l.
+  apply Lim_seq_ext ; by intuition.
 Qed.
 
 Lemma is_lim_seq_mult (u v : nat -> R) (l1 l2 : Rbar) :

@@ -332,7 +332,7 @@ have H : (forall x, k * Rbar.real x = Rbar.real (Rbar.Rbar_mult (Rbar.Finite k) 
   case: Rle_dec => //= H.
   case: Rle_lt_or_eq_dec => //=.
 rewrite H.
-rewrite -Lim_seq_scal.
+rewrite -Lim_seq_scal_l.
 apply f_equal, Lim_seq_ext => n.
 rewrite -Rmult_assoc.
 apply (f_equal (fun v => v / _)).
@@ -580,6 +580,8 @@ Proof.
   rewrite /Rmax ; case: Rle_dec (Rlt_le _ _ Hxy) => //.
   by apply -> Rminus_lt_0.
 Qed.
+
+
 
 (** * Newton integration *)
 
@@ -1165,6 +1167,22 @@ simpl.
 intros x.
 now apply Derive_ext.
 Qed.
+
+Lemma is_derive_Sn (f : R -> R) (n : nat) (x l : R) :
+  locally (ex_derive f) x -> 
+  (is_derive_n f (S n) x l <-> is_derive_n (Derive f) n x l).
+Proof.
+  move => Hf.
+  case: n => /= [ | n].
+  split => H.
+  by apply is_derive_unique.
+  rewrite -H ; apply Derive_correct.
+  by apply locally_singleton.
+  split ; apply is_derive_ext_loc ;
+  move: Hf ; apply locally_impl, locally_forall => y Hf ;
+  rewrite (Derive_n_comp f n 1%nat y) -plus_n_Sm -plus_n_O => //.
+Qed.
+
 
 (** ** Operations *)
 (** Addition of functions *)

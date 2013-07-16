@@ -469,3 +469,13 @@ Proof.
   intros x y c eps; exists eps; rewrite Rminus_eq0 Rabs_R0.
   intros; apply cond_pos.
 Qed.
+
+(** Absolute value *)
+
+Lemma continuity_pt_Rabs (x : R) :
+  continuity_pt Rabs x.
+Proof.
+  apply continuity_pt_locally => eps.
+  exists eps => y Hy.
+  by apply Rle_lt_trans with (1 := Rabs_triang_inv2 _ _).
+Qed.

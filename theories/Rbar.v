@@ -1,6 +1,6 @@
 Require Import Reals.
 Require Import ssreflect.
-Require Import Rcomplements Floor.
+Require Import Rcomplements.
 
 Open Scope R_scope.
 
@@ -16,6 +16,7 @@ Definition real (x : Rbar) :=
     | _ => 0
   end.
 Coercion Finite : R >-> Rbar.
+Coercion real : Rbar >-> R.
 
 Definition is_finite (x : Rbar) := Finite (real x) = x.
 Lemma is_finite_correct (x : Rbar) :

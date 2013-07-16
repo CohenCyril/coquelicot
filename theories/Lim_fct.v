@@ -1198,7 +1198,7 @@ Qed.
 Lemma Lim_scal_l (f : R -> R) (a : R) (x : Rbar) :
   Lim (fun y => a * f y) x = Rbar_mult a (Lim f x).
 Proof.
-  apply Lim_seq_scal.
+  apply Lim_seq_scal_l.
 Qed.
 
 Lemma is_lim_scal_r (f : R -> R) (a : R) (x l : Rbar) :
@@ -1220,7 +1220,7 @@ Qed.
 Lemma Lim_scal_r (f : R -> R) (a : R) (x : Rbar) :
   Lim (fun y => f y * a) x = Rbar_mult (Lim f x) a.
 Proof.
-  rewrite Rbar_mult_comm -Lim_seq_scal.
+  rewrite Rbar_mult_comm -Lim_seq_scal_l.
   apply Lim_seq_ext.
   move => y ; by apply Rmult_comm.
 Qed.
@@ -1408,7 +1408,7 @@ Proof.
   by exists x.
 Qed.
 
-Lemma IVT_Rbar_gen (f : R -> R) (a b la lb : Rbar) (y : R) :
+Lemma IVT_Rbar_incr (f : R -> R) (a b la lb : Rbar) (y : R) :
   is_lim f a la -> is_lim f b lb
   -> (forall (x : R), Rbar_lt a x -> Rbar_lt x b -> continuity_pt f x)
   -> (forall (x y : R), Rbar_lt a x -> x < y -> Rbar_lt y b -> f x < f y)
@@ -1960,6 +1960,68 @@ Proof.
   exists ((d-1)) ; repeat split.
   apply Rlt_le, Hfa.
   apply Rminus_lt_0 ; ring_simplify ; apply Rlt_0_1.
+Qed.
+
+Lemma IVT_Rbar_decr (f : R -> R) (a b la lb : Rbar) (y : R) :
+  is_lim f a la -> is_lim f b lb
+  -> (forall (x : R), Rbar_lt a x -> Rbar_lt x b -> continuity_pt f x)
+  -> (forall (x y : R), Rbar_lt a x -> x < y -> Rbar_lt y b -> f y < f x)
+  -> Rbar_lt a b
+  -> Rbar_lt lb y /\ Rbar_lt y la
+  -> {x : R | Rbar_lt a x /\ Rbar_lt x b /\ f x = y}.
+Proof.
+  move => Hla Hlb Cf Hf Hab Hy.
+  case: (IVT_Rbar_incr (fun x => - f x) a b (Rbar_opp la) (Rbar_opp lb) (-y)).
+  by apply is_lim_opp.
+  by apply is_lim_opp.
+  move => x Hax Hxb.
+  by apply continuity_pt_opp, Cf.
+  move => x z Hax Hxz Hzb.
+  apply Ropp_lt_contravar.
+  by apply Hf.
+  by apply Hab.
+  split ; apply Rbar_opp_lt ;
+  rewrite Rbar_opp_involutive /Rbar_opp Ropp_involutive ;
+  by apply Hy.
+  move => x Hx ; exists x ; intuition.
+  by rewrite -(Ropp_involutive y) -H4 Ropp_involutive.
+Qed.
+
+Lemma surjective_uniqueness (f : R -> R) (a b : Rbar) (y : R) :
+  (forall (x : R), Rbar_lt a x -> Rbar_lt x b -> continuity_pt f x)
+  -> (forall (x y : R), Rbar_lt a x -> Rbar_lt x b 
+    -> Rbar_lt a y -> Rbar_lt y b -> x <> y -> f x <> f y)
+  -> (exists (x : R), Rbar_lt a x /\ Rbar_lt x b /\ f x = y)
+  -> (exists! (x : R), Rbar_lt a x /\ Rbar_lt x b /\ f x = y).
+Proof.
+  move => Cf Hf [x [Hax [Hxb <-]]].
+  exists x ; split.
+  by intuition.
+  move => x' [Hax' [Hx'b Hx']].
+  have H : ~(x<>x').
+  contradict Hx'.
+  by apply sym_not_eq, Hf.
+  by case: (Req_dec x x').
+Qed.
+
+(** Inverse function *)
+
+Lemma is_lim_Rinv_0 : is_lim (fun x => / Rabs x) 0 p_infty.
+Proof.
+  move => M.
+  have Hd : 0 < / Rmax 1 M.
+    apply Rinv_0_lt_compat.
+    apply Rlt_le_trans with (2 := Rmax_l _ _).
+    by apply Rlt_0_1.
+  exists (mkposreal _ Hd) => x /= Hx Hx0.
+  apply Rle_lt_trans with (1 := Rmax_r 1 M).
+  replace (Rmax 1 M) with (/ / Rmax 1 M)
+  by (field ; apply Rgt_not_eq, Rlt_le_trans with (2 := Rmax_l _ _), Rlt_0_1).
+  apply Rinv_lt_contravar.
+  apply Rdiv_lt_0_compat.
+  by apply Rabs_pos_lt.
+  apply Rlt_le_trans with (2 := Rmax_l _ _), Rlt_0_1.
+  by rewrite Rminus_0_r in Hx.
 Qed.
 
 (** Square root function *)

@@ -1,5 +1,5 @@
 Require Import Reals Even Div2 ssreflect.
-Require Import Lim_seq Floor Rcomplements Rbar_theory Sup_seq Total_sup.
+Require Import Lim_seq Rcomplements Rbar_theory Sup_seq Total_sup.
 Require Import Lim_fct Derive Differential RInt Taylor Locally Seq_fct Series.
 
 (** * Definition *)
@@ -364,7 +364,7 @@ Proof.
   by apply pow_nonzero.
   apply Rmult_integral_contrapositive_currified => //.
   by apply pow_nonzero.
-  apply is_lim_seq_scal.
+  apply is_lim_seq_scal_l.
   apply H.
   by simpl.
   by simpl.
@@ -378,7 +378,7 @@ Proof.
   by apply Ha.
   apply Rmult_integral_contrapositive_currified => //.
   by apply pow_nonzero.
-  apply is_lim_seq_scal.
+  apply is_lim_seq_scal_l.
   apply H.
   by simpl.
   apply Rbar_finite_eq ; field.
@@ -808,7 +808,7 @@ Proof.
   simpl ; rewrite /PS_scal_l; ring.
   simpl ; rewrite -IH /PS_scal_l ; ring.
   evar (l0 : Rbar) ; replace (Finite (c * l)) with l0.
-  apply is_lim_seq_scal.
+  apply is_lim_seq_scal_l.
   by apply Ha.
   by simpl.
   by simpl.
@@ -909,7 +909,7 @@ Lemma is_pseries_incr_1 (a : nat -> R) (x l : R) :
 Proof.
   move => Ha.
   rewrite /is_pseries.
-  move: (is_lim_seq_scal _ x l Ha (refl_equal _)) => {Ha} Ha.
+  move: (is_lim_seq_scal_l _ x l Ha (refl_equal _)) => {Ha} Ha.
   apply is_lim_seq_incr_1.
   apply is_lim_seq_ext with (fun n : nat => x * sum_f_R0 (fun k : nat => a k * x ^ k) n).
   case.
@@ -937,6 +937,7 @@ Proof.
   ring.
   rewrite IH ; ring.
 Qed.
+
 
 Fixpoint PS_incr_n (a : nat -> R) (n k : nat) : R :=
   match n with
@@ -1124,6 +1125,74 @@ Proof.
   apply Ha ; by intuition.
 Qed.
 
+Lemma CV_circle_incr_1 (a : nat -> R) : CV_circle (PS_incr_1 a) = CV_circle a.
+Proof.
+  rewrite /CV_circle /CV_circle_set.
+
+  apply Lub_Rbar_ne_eqset => x ; split => Hx ;
+  case: (Req_dec x 0) => [-> | Hx0].
+
+  exists (Rabs (a O)).
+  apply is_lim_seq_ext with (fun _ => Rabs (a 0%nat)).
+  elim => /= [ | n <-].
+  by rewrite Rmult_1_r.
+  ring_simplify (a (S n) * (0 * 0 ^ n)) ;
+  by rewrite Rabs_R0 Rplus_0_r.
+  by apply is_lim_seq_const.
+  
+  apply ex_f_lim_seq_correct in Hx.
+  apply ex_f_lim_seq_correct.
+  case: Hx => Hex Hl.
+  apply ex_lim_seq_incr_1 in Hex.
+  rewrite -Lim_seq_incr_1 in Hl.
+  split.
+  apply ex_lim_seq_ext 
+    with (fun n => sum_f_R0 (fun k : nat => Rabs (PS_incr_1 a k * x ^ k)) (S n) / Rabs x).
+  elim => /= [ | n <-] ;
+  rewrite ?Rmult_1_r ?Rmult_0_r ?Rabs_R0 ?Rplus_0_l ?Rabs_mult ; field ;
+  by apply Rabs_no_R0.
+  by apply ex_lim_seq_scal_r.
+  rewrite -(Lim_seq_ext 
+    (fun n => sum_f_R0 (fun k : nat => Rabs (PS_incr_1 a k * x ^ k)) (S n) / Rabs x)).
+  rewrite Lim_seq_scal_r.
+  case: (Lim_seq
+          (fun n : nat =>
+           sum_f_R0 (fun k : nat => Rabs (PS_incr_1 a k * x ^ k)) (S n))) Hl => //.
+  elim => /= [ | n <-] ;
+  rewrite ?Rmult_1_r ?Rmult_0_r ?Rabs_R0 ?Rplus_0_l ?Rabs_mult ; field ;
+  by apply Rabs_no_R0.
+  
+  exists (0).
+  apply is_lim_seq_ext with (fun _ => 0).
+  elim => /= [ | n <-].
+  by rewrite Rmult_1_r Rabs_R0.
+  ring_simplify (a n * (0 * 0 ^ n)) ;
+  by rewrite Rabs_R0 Rplus_0_r.
+  by apply is_lim_seq_const.
+  
+  apply ex_f_lim_seq_correct in Hx.
+  apply ex_f_lim_seq_correct.
+  case: Hx => Hex Hl.
+  split.
+  apply ex_lim_seq_incr_1.
+  apply ex_lim_seq_ext 
+    with (fun n => sum_f_R0 (fun k : nat => Rabs (a k * x ^ k)) n * Rabs x).
+  elim => /= [ | n <-] ;
+  rewrite ?Rmult_1_r ?Rmult_0_r ?Rabs_R0 ?Rplus_0_l ?Rabs_mult ; field ;
+  by apply Rabs_no_R0.
+  by apply ex_lim_seq_scal_r.
+  rewrite -Lim_seq_incr_1.
+  rewrite -(Lim_seq_ext (fun n => sum_f_R0 (fun k : nat => Rabs (a k * x ^ k)) n * Rabs x)).
+  rewrite Lim_seq_scal_r.
+  case: (Lim_seq
+          (fun n : nat =>
+           sum_f_R0 (fun k : nat => Rabs (a k * x ^ k)) n)) Hl => //.
+  elim => /= [ | n <-] ;
+  rewrite ?Rmult_1_r ?Rmult_0_r ?Rabs_R0 ?Rplus_0_l ?Rabs_mult ; field ;
+  by apply Rabs_no_R0.
+Qed.
+
+
 Definition PS_mult (a b : nat -> R) n :=
   sum_f_R0 (fun k => a k * b (n - k)%nat) n.
 
@@ -1208,7 +1277,7 @@ rewrite /is_pseries.
   rewrite ?double_S in Hn ; apply le_n_S, IH.
   by apply le_S_n, le_S_n.
 (* a(2k+1)x^(2k+1) *)
-  apply (is_lim_seq_scal _ x l2) => //.
+  apply (is_lim_seq_scal_l _ x l2) => //.
   move => eps ; case: (H2 eps) => {H1 H2} N H2.
   exists (S (double N)) => n Hn.
   case: n Hn => [ | n] Hn.
@@ -1250,8 +1319,18 @@ Proof.
   apply (is_pseries_odd_even a x) ; by apply Series_correct.
 Qed.
 
+
+Lemma PSeries_const_0 : forall x, PSeries (fun _ => 0) x = 0.
+Proof.
+  move => x.
+  replace 0 with (real 0) by auto.
+  apply (f_equal real).
+  rewrite -{2}(Lim_seq.Lim_seq_const 0) /=.
+  apply Lim_seq.Lim_seq_ext.
+  elim => /= [ | n ->] ; ring.
+Qed.
+
 (** Coming soon: (* bonus *)
-  - multiplication
   - composition
   - inverse *)
 
@@ -1625,6 +1704,88 @@ Proof.
   by apply is_derive_PSeries.
 Qed.
 
+Definition PS_derive_n (n : nat) (a : nat -> R) := 
+  (fun k => (INR (fact (k + n)%nat) / INR (fact k)) * a (k + n)%nat).
+  
+Lemma is_derive_n_PSeries (n : nat) (a : nat -> R) :
+  forall x, Rbar_lt (Rabs x) (CV_circle a)
+    -> is_derive_n (PSeries a) n x (PSeries (PS_derive_n n a) x).
+Proof.
+  elim: n => [ | n IH] x Hx.
+  simpl ; rewrite /PS_derive_n /=.
+  apply PSeries_ext => n.
+  rewrite -plus_n_O.
+  field.
+  apply Rgt_not_eq.
+  by apply INR_fact_lt_0.
+  simpl ; rewrite /PS_derive_n /=.
+  apply is_derive_ext_loc 
+    with (PSeries (fun k : nat => INR (fact (k + n)) / INR (fact k) * a (k + n)%nat)).
+  case Ha : (CV_circle a) => [cva | | ].
+  move: (Hx) ; rewrite Ha ; move/Rminus_lt_0 => Hx0.
+  exists (mkposreal _ Hx0) => /= y Hy.
+  apply sym_eq.
+  apply is_derive_n_unique.
+  apply IH.
+  rewrite Ha /=.
+  replace y with ((y-x) + x) by ring.
+  apply Rle_lt_trans with (1 := Rabs_triang _ _).
+  by apply Rlt_minus_r.
+  exists (mkposreal _ Rlt_0_1) => /= y Hy.
+  apply sym_eq.
+  apply is_derive_n_unique.
+  apply IH.
+  by rewrite Ha /=.
+  by rewrite Ha in Hx.
+  replace (PSeries (fun k : nat => INR (fact (k + S n)) / INR (fact k) * a (k + S n)%nat) x)
+    with (PSeries (PS_derive
+      (fun k : nat => INR (fact (k + n)) / INR (fact k) * a (k + n)%nat)) x).
+  apply is_derive_PSeries.
+  replace (CV_circle (fun k : nat => INR (fact (k + n)) / INR (fact k) * a (k + n)%nat))
+    with (CV_circle a).
+  by apply Hx.
+  elim: n {IH} => [ | n IH].
+  apply CV_circle_ext => n.
+  rewrite -plus_n_O.
+  field.
+  apply Rgt_not_eq.
+  by apply INR_fact_lt_0.
+  rewrite IH.
+  rewrite -PS_derive_circle.
+  apply CV_circle_ext => k.
+  rewrite /PS_derive.
+  rewrite -plus_n_Sm plus_Sn_m /fact -/fact ?mult_INR ?S_INR.
+  field.
+  rewrite -S_INR ; split ; apply Rgt_not_eq.
+  by apply INR_fact_lt_0.
+  apply (lt_INR O), lt_O_Sn.
+  apply PSeries_ext.
+  move => k ; rewrite /PS_derive.
+  rewrite -plus_n_Sm plus_Sn_m /fact -/fact ?mult_INR ?S_INR.
+  field.
+  rewrite -S_INR ; split ; apply Rgt_not_eq.
+  by apply INR_fact_lt_0.
+  apply (lt_INR O), lt_O_Sn.
+Qed.
+Lemma ex_derive_n_PSeries (n : nat) (a : nat -> R) (x : R) :
+  Rbar_lt (Finite (Rabs x)) (CV_circle a)
+    -> ex_derive_n (PSeries a) n x.
+Proof.
+  elim: n a x => [ | n IH] a x Hx.
+  by simpl.
+  simpl.
+  exists (PSeries (PS_derive_n (S n) a) x).
+  by apply (is_derive_n_PSeries (S n)).
+Qed.
+Lemma Derive_n_PSeries (n : nat) (a : nat -> R) (x : R) :
+  Rbar_lt (Finite (Rabs x)) (CV_circle a)
+    -> Derive_n (PSeries a) n x = PSeries (PS_derive_n n a) x.
+Proof.
+  move => H.
+  apply is_derive_n_unique.
+  by apply is_derive_n_PSeries.
+Qed.
+
 Lemma Derive_n_coef (a : nat -> R) (n : nat) :
   Rbar_lt (Finite 0) (CV_circle a)
     -> Derive_n (PSeries a) n 0 = a n * (INR (fact n)).
@@ -1686,6 +1847,8 @@ Proof.
   rewrite H ; field ; exact: INR_fact_neq_0.
   field ; exact: INR_fact_neq_0.
 Qed.
+
+
 
 Lemma mk_pseries (f : R -> R) (M : R) (r : Rbar) :
   (forall n x, Rbar_lt (Finite (Rabs x)) r 
@@ -1821,7 +1984,7 @@ Proof.
     exact: H.
     apply pow_lt, Rle_lt_trans with (Rabs x), Hx ; by apply Rabs_pos.
     apply Rlt_le, Rdiv_lt_0_compat ; by apply H0.
-    rewrite -(Rmult_0_r r) ; apply (is_lim_seq_scal _ _ 0) => //.
+    rewrite -(Rmult_0_r r) ; apply (is_lim_seq_scal_l _ _ 0) => //.
     apply (is_lim_seq_incr_1 (fun n => / INR n)).
     replace (Finite 0) with (Rbar_inv p_infty) by auto.
     apply is_lim_seq_inv.

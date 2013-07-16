@@ -1,6 +1,6 @@
 Require Import Reals Markov.
 Require Import ssreflect.
-Require Import Rbar Rbar_bound Rcomplements Floor.
+Require Import Rbar Rbar_bound Rcomplements.
 
 (** * Supremum and Infimum of a Rbar sequence *)
 

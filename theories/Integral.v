@@ -387,7 +387,7 @@ intros f l.
 (* *)
 assert (forall a b, Lim_seq (RInt_val (fun x : R => l * f x) a b) = Rbar.Rbar_mult (Rbar.Finite l) (Lim_seq (RInt_val f a b))).
 intros a b.
-rewrite -Lim_seq_scal.
+rewrite -Lim_seq_scal_l.
 apply Lim_seq_ext => n.
 unfold RInt_val.
 replace (l * ((b - a) / (INR n + 1) * seq.foldr Rplus 0 (SF_val_ly f a b n)))
