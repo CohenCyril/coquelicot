@@ -1,6 +1,6 @@
 Require Import Reals ssreflect.
 Require Import Rcomplements Rbar_theory.
-Require Import Total_sup Derive Series PSeries.
+Require Import Total_sup Derive Series PSeries Lim_seq.
 Require Import AutoDerive.
 
 (** An exemple to use power series *)
@@ -8,88 +8,55 @@ Require Import AutoDerive.
 Definition Bessel1_seq (n k : nat) :=
   (-1)^(k)/(INR (fact (k)) * INR (fact (n + (k)))).
 
-Lemma ex_Bessel1 (n : nat) (x : R) :
-  ex_pseries (Bessel1_seq n) x.
+Lemma CV_Bessel1 (n : nat) :
+  CV_circle (Bessel1_seq n) = p_infty.
 Proof.
-  have H : forall k, Bessel1_seq n k <> 0.
+  apply DAlembert_CV_circle_eq_0.
     move => k.
     rewrite /Bessel1_seq.
     apply Rmult_integral_contrapositive_currified.
     apply pow_nonzero, Ropp_neq_0_compat, R1_neq_R0.
     apply Rinv_neq_0_compat, Rmult_integral_contrapositive_currified ;
     apply INR_fact_neq_0.
-  apply ex_series_Rabs.
-  apply DAlembert_crit with 0.
-  by apply H.
-  move => eps.
-  have H0 : 0 <= /(sqrt eps).
-    apply Rlt_le, Rinv_0_lt_compat, sqrt_lt_R0, eps.
-  set N := nfloor (/(sqrt eps)) H0.
-  exists N => k Hk.
-  rewrite Rminus_0_r Rabs_Rabsolu Rabs_div.
-  rewrite 2?Rabs_div ?Rabs_mult -?RPow_abs ?Rabs_Ropp ?Rabs_R1 
-    ?pow1 ?(Rabs_pos_eq _ (pos_INR _)) ?H2.
-  rewrite /Rdiv ?Rmult_1_l.
-  rewrite Rinv_involutive.
-  rewrite -plus_n_Sm.
-  rewrite /fact -/fact ?mult_INR.
-  field_simplify ; rewrite -?Rdiv_1 /Rdiv ?Rmult_1_l.
-  rewrite Rinv_mult_distr.
-  rewrite -(sqrt_sqrt eps (Rlt_le _ _ (cond_pos eps))).
-  apply Rmult_gt_0_lt_compat ; try by intuition.
-  apply sqrt_lt_R0, eps.
-  rewrite -(Rinv_involutive (sqrt eps)).
-  apply Rinv_lt_contravar.
-  apply Rmult_lt_0_compat ; try by intuition.
-  apply Rinv_0_lt_compat, sqrt_lt_R0, eps.
-  apply Rlt_le_trans with (INR (S N)).
-  rewrite /N /nfloor in Hk |- * ;
-  case: nfloor_ex Hk => {N} /= N HN Hk ; rewrite -/(INR (S N)) S_INR.
-  by apply HN.
-  by apply le_INR, le_n_S.
-  apply Rgt_not_eq, sqrt_lt_R0, eps.
-  rewrite -(Rinv_involutive (sqrt eps)).
-  apply Rinv_lt_contravar.
-  apply Rmult_lt_0_compat ; try by intuition.
-  apply Rinv_0_lt_compat, sqrt_lt_R0, eps.
-  apply Rlt_le_trans with (INR (S N)).
-  rewrite /N /nfloor in Hk |- * ;
-  case: nfloor_ex Hk => {N} /= N HN Hk ; rewrite -/(INR (S N)) S_INR.
-  by apply HN.
-  apply le_INR, le_n_S ; by intuition.
-  apply Rgt_not_eq, sqrt_lt_R0, eps.
-  apply Rgt_not_eq ; by intuition.
-  apply Rgt_not_eq ; by intuition.
+  apply is_lim_seq_ext with (fun p => / (INR (S p) * INR (S (n + p)))).
+  move => p ; rewrite /Bessel1_seq -plus_n_Sm /fact -/fact !mult_INR.
+  simpl ((-1)^(S p)).
+  field_simplify (-1 * (-1) ^ p /
+    (INR (S p) * INR (fact p) * (INR (S (n + p)) * INR (fact (n + p)))) /
+    ((-1) ^ p / (INR (fact p) * INR (fact (n + p))))).
+  rewrite Rabs_div.
+  rewrite Rabs_Ropp Rabs_R1 /Rdiv Rmult_1_l Rabs_pos_eq.
+  by [].
+  apply Rmult_le_pos ; apply pos_INR.
+  apply Rgt_not_eq, Rmult_lt_0_compat ;
+  apply lt_0_INR, lt_O_Sn.
   repeat split.
-  apply INR_fact_neq_0.
-  apply Rgt_not_eq ; by intuition.
-  apply INR_fact_neq_0.
-  apply Rgt_not_eq ; by intuition.
-  apply Rmult_integral_contrapositive_currified ; apply INR_fact_neq_0.
-  apply Rmult_integral_contrapositive_currified ; apply INR_fact_neq_0.
-  apply Rmult_integral_contrapositive_currified ; apply INR_fact_neq_0.
-  by apply H.
-  by left.
+  by apply INR_fact_neq_0.
+  by apply INR_fact_neq_0.
+  by apply Rgt_not_eq, lt_0_INR, lt_O_Sn.
+  by apply Rgt_not_eq, lt_0_INR, lt_O_Sn.
+  by apply pow_nonzero, Rlt_not_eq, (IZR_lt (-1) 0).
+  search_lim_seq.
+  apply is_lim_seq_inv.
+  apply is_lim_seq_mult.
+  apply -> is_lim_seq_incr_1.
+  by apply is_lim_seq_id.
+  apply is_lim_seq_ext with (fun k => INR (k + S n)).
+  intros k.
+  by rewrite (plus_comm n k) plus_n_Sm.
+  apply is_lim_seq_incr_n.
+  by apply is_lim_seq_id.
+  by [].
+  by [].
+  by [].
 Qed.
 
-Lemma CV_Bessel1 (n : nat) :
-  CV_circle (Bessel1_seq n) = p_infty.
+Lemma ex_Bessel1 (n : nat) (x : R) :
+  ex_pseries (Bessel1_seq n) x.
 Proof.
-  have : forall x : R, Rbar_le (Finite x) (CV_circle (Bessel1_seq n)).
-  move => x ; apply Rbar_le_trans with (Finite (Rabs x)).
-    by apply Rbar_finite_le, Rle_abs.
-  apply Rbar_not_lt_le => Hx.
-  apply CV_circle_carac_not in Hx.
-  apply: Hx.
-  by apply ex_series_lim_0, (ex_Bessel1 n x).
-  
-  rewrite /CV_circle /Lub_Rbar_ne ; case: ex_lub_Rbar_ne ;
-  case => /= [c | | ] Hc Hx.
-  have: False => // ; move: (Hx (c+1)).
-  apply Rbar_lt_not_le => /=.
-  by apply Rlt_plus_1.
-  by [].
-  by case: (Hx 0).
+  apply ex_series_Rabs.
+  apply CV_circle_carac.
+  by rewrite CV_Bessel1.
 Qed.
 
 Definition Bessel1 (n : nat) (x : R) :=
@@ -128,7 +95,6 @@ Proof.
   by rewrite PS_derive_circle CV_Bessel1.
   apply ex_derive_PSeries.
   by rewrite CV_Bessel1.
-  
   rewrite ?Derive_PSeries.
   case: n => [ | n] ; rewrite ?S_INR /Rdiv /= ;
   simpl ; field.

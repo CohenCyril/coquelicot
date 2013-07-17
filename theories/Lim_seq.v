@@ -478,6 +478,20 @@ Proof.
   rewrite -(is_lim_seq_unique v l2) //.
   rewrite (Rbar_plus_correct _ _ l) //.
 Qed.
+Lemma Lim_seq_plus_const (u : nat -> R) (a : R) :
+  ((LimSup_seq u) <> p_infty \/ (LimInf_seq u) <> m_infty) ->
+  Lim_seq (fun n => u n + a) = Rbar_plus (Lim_seq u) a.
+Proof.
+  rewrite /Lim_seq LimSup_seq_plus_const LimInf_seq_plus_const.
+  case Hls : (LimSup_seq u) => [ls | | ] ;
+  case Hli : (LimInf_seq u) => [li | | ] //= H.
+  apply f_equal ; field.
+  by case: H.
+  have : Rbar_le p_infty m_infty.
+    rewrite -Hls -Hli.
+    by apply LimSup_LimInf_seq_le.
+  by case.
+Qed.
 
 Lemma is_lim_seq_minus (u v : nat -> R) (l1 l2 : Rbar) :
   is_lim_seq u l1 -> is_lim_seq v l2 

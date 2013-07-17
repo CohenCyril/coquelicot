@@ -1580,5 +1580,3 @@ Proof.
   by apply Rlt_trans with (1 := Rlt_0_1).
   by [].
 Qed.
-
-

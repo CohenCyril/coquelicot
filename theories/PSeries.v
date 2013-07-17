@@ -1,6 +1,6 @@
 Require Import Reals Even Div2 ssreflect.
 Require Import Lim_seq Rcomplements Rbar_theory Sup_seq Total_sup.
-Require Import Lim_fct Derive Differential RInt Taylor Locally Seq_fct Series.
+Require Import Lim_fct Continuity Derive Differential RInt Integral Taylor Locally Seq_fct Series.
 
 (** * Definition *)
 
@@ -1336,7 +1336,7 @@ Qed.
 
 (** * Analysis *)
 
-(** Continuity *)
+(** ** Continuity *)
 
 Lemma PSeries_continuity (a : nat -> R) (x : R) :
   Rbar_lt (Finite (Rabs x)) (CV_circle a) 
@@ -1358,6 +1358,8 @@ Proof.
   by apply IH.
   rewrite /Boule Rminus_eq0 Rabs_R0 ; by apply r.
 Qed.
+
+(** ** Differentiability *)
 
 Definition PS_derive (a : nat -> R) (n : nat) :=
   INR (S n) * a (S n).
@@ -1848,8 +1850,6 @@ Proof.
   field ; exact: INR_fact_neq_0.
 Qed.
 
-
-
 Lemma mk_pseries (f : R -> R) (M : R) (r : Rbar) :
   (forall n x, Rbar_lt (Finite (Rabs x)) r 
     -> (ex_derive_n f n x) /\ Rabs (Derive_n f n x) <= M)
@@ -2058,6 +2058,103 @@ Proof.
   
 Qed.
 
+(** ** Riemann Integrability *)
+
+Definition PS_Int (a : nat -> R) (n : nat) : R :=
+  match n with
+    | O => 0
+    | S n => a n / INR (S n)
+  end.
+
+Lemma CV_circle_Int (a : nat -> R) :
+  CV_circle (PS_Int a) = CV_circle a.
+Proof.
+  rewrite -PS_derive_circle.
+  apply CV_circle_ext.
+  rewrite /PS_derive /PS_Int => n ; rewrite S_INR.
+  field.
+  apply Rgt_not_eq, INRp1_pos.
+Qed.
+
+Lemma is_RInt_PSeries (a : nat -> R) (x : R) :
+  Rbar_lt (Rabs x) (CV_circle a)
+  -> is_RInt (PSeries a) 0 x (PSeries (PS_Int a) x).
+Proof.
+  move => Hx.
+  have H : forall y, Rmin 0 x <= y <= Rmax 0 x -> Rbar_lt (Rabs y) (CV_circle a).
+    move => y Hy.
+    apply: Rbar_le_lt_trans Hx.
+    apply Rbar_finite_le.
+    apply Rabs_le_between.
+    split.
+    apply Rle_trans with (2 := proj1 Hy).
+    rewrite /Rabs /Rmin.
+    case: Rcase_abs ; case: Rle_dec => // Hx Hx' ; rewrite ?Ropp_involutive.
+    by apply Rlt_le.
+    by apply Req_le.
+    apply Ropp_le_cancel ; by rewrite Ropp_involutive Ropp_0.
+    by apply Rge_le in Hx'.
+    apply Rle_trans with (1 := proj2 Hy).
+    rewrite /Rabs /Rmax.
+    case: Rcase_abs ; case: Rle_dec => // Hx Hx'.
+    by apply Rlt_not_le in Hx'.
+    apply Ropp_le_cancel, Rlt_le ; by rewrite Ropp_involutive Ropp_0.
+    by apply Req_le.
+    by apply Rge_le in Hx'.
+
+  apply is_RInt_ext with (Derive (PSeries (PS_Int a))).
+  move => y Hy.
+  rewrite Derive_PSeries.
+  apply PSeries_ext ; rewrite /PS_derive /PS_Int => n ; rewrite S_INR.
+  field.
+  apply Rgt_not_eq, INRp1_pos.
+  rewrite CV_circle_Int.
+  by apply H.
+  search_RInt.
+  apply is_RInt_Derive.
+  move => y Hy.
+  apply ex_derive_PSeries.
+  rewrite CV_circle_Int.
+  by apply H.
+  move => y Hy.
+  apply continuity_pt_ext_loc with (PSeries a).
+
+  apply locally_interval with (Rbar_opp (CV_circle a)) (CV_circle a).
+  apply Rbar_opp_lt ; rewrite Rbar_opp_involutive.
+  apply: Rbar_le_lt_trans (H _ Hy).
+  simpl ; apply Rbar_finite_le.
+  apply Rabs_maj2.
+  apply: Rbar_le_lt_trans (H _ Hy).
+  apply Rbar_finite_le, Rle_abs.
+  move => z Hz Hz'.
+  rewrite Derive_PSeries.
+  apply PSeries_ext ; rewrite /PS_derive /PS_Int => n ; rewrite S_INR.
+  field.
+  apply Rgt_not_eq, INRp1_pos.
+  rewrite CV_circle_Int.
+  apply (Rbar_abs_lt_between z) ; by split.
+  apply PSeries_continuity.
+  by apply H.
+
+  rewrite PSeries_0 /(PS_Int _ 0) ; by rewrite Rminus_0_r.
+Qed.
+
+Lemma ex_RInt_PSeries (a : nat -> R) (x : R) :
+  Rbar_lt (Rabs x) (CV_circle a)
+  -> ex_RInt (PSeries a) 0 x.
+Proof.
+  move => Hx.
+  exists (PSeries (PS_Int a) x).
+  by apply is_RInt_PSeries.
+Qed.
+Lemma RInt_PSeries (a : nat -> R) (x : R) :
+  Rbar_lt (Rabs x) (CV_circle a)
+  -> RInt (PSeries a) 0 x = PSeries (PS_Int a) x.
+Proof.
+  move => Hx.
+  apply is_RInt_unique.
+  by apply is_RInt_PSeries.
+Qed.
 
 
 (*

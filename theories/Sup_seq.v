@@ -164,7 +164,48 @@ Proof.
   => // n ; by rewrite Heq.
 Qed.
 
-(** * LimSup, LimInf and Rbar_opp *)
+(** * Operations and relations *)
+
+Lemma is_LimSup_LimInf_seq_le (u : nat -> R) (ls li : Rbar) :
+  is_LimSup_seq u ls -> is_LimInf_seq u li -> Rbar_le li ls.
+Proof.
+  case: ls => [ls | | ] ; case: li => [li | | ] //= Hls Hli ;
+  try by [right | left].
+  apply Rbar_finite_le, le_epsilon => e He ;
+  set eps := pos_div_2 (mkposreal e He).
+  replace li with ((li - eps) + eps) by ring.
+  replace (ls + e) with ((ls + eps) + eps) by (simpl ; field).
+  apply Rplus_le_compat_r, Rlt_le.
+  case: (proj2 (Hls eps)) => {Hls} Ns Hls.
+  case: (proj2 (Hli eps)) => {Hli} Ni Hli.
+  apply Rlt_trans with (u (Ns + Ni)%nat).
+  apply Hli ; by intuition.
+  apply Hls ; by intuition.
+  case: (proj2 (Hls (mkposreal _ Rlt_0_1))) => {Hls} /= Ns Hls.
+  case: (Hli (ls + 1)) => {Hli} Ni Hli.
+  absurd (ls + 1 < u (Ns + Ni)%nat).
+  apply Rle_not_lt, Rlt_le, Hls ; by intuition.
+  apply Hli ; by intuition.
+  case: (proj2 (Hli (mkposreal _ Rlt_0_1))) => {Hli} /= Ni Hli.
+  case: (Hls (li - 1)) => {Hls} Ns Hls.
+  absurd (li - 1 < u (Ns + Ni)%nat).
+  apply Rle_not_lt, Rlt_le, Hls ; by intuition.
+  apply Hli ; by intuition.
+  case: (Hli 0) => {Hli} /= Ni Hli.
+  case: (Hls 0) => {Hls} Ns Hls.
+  absurd (0 < u (Ns + Ni)%nat).
+  apply Rle_not_lt, Rlt_le, Hls ; by intuition.
+  apply Hli ; by intuition.
+Qed.
+Lemma LimSup_LimInf_seq_le (u : nat -> R) :
+  Rbar_le (LimInf_seq u) (LimSup_seq u).
+Proof.
+  rewrite /LimInf_seq ; case: ex_LimInf_seq => /= li Hli.
+  rewrite /LimSup_seq ; case: ex_LimSup_seq => /= ls Hls.
+  by apply is_LimSup_LimInf_seq_le with u.
+Qed.
+
+(** ** Opposite *)
 
 Lemma is_limsup_seq_opp (u : nat -> R) (l : Rbar) :
   is_LimInf_seq u l -> is_LimSup_seq (fun n => - u n) (Rbar_opp l).
@@ -240,7 +281,75 @@ Proof.
   by apply (is_LimInf_seq_eq (fun n : nat => - u n) (fun n : nat => - u n)).
 Qed.
 
+(** ** addition by a constant *)
 
+Lemma is_LimSup_seq_plus_const (u : nat -> R) (a : R) (l : Rbar) :
+  is_LimSup_seq u l -> is_LimSup_seq (fun n => u n + a) (Rbar_plus l a).
+Proof.
+  case: l => [l | | ] //= Hu eps.
+
+  split.
+  move => N ; case: (proj1 (Hu eps) N) => {Hu} n [Hn Hu].
+  exists n ; split.
+  by [].
+  apply Rplus_lt_reg_r with (-a) ; by ring_simplify.
+  case: (proj2 (Hu eps)) => {Hu} N Hu.
+  exists N => n Hn.
+  apply Rplus_lt_reg_r with (-a) ; ring_simplify ; by apply Hu.
+  move => N.
+  case: (Hu (eps - a) N) => {Hu} n [Hn Hu].
+  exists n ; split.
+  by [].
+  by apply Rlt_minus_l.
+  case: (Hu (eps - a)) => {Hu} N Hu.
+  exists N => n Hn.
+  by apply Rlt_minus_r, Hu.
+Qed.
+Lemma LimSup_seq_plus_const (u : nat -> R) (a : R) :
+  LimSup_seq (fun n => u n + a) = (Rbar_plus (LimSup_seq u) a).
+Proof.
+  rewrite /LimSup_seq ;
+  case: ex_LimSup_seq => /= l1 Hl1 ;
+  case: ex_LimSup_seq => /= l2 Hl2.
+  apply (is_LimSup_seq_eq (fun n : nat => u n + a) (fun n : nat => u n + a)).
+  by [].
+  by [].
+  by apply is_LimSup_seq_plus_const.
+Qed.
+
+Lemma is_LimInf_seq_plus_const (u : nat -> R) (a : R) (l : Rbar) :
+  is_LimInf_seq u l -> is_LimInf_seq (fun n => u n + a) (Rbar_plus l a).
+Proof.
+  case: l => [l | | ] //= Hu eps.
+
+  split.
+  move => N ; case: (proj1 (Hu eps) N) => {Hu} n [Hn Hu].
+  exists n ; split.
+  by [].
+  apply Rplus_lt_reg_r with (-a) ; by ring_simplify.
+  case: (proj2 (Hu eps)) => {Hu} N Hu.
+  exists N => n Hn.
+  apply Rplus_lt_reg_r with (-a) ; ring_simplify ; by apply Hu.
+  case: (Hu (eps - a)) => {Hu} N Hu.
+  exists N => n Hn.
+  by apply Rlt_minus_l, Hu.
+  move => N.
+  case: (Hu (eps - a) N) => {Hu} n [Hn Hu].
+  exists n ; split.
+  by [].
+  by apply Rlt_minus_r.
+Qed.
+Lemma LimInf_seq_plus_const (u : nat -> R) (a : R) :
+  LimInf_seq (fun n => u n + a) = (Rbar_plus (LimInf_seq u) a).
+Proof.
+  rewrite /LimInf_seq ;
+  case: ex_LimInf_seq => /= l1 Hl1 ;
+  case: ex_LimInf_seq => /= l2 Hl2.
+  apply (is_LimInf_seq_eq (fun n : nat => u n + a) (fun n : nat => u n + a)).
+  by [].
+  by [].
+  by apply is_LimInf_seq_plus_const.
+Qed.
 
 
 
