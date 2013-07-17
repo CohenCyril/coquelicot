@@ -432,10 +432,10 @@ Proof.
   replace (f y0 - f x - l * (y0 - x)) with (f y0 - f x - (l * (y0 - x) + 0 * (y - y))) by ring.
   assert (Rabs (y0 - x) = Rmax (Rabs (y0 - x)) (Rabs (y-y))).
     rewrite Rmax_comm ; apply sym_equal, Rmax_right.
-    rewrite Rminus_eq0 Rabs_R0 ; apply Rabs_pos.
+    rewrite Rminus_eq_0 Rabs_R0 ; apply Rabs_pos.
   rewrite H0 ; clear H0.
   apply (Df _ _ H).
-  rewrite Rminus_eq0 Rabs_R0 ; apply delta.
+  rewrite Rminus_eq_0 Rabs_R0 ; apply delta.
 Qed.
 
 Lemma differentiable_pt_lim_comp : forall f1 f2 f3 x y l1x l1y l2x l2y l3x l3y,

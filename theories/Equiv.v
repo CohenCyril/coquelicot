@@ -1,5 +1,5 @@
 Require Import Reals ssreflect.
-Require Import Rbar Rcomplements.
+Require Import Rbar Rcomplements Locally.
 
 (** * Definitions of equivalent and preponderant *)
 
@@ -18,7 +18,7 @@ Proof.
     move: Hf ; apply Rbar_locally_imply, Rbar_locally_forall.
     intros x Hf ; apply Rlt_not_le.
     apply Rminus_lt ; field_simplify ;
-    rewrite -Rdiv_1 /Rdiv Ropp_mult_distr_l_reverse ;
+    rewrite Rdiv_1 /Rdiv Ropp_mult_distr_l_reverse ;
     apply Ropp_lt_gt_0_contravar, Rdiv_lt_0_compat.
     by apply Rabs_pos_lt.
     by apply Rlt_R0_R2.
@@ -27,10 +27,10 @@ Proof.
   case: (H (a + delta / 2)).
   ring_simplify (a + delta / 2 - a).
   rewrite Rabs_pos_eq.
-  apply Rminus_lt_0 ; field_simplify ; rewrite -Rdiv_1.
+  apply Rminus_lt_0 ; field_simplify ; rewrite Rdiv_1.
   by apply is_pos_div_2.
   by apply Rlt_le, is_pos_div_2.
-  apply Rgt_not_eq, Rminus_lt_0 ; field_simplify ; rewrite -Rdiv_1.
+  apply Rgt_not_eq, Rminus_lt_0 ; field_simplify ; rewrite Rdiv_1.
   by apply is_pos_div_2.
   by [].
   case: (H (delta+1)).
@@ -164,7 +164,7 @@ Lemma equiv_refl (f : R -> R) (a : Rbar) :
 Proof.
   move => eps /=.
   apply Rbar_locally_forall => x.
-  rewrite Rminus_eq0 Rabs_R0.
+  rewrite Rminus_eq_0 Rabs_R0.
   apply Rmult_le_pos.
   by apply Rlt_le, eps.
   by apply Rabs_pos.
@@ -414,7 +414,7 @@ Proof.
     rewrite Hf Rminus_0_r in H.
     apply Rle_not_lt in H.
     move => _ ; apply H.
-    apply Rminus_lt ; field_simplify ; rewrite -Rdiv_1 /Rdiv Ropp_mult_distr_l_reverse ; 
+    apply Rminus_lt ; field_simplify ; rewrite Rdiv_1 /Rdiv Ropp_mult_distr_l_reverse ; 
     apply Ropp_lt_gt_0_contravar.
     apply Rmult_lt_0_compat.
     by apply Rabs_pos_lt.
@@ -430,7 +430,7 @@ Proof.
   rewrite Rabs_div ?Rabs_Rinv ?Rabs_mult //.
   apply Rle_div_l.
   apply Rmult_lt_0_compat ; by apply Rabs_pos_lt.
-  field_simplify ; rewrite -?Rdiv_1.
+  field_simplify ; rewrite ?Rdiv_1.
   by [].
   by apply Rabs_no_R0.
   by apply Rmult_integral_contrapositive_currified.

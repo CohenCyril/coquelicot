@@ -206,7 +206,7 @@ intros u Hu.
 rewrite -2?Heq.
 apply Hd2 ; intuition.
 apply Rlt_le_trans with (1 := H0), Rmin_l.
-rewrite Rminus_eq0 Rabs_R0 ; by apply d0.
+rewrite Rminus_eq_0 Rabs_R0 ; by apply d0.
 apply Rlt_le_trans with (1 := proj2 Hu), Rmin_r.
 Qed.
 
@@ -264,7 +264,7 @@ destruct (cf eps (cond_pos eps)) as [delta [deltapos Pf]].
 destruct (cg (mkposreal _ deltapos)) as [gamma Pg].
 exists gamma; intros u v cu cv.
 destruct (Req_EM_T (g x y) (g u v)) as [eqg | neqg].
- solve[rewrite eqg Rminus_eq0 Rabs_R0; apply cond_pos].
+ solve[rewrite eqg Rminus_eq_0 Rabs_R0; apply cond_pos].
 apply (Pf (g u v)).
 split;[solve[unfold D_x, no_cond; tauto] | ].
 apply (Pg u v); assumption.
@@ -466,7 +466,7 @@ Qed.
 Lemma continuity_2d_pt_const :
   forall x y c, continuity_2d_pt (fun u v => c) x y.
 Proof.
-  intros x y c eps; exists eps; rewrite Rminus_eq0 Rabs_R0.
+  intros x y c eps; exists eps; rewrite Rminus_eq_0 Rabs_R0.
   intros; apply cond_pos.
 Qed.
 

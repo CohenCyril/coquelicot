@@ -1,5 +1,5 @@
-Require Import Reals Rcomplements Markov.
-Require Import Sup_seq Rbar_theory Total_sup ssreflect.
+Require Import Reals Rcomplements Markov Rbar.
+Require Import Sup_seq ssreflect Locally Rbar_seq.
 Open Scope R_scope.
 
 (** * Definition and unicity *)

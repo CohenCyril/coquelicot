@@ -1,6 +1,6 @@
 Require Import Reals Markov.
 Require Import ssreflect.
-Require Import Rbar Rbar_bound Rcomplements.
+Require Import Rbar Lub Rcomplements.
 
 (** * Supremum and Infimum of a Rbar sequence *)
 
@@ -655,7 +655,7 @@ Proof.
   rewrite /= Ropp_plus_distr ; by apply Hli.
   move => N0 ; case: (Hls N0) => {Hls} n [Hn Hls] ;
   exists n ; split => // ; apply Rbar_opp_lt ;
-  by rewrite /= Ropp_minus_distr.
+  by rewrite /= Ropp_minus_distr /Rminus Rplus_comm.
 (* Finite 2 *)
   move => eps ; case: (Hl eps) => [[N Hli] Hls] ; split.
   exists N => n Hn ; apply Rbar_opp_lt ;
@@ -1300,7 +1300,7 @@ split.
   have Hx : forall x, Rbar_is_lim_seq (fun n => Finite (x_seq x n)) x.
     case => [l | | ] /= eps.
     exists O => _ _.
-    rewrite -/(Rminus l l) (Rminus_eq0 l) Rabs_R0 ; by apply eps.
+    rewrite -/(Rminus l l) (Rminus_eq_0 l) Rabs_R0 ; by apply eps.
     exists (S (nfloor (Rmax 0 eps) (Rmax_l _ _))) => n Hn.
     apply Rlt_le_trans with (2 := le_INR _ _ Hn).
     rewrite /nfloor S_INR ; case: nfloor_ex => /= N HN.
@@ -1584,7 +1584,7 @@ Proof.
     contradict H1.
     apply Rle_not_lt ; rewrite H1.
     rewrite Rplus_0_l Rabs_Ropp.
-    apply Rminus_le_0 ; field_simplify ; rewrite -Rdiv_1.
+    apply Rminus_le_0 ; field_simplify ; rewrite Rdiv_1.
     apply Rdiv_le_0_compat.
     exact: Rabs_pos.
     exact: Rlt_R0_R2.
@@ -1603,7 +1603,7 @@ Proof.
   exact: Rabs_pos.
   apply Rabs_lt_between' in H1.
   move: H1 ; rewrite /(Rabs l) ; case: Rcase_abs => Hl' ; case => H1 H1' ;
-  field_simplify in H1 ; field_simplify in H1' ; rewrite -Rdiv_1 in H1 H1'.
+  field_simplify in H1 ; field_simplify in H1' ; rewrite Rdiv_1 in H1 H1'.
   apply Rle_trans with (2 := Rabs_maj2 _).
   rewrite /Rdiv (Ropp_mult_distr_l_reverse l (/2)).
   by apply Ropp_le_contravar, Rlt_le.
@@ -1835,7 +1835,7 @@ Proof.
     exact: Rlt_R0_R2.
     exists N => n Hn.
     case: (u n) (Hu n Hn) => [un | | ] //= {Hu} Hu.
-    case/Rabs_lt_between': Hu => _ Hu ; field_simplify in Hu ; rewrite -Rdiv_1 in Hu.
+    case/Rabs_lt_between': Hu => _ Hu ; field_simplify in Hu ; rewrite Rdiv_1 in Hu.
     contradict Hu.
     apply Rle_not_lt, Rbar_finite_le ; rewrite Hu Rbar_finite_le.
     apply Rlt_le, Ropp_lt_cancel ;
@@ -1938,7 +1938,7 @@ Proof.
     exact: Rlt_R0_R2.
     exists N => n Hn.
     case: (v n) (Hv n Hn) => [vn | | ] //= {Hv} Hv.
-    case/Rabs_lt_between': Hv => _ Hv ; field_simplify in Hv ; rewrite -Rdiv_1 in Hv.
+    case/Rabs_lt_between': Hv => _ Hv ; field_simplify in Hv ; rewrite Rdiv_1 in Hv.
     contradict Hv.
     apply Rle_not_lt, Rbar_finite_le ; rewrite Hv Rbar_finite_le.
     apply Rlt_le, Ropp_lt_cancel ;
@@ -2020,7 +2020,7 @@ Proof.
     try case/Rabs_lt_between': Hu => Hu _ ;
     try simpl in Hu ;
     try field_simplify in Hu ;
-    try rewrite -Rdiv_1 in Hu ;
+    try rewrite Rdiv_1 in Hu ;
     case: (v n) (Hv n (le_trans _ _ _ (le_plus_r _ _) Hn)) => [vn | | ] {Hv} //= Hv.
   replace M with ((lu/2) * (M / (lu / 2))).
   apply Rle_lt_trans with (lu / 2 * Rmax 0 (M / (lu / 2))).
@@ -2101,7 +2101,7 @@ split.
   have Hx : forall x, Rbar_is_lim_seq (fun n => Finite (x_seq x n)) x.
     case => [l | | ] /= eps.
     exists O => _ _.
-    rewrite -/(Rminus l l)Rminus_eq0 Rabs_R0 ; by apply eps.
+    rewrite -/(Rminus l l) Rminus_eq_0 Rabs_R0 ; by apply eps.
     exists (S (nfloor (Rmax 0 eps) (Rmax_l _ _))) => n Hn.
     apply Rlt_le_trans with (2 := le_INR _ _ Hn).
     rewrite /nfloor S_INR ; case: nfloor_ex => /= N HN.
@@ -2171,7 +2171,7 @@ split.
   case/Rabs_lt_between': (H _ (le_n_Sn _)) => {H} _.
   apply Rle_not_lt, Rle_minus_r.
   field_simplify.
-  rewrite -?Rdiv_1.
+  rewrite ?Rdiv_1.
   
   by apply Rlt_le.
   apply (not_INR _ 0), sym_not_eq, O_S.
@@ -2259,7 +2259,7 @@ split.
   apply Rle_not_lt, Rle_minus_r.
   rewrite Ropp_mult_distr_r_reverse.
   field_simplify.
-  rewrite -?Rdiv_1.
+  rewrite ?Rdiv_1.
   by apply Rlt_le.
   apply (not_INR _ 0), sym_not_eq, O_S.
   case: (H (mkposreal _ (Rlt_0_1))) => /= N {H} H.
@@ -2351,7 +2351,7 @@ rename y into x.
   case/Rabs_lt_between': (H _ (le_n_Sn _)) => {H} _.
   apply Rle_not_lt, Rle_minus_r.
   field_simplify.
-  rewrite -?Rdiv_1.
+  rewrite ?Rdiv_1.
   by apply Rlt_le.
   apply (not_INR _ 0), sym_not_eq, O_S.
   case: (H (mkposreal _ (Rlt_0_1))) => /= N {H} H.
@@ -2494,7 +2494,7 @@ rename y into x.
   apply Rle_not_lt, Rle_minus_r.
   rewrite Ropp_mult_distr_l_reverse.
   field_simplify.
-  rewrite -?Rdiv_1.
+  rewrite ?Rdiv_1.
   by apply Rlt_le.
   apply (not_INR _ 0), sym_not_eq, O_S.
   case: (H (mkposreal _ (Rlt_0_1))) => /= N {H} H.
@@ -2666,7 +2666,7 @@ Lemma Rbar_is_lim_seq_const (a : Rbar) :
   Rbar_is_lim_seq (fun _ => a) a.
 Proof.
   case: a => [a | | ] /= eps ; exists O => n Hn //.
-  rewrite -/(Rminus a a) Rminus_eq0 Rabs_R0.
+  rewrite -/(Rminus a a) Rminus_eq_0 Rabs_R0.
   by apply eps.
 Qed.
 Lemma Rbar_ex_lim_seq_const (a : Rbar) :

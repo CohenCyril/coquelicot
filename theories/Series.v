@@ -1,6 +1,6 @@
 Require Import Reals ssreflect.
 Require Import Rcomplements.
-Require Import Lim_seq Rbar_theory.
+Require Import Lim_seq Rbar.
 
 (** * Series *)
 (** ** Definitions *)
@@ -358,7 +358,7 @@ Proof.
   case: (le_lt_dec n m) => Hnm.
   apply le_lt_eq_dec in Hnm ; case: Hnm => Hnm.
   rewrite /R_dist -Ropp_minus_distr' Rabs_Ropp ; by apply Hw.
-  by rewrite Hnm /R_dist Rminus_eq0 Rabs_R0.
+  by rewrite Hnm /R_dist Rminus_eq_0 Rabs_R0.
   by apply Hw.
   move: (Hb n m Hn Hm).
   rewrite /R_dist (tech2 a m n Hnm) (tech2 b m n Hnm) ; 
@@ -817,7 +817,7 @@ Proof.
     exists N => n Hn.
     move: (H n Hn) => {H} H.
     apply Rabs_lt_between' in H ; case: H => _ H ; 
-    field_simplify in H ; rewrite -Rdiv_1 in H ; by apply Rlt_le.
+    field_simplify in H ; rewrite Rdiv_1 in H ; by apply Rlt_le.
   case => {H} N H.
   apply ex_series_decal_n with N.
   apply Comp_ex_series with (fun n => Rabs (a N) * ((k+1)/2)^n).
@@ -871,7 +871,7 @@ Proof.
   move => Hl Ha Hda Ha0.
   set k := (l+1)/2.
   have Hk1 : 1 < k.
-    apply Rminus_lt ; unfold k ; field_simplify ; rewrite -Rdiv_1.
+    apply Rminus_lt ; unfold k ; field_simplify ; rewrite Rdiv_1.
     rewrite -(Rmult_0_l (/2)) ; apply Rmult_lt_compat_r ; try by intuition.
     rewrite Rplus_comm ; by apply Rlt_minus.
   have : exists N, forall n, (N <= n)%nat -> k <= Rabs (a (S n) / a n).

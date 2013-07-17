@@ -1,5 +1,5 @@
 Require Import Reals Even Div2 ssreflect.
-Require Import Lim_seq Rcomplements Rbar_theory Sup_seq Total_sup.
+Require Import Lim_seq Rcomplements Rbar Sup_seq Lub.
 Require Import Lim_fct Continuity Derive Differential RInt Integral Taylor Locally Seq_fct Series.
 
 (** * Definition *)
@@ -235,13 +235,13 @@ Proof.
   apply Rmult_le_compat_r ; intuition.
   apply Rplus_le_compat_l.
   apply Rle_trans with 0.
-  rewrite -(Rminus_eq0 c).
+  rewrite -(Rminus_eq_0 c).
   rewrite -(Rplus_0_l (-c)).
   by apply Rplus_le_compat_r.
   by apply Rlt_le.
   move: (H0 _ H3).
   apply Rlt_not_le.
-  rewrite {1}(Rdiv_1 r).
+  rewrite -{1}(Rdiv_1 r).
   rewrite Rdiv_minus ; try by [intuition | apply Rgt_not_eq ; intuition].
   ring_simplify (r * 2 - (r - c) * 1) ; rewrite Rmult_1_l.
   rewrite Rplus_comm ; by apply H2.
@@ -1356,7 +1356,7 @@ Proof.
   apply continuity_pt_mult.
   apply derivable_continuous_pt, derivable_pt_id.
   by apply IH.
-  rewrite /Boule Rminus_eq0 Rabs_R0 ; by apply r.
+  rewrite /Boule Rminus_eq_0 Rabs_R0 ; by apply r.
 Qed.
 
 (** ** Differentiability *)
@@ -1411,13 +1411,13 @@ Proof.
       by apply Rplus_lt_le_0_compat.
       by apply Rlt_R0_R2.
       apply Rminus_lt, Ropp_lt_cancel ; field_simplify.
-      rewrite -Rdiv_1 ; apply Rdiv_lt_0_compat.
+      rewrite Rdiv_1 ; apply Rdiv_lt_0_compat.
       by apply -> Rminus_lt_0.
       by apply Rlt_R0_R2.
     move: (H2 _ H4).
     apply Rbar_lt_not_le => /=.
     apply Rminus_lt, Ropp_lt_cancel ; field_simplify.
-    rewrite -Rdiv_1 ; apply Rdiv_lt_0_compat.
+    rewrite Rdiv_1 ; apply Rdiv_lt_0_compat.
     rewrite Rplus_comm ; by apply -> Rminus_lt_0.
     by apply Rlt_R0_R2.
     by left.
@@ -1484,7 +1484,7 @@ Proof.
     replace (INR (S n) * a (S n) * y ^ n)
       with ((a (S n) * x ^ (S n)) * (INR (S n) /x * (y / x) ^ n))
       by (rewrite /pow -/pow ; apply Rminus_diag_uniq ; field_simplify ;
-      [rewrite -?Rdiv_1 | apply Rgt_not_eq, Rlt_trans with y ; by apply Hy ] ;
+      [rewrite ?Rdiv_1 | apply Rgt_not_eq, Rlt_trans with y ; by apply Hy ] ;
       rewrite ?Rmult_assoc -(Rmult_minus_distr_l (a (S n))) ;
       apply Rmult_eq_0_compat_l ;
       rewrite Rmult_comm Rmult_assoc -(Rmult_minus_distr_l (INR (S n))) ;
@@ -1534,8 +1534,8 @@ Proof.
     apply Rabs_lt_between' in Hy ; simpl in Hy.
     have H : 0 < Rmin ((x+Rmin r0 r1)-y) (y-(x-Rmin r0 r1)).
     apply Rmin_case.
-    rewrite -(Rminus_eq0 y) ; by apply Rplus_lt_compat_r, Hy.
-    rewrite -(Rminus_eq0 ((x-Rmin r0 r1))) /Rminus ;
+    rewrite -(Rminus_eq_0 y) ; by apply Rplus_lt_compat_r, Hy.
+    rewrite -(Rminus_eq_0 ((x-Rmin r0 r1))) /Rminus ;
     by apply Rplus_lt_compat_r , Hy.
     exists (mkposreal _ H) => /= z Hz.
     apply Rabs_lt_between' ; split ; apply (Rplus_lt_reg_r (-y)) ; simpl.
@@ -1653,7 +1653,7 @@ Proof.
     by apply Hr1.
   
   have Hx' : D x.
-    by rewrite /D /Boule /= Rminus_eq0 Rabs_R0.
+    by rewrite /D /Boule /= Rminus_eq_0 Rabs_R0.
   have H := (CVU_Derive (fun n y => (sum_f_R0 (fun k : nat => a k * y ^ k)) n) D Ho Hc Hfn Edn Cdn Hdn x Hx').
   replace (PSeries (PS_derive a) x)
     with (real (Lim_seq
@@ -2155,45 +2155,3 @@ Proof.
   apply is_RInt_unique.
   by apply is_RInt_PSeries.
 Qed.
-
-
-(*
-(** * Power series for equivalent computation *)
-
-Record PSeries_equiv := mk_pse {ind : Z ; seq : nat -> R}.
-Definition PSE_fun (A : PSeries_equiv) (x : R) : R :=
-  (seq A 0) * Zpow x (ind A) * (1 + PSeries (seq A) 1 x).
-
-(** ** PSeries_equiv is a field *)
-
-Definition PSE_zero := mk_pse 0 (fun _ => 0).
-Lemma PSE_zero_carac (A : PSeries_equiv) :
-  seq A 0 = 0 -> forall x, PSE_fun A x = 0.
-Proof.
-  move => H x.
-  by rewrite /PSE_fun H !Rmult_0_l.
-Qed.
-
-Definition PSE_one := mk_pse 0 (fun n => match n with | 0 => 1 | _ => 0 end).
-Lemma PSE_one_carac :
-  forall x, PSE_fun PSE_one x = 1.
-Proof.
-  move => x.
-  rewrite /PSE_fun.
-  replace (PSeries (seq PSE_one) 1 x) with 0.
-  simpl ; ring.
-  apply sym_equal.
-  rewrite -(Lim_seq_const 0).
-  apply Lim_seq_ext => n.
-  rewrite /sum_f.
-  case: n => [ | n].
-  simpl ; ring.
-  rewrite -pred_of_minus ; simpl pred.
-  elim: n => [ | n IH] /=.
-  ring.
-  rewrite IH ; ring.
-Qed.
-
-Definition PSE_opp (A : PSeries_equiv) := mk_pse (ind A) (fun n => - seq A n).
-Lemma PSE_opp_carac (A : PSeries_equiv) :
-  forall x, PSeries *)

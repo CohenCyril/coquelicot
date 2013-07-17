@@ -1,6 +1,6 @@
 Require Import Reals.
 Require Import ssreflect seq.
-Require Import Rcomplements Rbar_theory Derive SF_seq RInt Differential Locally.
+Require Import Rcomplements Rbar Derive SF_seq RInt Differential Locally.
 Require Import Continuity Lim_seq Lim_fct.
 
 
@@ -12,7 +12,7 @@ Lemma is_RInt_point (f : R -> R) (a : R) :
   is_RInt f a a 0.
 Proof.
   move => eps ; exists (mkposreal _ Rlt_0_1) => ptd _ _ _ _.
-  rewrite Rminus_eq0 /signe.
+  rewrite Rminus_eq_0 /signe.
   case: Rle_dec (Rle_refl 0) => // H _.
   case: Rle_lt_or_eq_dec (Rle_not_lt _ _ H) => // _ _.
   rewrite Rmult_0_l Rminus_0_r Rabs_R0.
@@ -140,7 +140,7 @@ Proof.
     apply Rminus_diag_uniq ; ring_simplify.
     apply Rmult_eq_0_compat_r.
     apply Ropp_eq_0_compat.
-    rewrite Rminus_eq0.
+    rewrite Rminus_eq_0.
     rewrite /signe.
     case: Rle_dec (Rle_refl 0) => // H _.
     case: Rle_lt_or_eq_dec (Rlt_irrefl 0) => //.
@@ -316,7 +316,7 @@ wlog: a b /(a < b) => [Hw | Hab].
   case: (Rle_lt_dec a b) => Hab.
   case: Hab => Hab.
   by apply Hw.
-  rewrite Hab ; rewrite Rminus_eq0 Rmult_0_r.
+  rewrite Hab ; rewrite Rminus_eq_0 Rmult_0_r.
   by apply is_RInt_point.
   apply is_RInt_swap.
   replace (- (v * (b - a))) with (v * (a - b)) by ring.
@@ -327,7 +327,7 @@ rewrite /signe ; case: Rle_dec (Rlt_le _ _ (Rgt_minus _ _ Hab)) => // H _ ;
 case: Rle_lt_or_eq_dec (Rlt_not_eq _ _ (Rgt_minus _ _ Hab)) => // {H} _ _ ;
 rewrite Rmult_1_l => Ha Hb.
 replace (Riemann_sum _ _) with (v * (b-a)).
-rewrite Rminus_eq0 Rabs_R0 ; by apply eps.
+rewrite Rminus_eq_0 Rabs_R0 ; by apply eps.
 rewrite -Ha -Hb => {Ha Hb} ;
 apply SF_seq.SF_cons_ind with (s := ptd) => {ptd} [ x0 | [x0 y0] s IH] /= .
 rewrite /Riemann_sum /SF_seq.RInt_seq /= ; ring.

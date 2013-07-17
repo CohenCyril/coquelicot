@@ -1,6 +1,6 @@
 Require Import Reals Div2 ConstructiveEpsilon.
 Require Import ssreflect ssrbool eqtype seq.
-Require Import Markov Rcomplements Total_sup Sup_seq Lim_seq Derive SF_seq.
+Require Import Markov Rcomplements Rbar Lub Sup_seq Lim_seq Derive SF_seq.
 
 
 (** * Build sequences *)
@@ -49,7 +49,7 @@ Proof.
   rewrite ?size_mkseq in Hi ; rewrite ?nth_mkseq ?S_INR ;
   [ |apply SSR_leq ; intuition | apply SSR_leq ; intuition ].
   apply Rminus_le_0 ; field_simplify ; 
-  [| apply Rgt_not_eq ; intuition] ; rewrite -?Rdiv_1 ;
+  [| apply Rgt_not_eq ; intuition] ; rewrite ?Rdiv_1 ;
   apply Rdiv_le_0_compat ; intuition.
   rewrite Rplus_comm ; by apply (proj1 (Rminus_le_0 _ _)).
 Qed.
@@ -69,7 +69,7 @@ Proof.
     rewrite -nth_last size_mkseq nth_mkseq ?S_INR //= /Rdiv.
     ring_simplify (a + 0 * (b - a) * / (INR n + 1)).
     field_simplify (a + (INR n + 1) * (b - a) * / (INR n + 1)).
-    by rewrite -Rdiv_1.
+    by rewrite Rdiv_1.
     apply Rgt_not_eq, INRp1_pos.
   case: (Hdec Hx') => {Hdec Hx'} [[i Hi]|Hi].
   left ; by exists i.
@@ -1038,7 +1038,7 @@ Proof.
       rewrite size_mkseq /= in Hj.
       rewrite ?nth_mkseq ?S_INR /= ; try apply SSR_leq.
       apply Rminus_gt ; field_simplify.
-      rewrite Rplus_comm -Rdiv_1 ; apply Rdiv_lt_0_compat.
+      rewrite Rplus_comm Rdiv_1 ; apply Rdiv_lt_0_compat.
       exact: Rgt_minus.
       by intuition.
       apply Rgt_not_eq ; by intuition.
@@ -1532,7 +1532,7 @@ Proof.
   rewrite /SF_lx /SF_rcons /SF_belast /SF_last /SF_cut_down /=.
   move: (proj1 Hab0) ; case: Rle_dec => //= _ _.
   rewrite (Rle_antisym _ _ (proj1 Hab0) (proj2 Hab0)) /seq_step /=.
-  rewrite Rminus_eq0 Rabs_R0 ; apply Rmax_case_strong ; by intuition.
+  rewrite Rminus_eq_0 Rabs_R0 ; apply Rmax_case_strong ; by intuition.
   move: Hab0 (fun Hx1 => IH (conj Hx1 (proj2 Hab0))) => {IH}.
   apply SF_cons_dec with (s := s) => {s} /= [x1 | [x1 y1] s] //= Hab0 IH.
   rewrite /SF_cut_down /SF_belast /SF_last /SF_rcons /SF_lx /=.
@@ -1540,7 +1540,7 @@ Proof.
   case: Rle_dec => //= Hx1.
   rewrite /seq_step /=.
   apply Rle_max_compat_l.
-  rewrite (Rle_antisym _ _ Hx1 (proj2 Hab0)) Rminus_eq0 Rabs_R0.
+  rewrite (Rle_antisym _ _ Hx1 (proj2 Hab0)) Rminus_eq_0 Rabs_R0.
   apply Rmax_case_strong ; by intuition.
   rewrite /seq_step /=.
   apply Rle_max_compat_r.
@@ -1711,13 +1711,16 @@ Proof.
   apply (Rmax_case_strong (fmax - fmin)) => H.
   apply Req_le ; field.
   apply Rgt_not_eq, Rlt_le_trans with 1 ; by intuition.
-  rewrite -Rdiv_1 -{2}(Rmult_1_l (eps/2/2)).
+  rewrite Rdiv_1 -{2}(Rmult_1_l (eps/2/2)).
   apply Rmult_le_compat_r, H.
   apply Rlt_le, eps4.
   
   clear H IH.
-  rewrite Rplus_assoc -Ropp_minus_distr Rmult_1_l.
-  apply (f_equal (Rminus (ly0 * (lx1 - lx0)))).
+  rewrite Rplus_assoc Rmult_1_l.
+  apply (f_equal (Rplus (ly0 * (lx1 - lx0)))).
+  rewrite -(Ropp_involutive (-_+_)).
+  apply Ropp_eq_compat.
+  rewrite Ropp_plus_distr Ropp_involutive.
   revert ptd_r_last ptd_r_belast ptd_r ; move: (proj1 Hab0) ; 
   rewrite -Ha => {Hab0} ;
   apply SF_cons_ind with (s := ptd) => /= [x0 | [x0 y0] s IH] /= Hx0.
@@ -1814,7 +1817,7 @@ Proof.
   revert ptd_l_behead ptd_l ; move :(proj1 Hab0) ;
   rewrite -Ha ; apply SF_cons_ind with (s := ptd) => /= [x0 | [x0 y0] /= s IH] Hx0.
   rewrite /SF_cut_up /= ; case: (Rle_dec x0 _) => //= _.
-  rewrite /seq_step /= Rminus_eq0 Rabs_R0 ; apply Rmax_case_strong ; by intuition.
+  rewrite /seq_step /= Rminus_eq_0 Rabs_R0 ; apply Rmax_case_strong ; by intuition.
   rewrite /SF_cut_up /= ; case: (Rle_dec x0 _) => //= _.
   move: IH ; rewrite /SF_cut_up /= ; case: (Rle_dec (SF_h s) _) => //= Hx1 ;
   rewrite ?seq_cut_up_head => IH.
@@ -1992,7 +1995,7 @@ Proof.
   apply (Rmax_case_strong (fmax - fmin)) => H.
   apply Req_le ; field.
   apply Rgt_not_eq, Rlt_le_trans with 1 ; by intuition.
-  rewrite -Rdiv_1 -{2}(Rmult_1_l (eps/2/2)).
+  rewrite Rdiv_1 -{2}(Rmult_1_l (eps/2/2)).
   apply Rmult_le_compat_r, H.
   apply Rlt_le, eps4.
   
@@ -2202,7 +2205,7 @@ Proof.
   apply SF_cons_ind with (s := ptd) 
     => {ptd} [x0 | [x0 y0] ptd IH] Hptd Hstep Ha Hb ; simpl in Ha, Hb.
   rewrite -Ha -Hb /Riemann_sum /RInt_seq /= ;
-  rewrite Rminus_eq0 Rmult_0_r Rminus_0_r Rabs_R0.
+  rewrite Rminus_eq_0 Rmult_0_r Rminus_0_r Rabs_R0.
   by apply Rlt_le, eps.
   move: (fun Ha => IH (ptd_cons _ _ Hptd) (Rle_lt_trans _ _ _ (RmaxLess2 _ _) Hstep) Ha Hb)
     => {IH} IH.
@@ -2221,7 +2224,7 @@ Proof.
   case ; case => Ha'.
   case => Hb'.
   rewrite Hval.
-  rewrite Rminus_eq0 Rabs_R0 -Rminus_le_0 /fmin /fmax.
+  rewrite Rminus_eq_0 Rabs_R0 -Rminus_le_0 /fmin /fmax.
   rewrite /Rmin /Rmax ; case: Rle_dec ; case: Rle_dec ; 
   case: Rle_dec => // H0 H1 H2.
   by apply Rlt_le, Rnot_le_lt, H1.
@@ -2256,7 +2259,7 @@ Proof.
   rewrite /alpha /= ; apply (Rmax_case_strong (fmax-fmin)) => H.
   apply Req_le ; field.
   by apply Rgt_not_eq, Rlt_le_trans with (1 := Rlt_0_1), H.
-  rewrite -Rdiv_1 -{2}(Rmult_1_l (eps/2)) ; apply Rmult_le_compat_r.
+  rewrite Rdiv_1 -{2}(Rmult_1_l (eps/2)) ; apply Rmult_le_compat_r.
   apply Rlt_le, eps2.
   apply H.
   
@@ -2293,7 +2296,7 @@ Proof.
   case ; case => Ha'.
   case => Hb'.
   rewrite Hval.
-  rewrite Rminus_eq0 Rabs_R0 -Rminus_le_0 /fmin /fmax.
+  rewrite Rminus_eq_0 Rabs_R0 -Rminus_le_0 /fmin /fmax.
   rewrite /Rmin /Rmax ; case: Rle_dec ; case: Rle_dec ; 
   case: Rle_dec => // H0 H1 H2.
   by apply Rlt_le, Rnot_le_lt, H1.
@@ -2326,7 +2329,7 @@ Proof.
   rewrite /alpha /= ; apply (Rmax_case_strong (fmax-fmin)) => H.
   apply Req_le ; field.
   by apply Rgt_not_eq, Rlt_le_trans with (1 := Rlt_0_1), H.
-  rewrite -Rdiv_1 -{2}(Rmult_1_l (eps/2)) ; apply Rmult_le_compat_r.
+  rewrite Rdiv_1 -{2}(Rmult_1_l (eps/2)) ; apply Rmult_le_compat_r.
   apply Rlt_le, eps2.
   apply H.
   apply ptd_sort, (ptd_cons (x0,y0)), Hptd.
@@ -2341,7 +2344,7 @@ Proof.
     apply ptd_sort, Hptd.
     apply lt_O_Sn.
   rewrite Riemann_sum_cons /= -Ha.
-  rewrite Rminus_eq0 Rmult_0_r Rplus_0_l.
+  rewrite Rminus_eq_0 Rmult_0_r Rplus_0_l.
   by apply IH.
 Qed.
 
@@ -2390,7 +2393,7 @@ Proof.
     suff H0 : forall eps : posreal, Rabs If < eps.
     apply Rle_antisym ; apply le_epsilon => e He ;
     set eps := mkposreal e He ; apply Rlt_le.
-    rewrite -(Rminus_eq0 If) ; 
+    rewrite -(Rminus_eq_0 If) ; 
     apply Rplus_lt_compat_l, Rle_lt_trans with (Rabs If).
     exact: Rabs_maj2.
     by apply (H0 eps).
@@ -2399,7 +2402,7 @@ Proof.
     exact: Rle_abs.
     by apply (H0 eps).
     move => eps ; move: (Hex eps) => {Hex}.
-    rewrite Rminus_eq0 /signe.
+    rewrite Rminus_eq_0 /signe.
     move: (Rle_refl 0) (Rle_not_lt _ _ (Rle_refl 0)).
     case: Rle_dec => // H0 _ ; case: Rle_lt_or_eq_dec => // _ _ {H0}.
     case => alpha Halpha.
@@ -2604,7 +2607,7 @@ Proof.
   exists phi ; exists psi ; split.
   exact: H.
   apply Rle_lt_trans with (1 := H0).
-  apply Rminus_gt ; simpl ; field_simplify ; rewrite -Rdiv_1 ; by apply eps2.
+  apply Rminus_gt ; simpl ; field_simplify ; rewrite Rdiv_1 ; by apply eps2.
 
   move => eps ; set eps2 := pos_div_2 eps.
   case: (Hn eps2) => {Hn} n Hn.
@@ -2708,7 +2711,7 @@ have Hfin : forall i, (S i < size (RInt_part a b n))%nat ->
   have H : (a + INR i * (b - a) / (INR n + 1)) <
     (a + (INR (S i)) * (b - a) / (INR n + 1)).
     rewrite S_INR ; apply Rminus_gt ; field_simplify.
-    rewrite -Rdiv_1 Rplus_comm ; apply Rdiv_lt_0_compat. 
+    rewrite Rdiv_1 Rplus_comm ; apply Rdiv_lt_0_compat. 
     by apply Rgt_minus.
     by apply INRp1_pos.
     by apply Rgt_not_eq, INRp1_pos.
@@ -3058,12 +3061,12 @@ have Hfin' : forall t, is_finite (SF_sup_fun (fun t : R => Rabs (f t - phi t)) a
     rewrite !nth_mkseq.
     rewrite S_INR.
     split ; simpl ; apply Rminus_le_0 ; field_simplify.
-    rewrite -Rdiv_1 ; apply Rdiv_le_0_compat.
+    rewrite Rdiv_1 ; apply Rdiv_le_0_compat.
     rewrite Rplus_comm -Rminus_le_0 ; exact: (Rlt_le _ _ Hab).
     replace (2 * INR n + 2) with (2 * (INR n + 1)) by field.
     apply Rmult_lt_0_compat ; by intuition.
     apply Rgt_not_eq ; by intuition.
-    rewrite -Rdiv_1 ; apply Rdiv_le_0_compat.
+    rewrite Rdiv_1 ; apply Rdiv_le_0_compat.
     rewrite Rplus_comm -Rminus_le_0 ; exact: (Rlt_le _ _ Hab).
     replace (2 * INR n + 2) with (2 * (INR n + 1)) by field.
     apply Rmult_lt_0_compat ; by intuition.
@@ -3095,12 +3098,12 @@ have Hfin' : forall t, is_finite (SF_sup_fun (fun t : R => Rabs (f t - phi t)) a
     move => ->.
     rewrite !nth_mkseq ?S_INR.
     split ; simpl ; apply Rminus_le_0 ; field_simplify.
-    rewrite -Rdiv_1 ; apply Rdiv_le_0_compat.
+    rewrite Rdiv_1 ; apply Rdiv_le_0_compat.
     rewrite Rplus_comm -Rminus_le_0 ; exact: (Rlt_le _ _ Hab).
     replace (2 * INR n + 2) with (2 * (INR n + 1)) by ring.
     apply Rmult_lt_0_compat ; by intuition.
     apply Rgt_not_eq ; by intuition.
-    rewrite -Rdiv_1 ; apply Rdiv_le_0_compat.
+    rewrite Rdiv_1 ; apply Rdiv_le_0_compat.
     rewrite Rplus_comm -Rminus_le_0 ; exact: (Rlt_le _ _ Hab).
     replace (2 * INR n + 2) with (2 * (INR n + 1)) by ring.
     apply Rmult_lt_0_compat ; by intuition.
@@ -3315,7 +3318,7 @@ have Hfin' : forall t, is_finite (SF_sup_fun (fun t : R => Rabs (f t - phi t)) a
     apply sorted_nth => i.
     rewrite size_mkseq => Hi x0 ; rewrite !nth_mkseq.
     apply Rminus_gt ; rewrite S_INR ; field_simplify.
-    rewrite -Rdiv_1.
+    rewrite Rdiv_1.
     apply Rdiv_lt_0_compat.
     rewrite Rplus_comm ; by apply Rgt_minus.
     by intuition.

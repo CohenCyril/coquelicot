@@ -1,4 +1,4 @@
-Require Import Reals Rbar_theory.
+Require Import Reals Rbar.
 Require Import ssreflect.
 Require Import Lim_seq Lim_fct.
 Require Import Locally Continuity.
@@ -99,13 +99,13 @@ Proof.
 intros f g x Hfg.
 rewrite /Derive /Lim.
 apply f_equal, Lim_seq_ext_loc.
-apply (Rbar.Rbar_loc_seq_carac (fun h => (f (x + h) - f x) / h =
+apply (Rbar_loc_seq_carac (fun h => (f (x + h) - f x) / h =
   (g (x + h) - g x) / h) (Rbar.Finite 0)) => /=.
 case: Hfg => delta Hfg.
 exists delta => h Hh.
 rewrite ?Hfg.
 reflexivity.
-rewrite Rminus_eq0 Rabs_R0 ; by apply delta.
+rewrite Rminus_eq_0 Rabs_R0 ; by apply delta.
 ring_simplify (x + h - x).
 by rewrite Rminus_0_r in Hh.
 Qed.
@@ -191,7 +191,7 @@ Lemma Derive_opp :
 Proof.
 intros f x.
 unfold Derive, Lim.
-rewrite /Rbar.Rbar_loc_seq.
+rewrite /Rbar_loc_seq.
 rewrite -Rbar.Rbar_opp_real.
 rewrite -Lim_seq_opp.
 apply f_equal, Lim_seq_ext => n.
@@ -1224,10 +1224,10 @@ Proof.
   apply Rlt_le_trans with (1 := Hz) => /= ; by apply Rmin_r.
   by apply le_trans with (1 := Hk), le_n_Sn.
   apply Hf with (k := (S n)).
-  rewrite Rminus_eq0 Rabs_R0 ; by apply rf.
+  rewrite Rminus_eq_0 Rabs_R0 ; by apply rf.
   by apply le_refl.
   apply Hg with (k := S n).
-  rewrite Rminus_eq0 Rabs_R0 ; by apply rg.
+  rewrite Rminus_eq_0 Rabs_R0 ; by apply rg.
   by apply le_refl.  
 Qed.
 Lemma ex_derive_n_plus (f g : R -> R) (n : nat) (x : R) :
@@ -1560,7 +1560,7 @@ Proof.
   apply Rle_div_l.
   by apply Rlt_trans with (1 := Rlt_0_1).
   rewrite -{3}(sqrt_sqrt x).
-  field_simplify ; rewrite -?Rdiv_1.
+  field_simplify ; rewrite ?Rdiv_1.
   apply Rlt_le, H.
   apply sqrt_lt_R0.
   by apply Rlt_trans with (1 := Rlt_0_1).

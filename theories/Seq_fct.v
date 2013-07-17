@@ -1,4 +1,4 @@
-Require Import Reals ssreflect Rbar_theory.
+Require Import Reals ssreflect Rbar.
 Require Import Rcomplements Locally.
 Require Import Lim_seq Sup_seq Lim_fct Derive Series.
 
@@ -522,7 +522,7 @@ Proof.
   apply ex_f_lim_seq_correct, CVU_CVS_dom with D.
   exact: Hfn.
   apply Ho.
-  rewrite Rminus_eq0 Rabs_R0 ; by apply dx.
+  rewrite Rminus_eq_0 Rabs_R0 ; by apply dx.
   apply (CVU_CVS_dom fn D) in Hfn ; rewrite /CVS_dom in Hfn.
   move: (fun H => Lim_seq_correct' _ (Hfn (x+h) (Ho _ H))) => F.
   move: (fun H => Lim_seq_correct' _ (Hfn (x) (Ho _ H))) => F0.
@@ -531,7 +531,7 @@ Proof.
   exists (real (Lim_seq (fun n : nat => fn n (x + h)))
     - real (Lim_seq (fun n : nat => fn n x))) ; by simpl.
   apply F0.
-  rewrite Rminus_eq0 Rabs_R0 ; by apply dx.
+  rewrite Rminus_eq_0 Rabs_R0 ; by apply dx.
   apply F.
   ring_simplify (x + h - x).
   apply Rlt_le_trans with (1 := Hh), Rmin_r.
@@ -542,7 +542,7 @@ Proof.
   rewrite (is_lim_seq_unique  (fun n : nat => fn n (x)) (real (Lim_seq (fun n : nat => fn n (x))))).
   by [].
   apply F0.
-  rewrite Rminus_eq0 Rabs_R0 ; by apply dx.
+  rewrite Rminus_eq_0 Rabs_R0 ; by apply dx.
   apply F.
   ring_simplify (x + h - x).
   apply Rlt_le_trans with (1 := Hh), Rmin_r.
@@ -591,7 +591,7 @@ Proof.
   apply ex_f_lim_seq_correct, CVU_CVS_dom with D.
   exact: Hfn.
   apply Ho.
-  rewrite Rminus_eq0 Rabs_R0 ; by apply dx.
+  rewrite Rminus_eq_0 Rabs_R0 ; by apply dx.
   apply (CVU_CVS_dom fn D) in Hfn ; rewrite /CVS_dom in Hfn.
   move: (fun H => Lim_seq_correct' _ (Hfn (x+h) (Ho _ H))) => F.
   move: (fun H => Lim_seq_correct' _ (Hfn (x) (Ho _ H))) => F0.
@@ -600,7 +600,7 @@ Proof.
   exists (real (Lim_seq (fun n : nat => fn n (x + h)))
     - real (Lim_seq (fun n : nat => fn n x))) ; by simpl.
   apply F0.
-  rewrite Rminus_eq0 Rabs_R0 ; by apply dx.
+  rewrite Rminus_eq_0 Rabs_R0 ; by apply dx.
   apply F.
   ring_simplify (x + h - x).
   rewrite Rminus_0_r in Hh0.
@@ -612,7 +612,7 @@ Proof.
   rewrite (is_lim_seq_unique  (fun n : nat => fn n (x)) (real (Lim_seq (fun n : nat => fn n (x))))).
   by [].
   apply F0.
-  rewrite Rminus_eq0 Rabs_R0 ; by apply dx.
+  rewrite Rminus_eq_0 Rabs_R0 ; by apply dx.
   apply F.
   ring_simplify (x + h - x).
   rewrite Rminus_0_r in Hh0.
@@ -737,7 +737,7 @@ Proof.
   apply Rle_minus_l.
   rewrite Rplus_comm.
   by apply Ha_.
-  apply Rminus_lt_0 ; field_simplify ; rewrite -Rdiv_1.
+  apply Rminus_lt_0 ; field_simplify ; rewrite Rdiv_1.
   by apply is_pos_div_2.
   apply Rle_minus_r ; rewrite Rplus_0_l.
   by apply Hx'.
@@ -777,7 +777,7 @@ Proof.
   apply Rle_minus_l.
   rewrite Rplus_comm.
   by apply Ha_.
-  apply Rminus_lt_0 ; field_simplify ; rewrite -Rdiv_1.
+  apply Rminus_lt_0 ; field_simplify ; rewrite Rdiv_1.
   by apply is_pos_div_2.
   apply Rle_minus_r ; rewrite Rplus_0_l.
   apply Rle_trans with x ; apply Hx'.

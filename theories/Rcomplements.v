@@ -4,8 +4,9 @@ Require Import seq.
 
 Open Scope R_scope.
 
-(** * Integer part *)
-(** ** to Z *)
+(** * Integers *)
+
+(** Integer part in Z *)
 
 Lemma floor_ex : forall x : R, {n : Z | IZR n <= x < IZR n + 1}.
 Proof.
@@ -34,7 +35,7 @@ Proof.
 Qed.
 Definition floor1 x := projT1 (floor1_ex x).
 
-(** ** to nat *)
+(** Interger part in nat *)
 
 Lemma nfloor_ex : forall x : R, 0 <= x -> {n : nat | INR n <= x < INR n + 1}.
 Proof.
@@ -76,7 +77,7 @@ Proof.
 Qed.
 Definition nfloor1 x pr := projT1 (nfloor1_ex x pr).
 
-(** * INR *)
+(** More theorems about INR *)
 
 Lemma INRp1_pos : forall n, 0 < INR n + 1.
 Proof.
@@ -118,10 +119,24 @@ Proof.
   exact Ha.
 Qed.
 
-(** * Operations on Rdiv *)
+(** * Rinv *)
+
+Lemma Rinv_le_contravar :
+  forall x y, 0 < x -> x <= y -> / y <= / x.
+Proof.
+intros x y H1 [H2|H2].
+apply Rlt_le.
+apply Rinv_lt_contravar with (2 := H2).
+apply Rmult_lt_0_compat with (1 := H1).
+now apply Rlt_trans with x.
+rewrite H2.
+apply Rle_refl.
+Qed.
+
+(** * Rdiv *)
 (** Rewritings *)
 
-Lemma Rdiv_1 : forall x : R, x = x / 1.
+Lemma Rdiv_1 : forall x : R, x / 1 = x.
 Proof.
   intros.
   unfold Rdiv ;
@@ -129,7 +144,8 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma Rdiv_plus : forall a b c d : R, b <> 0 -> d <> 0 -> a / b + c / d = (a * d + c * b) / (b * d).
+Lemma Rdiv_plus : forall a b c d : R, b <> 0 -> d <> 0 ->
+  a / b + c / d = (a * d + c * b) / (b * d).
 Proof.
   intros.
   field.
@@ -138,7 +154,8 @@ Proof.
   apply H.
 Qed.
 
-Lemma Rdiv_minus : forall a b c d : R, b <> 0 -> d <> 0 -> a/b-c/d = (a*d - c*b)/(b*d).
+Lemma Rdiv_minus : forall a b c d : R, b <> 0 -> d <> 0 ->
+  a / b - c / d = (a * d - c * b) / (b * d).
 Proof.
   intros.
   field.
@@ -271,16 +288,16 @@ Proof.
   intros ; rewrite Rmult_comm ; apply Rmult_le_0_r ; auto.
 Qed.
 
-(** * Operations on Rminus *)
+(** * Rminus *)
 (** Rewritings *)
 
-Lemma Rminus_eq0 : forall r : R, r-r = 0.
+Lemma Rminus_eq_0 : forall r : R, r - r = 0.
 Proof.
   intros.
   ring.
 Qed.
 
-Lemma Rdiv_minus_distr : forall a b c, b <> 0 -> a/b-c = (a-b*c)/b.
+Lemma Rdiv_minus_distr : forall a b c, b <> 0 -> a / b - c = (a - b * c) / b.
 Proof.
     intros.
     field.
@@ -313,15 +330,6 @@ Lemma Ropp_plus_minus_distr : forall r1 r2 : R, - (r1 + r2) = - r1 - r2.
 Proof.
   intros.
   unfold Rminus.
-  apply Ropp_plus_distr.
-Qed.
-
-Lemma Ropp_minus_distr : forall r1 r2 : R, - (r1 - r2) = - r1 + r2.
-Proof.
-  intros.
-  assert (- r1 + r2 = -r1 --r2).
-    ring.
-    rewrite H ; clear H.
   apply Ropp_plus_distr.
 Qed.
 
@@ -962,9 +970,7 @@ Proof.
 Qed.
 
 
-(** * Order *)
-
-(** Req *)
+(** * Req *)
 
 Lemma Req_lt_aux : forall x y, (forall eps : posreal, Rabs (x - y) < eps) -> x = y.
 Proof.
@@ -994,7 +1000,7 @@ Proof.
 Qed.
 
 
-(** posreal *)
+(** * posreal *)
 
 Lemma is_pos_div_2 (eps : posreal) : 0 < eps / 2.
 Proof.
@@ -1002,43 +1008,6 @@ Proof.
   [apply eps | apply Rinv_0_lt_compat, Rlt_0_2].
 Qed.
 Definition pos_div_2 (eps : posreal) := mkposreal _ (is_pos_div_2 eps).
-
-(** * Integers *)
-
-Definition Zpow (x : R) (n : Z) : R :=
-  match n with
-    | Z0 => 1
-    | Zpos p => x ^ (nat_of_P p)
-    | Zneg p => / x ^ (nat_of_P p)
-  end.
-
-
-Fixpoint is_even (n : nat) :=
-  match n with
-    | O => 1
-    | 1%nat => 0
-    | S (S n) => is_even n
-  end.
-Definition is_odd (n : nat) := is_even (S n).
-
-Lemma is_even_simplify (n : nat) :
-  is_even n = match (even_odd_dec n) with
-    | left _ => 1
-    | right _ => 0
-  end.
-Proof.
-  revert n.
-  apply ind_0_1_SS.
-  reflexivity.
-  reflexivity.
-  intros n.
-  destruct (even_odd_dec (S (S n))) as [H|H] ; 
-  destruct (even_odd_dec n) as [H0|H0] ; simpl ; auto.
-  apply even_S, odd_S in H0.
-  apply not_even_and_odd in H ; intuition.
-  apply odd_S, even_S in H0.
-  apply not_even_and_odd in H ; intuition.
-Qed.
 
 (** * The signe function *)
 
@@ -1167,7 +1136,8 @@ Proof.
   rewrite IH ; field.
 Qed.
 
-(** * Finite subdivision *)
+(** * ssreflect.seq *)
+(** Finite subdivision *)
 
 Lemma interval_finite_subdiv (a b : R) (eps : posreal) : (a <= b) ->
   {l : seq R | head 0 l = a /\ last 0 l = b /\
@@ -1500,7 +1470,7 @@ Proof.
   intros ; ring.
 Qed.
 
-(** ln *)
+(** * ln *)
 
 Lemma ln_pow x n : 0 < x -> ln (x^n) = INR n * ln x.
   intro Hx ;

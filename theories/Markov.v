@@ -1,17 +1,5 @@
-Require Import RIneq.
+Require Import RIneq Rcomplements.
 Open Scope R_scope.
-
-Lemma Rinv_le_contravar :
-  forall x y, 0 < x -> x <= y -> / y <= / x.
-Proof.
-intros x y H1 [H2|H2].
-apply Rlt_le.
-apply Rinv_lt_contravar with (2 := H2).
-apply Rmult_lt_0_compat with (1 := H1).
-now apply Rlt_trans with x.
-rewrite H2.
-apply Rle_refl.
-Qed.
 
 (** * Markov's principle *)
 
@@ -159,6 +147,8 @@ Proof.
   specialize (K n).
   now destruct (H n).
 Qed.
+
+(** * Corollaries *)
 
 Lemma Markov_cor1 : forall P : nat -> Prop, (forall n, {P n}+{~P n}) ->
   (~ forall n : nat, ~ P n) -> exists n : nat, P n.

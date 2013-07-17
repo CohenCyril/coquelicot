@@ -1,5 +1,5 @@
-Require Import Rcomplements Reals.
-Require Import Rbar_theory Total_sup.
+Require Import Rcomplements Reals Rbar.
+Require Import Rbar_seq.
 Require Import ssreflect.
 Open Scope R_scope.
 
