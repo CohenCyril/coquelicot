@@ -1,3 +1,13 @@
+config.log
+config.status
+configure
+aclocal.m4
+autom4te.cache
+ChangeLog
+Remakefile
+.remake
+remake
+remake.exe
+html
 *.vo
-*.v.d
 *.glob

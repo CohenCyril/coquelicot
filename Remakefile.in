@@ -1,0 +1,76 @@
+FILES = \
+	AutoDerive.v \
+	Compactness.v \
+	Continuity.v \
+	Derive.v \
+	Differential.v \
+	Equiv.v \
+	Integral.v \
+	Lim_fct.v \
+	Lim_seq.v \
+	Locally.v \
+	Lub.v \
+	Markov.v \
+	PSeries.v \
+	Rbar_seq.v \
+	Rbar.v \
+	Rcomplements.v \
+	RInt.v \
+	Seq_fct.v \
+	Series.v \
+	SF_seq.v \
+	Sup_seq.v \
+	Taylor.v
+
+OBJS = $(addprefix theories/,$(addsuffix o,$(FILES)))
+
+all: $(OBJS)
+
+clean: theories/clean
+
+Remakefile: Remakefile.in config.status
+	./config.status Remakefile
+
+configure config.status: configure.in
+	autoconf
+	./config.status --recheck
+
+%.vo: %.v
+	@COQDEP@ -R theories Coquelicot $< | @REMAKE@ -r $@
+	@COQC@ -R theories Coquelicot -dont-load-proofs $<
+
+theories/clean:
+	rm -f $(OBJS) theories/*.glob
+
+html/index.html: $(OBJS)
+	rm -rf html
+	mkdir -p html
+	@COQDOC@ -toc -interpolate -utf8 -html -g -R theories Coquelicot -d html \
+	  --coqlib http://coq.inria.fr/distrib/current/stdlib/ \
+	  --external http://ssr2.msr-inria.inria.fr/doc/ssreflect-1.4/ Ssreflect \
+	  $(addprefix theories/,$(FILES))
+
+doc: html/index.html
+
+install:
+	prefix=@prefix@
+	exec_prefix=@exec_prefix@
+	mkdir -p @libdir@
+	cp $(OBJS) @libdir@
+
+EXTRA_DIST = \
+	configure
+
+dist: $(EXTRA_DIST)
+	PACK=@PACKAGE_TARNAME@-@PACKAGE_VERSION@
+	DIRS=`git ls-tree -d -r --name-only HEAD`
+	FILES=`git ls-tree -r --name-only HEAD`
+	rm -rf $PACK.tar.gz $PACK
+	mkdir $PACK
+	for d in $DIRS; do mkdir $PACK/$d; done
+	for f in $FILES $(EXTRA_DIST); do cp $f $PACK/$f; done
+	#git log --pretty="format:%ad %s" --date=short > $PACK/ChangeLog
+	cat /dev/null > $PACK/ChangeLog
+	rm `find $PACK -name .gitignore`
+	tar czf $PACK.tar.gz $PACK
+	rm -rf $PACK
