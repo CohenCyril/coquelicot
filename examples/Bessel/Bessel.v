@@ -1,6 +1,6 @@
 Require Import Reals ssreflect.
-Require Import Rcomplements Rbar_theory.
-Require Import Total_sup Derive Series PSeries Lim_seq.
+Require Import Rcomplements Rbar.
+Require Import Derive Series PSeries Lim_seq.
 Require Import AutoDerive.
 
 (** An exemple to use power series *)

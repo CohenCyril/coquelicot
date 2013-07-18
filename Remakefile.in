@@ -26,7 +26,7 @@ OBJS = $(addprefix theories/,$(addsuffix o,$(FILES)))
 
 all: $(OBJS)
 
-clean: theories/clean
+clean: theories/clean examples/clean
 
 Remakefile: Remakefile.in config.status
 	./config.status Remakefile
@@ -51,6 +51,18 @@ html/index.html: $(OBJS)
 	  $(addprefix theories/,$(FILES))
 
 doc: html/index.html
+
+EXAMPLES = \
+	bac2013/bacS2013.v \
+	Bessel/Bessel.v \
+	dalembert/Auto.v
+
+EXOBJS = $(addprefix examples/,$(addsuffix o,$(EXAMPLES)))
+
+check: $(EXOBJS)
+
+examples/clean:
+	rm -f $(EXOBJS) examples/*/*.glob
 
 install:
 	prefix=@prefix@

@@ -1,7 +1,12 @@
 Require Import Reals ssreflect.
-Add LoadPath "~/Documents/coquelicot/coquelicot/theories".
-Require Import Rcomplements Rbar_theory Suppl.
+Require Import Rcomplements Rbar.
 Require Import Derive RInt Integral Lim_fct Continuity Lim_seq.
+
+Ltac pos_rat :=
+  repeat ( apply Rdiv_lt_0_compat
+         || apply Rplus_lt_0_compat
+         || apply Rmult_lt_0_compat) ;
+  try by apply Rlt_0_1.
 
 (** * Exercice 2 *)
 (** 8:14 *)
@@ -42,7 +47,7 @@ Proof.
   move => Hf Hdf.
   rewrite /fab in Hf.
   rewrite ln_1 in Hf.
-  rewrite -Rdiv_1 in Hf.
+  rewrite Rdiv_1 in Hf.
   rewrite Rmult_0_r in Hf.
   rewrite Rplus_0_r in Hf.
   rewrite Hf in Hdf |- * => {a Hf}.
@@ -51,9 +56,8 @@ Proof.
   replace (Derive (fab 2 b) 1) with (((b - 2) - b * ln 1) / 1 ^ 2) in Hdf.
   rewrite ln_1 /= in Hdf.
   field_simplify in Hdf.
-  rewrite -?Rdiv_1 in Hdf.
-  apply Rminus_diag_uniq.
-  by apply Hdf.
+  rewrite !Rdiv_1 in Hdf.
+  by apply Rminus_diag_uniq.
   apply sym_eq, is_derive_unique.
   apply Dfab.
   by apply Rlt_0_1.
@@ -203,7 +207,7 @@ Qed.
 
 Lemma f_eq_1_0_1 : exists x, 0 < x <= 1 /\ f x = 1.
 Proof.
-  case: (IVT_Rbar_gen (fun x => f (Rabs x)) 0 1 m_infty 2 1).
+  case: (IVT_Rbar_incr (fun x => f (Rabs x)) 0 1 m_infty 2 1).
   apply Lim_f_0.
   apply is_lim_comp with 1.
   replace 2 with (f 1).
@@ -218,7 +222,7 @@ Proof.
   by apply Rle_0_1.
   exists (mkposreal _ Rlt_0_1) => /= x H0x Hx.
   apply Rabs_lt_between' in H0x.
-  rewrite Rminus_eq0 in H0x.
+  rewrite Rminus_eq_0 in H0x.
   contradict Hx.
   rewrite -(Rabs_pos_eq x).
   by apply Rbar_finite_eq.
@@ -252,7 +256,7 @@ Qed.
 
 Lemma f_eq_1_1_p_infty : exists x, 1 <= x /\ f x = 1.
 Proof.
-  case: (IVT_Rbar_gen (fun x => - f x) 1 p_infty (-2) 0 (-1)).
+  case: (IVT_Rbar_incr (fun x => - f x) 1 p_infty (-2) 0 (-1)).
   replace 2 with (f 1).
   apply (is_lim_continuity (fun x => - f x)).
   apply continuity_pt_opp.
@@ -303,6 +307,9 @@ Qed.
 
 Lemma RInt_f : is_RInt f ( / exp 1) 1 1.
 Proof.
+  have Haux1: (0 < /exp 1).
+    apply Rinv_0_lt_compat.
+    apply exp_pos.
   apply is_RInt_ext with (Derive (fun y => 2 * ln y + (ln y) ^ 2)).
   move => y Hy.
   apply is_derive_unique, If.
@@ -373,7 +380,7 @@ Proof.
   apply Rlt_le ; pos_rat.
   by apply IH.
   apply Rminus_le_0 ; field_simplify.
-  rewrite -Rdiv_1.
+  rewrite Rdiv_1.
   apply Rlt_le ; pos_rat.
 Qed.
 
@@ -429,7 +436,7 @@ Proof.
   apply is_lim_seq_ext with (fun n => 2 * (2/3)^n + INR n).
   move => n ; by rewrite Q3b.
   apply is_lim_seq_plus.
-  apply is_lim_seq_scal.
+  apply is_lim_seq_scal_l.
   apply is_lim_seq_geom.
   rewrite Rabs_pos_eq.
   apply Rlt_div_l.
@@ -483,7 +490,7 @@ Proof.
   apply is_lim_seq_div.
   apply is_lim_seq_minus.
   apply is_lim_seq_const.
-  apply is_lim_seq_scal.
+  apply is_lim_seq_scal_l.
   apply is_lim_seq_geom.
   rewrite Rabs_pos_eq.
   apply Rlt_div_l.
@@ -511,7 +518,7 @@ Proof.
   case: Rle_dec Rle_0_1 => // H _.
   case: Rle_lt_or_eq_dec (Rlt_not_eq _ _ Rlt_0_1) => //.
   apply is_lim_seq_inv.
-  apply is_lim_seq_scal.
+  apply is_lim_seq_scal_l.
   by apply is_lim_seq_id.
   simpl.
   case: Rle_dec (Rlt_le _ _ Rlt_0_2) => // H _.
