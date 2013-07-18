@@ -53,16 +53,16 @@ html/index.html: $(OBJS)
 doc: html/index.html
 
 EXAMPLES = \
-	bac2013/bacS2013.v \
-	Bessel/Bessel.v \
-	dalembert/Auto.v
+	BacS2013.v \
+	Bessel.v \
+	DAlembert.v
 
 EXOBJS = $(addprefix examples/,$(addsuffix o,$(EXAMPLES)))
 
 check: $(EXOBJS)
 
 examples/clean:
-	rm -f $(EXOBJS) examples/*/*.glob
+	rm -f $(EXOBJS) examples/*.glob
 
 install:
 	prefix=@prefix@
