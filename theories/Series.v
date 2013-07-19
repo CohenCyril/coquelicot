@@ -1,6 +1,6 @@
 Require Import Reals ssreflect.
 Require Import Rcomplements.
-Require Import Lim_seq Rbar.
+Require Import Limit Rbar.
 
 (** * Series *)
 (** ** Definitions *)
@@ -8,7 +8,7 @@ Require Import Lim_seq Rbar.
 Definition is_series (a : nat -> R) (l : R) :=
   is_lim_seq (sum_f_R0 (fun k => a k)) l.
 Definition ex_series (a : nat -> R) :=
-  ex_f_lim_seq (sum_f_R0 (fun k => a k)).
+  ex_finite_lim_seq (sum_f_R0 (fun k => a k)).
 Definition Series (a : nat -> R) : R :=
   real (Lim_seq (sum_f_R0 (fun k => a k))).
 
@@ -417,7 +417,7 @@ Proof.
   simpl ; ring.
   simpl ; rewrite -IH ; ring.
   search_lim_seq.
-  apply is_lim_seq_opp.
+  apply -> is_lim_seq_opp.
   by apply Ha.
   by simpl.
 Qed.

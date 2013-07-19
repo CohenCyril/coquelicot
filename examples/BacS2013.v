@@ -1,6 +1,6 @@
 Require Import Reals ssreflect.
 Require Import Rcomplements Rbar.
-Require Import Derive RInt Integral Lim_fct Continuity Lim_seq.
+Require Import Derive RInt Integral Lim_fct Continuity Limit.
 
 Ltac pos_rat :=
   repeat ( apply Rdiv_lt_0_compat

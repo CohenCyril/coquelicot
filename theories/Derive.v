@@ -1,6 +1,6 @@
 Require Import Reals Rbar.
 Require Import ssreflect.
-Require Import Lim_seq Lim_fct.
+Require Import Limit Lim_fct.
 Require Import Locally Continuity.
 Require Import Rcomplements.
 Open Scope R_scope.

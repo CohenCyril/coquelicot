@@ -1,6 +1,6 @@
 Require Import Reals ssreflect.
 Require Import Rcomplements Rbar.
-Require Import Derive Series PSeries Lim_seq.
+Require Import Derive Series PSeries Limit.
 Require Import AutoDerive.
 
 (** An exemple to use power series *)
@@ -92,14 +92,14 @@ Proof.
   auto_derive.
   repeat split.
   apply ex_derive_PSeries.
-  by rewrite PS_derive_circle CV_Bessel1.
+  by rewrite CV_circle_derive CV_Bessel1.
   apply ex_derive_PSeries.
   by rewrite CV_Bessel1.
   rewrite ?Derive_PSeries.
   case: n => [ | n] ; rewrite ?S_INR /Rdiv /= ;
   simpl ; field.
   by rewrite CV_Bessel1.
-  by rewrite PS_derive_circle CV_Bessel1.
+  by rewrite CV_circle_derive CV_Bessel1.
 Qed.
 
 Lemma Bessel1_correct (n : nat) (x : R) :
@@ -155,54 +155,18 @@ Proof.
   apply ex_series_Rabs, CV_circle_carac.
   apply Rbar_lt_le_trans with (2 := CV_circle_plus _ _).
   rewrite /Rbar_min ; case: Rbar_le_dec => _.
-  by rewrite CV_circle_incr_1 ?PS_derive_circle CV_Bessel1.
+  by rewrite CV_circle_incr_1 ?CV_circle_derive CV_Bessel1.
   apply Rbar_lt_le_trans with (2 := CV_circle_scal_l _ _).
-  by rewrite PS_derive_circle CV_Bessel1.
+  by rewrite CV_circle_derive CV_Bessel1.
   by apply ex_Bessel1.
   apply ex_series_Rabs, CV_circle_carac.
-  by rewrite CV_circle_incr_1 ?PS_derive_circle CV_Bessel1.
+  by rewrite CV_circle_incr_1 ?CV_circle_derive CV_Bessel1.
   apply ex_series_Rabs, CV_circle_carac.
   apply Rbar_lt_le_trans with (2 := CV_circle_scal_l _ _).
-  by rewrite PS_derive_circle CV_Bessel1.
+  by rewrite CV_circle_derive CV_Bessel1.
 Qed.
 
-Lemma Bessel1_equality_1 (n : nat) (x : R) : (0 < n)%nat -> x<>0
-  -> Bessel1 (S n)%nat x + Bessel1 (pred n)%nat x = (2*INR n)/x * Bessel1 n x.
-Proof.
-  case: n => [ | n] Hn Hx.
-  by apply lt_irrefl in Hn.
-  clear Hn ; simpl pred.
-  rewrite /Bessel1 S_INR.
-  replace ((x / 2) ^ S (S n) * PSeries (Bessel1_seq (S (S n))) ((x / 2) ^ 2) +
-      (x / 2) ^ n * PSeries (Bessel1_seq n) ((x / 2) ^ 2)) 
-    with ((x/2)^n *
-      ((x/2)^2 * PSeries (Bessel1_seq (S (S n))) ((x / 2) ^ 2) +
-      PSeries (Bessel1_seq n) ((x / 2) ^ 2))) 
-    by (simpl ; ring).
-  replace (2 * (INR n + 1) / x *
-      ((x / 2) ^ S n * PSeries (Bessel1_seq (S n)) ((x / 2) ^ 2)))
-    with ((x/2)^n * ((INR n + 1) * PSeries (Bessel1_seq (S n)) ((x / 2) ^ 2)))
-    by (simpl ; field ; exact: Hx).
-  apply f_equal.
-  rewrite -PSeries_incr_1 -PSeries_scal_l -PSeries_plus.
-Focus 2. (* ex_pseries (PS_incr_1 (Bessel1_seq (S (S n))) (S (S n))) (x / 2) *)
-  by apply ex_pseries_incr_1, ex_Bessel1.
-Focus 2. (* ex_pseries (PS_incr_n (Bessel1_seq n) n) (x / 2) *)
-  by apply ex_Bessel1.
-  apply PSeries_ext => k.
-(* egalité *)
-  rewrite /PS_plus /PS_scal_l /PS_incr_1 /Bessel1_seq ;
-  case: k => [ | k] ;
-  rewrite ?plus_0_r -?plus_n_Sm ?plus_Sn_m 
-    /fact -/fact ?mult_INR ?S_INR ?plus_INR /=.
-  field.
-  rewrite -?S_INR ; split ;
-  by [apply not_0_INR, sym_not_eq, O_S | apply INR_fact_neq_0].
-  field ;
-  rewrite -?plus_INR -?S_INR ; repeat split ;
-  by [apply INR_fact_neq_0 | apply not_0_INR, sym_not_eq, O_S].
-Qed.
-Lemma Bessel1_equality_2 (n : nat) (x : R) : x <> 0
+Lemma Bessel1_equality_1 (n : nat) (x : R) : x <> 0
   -> Bessel1 (S n)%nat x = INR n * Bessel1 n x / x - Derive (Bessel1 n) x.
 Proof.
   move => Hx.
@@ -242,4 +206,76 @@ Proof.
   rewrite -plus_INR -?S_INR.
   repeat split ;
   try by [exact: INR_fact_neq_0 | apply not_0_INR, not_eq_sym, O_S].
+Qed.
+
+Lemma Bessel1_equality_2 (n : nat) (x : R) : (0 < n)%nat -> x<>0
+  -> Bessel1 (S n)%nat x + Bessel1 (pred n)%nat x = (2*INR n)/x * Bessel1 n x.
+Proof.
+  case: n => [ | n] Hn Hx.
+  by apply lt_irrefl in Hn.
+  clear Hn ; simpl pred.
+  rewrite /Bessel1 S_INR.
+  replace ((x / 2) ^ S (S n) * PSeries (Bessel1_seq (S (S n))) ((x / 2) ^ 2) +
+      (x / 2) ^ n * PSeries (Bessel1_seq n) ((x / 2) ^ 2)) 
+    with ((x/2)^n *
+      ((x/2)^2 * PSeries (Bessel1_seq (S (S n))) ((x / 2) ^ 2) +
+      PSeries (Bessel1_seq n) ((x / 2) ^ 2))) 
+    by (simpl ; ring).
+  replace (2 * (INR n + 1) / x *
+      ((x / 2) ^ S n * PSeries (Bessel1_seq (S n)) ((x / 2) ^ 2)))
+    with ((x/2)^n * ((INR n + 1) * PSeries (Bessel1_seq (S n)) ((x / 2) ^ 2)))
+    by (simpl ; field ; exact: Hx).
+  apply f_equal.
+  rewrite -PSeries_incr_1 -PSeries_scal_l -PSeries_plus.
+Focus 2. (* ex_pseries (PS_incr_1 (Bessel1_seq (S (S n))) (S (S n))) (x / 2) *)
+  by apply ex_pseries_incr_1, ex_Bessel1.
+Focus 2. (* ex_pseries (PS_incr_n (Bessel1_seq n) n) (x / 2) *)
+  by apply ex_Bessel1.
+  apply PSeries_ext => k.
+(* egalité *)
+  rewrite /PS_plus /PS_scal_l /PS_incr_1 /Bessel1_seq ;
+  case: k => [ | k] ;
+  rewrite ?plus_0_r -?plus_n_Sm ?plus_Sn_m 
+    /fact -/fact ?mult_INR ?S_INR ?plus_INR /=.
+  field.
+  rewrite -?S_INR ; split ;
+  by [apply not_0_INR, sym_not_eq, O_S | apply INR_fact_neq_0].
+  field ;
+  rewrite -?plus_INR -?S_INR ; repeat split ;
+  by [apply INR_fact_neq_0 | apply not_0_INR, sym_not_eq, O_S].
+Qed.
+
+Lemma Bessel1_equality_3 (n : nat) (x : R) : (0 < n)%nat ->
+  Bessel1 (S n)%nat x - Bessel1 (pred n)%nat x = - 2 * Derive (Bessel1 n) x.
+Proof.
+  move => Hn.
+  rewrite (is_derive_unique _ _ _ (is_derive_Bessel1 _ _)) /Bessel1.
+  case: n Hn => [ | n] Hn.
+  by apply lt_irrefl in Hn.
+  clear Hn ; simpl pred.
+  replace ((x / 2) ^ S (S n) * PSeries (Bessel1_seq (S (S n))) ((x / 2) ^ 2) -
+      (x / 2) ^ n * PSeries (Bessel1_seq n) ((x / 2) ^ 2)) 
+    with ((x/2)^n *
+      ((x/2)^2 * PSeries (Bessel1_seq (S (S n))) ((x / 2) ^ 2) -
+      PSeries (Bessel1_seq n) ((x / 2) ^ 2))) 
+    by (simpl ; ring).
+  replace (-2 *((x / 2) ^ S (S n) * PSeries (PS_derive (Bessel1_seq (S n))) ((x / 2) ^ 2) +
+      INR (S n) / 2 * (x / 2) ^ n * PSeries (Bessel1_seq (S n)) ((x / 2) ^ 2)))
+    with ((x/2)^n * (-2 * ((x/2)^2  * PSeries (PS_derive (Bessel1_seq (S n))) ((x / 2) ^ 2)) -
+      INR (S n) * PSeries (Bessel1_seq (S n)) ((x / 2) ^ 2)))
+    by (rewrite S_INR ; simpl ; field).
+  set y := (x / 2).
+  apply f_equal.
+  rewrite -?PSeries_incr_1 -?PSeries_scal_l -?PSeries_minus.
+  apply PSeries_ext => k.
+  rewrite  /PS_minus /PS_incr_1 /PS_scal_l /PS_derive /Bessel1_seq.
+  case: k => [ | k] ; rewrite -?plus_n_Sm ?plus_Sn_m /fact -/fact ?mult_INR ?S_INR -?plus_n_O ?plus_INR /= ;
+  field ; rewrite -?plus_INR -?S_INR.
+  split ; (apply INR_fact_neq_0 || apply not_0_INR, sym_not_eq, O_S).
+  repeat split ; (apply INR_fact_neq_0 || apply not_0_INR, sym_not_eq, O_S).
+  apply ex_pseries_scal_l, ex_pseries_incr_1, ex_pseries_derive.
+  by rewrite CV_Bessel1.
+  by apply ex_pseries_scal_l, ex_Bessel1.
+  by apply ex_pseries_incr_1, ex_Bessel1.
+  by apply ex_Bessel1.
 Qed.

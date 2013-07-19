@@ -1,5 +1,5 @@
 Require Import Reals Rbar Rcomplements.
-Require Import Lim_seq ssreflect.
+Require Import Limit ssreflect.
 Require Import Locally .
 Open Scope R_scope.
 
@@ -13,7 +13,7 @@ Definition is_lim (f : R -> R) (x l : Rbar) :=
     | m_infty => forall M : R, Rbar_locally (fun y => f y < M) x
   end.
 Definition ex_lim (f : R -> R) (x : Rbar) := exists l : Rbar, is_lim f x l.
-Definition ex_f_lim (f : R -> R) (x : Rbar) := exists l : R, is_lim f x l.
+Definition ex_finite_lim (f : R -> R) (x : Rbar) := exists l : R, is_lim f x l.
 Definition Lim (f : R -> R) (x : Rbar) := Lim_seq (fun n => f (Rbar_loc_seq x n)).
 
 (** ** Equivalence with Coq definition *)
@@ -146,8 +146,8 @@ Proof.
   apply sym_eq, is_lim_unique, H.
 Qed.
 
-Lemma ex_f_lim_correct (f : R -> R) (x : Rbar) :
-  ex_f_lim f x <-> ex_lim f x /\ is_finite (Lim f x).
+Lemma ex_finite_lim_correct (f : R -> R) (x : Rbar) :
+  ex_finite_lim f x <-> ex_lim f x /\ is_finite (Lim f x).
 Proof.
   split.
   case => l Hf.
@@ -162,10 +162,10 @@ Proof.
   by rewrite (is_lim_unique _ _ _ Hf).
 Qed.
 Lemma Lim_correct' (f : R -> R) (x : Rbar) :
-  ex_f_lim f x -> is_lim f x (real (Lim f x)).
+  ex_finite_lim f x -> is_lim f x (real (Lim f x)).
 Proof.
   intro Hf.
-  apply ex_f_lim_correct in Hf.
+  apply ex_finite_lim_correct in Hf.
   rewrite (proj2 Hf).
   by apply Lim_correct, Hf.
 Qed.
@@ -1341,7 +1341,7 @@ Proof.
   by apply Hy.
 Qed.
 Lemma ex_lim_continuity (f : R -> R) (x : R) :
-  continuity_pt f x -> ex_f_lim f x.
+  continuity_pt f x -> ex_finite_lim f x.
 Proof.
   move => Hf.
   exists (f x).
@@ -2105,7 +2105,7 @@ Qed.
 Lemma ex_lim_exp (x : Rbar) : ex_lim (fun y => exp y) x.
 Proof.
   case: x => [x | | ].
-  apply ex_f_lim_correct, ex_lim_continuity.
+  apply ex_finite_lim_correct, ex_lim_continuity.
   apply derivable_continuous_pt, derivable_pt_exp.
   exists p_infty ; by apply is_lim_exp_p.
   exists 0 ; by apply is_lim_exp_m.

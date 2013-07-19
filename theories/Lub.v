@@ -366,7 +366,6 @@ Proof.
   rewrite Rbar_opp_involutive ; auto.
   apply Hg', Rbar_lb_ub ; auto.
 Qed.
-
 Lemma Rbar_opp_lub_glb (E : Rbar -> Prop) Hp Hm Hex1 Hex2 :
   Rbar_lub_ne (fun x => E (Rbar_opp x)) Hp Hex1 = Rbar_opp (Rbar_glb_ne E Hm Hex2).
 Proof.
@@ -377,6 +376,29 @@ Proof.
   apply (Rbar_is_lb_subset _ E) ; auto ; intros x ; rewrite Rbar_opp_involutive ; auto.
   apply Rbar_opp_le ; rewrite Rbar_opp_involutive ; apply Hg', Rbar_ub_lb ; 
   rewrite Rbar_opp_involutive ; auto.
+Qed.
+
+Lemma Rbar_is_lub_ne_unique (E : Rbar -> Prop) (Hp : {E p_infty} + {~ E p_infty}) 
+  (Hex : exists (x : R), E x) (l : Rbar) :
+  Rbar_is_lub E l -> Rbar_lub_ne E Hp Hex = l.
+Proof.
+  move => H.
+  rewrite /Rbar_lub_ne.
+  case: Rbar_ex_lub_ne => l0 H0 /=.
+  apply Rbar_le_antisym.
+  apply H0, H.
+  apply H, H0.
+Qed.
+Lemma Rbar_is_glb_ne_unique (E : Rbar -> Prop) (Hp : {E m_infty} + {~ E m_infty}) 
+  (Hex : exists (x : R), E x) (l : Rbar) :
+  Rbar_is_glb E l -> Rbar_glb_ne E Hp Hex = l.
+Proof.
+  move => H.
+  rewrite /Rbar_glb_ne.
+  case: Rbar_ex_glb_ne => l0 H0 /=.
+  apply Rbar_le_antisym.
+  apply H, H0.
+  apply H0, H.
 Qed.
 
 (** Order *)

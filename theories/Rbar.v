@@ -645,6 +645,50 @@ Proof.
   case: x => [x | | ] ; case: y => [y | | ] //=.
   by apply Rbar_finite_eq, Rmult_comm.
 Qed.
+Lemma Rbar_mult_opp_l (x y : Rbar) :
+  Rbar_mult x (Rbar_opp y) = (Rbar_opp (Rbar_mult x y)).
+Proof.
+  case: x => [x | | ] ;
+  case: y => [y | | ] //= ; 
+  (try (case: Rle_dec => Hx //= ;
+  try (case: Rle_lt_or_eq_dec => //= Hx0))).
+  apply f_equal ; ring.
+  by rewrite Ropp_0.
+  by rewrite Ropp_0.
+  apply Ropp_lt_contravar in Hx0 ;
+  rewrite Ropp_involutive Ropp_0 in Hx0.
+  by case: Rle_dec (Rlt_not_le _ _ Hx0).
+  rewrite -(Ropp_involutive y) -Hx0 Ropp_0.
+  case: Rle_dec (Rle_refl 0) => // H _.
+  case: Rle_lt_or_eq_dec (Rlt_irrefl 0) => //= _ _.
+  by rewrite Ropp_0.
+  apply Rnot_le_lt, Ropp_lt_contravar in Hx ;
+  rewrite Ropp_involutive Ropp_0 in Hx.
+  case: Rle_dec (Rlt_le _ _ Hx) => // Hx0 _.
+  case: Rle_lt_or_eq_dec (Rlt_not_eq _ _ Hx) => //=.
+  apply Ropp_lt_contravar in Hx0 ;
+  rewrite Ropp_involutive Ropp_0 in Hx0.
+  by case: Rle_dec (Rlt_not_le _ _ Hx0).
+  rewrite -(Ropp_involutive y) -Hx0 Ropp_0.
+  case: Rle_dec (Rle_refl 0) => // H _.
+  case: Rle_lt_or_eq_dec (Rlt_irrefl 0) => //= _ _.
+  by rewrite Ropp_0.
+  apply Rnot_le_lt, Ropp_lt_contravar in Hx ;
+  rewrite Ropp_involutive Ropp_0 in Hx.
+  case: Rle_dec (Rlt_le _ _ Hx) => // Hx0 _.
+  case: Rle_lt_or_eq_dec (Rlt_not_eq _ _ Hx) => //=.
+Qed.
+Lemma Rbar_mult_opp_r (x y : Rbar) :
+  Rbar_mult (Rbar_opp x) y = Rbar_opp (Rbar_mult x y).
+Proof.
+  rewrite ?(Rbar_mult_comm _ y).
+  by apply Rbar_mult_opp_l.
+Qed.
+Lemma Rbar_mult_opp (x y : Rbar) :
+  Rbar_mult (Rbar_opp x) (Rbar_opp y) = Rbar_mult x y.
+Proof.
+  by rewrite Rbar_mult_opp_l -Rbar_mult_opp_r Rbar_opp_involutive.
+Qed.
 
 (** *** Rbar_div *)
 

@@ -1,15 +1,15 @@
 Require Import Reals Even Div2 ssreflect.
-Require Import Lim_seq Rcomplements Rbar Sup_seq Lub.
+Require Import Rcomplements Rbar Limit Lub.
 Require Import Lim_fct Continuity Derive Differential RInt Integral Taylor Locally Seq_fct Series.
 
 (** * Definition *)
 
 Definition is_pseries (a : nat -> R) (x l : R) :=
-  is_lim_seq (sum_f_R0 (fun k => a k * x ^ k)) l.
+  is_series (fun k => a k * x ^ k) l.
 Definition ex_pseries (a : nat -> R) (x : R) :=
-  ex_f_lim_seq (sum_f_R0 (fun k => a k * x ^ k)).
+  ex_series (fun k => a k * x ^ k).
 Definition PSeries (a : nat -> R) (x : R) : R :=
-  real (Lim_seq (sum_f_R0 (fun k => a k * x ^ k))).
+  Series (fun k => a k * x ^ k).
 
 Lemma ex_pseries_dec (a : nat -> R) (x : R) :
   {ex_pseries a x} + {~ ex_pseries a x}.
@@ -1039,7 +1039,7 @@ Proof.
   rewrite Hx PSeries_0 ; ring.
   move: (is_pseries_decr_1 a x (PSeries a x) Hx (Series_correct _ Ha)) => Hb.
   rewrite /is_pseries in Hb.
-  rewrite {2}/PSeries (is_lim_seq_unique _ _ Hb).
+  rewrite {2}/PSeries /Series (is_lim_seq_unique _ _ Hb).
   simpl.
   by field.
 Qed.
@@ -1102,7 +1102,7 @@ Proof.
   rewrite -IH ; ring.
   move: (is_pseries_decr_n a (S n) x (PSeries a x) Hx (lt_0_Sn _) (Series_correct _ Ha)) => Hb.
   rewrite /is_pseries in Hb.
-  rewrite {2}/PSeries (is_lim_seq_unique _ _ Hb).
+  rewrite {2}/PSeries /Series (is_lim_seq_unique _ _ Hb).
   simpl ; rewrite -minus_n_O ; field.
   split.
   by apply pow_nonzero.
@@ -1140,8 +1140,8 @@ Proof.
   by rewrite Rabs_R0 Rplus_0_r.
   by apply is_lim_seq_const.
   
-  apply ex_f_lim_seq_correct in Hx.
-  apply ex_f_lim_seq_correct.
+  apply ex_finite_lim_seq_correct in Hx.
+  apply ex_finite_lim_seq_correct.
   case: Hx => Hex Hl.
   apply ex_lim_seq_incr_1 in Hex.
   rewrite -Lim_seq_incr_1 in Hl.
@@ -1170,8 +1170,8 @@ Proof.
   by rewrite Rabs_R0 Rplus_0_r.
   by apply is_lim_seq_const.
   
-  apply ex_f_lim_seq_correct in Hx.
-  apply ex_f_lim_seq_correct.
+  apply ex_finite_lim_seq_correct in Hx.
+  apply ex_finite_lim_seq_correct.
   case: Hx => Hex Hl.
   split.
   apply ex_lim_seq_incr_1.
@@ -1325,9 +1325,76 @@ Proof.
   move => x.
   replace 0 with (real 0) by auto.
   apply (f_equal real).
-  rewrite -{2}(Lim_seq.Lim_seq_const 0) /=.
-  apply Lim_seq.Lim_seq_ext.
+  rewrite -{2}(Lim_seq_const 0) /=.
+  apply Lim_seq_ext.
   elim => /= [ | n ->] ; ring.
+Qed.
+
+Definition PS_opp (a : nat -> R) (n : nat) : R := - a n.
+Lemma is_pseries_opp (a : nat -> R) (x l : R) :
+  is_pseries a x l -> is_pseries (PS_opp a) x (-l).
+Proof.
+  move/(is_pseries_scal_l (-1) a x l).
+  ring_simplify (-1 * l).
+  apply is_pseries_ext => n.
+  rewrite /PS_scal_l /PS_opp ; ring.
+Qed.
+Lemma ex_pseries_opp (a : nat -> R) (x : R) :
+  ex_pseries a x -> ex_pseries (PS_opp a) x.
+Proof.
+  move/(ex_pseries_scal_l (-1) a x).
+  apply ex_pseries_ext => n.
+  rewrite /PS_scal_l /PS_opp ; ring.
+Qed.
+Lemma PSeries_opp (a : nat -> R) (x : R) :
+  PSeries (PS_opp a) x = - PSeries a x.
+Proof.
+  replace (- PSeries a x) with ((-1) * PSeries a x) by ring.
+  rewrite -PSeries_scal_l.
+  apply PSeries_ext => n.
+  rewrite /PS_scal_l /PS_opp ; ring.
+Qed.
+
+Lemma CV_circle_opp (a : nat -> R) :
+  (CV_circle a) = (CV_circle (PS_opp a)).
+Proof.
+  apply Rbar_le_antisym.
+  rewrite (CV_circle_ext (PS_opp a) (PS_scal_l (-1) a)).
+  by apply CV_circle_scal_l.
+  move => n ; rewrite /PS_scal_l /PS_opp ; ring.
+  rewrite (CV_circle_ext a (PS_scal_l (-1) (PS_opp a))).
+  by apply CV_circle_scal_l.
+  move => n ; rewrite /PS_scal_l /PS_opp ; ring.
+Qed.
+
+Definition PS_minus (a b : nat -> R) (n : nat) : R := a n - b n.
+Lemma is_pseries_minus (a b : nat -> R) (x la lb : R) :
+  is_pseries a x la -> is_pseries b x lb
+  -> is_pseries (PS_minus a b) x (la - lb).
+Proof.
+  move => Ha Hb.
+  apply is_pseries_plus.
+  exact: Ha.
+  by apply is_pseries_opp.
+Qed.
+Lemma ex_pseries_minus (a b : nat -> R) (x : R) :
+  ex_pseries a x -> ex_pseries b x
+  -> ex_pseries (PS_minus a b) x.
+Proof.
+  move => Ha Hb.
+  apply ex_pseries_plus.
+  exact: Ha.
+  by apply ex_pseries_opp.
+Qed.
+Lemma PSeries_minus (a b : nat -> R) (x : R) :
+  ex_pseries a x -> ex_pseries b x
+  -> PSeries (PS_minus a b) x = PSeries a x - PSeries b x.
+Proof.
+  move => Ha Hb.
+  rewrite PSeries_plus.
+  by rewrite PSeries_opp.
+  exact: Ha.
+  by apply ex_pseries_opp.
 Qed.
 
 (** Coming soon: (* bonus *)
@@ -1363,7 +1430,7 @@ Qed.
 
 Definition PS_derive (a : nat -> R) (n : nat) :=
   INR (S n) * a (S n).
-Lemma PS_derive_circle (a : nat -> R) :
+Lemma CV_circle_derive (a : nat -> R) :
   CV_circle (PS_derive a) = CV_circle a.
 Proof.
   have H := (CV_circle_bounded a).
@@ -1517,9 +1584,9 @@ Proof.
   move => Hx.
 
   case: (CV_circle_CVU _ _ Hx) => r0 Hr0 ;
-  rewrite -PS_derive_circle in Hx ;
+  rewrite -CV_circle_derive in Hx ;
   case: (CV_circle_CVU _ _ Hx) => r1 Hr1 ;
-  rewrite PS_derive_circle in Hx.
+  rewrite CV_circle_derive in Hx.
   apply CVU_dom_equiv in Hr0 ;
   apply CVU_dom_equiv in Hr1.
   have Hr : 0 < (Rmin r0 r1).
@@ -1706,6 +1773,16 @@ Proof.
   by apply is_derive_PSeries.
 Qed.
 
+Lemma ex_pseries_derive (a : nat -> R) (x : R) :
+  Rbar_lt (Finite (Rabs x)) (CV_circle a)
+    -> ex_pseries (PS_derive a) x.
+Proof.
+  move => Hx.
+  apply ex_series_Rabs.
+  apply CV_circle_carac.
+  by rewrite CV_circle_derive.
+Qed.
+
 Definition PS_derive_n (n : nat) (a : nat -> R) := 
   (fun k => (INR (fact (k + n)%nat) / INR (fact k)) * a (k + n)%nat).
   
@@ -1753,7 +1830,7 @@ Proof.
   apply Rgt_not_eq.
   by apply INR_fact_lt_0.
   rewrite IH.
-  rewrite -PS_derive_circle.
+  rewrite -CV_circle_derive.
   apply CV_circle_ext => k.
   rewrite /PS_derive.
   rewrite -plus_n_Sm plus_Sn_m /fact -/fact ?mult_INR ?S_INR.
@@ -1794,7 +1871,7 @@ Lemma Derive_n_coef (a : nat -> R) (n : nat) :
 Proof.
   elim: n a => [ | n IH] a Ha.
   rewrite Rmult_1_r.
-  rewrite /= /PSeries -(Lim_seq_ext (fun _ => a O)).
+  rewrite /= /PSeries /Series -(Lim_seq_ext (fun _ => a O)).
   by rewrite Lim_seq_const.
   elim => /= [ | n IH].
   ring.
@@ -1804,7 +1881,7 @@ Proof.
     with (Derive_n (PSeries (PS_derive a)) n 0).
   rewrite IH.
   rewrite /fact -/fact mult_INR /PS_derive ; ring.
-  by rewrite PS_derive_circle.
+  by rewrite CV_circle_derive.
   transitivity (Derive_n (Derive (PSeries a)) n 0).
   apply Derive_n_ext_loc.
   case: (Rbar_eq_dec (CV_circle a) p_infty) => H.
@@ -2069,7 +2146,7 @@ Definition PS_Int (a : nat -> R) (n : nat) : R :=
 Lemma CV_circle_Int (a : nat -> R) :
   CV_circle (PS_Int a) = CV_circle a.
 Proof.
-  rewrite -PS_derive_circle.
+  rewrite -CV_circle_derive.
   apply CV_circle_ext.
   rewrite /PS_derive /PS_Int => n ; rewrite S_INR.
   field.

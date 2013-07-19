@@ -1,6 +1,6 @@
 Require Import Reals Div2 ConstructiveEpsilon.
 Require Import ssreflect ssrbool eqtype seq.
-Require Import Markov Rcomplements Rbar Lub Sup_seq Lim_seq Derive SF_seq.
+Require Import Markov Rcomplements Rbar Lub Limit Derive SF_seq.
 
 
 (** * Build sequences *)

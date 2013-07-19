@@ -6,20 +6,18 @@ FILES = \
 	Differential.v \
 	Equiv.v \
 	Integral.v \
+	Limit.v \
 	Lim_fct.v \
-	Lim_seq.v \
 	Locally.v \
 	Lub.v \
 	Markov.v \
 	PSeries.v \
-	Rbar_seq.v \
 	Rbar.v \
 	Rcomplements.v \
 	RInt.v \
 	Seq_fct.v \
 	Series.v \
 	SF_seq.v \
-	Sup_seq.v \
 	Taylor.v
 
 OBJS = $(addprefix theories/,$(addsuffix o,$(FILES)))

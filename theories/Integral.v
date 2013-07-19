@@ -1,7 +1,7 @@
 Require Import Reals.
 Require Import ssreflect seq.
 Require Import Rcomplements Rbar Derive SF_seq RInt Differential Locally.
-Require Import Continuity Lim_seq Lim_fct.
+Require Import Continuity Limit Lim_fct.
 
 
 (** * Basic properties of integration *)

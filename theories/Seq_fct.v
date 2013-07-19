@@ -1,6 +1,6 @@
 Require Import Reals ssreflect Rbar.
 Require Import Rcomplements Locally.
-Require Import Lim_seq Sup_seq Lim_fct Derive Series.
+Require Import Limit Lim_fct Derive Series.
 
 Open Scope R_scope.
 
@@ -9,7 +9,7 @@ Open Scope R_scope.
 (** ** Definitions *)
 
 Definition CVS_dom (fn : nat -> R -> R) (D : R -> Prop) :=
-  forall x : R, D x -> ex_f_lim_seq (fun n => fn n x).
+  forall x : R, D x -> ex_finite_lim_seq (fun n => fn n x).
 
 Definition CVU_dom (fn : nat -> R -> R) (D : R -> Prop) :=
   forall eps : posreal, exists N : nat, 
@@ -184,14 +184,14 @@ Definition is_connex (D : R -> Prop) :=
 Lemma CVU_limits_open (fn : nat -> R -> R) (D : R -> Prop) :
   is_open D
   -> CVU_dom fn D
-  -> (forall x n, D x -> ex_f_lim (fn n) x)
-  -> forall x, D x -> ex_f_lim_seq (fun n => real (Lim (fn n) x)) 
-    /\ ex_f_lim (fun y => real (Lim_seq (fun n => fn n y))) x
+  -> (forall x n, D x -> ex_finite_lim (fn n) x)
+  -> forall x, D x -> ex_finite_lim_seq (fun n => real (Lim (fn n) x)) 
+    /\ ex_finite_lim (fun y => real (Lim_seq (fun n => fn n y))) x
     /\ real (Lim_seq (fun n => real (Lim (fn n) x)))
       = real (Lim (fun y => real (Lim_seq (fun n => fn n y))) x).
 Proof.
   move => Ho Hfn Hex x Hx.
-  have H : ex_f_lim_seq (fun n : nat => real (Lim (fn n) x)).
+  have H : ex_finite_lim_seq (fun n : nat => real (Lim (fn n) x)).
     apply CVU_dom_cauchy in Hfn.
     apply ex_lim_seq_cauchy_corr => eps.
     case: (Hfn (pos_div_2 eps)) => {Hfn} /= N Hfn.
@@ -471,7 +471,7 @@ Proof.
     by apply Hz.
 
   have Lrn : forall x, D x -> (forall (y : R) (n : nat),
-    (fun h : R => D (x + h)) y -> ex_f_lim (rn x n) y).
+    (fun h : R => D (x + h)) y -> ex_finite_lim (rn x n) y).
     intros ; exists (rn x n y) ; by intuition.
   
   move => x Hx.
@@ -515,11 +515,11 @@ Proof.
     case: Rle_dec => // Hh1.
     case: Rle_lt_or_eq_dec => //.
   
-  apply ex_f_lim_seq_correct, CVU_CVS_dom with D.
+  apply ex_finite_lim_seq_correct, CVU_CVS_dom with D.
   exact: Hfn.
   apply Ho.
   ring_simplify (x + h - x) ; apply Rlt_le_trans with (1 := Hh), Rmin_r.
-  apply ex_f_lim_seq_correct, CVU_CVS_dom with D.
+  apply ex_finite_lim_seq_correct, CVU_CVS_dom with D.
   exact: Hfn.
   apply Ho.
   rewrite Rminus_eq_0 Rabs_R0 ; by apply dx.
@@ -583,12 +583,12 @@ Proof.
     case: Rle_dec => // Hh1.
     case: Rle_lt_or_eq_dec => //.
   
-  apply ex_f_lim_seq_correct, CVU_CVS_dom with D.
+  apply ex_finite_lim_seq_correct, CVU_CVS_dom with D.
   exact: Hfn.
   apply Ho.
   ring_simplify (x + h - x) ; rewrite -(Rminus_0_r h) ;
   apply Rlt_le_trans with (1 := Hh0), Rmin_r.
-  apply ex_f_lim_seq_correct, CVU_CVS_dom with D.
+  apply ex_finite_lim_seq_correct, CVU_CVS_dom with D.
   exact: Hfn.
   apply Ho.
   rewrite Rminus_eq_0 Rabs_R0 ; by apply dx.
@@ -826,7 +826,7 @@ Proof.
     by apply is_lim_seq_const.
     replace (Finite (-Series An)) with (Rbar_opp (Series An))
       by (simpl ; apply Rbar_finite_eq ; ring).
-    apply is_lim_seq_opp.
+    apply -> is_lim_seq_opp.
     rewrite /Series ;
     apply (is_lim_seq_ext (sum_f_R0 (fun k => An k))).
     elim => /= [ | n IH].
