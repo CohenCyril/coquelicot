@@ -2,12 +2,13 @@ FILES = \
 	AutoDerive.v \
 	Compactness.v \
 	Continuity.v \
+	Coquelicot.v \
 	Derive.v \
 	Differential.v \
 	Equiv.v \
+	ElemFct.v \
 	Integral.v \
 	Limit.v \
-	Lim_fct.v \
 	Locally.v \
 	Lub.v \
 	Markov.v \

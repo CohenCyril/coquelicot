@@ -1,6 +1,6 @@
 Require Import Reals ssreflect Rbar.
 Require Import Rcomplements Locally.
-Require Import Limit Lim_fct Derive Series.
+Require Import Limit Continuity Derive Series.
 
 Open Scope R_scope.
 
