@@ -2028,37 +2028,89 @@ Qed.
 (** Multiplication by a scalar *)
 
 Lemma is_lim_seq_scal_l (u : nat -> R) (a : R) (lu : Rbar) :
-  is_lim_seq u lu -> is_Rbar_mult a lu (Rbar_mult a lu) ->
+  is_lim_seq u lu -> 
     is_lim_seq (fun n => a * u n) (Rbar_mult a lu).
 Proof.
-  move => Hu Hl.
-Admitted.
+  move => Hu.
+  case: (Req_dec a 0) => Ha.
+  rewrite Ha => {a Ha}.
+  apply is_lim_seq_ext with (fun n => 0).
+  move => n ; by rewrite Rmult_0_l.
+  replace (Rbar_mult 0 lu) with (Finite 0).
+  by apply is_lim_seq_const.
+  case: (lu) => [x | | ] //=.
+  by rewrite Rmult_0_l.
+  case: Rle_dec (Rle_refl 0) => // H _.
+  case: Rle_lt_or_eq_dec (Rlt_irrefl 0) => // _ _.
+  case: Rle_dec (Rle_refl 0) => // H _.
+  case: Rle_lt_or_eq_dec (Rlt_irrefl 0) => // _ _.
+  
+  apply is_lim_seq_mult.
+  by apply is_lim_seq_const.
+  by [].
+  case: (lu) => [x | | ] //=.
+  case: Rle_dec => // H.
+  case: Rle_lt_or_eq_dec => //.
+  by apply sym_not_eq.
+  by apply Rnot_le_lt.
+  case: Rle_dec => // H.
+  case: Rle_lt_or_eq_dec => //.
+  by apply sym_not_eq.
+  by apply Rnot_le_lt.
+Qed.
 Lemma ex_lim_seq_scal_l (u : nat -> R) (a : R) :
   ex_lim_seq u -> ex_lim_seq (fun n => a * u n).
 Proof.
   move => [l H].
-  case: (Req_dec a 0) => Ha.
-  exists 0.
-  apply is_lim_seq_ext with (fun _ => 0).
-  move => n ; rewrite Ha ; by rewrite Rmult_0_l.
-Admitted.
+  exists (Rbar_mult a l).
+  by apply is_lim_seq_scal_l.
+Qed.
 Lemma Lim_seq_scal_l (u : nat -> R) (a : R) : 
   Lim_seq (fun n => a * u n) = Rbar_mult a (Lim_seq u).
 Proof.
   case: (Req_dec a 0) => [ -> | Ha].
-    rewrite -(Lim_seq_ext (fun _ => 0)) /=.
-Admitted.
+  rewrite -(Lim_seq_ext (fun _ => 0)) /=.
+  rewrite Lim_seq_const.
+  case: (Lim_seq u) => [x | | ] //=.
+  by rewrite Rmult_0_l.
+  case: Rle_dec (Rle_refl 0) => // H _.
+  case: Rle_lt_or_eq_dec (Rlt_irrefl 0) => // _ _.
+  case: Rle_dec (Rle_refl 0) => // H _.
+  case: Rle_lt_or_eq_dec (Rlt_irrefl 0) => // _ _.
+  move => n ; by rewrite Rmult_0_l.
+
+  wlog: a u Ha / (0 < a) => [Hw | {Ha} Ha].
+    case: (Rlt_le_dec 0 a) => Ha'.
+    by apply Hw.
+    case: Ha' => // Ha'.
+    rewrite -(Lim_seq_ext (fun n => - a * - u n)).
+    rewrite -Rbar_mult_opp.
+    rewrite -Lim_seq_opp.
+    apply Hw.
+    contradict Ha ; rewrite -(Ropp_involutive a) Ha ; ring.
+    apply Ropp_lt_cancel ; by rewrite Ropp_0 Ropp_involutive.
+    move => n ; ring.
+  rewrite /Lim_seq.
+  rewrite {2}/LimSup_seq ; case: ex_LimSup_seq => ls Hs ;
+  rewrite {2}/LimInf_seq ; case: ex_LimInf_seq => li Hi ; simpl projT1.
+  apply (is_LimSup_seq_scal_pos a) in Hs => //.
+  apply (is_LimInf_seq_scal_pos a) in Hi => //.
+  rewrite (is_LimSup_seq_unique _ _ Hs).
+  rewrite (is_LimInf_seq_unique _ _ Hi).
+  case: ls {Hs} => [ls | | ] ; case: li {Hi} => [li | | ] //= ;
+  case: (Rle_dec 0 a) (Rlt_le _ _ Ha) => // Ha' _ ;
+  case: (Rle_lt_or_eq_dec 0 a Ha') (Rlt_not_eq _ _ Ha) => //= _ _ ;
+  apply f_equal ; field.
+Qed.
 Lemma is_lim_seq_scal_r (u : nat -> R) (a : R) (lu : Rbar) :
-  is_lim_seq u lu -> is_Rbar_mult lu a (Rbar_mult lu a) ->
+  is_lim_seq u lu -> 
     is_lim_seq (fun n => u n * a) (Rbar_mult lu a).
 Proof.
-  move => Hu Hl.
+  move => Hu.
   apply is_lim_seq_ext with ((fun n : nat => a * u n)) ; try by intuition.
   rewrite Rbar_mult_comm.
   apply is_lim_seq_scal_l.
   by apply Hu.
-  rewrite Rbar_mult_comm.
-  by apply is_Rbar_mult_comm.
 Qed.
 Lemma ex_lim_seq_scal_r (u : nat -> R) (a : R) :
   ex_lim_seq u -> ex_lim_seq (fun n => u n * a).
@@ -2083,7 +2135,11 @@ Lemma is_lim_seq_div (u v : nat -> R) (l1 l2 : Rbar) :
     -> is_lim_seq (fun n => u n / v n) (Rbar_div l1 l2).
 Proof.
   intros.
-Admitted.
+  apply is_lim_seq_mult.
+  by [].
+  by apply is_lim_seq_inv.
+  by [].
+Qed.
 Lemma ex_lim_seq_div (u v : nat -> R) :
   ex_lim_seq u -> ex_lim_seq v
     -> Lim_seq v <> 0
@@ -2173,7 +2229,9 @@ Lemma is_lim_seq_le (u v : nat -> R) (l1 l2 : Rbar) :
   (forall n, u n <= v n) -> is_lim_seq u l1 -> is_lim_seq v l2 -> Rbar_le l1 l2.
 Proof.
   move => Heq Hu Hv.
-Admitted.
+  apply (is_lim_seq_le_loc u v) => //.
+  by exists O.
+Qed.
 
 Lemma is_lim_seq_le_le (u v w : nat -> R) (l : Rbar) : 
   (forall n, u n <= v n <= w n) -> is_lim_seq u l -> is_lim_seq w l -> is_lim_seq v l.

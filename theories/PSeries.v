@@ -367,7 +367,6 @@ Proof.
   apply is_lim_seq_scal_l.
   apply H.
   by simpl.
-  by simpl.
   evar (l : Rbar).
   replace (Finite k) with l.
   apply is_lim_seq_ext with (fun n : nat => /Rabs x * Rabs (a (S n) * x ^ S n / (a n * x ^ n))).
@@ -380,7 +379,6 @@ Proof.
   by apply pow_nonzero.
   apply is_lim_seq_scal_l.
   apply H.
-  by simpl.
   apply Rbar_finite_eq ; field.
   apply Rabs_no_R0 => //.
 Qed.
@@ -811,7 +809,6 @@ Proof.
   apply is_lim_seq_scal_l.
   by apply Ha.
   by simpl.
-  by simpl.
 Qed.
 Lemma ex_pseries_scal_l (c : R) (a : nat -> R) (x : R) :
   ex_pseries a x -> ex_pseries (PS_scal_l c a) x.
@@ -909,7 +906,7 @@ Lemma is_pseries_incr_1 (a : nat -> R) (x l : R) :
 Proof.
   move => Ha.
   rewrite /is_pseries.
-  move: (is_lim_seq_scal_l _ x l Ha (refl_equal _)) => {Ha} Ha.
+  move: (is_lim_seq_scal_l _ x l Ha) => {Ha} Ha.
   apply is_lim_seq_incr_1.
   apply is_lim_seq_ext with (fun n : nat => x * sum_f_R0 (fun k : nat => a k * x ^ k) n).
   case.

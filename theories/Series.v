@@ -509,7 +509,6 @@ Proof.
   simpl ; rewrite -IH ; ring.
   apply (is_lim_seq_scal_l _ c l).
   by apply Ha.
-  by simpl.
 Qed.
 Lemma ex_series_scal_l (c : R) (a : nat -> R) :
   ex_series a -> ex_series (fun n => c * a n).
@@ -859,8 +858,6 @@ Proof.
   apply Rmult_lt_compat_r ; by intuition.
   apply Rle_trans with (2 := H N (le_refl _)) ; by apply Rabs_pos.
   simpl ; ring.
-  simpl ; ring.
-  simpl ; ring.
 Qed.
 
 Lemma DAlembert_not_ex_series (a : nat -> R) (l : R) :
@@ -919,7 +916,6 @@ Proof.
     by apply H.
     by apply is_lim_seq_const.
     by apply Ha0.
-  by [].
   by [].
 Qed.
 
