@@ -175,6 +175,7 @@ apply is_derive_unique.
 apply derivable_pt_lim_id.
 Qed.
 
+(** ** Additive *)
 (** Opposite of functions *)
 
 Lemma ex_derive_opp :
@@ -272,6 +273,7 @@ apply derivable_pt_lim_minus ;
   now apply Derive_correct.
 Qed.
 
+(** ** Multiplicative *)
 (** Multiplication of functions *)
 
 Lemma derivable_pt_lim_inv (f : R -> R) (x l : R) :
@@ -733,7 +735,7 @@ Proof.
   apply derivable_pt_lim_const.
   rewrite (is_derive_unique _ _ _ Hf) ; ring.
   simpl ; ring.
-(** a = x < b *)
+(* a = x < b *)
   case: a Hxb Hax Hf => [a | | ] Hxb //= Hax Hf.
   apply Rbar_finite_eq in Hax ; rewrite -Hax in Hxb Hf |- * => {x Hax}.
   apply is_derive_ext_loc with (fun x : R =>
@@ -1185,6 +1187,38 @@ Qed.
 
 
 (** ** Operations *)
+(** *** Additive *)
+(** Opposite *)
+
+Lemma Derive_n_opp (f : R -> R) (n : nat) (x : R) :
+  Derive_n (fun x => - f x) n x = - Derive_n f n x.
+Proof.
+  elim: n x => [ | n IH] x /=.
+  by [].
+  rewrite -Derive_opp.
+  by apply Derive_ext.
+Qed.
+Lemma ex_derive_n_opp (f : R -> R) (n : nat) (x : R) :
+  ex_derive_n f n x -> ex_derive_n (fun x => -f x) n x.
+Proof.
+  case: n x => [ | n] /= x Hf.
+  by [].
+  apply ex_derive_opp in Hf.
+  move: Hf.
+  apply ex_derive_ext.
+  move => y ; by rewrite Derive_n_opp.
+Qed.
+Lemma is_derive_n_opp (f : R -> R) (n : nat) (x l : R) :
+  is_derive_n f n x l -> is_derive_n (fun x => -f x) n x (- l).
+Proof.
+  case: n x => [ | n] /= x Hf.
+  by rewrite Hf.
+  apply derivable_pt_lim_opp in Hf.
+  move: Hf.
+  apply is_derive_ext.
+  move => y ; by rewrite Derive_n_opp.
+Qed.
+
 (** Addition of functions *)
 
 Lemma Derive_n_plus (f g : R -> R) (n : nat) (x : R) :
@@ -1250,14 +1284,13 @@ Proof.
   apply locally_singleton ; move: Hg ; apply locally_impl, locally_forall => y Hy.
   by apply (Hy (S n)).
 Qed.
-Lemma is_derive_n_plus (f g : R -> R) (n : nat) (x lf lg l : R) :
+Lemma is_derive_n_plus (f g : R -> R) (n : nat) (x lf lg : R) :
   locally (fun y => forall k, (k <= n)%nat -> ex_derive_n f k y) x ->
   locally (fun y => forall k, (k <= n)%nat -> ex_derive_n g k y) x ->
   is_derive_n f n x lf -> is_derive_n g n x lg ->
-  l = lf + lg ->
-  is_derive_n (fun x => f x + g x) n x l.
+  is_derive_n (fun x => f x + g x) n x (lf + lg).
 Proof.
-  case: n x lf lg l => /= [ | n] x lf lg l Hfn Hgn Hf Hg ->.
+  case: n x lf lg => /= [ | n] x lf lg Hfn Hgn Hf Hg.
   by rewrite Hf Hg.
   apply is_derive_ext_loc with (fun y => Derive_n f n y + Derive_n g n y).
   move: Hfn ; apply locally_impl_strong.
@@ -1268,6 +1301,48 @@ Proof.
   move: Hgn ; apply locally_impl, locally_forall ; by intuition.
   by apply derivable_pt_lim_plus.
 Qed.
+
+(** Substraction of functions *)
+
+Lemma Derive_n_minus (f g : R -> R) (n : nat) (x : R) :
+  locally (fun y => forall k, (k <= n)%nat -> ex_derive_n f k y) x ->
+  locally (fun y => forall k, (k <= n)%nat -> ex_derive_n g k y) x ->
+  Derive_n (fun x => f x - g x) n x = Derive_n f n x - Derive_n g n x.
+Proof.
+  move => Hf Hg.
+  rewrite Derive_n_plus.
+  by rewrite Derive_n_opp.
+  by [].
+  move: Hg ; apply locally_impl, locally_forall => y Hg k Hk.
+  apply ex_derive_n_opp ; by apply Hg.
+Qed.
+Lemma ex_derive_n_minus (f g : R -> R) (n : nat) (x : R) :
+  locally (fun y => forall k, (k <= n)%nat -> ex_derive_n f k y) x ->
+  locally (fun y => forall k, (k <= n)%nat -> ex_derive_n g k y) x ->
+  ex_derive_n (fun x => f x - g x) n x.
+Proof.
+  move => Hf Hg.
+  apply ex_derive_n_plus.
+  by [].
+  move: Hg ; apply locally_impl, locally_forall => y Hg k Hk.
+  apply ex_derive_n_opp ; by apply Hg.
+Qed.
+Lemma is_derive_n_minus (f g : R -> R) (n : nat) (x lf lg : R) :
+  locally (fun y => forall k, (k <= n)%nat -> ex_derive_n f k y) x ->
+  locally (fun y => forall k, (k <= n)%nat -> ex_derive_n g k y) x ->
+  is_derive_n f n x lf -> is_derive_n g n x lg ->
+  is_derive_n (fun x => f x - g x) n x (lf - lg).
+Proof.
+  move => Hf Hg Df Dg.
+  apply is_derive_n_plus.
+  by [].
+  move: Hg ; apply locally_impl, locally_forall => y Hg k Hk.
+  apply ex_derive_n_opp ; by apply Hg.
+  by [].
+  by apply is_derive_n_opp.
+Qed.
+
+(** *** Multiplicative *)
 
 (** Multiplication *)
 
@@ -1473,7 +1548,3 @@ Proof.
   by replace (-1*x) with (-x) by ring.
   by replace (-1*x) with (-x) by ring.
 Qed.
-
-(** * Limits using differentials *)
-(** a usual limit with natural logarithm *)
-

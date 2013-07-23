@@ -1,6 +1,6 @@
 Require Import Reals ssreflect.
 Require Import Rcomplements Rbar.
-Require Import Derive RInt Integral Lim_fct Continuity Limit.
+Require Import Derive RInt Integral Continuity Limit ElemFct.
 
 Ltac pos_rat :=
   repeat ( apply Rdiv_lt_0_compat
@@ -445,7 +445,6 @@ Proof.
   apply Rdiv_le_0_compat.
   by apply Rlt_le, Rlt_0_2.
   repeat apply Rplus_lt_0_compat ; apply Rlt_0_1.
-  by [].
   apply is_lim_seq_id.
   by [].
   by [].
@@ -500,7 +499,6 @@ Proof.
   by apply Rlt_le, Rlt_0_2.
   repeat apply Rplus_lt_0_compat ; apply Rlt_0_1.
   by [].
-  by [].
   repeat apply is_lim_seq_mult.
   apply is_lim_seq_id.
   apply is_lim_seq_id.
@@ -522,9 +520,6 @@ Proof.
   by apply is_lim_seq_id.
   simpl.
   case: Rle_dec (Rlt_le _ _ Rlt_0_2) => // H _.
-  case: Rle_lt_or_eq_dec (Rlt_not_eq _ _ Rlt_0_2) => //.
-  simpl ;
-  case: Rle_dec (Rlt_le _ _ Rlt_0_2) => // H _ ;
   case: Rle_lt_or_eq_dec (Rlt_not_eq _ _ Rlt_0_2) => //.
   simpl.
   case: Rle_dec Rle_0_1 => // H _.
