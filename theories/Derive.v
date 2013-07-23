@@ -1049,6 +1049,149 @@ Proof.
   by apply continuity_pt_const.
 Qed.
 
+(** Various theorems *)
+
+Lemma MVT_cor4:
+  forall (f : R -> R) a eps,
+  (forall c, Rabs (c - a) <= eps -> ex_derive f c) ->
+  forall b, (Rabs (b - a) <= eps) ->
+  exists c, f b - f a = Derive f c * (b - a) /\ (Rabs (c - a) <= Rabs (b - a)).
+Proof.
+intros f a eps Hf' b.
+unfold Rabs at 1 3.
+case Rcase_abs; intros H1 H2.
+destruct (MVT_cor2 f (Derive f) b a).
+apply Rplus_lt_reg_r with (-a).
+ring_simplify.
+now rewrite Rplus_comm.
+intros c Hc.
+apply Derive_correct.
+apply Hf'.
+rewrite Rabs_left1.
+apply Rle_trans with (2:=H2).
+apply Ropp_le_contravar.
+now apply Rplus_le_compat_r.
+apply Rplus_le_reg_r with a.
+now ring_simplify.
+exists x; split.
+rewrite -RIneq.Ropp_minus_distr (proj1 H).
+ring.
+rewrite Rabs_left.
+apply Ropp_le_contravar.
+left; now apply Rplus_lt_compat_r.
+apply Rplus_lt_reg_r with a.
+now ring_simplify.
+destruct H1.
+destruct (MVT_cor2 f (Derive f) a b).
+apply Rplus_lt_reg_r with (-a).
+ring_simplify.
+now rewrite Rplus_comm.
+intros c Hc.
+apply Derive_correct.
+apply Hf'.
+rewrite Rabs_right.
+apply Rle_trans with (2:=H2).
+now apply Rplus_le_compat_r.
+apply Rle_ge; apply Rplus_le_reg_r with a.
+now ring_simplify.
+exists x; split.
+exact (proj1 H0).
+rewrite Rabs_right.
+left; now apply Rplus_lt_compat_r.
+apply Rle_ge; apply Rplus_le_reg_r with a.
+left; now ring_simplify.
+exists a.
+replace b with a.
+split;[ring|idtac].
+rewrite /Rminus Rplus_opp_r Rabs_R0.
+apply Rle_refl.
+apply Rplus_eq_reg_l with (-a).
+ring_simplify.
+rewrite - H; ring.
+Qed.
+
+Lemma bounded_variation :
+  forall h D x y,
+  (forall t, Rabs (t - x) <= Rabs (y - x) -> ex_derive h t /\ (Rabs (Derive h t) <= D)) ->
+  Rabs (h y - h x) <= D * Rabs (y - x).
+Proof.
+intros h D x y H.
+destruct (MVT_cor4 h x (Rabs (y - x))) with (b := y) as [t Ht].
+intros c Hc.
+specialize (H c Hc).
+apply H.
+apply Rle_refl.
+rewrite (proj1 Ht).
+rewrite Rabs_mult.
+apply Rmult_le_compat_r.
+apply Rabs_pos.
+now apply H.
+Qed.
+
+(* TODO : replacer is_derive par cette définition ? *)
+Definition derivable_pt_lim_aux (f : R -> R) (x l : R) :=
+  forall eps : posreal, locally (fun y => Rabs (f y - f x - l * (y-x)) <= eps * Rabs (y-x)) x.
+
+Lemma equiv_deriv_pt_lim_0 : forall f x l,
+  derivable_pt_lim f x l -> derivable_pt_lim_aux f x l.
+Proof.
+  intros f x l.
+  move /derivable_pt_lim_locally => H eps.
+  specialize (H eps).
+  apply: locally_impl H.
+  apply locally_forall => y H.
+  destruct (Req_dec y x) as [H'|H'].
+  rewrite H'.
+  ring_simplify (f x - f x - l * (x - x)).
+  rewrite /Rminus Rplus_opp_r Rabs_R0 Rmult_0_r.
+  apply Rle_refl.
+  move: (H H') => {H} H.
+  replace (f y - f x - l * (y - x)) with (((f y - f x) / (y - x) - l) * (y - x)).
+  rewrite Rabs_mult.
+  apply Rmult_le_compat_r.
+  apply Rabs_pos.
+  now apply Rlt_le.
+  field.
+  contradict H'.
+  now apply Rminus_diag_uniq.
+Qed.
+
+Lemma equiv_deriv_pt_lim_1 : forall f x l,
+  derivable_pt_lim_aux f x l -> derivable_pt_lim f x l.
+Proof.
+  intros f x l Df.
+  intros eps Heps.
+  assert (He : 0 < eps/2).
+    apply Rdiv_lt_0_compat.
+    apply Heps.
+    apply Rlt_R0_R2.
+    set (eps2 := mkposreal _ He).
+  elim (Df eps2) ; clear Df ; intros delta Df.
+  exists delta ; intros.
+  assert (x+h-x = h).
+    ring.
+  assert (((f (x + h) - f x) / h - l) = (f(x+h) - f x - l * ((x+h)-x))/((x+h)-x)).
+    field.
+    rewrite H1 ;
+    apply H.
+    rewrite H2 ; clear H2.
+  apply (Rle_lt_trans _ eps2).
+  rewrite Rabs_div.
+  apply (Rle_div_l _ _ (Rabs (x + h - x))).
+  apply Rabs_pos_lt.
+  rewrite H1 ;
+    apply H.
+  apply (Df (x+h)).
+  rewrite H1 ;
+    apply H0.
+    rewrite H1 ; apply H.
+  rewrite (double_var eps).
+  rewrite <- (Rplus_0_r eps2).
+  unfold eps2 ; simpl.
+  apply Rplus_lt_compat_l.
+  apply He.
+Qed.
+
 (** * Iterated differential *)
 
 (** ** Definition *)
@@ -1344,9 +1487,12 @@ Qed.
 
 (** *** Multiplicative *)
 
-(** Multiplication *)
 
-Lemma Derive_n_scal (f : R -> R) (n : nat) (a x : R) :
+
+
+(** Scalar multiplication *)
+
+Lemma Derive_n_scal_l (f : R -> R) (n : nat) (a x : R) :
   Derive_n (fun y => a * f y) n x = a * Derive_n f n x.
 Proof.
   elim: n x => /= [ | n IH] x.
@@ -1354,26 +1500,53 @@ Proof.
   rewrite -Derive_scal.
   by apply Derive_ext.
 Qed.
-Lemma ex_derive_n_scal (f : R -> R) (n : nat) (a x : R) :
+Lemma ex_derive_n_scal_l (f : R -> R) (n : nat) (a x : R) :
   ex_derive_n f n x -> ex_derive_n (fun y => a * f y) n x.
 Proof.
   case: n x => /= [ | n] x Hf.
   by [].
   apply ex_derive_ext with (fun y => a * Derive_n f n y).
-  move => t ; by rewrite Derive_n_scal.
+  move => t ; by rewrite Derive_n_scal_l.
   by apply ex_derive_scal.
 Qed.
-Lemma is_derive_n_scal (f : R -> R) (n : nat) (a x l : R) :
+Lemma is_derive_n_scal_l (f : R -> R) (n : nat) (a x l : R) :
   is_derive_n f n x l -> is_derive_n (fun y => a * f y) n x (a * l).
 Proof.
   case: n x => /= [ | n] x Hf.
   by rewrite Hf.
   apply is_derive_ext with (fun y => a * Derive_n f n y).
-  move => t ; by rewrite Derive_n_scal.
+  move => t ; by rewrite Derive_n_scal_l.
   by apply derivable_pt_lim_scal.
 Qed.
 
-(** Simpl cases for Composition of functions *)
+Lemma Derive_n_scal_r (f : R -> R) (n : nat) (a x : R) :
+  Derive_n (fun y => f y * a) n x = Derive_n f n x * a.
+Proof.
+  rewrite Rmult_comm -Derive_n_scal_l.
+  apply Derive_n_ext => y ; ring.
+Qed.
+Lemma ex_derive_n_scal_r (f : R -> R) (n : nat) (a x : R) :
+  ex_derive_n f n x -> ex_derive_n (fun y => f y * a) n x.
+Proof.
+  move/(ex_derive_n_scal_l _ _ a).
+  apply ex_derive_n_ext => y ; ring.
+Qed.
+Lemma is_derive_n_scal_r (f : R -> R) (n : nat) (a x l : R) :
+  is_derive_n f n x l -> is_derive_n (fun y => f y * a) n x (l * a).
+Proof.
+  move/(is_derive_n_scal_l _ _ a).
+  rewrite Rmult_comm.
+  apply is_derive_n_ext => y ; ring.
+Qed.
+
+(** Comming soon:
+- multiplication
+- composition
+- inverse *)
+
+(** *** Composition *)
+
+(** Simpl cases of compositions *)
 
 Lemma Derive_n_comp_scal (f : R -> R) (a : R) (n : nat) (x : R) :
   locally (fun x => forall k, (k <= n)%nat -> ex_derive_n f k x) (a * x) ->
@@ -1548,3 +1721,47 @@ Proof.
   by replace (-1*x) with (-x) by ring.
   by replace (-1*x) with (-x) by ring.
 Qed.
+
+Lemma Derive_n_comp_trans (f : R -> R) (n : nat) (x b : R) :
+  Derive_n (fun y => f (y + b)) n x  = Derive_n f n (x + b).
+Proof.
+  elim: n x => [ | n IH] x /=.
+  by [].
+  rewrite (Derive_ext _ _ _ IH) => {IH}.
+  generalize (Derive_n f n) => {f} f.
+  apply (f_equal real).
+  apply Lim_ext => y.
+  replace (x + b + y) with (x + y + b) by ring.
+  by [].
+Qed.
+Lemma ex_derive_n_comp_trans (f : R -> R) (n : nat) (x b : R) :
+  ex_derive_n f n (x + b) ->
+  ex_derive_n (fun y => f (y + b)) n x.
+Proof.
+  case: n => [ | n] /= Df.
+  by [].
+  apply (ex_derive_ext _ _ _ (fun x => sym_eq (Derive_n_comp_trans f n x b))).
+  move: (Derive_n f n) Df => {f} f Df.
+  apply ex_derive_comp.
+  by [].
+  apply ex_derive_plus.
+  by apply ex_derive_id.
+  by apply ex_derive_const.
+Qed.
+Lemma is_derive_n_comp_trans (f : R -> R) (n : nat) (x b l : R) :
+  is_derive_n f n (x + b) l ->
+  is_derive_n (fun y => f (y + b)) n x l.
+Proof.
+  case: n => [ | n] /= Df.
+  by [].
+  apply (is_derive_ext _ _ _ _ (fun x => sym_eq (Derive_n_comp_trans f n x b))).
+  move: (Derive_n f n) Df => {f} f Df.
+  search_derive.
+  apply derivable_pt_lim_comp.
+  apply derivable_pt_lim_plus.
+  by apply derivable_pt_lim_id.
+  by apply derivable_pt_lim_const.
+  by apply Df.
+  ring.
+Qed.
+

@@ -1,6 +1,6 @@
 Require Import Reals Even Div2 ssreflect.
 Require Import Rcomplements Rbar Limit Lub.
-Require Import Continuity Derive Differential RInt Integral Taylor Locally Seq_fct Series.
+Require Import Continuity Derive Derive_2d RInt Integral Taylor Locally Seq_fct Series.
 
 (** * Definition *)
 

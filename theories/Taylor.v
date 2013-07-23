@@ -1,7 +1,7 @@
 Require Import Reals Rcomplements.
 Require Import ssreflect.
 Require Import Derive.
-Require Import Locally Continuity Differential.
+Require Import Locally Continuity Derive_2d.
 
 Lemma C_n_n: forall n, C n n = 1.
 intros n; unfold C.

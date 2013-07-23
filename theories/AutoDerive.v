@@ -1,5 +1,5 @@
 Require Import Reals.
-Require Import Rcomplements Locally Derive RInt Differential Integral Continuity.
+Require Import Rcomplements Locally Derive RInt Derive_2d Integral Continuity.
 Require Import ssreflect ssrbool seq Datatypes.
 
 Fixpoint Rn n T :=
