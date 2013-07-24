@@ -18,8 +18,7 @@ FILES = \
 	RInt.v \
 	Seq_fct.v \
 	Series.v \
-	SF_seq.v \
-	Taylor.v
+	SF_seq.v
 
 OBJS = $(addprefix theories/,$(addsuffix o,$(FILES)))
 

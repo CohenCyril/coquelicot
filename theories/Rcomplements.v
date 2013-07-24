@@ -119,6 +119,22 @@ Proof.
   exact Ha.
 Qed.
 
+Lemma C_n_n: forall n, C n n = 1.
+intros n; unfold C.
+rewrite minus_diag.
+simpl.
+field.
+apply INR_fact_neq_0.
+Qed.
+
+Lemma C_n_0: forall n, C n 0 = 1.
+intros n; unfold C.
+rewrite - minus_n_O.
+simpl.
+field.
+apply INR_fact_neq_0.
+Qed.
+
 (** * Rinv *)
 
 Lemma Rinv_le_contravar :
