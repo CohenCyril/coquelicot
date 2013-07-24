@@ -7,7 +7,6 @@ FILES = \
 	Derive_2d.v \
 	Equiv.v \
 	ElemFct.v \
-	Integral.v \
 	Limit.v \
 	Locally.v \
 	Lub.v \

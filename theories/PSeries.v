@@ -1,6 +1,6 @@
 Require Import Reals Even Div2 ssreflect.
 Require Import Rcomplements Rbar Limit Lub.
-Require Import Continuity Derive Derive_2d RInt Integral Locally Seq_fct Series.
+Require Import Continuity Derive Derive_2d RInt Locally Seq_fct Series.
 
 (** * Definition *)
 

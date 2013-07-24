@@ -1,6 +1,6 @@
 Require Import Reals ssreflect.
 Require Import Even Div2.
-Require Import seq.
+Require Import seq ssrbool.
 
 Open Scope R_scope.
 
@@ -133,6 +133,23 @@ rewrite - minus_n_O.
 simpl.
 field.
 apply INR_fact_neq_0.
+Qed.
+
+Fixpoint pow2 (n : nat) : nat :=
+  match n with
+    | O => 1%nat
+    | S n => (2 * pow2 n)%nat
+  end.
+
+Lemma pow2_INR (n : nat) : INR (pow2 n) = 2^n.
+Proof.
+  elim: n => //= n IH ;
+  rewrite ?plus_INR ?IH /= ; field.
+Qed.
+
+Lemma pow2_pos (n : nat) : (0 < pow2 n)%nat.
+Proof.
+  apply INR_lt ; rewrite pow2_INR ; intuition.
 Qed.
 
 (** * Rinv *)
@@ -1312,6 +1329,254 @@ Proof.
   move => i Hi.
   apply (Hl (S i)).
   by apply lt_n_S.
+Qed.
+
+(** Notations *)
+Lemma SSR_leq (n m : nat) : is_true (ssrnat.leq n m) <-> (n <= m)%nat.
+Proof.
+  set H := (@ssrnat.leP n m) ; case: H => H //=.
+Qed.
+Lemma SSR_minus (n m : nat) : ssrnat.subn n m = (n - m)%nat.
+Proof.
+  elim: m n => //.
+Qed.
+(** rcons *)
+Lemma rcons_ind {T : Type} (P : seq T -> Type) :
+  P [::] -> (forall (s : seq T) (t : T), P s -> P (rcons s t)) -> forall s, P s.
+Proof.
+  move => H0 Hr s ; move: (refl_equal (size s)).
+  move: {1}(size s) => n ; elim: n s => // [| n IH] s Hn ;
+  case: s Hn => [| h s] Hn //.
+  have: ({s0 : _&{ t0 | h::s = rcons s0 t0}}) ;
+    [| case => s0 [t0 H]].
+    elim: (s) (h) => {s h Hn IH} [| h s IH] h0.
+      exists [::] ; by exists h0.
+    case: (IH h) => s0 [t0 H] ; exists (h0::s0) ; exists t0 ; 
+    by rewrite rcons_cons -H.
+  rewrite H ; apply Hr, IH, eq_add_S ; by rewrite -(size_rcons s0 t0) -H.
+Qed.
+Lemma rcons_dec {T : Type} (P : seq T -> Type) :
+  (P [::]) -> (forall s t, P (rcons s t)) -> forall s, P s.
+Proof.
+  move => H0 Hr ; case => [| h s] //.
+  have: ({s0 : _&{ t0 | h::s = rcons s0 t0}}) ;
+    [| case => s0 [t0 H]].
+    elim: s h => [| h s IH] h0.
+      exists [::] ; by exists h0.
+    case: (IH h) => s0 [t0 H] ; exists (h0::s0) ; exists t0 ; 
+    by rewrite rcons_cons -H.
+  by rewrite H.
+Qed.
+Lemma size_rcons_pos {T : Type} (s : seq T) (t : T) : (0 < size (rcons s t))%nat.
+Proof.
+  rewrite size_rcons /= ; apply lt_O_Sn.
+Qed.
+
+Lemma foldr_rcons {T T0 : Type} : forall (f : T0 -> T -> T) x0 s t, 
+  foldr f x0 (rcons s t) = foldr f (f t x0) s.
+Proof.
+  move => f x0 s ; elim: s x0 => //= t s IH x0 t0 ;
+  by rewrite IH.
+Qed.
+Lemma foldl_rcons {T T0 : Type} : forall (f : T -> T0 -> T) x0 s t, 
+  foldl f x0 (rcons s t) = f (foldl f x0 s) t.
+Proof.
+  move => f x0 s ; elim: s x0 => //= t s IH x0 t0 ;
+  by rewrite IH.
+Qed.
+
+(** sorted *)
+Fixpoint sorted {T : Type} (Ord : T -> T -> Prop) (s : seq T) :=
+  match s with
+    | [::] | [:: _] => True
+    | h0 :: (h1 :: t1) as t0 => Ord h0 h1 /\ sorted Ord t0
+  end.
+Lemma sorted_nth {T : Type} (Ord : T -> T -> Prop) (s : seq T) :
+  sorted Ord s <-> (forall i : nat,
+    (i < Peano.pred (size s))%nat -> forall x0 : T, Ord (nth x0 s i) (nth x0 s (S i))).
+Proof.
+  case: s.
+  split => // _ i Hi ; contradict Hi ; apply lt_n_O.
+  move => t s ; elim: s t => [ t | t s IHs t0] ; split => // H.
+  move => i Hi ; contradict Hi ; apply lt_n_O.
+  case => [| i] Hi x0 ; simpl in Hi.
+  apply H.
+  case: (IHs t) => {IHs} IHs _ ;
+  apply (IHs (proj2 H) i (lt_S_n _ _ Hi) x0).
+  split.
+  apply (H O (lt_0_Sn _) t).
+  case: (IHs t) => {IHs} _ IHs.
+  apply: IHs => i Hi x0 ; apply: (H (S i)) ; simpl ; apply lt_n_S, Hi.
+Qed.
+Lemma sorted_cat  {T : Type} (Ord : T -> T -> Prop) (s1 s2 : seq T) x0 :
+  sorted Ord s1 -> sorted Ord s2 -> Ord (last x0 s1)  (head x0 s2)
+  -> sorted Ord (s1 ++ s2).
+Proof.
+  move/sorted_nth => H1.
+  move/sorted_nth => H2 H0.
+  apply sorted_nth => i Hi => x1.
+  rewrite ?nth_cat.
+  rewrite ?SSR_minus.
+  case: (le_dec (S i) (size s1)) => Hi0.
+  move: (proj2 (SSR_leq _ _) Hi0) ;
+  case: (ssrnat.leq (S i) (size s1)) => // _.
+  case: (le_dec (S (S i)) (size s1)) => Hi1.
+  move: (proj2 (SSR_leq _ _) Hi1) ;
+  case: (ssrnat.leq (S (S i)) (size s1)) => // _.
+  apply H1 ; intuition.
+  have : ~ (ssrnat.leq (S (S i)) (size s1)).
+  contradict Hi1 ; by apply SSR_leq.
+  case: (ssrnat.leq (S (S i)) (size s1)) => // _.
+  suff Hi' : i = Peano.pred (size s1).
+  rewrite Hi' nth_last.
+  replace (S (Peano.pred (size s1)) - size s1)%nat with O.
+  rewrite nth0.
+  apply not_le in Hi1.
+  case: (s1) H0 Hi Hi' Hi0 Hi1 => [ | x2 s1'] //= H0 Hi Hi' Hi0 Hi1.
+  by apply le_Sn_O in Hi0.
+  case: (s2) H0 Hi0 Hi => [ | x3 s2'] //= H0 Hi0 Hi.
+  rewrite cats0 /= in Hi.
+  rewrite Hi' in Hi.
+  by apply lt_irrefl in Hi.
+  case: (s1) Hi0 => //= [ | x2 s0] Hi0.
+  by apply le_Sn_O in Hi0.
+  by rewrite minus_diag.
+  apply sym_eq, le_antisym.
+  apply NPeano.Nat.le_pred_le_succ.
+  apply not_le in Hi1.
+  by apply lt_n_Sm_le.
+  replace i with (Peano.pred (S i)) by auto.
+  by apply le_pred.
+  have : ~ (ssrnat.leq (S i) (size s1)).
+  contradict Hi0 ; by apply SSR_leq.
+  case: (ssrnat.leq (S i) (size s1)) => // _.
+  have : ~ssrnat.leq (S (S i)) (size s1).
+  contradict Hi0.
+  apply SSR_leq in Hi0.
+  intuition.
+  case: (ssrnat.leq (S (S i)) (size s1)) => // _.
+  replace (S i - size s1)%nat with (S (i - size s1)).
+  apply H2.
+  rewrite size_cat in Hi.
+  apply not_le in Hi0.
+  elim: (size s1) i Hi Hi0 => [ | n IH] /= i Hi Hi0.
+  rewrite -minus_n_O.
+  unfold ssrnat.addn, ssrnat.addn_rec in Hi.
+  by rewrite plus_0_l in Hi.
+  case: i Hi Hi0 => [ | i] /= Hi Hi0.
+  by apply lt_S_n, lt_n_O in Hi0.
+  apply IH ; by intuition.
+  apply not_le in Hi0.
+  rewrite minus_Sn_m ; by intuition.
+Qed.
+(* head, last, behead and belast *)
+Lemma head_rcons {T : Type} (x0 : T) (s : seq T) (t : T) : head x0 (rcons s t) = head t s.
+Proof.
+  case: s x0 t => //.
+Qed.
+Lemma behead_rcons {T : Type} (s : seq T) (t : T) : 
+  (0 < size s)%nat ->  behead (rcons s t) = rcons (behead s) t.
+Proof.
+  case: s t => // t Hi ; contradict Hi ; apply lt_n_O.
+Qed.
+Definition belast {T : Type} (s : seq T) :=
+  match s with
+    | [::] => [::]
+    | h :: s => belast h s
+  end.
+Lemma behead_rev {T : Type} (s : seq T) : behead (rev s) = rev (belast s).
+Proof.
+  case: s => // t s ; elim: s t => // t s IHs t0.
+  rewrite rev_cons behead_rcons ?IHs ?size_rev -?rev_cons //= ; by apply lt_0_Sn.
+Qed.
+
+Lemma pairmap_rcons {T T0 : Type} (f : T -> T -> T0) (s : seq T) h0 h x0 :
+  pairmap f x0 (rcons (rcons s h0) h) = rcons (pairmap f x0 (rcons s h0)) (f h0 h).
+Proof.
+  elim: s x0 h h0 => [| h1 s IH] x0 h h0 //= ; by rewrite IH.
+Qed.
+Lemma map_pairmap {T T0 T1 : Type} (f : T0 -> T1) (g : T -> T -> T0) (s : seq T) (x0 : T) :
+  map f (pairmap g x0 s) = pairmap (fun x y => f (g x y)) x0 s.
+Proof.
+  elim: s x0 => [| h s IH] x0 //=.
+  by rewrite IH.
+Qed.
+Lemma pairmap_map {T T0 T1 : Type} (f : T0 -> T0 -> T1) (g : T -> T0) (s : seq T) (x0 : T) :
+  pairmap f (g x0) (map g s) = pairmap (fun x y => f (g x) (g y)) x0 s.
+Proof.
+  elim: s x0 => [| h s IH] x0 //=.
+  by rewrite IH.
+Qed.
+(** zip and unzip *)
+Lemma size_unzip1 {T T0 : Type} (s : seq (T * T0)) : size (unzip1 s) = size s.
+Proof.
+  by elim: s => //= _ s0 ->.
+Qed.
+Lemma size_unzip2 {T T0 : Type} (s : seq (T * T0)) : size (unzip2 s) = size s.
+Proof.
+  by elim: s => //= _ s0 ->.
+Qed.
+Lemma zip_cons {S T : Type} hs ht (s : seq S) (t : seq T) :
+  zip (hs :: s) (ht :: t) = (hs,ht) :: zip s t.
+Proof.
+  by [].
+Qed.
+Lemma zip_rcons {S T : Type} (s : seq S) (t : seq T) hs ht : size s = size t ->
+  zip (rcons s hs) (rcons t ht) = rcons (zip s t) (hs,ht).
+Proof.
+  elim: s t hs ht => [| hs s IHs] ; case => //= ht t hs' ht' Hs.
+  rewrite IHs => // ; by apply eq_add_S.
+Qed.
+Lemma unzip1_rcons {S T : Type} (s : seq (S*T)) (h : S*T) :
+  unzip1 (rcons s h) = rcons (unzip1 s) (fst h).
+Proof.
+  elim: s => [ | h0 s IH] //= ; by rewrite IH.
+Qed.
+Lemma unzip2_rcons {S T : Type} (s : seq (S*T)) (h : S*T) :
+  unzip2 (rcons s h) = rcons (unzip2 s) (snd h).
+Proof.
+  elim: s => [ | h0 s IH] //= ; by rewrite IH.
+Qed.
+Lemma unzip1_belast {S T : Type} (s : seq (S*T)) :
+  unzip1 (belast s) = belast (unzip1 s).
+Proof.
+  elim: s => //= h0 ; case => //= h1 s -> //.
+Qed.
+Lemma unzip2_belast {S T : Type} (s : seq (S*T)) :
+  unzip2 (belast s) = belast (unzip2 s).
+Proof.
+  elim: s => //= h0 ; case => //= h1 s -> //.
+Qed.
+Lemma unzip1_behead {S T : Type} (s : seq (S*T)) :
+  unzip1 (behead s) = behead (unzip1 s).
+Proof.
+  elim: s => //= h0 ; case => //= h1 s -> //.
+Qed.
+Lemma unzip2_behead {S T : Type} (s : seq (S*T)) :
+  unzip2 (behead s) = behead (unzip2 s).
+Proof.
+  elim: s => //= h0 ; case => //= h1 s -> //.
+Qed.
+Lemma unzip1_fst {S T : Type} (s : seq (S*T)) :
+  unzip1 s = map (@fst S T) s.
+Proof.
+  by elim: s.
+Qed.
+Lemma unzip2_snd {S T : Type} (s : seq (S*T)) :
+  unzip2 s = map (@snd S T) s.
+Proof.
+  by elim: s.
+Qed.
+Lemma size_belast' {T : Type} (s : seq T) :
+  size (belast s) = Peano.pred (size s).
+Proof.
+  case: s => /= [ | x0 s] //.
+  by rewrite size_belast.
+Qed.
+Lemma head_map {T1 T2 : Type} (f : T1 -> T2) (s : seq T1) (x : T1) :
+  head (f x) (map f s) = f (head x s).
+Proof.
+  by case: s.
 Qed.
 
 (** * Operations on the Riemann integral *)
