@@ -1604,6 +1604,62 @@ Proof.
   exists (fun x => INR n * x ^ (Peano.pred n)) (fun _ => True).
   move => x _ ; by apply derivable_pt_lim_pow.
 Defined.
+Global Instance UnaryDiff_Rabs : UnaryDiff Rabs.
+Proof.
+  exists (fun x => signe x) (fun x => x <> 0).
+  move => x Hx0.
+  case: (Rle_lt_dec 0 x) => Hx.
+  case: Hx => //= Hx.
+  rewrite (proj1 (signe_0_lt x)) => //.
+  by apply Rabs_derive_1.
+  by apply sym_eq in Hx.
+  rewrite (proj1 (signe_lt_0 x)) => //.
+  by apply Rabs_derive_2.
+Defined.
+Global Instance UnaryDiff_Rsqr : UnaryDiff Rsqr.
+Proof.
+  exists (fun x => 2 * x) (fun _ => True).
+  move => x _ ; by apply derivable_pt_lim_Rsqr.
+Defined.
+Global Instance UnaryDiff_cosh : UnaryDiff cosh.
+Proof.
+  exists sinh (fun _ => True).
+  move => x _ ; by apply derivable_pt_lim_cosh.
+Defined.
+Global Instance UnaryDiff_sinh : UnaryDiff sinh.
+Proof.
+  exists (fun x => cosh x) (fun _ => True).
+  move => x _ ; by apply derivable_pt_lim_sinh.
+Defined.
+Global Instance UnaryDiff_ps_atan : UnaryDiff ps_atan.
+Proof.
+  exists (fun x => /(1+x^2)) (fun x => -1 < x < 1).
+  move => x Hx ; by apply derivable_pt_lim_ps_atan.
+Defined.
+Global Instance UnaryDiff_ln : UnaryDiff ln.
+Proof.
+  exists (fun x => /x) (fun x => 0 < x).
+  move => x Hx ; by apply derivable_pt_lim_ln.
+Defined.
+Global Instance UnaryDiff_cos : UnaryDiff cos.
+Proof.
+  exists (fun x => - sin x ) (fun _ => True).
+  move => x _ ; by apply derivable_pt_lim_cos.
+Defined.
+Global Instance UnaryDiff_sin : UnaryDiff sin.
+Proof.
+  exists cos (fun _ => True).
+  move => x _ ; by apply derivable_pt_lim_sin.
+Defined.
+Global Instance UnaryDiff_sqrt : UnaryDiff sqrt.
+Proof.
+  exists (fun x => / (2 * sqrt x)) (fun x => 0 < x).
+  move => x Hx ; by apply derivable_pt_lim_sqrt.
+Defined.
+
+
+
+
 
 Definition var : nat -> R.
 exact (fun _ => R0).
