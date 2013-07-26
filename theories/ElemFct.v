@@ -27,6 +27,18 @@ Qed.
 
 (** * Absolute value *)
 
+Lemma derivable_pt_lim_Rabs (x : R) :
+  x <> 0 -> is_derive Rabs x (sign x).
+Proof.
+  move => Hx0.
+  case: (Rle_lt_dec 0 x) => Hx.
+  case: Hx => //= Hx.
+  rewrite (proj1 (sign_0_lt x)) => //.
+  by apply Rabs_derive_1.
+  by apply sym_eq in Hx.
+  rewrite (proj1 (sign_lt_0 x)) => //.
+  by apply Rabs_derive_2.
+Qed.
 Lemma continuity_pt_Rabs (x : R) :
   continuity_pt Rabs x.
 Proof.

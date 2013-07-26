@@ -1,6 +1,6 @@
 Require Import Reals ssreflect.
 Require Import Rcomplements Rbar.
-Require Import Derive RInt Integral Continuity Limit ElemFct.
+Require Import Derive RInt Continuity Limit ElemFct.
 
 Ltac pos_rat :=
   repeat ( apply Rdiv_lt_0_compat
@@ -69,11 +69,11 @@ Definition f (x : R) : R := fab 2 2 x.
 (** 8:38 *)
 (** 2.a. *)
 
-Lemma Signe_df : forall x, 0 < x -> signe (Derive f x) = signe (- ln x).
+Lemma Signe_df : forall x, 0 < x -> sign (Derive f x) = sign (- ln x).
 Proof.
   move => x Hx.
   replace (Derive f x) with (-2 * ln x / x ^ 2).
-  rewrite /signe.
+  rewrite /sign.
   case: (Rle_dec 0 (- ln x)) => Hln.
   have Hf : 0 <= -2 * ln x / x ^ 2.
     apply Rdiv_le_0_compat.
@@ -164,9 +164,9 @@ Proof.
   exists ((2 - 2 - 2 * ln x) / x ^ 2).
   by apply (Dfab 2 2 x).
   move => x H0x Hx1.
-  apply signe_0_lt.
+  apply sign_0_lt.
   rewrite Signe_df.
-  apply signe_0_lt.
+  apply sign_0_lt.
   apply Ropp_lt_cancel ; rewrite Ropp_0 Ropp_involutive.
   rewrite -ln_1.
   by apply ln_increasing.
@@ -186,9 +186,9 @@ Proof.
   move => z H1z _.
   rewrite Derive_opp.
   apply Ropp_lt_cancel ; rewrite Ropp_0 Ropp_involutive.
-  apply signe_lt_0.
+  apply sign_lt_0.
   rewrite Signe_df.
-  apply signe_lt_0.
+  apply sign_lt_0.
   apply Ropp_lt_cancel ; rewrite Ropp_0 Ropp_involutive.
   rewrite -ln_1.
   apply ln_increasing.

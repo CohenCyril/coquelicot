@@ -211,7 +211,7 @@ intros t' _.
 admit.
 unfold gamma20.
 apply f_equal.
-apply Integral.RInt_ext => z _.
+apply RInt_ext => z _.
 now rewrite 4!Rmult_1_l.
 Qed.
 
@@ -292,16 +292,16 @@ admit.
 unfold gamma02.
 ring_simplify.
 rewrite Rplus_opp_r Rmult_0_r Ropp_0 Rplus_0_r.
-rewrite Integral.RInt_point Rmult_0_r Rplus_0_r.
+rewrite RInt_point Rmult_0_r Rplus_0_r.
 apply Rplus_eq_reg_l with (- f x t).
 field_simplify.
 2: exact Zc.
 rewrite Rmult_1_r.
 rewrite /Rdiv Rmult_comm.
-rewrite -Integral.RInt_scal.
+rewrite -RInt_scal.
 rewrite Rmult_assoc (Rmult_comm _ (/2)) -Rmult_assoc.
-rewrite -Integral.RInt_scal.
-apply Integral.RInt_ext => u _.
+rewrite -RInt_scal.
+apply RInt_ext => u _.
 unfold Rminus.
 now field.
 Qed.

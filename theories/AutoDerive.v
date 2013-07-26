@@ -1,5 +1,5 @@
 Require Import Reals.
-Require Import Rcomplements Locally Derive RInt Derive_2d Continuity.
+Require Import Rcomplements Locally Derive RInt Derive_2d Continuity ElemFct.
 Require Import ssreflect ssrbool seq Datatypes.
 
 Fixpoint Rn n T :=
@@ -1606,15 +1606,8 @@ Proof.
 Defined.
 Global Instance UnaryDiff_Rabs : UnaryDiff Rabs.
 Proof.
-  exists (fun x => signe x) (fun x => x <> 0).
-  move => x Hx0.
-  case: (Rle_lt_dec 0 x) => Hx.
-  case: Hx => //= Hx.
-  rewrite (proj1 (signe_0_lt x)) => //.
-  by apply Rabs_derive_1.
-  by apply sym_eq in Hx.
-  rewrite (proj1 (signe_lt_0 x)) => //.
-  by apply Rabs_derive_2.
+  exists (fun x => sign x) (fun x => x <> 0).
+  move => x Hx0 ; by apply derivable_pt_lim_Rabs.
 Defined.
 Global Instance UnaryDiff_Rsqr : UnaryDiff Rsqr.
 Proof.

@@ -1042,9 +1042,9 @@ Proof.
 Qed.
 Definition pos_div_2 (eps : posreal) := mkposreal _ (is_pos_div_2 eps).
 
-(** * The signe function *)
+(** * The sign function *)
 
-Definition signe (x : R) :=
+Definition sign (x : R) :=
   match Rle_dec 0 x with
     | left H => match Rle_lt_or_eq_dec _ _ H with
         | left _ => 1
@@ -1053,9 +1053,9 @@ Definition signe (x : R) :=
     | right _ => -1
   end.
 
-Lemma Ropp_signe (x : R) : signe (-x) = - signe x.
+Lemma Ropp_sign (x : R) : sign (-x) = - sign x.
 Proof.
-  rewrite /signe ; 
+  rewrite /sign ; 
   case: Rle_dec => H ; case: Rle_dec => H0.
   have: ~ (0 < - x).
     apply Rle_not_lt, Ropp_le_cancel ; intuition.
@@ -1071,9 +1071,9 @@ Proof.
   contradict H0 ; apply Ropp_le_cancel, Rlt_le, Rnot_le_lt ; intuition.
 Qed.
 
-Lemma signe_0_lt (x : R) : 0 < x <-> signe x = 1.
+Lemma sign_0_lt (x : R) : 0 < x <-> sign x = 1.
 Proof.
-  split ; rewrite /signe => Hx.
+  split ; rewrite /sign => Hx.
   case: Rle_dec (Rlt_le _ _ Hx) => // Hx0 _.
   case: Rle_lt_or_eq_dec (Rlt_not_eq _ _ Hx) => // Hx0 _.
   case: Rle_dec Hx => // Hx.
@@ -1086,18 +1086,18 @@ Proof.
   by apply Ropp_0_gt_lt_contravar.
 Qed.
 
-Lemma signe_lt_0 (x : R) : x < 0 <-> signe x = -1.
+Lemma sign_lt_0 (x : R) : x < 0 <-> sign x = -1.
 Proof.
-  rewrite -(Ropp_involutive x) Ropp_signe Ropp_involutive ; split => Hx.
+  rewrite -(Ropp_involutive x) Ropp_sign Ropp_involutive ; split => Hx.
   apply f_equal.
-  apply signe_0_lt.
+  apply sign_0_lt.
   by apply Ropp_0_gt_lt_contravar.
   apply (f_equal Ropp) in Hx ; rewrite ?Ropp_involutive in Hx.
-  apply signe_0_lt in Hx.
+  apply sign_0_lt in Hx.
   apply Ropp_lt_cancel ; by rewrite Ropp_0.
 Qed.
 
-Lemma signe_carac (x y : R) : (x * y > 0 \/ (x = 0 /\ y = 0)) -> signe x = signe y.
+Lemma sign_carac (x y : R) : (x * y > 0 \/ (x = 0 /\ y = 0)) -> sign x = sign y.
 Proof.
   case => Hxy.
   wlog : x y Hxy / (0 < x) => [Hw | Hx].
@@ -1106,8 +1106,8 @@ Proof.
     by apply Hw.
     rewrite -Hx Rmult_0_l in Hxy.
     by apply Rlt_irrefl in Hxy.
-  rewrite -(Ropp_involutive (signe x)) -(Ropp_involutive (signe y)).
-  rewrite -(Ropp_signe x) -(Ropp_signe y).
+  rewrite -(Ropp_involutive (sign x)) -(Ropp_involutive (sign y)).
+  rewrite -(Ropp_sign x) -(Ropp_sign y).
   apply f_equal, Hw.
   by ring_simplify.
   by apply Ropp_0_gt_lt_contravar.
@@ -1119,7 +1119,7 @@ Proof.
   apply Rmult_le_compat_l.
   by apply Rlt_le.
   by [].
-  rewrite /signe.
+  rewrite /sign.
   case: Rle_dec (Rlt_le _ _ Hx) => // Hx0 _.
   case: Rle_dec (Rlt_le _ _ Hy) => // Hy0 _.
   case: Rle_lt_or_eq_dec (Rlt_not_eq _ _ Hx) => // _ _.
@@ -1128,19 +1128,19 @@ Proof.
   by [].
 Qed.
 
-Lemma signe_mult (x y : R) : signe (x * y) = signe x * signe y.
+Lemma sign_mult (x y : R) : sign (x * y) = sign x * sign y.
 Proof.
   wlog: x / (0 < x) => [Hw | Hx].
     case: (Rle_lt_dec 0 x) => Hx.
     case: Hx => Hx.
     by apply Hw.
     rewrite -Hx Rmult_0_l.
-    rewrite {1 2}/signe.
+    rewrite {1 2}/sign.
     case: Rle_dec (Rle_refl 0) => // H _.
     case: Rle_lt_or_eq_dec (Rlt_irrefl 0) => // _ _.
     by rewrite Rmult_0_l.
     rewrite -(Ropp_involutive x).
-    rewrite Ropp_signe Ropp_mult_distr_l_reverse Ropp_signe Hw.
+    rewrite Ropp_sign Ropp_mult_distr_l_reverse Ropp_sign Hw.
     ring.
     by apply Ropp_0_gt_lt_contravar.
   wlog: y / (0 < y) => [Hw | Hy].
@@ -1148,17 +1148,17 @@ Proof.
     case: Hy => Hy.
     by apply Hw.
     rewrite -Hy Rmult_0_r.
-    rewrite {1 3}/signe.
+    rewrite {1 3}/sign.
     case: Rle_dec (Rle_refl 0) => // H _.
     case: Rle_lt_or_eq_dec (Rlt_irrefl 0) => // _ _.
     by rewrite Rmult_0_r.
     rewrite -(Ropp_involutive y).
-    rewrite Ropp_signe Ropp_mult_distr_r_reverse Ropp_signe Hw.
+    rewrite Ropp_sign Ropp_mult_distr_r_reverse Ropp_sign Hw.
     ring.
     by apply Ropp_0_gt_lt_contravar.
   have Hxy : 0 < x * y.
     by apply Rmult_lt_0_compat.
-  rewrite ?(proj1 (signe_0_lt _)) //.
+  rewrite ?(proj1 (sign_0_lt _)) //.
   by rewrite Rmult_1_l.
 Qed.
 
