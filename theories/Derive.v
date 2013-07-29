@@ -18,10 +18,10 @@ Lemma is_derive_unique f x l :
 Proof.
   intros.
   apply (uniqueness_step1 f x).
-  apply is_lim_Coq_0.
+  apply is_lim_Reals_0.
   apply Lim_correct'.
   exists l.
-  apply is_lim_Coq_1.
+  apply is_lim_Reals_1.
   
   apply uniqueness_step2, H.
   apply uniqueness_step2, H.
@@ -36,21 +36,23 @@ Proof.
   apply is_derive_unique, H.
 Qed.
 
-Lemma ex_derive_equiv_0 (f : R -> R) (x : R) :
+(** Equivalence with standard library Reals *)
+
+Lemma ex_derive_Reals_0 (f : R -> R) (x : R) :
   ex_derive f x -> derivable_pt f x.
 Proof.
   move => Hf.
   apply Derive_correct in Hf.
   by exists (Derive f x).
 Qed.
-Lemma ex_derive_equiv_1 (f : R -> R) (x : R) :
+Lemma ex_derive_Reals_1 (f : R -> R) (x : R) :
   derivable_pt f x -> ex_derive f x.
 Proof.
   case => l Hf.
   by exists l.
 Qed.
 
-Lemma Derive_equiv (f : R -> R) (x : R) (pr : derivable_pt f x) :
+Lemma Derive_Reals (f : R -> R) (x : R) (pr : derivable_pt f x) :
   derive_pt f x pr = Derive f x.
 Proof.
   apply sym_eq, is_derive_unique.
@@ -175,7 +177,7 @@ apply is_derive_unique.
 apply derivable_pt_lim_id.
 Qed.
 
-(** ** Additive *)
+(** ** Additive operators *)
 (** Opposite of functions *)
 
 Lemma ex_derive_opp :
@@ -273,7 +275,7 @@ apply derivable_pt_lim_minus ;
   now apply Derive_correct.
 Qed.
 
-(** ** Multiplicative *)
+(** ** Multiplicative operators *)
 (** Multiplication of functions *)
 
 Lemma derivable_pt_lim_inv (f : R -> R) (x l : R) :
@@ -583,7 +585,82 @@ Proof.
   by apply -> Rminus_lt_0.
 Qed.
 
+Lemma MVT_cor4:
+  forall (f : R -> R) a eps,
+  (forall c, Rabs (c - a) <= eps -> ex_derive f c) ->
+  forall b, (Rabs (b - a) <= eps) ->
+  exists c, f b - f a = Derive f c * (b - a) /\ (Rabs (c - a) <= Rabs (b - a)).
+Proof.
+intros f a eps Hf' b.
+unfold Rabs at 1 3.
+case Rcase_abs; intros H1 H2.
+destruct (MVT_cor2 f (Derive f) b a).
+apply Rplus_lt_reg_r with (-a).
+ring_simplify.
+now rewrite Rplus_comm.
+intros c Hc.
+apply Derive_correct.
+apply Hf'.
+rewrite Rabs_left1.
+apply Rle_trans with (2:=H2).
+apply Ropp_le_contravar.
+now apply Rplus_le_compat_r.
+apply Rplus_le_reg_r with a.
+now ring_simplify.
+exists x; split.
+rewrite -RIneq.Ropp_minus_distr (proj1 H).
+ring.
+rewrite Rabs_left.
+apply Ropp_le_contravar.
+left; now apply Rplus_lt_compat_r.
+apply Rplus_lt_reg_r with a.
+now ring_simplify.
+destruct H1.
+destruct (MVT_cor2 f (Derive f) a b).
+apply Rplus_lt_reg_r with (-a).
+ring_simplify.
+now rewrite Rplus_comm.
+intros c Hc.
+apply Derive_correct.
+apply Hf'.
+rewrite Rabs_right.
+apply Rle_trans with (2:=H2).
+now apply Rplus_le_compat_r.
+apply Rle_ge; apply Rplus_le_reg_r with a.
+now ring_simplify.
+exists x; split.
+exact (proj1 H0).
+rewrite Rabs_right.
+left; now apply Rplus_lt_compat_r.
+apply Rle_ge; apply Rplus_le_reg_r with a.
+left; now ring_simplify.
+exists a.
+replace b with a.
+split;[ring|idtac].
+rewrite /Rminus Rplus_opp_r Rabs_R0.
+apply Rle_refl.
+apply Rplus_eq_reg_l with (-a).
+ring_simplify.
+rewrite - H; ring.
+Qed.
 
+Lemma bounded_variation :
+  forall h D x y,
+  (forall t, Rabs (t - x) <= Rabs (y - x) -> ex_derive h t /\ (Rabs (Derive h t) <= D)) ->
+  Rabs (h y - h x) <= D * Rabs (y - x).
+Proof.
+intros h D x y H.
+destruct (MVT_cor4 h x (Rabs (y - x))) with (b := y) as [t Ht].
+intros c Hc.
+specialize (H c Hc).
+apply H.
+apply Rle_refl.
+rewrite (proj1 Ht).
+rewrite Rabs_mult.
+apply Rmult_le_compat_r.
+apply Rabs_pos.
+now apply H.
+Qed.
 
 (** * Newton integration *)
 
@@ -1049,86 +1126,8 @@ Proof.
   by apply continuity_pt_const.
 Qed.
 
-(** Various theorems *)
+(** Alternate definition of differentiability *)
 
-Lemma MVT_cor4:
-  forall (f : R -> R) a eps,
-  (forall c, Rabs (c - a) <= eps -> ex_derive f c) ->
-  forall b, (Rabs (b - a) <= eps) ->
-  exists c, f b - f a = Derive f c * (b - a) /\ (Rabs (c - a) <= Rabs (b - a)).
-Proof.
-intros f a eps Hf' b.
-unfold Rabs at 1 3.
-case Rcase_abs; intros H1 H2.
-destruct (MVT_cor2 f (Derive f) b a).
-apply Rplus_lt_reg_r with (-a).
-ring_simplify.
-now rewrite Rplus_comm.
-intros c Hc.
-apply Derive_correct.
-apply Hf'.
-rewrite Rabs_left1.
-apply Rle_trans with (2:=H2).
-apply Ropp_le_contravar.
-now apply Rplus_le_compat_r.
-apply Rplus_le_reg_r with a.
-now ring_simplify.
-exists x; split.
-rewrite -RIneq.Ropp_minus_distr (proj1 H).
-ring.
-rewrite Rabs_left.
-apply Ropp_le_contravar.
-left; now apply Rplus_lt_compat_r.
-apply Rplus_lt_reg_r with a.
-now ring_simplify.
-destruct H1.
-destruct (MVT_cor2 f (Derive f) a b).
-apply Rplus_lt_reg_r with (-a).
-ring_simplify.
-now rewrite Rplus_comm.
-intros c Hc.
-apply Derive_correct.
-apply Hf'.
-rewrite Rabs_right.
-apply Rle_trans with (2:=H2).
-now apply Rplus_le_compat_r.
-apply Rle_ge; apply Rplus_le_reg_r with a.
-now ring_simplify.
-exists x; split.
-exact (proj1 H0).
-rewrite Rabs_right.
-left; now apply Rplus_lt_compat_r.
-apply Rle_ge; apply Rplus_le_reg_r with a.
-left; now ring_simplify.
-exists a.
-replace b with a.
-split;[ring|idtac].
-rewrite /Rminus Rplus_opp_r Rabs_R0.
-apply Rle_refl.
-apply Rplus_eq_reg_l with (-a).
-ring_simplify.
-rewrite - H; ring.
-Qed.
-
-Lemma bounded_variation :
-  forall h D x y,
-  (forall t, Rabs (t - x) <= Rabs (y - x) -> ex_derive h t /\ (Rabs (Derive h t) <= D)) ->
-  Rabs (h y - h x) <= D * Rabs (y - x).
-Proof.
-intros h D x y H.
-destruct (MVT_cor4 h x (Rabs (y - x))) with (b := y) as [t Ht].
-intros c Hc.
-specialize (H c Hc).
-apply H.
-apply Rle_refl.
-rewrite (proj1 Ht).
-rewrite Rabs_mult.
-apply Rmult_le_compat_r.
-apply Rabs_pos.
-now apply H.
-Qed.
-
-(* TODO : replacer is_derive par cette définition ? *)
 Definition derivable_pt_lim_aux (f : R -> R) (x l : R) :=
   forall eps : posreal, locally (fun y => Rabs (f y - f x - l * (y-x)) <= eps * Rabs (y-x)) x.
 
@@ -1230,7 +1229,7 @@ Proof.
   by apply Derive_correct.
 Qed.
 
-(** Extentionality *)
+(** Extensionality *)
 
 Lemma Derive_n_ext_loc :
   forall f g n x,
@@ -1330,7 +1329,7 @@ Qed.
 
 
 (** ** Operations *)
-(** *** Additive *)
+(** *** Additive operators *)
 (** Opposite *)
 
 Lemma Derive_n_opp (f : R -> R) (n : nat) (x : R) :
@@ -1445,7 +1444,7 @@ Proof.
   by apply derivable_pt_lim_plus.
 Qed.
 
-(** Substraction of functions *)
+(** Subtraction of functions *)
 
 Lemma Derive_n_minus (f g : R -> R) (n : nat) (x : R) :
   locally (fun y => forall k, (k <= n)%nat -> ex_derive_n f k y) x ->
@@ -1485,10 +1484,7 @@ Proof.
   by apply is_derive_n_opp.
 Qed.
 
-(** *** Multiplicative *)
-
-
-
+(** *** Multiplicative operators *)
 
 (** Scalar multiplication *)
 
@@ -1539,14 +1535,9 @@ Proof.
   apply is_derive_n_ext => y ; ring.
 Qed.
 
-(** Comming soon:
-- multiplication
-- composition
-- inverse *)
-
 (** *** Composition *)
 
-(** Simpl cases of compositions *)
+(** Composition with linear functions *)
 
 Lemma Derive_n_comp_scal (f : R -> R) (a : R) (n : nat) (x : R) :
   locally (fun x => forall k, (k <= n)%nat -> ex_derive_n f k x) (a * x) ->
@@ -1765,7 +1756,7 @@ Proof.
   ring.
 Qed.
 
-(** * Taylor Lagrange Theorem *)
+(** * Taylor-Lagrange formula *)
 
 Theorem Taylor_Lagrange :
   forall f n x y, x < y ->

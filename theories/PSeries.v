@@ -37,9 +37,9 @@ Proof.
   by apply Ha.
 Qed.
 
-(** This new formalisation is equivalent with standard library *)
+(** Equivalence with standard library Reals *)
 
-Lemma is_pseries_equiv (a : nat -> R) (x l : R) :
+Lemma is_pseries_Reals (a : nat -> R) (x l : R) :
   is_pseries a x l <-> Pser a x l.
 Proof.
   split => H.
@@ -53,7 +53,7 @@ Proof.
   by apply H.
 Qed.
 
-(** Extentionality *)
+(** Extensionality *)
 
 Lemma is_pseries_ext (a b : nat -> R) (x l : R) :
   (forall n, a n = b n) -> (is_pseries a x l) 
@@ -103,13 +103,13 @@ Proof.
   apply (is_pseries_0 a).
 Qed.
 
-(** Convergence circle *)
+(** Convergence disk *)
 
-Definition CV_circle_set (a : nat -> R) (r : R) :=
+Definition CV_disk (a : nat -> R) (r : R) :=
   ex_series (fun n => Rabs (a n * r^n)).
 
-Lemma CV_circle_pty1 (a : nat -> R) (r1 r2 : R) :
-  Rabs r1 <= Rabs r2 -> CV_circle_set a r2 -> CV_circle_set a r1.
+Lemma CV_disk_le (a : nat -> R) (r1 r2 : R) :
+  Rabs r1 <= Rabs r2 -> CV_disk a r2 -> CV_disk a r1.
 Proof.
   move => H.
   apply Comp_ex_series => n ; split.
@@ -120,14 +120,14 @@ Proof.
   by apply Rabs_pos.
   by apply H.
 Qed.
-Lemma CV_circle_pty2 (a : nat -> R) (x : R) :
-  CV_circle_set a x -> ex_pseries a x.
+Lemma CV_disk_correct (a : nat -> R) (x : R) :
+  CV_disk a x -> ex_pseries a x.
 Proof.
   by apply ex_series_Rabs.
 Qed.
 
-Lemma CV_circle_0 (a : nat -> R) :
-  CV_circle_set a 0.
+Lemma CV_disk_0 (a : nat -> R) :
+  CV_disk a 0.
 Proof.
   exists (Rabs (a O)).
   apply is_lim_seq_ext with (fun _ => Rabs (a O)).
@@ -137,34 +137,28 @@ Proof.
   by apply is_lim_seq_const.  
 Qed.
 
-Lemma CV_circle_ne (a : nat -> R) :
-  exists x, (CV_circle_set a) x.
-Proof.
-  exists 0.
-  by apply CV_circle_0.
-Qed.
-Definition CV_circle (a : nat -> R) : Rbar :=
-  Lub_Rbar_ne (CV_circle_set a) (CV_circle_ne a).
+Definition CV_radius (a : nat -> R) : Rbar :=
+  Lub_Rbar_ne (CV_disk a) (ex_intro _ 0 (CV_disk_0 _)).
 
-Lemma CV_circle_le_0 (a : nat -> R) :
-  Rbar_le (Finite 0) (CV_circle a).
+Lemma CV_radius_ge_0 (a : nat -> R) :
+  Rbar_le (Finite 0) (CV_radius a).
 Proof.
-  rewrite /CV_circle /Lub_Rbar_ne ;
+  rewrite /CV_radius /Lub_Rbar_ne ;
   case: ex_lub_Rbar_ne => /= l Hl.
-  apply Hl, CV_circle_0.
+  apply Hl, CV_disk_0.
 Qed.
 
-Lemma CV_circle_bounded (a : nat -> R) :
-  is_lub_Rbar (fun r => exists M, forall n, Rabs (a n * r ^ n) <= M) (CV_circle a).
+Lemma CV_radius_bounded (a : nat -> R) :
+  is_lub_Rbar (fun r => exists M, forall n, Rabs (a n * r ^ n) <= M) (CV_radius a).
 Proof.
-  rewrite /CV_circle /Lub_Rbar_ne ;
+  rewrite /CV_radius /Lub_Rbar_ne ;
   case: ex_lub_Rbar_ne => cv /= [ub lub].
   split.
   
   move => r /= [M Hr].
   
-  have : forall y, Rabs y < Rabs r -> (CV_circle_set a) y.
-    move => y Hy ; rewrite /CV_circle_set /=.
+  have : forall y, Rabs y < Rabs r -> (CV_disk a) y.
+    move => y Hy ; rewrite /CV_disk /=.
   set l := (Rabs (y / r)).
   have : ex_series (fun n => M * l ^ n).
   apply ex_series_scal_l.
@@ -203,7 +197,7 @@ Proof.
   by apply (H y Hy).
 
   have Hc0 : Rbar_le (Finite 0) cv.
-  apply ub, CV_circle_0.
+  apply ub, CV_disk_0.
   case: (cv) Hc0 => [c | | ] Hc0 Hcv.
   apply Rbar_finite_le.
 
@@ -276,30 +270,30 @@ Qed.
 
 (** Convergence theorems *)
 
-Lemma CV_circle_carac (a : nat -> R) (x : R) :
-  Rbar_lt (Finite (Rabs x)) (CV_circle a)
+Lemma CV_disk_inside (a : nat -> R) (x : R) :
+  Rbar_lt (Finite (Rabs x)) (CV_radius a)
     -> ex_series (fun n => Rabs (a n * x ^ n)).
 Proof.
   move => Ha.
   have H : ~ ~ ex_series (fun n => Rabs (a n * x ^ n)).
     contradict Ha.
     apply Rbar_le_not_lt.
-    rewrite /CV_circle /Lub_Rbar_ne ;
+    rewrite /CV_radius /Lub_Rbar_ne ;
     case: ex_lub_Rbar_ne => l /= [ub lub].
     apply: lub => r Hr.
     apply Rbar_finite_le.
     apply Rnot_lt_le ; contradict Ha.
     move: Hr.
-    apply CV_circle_pty1.
+    apply CV_disk_le.
     by apply Rlt_le, Rlt_le_trans with (2 := Rle_abs _).
   by case: (ex_series_dec (fun n => Rabs (a n * x ^ n))).
 Qed.
 
-Lemma CV_circle_carac_not (a : nat -> R) (x : R) :
-  Rbar_lt (CV_circle a) (Finite (Rabs x))
+Lemma CV_disk_outside (a : nat -> R) (x : R) :
+  Rbar_lt (CV_radius a) (Finite (Rabs x))
     -> ~ is_lim_seq (fun n => a n * x ^ n) 0.
 Proof.
-  case: (CV_circle_bounded a) => ub lub.
+  case: (CV_radius_bounded a) => ub lub.
   move => Hx.
   have H : ~ (fun r : R => exists M : R, forall n : nat, Rabs (a n * r ^ n) <= M) x.
     contradict Hx ; apply Rbar_le_not_lt.
@@ -329,11 +323,11 @@ Proof.
   rewrite Hn ; by apply Rle_trans with (2 := Rmax_r _ _), Rle_refl.
 Qed.
 
-Lemma CV_circle_ext (a b : nat -> R) :
-  (forall n, a n = b n) -> CV_circle a = CV_circle b.
+Lemma CV_radius_ext (a b : nat -> R) :
+  (forall n, a n = b n) -> CV_radius a = CV_radius b.
 Proof.
   move => Heq.
-  rewrite /CV_circle /Lub_Rbar_ne.
+  rewrite /CV_radius /Lub_Rbar_ne.
   case: ex_lub_Rbar_ne => la [ub_a lub_a] ;
   case: ex_lub_Rbar_ne => lb [ub_b lub_b] /=.
   apply Rbar_le_antisym.
@@ -345,10 +339,10 @@ Proof.
   apply ex_series_ext => n ; by rewrite Heq.
 Qed.
 
-(** ** Convergence criterion *)
-(** D'Alembert Criterion for power series *)
+(** ** Convergence criteria *)
+(** D'Alembert criterion for power series *)
 
-Lemma DAlembert_ex_pseries_aux (a : nat -> R) (x k : R) : 
+Lemma CV_disk_DAlembert_aux (a : nat -> R) (x k : R) : 
   x <> 0 -> (forall n, a n <> 0) ->
   (is_lim_seq (fun n => Rabs (a (S n) / a n)) k
     <-> is_lim_seq (fun n => Rabs ((a (S n) * x^(S n)) / (a n * x ^ n))) (Rabs x * k)).
@@ -383,11 +377,11 @@ Proof.
   apply Rabs_no_R0 => //.
 Qed.
 
-Lemma DAlembert_crit (a : nat -> R) (x:R) l :
+Lemma CV_disk_DAlembert (a : nat -> R) (x:R) l :
   (forall n:nat, a n <> 0) ->
   is_lim_seq (fun n:nat => Rabs (a (S n) / a n)) (Finite l) ->
   (l = 0 \/ (l <> 0 /\ Rabs x < / l)) 
-    -> ex_series (fun n => Rabs (a n * x ^ n)).
+    -> CV_disk a x.
 Proof.
   move => Ha Hl H.
   case: (Req_dec x 0) => Hx.
@@ -399,7 +393,7 @@ Proof.
   by rewrite Rmult_0_l Rmult_0_r Rabs_R0 Rplus_0_r.
   apply is_lim_seq_const.
   
-  apply DAlembert_ex_series with (Rabs x * l).
+  apply ex_series_DAlembert with (Rabs x * l).
   case: H => H.
   rewrite H Rmult_0_r ; by apply Rlt_0_1.
   replace 1 with (/ l * l) by (field ; apply H).
@@ -415,17 +409,17 @@ Proof.
   move => n ; apply Rmult_integral_contrapositive_currified.
   by apply Ha.
   by apply pow_nonzero.
-  by apply DAlembert_ex_pseries_aux.
+  by apply CV_disk_DAlembert_aux.
 Qed.
 
-Lemma DAlembert_CV_circle_neq_0 (a : nat -> R) (l : R) :
+Lemma CV_radius_finite_DAlembert (a : nat -> R) (l : R) :
   (forall n:nat, a n <> 0) -> 0 < l ->
   is_lim_seq (fun n:nat => Rabs (a (S n) / a n)) l ->
-  CV_circle a = Finite (/l).
+  CV_radius a = Finite (/l).
 Proof.
   move => Ha Hl Hda.
   apply Rbar_le_antisym.
-  rewrite /CV_circle /Lub_Rbar_ne ;
+  rewrite /CV_radius /Lub_Rbar_ne ;
   case: ex_lub_Rbar_ne => /= cv [ub lub].
   apply lub => x Hax.
   apply Rbar_finite_le.
@@ -440,24 +434,24 @@ Proof.
   by apply Rlt_le, Rinv_0_lt_compat.
   apply Rnot_lt_le.
   contradict Hax.
-  have : CV_circle_set a x -> is_lim_seq (fun n => a n * x ^ n) 0.
+  have : CV_disk a x -> is_lim_seq (fun n => a n * x ^ n) 0.
     move => H.
     apply ex_series_lim_0.
     by apply ex_series_Rabs.
   move => H H0.
   move: (H H0) => {H H0}.
-  apply (DAlembert_not_ex_series ) with (Rabs x * l) => //.
+  apply not_ex_series_DAlembert with (Rabs x * l) => //.
   move => n.
   apply Rmult_integral_contrapositive_currified => //.
   by apply pow_nonzero, Rgt_not_eq.
-  apply DAlembert_ex_pseries_aux.
+  apply CV_disk_DAlembert_aux.
   by apply Rgt_not_eq.
   by apply Ha.
   by apply Hda.
 
   apply Rbar_not_lt_le.
-  move : (CV_circle_carac_not a).
-  rewrite /CV_circle /Lub_Rbar_ne ;
+  move : (CV_disk_outside a).
+  rewrite /CV_radius /Lub_Rbar_ne ;
   case: ex_lub_Rbar_ne ;
   case => [cv | | ] /= [ub lub] Hnot_ex H ; try by auto.
   suff H0 : cv < ((cv+/l)/2) < /l.
@@ -467,7 +461,7 @@ Proof.
   move: (Hnot_ex ((cv + / l) / 2) H1) => {Hnot_ex} Hnot_ex.
   contradict Hnot_ex ; by apply ex_series_lim_0, ex_series_Rabs.
   apply Rlt_le_trans with (2 := Rle_abs _), H0.
-  apply (DAlembert_crit) with l.
+  apply (CV_disk_DAlembert) with l.
   by apply Ha.
   by apply Hda.
   right ; split.
@@ -496,16 +490,16 @@ Proof.
     by apply is_lim_seq_const.
 Qed.
 
-Lemma DAlembert_CV_circle_eq_0 (a : nat -> R) :
+Lemma CV_radius_infinite_DAlembert (a : nat -> R) :
   (forall n:nat, a n <> 0) -> 
   is_lim_seq (fun n:nat => Rabs (a (S n) / a n)) 0 ->
-  CV_circle a = p_infty.
+  CV_radius a = p_infty.
 Proof.
   move => Ha Hda.
-  rewrite /CV_circle /Lub_Rbar_ne ;
+  rewrite /CV_radius /Lub_Rbar_ne ;
   case: ex_lub_Rbar_ne ; case => [cv | | ] //= [ub lub] ;
   have : False => //.
-  have H : CV_circle_set a (cv + 1).
+  have H : CV_disk a (cv + 1).
     have H : 0 < cv + 1.
       apply Rlt_le_trans with (0+1).
       rewrite Rplus_0_l ; by apply Rlt_0_1.
@@ -518,13 +512,13 @@ Proof.
       by rewrite Rmult_0_l Rmult_0_r Rabs_R0 Rplus_0_r.
       by apply is_lim_seq_const.
       
-    apply DAlembert_ex_series with 0.
+    apply ex_series_DAlembert with 0.
     by apply Rlt_0_1.
     move => n ; apply Rmult_integral_contrapositive_currified.
     by[].
     by apply Rgt_not_eq, pow_lt.
   rewrite -(Rmult_0_r (Rabs (cv + 1))).
-  apply (DAlembert_ex_pseries_aux a (cv + 1)).
+  apply (CV_disk_DAlembert_aux a (cv + 1)).
   by apply Rgt_not_eq.
   by [].
   by [].
@@ -539,18 +533,18 @@ Proof.
   by apply is_lim_seq_const.
 Qed.
 
-(** Convergence normale *)
+(** Equivalence with standard library Reals *)
 
-Lemma CV_circle_CVN (a : nat -> R) (r : posreal) :
-  Rbar_lt (Finite r) (CV_circle a) -> CVN_r (fun n x => a n * x ^ n) r.
+Lemma CV_radius_Reals_0 (a : nat -> R) (r : posreal) :
+  Rbar_lt (Finite r) (CV_radius a) -> CVN_r (fun n x => a n * x ^ n) r.
 Proof.
   move => Hr.
   rewrite /CVN_r /Boule.
-  have H := CV_circle_bounded a.
+  have H := CV_radius_bounded a.
   exists (fun n => Rabs (a n * r ^ n)).
   exists (Series (fun n => Rabs (a n * r ^ n))) ; split.
   rewrite -(Rabs_pos_eq r (Rlt_le _ _ (cond_pos r))) in Hr.
-  apply CV_circle_carac in Hr.
+  apply CV_disk_inside in Hr.
   apply Lim_seq_correct' in Hr ; 
   rewrite -/(Series (fun n : nat => Rabs (a n * r ^ n))) in Hr.
   move => e He.
@@ -574,13 +568,13 @@ Proof.
   by apply Rlt_le, r.
 Qed.
 
-Lemma CV_circle_CVN_bis (a : nat -> R) (r : posreal) :
-  CVN_r (fun n x => a n * x ^ n) r -> Rbar_le (Finite r) (CV_circle a).
+Lemma CV_radius_Reals_1 (a : nat -> R) (r : posreal) :
+  CVN_r (fun n x => a n * x ^ n) r -> Rbar_le (Finite r) (CV_radius a).
 Proof.
   case => An [l [H H0]].
-  have H1 : is_lub_Rbar (CV_circle_set a) (CV_circle a).
-    rewrite /CV_circle /Lub_Rbar_ne ; by case: ex_lub_Rbar_ne.
-  have H2 : forall (y : R), 0 < y < r -> (CV_circle_set a y).
+  have H1 : is_lub_Rbar (CV_disk a) (CV_radius a).
+    rewrite /CV_radius /Lub_Rbar_ne ; by case: ex_lub_Rbar_ne.
+  have H2 : forall (y : R), 0 < y < r -> (CV_disk a y).
     move => y Hy.
     apply Comp_ex_series with An.
     move => n ; split.
@@ -604,11 +598,11 @@ Proof.
     apply Rle_trans with (Rabs (a (S n) * 0 ^ (S n))).
     by apply Rabs_pos.
     apply H0 ; rewrite /Boule Rminus_0_r Rabs_R0 ; by apply r.
-  have H3  : forall y, 0 < y < r -> Rbar_le (Finite (y)) (CV_circle a).
+  have H3  : forall y, 0 < y < r -> Rbar_le (Finite (y)) (CV_radius a).
     move => y Hy.
     by apply H1, H2.
-    have H4 := CV_circle_le_0 a.
-    case: (CV_circle a) H3 H4 => /= [cv | | ] H3 H4.
+    have H4 := CV_radius_ge_0 a.
+    case: (CV_radius a) H3 H4 => /= [cv | | ] H3 H4.
     apply Rbar_not_lt_le => /= H5.
     apply Rbar_finite_le in H4.
     have H6 : 0 < (cv+r)/2 < r.
@@ -628,14 +622,13 @@ Proof.
     by case: H4.
 Qed.
 
-
-Lemma CV_circle_CVU (a : nat -> R) (x : R) :
-  Rbar_lt (Finite (Rabs x)) (CV_circle a) 
+Lemma CV_radius_Reals_2 (a : nat -> R) (x : R) :
+  Rbar_lt (Finite (Rabs x)) (CV_radius a) 
   -> exists r : posreal, CVU (fun n x => sum_f_R0 (fun k => a k * x ^ k) n) (PSeries a) x r.
 Proof.
   move => Hx.
-  have H : exists r : posreal, Rabs x < r /\ Rbar_lt (Finite r) (CV_circle a).
-    case: (CV_circle a) Hx => /= [cv | | ] Hx.
+  have H : exists r : posreal, Rabs x < r /\ Rbar_lt (Finite r) (CV_radius a).
+    case: (CV_radius a) Hx => /= [cv | | ] Hx.
     have H : 0 < (Rabs x + cv)/2.
     apply Rdiv_lt_0_compat.
     apply Rplus_le_lt_0_compat.
@@ -655,7 +648,7 @@ Proof.
     by [].
   case: H => r H.
   apply CVN_CVU_r with r.
-  by apply CV_circle_CVN, H.
+  by apply CV_radius_Reals_0, H.
   by apply H.
 Qed.
 
@@ -695,9 +688,9 @@ Proof.
   by apply Series_correct.
 Qed.
 
-Lemma CV_circle_set_plus (a b : nat -> R) (x : R) :
-  (CV_circle_set a x) -> (CV_circle_set b x) 
-  -> (CV_circle_set (PS_plus a b) x).
+Lemma CV_disk_plus (a b : nat -> R) (x : R) :
+  (CV_disk a x) -> (CV_disk b x) 
+  -> (CV_disk (PS_plus a b) x).
 Proof.
   move => Ha Hb.
   move: (ex_series_plus _ _ Ha Hb).
@@ -706,37 +699,37 @@ Proof.
   rewrite Rmult_plus_distr_r.
   by apply Rabs_triang.
 Qed.
-Lemma CV_circle_plus (a b : nat -> R) :
-  Rbar_le (Rbar_min (CV_circle a) (CV_circle b)) (CV_circle (PS_plus a b)).
+Lemma CV_radius_plus (a b : nat -> R) :
+  Rbar_le (Rbar_min (CV_radius a) (CV_radius b)) (CV_radius (PS_plus a b)).
 Proof.
-  have Ha0 := CV_circle_le_0 a.
-  have Hb0 := CV_circle_le_0 b.
-  have Hab0 := CV_circle_le_0 (PS_plus a b).
-  have Hmin_0 : Rbar_le (Finite 0) (Rbar_min (CV_circle a) (CV_circle b)).
+  have Ha0 := CV_radius_ge_0 a.
+  have Hb0 := CV_radius_ge_0 b.
+  have Hab0 := CV_radius_ge_0 (PS_plus a b).
+  have Hmin_0 : Rbar_le (Finite 0) (Rbar_min (CV_radius a) (CV_radius b)).
     rewrite /Rbar_min ; by case: Rbar_le_dec => H.
   apply is_lub_Rbar_subset 
-    with (CV_circle_set (PS_plus a b)) 
-    (fun x => (CV_circle_set a x) /\ (CV_circle_set b x)).
-  move => x [Ha Hb] ; by apply CV_circle_set_plus.
-  rewrite /CV_circle /Lub_Rbar_ne ; by case: ex_lub_Rbar_ne.
+    with (CV_disk (PS_plus a b)) 
+    (fun x => (CV_disk a x) /\ (CV_disk b x)).
+  move => x [Ha Hb] ; by apply CV_disk_plus.
+  rewrite /CV_radius /Lub_Rbar_ne ; by case: ex_lub_Rbar_ne.
   rewrite /Rbar_min ; case: Rbar_le_dec => Hle ; [case: Hle => Hle | ].
 
-  apply is_lub_Rbar_eqset with (CV_circle_set a).
+  apply is_lub_Rbar_eqset with (CV_disk a).
   move => x ; split => Hx.
   by apply Hx.
   split.
   by apply Hx.
-  apply CV_circle_carac.
+  apply CV_disk_inside.
   apply Rbar_le_lt_trans with (2 := Hle).
   apply Rbar_not_lt_le => H1.
-  apply (CV_circle_carac_not _ _ H1).
+  apply (CV_disk_outside _ _ H1).
   by apply ex_series_lim_0, ex_series_Rabs.
-  rewrite /CV_circle /Lub_Rbar_ne ; by case: ex_lub_Rbar_ne.
+  rewrite /CV_radius /Lub_Rbar_ne ; by case: ex_lub_Rbar_ne.
 
-  have Ha : is_lub_Rbar (fun x : R => CV_circle_set a x) (CV_circle a).
-    rewrite /CV_circle /Lub_Rbar_ne ; by case: ex_lub_Rbar_ne.
-  have Hb : is_lub_Rbar (fun x : R => CV_circle_set b x) (CV_circle b).
-    rewrite /CV_circle /Lub_Rbar_ne ; by case: ex_lub_Rbar_ne.
+  have Ha : is_lub_Rbar (fun x : R => CV_disk a x) (CV_radius a).
+    rewrite /CV_radius /Lub_Rbar_ne ; by case: ex_lub_Rbar_ne.
+  have Hb : is_lub_Rbar (fun x : R => CV_disk b x) (CV_radius b).
+    rewrite /CV_radius /Lub_Rbar_ne ; by case: ex_lub_Rbar_ne.
   rewrite -Hle in Hb.
   split => [x Hx | l Hl].
   case: Hx => Hx0 Hx1.
@@ -744,13 +737,13 @@ Proof.
   move: (proj2 Ha l) => {Ha} Ha.
   move: (proj2 Hb l) => {Hb} Hb.
   have H1 : Rbar_le (Finite 0) l.
-    apply Hl ; split ; by apply CV_circle_0.
+    apply Hl ; split ; by apply CV_disk_0.
   case: l Hl Ha Hb H1 => [l | | ] Hl Ha Hb H1.
   apply Rbar_finite_le in H1.
   apply Rbar_not_lt_le => H0.
-  case: {1 2 3 5 6}(CV_circle a) H0 Hl Ha Hb (eq_refl (CV_circle a)) Ha0 => /= [c | | ] H0 Hl Ha Hb Heq Ha0.
+  case: {1 2 3 5 6}(CV_radius a) H0 Hl Ha Hb (eq_refl (CV_radius a)) Ha0 => /= [c | | ] H0 Hl Ha Hb Heq Ha0.
   case: (Hl ((l+c)/2)).
-  split ; apply CV_circle_carac ; rewrite -?Hle ?Heq /=.
+  split ; apply CV_disk_inside ; rewrite -?Hle ?Heq /=.
   have H : 0 <= ((l + c) / 2).
     apply Rmult_le_pos ; intuition.
     apply Rbar_finite_le in Ha0.
@@ -772,7 +765,7 @@ Proof.
   pattern l at 2 ; replace l with ((l+l)/2) by field.
   apply Rmult_lt_compat_r ; by intuition.
   case: (Hl (l+1)).
-  split ; apply CV_circle_carac ; by rewrite -?Hle ?Heq.
+  split ; apply CV_disk_inside ; by rewrite -?Hle ?Heq.
   apply Rle_not_lt, Rlt_le, Rlt_plus_1.
   rewrite Rbar_finite_eq ; apply Rgt_not_eq, Rlt_plus_1.
   by case: Ha0.
@@ -780,17 +773,17 @@ Proof.
   by case: H1.
 
   apply Rbar_not_le_lt in Hle.
-  apply is_lub_Rbar_eqset with (CV_circle_set b).
+  apply is_lub_Rbar_eqset with (CV_disk b).
   move => x ; split => Hx.
   by apply Hx.
   split.
-  apply CV_circle_carac.
+  apply CV_disk_inside.
   apply Rbar_le_lt_trans with (2 := Hle).
   apply Rbar_not_lt_le => H1.
-  apply (CV_circle_carac_not _ _ H1).
+  apply (CV_disk_outside _ _ H1).
   by apply ex_series_lim_0, ex_series_Rabs.
   by apply Hx.
-  rewrite /CV_circle /Lub_Rbar_ne ; by case: ex_lub_Rbar_ne.
+  rewrite /CV_radius /Lub_Rbar_ne ; by case: ex_lub_Rbar_ne.
 Qed.
 
 (** Scalar multiplication *)
@@ -826,9 +819,9 @@ Proof.
   apply Rmult_assoc.
 Qed.
 
-Lemma CV_circle_set_scal_l (c : R) (a : nat -> R) (x : R) :
-  (CV_circle_set a x) 
-  -> (CV_circle_set (PS_scal_l c a) x).
+Lemma CV_disk_scal_l (c : R) (a : nat -> R) (x : R) :
+  (CV_disk a x) 
+  -> (CV_disk (PS_scal_l c a) x).
 Proof.
   move => Ha.
   apply ex_series_ext with (fun n => Rabs c * Rabs (a n * x ^ n)).
@@ -837,14 +830,14 @@ Proof.
   by apply ex_series_scal_l, Ha.
 Qed.
 
-Lemma CV_circle_scal_l (c : R) (a : nat -> R) :
-  Rbar_le (CV_circle a) (CV_circle (PS_scal_l c a)).
+Lemma CV_radius_scal_l (c : R) (a : nat -> R) :
+  Rbar_le (CV_radius a) (CV_radius (PS_scal_l c a)).
 Proof.
-  rewrite /CV_circle /Lub_Rbar_ne ;
+  rewrite /CV_radius /Lub_Rbar_ne ;
   case: ex_lub_Rbar_ne => la [ub_a lub_a] ;
   case: ex_lub_Rbar_ne => lc [ub_c lub_c] /=.
   apply lub_a => x Hx.
-  by apply ub_c, CV_circle_set_scal_l.
+  by apply ub_c, CV_disk_scal_l.
 Qed.
 
 Definition PS_scal_r (c : R) (a : nat -> R) (n : nat) : R :=
@@ -874,9 +867,9 @@ Proof.
   rewrite /PS_scal_r ; ring.
 Qed.
 
-Lemma CV_circle_set_scal_r (c : R) (a : nat -> R) (x : R) :
-  (CV_circle_set a x) 
-  -> (CV_circle_set (PS_scal_r c a) x).
+Lemma CV_disk_scal_r (c : R) (a : nat -> R) (x : R) :
+  (CV_disk a x) 
+  -> (CV_disk (PS_scal_r c a) x).
 Proof.
   move => Ha.
   apply ex_series_ext with (fun n => Rabs c * Rabs (a n * x ^ n)).
@@ -884,14 +877,14 @@ Proof.
   rewrite /PS_scal_r /= ; ring.
   by apply ex_series_scal_l, Ha.
 Qed.
-Lemma CV_circle_scal_r (c : R) (a : nat -> R) :
-  Rbar_le (CV_circle a) (CV_circle (PS_scal_r c a)).
+Lemma CV_radius_scal_r (c : R) (a : nat -> R) :
+  Rbar_le (CV_radius a) (CV_radius (PS_scal_r c a)).
 Proof.
-  rewrite /CV_circle /Lub_Rbar_ne ;
+  rewrite /CV_radius /Lub_Rbar_ne ;
   case: ex_lub_Rbar_ne => la [ub_a lub_a] ;
   case: ex_lub_Rbar_ne => lc [ub_c lub_c] /=.
   apply lub_a => x Hx.
-  by apply ub_c, CV_circle_set_scal_r.
+  by apply ub_c, CV_disk_scal_r.
 Qed.
 
 (** Multiplication and division by a variable *)
@@ -1122,9 +1115,9 @@ Proof.
   apply Ha ; by intuition.
 Qed.
 
-Lemma CV_circle_incr_1 (a : nat -> R) : CV_circle (PS_incr_1 a) = CV_circle a.
+Lemma CV_radius_incr_1 (a : nat -> R) : CV_radius (PS_incr_1 a) = CV_radius a.
 Proof.
-  rewrite /CV_circle /CV_circle_set.
+  rewrite /CV_radius /CV_disk.
 
   apply Lub_Rbar_ne_eqset => x ; split => Hx ;
   case: (Req_dec x 0) => [-> | Hx0].
@@ -1195,7 +1188,7 @@ Definition PS_mult (a b : nat -> R) n :=
 
 Lemma is_pseries_mult (a b : nat -> R) (x la lb : R) :
   is_pseries a x la -> is_pseries b x lb 
-  -> Rbar_lt (Rabs x) (CV_circle a) -> Rbar_lt (Rabs x) (CV_circle b)
+  -> Rbar_lt (Rabs x) (CV_radius a) -> Rbar_lt (Rabs x) (CV_radius b)
   -> is_pseries (PS_mult a b) x (la * lb).
 Proof.
   move => Hla Hlb Ha Hb.
@@ -1210,8 +1203,8 @@ Proof.
   apply (is_series_mult (fun l => a l * x ^ l) (fun l => b l * x ^ l)).
   by apply Hla.
   by apply Hlb.
-  by apply CV_circle_carac.
-  by apply CV_circle_carac.
+  by apply CV_disk_inside.
+  by apply CV_disk_inside.
 Qed.
 
 (** Sums on even and odd *)
@@ -1352,15 +1345,15 @@ Proof.
   rewrite /PS_scal_l /PS_opp ; ring.
 Qed.
 
-Lemma CV_circle_opp (a : nat -> R) :
-  (CV_circle a) = (CV_circle (PS_opp a)).
+Lemma CV_radius_opp (a : nat -> R) :
+  (CV_radius a) = (CV_radius (PS_opp a)).
 Proof.
   apply Rbar_le_antisym.
-  rewrite (CV_circle_ext (PS_opp a) (PS_scal_l (-1) a)).
-  by apply CV_circle_scal_l.
+  rewrite (CV_radius_ext (PS_opp a) (PS_scal_l (-1) a)).
+  by apply CV_radius_scal_l.
   move => n ; rewrite /PS_scal_l /PS_opp ; ring.
-  rewrite (CV_circle_ext a (PS_scal_l (-1) (PS_opp a))).
-  by apply CV_circle_scal_l.
+  rewrite (CV_radius_ext a (PS_scal_l (-1) (PS_opp a))).
+  by apply CV_radius_scal_l.
   move => n ; rewrite /PS_scal_l /PS_opp ; ring.
 Qed.
 
@@ -1394,20 +1387,16 @@ Proof.
   by apply ex_pseries_opp.
 Qed.
 
-(** Coming soon: (* bonus *)
-  - composition
-  - inverse *)
-
 (** * Analysis *)
 
 (** ** Continuity *)
 
 Lemma PSeries_continuity (a : nat -> R) (x : R) :
-  Rbar_lt (Finite (Rabs x)) (CV_circle a) 
+  Rbar_lt (Finite (Rabs x)) (CV_radius a) 
     -> continuity_pt (PSeries a) x.
 Proof.
   move => H.
-  case: (CV_circle_CVU a x H) => r H0.
+  case: (CV_radius_Reals_2 a x H) => r H0.
   apply (CVU_continuity 
     (fun (n : nat) (x : R) => sum_f_R0 (fun k : nat => a k * x ^ k) n)
     (PSeries a) x r H0).
@@ -1427,11 +1416,11 @@ Qed.
 
 Definition PS_derive (a : nat -> R) (n : nat) :=
   INR (S n) * a (S n).
-Lemma CV_circle_derive (a : nat -> R) :
-  CV_circle (PS_derive a) = CV_circle a.
+Lemma CV_radius_derive (a : nat -> R) :
+  CV_radius (PS_derive a) = CV_radius a.
 Proof.
-  have H := (CV_circle_bounded a).
-  have H0 := (CV_circle_bounded (PS_derive a)).
+  have H := (CV_radius_bounded a).
+  have H0 := (CV_radius_bounded (PS_derive a)).
 
   apply Rbar_le_antisym.
   apply is_lub_Rbar_subset with (2 := H) (3 := H0) => x [M Ha].
@@ -1454,7 +1443,7 @@ Proof.
   
   apply H => x [M Hx].
   
-  have H1 : Rbar_le (Finite 0) (CV_circle (PS_derive a)).
+  have H1 : Rbar_le (Finite 0) (CV_radius (PS_derive a)).
     apply H0 ; exists (Rabs (PS_derive a O)) ; case => /= [ | n].
     rewrite Rmult_1_r ; by apply Rle_refl.
     rewrite Rmult_0_l Rmult_0_r Rabs_R0 ; by apply Rabs_pos.
@@ -1465,8 +1454,8 @@ Proof.
     by apply H1.
     by apply Hw.
   
-  suff : forall y, 0 < y < x -> Rbar_le (Finite y) (CV_circle (PS_derive a)).
-    case: (CV_circle (PS_derive a)) H1 => [l | | ] /= H1 H2.
+  suff : forall y, 0 < y < x -> Rbar_le (Finite y) (CV_radius (PS_derive a)).
+    case: (CV_radius (PS_derive a)) H1 => [l | | ] /= H1 H2.
     apply Rbar_not_lt_le => /= H3.
     have H4 : (0 < (x+l)/2 < x).
       apply Rbar_finite_le in H1.
@@ -1491,7 +1480,7 @@ Proof.
   have H2 : is_lim_seq (fun n => INR (S n) / x * (y/x) ^ n) 0.
     apply ex_series_lim_0.
     apply ex_series_Rabs.
-    apply DAlembert_crit with 1.
+    apply CV_disk_DAlembert with 1.
     move => n.
     apply Rgt_not_eq, Rdiv_lt_0_compat.
     by apply lt_0_INR, lt_O_Sn.
@@ -1575,17 +1564,17 @@ Proof.
 Qed.
 
 Lemma is_derive_PSeries (a : nat -> R) (x : R) :
-  Rbar_lt (Finite (Rabs x)) (CV_circle a)
+  Rbar_lt (Finite (Rabs x)) (CV_radius a)
     -> is_derive (PSeries a) x (PSeries (PS_derive a) x).
 Proof.
   move => Hx.
 
-  case: (CV_circle_CVU _ _ Hx) => r0 Hr0 ;
-  rewrite -CV_circle_derive in Hx ;
-  case: (CV_circle_CVU _ _ Hx) => r1 Hr1 ;
-  rewrite CV_circle_derive in Hx.
-  apply CVU_dom_equiv in Hr0 ;
-  apply CVU_dom_equiv in Hr1.
+  case: (CV_radius_Reals_2 _ _ Hx) => r0 Hr0 ;
+  rewrite -CV_radius_derive in Hx ;
+  case: (CV_radius_Reals_2 _ _ Hx) => r1 Hr1 ;
+  rewrite CV_radius_derive in Hx.
+  apply CVU_dom_Reals in Hr0 ;
+  apply CVU_dom_Reals in Hr1.
   have Hr : 0 < (Rmin r0 r1).
     apply Rmin_case.
     by apply r0.
@@ -1755,14 +1744,14 @@ Proof.
   by apply Hr1.
 Qed.
 Lemma ex_derive_PSeries (a : nat -> R) (x : R) :
-  Rbar_lt (Finite (Rabs x)) (CV_circle a)
+  Rbar_lt (Finite (Rabs x)) (CV_radius a)
     -> ex_derive (PSeries a) x.
 Proof.
   move => Hx ; exists (PSeries (PS_derive a) x).
   by apply is_derive_PSeries.
 Qed.
 Lemma Derive_PSeries (a : nat -> R) (x : R) :
-  Rbar_lt (Finite (Rabs x)) (CV_circle a)
+  Rbar_lt (Finite (Rabs x)) (CV_radius a)
     -> Derive (PSeries a) x = PSeries (PS_derive a) x.
 Proof.
   move => H.
@@ -1771,20 +1760,20 @@ Proof.
 Qed.
 
 Lemma ex_pseries_derive (a : nat -> R) (x : R) :
-  Rbar_lt (Finite (Rabs x)) (CV_circle a)
+  Rbar_lt (Finite (Rabs x)) (CV_radius a)
     -> ex_pseries (PS_derive a) x.
 Proof.
   move => Hx.
   apply ex_series_Rabs.
-  apply CV_circle_carac.
-  by rewrite CV_circle_derive.
+  apply CV_disk_inside.
+  by rewrite CV_radius_derive.
 Qed.
 
 Definition PS_derive_n (n : nat) (a : nat -> R) := 
   (fun k => (INR (fact (k + n)%nat) / INR (fact k)) * a (k + n)%nat).
   
 Lemma is_derive_n_PSeries (n : nat) (a : nat -> R) :
-  forall x, Rbar_lt (Rabs x) (CV_circle a)
+  forall x, Rbar_lt (Rabs x) (CV_radius a)
     -> is_derive_n (PSeries a) n x (PSeries (PS_derive_n n a) x).
 Proof.
   elim: n => [ | n IH] x Hx.
@@ -1797,7 +1786,7 @@ Proof.
   simpl ; rewrite /PS_derive_n /=.
   apply is_derive_ext_loc 
     with (PSeries (fun k : nat => INR (fact (k + n)) / INR (fact k) * a (k + n)%nat)).
-  case Ha : (CV_circle a) => [cva | | ].
+  case Ha : (CV_radius a) => [cva | | ].
   move: (Hx) ; rewrite Ha ; move/Rminus_lt_0 => Hx0.
   exists (mkposreal _ Hx0) => /= y Hy.
   apply sym_eq.
@@ -1817,18 +1806,18 @@ Proof.
     with (PSeries (PS_derive
       (fun k : nat => INR (fact (k + n)) / INR (fact k) * a (k + n)%nat)) x).
   apply is_derive_PSeries.
-  replace (CV_circle (fun k : nat => INR (fact (k + n)) / INR (fact k) * a (k + n)%nat))
-    with (CV_circle a).
+  replace (CV_radius (fun k : nat => INR (fact (k + n)) / INR (fact k) * a (k + n)%nat))
+    with (CV_radius a).
   by apply Hx.
   elim: n {IH} => [ | n IH].
-  apply CV_circle_ext => n.
+  apply CV_radius_ext => n.
   rewrite -plus_n_O.
   field.
   apply Rgt_not_eq.
   by apply INR_fact_lt_0.
   rewrite IH.
-  rewrite -CV_circle_derive.
-  apply CV_circle_ext => k.
+  rewrite -CV_radius_derive.
+  apply CV_radius_ext => k.
   rewrite /PS_derive.
   rewrite -plus_n_Sm plus_Sn_m /fact -/fact ?mult_INR ?S_INR.
   field.
@@ -1844,7 +1833,7 @@ Proof.
   apply (lt_INR O), lt_O_Sn.
 Qed.
 Lemma ex_derive_n_PSeries (n : nat) (a : nat -> R) (x : R) :
-  Rbar_lt (Finite (Rabs x)) (CV_circle a)
+  Rbar_lt (Finite (Rabs x)) (CV_radius a)
     -> ex_derive_n (PSeries a) n x.
 Proof.
   elim: n a x => [ | n IH] a x Hx.
@@ -1854,7 +1843,7 @@ Proof.
   by apply (is_derive_n_PSeries (S n)).
 Qed.
 Lemma Derive_n_PSeries (n : nat) (a : nat -> R) (x : R) :
-  Rbar_lt (Finite (Rabs x)) (CV_circle a)
+  Rbar_lt (Finite (Rabs x)) (CV_radius a)
     -> Derive_n (PSeries a) n x = PSeries (PS_derive_n n a) x.
 Proof.
   move => H.
@@ -1863,7 +1852,7 @@ Proof.
 Qed.
 
 Lemma Derive_n_coef (a : nat -> R) (n : nat) :
-  Rbar_lt (Finite 0) (CV_circle a)
+  Rbar_lt (Finite 0) (CV_radius a)
     -> Derive_n (PSeries a) n 0 = a n * (INR (fact n)).
 Proof.
   elim: n a => [ | n IH] a Ha.
@@ -1878,18 +1867,18 @@ Proof.
     with (Derive_n (PSeries (PS_derive a)) n 0).
   rewrite IH.
   rewrite /fact -/fact mult_INR /PS_derive ; ring.
-  by rewrite CV_circle_derive.
+  by rewrite CV_radius_derive.
   transitivity (Derive_n (Derive (PSeries a)) n 0).
   apply Derive_n_ext_loc.
-  case: (Rbar_eq_dec (CV_circle a) p_infty) => H.
+  case: (Rbar_eq_dec (CV_radius a) p_infty) => H.
   exists (mkposreal _ Rlt_0_1) => /= x Hx.
   apply sym_eq ; apply Derive_PSeries.
   by rewrite H.
-  have Hc : 0 < real (CV_circle a).
-    case: (CV_circle a) Ha H => /= [c | | ] Ha H ; by [].
+  have Hc : 0 < real (CV_radius a).
+    case: (CV_radius a) Ha H => /= [c | | ] Ha H ; by [].
   exists (mkposreal _ Hc) => /= x Hx.
   apply sym_eq ; apply Derive_PSeries.
-  case: (CV_circle a) Hx Ha => /= [c | | ] Hx Ha.
+  case: (CV_radius a) Hx Ha => /= [c | | ] Hx Ha.
   by rewrite Rminus_0_r in Hx.
   by [].
   by [].
@@ -1898,22 +1887,22 @@ Proof.
 Qed.
 
 Lemma PSeries_ext_recip (a b : nat -> R) (n : nat) :
-  Rbar_lt (Finite 0) (CV_circle a) -> Rbar_lt (Finite 0) (CV_circle b)
-  -> (forall x, Rbar_lt (Finite (Rabs x)) (CV_circle a) -> PSeries a x = PSeries b x)
+  Rbar_lt (Finite 0) (CV_radius a) -> Rbar_lt (Finite 0) (CV_radius b)
+  -> (forall x, Rbar_lt (Finite (Rabs x)) (CV_radius a) -> PSeries a x = PSeries b x)
     -> a n = b n.
 Proof.
   move => Ha Hb Hab.
   have H : a n * (INR (fact n)) = b n * (INR (fact n)).
   rewrite -?Derive_n_coef.
-  case: (Rbar_eq_dec (CV_circle a) p_infty) => H.
+  case: (Rbar_eq_dec (CV_radius a) p_infty) => H.
   apply Derive_n_ext => x.
   apply Hab ; by rewrite H.
   apply Derive_n_ext_loc.
-  have Hc : 0 < real (CV_circle a).
-    case: (CV_circle a) Ha H => /= [c | | ] Ha H ; by [].
+  have Hc : 0 < real (CV_radius a).
+    case: (CV_radius a) Ha H => /= [c | | ] Ha H ; by [].
   exists (mkposreal _ Hc) => /= x Hx.
   apply Hab.
-  case: (CV_circle a) Hx Ha => /= [c | | ] Hx Ha.
+  case: (CV_radius a) Hx Ha => /= [c | | ] Hx Ha.
   by rewrite Rminus_0_r in Hx.
   by [].
   by [].
@@ -2045,7 +2034,7 @@ Proof.
       exact: H.
       exact: INR_fact_lt_0.
 
-    apply ex_series_lim_0, ex_series_Rabs, DAlembert_ex_series with 0.
+    apply ex_series_lim_0, ex_series_Rabs, ex_series_DAlembert with 0.
     exact: Rlt_0_1.
     move => n ; apply Rgt_not_eq, Rlt_gt, H0.
 
@@ -2062,7 +2051,7 @@ Proof.
     apply (is_lim_seq_incr_1 (fun n => / INR n)).
     replace (Finite 0) with (Rbar_inv p_infty) by auto.
     apply is_lim_seq_inv.
-    by apply is_lim_seq_id.
+    by apply is_lim_seq_INR.
     by [].
     apply Rnot_lt_le in H ; case: H => H.
     contradict H.
@@ -2132,7 +2121,7 @@ Proof.
   
 Qed.
 
-(** ** Riemann Integrability *)
+(** ** Riemann integrability *)
 
 Definition PS_Int (a : nat -> R) (n : nat) : R :=
   match n with
@@ -2140,22 +2129,22 @@ Definition PS_Int (a : nat -> R) (n : nat) : R :=
     | S n => a n / INR (S n)
   end.
 
-Lemma CV_circle_Int (a : nat -> R) :
-  CV_circle (PS_Int a) = CV_circle a.
+Lemma CV_radius_Int (a : nat -> R) :
+  CV_radius (PS_Int a) = CV_radius a.
 Proof.
-  rewrite -CV_circle_derive.
-  apply CV_circle_ext.
+  rewrite -CV_radius_derive.
+  apply CV_radius_ext.
   rewrite /PS_derive /PS_Int => n ; rewrite S_INR.
   field.
   apply Rgt_not_eq, INRp1_pos.
 Qed.
 
 Lemma is_RInt_PSeries (a : nat -> R) (x : R) :
-  Rbar_lt (Rabs x) (CV_circle a)
+  Rbar_lt (Rabs x) (CV_radius a)
   -> is_RInt (PSeries a) 0 x (PSeries (PS_Int a) x).
 Proof.
   move => Hx.
-  have H : forall y, Rmin 0 x <= y <= Rmax 0 x -> Rbar_lt (Rabs y) (CV_circle a).
+  have H : forall y, Rmin 0 x <= y <= Rmax 0 x -> Rbar_lt (Rabs y) (CV_radius a).
     move => y Hy.
     apply: Rbar_le_lt_trans Hx.
     apply Rbar_finite_le.
@@ -2182,18 +2171,18 @@ Proof.
   apply PSeries_ext ; rewrite /PS_derive /PS_Int => n ; rewrite S_INR.
   field.
   apply Rgt_not_eq, INRp1_pos.
-  rewrite CV_circle_Int.
+  rewrite CV_radius_Int.
   by apply H.
   search_RInt.
   apply is_RInt_Derive.
   move => y Hy.
   apply ex_derive_PSeries.
-  rewrite CV_circle_Int.
+  rewrite CV_radius_Int.
   by apply H.
   move => y Hy.
   apply continuity_pt_ext_loc with (PSeries a).
 
-  apply locally_interval with (Rbar_opp (CV_circle a)) (CV_circle a).
+  apply locally_interval with (Rbar_opp (CV_radius a)) (CV_radius a).
   apply Rbar_opp_lt ; rewrite Rbar_opp_involutive.
   apply: Rbar_le_lt_trans (H _ Hy).
   simpl ; apply Rbar_finite_le.
@@ -2205,7 +2194,7 @@ Proof.
   apply PSeries_ext ; rewrite /PS_derive /PS_Int => n ; rewrite S_INR.
   field.
   apply Rgt_not_eq, INRp1_pos.
-  rewrite CV_circle_Int.
+  rewrite CV_radius_Int.
   apply (Rbar_abs_lt_between z) ; by split.
   apply PSeries_continuity.
   by apply H.
@@ -2214,7 +2203,7 @@ Proof.
 Qed.
 
 Lemma ex_RInt_PSeries (a : nat -> R) (x : R) :
-  Rbar_lt (Rabs x) (CV_circle a)
+  Rbar_lt (Rabs x) (CV_radius a)
   -> ex_RInt (PSeries a) 0 x.
 Proof.
   move => Hx.
@@ -2222,7 +2211,7 @@ Proof.
   by apply is_RInt_PSeries.
 Qed.
 Lemma RInt_PSeries (a : nat -> R) (x : R) :
-  Rbar_lt (Rabs x) (CV_circle a)
+  Rbar_lt (Rabs x) (CV_radius a)
   -> RInt (PSeries a) 0 x = PSeries (PS_Int a) x.
 Proof.
   move => Hx.

@@ -87,12 +87,12 @@ Lemma continuity_implies_ex_Rint: forall f a b,
    (forall x, continuity_pt f x) -> ex_RInt f a b.
 intros f a b H.
 case (Rle_or_lt a b); intros H1.
-apply ex_RInt_correct_1.
+apply ex_RInt_Reals_1.
 apply continuity_implies_RiemannInt.
 exact H1.
 intros x _; apply H.
 apply ex_RInt_swap.
-apply ex_RInt_correct_1.
+apply ex_RInt_Reals_1.
 apply continuity_implies_RiemannInt.
 left; exact H1.
 intros x _; apply H.
@@ -196,6 +196,7 @@ apply locally_forall => y.
 admit. (* cont 2D -> 1D *)
 apply locally_forall => y.
 apply continuity_implies_ex_Rint => z.
+apply derivable_continuous_pt.
 admit. (* ??? *)
 intros t' _.
 admit.

@@ -2,8 +2,7 @@ Require Import Reals ssreflect.
 Require Import Rcomplements.
 Require Import Limit Rbar.
 
-(** * Series *)
-(** ** Definitions *)
+(** * Definitions *)
 
 Definition is_series (a : nat -> R) (l : R) :=
   is_lim_seq (sum_f_R0 (fun k => a k)) l.
@@ -102,7 +101,7 @@ Proof.
   by apply (H n Hn).
 Qed.
 
-(** Extentionality *)
+(** Extensionality *)
 
 Lemma is_series_ext (a b : nat -> R) (l : R) :
   (forall n, a n = b n) -> (is_series a l) 
@@ -275,9 +274,7 @@ Proof.
   move => k Hk ; intuition.
 Qed.
 
-(** ** Convergence theorems *)
-
-(** Cauchy Criterion : A redemontrer sans Rcomplete.R_complete *)
+(** * Convergence theorems *)
 
 Lemma Cauchy_ex_series (a : nat -> R) :
   ex_series a <-> (Cauchy_crit_series a).
@@ -288,8 +285,6 @@ Proof.
   apply R_complete.
   by apply Hcv.
 Qed.
-(** %$\sum a_n$ is convergent $\Rightarrow \lim_{n\to + \infty} a_n = 0$%
-#if a is summable, then its limit is 0# *)
 
 Lemma ex_series_lim_0 (a : nat -> R) :
   ex_series a -> is_lim_seq a 0.
@@ -305,9 +300,6 @@ Proof.
     by (simpl ; ring).
   apply Hs ; by intuition.
 Qed.
-
-(** #Absolute convergence imply convergence#
-%$\sum | a_n |$ converge $\Rightarrow \sum a_n$ is convergent% *)
 
 Lemma ex_series_Rabs (a : nat -> R) :
   ex_series (fun n => Rabs (a n)) -> ex_series a.
@@ -402,9 +394,9 @@ Proof.
 Qed.
 
 
-(** ** Operations *)
+(** * Operations *)
 
-(** Additive *)
+(** Additive operators *)
 
 Lemma is_series_opp (a : nat -> R) (la : R) :
   is_series a la
@@ -793,15 +785,9 @@ Proof.
   rewrite /ap /am /bp /bm ; field.
 Qed.
 
-(** Coming soon:
-  - multiplication *)
+(** * D'Alembert criterion *)
 
-
-
-(** * Particular series *)
-(** D'Alembert criterium *)
-
-Lemma DAlembert_ex_series (a : nat -> R) (k : R) :
+Lemma ex_series_DAlembert (a : nat -> R) (k : R) :
   k < 1 -> (forall n, a n <> 0) 
     -> is_lim_seq (fun n => Rabs (a (S n) / a n)) k
       -> ex_series (fun n => Rabs (a n)).
@@ -860,7 +846,7 @@ Proof.
   simpl ; ring.
 Qed.
 
-Lemma DAlembert_not_ex_series (a : nat -> R) (l : R) :
+Lemma not_ex_series_DAlembert (a : nat -> R) (l : R) :
   l > 1 -> (forall n, a n <> 0)
     -> is_lim_seq (fun n => Rabs (a (S n) / a n)) l
       -> ~ is_lim_seq a 0.
@@ -919,7 +905,7 @@ Proof.
   by [].
 Qed.
 
-(** Geometric series *)
+(** * Geometric series *)
 
 Lemma is_series_geom (q : R) :
   Rabs q < 1 -> is_series (fun n => q ^ n) (/ (1-q)).

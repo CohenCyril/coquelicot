@@ -1581,7 +1581,7 @@ Qed.
 
 (** * Operations on the Riemann integral *)
 
-(** Change of expression *)
+(** Extensionality *)
 
 Lemma Riemann_integrable_ext : forall (f g : R -> R) (a b : R),
   (forall x, Rmin a b <= x <= Rmax a b -> f x = g x)
@@ -1751,7 +1751,7 @@ Proof.
   intros ; ring.
 Qed.
 
-(** * ln *)
+(** * Natural logarithm *)
 
 Lemma ln_pow x n : 0 < x -> ln (x^n) = INR n * ln x.
   intro Hx ;

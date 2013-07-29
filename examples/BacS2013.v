@@ -1,3 +1,6 @@
+(** * Bac S 2013 *)
+(** https://www.lri.fr/~lelay/Bac2013/Bac_S_2013_Metropole.pdf *)
+
 Require Import Reals ssreflect.
 Require Import Rcomplements Rbar.
 Require Import Derive RInt Continuity Limit ElemFct.
@@ -9,7 +12,7 @@ Ltac pos_rat :=
   try by apply Rlt_0_1.
 
 (** * Exercice 2 *)
-(** 8:14 *)
+(* 8:14 *)
 
 Definition fab (a b x : R) : R := (a + b * ln x) / x.
 
@@ -66,7 +69,7 @@ Qed.
 Definition f (x : R) : R := fab 2 2 x.
 
 (** ** Questions 2 *)
-(** 8:38 *)
+(* 8:38 *)
 (** 2.a. *)
 
 Lemma Signe_df : forall x, 0 < x -> sign (Derive f x) = sign (- ln x).
@@ -149,7 +152,7 @@ Proof.
   by apply is_lim_id.
   by [].
   apply is_lim_scal_l.
-  by apply is_lim_ln_aux1.
+  by apply is_lim_div_ln_p.
   simpl.
   reflexivity.
   simpl ; apply Rbar_finite_eq ; ring.
@@ -201,7 +204,7 @@ Proof.
 Qed.
 
 (** ** Questions 3 *)
-(** 9:40 *)
+(* 9:40 *)
 
 (** 3.a *)
 
@@ -285,7 +288,7 @@ Proof.
 Qed.
 
 (** ** Questions 5 *)
-(** 10:08 *)
+(* 10:08 *)
 
 (** 5.a. *)
 
@@ -353,7 +356,7 @@ Proof.
 Qed.
 
 (** * Exercice 4 *)
-(** 10:36 *)
+(* 10:36 *)
 
 Fixpoint u (n : nat) : R :=
   match n with
@@ -367,7 +370,7 @@ Fixpoint u (n : nat) : R :=
 (** 1.b. *)
 
 (** ** Questions 2 *)
-(** 10:40 *)
+(* 10:40 *)
 (** 2.a *)
 
 Lemma Q2a : forall n, u n <= INR n + 3.
@@ -407,7 +410,7 @@ Proof.
 Qed.
 
 (** ** Question 3 *)
-(** 10:49 *)
+(* 10:49 *)
 
 Definition v (n : nat) : R := u n - INR n.
 
@@ -445,13 +448,13 @@ Proof.
   apply Rdiv_le_0_compat.
   by apply Rlt_le, Rlt_0_2.
   repeat apply Rplus_lt_0_compat ; apply Rlt_0_1.
-  apply is_lim_seq_id.
+  apply is_lim_seq_INR.
   by [].
   by [].
 Qed.
 
 (** ** Questions 4 *)
-(** 11:00 *)
+(* 11:00 *)
 
 Definition Su (n : nat) : R := sum_f_R0 u n.
 Definition Tu (n : nat) : R := Su n / (INR n) ^ 2.
@@ -500,8 +503,8 @@ Proof.
   repeat apply Rplus_lt_0_compat ; apply Rlt_0_1.
   by [].
   repeat apply is_lim_seq_mult.
-  apply is_lim_seq_id.
-  apply is_lim_seq_id.
+  apply is_lim_seq_INR.
+  apply is_lim_seq_INR.
   apply is_lim_seq_const.
   simpl.
   case: Rle_dec Rle_0_1 => // H _.
@@ -517,7 +520,7 @@ Proof.
   case: Rle_lt_or_eq_dec (Rlt_not_eq _ _ Rlt_0_1) => //.
   apply is_lim_seq_inv.
   apply is_lim_seq_scal_l.
-  by apply is_lim_seq_id.
+  by apply is_lim_seq_INR.
   simpl.
   case: Rle_dec (Rlt_le _ _ Rlt_0_2) => // H _.
   case: Rle_lt_or_eq_dec (Rlt_not_eq _ _ Rlt_0_2) => //.
@@ -539,4 +542,4 @@ Proof.
   case: Rle_lt_or_eq_dec (Rlt_not_eq _ _ Rlt_0_2) => //= _ _.
   apply Rbar_finite_eq ; field.
 Qed.
- (** 11:33 *)
+(* 11:33 *)

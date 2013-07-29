@@ -18,9 +18,9 @@ Definition ex_lim (f : R -> R) (x : Rbar) := exists l : Rbar, is_lim f x l.
 Definition ex_finite_lim (f : R -> R) (x : Rbar) := exists l : R, is_lim f x l.
 Definition Lim (f : R -> R) (x : Rbar) := Lim_seq (fun n => f (Rbar_loc_seq x n)).
 
-(** Equivalences *)
+(** Equivalence with standard library Reals *)
 
-Lemma is_lim_Coq_0 (f : R -> R) (x l : R) :
+Lemma is_lim_Reals_0 (f : R -> R) (x l : R) :
   is_lim f x l -> limit1_in f (fun y => y <> x) l x.
 Proof.
   intros H e He ; set (eps := mkposreal e He).
@@ -30,7 +30,7 @@ Proof.
   apply Hy.
   apply Hy.
 Qed.
-Lemma is_lim_Coq_1 (f : R -> R) (x l : R) :
+Lemma is_lim_Reals_1 (f : R -> R) (x l : R) :
   limit1_in f (fun y => y <> x) l x -> is_lim f x l.
 Proof.
   intros H (e,He).
@@ -40,13 +40,13 @@ Proof.
   by apply Hxy.
   by apply Hy.
 Qed.
-Lemma is_lim_Coq f x l :
+Lemma is_lim_Reals f x l :
   limit1_in f (fun y => y <> x) l x <-> is_lim f x l.
 Proof.
-  split ; [apply is_lim_Coq_1|apply is_lim_Coq_0].
+  split ; [apply is_lim_Reals_1|apply is_lim_Reals_0].
 Qed.
 
-(** Unicity *)
+(** Uniqueness *)
 
 Lemma is_lim_comp_seq (f : R -> R) (x l : Rbar) :
   is_lim f x l -> (forall u : nat -> R, 
@@ -181,7 +181,7 @@ end.
 
 (** ** Operations and order *)
 
-(** Extentionality *)
+(** Extensionality *)
 
 Lemma is_lim_ext_loc (f g : R -> R) (x l : Rbar) :
   Rbar_locally (fun y => f y = g y) x
@@ -484,9 +484,9 @@ Proof.
   by apply is_lim_const.
 Qed.
 
-(** *** Additive *)
+(** *** Additive operators *)
 
-(** Oposite *)
+(** Opposite *)
 
 Lemma is_lim_opp (f : R -> R) (x l : Rbar) :
   is_lim f x l -> is_lim (fun y => - f y) x (Rbar_opp l).
@@ -594,7 +594,7 @@ Proof.
   by rewrite (Rbar_plus_correct _ _ _ Hl).
 Qed.
 
-(** Substraction *)
+(** Subtraction *)
 
 Lemma is_lim_minus (f g : R -> R) (x lf lg : Rbar) :
   is_lim f x lf -> is_lim g x lg
@@ -636,7 +636,7 @@ Proof.
   by apply Hl.
 Qed.
 
-(** ** Multiplicative *)
+(** ** Multiplicative operators *)
 (** Multiplicative inverse *)
 
 Lemma is_lim_inv (f : R -> R) (x l : Rbar) :
@@ -1178,7 +1178,7 @@ Proof.
   by apply Hlg.
 Qed.
 
-(** a particular composition *)
+(** Composition by linear functions *)
 
 Lemma is_lim_comp_lin (f : R -> R) (a b : R) (x l : Rbar) :
   is_lim f (Rbar_plus (Rbar_mult a x) b) l -> a <> 0
@@ -1231,6 +1231,8 @@ Proof.
   by apply Lim_correct.
   exact: Ha.
 Qed.
+
+(** Continuity and limit *)
 
 Lemma is_lim_continuity (f : R -> R) (x : R) :
   continuity_pt f x -> is_lim f x (f x).
@@ -2003,26 +2005,9 @@ Proof.
   by rewrite -(Ropp_involutive y) -H4 Ropp_involutive.
 Qed.
 
-Lemma surjective_uniqueness (f : R -> R) (a b : Rbar) (y : R) :
-  (forall (x : R), Rbar_lt a x -> Rbar_lt x b -> continuity_pt f x)
-  -> (forall (x y : R), Rbar_lt a x -> Rbar_lt x b 
-    -> Rbar_lt a y -> Rbar_lt y b -> x <> y -> f x <> f y)
-  -> (exists (x : R), Rbar_lt a x /\ Rbar_lt x b /\ f x = y)
-  -> (exists! (x : R), Rbar_lt a x /\ Rbar_lt x b /\ f x = y).
-Proof.
-  move => Cf Hf [x [Hax [Hxb <-]]].
-  exists x ; split.
-  by intuition.
-  move => x' [Hax' [Hx'b Hx']].
-  have H : ~(x<>x').
-  contradict Hx'.
-  by apply sym_not_eq, Hf.
-  by case: (Req_dec x x').
-Qed.
-
 (** * 2D-continuity *)
 
-(** * Definitions *)
+(** ** Definitions *)
 
 Definition continuity_2d_pt f x y :=
   forall eps : posreal, locally_2d (fun u v => Rabs (f u v - f x y) < eps) x y.
@@ -2204,9 +2189,32 @@ Proof.
   ring_simplify in Cf ; by apply Rgt_not_eq.
 Qed.
 
-(** * Operations *)
+(** ** Operations *)
 
-(** ** Extentionality *)
+(** Identity *)
+
+Lemma continuity_2d_pt_id1 :
+  forall x y, continuity_2d_pt (fun u v => u) x y.
+Proof.
+  intros x y eps; exists eps; tauto.
+Qed.
+
+Lemma continuity_2d_pt_id2 :
+  forall x y, continuity_2d_pt (fun u v => v) x y.
+Proof.
+  intros x y eps; exists eps; tauto.
+Qed.
+
+(** Constant functions *)
+
+Lemma continuity_2d_pt_const :
+  forall x y c, continuity_2d_pt (fun u v => c) x y.
+Proof.
+  intros x y c eps; exists eps; rewrite Rminus_eq_0 Rabs_R0.
+  intros; apply cond_pos.
+Qed.
+
+(** *** Extensionality *)
 
 Lemma continuity_pt_ext_loc :
   forall f g x,
@@ -2271,7 +2279,7 @@ rewrite <- H1.
 exact H4.
 Qed.
 
-(** ** Composition *)
+(** *** Composition *)
 
 Lemma continuity_1d_2d_pt_comp :
  forall f g x y,
@@ -2289,7 +2297,7 @@ split;[solve[unfold D_x, no_cond; tauto] | ].
 apply (Pg u v); assumption.
 Qed.
 
-(** ** Additive *)
+(** *** Additive operators *)
 
 Lemma continuity_2d_pt_opp (f : R -> R -> R) (x y : R) :
     continuity_2d_pt f x y ->
@@ -2336,7 +2344,7 @@ Proof.
   by apply continuity_2d_pt_opp.
 Qed.
 
-(** ** Multiplicative *)
+(** *** Multiplicative operators *)
 
 Lemma continuity_2d_pt_inv (f : R -> R -> R) (x y : R) :
   continuity_2d_pt f x y ->
@@ -2463,4 +2471,3 @@ apply Rplus_le_lt_0_compat.
 by apply Rabs_pos.
 by apply Rlt_0_2.
 Qed.
-

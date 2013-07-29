@@ -328,7 +328,7 @@ intros h [Zh Hh].
 exact: H.
 Qed.
 
-(** * intervals *)
+(** * Intervals *)
 
 Lemma locally_interval (P : R -> Prop) (x : R) (a b : Rbar) :
   Rbar_lt a x -> Rbar_lt x b 
@@ -341,7 +341,7 @@ Proof.
   apply Hp ; by apply Hd.
 Qed.
 
-(** * continuity *)
+(** * Continuity *)
 
 Lemma locally_comp (P : R -> Prop) (f : R -> R) (x : R) :
   locally P (f x) -> continuity_pt f x 
@@ -616,7 +616,7 @@ Proof.
   by right.
 Qed.
 
-(** A particular subsequence *)
+(** A particular sequence converging to a point *)
 
 Definition Rbar_loc_seq (x : Rbar) (n : nat) := match x with
     | Finite x => x + / (INR n + 1)

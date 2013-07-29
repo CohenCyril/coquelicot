@@ -2,6 +2,8 @@ Require Import Reals.
 Require Import Rcomplements Locally Derive RInt Derive_2d Continuity ElemFct.
 Require Import ssreflect ssrbool seq Datatypes.
 
+(** * Reflective tactic for solving goals of the form [derivable_pt_lim] *)
+
 Fixpoint Rn n T :=
   match n with
   | O => T
@@ -919,7 +921,7 @@ destruct (D e3 n) as (a3,b3).
 assert (HexI: forall f x, locally (fun x => continuity_pt f x) x -> exists eps : posreal, ex_RInt f (x - eps) (x + eps)).
 clear => f x [eps H].
 exists (pos_div_2 eps).
-apply ex_RInt_correct_1.
+apply ex_RInt_Reals_1.
 apply RiemannInt_P6.
 apply Rplus_lt_compat_l.
 apply Rle_lt_trans with (2 := cond_pos _).
@@ -1727,8 +1729,6 @@ Ltac reify fct nb :=
   | _ => constr:(Cst fct)
   end.
 
-
-
 Lemma auto_derive_helper :
   forall (e : expr) l n,
   let '(a,b) := D e n in
@@ -1763,4 +1763,3 @@ Ltac auto_derive :=
     refine (eq_ind _ (derivable_pt_lim _ _) (H _) _ _) ;
     clear H
   end.
-

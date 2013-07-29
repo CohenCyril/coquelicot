@@ -20,9 +20,9 @@ Definition CVU_cauchy (fn : nat -> R -> R) (D : R -> Prop) :=
   forall (n m : nat) (x : R), D x -> (N <= n)%nat -> (N <= m)%nat
     -> Rabs (fn n x - fn m x) < eps.
 
-(** equivalences with standard library *)
+(** Equivalence with standard library *)
 
-Lemma CVU_dom_equiv (fn : nat -> R -> R) (f : R -> R) (x : R) (r : posreal) :
+Lemma CVU_dom_Reals (fn : nat -> R -> R) (f : R -> R) (x : R) (r : posreal) :
   (forall y, (Boule x r y) -> (Finite (f y)) = Lim_seq (fun n => fn n y)) ->
   (CVU fn f x r <-> CVU_dom fn (Boule x r)).
 Proof.
@@ -49,7 +49,7 @@ Proof.
   by rewrite -Ropp_minus_distr' Rabs_Ropp.
 Qed.
 
-(** Various inclusions and equivalence between definitions *)
+(** Various inclusions and equivalences between definitions *)
 
 Lemma CVU_CVS_dom (fn : nat -> R -> R) (D : R -> Prop) :
   CVU_dom fn D -> CVS_dom fn D.
@@ -634,9 +634,9 @@ Proof.
   by apply Derive_correct.
 Qed.
 
-(** ** Dini theorem *)
+(** ** Dini's theorem *)
 
-Lemma Dini_1 (fn : nat -> R -> R) (a b : R) :
+Lemma Dini (fn : nat -> R -> R) (a b : R) :
   a < b -> CVS_dom fn (fun x => a <= x <= b)
   -> (forall (n : nat) (x : R), a <= x <= b -> continuity_pt (fn n) x)
   -> (forall (x : R), a <= x <= b -> continuity_pt (fun y => Lim_seq (fun n => fn n y)) x)

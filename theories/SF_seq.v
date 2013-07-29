@@ -271,7 +271,7 @@ Proof.
   right => /= ; intuition.
 Qed.
 
-(** * SF_map *)
+(** ** SF_map *)
 
 Definition SF_map {T T0 : Type} (f : T -> T0) (s : SF_seq) : SF_seq :=
   mkSF_seq (SF_h s) (map (fun x => (fst x,f (snd x))) (SF_t s)).
@@ -460,7 +460,7 @@ Proof.
   apply SF_cons_dec with (s := s) => {s} [x1 | h0 s] //=.
 Qed.
 
-(** * SF_seq form seq R *)
+(** * SF_seq from seq R *)
 
 (** ** SF_seq *)
 
@@ -670,7 +670,7 @@ Proof.
   intuition.
 Qed.
 
-(** ** from SF_seq to StepFun *)
+(** ** From SF_seq to StepFun *)
 
 Lemma ad_SF_compat (s : SF_seq) (pr : SF_sorted Rle s) : 
   adapted_couple (SF_fun s 0) (head 0 (SF_lx s)) (last 0 (SF_lx s))
@@ -968,7 +968,7 @@ Proof.
   by rewrite -minus_n_O in H1.
 Qed.
 
-(** * Particluar step functions using unif_part *)
+(** * Specific step functions using unif_part *)
 
 Definition SF_val_ly (f : R -> R) (a b : R) (n : nat) : seq R :=
   behead (pairmap (fun x y => f ((x+y)/2)) 0 (unif_part a b n)).
@@ -1115,7 +1115,7 @@ Proof.
   rewrite size_mkseq ; by apply lt_n_S, lt_O_Sn.
 Qed.
 
-(** * pointed subdivision *)
+(** * Pointed subdivision *)
 
 Definition pointed_subdiv (ptd : @SF_seq R) :=
   forall i : nat, (i < SF_size ptd)%nat -> 
@@ -1636,4 +1636,3 @@ Lemma SF_inf_r_bound (f : R -> R) (a b : R) (n : nat) :
 Proof.
   move => x /= ; by rewrite SF_inf_fun_bound.
 Qed.
-

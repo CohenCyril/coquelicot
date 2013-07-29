@@ -1,16 +1,16 @@
 Require Import Reals ssreflect.
 Require Import Rbar Rcomplements Locally.
 
-(** * Definitions of equivalent and preponderant *)
+(** * Definitions of equivalent and dominant *)
 
-Definition is_prepond (f : R -> R) (a : Rbar) (g : R -> R) :=
+Definition is_domin (f : R -> R) (a : Rbar) (g : R -> R) :=
   forall eps : posreal, Rbar_locally (fun x => Rabs (g x) <= eps * Rabs (f x)) a.
 Definition is_equiv (f g : R -> R) (a : Rbar) :=
-  is_prepond g a (fun x => g x - f x).
+  is_domin g a (fun x => g x - f x).
 
-(** ** Be preponderent is a partial strict order *)
-Lemma prepond_anti_sym (f : R -> R) (a : Rbar) :
-  Rbar_locally (fun x => f x <> 0) a -> ~ is_prepond f a f.
+(** To be dominant is a partial strict order *)
+Lemma domin_anti_sym (f : R -> R) (a : Rbar) :
+  Rbar_locally (fun x => f x <> 0) a -> ~ is_domin f a f.
 Proof.
   intros Hf H ;
   move: (H (pos_div_2 (mkposreal _ Rlt_0_1))) => {H} /= H.
@@ -43,8 +43,8 @@ Proof.
   by [].
 Qed.
 
-Lemma prepond_trans (f g h : R -> R) (a : Rbar) :
-  is_prepond f a g -> is_prepond g a h -> is_prepond f a h.
+Lemma domin_trans (f g h : R -> R) (a : Rbar) :
+  is_domin f a g -> is_domin g a h -> is_domin f a h.
 Proof.
   move => Hfg Hgh eps.
   apply (Rbar_locally_imply (fun x => (Rabs (h x) <= sqrt eps * Rabs (g x)) /\ (Rabs (g x) <= sqrt eps * Rabs (f x)))).
@@ -61,10 +61,10 @@ Proof.
   by apply (Hfg (mkposreal (sqrt eps) (sqrt_lt_R0 _ (cond_pos eps)))).
 Qed.
 
-(** ** Relations between preponderance and equivalence *)
+(** Relations between domination and equivalence *)
 
-Lemma prepond_rw_l (f1 f2 g : R -> R) (a : Rbar) :
-  is_equiv f1 f2 a -> (is_prepond f1 a g <-> is_prepond f2 a g).
+Lemma domin_rw_l (f1 f2 g : R -> R) (a : Rbar) :
+  is_equiv f1 f2 a -> (is_domin f1 a g <-> is_domin f2 a g).
 Proof.
   move => Hf ; split => Hfg.
 (* Cas facile *)
@@ -118,20 +118,20 @@ Lemma equiv_sym (f g : R -> R) (a : Rbar) :
   is_equiv f g a -> is_equiv g f a.
 Proof.
   intros H.
-  apply (prepond_rw_l _ _ (fun x : R => f x - g x) _ H).
+  apply (domin_rw_l _ _ (fun x : R => f x - g x) _ H).
   move => eps ; move: (H eps).
   apply Rbar_locally_imply, Rbar_locally_forall => x Hx.
   by rewrite -Rabs_Ropp Ropp_minus_distr'.
 Qed.
 
 
-Lemma prepond_rw_r (f g1 g2 : R -> R) (a : Rbar) :
-  is_equiv g1 g2 a -> (is_prepond f a g1 <-> is_prepond f a g2).
+Lemma domin_rw_r (f g1 g2 : R -> R) (a : Rbar) :
+  is_equiv g1 g2 a -> (is_domin f a g1 <-> is_domin f a g2).
 Proof.
-  assert (forall g1 g2,  is_equiv g1 g2 a -> is_prepond f a g2 -> is_prepond f a g1).
+  assert (forall g1 g2,  is_equiv g1 g2 a -> is_domin f a g2 -> is_domin f a g1).
   clear g1 g2; intros g1 g2 Hg Hf eps.
   rewrite /is_equiv in Hg.
-  rewrite /is_prepond in Hg Hf.
+  rewrite /is_domin in Hg Hf.
   specialize (Hg (mkposreal _ Rlt_0_1)); simpl in Hg.
   specialize (Hf (pos_div_2 eps)).
   apply Rbar_locally_imply with (2:=Hf).
@@ -157,7 +157,7 @@ Qed.
 
 
 
-(** ** Be equivalent is a relation of equivalence *)
+(** To be equivalent is an equivalence relation *)
 
 Lemma equiv_refl (f : R -> R) (a : Rbar) :
   is_equiv f f a.
@@ -176,7 +176,7 @@ Lemma equiv_trans (f g h : R -> R) (a : Rbar) :
   is_equiv f g a -> is_equiv g h a -> is_equiv f h a.
 Proof.
   intros Hfg Hgh.
-  move: (fun c => prepond_rw_l _ _ c _ Hgh) => Hgh'.
+  move: (fun c => domin_rw_l _ _ c _ Hgh) => Hgh'.
   apply Hgh' => {Hgh'} eps.
   apply equiv_sym in Hgh.
   move: (Rbar_locally_and _ _ _ (Hfg (pos_div_2 eps)) (Hgh (pos_div_2 eps))) => {Hfg Hgh}.
@@ -189,18 +189,18 @@ Qed.
 
 Lemma equiv_carac_0 (f g : R -> R) (a : Rbar) :
   is_equiv f g a 
-    -> {o : R -> R | (forall x : R, f x = g x + o x) /\ is_prepond g a o }.
+    -> {o : R -> R | (forall x : R, f x = g x + o x) /\ is_domin g a o }.
 Proof.
   intro H.
   exists (fun x => f x - g x).
   split.
   intro x ; ring.
-  apply (prepond_rw_l _ _ _ _ H).
+  apply (domin_rw_l _ _ _ _ H).
   by apply equiv_sym.
 Qed.
 
 Lemma equiv_carac_1 (f g : R -> R) (a : Rbar) :
-  forall (o : R -> R), (forall x : R, f x = g x + o x) -> is_prepond g a o
+  forall (o : R -> R), (forall x : R, f x = g x + o x) -> is_domin g a o
     -> is_equiv f g a.
 Proof.
   intros o Ho Hgo.
@@ -211,11 +211,11 @@ Proof.
   rewrite Ho ; ring.
 Qed.
 
-(** * Vectorial space *)
-(** ** is_preponderant is a vectorial space *)
+(** * Vector space *)
+(** is_domin is a vector space *)
 
-Lemma prepond_scal_r (f g : R -> R) (a : Rbar) (c : R) :
-  is_prepond f a g -> is_prepond f a (fun x => c * g x).
+Lemma domin_scal_r (f g : R -> R) (a : Rbar) (c : R) :
+  is_domin f a g -> is_domin f a (fun x => c * g x).
 Proof.
   move => H.
   wlog: c / (0 < c) => [Hw  {H} | Hc].
@@ -248,8 +248,8 @@ Proof.
   by apply Rle_ge, Rlt_le.
 Qed.
 
-Lemma prepond_scal_l (f g : R -> R) (a : Rbar) (c : R) :
-  c <> 0 -> is_prepond f a g -> is_prepond (fun x => c * f x) a g.
+Lemma domin_scal_l (f g : R -> R) (a : Rbar) (c : R) :
+  c <> 0 -> is_domin f a g -> is_domin (fun x => c * f x) a g.
 Proof.
   intros Hc H eps.
   have He : (0 < eps * Rabs c).
@@ -261,9 +261,9 @@ Proof.
   by rewrite Rabs_mult -Rmult_assoc.
 Qed.
 
-Lemma prepond_plus (f g1 g2 : R -> R) (a : Rbar) :
-  is_prepond f a g1 -> is_prepond f a g2 
-    -> is_prepond f a (fun x => g1 x + g2 x).
+Lemma domin_plus (f g1 g2 : R -> R) (a : Rbar) :
+  is_domin f a g1 -> is_domin f a g2 
+    -> is_domin f a (fun x => g1 x + g2 x).
 Proof.
   intros Hg1 Hg2 eps.
   move: (Rbar_locally_and _ _ _ (Hg1 (pos_div_2 eps)) (Hg2 (pos_div_2 eps))) 
@@ -276,7 +276,7 @@ Proof.
   by apply Rplus_le_compat.
 Qed.
 
-(** ** is_equiv is compatible with vectorial space structure *)
+(** is_equiv is compatible with the vector space structure *)
 
 Lemma equiv_scal (f g : R -> R) (a : Rbar) (c : R) :
   is_equiv f g a -> is_equiv (fun x => c * f x) (fun x => c * g x) a.
@@ -288,18 +288,18 @@ Proof.
   rewrite ?Rmult_0_l Rminus_0_r Rabs_R0 Rmult_0_r.
   apply Rle_refl.
 (* c <> 0 *)
-  apply prepond_scal_l.
+  apply domin_scal_l.
   by apply Hc.
   move => eps /=.
   have : Rbar_locally (fun x : R => Rabs (c * (g x - f x)) <= eps * Rabs (g x)) a.
-  apply (prepond_scal_r g (fun x => g x - f x) a c).
+  apply (domin_scal_r g (fun x => g x - f x) a c).
   by apply H.
   apply Rbar_locally_imply, Rbar_locally_forall => x.
   by rewrite Rmult_minus_distr_l.
 Qed.
 
 Lemma equiv_plus (f o : R -> R) (a : Rbar) :
-  is_prepond f a o -> is_equiv (fun x => f x + o x) f a.
+  is_domin f a o -> is_equiv (fun x => f x + o x) f a.
 Proof.
   intros H eps.
   move: (H eps) => {H}.
@@ -309,11 +309,11 @@ Proof.
 Qed.
 
 (** * Multiplication and inverse *)
-(** ** Preponderance *)
+(** Domination *)
 
-Lemma prepond_mult_r (f g h : R -> R) (a : Rbar) :
-  is_prepond f a g 
-    -> is_prepond (fun x => f x * h x) a (fun x => g x * h x).
+Lemma domin_mult_r (f g h : R -> R) (a : Rbar) :
+  is_domin f a g 
+    -> is_domin (fun x => f x * h x) a (fun x => g x * h x).
 Proof.
   move => H eps.
   move: (H eps) => {H} H.
@@ -326,19 +326,19 @@ Proof.
   by apply H1.
 Qed.
 
-Lemma prepond_mult_l (f g h : R -> R) (a : Rbar) :
-  is_prepond f a g 
-    -> is_prepond (fun x => h x * f x) a (fun x => h x * g x).
+Lemma domin_mult_l (f g h : R -> R) (a : Rbar) :
+  is_domin f a g 
+    -> is_domin (fun x => h x * f x) a (fun x => h x * g x).
 Proof.
   intros => eps.
-  move: (prepond_mult_r f g h a H eps).
+  move: (domin_mult_r f g h a H eps).
   apply Rbar_locally_imply, Rbar_locally_forall => x.
   by rewrite ?(Rmult_comm (h x)).
 Qed.
 
-Lemma prepond_mult (f1 f2 g1 g2 : R -> R) (a : Rbar) :
-  is_prepond f1 a g1 -> is_prepond f2 a g2 
-    -> is_prepond (fun x => f1 x * f2 x) a (fun x => g1 x * g2 x).
+Lemma domin_mult (f1 f2 g1 g2 : R -> R) (a : Rbar) :
+  is_domin f1 a g1 -> is_domin f2 a g2 
+    -> is_domin (fun x => f1 x * f2 x) a (fun x => g1 x * g2 x).
 Proof.
   move => H1 H2 eps.
   move: (H1 (mkposreal _ (sqrt_lt_R0 _ (cond_pos eps))))
@@ -356,9 +356,9 @@ Proof.
   by apply H2.
 Qed.
 
-Lemma prepond_inv (f g : R -> R) (a : Rbar) :
-  Rbar_locally (fun x => g x <> 0) a -> is_prepond f a g 
-    -> is_prepond (fun x => / g x) a (fun x => / f x).
+Lemma domin_inv (f g : R -> R) (a : Rbar) :
+  Rbar_locally (fun x => g x <> 0) a -> is_domin f a g 
+    -> is_domin (fun x => / g x) a (fun x => / f x).
 Proof.
   intros Hg H eps.
   have Hf : Rbar_locally (fun x => f x <> 0) a.
@@ -384,7 +384,7 @@ Proof.
   by apply H.
 Qed.
 
-(** ** Equivalence *)
+(** Equivalence *)
 
 Lemma equiv_mult (f1 f2 g1 g2 : R -> R) (a : Rbar) :
   is_equiv f1 g1 a -> is_equiv f2 g2 a
@@ -395,11 +395,11 @@ Proof.
   case: (equiv_carac_0 _ _ _ H2) => {H2} o2 [H2 Ho2].
   apply equiv_carac_1 with (fun x => o1 x * g2 x + g1 x * o2 x + o1 x * o2 x).
   move => x ; rewrite H1 H2 ; ring.
-  apply prepond_plus.
-  apply prepond_plus.
-  by apply prepond_mult_r.
-  by apply prepond_mult_l.
-  by apply prepond_mult.
+  apply domin_plus.
+  apply domin_plus.
+  by apply domin_mult_r.
+  by apply domin_mult_l.
+  by apply domin_mult.
 Qed.
 
 Lemma equiv_inv (f g : R -> R) (a : Rbar) :

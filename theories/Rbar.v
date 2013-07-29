@@ -42,7 +42,7 @@ Definition Rbar_le x y := (Rbar_lt x y \/ x = y).
 Definition Rbar_ge x y := (Rbar_le y x).
 
 (** ** Operations *)
-(** *** Additive *)
+(** *** Additive operators *)
 
 Definition Rbar_opp (x : Rbar) :=
   match x with
@@ -77,7 +77,7 @@ Definition Rbar_minus (x y : Rbar) := Rbar_plus x (Rbar_opp y).
 Definition is_Rbar_minus (x y z : Rbar) : Prop :=
   is_Rbar_plus x (Rbar_opp y) z.
 
-(** *** Multiplicative *)
+(** *** Multiplicative operators *)
 
 Definition Rbar_inv (x : Rbar) : Rbar :=
   match x with
@@ -238,7 +238,6 @@ Proof.
 Qed.
 
 (** * Properties of order *)
-(** Many usual properties on real numbers' order are also true for extended real numbers. *)
 (** ** Decidability *)
 
 Lemma Rbar_total_order (x y : Rbar) :
@@ -302,7 +301,7 @@ Proof.
   right ; auto.
 Qed.
 
-(** ** Positive and negative propositions *)
+(** ** Relations between inequalities *)
 
 Lemma Rbar_lt_not_eq (x y : Rbar) :
   Rbar_lt x y -> x<>y.
@@ -428,7 +427,7 @@ Proof.
 Qed.
 
 (** * Properties of operations *)
-(** ** Additive *)
+(** ** Additive operators *)
 (** *** Rbar_opp *)
 
 Lemma Rbar_opp_involutive (x : Rbar) : (Rbar_opp (Rbar_opp x)) = x.
@@ -463,8 +462,6 @@ Proof.
 Qed.
 
 (** *** Rbar_plus *)
-
-(** the predicate *)
 
 Lemma is_Rbar_plus_comm (x y z : Rbar) :
   is_Rbar_plus x y z <-> is_Rbar_plus y x z.
@@ -516,8 +513,6 @@ Proof.
   by rewrite -(Ropp_involutive z) -H Ropp_involutive.
   by rewrite H.
 Qed.
-
-(** the function *)
 
 Lemma Rbar_plus_0_r (x : Rbar) : Rbar_plus x (Finite 0) = x.
 Proof.
@@ -573,8 +568,6 @@ Qed.
 
 (** *** Rbar_minus *)
 
-(** the predicate *)
-
 Lemma is_Rbar_minus_f_p (x : R) :
   is_Rbar_minus (Finite x) p_infty m_infty.
 Proof.
@@ -596,8 +589,6 @@ Qed.
 
 (** ** Multiplicative *)
 (** *** Rbar_mult *)
-
-(** the predicate *)
 
 Lemma is_Rbar_mult_comm (x y z : Rbar) :
   is_Rbar_mult x y z <-> is_Rbar_mult y x z.
@@ -643,8 +634,6 @@ Lemma is_Rbar_mult_opp (x y z : Rbar) :
 Proof.
   by rewrite -is_Rbar_mult_opp_l Rbar_opp_involutive is_Rbar_mult_opp_r.
 Qed.
-
-(** the function *)
 
 Lemma Rbar_mult_comm (x y : Rbar) :
   Rbar_mult x y = Rbar_mult y x.
@@ -697,9 +686,38 @@ Proof.
   by rewrite Rbar_mult_opp_l -Rbar_mult_opp_r Rbar_opp_involutive.
 Qed.
 
-(** *** Rbar_div *)
+(** Rbar_mult_pos *)
 
-(** the predicate *)
+Lemma Rbar_mult_pos_eq (x y : Rbar) (z : posreal) :
+  x = y <-> (Rbar_mult_pos x z) = (Rbar_mult_pos y z).
+Proof.
+  case: z => z Hz ; case: x => [x | | ] ; case: y => [y | | ] ;
+  split => //= H ; apply Rbar_finite_eq in H.
+  by rewrite H.
+  apply Rbar_finite_eq, (Rmult_eq_reg_r (z)) => // ; 
+  by apply Rgt_not_eq.
+Qed.
+
+Lemma Rbar_mult_pos_lt (x y : Rbar) (z : posreal) :
+  Rbar_lt x y <-> Rbar_lt (Rbar_mult_pos x z) (Rbar_mult_pos y z).
+Proof.
+  case: z => z Hz ; case: x => [x | | ] ; case: y => [y | | ] ;
+  split => //= H.
+  apply (Rmult_lt_compat_r (z)) => //.
+  apply (Rmult_lt_reg_r (z)) => //.
+Qed.
+
+Lemma Rbar_mult_pos_le (x y : Rbar) (z : posreal) :
+  Rbar_le x y <-> Rbar_le (Rbar_mult_pos x z) (Rbar_mult_pos y z).
+Proof.
+  split ; case => H.
+  left ; by apply Rbar_mult_pos_lt.
+  right ; by apply Rbar_mult_pos_eq.
+  left ; by apply Rbar_mult_pos_lt with z.
+  right ; by apply Rbar_mult_pos_eq with z.
+Qed.
+
+(** *** Rbar_div *)
 
 Lemma is_Rbar_div_f (x y : R) :
   is_Rbar_div (Finite x) (Finite y) (Finite (x/y)).
@@ -746,37 +764,6 @@ Proof.
   right ; by apply Rbar_div_pos_eq.
   left ; by apply Rbar_div_pos_lt with z.
   right ; by apply Rbar_div_pos_eq with z.
-Qed.
-
-(** *** Rbar_mult_pos *)
-
-Lemma Rbar_mult_pos_eq (x y : Rbar) (z : posreal) :
-  x = y <-> (Rbar_mult_pos x z) = (Rbar_mult_pos y z).
-Proof.
-  case: z => z Hz ; case: x => [x | | ] ; case: y => [y | | ] ;
-  split => //= H ; apply Rbar_finite_eq in H.
-  by rewrite H.
-  apply Rbar_finite_eq, (Rmult_eq_reg_r (z)) => // ; 
-  by apply Rgt_not_eq.
-Qed.
-
-Lemma Rbar_mult_pos_lt (x y : Rbar) (z : posreal) :
-  Rbar_lt x y <-> Rbar_lt (Rbar_mult_pos x z) (Rbar_mult_pos y z).
-Proof.
-  case: z => z Hz ; case: x => [x | | ] ; case: y => [y | | ] ;
-  split => //= H.
-  apply (Rmult_lt_compat_r (z)) => //.
-  apply (Rmult_lt_reg_r (z)) => //.
-Qed.
-
-Lemma Rbar_mult_pos_le (x y : Rbar) (z : posreal) :
-  Rbar_le x y <-> Rbar_le (Rbar_mult_pos x z) (Rbar_mult_pos y z).
-Proof.
-  split ; case => H.
-  left ; by apply Rbar_mult_pos_lt.
-  right ; by apply Rbar_mult_pos_eq.
-  left ; by apply Rbar_mult_pos_lt with z.
-  right ; by apply Rbar_mult_pos_eq with z.
 Qed.
 
 (** * Rbar_min *)
@@ -874,4 +861,3 @@ Proof.
   case: x => [x | | ] ; case: y => [y | | ] /= ; try by intuition.
   by apply Rabs_lt_between.
 Qed.
-

@@ -222,7 +222,7 @@ elim H'.
 now apply Rlt_le.
 Qed.
 
-(** integrable imply bounded *)
+(** Integrable implies bounded *)
 
 Lemma ex_RInt_bounded f a b :
   ex_RInt f a b -> exists m, exists M : R, forall t : R,
@@ -522,7 +522,7 @@ Qed.
 
 (** * Equivalence with standard library *)
 
-Lemma RInt_val_correct (f : R -> R) (a b : R) (n : nat) :
+Lemma RInt_val_Reals (f : R -> R) (a b : R) (n : nat) :
   RInt_val f a b n = RiemannInt_SF (sf_SF_val_fun f a b n).
 Proof.
 have H : (forall a b i, (S i < size (unif_part a b n))%nat -> 
@@ -553,7 +553,7 @@ case: Rle_dec => Hab.
   move => i Hi ; apply (Hs (S i)), lt_n_S, Hi.
 Qed.
 
-Lemma ex_RInt_correct_aux_1 (f : R -> R) (a b : R) :
+Lemma ex_RInt_Reals_aux_1 (f : R -> R) (a b : R) :
   forall pr : Riemann_integrable f a b,
     is_RInt f a b (RiemannInt pr).
 Proof.
@@ -1661,14 +1661,14 @@ Proof.
   by apply IH.
 Qed.
 
-Lemma ex_RInt_correct_1 (f : R -> R) (a b : R) :
+Lemma ex_RInt_Reals_1 (f : R -> R) (a b : R) :
   Riemann_integrable f a b -> ex_RInt f a b.
 Proof.
   move => pr ; exists (RiemannInt pr).
-  exact: ex_RInt_correct_aux_1.
+  exact: ex_RInt_Reals_aux_1.
 Qed.
 
-Lemma ex_RInt_correct_aux_2 (f : R -> R) (a b : R) :
+Lemma ex_RInt_Reals_aux_2 (f : R -> R) (a b : R) :
   forall If : R, is_RInt f a b If -> is_lim_seq (RInt_val f a b) If.
 Proof.
   wlog: a b /(a < b) => [Hw | Hab] If Hex.
@@ -1827,7 +1827,7 @@ Proof.
   apply SSR_leq ; by intuition.
 Qed.
 
-Lemma ex_RInt_correct_2 (f : R -> R) (a b : R) :
+Lemma ex_RInt_Reals_2 (f : R -> R) (a b : R) :
   ex_RInt f a b -> Riemann_integrable f a b.
 Proof.
   wlog: a b /(a < b) => [Hw | Hab ] Hex.
@@ -1846,7 +1846,7 @@ Proof.
     exact: Hex.
     replace If with (real (Finite If)) by auto.
     apply f_equal, sym_equal, is_lim_seq_unique.
-    by apply ex_RInt_correct_aux_2.
+    by apply ex_RInt_Reals_aux_2.
   case => If HIf.
   set E := fun eps : posreal => 
     (fun alpha => 0 < alpha <= b-a + 1 /\
@@ -2914,7 +2914,7 @@ have Hfin' : forall t, is_finite (SF_sup_fun (fun t : R => Rabs (f t - phi t)) a
   exact: lt_O_Sn.
 Qed.
 
-Lemma RInt_correct (f : R -> R) (a b : R) :
+Lemma RInt_Reals (f : R -> R) (a b : R) :
   forall pr, RInt f a b = @RiemannInt f a b pr.
 Proof.
   wlog: a b /(a <= b) => [Hw | Hab].
@@ -2929,8 +2929,8 @@ Proof.
   move => pr ; rewrite /RInt ; case: Rle_dec => // _.
   replace (RiemannInt pr) with (real (Finite (RiemannInt pr))) by auto.
   apply f_equal, is_lim_seq_unique.
-  apply ex_RInt_correct_aux_2.
-  exact: ex_RInt_correct_aux_1.
+  apply ex_RInt_Reals_aux_2.
+  exact: ex_RInt_Reals_aux_1.
 Qed.
 
 (** * Usual properties *)
@@ -2939,15 +2939,15 @@ Lemma ex_RInt_cv (f : R -> R) (a b : R) :
   ex_RInt f a b -> ex_lim_seq (RInt_val f a b).
 Proof.
   case => If Hex.
-  exists If ; by apply ex_RInt_correct_aux_2.
+  exists If ; by apply ex_RInt_Reals_aux_2.
 Qed.
 
 Lemma ex_RInt_Chasles :
   forall f a b c, ex_RInt f a b -> ex_RInt f b c -> ex_RInt f a c.
 Proof.
 intros f a b c H1 H2.
-apply ex_RInt_correct_1.
-apply RiemannInt_P24 with b; now apply ex_RInt_correct_2.
+apply ex_RInt_Reals_1.
+apply RiemannInt_P24 with b; now apply ex_RInt_Reals_2.
 Qed.
 
 Lemma RInt_Chasles :
@@ -2956,27 +2956,27 @@ Lemma RInt_Chasles :
   RInt f a b + RInt f b c = RInt f a c.
 Proof.
 intros f a b c H1 H2.
-apply ex_RInt_correct_2 in H1.
-apply ex_RInt_correct_2 in H2.
-rewrite (RInt_correct _ _ _ H1) (RInt_correct _ _ _ H2).
-rewrite (RInt_correct _ _ _ (RiemannInt_P24 H1 H2)).
+apply ex_RInt_Reals_2 in H1.
+apply ex_RInt_Reals_2 in H2.
+rewrite (RInt_Reals _ _ _ H1) (RInt_Reals _ _ _ H2).
+rewrite (RInt_Reals _ _ _ (RiemannInt_P24 H1 H2)).
 apply RiemannInt_P26.
 Qed.
 
 Lemma ex_RInt_included1: forall f a b c, ex_RInt f a b -> a <= c <= b -> ex_RInt f a c.
 Proof.
 intros f a b c H1 H2.
-apply ex_RInt_correct_1.
-apply RiemannInt_P22 with b;[now apply ex_RInt_correct_2|exact H2].
+apply ex_RInt_Reals_1.
+apply RiemannInt_P22 with b;[now apply ex_RInt_Reals_2|exact H2].
 Qed.
 
 Lemma ex_RInt_included2: forall f a b c, ex_RInt f a b -> a <= c <= b -> ex_RInt f c b.
 intros f a b c H1 H2.
-apply ex_RInt_correct_1.
-apply RiemannInt_P23 with a;[now apply ex_RInt_correct_2|exact H2].
+apply ex_RInt_Reals_1.
+apply RiemannInt_P23 with a;[now apply ex_RInt_Reals_2|exact H2].
 Qed.
 
-(** * Unicity *)
+(** * Uniqueness *)
 
 Lemma is_RInt_unique (f : R -> R) (a b l : R) :
   is_RInt f a b l -> RInt f a b = l.
@@ -3027,7 +3027,7 @@ Proof.
   rewrite /RInt.
   case: Rle_dec (Rlt_le _ _ Hab) => // _ _.
   rewrite (is_lim_seq_unique _ l) => //.
-  by apply ex_RInt_correct_aux_2.
+  by apply ex_RInt_Reals_aux_2.
 Qed.
 
 Ltac search_RInt := let l := fresh "l" in
@@ -3048,7 +3048,7 @@ apply Hw; try easy.
 intros x; rewrite Rmin_comm Rmax_comm.
 apply H.
 now left.
-apply ex_RInt_correct_1.
+apply ex_RInt_Reals_1.
 apply continuity_implies_RiemannInt.
 exact Hab.
 intros; apply H.
@@ -3059,7 +3059,7 @@ Qed.
 
 (** * Operations *)
 
-(** ** Extentionality *)
+(** ** Extensionality *)
 
 Lemma is_RInt_ext (f g : R -> R) (a b l : R) :
   (forall x, Rmin a b <= x <= Rmax a b -> f x = g x) ->
@@ -3253,9 +3253,9 @@ Lemma ex_RInt_scal :
   ex_RInt (fun x => l * f x) a b.
 Proof.
 intros f l a b If.
-apply ex_RInt_correct_1.
+apply ex_RInt_Reals_1.
 apply Riemann_integrable_scal.
-now apply ex_RInt_correct_2.
+now apply ex_RInt_Reals_2.
 Qed.
 
 Lemma RInt_scal :
@@ -3325,16 +3325,16 @@ Proof.
   by rewrite (is_RInt_unique _ _ _ kl).
 Qed.
 
-(** ** Additive *)
+(** ** Additive operators *)
 
 Lemma ex_RInt_opp :
   forall f a b, ex_RInt f a b ->
   ex_RInt (fun x => - f x) a b.
 Proof.
 intros f a b If.
-apply ex_RInt_correct_1.
+apply ex_RInt_Reals_1.
 apply Riemann_integrable_opp.
-now apply ex_RInt_correct_2.
+now apply ex_RInt_Reals_2.
 Qed.
 
 Lemma RInt_opp :
@@ -3363,8 +3363,8 @@ Lemma ex_RInt_plus :
   ex_RInt (fun x => f x + g x) a b.
 Proof.
 intros f g a b If Ig.
-apply ex_RInt_correct_1.
-apply Riemann_integrable_plus ; now apply ex_RInt_correct_2.
+apply ex_RInt_Reals_1.
+apply Riemann_integrable_plus ; now apply ex_RInt_Reals_2.
 Qed.
 
 Lemma RInt_plus :
@@ -3372,9 +3372,9 @@ Lemma RInt_plus :
   RInt (fun x => f x + g x) a b = RInt f a b + RInt g a b.
 Proof.
 intros f g a b If Ig.
-rewrite (RInt_correct _ _ _ (ex_RInt_correct_2 _ _ _ If)).
-rewrite (RInt_correct _ _ _ (ex_RInt_correct_2 _ _ _ Ig)).
-rewrite (RInt_correct _ _ _ (ex_RInt_correct_2 _ _ _ (ex_RInt_plus _ _ _ _ If Ig))).
+rewrite (RInt_Reals _ _ _ (ex_RInt_Reals_2 _ _ _ If)).
+rewrite (RInt_Reals _ _ _ (ex_RInt_Reals_2 _ _ _ Ig)).
+rewrite (RInt_Reals _ _ _ (ex_RInt_Reals_2 _ _ _ (ex_RInt_plus _ _ _ _ If Ig))).
 apply RiemannInt_plus.
 Qed.
 
@@ -3398,8 +3398,8 @@ Lemma ex_RInt_minus :
   ex_RInt (fun x => f x - g x) a b.
 Proof.
 intros f g a b If Ig.
-apply ex_RInt_correct_1.
-apply Riemann_integrable_minus ; now apply ex_RInt_correct_2.
+apply ex_RInt_Reals_1.
+apply Riemann_integrable_minus ; now apply ex_RInt_Reals_2.
 Qed.
 
 Lemma RInt_minus :
@@ -3407,9 +3407,9 @@ Lemma RInt_minus :
   RInt (fun x => f x - g x) a b = RInt f a b - RInt g a b.
 Proof.
 intros f g a b If Ig.
-rewrite (RInt_correct _ _ _ (ex_RInt_correct_2 _ _ _ If)).
-rewrite (RInt_correct _ _ _ (ex_RInt_correct_2 _ _ _ Ig)).
-rewrite (RInt_correct _ _ _ (ex_RInt_correct_2 _ _ _ (ex_RInt_minus _ _ _ _ If Ig))).
+rewrite (RInt_Reals _ _ _ (ex_RInt_Reals_2 _ _ _ If)).
+rewrite (RInt_Reals _ _ _ (ex_RInt_Reals_2 _ _ _ Ig)).
+rewrite (RInt_Reals _ _ _ (ex_RInt_Reals_2 _ _ _ (ex_RInt_minus _ _ _ _ If Ig))).
 apply RiemannInt_minus.
 Qed.
 
@@ -3827,10 +3827,10 @@ Lemma RInt_le: forall f g a b,
 Proof.
 intros f g a b H1 If Ig H2.
 assert (Riemann_integrable f a b).
-now apply ex_RInt_correct_2.
+now apply ex_RInt_Reals_2.
 assert (Riemann_integrable g a b).
-now apply ex_RInt_correct_2.
-rewrite (RInt_correct _ _ _ X)(RInt_correct _ _ _ X0).
+now apply ex_RInt_Reals_2.
+rewrite (RInt_Reals _ _ _ X)(RInt_Reals _ _ _ X0).
 apply RiemannInt_P19.
 exact H1.
 intros; apply H2.
@@ -3858,9 +3858,9 @@ Lemma ex_RInt_abs :
   ex_RInt (fun x => Rabs (f x)) a b.
 Proof.
 intros f a b If.
-apply ex_RInt_correct_1.
+apply ex_RInt_Reals_1.
 apply RiemannInt_P16.
-now apply ex_RInt_correct_2.
+now apply ex_RInt_Reals_2.
 Qed.
 
 Lemma RInt_abs: forall f a b,
@@ -3911,7 +3911,7 @@ apply Rle_trans with (1:=RInt_abs _ _ _ Hab If).
 apply RInt_le.
 exact Hab.
 now apply ex_RInt_abs.
-apply ex_RInt_correct_1.
+apply ex_RInt_Reals_1.
 apply continuity_implies_RiemannInt.
 exact Hab.
 intros x Hx eps Heps.
@@ -4265,9 +4265,9 @@ assert (D3: ex_RInt (fun t => f y t - f x t) a b) by now apply (ex_RInt_minus (f
 assert (D4: ex_RInt (fun t => (y - x) * Derive (fun u => f u t) x) a b) by now apply ex_RInt_scal.
 rewrite -RInt_minus //.
 assert (D5: ex_RInt (fun t => f y t - f x t - (y - x) * Derive (fun u => f u t) x) a b) by now apply ex_RInt_minus.
-rewrite (RInt_correct _ _ _ (ex_RInt_correct_2 _ _ _ D5)).
+rewrite (RInt_Reals _ _ _ (ex_RInt_Reals_2 _ _ _ D5)).
 assert (D6: ex_RInt (fun t => Rabs (f y t - f x t - (y - x) * Derive (fun u => f u t) x)) a b) by now apply ex_RInt_abs.
-apply Rle_trans with (1 := RiemannInt_P17 _ (ex_RInt_correct_2 _ _ _ D6) (Rlt_le _ _ H)).
+apply Rle_trans with (1 := RiemannInt_P17 _ (ex_RInt_Reals_2 _ _ _ D6) (Rlt_le _ _ H)).
 refine (Rle_trans _ _ _ (RiemannInt_P19 _ (RiemannInt_P14 a b (eps / Rabs (b - a) * Rabs (y - x))) (Rlt_le _ _ H) _) _).
 intros u Hu.
 destruct (MVT_cor4 (fun t => f t u) x) with (eps := pos_div_2 d2) (b := y) as (z,Hz).
@@ -4322,7 +4322,7 @@ Lemma derivable_pt_lim_param : forall f a b x,
 Proof.
 intros f a b x H1 H2 H3.
 apply derivable_pt_lim_param_aux; try easy.
-apply ex_RInt_correct_1.
+apply ex_RInt_Reals_1.
 clear H1 H3.
 wlog: a b H2 / a < b => H.
 case (total_order_T a b).
@@ -4370,9 +4370,9 @@ intros t.
 apply RInt_swap.
 apply derivable_pt_lim_opp.
 apply derivable_pt_lim_RInt ; try easy.
-apply ex_RInt_correct_1.
+apply ex_RInt_Reals_1.
 apply RiemannInt_P1.
-now apply ex_RInt_correct_2.
+now apply ex_RInt_Reals_2.
 Qed.
 
 Lemma ex_RInt_inside :
@@ -5146,6 +5146,3 @@ Proof.
   rewrite ?RInt_point Rplus_0_l.
   by apply sym_eq.
 Qed.
-
-
-

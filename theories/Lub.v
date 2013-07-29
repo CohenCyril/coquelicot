@@ -3,9 +3,9 @@ Require Import Rbar Rcomplements Markov.
 
 Open Scope R_scope.
 
-(** * Upper and Lower Bounds *)
+(** * Upper and lower bounds *)
 
-(** ** for sets in Rbar *)
+(** ** For sets in Rbar *)
 
 Definition Rbar_is_upper_bound (E : Rbar -> Prop) (l : Rbar) :=
   forall x, E x -> Rbar_le x l.
@@ -183,9 +183,9 @@ Proof.
   intros Hs Hl x Ex ; apply Hl, Hs ; auto.
 Qed.
 
-(** ** complements for sets in R *)
+(** ** Complements for sets in R *)
 
-(** standard library *)
+(** Links with the standard library *)
 
 Definition is_lower_bound (E : R -> Prop) (l : R) :=
   forall x, E x -> l <= x.
@@ -261,7 +261,7 @@ Qed.
 
 (** * Least Upper Bound and Greatest Lower Bound *)
 
-(** ** for sets in Rbar *)
+(** ** For sets in Rbar *)
 
 (** Definitions *)
 
@@ -427,7 +427,7 @@ Proof.
   apply H2 ; intros x Hx ; apply H1, Hs, Hx.
 Qed.
 
-Lemma Rbar_is_lub_rw (E1 E2 : Rbar -> Prop) (l1 l2 : Rbar) :
+Lemma Rbar_is_lub_unique (E1 E2 : Rbar -> Prop) (l1 l2 : Rbar) :
   (forall x, E1 x <-> E2 x) -> (Rbar_is_lub E1 l1) -> (Rbar_is_lub E2 l2)
   -> l1 = l2.
 Proof.
@@ -435,7 +435,7 @@ Proof.
   [apply (Rbar_is_lub_subset E1 E2) | apply (Rbar_is_lub_subset E2 E1) ] ; auto ; intros x H ; 
   apply Hs ; auto.
 Qed.
-Lemma Rbar_is_glb_rw (E1 E2 : Rbar -> Prop) (l1 l2 : Rbar) :
+Lemma Rbar_is_glb_unique (E1 E2 : Rbar -> Prop) (l1 l2 : Rbar) :
   (forall x, E1 x <-> E2 x) -> (Rbar_is_glb E1 l1) -> (Rbar_is_glb E2 l2)
   -> l1 = l2.
 Proof.
@@ -444,14 +444,14 @@ Proof.
   apply Hs ; auto.
 Qed.
 
-Lemma Rbar_is_lub_eq (E1 E2 : Rbar -> Prop) (l : Rbar) :
+Lemma Rbar_is_lub_ext (E1 E2 : Rbar -> Prop) (l : Rbar) :
   (forall x, E1 x <-> E2 x) -> (Rbar_is_lub E1 l) -> (Rbar_is_lub E2 l).
 Proof.
   intros Heq (H1,H2) ; split.
   apply (Rbar_is_ub_subset _ E1) ; auto ; intros x Hx ; apply Heq ; auto.
   intros b Hb ; apply H2 ; apply (Rbar_is_ub_subset _ E2) ; auto ; intros x Hx ; apply Heq ; auto.
 Qed.
-Lemma Rbar_is_glb_eq (E1 E2 : Rbar -> Prop) (l : Rbar) :
+Lemma Rbar_is_glb_ext (E1 E2 : Rbar -> Prop) (l : Rbar) :
   (forall x, E1 x <-> E2 x) -> (Rbar_is_glb E1 l) -> (Rbar_is_glb E2 l).
 Proof.
   intros Heq (H1, H2) ; split.
@@ -483,7 +483,7 @@ Proof.
   intros Hs ; apply Rbar_le_antisym ; apply Rbar_glb_subset ; intros x H ; apply Hs ; auto.
 Qed.
 
-(** ** for sets in R *)
+(** ** For sets in R *)
 
 (** Definition *)
 

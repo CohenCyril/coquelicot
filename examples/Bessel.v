@@ -3,15 +3,15 @@ Require Import Rcomplements Rbar.
 Require Import Derive Series PSeries Limit.
 Require Import AutoDerive.
 
-(** An exemple to use power series *)
+(** An example of how to use power series *)
 
 Definition Bessel1_seq (n k : nat) :=
   (-1)^(k)/(INR (fact (k)) * INR (fact (n + (k)))).
 
 Lemma CV_Bessel1 (n : nat) :
-  CV_circle (Bessel1_seq n) = p_infty.
+  CV_radius (Bessel1_seq n) = p_infty.
 Proof.
-  apply DAlembert_CV_circle_eq_0.
+  apply CV_radius_infinite_DAlembert.
     move => k.
     rewrite /Bessel1_seq.
     apply Rmult_integral_contrapositive_currified.
@@ -40,12 +40,12 @@ Proof.
   apply is_lim_seq_inv.
   apply is_lim_seq_mult.
   apply -> is_lim_seq_incr_1.
-  by apply is_lim_seq_id.
+  by apply is_lim_seq_INR.
   apply is_lim_seq_ext with (fun k => INR (k + S n)).
   intros k.
   by rewrite (plus_comm n k) plus_n_Sm.
   apply is_lim_seq_incr_n.
-  by apply is_lim_seq_id.
+  by apply is_lim_seq_INR.
   by [].
   by [].
   by [].
@@ -55,7 +55,7 @@ Lemma ex_Bessel1 (n : nat) (x : R) :
   ex_pseries (Bessel1_seq n) x.
 Proof.
   apply ex_series_Rabs.
-  apply CV_circle_carac.
+  apply CV_disk_inside.
   by rewrite CV_Bessel1.
 Qed.
 
@@ -92,14 +92,14 @@ Proof.
   auto_derive.
   repeat split.
   apply ex_derive_PSeries.
-  by rewrite CV_circle_derive CV_Bessel1.
+  by rewrite CV_radius_derive CV_Bessel1.
   apply ex_derive_PSeries.
   by rewrite CV_Bessel1.
   rewrite ?Derive_PSeries.
   case: n => [ | n] ; rewrite ?S_INR /Rdiv /= ;
   simpl ; field.
   by rewrite CV_Bessel1.
-  by rewrite CV_circle_derive CV_Bessel1.
+  by rewrite CV_radius_derive CV_Bessel1.
 Qed.
 
 Lemma Bessel1_correct (n : nat) (x : R) :
@@ -152,18 +152,18 @@ Proof.
   by apply (lt_INR 0), lt_O_Sn.
   by apply (lt_INR 0), lt_O_Sn.
 
-  apply ex_series_Rabs, CV_circle_carac.
-  apply Rbar_lt_le_trans with (2 := CV_circle_plus _ _).
+  apply ex_series_Rabs, CV_disk_inside.
+  apply Rbar_lt_le_trans with (2 := CV_radius_plus _ _).
   rewrite /Rbar_min ; case: Rbar_le_dec => _.
-  by rewrite CV_circle_incr_1 ?CV_circle_derive CV_Bessel1.
-  apply Rbar_lt_le_trans with (2 := CV_circle_scal_l _ _).
-  by rewrite CV_circle_derive CV_Bessel1.
+  by rewrite CV_radius_incr_1 ?CV_radius_derive CV_Bessel1.
+  apply Rbar_lt_le_trans with (2 := CV_radius_scal_l _ _).
+  by rewrite CV_radius_derive CV_Bessel1.
   by apply ex_Bessel1.
-  apply ex_series_Rabs, CV_circle_carac.
-  by rewrite CV_circle_incr_1 ?CV_circle_derive CV_Bessel1.
-  apply ex_series_Rabs, CV_circle_carac.
-  apply Rbar_lt_le_trans with (2 := CV_circle_scal_l _ _).
-  by rewrite CV_circle_derive CV_Bessel1.
+  apply ex_series_Rabs, CV_disk_inside.
+  by rewrite CV_radius_incr_1 ?CV_radius_derive CV_Bessel1.
+  apply ex_series_Rabs, CV_disk_inside.
+  apply Rbar_lt_le_trans with (2 := CV_radius_scal_l _ _).
+  by rewrite CV_radius_derive CV_Bessel1.
 Qed.
 
 Lemma Bessel1_equality_1 (n : nat) (x : R) : x <> 0

@@ -153,7 +153,7 @@ Lemma is_inf_seq_glb (u : nat -> Rbar) (l : Rbar) :
 Proof.
   move => H ;
   apply Rbar_lub_glb ;
-  apply (Rbar_is_lub_eq (fun x : Rbar => exists n : nat, x = Rbar_opp (u n))).
+  apply (Rbar_is_lub_ext (fun x : Rbar => exists n : nat, x = Rbar_opp (u n))).
   move => x ; split ; case => n Hn ; exists n.
   by rewrite Hn Rbar_opp_involutive.
   by rewrite -Hn Rbar_opp_involutive.
@@ -168,11 +168,11 @@ Proof.
   apply Rbar_is_lub_sup_seq ;
   apply Rbar_glb_lub.
   rewrite Rbar_opp_involutive ;
-  apply (Rbar_is_glb_eq (fun x : Rbar => exists n : nat, x = u n)) => // x ;
+  apply (Rbar_is_glb_ext (fun x : Rbar => exists n : nat, x = u n)) => // x ;
   split ; case => n Hx ; exists n ; by apply Rbar_opp_eq.
 Qed.
 
-(** Extentionality *)
+(** Extensionality *)
 
 Lemma is_sup_seq_ext (u v : nat -> Rbar) (l : Rbar) :
   (forall n, u n = v n)
@@ -337,7 +337,7 @@ Lemma Rbar_sup_eq_lub (u : nat -> Rbar) Hp Hex :
 Proof.
   rewrite /Sup_seq ; case: (ex_sup_seq _) => /= s Hs.
   rewrite /Rbar_lub_ne ; case: (Rbar_ex_lub_ne _ _ _) => /= l Hl.
-  apply (Rbar_is_lub_rw 
+  apply (Rbar_is_lub_unique
     (fun x : Rbar => exists n : nat, x = u n) 
     (fun x : Rbar => exists n : nat, x = u n)) => // ;
   by apply is_sup_seq_lub.
@@ -347,7 +347,7 @@ Lemma Inf_eq_glb (u : nat -> Rbar) Hm Hex :
 Proof.
   rewrite /Inf_seq ; case: (ex_inf_seq _) => /= s Hs.
   rewrite /Rbar_glb_ne ; case: (Rbar_ex_glb_ne _ _ _) => /= l Hl.
-  apply (Rbar_is_glb_rw 
+  apply (Rbar_is_glb_unique
     (fun x : Rbar => exists n : nat, x = u n) 
     (fun x : Rbar => exists n : nat, x = u n)) => // ;
   by apply is_inf_seq_glb.
@@ -369,7 +369,7 @@ Proof.
   repeat (case: ex_inf_seq ; intros) => /=.
   apply is_inf_seq_glb in p.
   apply is_inf_seq_glb in p0.
-  move: p p0 ; apply Rbar_is_glb_rw.
+  move: p p0 ; apply Rbar_is_glb_unique.
   move => x1 ; split ; case => n -> ; exists n ; by rewrite Rbar_opp_involutive.
 Qed.
 
@@ -701,7 +701,7 @@ Proof.
   by rewrite Inf_opp_sup.
 Qed.
 
-(** Extentionality *)
+(** Extensionality *)
 
 Lemma is_LimSup_seq_ext_loc (u v : nat -> R) (l : Rbar) :
   (exists N, forall n, (N <= n)%nat -> u n = v n)
@@ -752,7 +752,7 @@ Proof.
   exists O => n _ ; by apply Hext.
 Qed.
 
-(** Existance *)
+(** Existence *)
 
 Lemma ex_LimSup_seq (u : nat -> R) : 
   {l : Rbar | is_LimSup_seq u l}.
@@ -776,7 +776,7 @@ Definition LimSup_seq (u : nat -> R) :=
 Definition LimInf_seq (u : nat -> R) :=
   projT1 (ex_LimInf_seq u).
 
-(** Unicity *)
+(** Uniqueness *)
 
 Lemma is_LimSup_seq_unique (u : nat -> R) (l : Rbar) :
   is_LimSup_seq u l -> LimSup_seq u = l.
@@ -1022,9 +1022,9 @@ Definition Lim_seq (u : nat -> R) : Rbar :=
   Rbar_div_pos (Rbar_plus (LimSup_seq u) (LimInf_seq u))
     {| pos := 2; cond_pos := Rlt_R0_R2 |}.
 
-(** Equivalences *)
+(** Equivalence with standard library Reals *)
 
-Lemma is_lim_seq_Un_cv (u : nat -> R) (l : R) :
+Lemma is_lim_seq_Reals (u : nat -> R) (l : R) :
   is_lim_seq u l <-> Un_cv u l.
 Proof.
   split => Hl.
@@ -1105,7 +1105,7 @@ Proof.
   rewrite Hl /LimInf_seq ; by case: ex_LimInf_seq.
 Qed.
 
-(** Extentionality *)
+(** Extensionality *)
 
 Lemma is_lim_seq_ext_loc (u v : nat -> R) (l : Rbar) : 
   (exists N, forall n, (N <= n)%nat -> u n = v n) 
@@ -1295,7 +1295,7 @@ Qed.
 
 (** Identity *)
 
-Lemma is_lim_seq_id :
+Lemma is_lim_seq_INR :
   is_lim_seq INR p_infty.
 Proof.
   move => M.
@@ -1308,17 +1308,17 @@ Proof.
   by apply Hn.
   apply Rmax_l.
 Qed.
-Lemma ex_lim_seq_id :
+Lemma ex_lim_seq_INR :
   ex_lim_seq INR.
 Proof.
-  exists p_infty ; by apply is_lim_seq_id.
+  exists p_infty ; by apply is_lim_seq_INR.
 Qed.
-Lemma Lim_seq_id :
+Lemma Lim_seq_INR :
   Lim_seq INR = p_infty.
 Proof.
   intros.
   apply is_lim_seq_unique.
-  apply is_lim_seq_id.
+  apply is_lim_seq_INR.
 Qed.
 
 (** Constants *)
@@ -1846,7 +1846,7 @@ Proof.
 Qed.
 
 
-(** *** Additive *)
+(** *** Additive operators *)
 
 (** Opposite *)
 
@@ -1974,7 +1974,7 @@ Proof.
   rewrite (Rbar_plus_correct _ _ l) //.
 Qed.
 
-(** Substraction *)
+(** Subtraction *)
 
 Lemma is_lim_seq_minus (u v : nat -> R) (l1 l2 : Rbar) :
   is_lim_seq u l1 -> is_lim_seq v l2 
@@ -2009,7 +2009,7 @@ Proof.
   rewrite /Rbar_minus (Rbar_plus_correct _ _ l) //.
 Qed.
 
-(** *** Multiplicative *)
+(** *** Multiplicative operators *)
 
 (** Inverse *)
 
@@ -2499,9 +2499,9 @@ Lemma is_lim_seq_continuous (f : R -> R) (u : nat -> R) (l : R) :
   -> is_lim_seq (fun n => f (u n)) (f l).
 Proof.
   move => Cf Hu.
-  apply is_lim_seq_Un_cv, continuity_seq.
+  apply is_lim_seq_Reals, continuity_seq.
   apply Cf.
-  by apply is_lim_seq_Un_cv.
+  by apply is_lim_seq_Reals.
 Qed.
 
 (** Absolute value *)
@@ -2655,7 +2655,7 @@ Proof.
   apply Rle_trans with (2 := Hq), Rle_0_1.
 Qed.
 
-(** Rbar_loc_seq is a good sequence *)
+(** Rbar_loc_seq converges *)
 
 Lemma is_lim_seq_Rbar_loc_seq (x : Rbar) :
   is_lim_seq (Rbar_loc_seq x) x.
@@ -2668,17 +2668,17 @@ Proof.
   by apply is_lim_seq_const.
   apply is_lim_seq_inv.
   apply is_lim_seq_plus.
-  by apply is_lim_seq_id.
+  by apply is_lim_seq_INR.
   by apply is_lim_seq_const.
   by [].
   by [].
   by [].
   rewrite /l /= ; by apply Rbar_finite_eq, Rplus_0_r.
-  apply is_lim_seq_id.
+  apply is_lim_seq_INR.
   evar (l : Rbar).
   pattern m_infty at 2.
   replace m_infty with l.
   apply -> is_lim_seq_opp ; simpl.
-  by apply is_lim_seq_id.
+  by apply is_lim_seq_INR.
   by [].
 Qed.

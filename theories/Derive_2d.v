@@ -741,7 +741,7 @@ now apply Derive_n_ext.
 Qed.
 
 
-(** * Iterate differential *)
+(** * Iterated differential *)
 
 Fixpoint ex_diff_n f n x y :=
   continuity_2d_pt f x y /\
@@ -1002,9 +1002,10 @@ intros n0; simpl; intros H; apply H.
 Qed.
 
 
-Lemma Schwarz_ext_aux: forall p f x y, 
+Lemma Derive_partial_derive_aux1: forall p f x y, 
   locally_2d (ex_diff_n f (S p)) x y ->
    partial_derive  1 p f x y = partial_derive 0 p (partial_derive  1 0 f) x y.
+Proof.
 intros p; induction p.
 intros f x y H.
 unfold partial_derive; now simpl.
@@ -1074,10 +1075,11 @@ rewrite plus_0_l.
 omega.
 Qed.
 
-Lemma Schwarz_ext_aux2: forall p k f x y, 
+Lemma Derive_partial_derive_aux2: forall p k f x y, 
   locally_2d (ex_diff_n f (p+S k)) x y ->
   partial_derive 0 1 (partial_derive p k f) x y =
      partial_derive p (S k) f x y.
+Proof.
 intros p; induction p.
 intros; easy.
 intros k f x y Y.
@@ -1095,7 +1097,7 @@ apply partial_derive_ext_loc.
 apply locally_2d_impl_strong with (2:=Y).
 apply locally_2d_forall.
 intros u v H.
-apply Schwarz_ext_aux.
+apply Derive_partial_derive_aux1.
 apply locally_2d_impl with (2:=H).
 apply locally_2d_forall.
 intros u'' v''.
@@ -1122,7 +1124,7 @@ apply locally_2d_impl_strong with (2:=H).
 apply locally_2d_forall.
 intros u' v' H'.
 apply sym_eq.
-apply Schwarz_ext_aux.
+apply Derive_partial_derive_aux1.
 apply locally_2d_impl with (2:=H').
 apply locally_2d_forall.
 intros u'' v''.
@@ -1145,12 +1147,13 @@ omega.
 Qed.
 
 
-Lemma Schwarz_ext: forall p k f x y, 
+Lemma Derive_partial_derive: forall p k f x y, 
   locally_2d (ex_diff_n f (p+S k)) x y ->
   Derive (fun v : R => partial_derive p k f x v) y =
      partial_derive p (S k) f x y.
+Proof.
 intros p k f x y H.
-generalize (Schwarz_ext_aux2 p k f x y H).
+generalize (Derive_partial_derive_aux2 p k f x y H).
 easy.
 Qed.
 
@@ -1174,17 +1177,13 @@ intros Y; apply Y.
 intros n1 Y; apply Y.
 Qed.
 
-
-
-
+(** * 2D Taylor-Lagrange inequality *)
 
 Definition DL_regular_n f m x y :=
   exists D, locally_2d (fun u v =>
     Rabs (f u v - DL_pol m f x y (u-x) (v-y)) <= D * (Rmax (Rabs (u-x)) (Rabs (v-y))) ^ (S m)) x y.
 
-
-
-Theorem Taylor_Lagrange_2D : forall f n x y,
+Theorem Taylor_Lagrange_2d : forall f n x y,
   locally_2d (fun u v => ex_diff_n f (S n) u v) x y -> DL_regular_n f n x y.
 Proof.
 intros f n x y Df.
@@ -1312,7 +1311,7 @@ apply locally_2d_singleton in HH.
 apply ex_diff_n_continuity_inf_1 with (S n).
 now rewrite - le_plus_minus.
 apply HH.
-apply Schwarz_ext.
+apply Derive_partial_derive_aux2.
 apply locally_2d_impl with (2:=HH).
 apply locally_2d_forall.
 intros u' v' (Y,_).

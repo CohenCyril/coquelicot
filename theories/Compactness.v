@@ -58,6 +58,8 @@ Fixpoint close_n n d : Tn n R -> Tn n R -> Prop :=
     Rabs (x1 - t1) < d /\ close_n n d x2 t2
   end.
 
+(** * Compactness: there is a finite covering of opens *)
+
 Lemma compactness_list :
   forall n a b (delta : Tn n R -> posreal),
   ~~ exists l, forall x, bounded_n n a b x -> exists t, In t l /\ bounded_n n a b t /\ close_n n (delta t) x t.
@@ -245,6 +247,8 @@ apply Rplus_lt_compat_l.
 apply cond_pos.
 Qed.
 
+(** * Compactness: there is a covering based on a gauge function *)
+
 Lemma compactness_value :
   forall n a b (delta : Tn n R -> posreal),
   { d : posreal | forall x, bounded_n n a b x -> ~~ exists t, bounded_n n a b t /\ close_n n (delta t) x t /\ d <= delta t }.
@@ -346,6 +350,8 @@ apply Rlt_R0_R2.
 Qed.
 
 End Compactness.
+
+(** * Specific instances of compactness for 1D and 2D spaces *)
 
 Lemma compactness_value_1d :
   forall a b (delta : R -> posreal),

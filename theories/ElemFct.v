@@ -2,29 +2,6 @@ Require Import Reals ssreflect.
 
 Require Import Rbar Rcomplements Continuity Derive Locally.
 
-(** * Identities *)
-
-Lemma continuity_2d_pt_id1 :
-  forall x y, continuity_2d_pt (fun u v => u) x y.
-Proof.
-  intros x y eps; exists eps; tauto.
-Qed.
-
-Lemma continuity_2d_pt_id2 :
-  forall x y, continuity_2d_pt (fun u v => v) x y.
-Proof.
-  intros x y eps; exists eps; tauto.
-Qed.
-
-(** * Constant functions *)
-
-Lemma continuity_2d_pt_const :
-  forall x y c, continuity_2d_pt (fun u v => c) x y.
-Proof.
-  intros x y c eps; exists eps; rewrite Rminus_eq_0 Rabs_R0.
-  intros; apply cond_pos.
-Qed.
-
 (** * Absolute value *)
 
 Lemma derivable_pt_lim_Rabs (x : R) :
@@ -84,7 +61,7 @@ Qed.
 
 (** * Exponential function *)
 
-Lemma Rle_exp (x : R) (n : nat) :
+Lemma exp_ge_taylor (x : R) (n : nat) :
   0 <= x -> sum_f_R0 (fun k => x^k / INR (fact k)) n <= exp x.
 Proof.
   move => Hx.
@@ -169,7 +146,7 @@ Proof.
   by apply is_lim_exp_m.
 Qed.
 
-Lemma is_lim_exp_aux1 : is_lim (fun y => exp y / y) p_infty p_infty.
+Lemma is_lim_div_exp_p : is_lim (fun y => exp y / y) p_infty p_infty.
 Proof.
   apply is_lim_le_p_loc with (fun y => (1 + y + y^2 / 2)/y).
   evar (l : Rbar).
@@ -224,7 +201,7 @@ Proof.
   by apply Rlt_le.
 Qed.
 
-Lemma is_lim_exp_aux2 : is_lim (fun y => y * exp y) m_infty 0.
+Lemma is_lim_mul_exp_m : is_lim (fun y => y * exp y) m_infty 0.
 Proof.
   search_lim.
   apply is_lim_ext_loc with (fun y => - / (exp (-y) / (- y))).
@@ -237,7 +214,7 @@ Proof.
   apply is_lim_opp.
   apply is_lim_inv.
   apply (is_lim_comp (fun y => exp y / y)) with p_infty.
-  by apply is_lim_exp_aux1.
+  by apply is_lim_div_exp_p.
   search_lim.
   apply is_lim_opp.
   apply is_lim_id.
@@ -247,7 +224,7 @@ Proof.
   simpl ; by rewrite Ropp_0.
 Qed.
 
-Lemma is_lim_exp_aux3 : is_lim (fun y => (exp y - 1) / y) 0 1.
+Lemma is_lim_div_expm1_0 : is_lim (fun y => (exp y - 1) / y) 0 1.
 Proof.
   move => eps.
   case: (derivable_pt_lim_exp_0 eps (cond_pos eps)) => delta H.
@@ -280,7 +257,7 @@ Proof.
   by apply Hx.
 Qed.
 
-Lemma is_lim_ln_aux1 : is_lim (fun y => ln y / y) p_infty 0.
+Lemma is_lim_div_ln_p : is_lim (fun y => ln y / y) p_infty 0.
 Proof.
   have H : forall x, 0 < x -> ln x < x.
     move => x Hx.
@@ -384,7 +361,7 @@ Proof.
   by [].
 Qed.
 
-Lemma is_lim_ln_aux2 : is_lim (fun y => ln (1+y) / y) 0 1.
+Lemma is_lim_div_ln1p_0 : is_lim (fun y => ln (1+y) / y) 0 1.
 Proof.
   move => eps.
   case: (derivable_pt_lim_ln 1 (Rlt_0_1) eps (cond_pos eps)) => delta H.
@@ -394,9 +371,9 @@ Proof.
   by rewrite ln_1 Rinv_1 Rminus_0_r.
 Qed.
 
-(** * the function sin x / x *)
+(** * Unnormalized sinc *)
 
-Lemma is_lim_sin_aux : is_lim (fun x => sin x / x) 0 1.
+Lemma is_lim_sinc_0 : is_lim (fun x => sin x / x) 0 1.
 Proof.
   move => eps.
   case: (derivable_pt_lim_sin_0 eps (cond_pos eps)) => delta H.
