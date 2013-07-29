@@ -1,3 +1,24 @@
+(**
+This file is part of the Coquelicot formalization of real
+analysis in Coq: http://coquelicot.saclay.inria.fr/
+
+Copyright (C) 2011-2013 Sylvie Boldo
+#<br />#
+Copyright (C) 2011-2013 Catherine Lelay
+#<br />#
+Copyright (C) 2011-2013 Guillaume Melquiond
+
+This library is free software; you can redistribute it and/or
+modify it under the terms of the GNU Lesser General Public
+License as published by the Free Software Foundation; either
+version 3 of the License, or (at your option) any later version.
+
+This library is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+COPYING file for more details.
+*)
+
 Require Import Reals.
 Require Import Rcomplements Locally Derive RInt Derive_2d Continuity ElemFct.
 Require Import ssreflect ssrbool seq Datatypes.

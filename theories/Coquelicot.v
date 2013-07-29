@@ -48,3 +48,24 @@ Require Export AutoDerive Compactness Continuity Derive.
 Require Export Derive_2d Equiv ElemFct Limit.
 Require Export Locally Lub Markov PSeries Rbar Rcomplements.
 Require Export RInt Seq_fct Series SF_seq.
+
+(**
+This file is part of the Coquelicot formalization of real
+analysis in Coq: http://coquelicot.saclay.inria.fr/
+
+Copyright (C) 2011-2013 Sylvie Boldo
+#<br />#
+Copyright (C) 2011-2013 Catherine Lelay
+#<br />#
+Copyright (C) 2011-2013 Guillaume Melquiond
+
+This library is free software; you can redistribute it and/or
+modify it under the terms of the GNU Lesser General Public
+License as published by the Free Software Foundation; either
+version 3 of the License, or (at your option) any later version.
+
+This library is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+COPYING file for more details.
+*)
