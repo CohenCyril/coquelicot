@@ -564,6 +564,13 @@ Proof.
   apply Rbar_plus_le_lt_compat => // ; by right.
 Qed.
 
+Lemma Rbar_plus_opp (x y : Rbar) :
+  Rbar_plus (Rbar_opp x) (Rbar_opp y) = Rbar_opp (Rbar_plus x y).
+Proof.
+  case: x => [x | | ] ;
+  case: y => [y | | ] //= ; apply f_equal ; ring.
+Qed.
+
 (** *** Rbar_minus *)
 
 (** the predicate *)
