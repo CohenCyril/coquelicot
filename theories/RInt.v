@@ -4210,9 +4210,9 @@ Proof.
 Qed.
 
 Lemma derivable_pt_lim_param_aux : forall f a b x,
-  locally (fun x => forall t, Rmin a b <= t <= Rmax a b -> ex_derive (fun u => f u t) x) x ->
+  locally x (fun x => forall t, Rmin a b <= t <= Rmax a b -> ex_derive (fun u => f u t) x) ->
   (forall t, Rmin a b <= t <= Rmax a b -> continuity_2d_pt (fun u v => Derive (fun z => f z v) u) x t) ->
-  locally (fun y => ex_RInt (fun t => f y t) a b) x ->
+  locally x (fun y => ex_RInt (fun t => f y t) a b) ->
   ex_RInt (fun t => Derive (fun u => f u t) x) a b ->
   derivable_pt_lim (fun x => RInt (fun t => f x t) a b) x
     (RInt (fun t => Derive (fun u => f u t) x) a b).
@@ -4335,9 +4335,9 @@ Qed.
 
 
 Lemma derivable_pt_lim_param : forall f a b x,
-  locally (fun x => forall t, Rmin a b <= t <= Rmax a b -> ex_derive (fun u => f u t) x) x ->
+  locally x (fun x => forall t, Rmin a b <= t <= Rmax a b -> ex_derive (fun u => f u t) x) ->
   (forall t, Rmin a b <= t <= Rmax a b -> continuity_2d_pt (fun u v => Derive (fun z => f z v) u) x t) ->
-  locally (fun y => ex_RInt (fun t => f y t) a b) x ->
+  locally x (fun y => ex_RInt (fun t => f y t) a b) ->
   derivable_pt_lim (fun x => RInt (fun t => f x t) a b) x
     (RInt (fun t => Derive (fun u => f u t) x) a b).
 Proof.
@@ -4420,11 +4420,11 @@ Qed.
 
 Lemma RInt_Chasles_bound_comp_l_loc :
   forall f a b x,
-  locally (fun y => ex_RInt (f y) (a x) b) x ->
-  (exists eps : posreal, locally (fun y => ex_RInt (f y) (a x - eps) (a x + eps)) x) ->
+  locally x (fun y => ex_RInt (f y) (a x) b) ->
+  (exists eps : posreal, locally x (fun y => ex_RInt (f y) (a x - eps) (a x + eps))) ->
   continuity_pt a x ->
-  locally (fun x' => RInt (f x') (a x') (a x) + RInt (f x') (a x) b =
-    RInt (f x') (a x') b) x.
+  locally x (fun x' => RInt (f x') (a x') (a x) + RInt (f x') (a x) b =
+    RInt (f x') (a x') b).
 Proof.
 intros f a b x Hab (eps,Hae) Ca.
 move /continuity_pt_locally: Ca => Ca.
@@ -4441,13 +4441,13 @@ Qed.
 
 Lemma RInt_Chasles_bound_comp_loc :
   forall f a b x,
-  locally (fun y => ex_RInt (f y) (a x) (b x)) x ->
-  (exists eps : posreal, locally (fun y => ex_RInt (f y) (a x - eps) (a x + eps)) x) ->
-  (exists eps : posreal, locally (fun y => ex_RInt (f y) (b x - eps) (b x + eps)) x) ->
+  locally x (fun y => ex_RInt (f y) (a x) (b x)) ->
+  (exists eps : posreal, locally x (fun y => ex_RInt (f y) (a x - eps) (a x + eps))) ->
+  (exists eps : posreal, locally x (fun y => ex_RInt (f y) (b x - eps) (b x + eps))) ->
   continuity_pt a x ->
   continuity_pt b x ->
-  locally (fun x' => RInt (f x') (a x') (a x) + RInt (f x') (a x) (b x') =
-    RInt (f x') (a x') (b x')) x.
+  locally x (fun x' => RInt (f x') (a x') (a x) + RInt (f x') (a x) (b x') =
+    RInt (f x') (a x') (b x')).
 Proof.
 intros f a b x Hab (ea,Hae) (eb,Hbe) Ca Cb.
 move /continuity_pt_locally: Ca => Ca.
@@ -4515,19 +4515,13 @@ exact Db.
 now apply derivable_pt_lim_RInt.
 Qed.
 
-
-
-
-
-
-
 Lemma derivable_pt_lim_RInt_param_bound_comp_aux1: forall f a x,
-  (exists eps:posreal, locally (fun y => ex_RInt (fun t => f y t) (a x - eps) (a x + eps)) x) ->
-  (exists eps:posreal, locally
+  (exists eps:posreal, locally x (fun y => ex_RInt (fun t => f y t) (a x - eps) (a x + eps))) ->
+  (exists eps:posreal, locally x
     (fun x0 : R =>
        forall t : R,
         a x-eps <= t <= a x+eps ->
-        ex_derive (fun u : R => f u t) x0) x) ->
+        ex_derive (fun u : R => f u t) x0)) ->
   (locally_2d (fun x' t =>
          continuity_2d_pt (fun u v : R => Derive (fun z : R => f z v) u) x' t) x (a x)) ->
 
@@ -4680,14 +4674,14 @@ Qed.
 (* integral between a(x) and fixed b *)
 Lemma derivable_pt_lim_RInt_param_bound_comp_aux2 :
   forall f a b x da,
-  (locally (fun y => ex_RInt (fun t => f y t) (a x) b) x) ->
-  (exists eps:posreal, locally (fun y => ex_RInt (fun t => f y t) (a x - eps) (a x + eps)) x) ->
+  (locally x (fun y => ex_RInt (fun t => f y t) (a x) b)) ->
+  (exists eps:posreal, locally x (fun y => ex_RInt (fun t => f y t) (a x - eps) (a x + eps))) ->
   derivable_pt_lim a x da ->
-  (exists eps:posreal, locally
+  (exists eps:posreal, locally x
     (fun x0 : R =>
        forall t : R,
         Rmin (a x-eps) b <= t <= Rmax (a x+eps) b ->
-        ex_derive (fun u : R => f u t) x0) x) ->
+        ex_derive (fun u : R => f u t) x0)) ->
   (forall t : R,
           Rmin (a x) b <= t <= Rmax (a x) b ->
          continuity_2d_pt (fun u v : R => Derive (fun z : R => f z v) u) x t) -> 
@@ -4840,14 +4834,14 @@ Qed.
 
 Lemma derivable_pt_lim_RInt_param_bound_comp_aux3 :
   forall f a b x db,
-  (locally (fun y => ex_RInt (fun t => f y t) a (b x)) x) ->
-  (exists eps:posreal, locally (fun y => ex_RInt (fun t => f y t) (b x - eps) (b x + eps)) x) ->
+  (locally x (fun y => ex_RInt (fun t => f y t) a (b x))) ->
+  (exists eps:posreal, locally x (fun y => ex_RInt (fun t => f y t) (b x - eps) (b x + eps))) ->
   derivable_pt_lim b x db ->
-  (exists eps:posreal, locally
+  (exists eps:posreal, locally x
     (fun x0 : R =>
        forall t : R,
         Rmin a (b x-eps) <= t <= Rmax a (b x+eps) ->
-        ex_derive (fun u : R => f u t) x0) x) ->
+        ex_derive (fun u : R => f u t) x0)) ->
   (forall t : R,
           Rmin a (b x) <= t <= Rmax a (b x) ->
          continuity_2d_pt (fun u v : R => Derive (fun z : R => f z v) u) x t) -> 
@@ -4886,16 +4880,16 @@ Qed.
 
 Lemma derivable_pt_lim_RInt_param_bound_comp :
  forall f a b x da db,
-  (locally (fun y => ex_RInt (fun t => f y t) (a x) (b x)) x) ->
-  (exists eps:posreal, locally (fun y => ex_RInt (fun t => f y t) (a x - eps) (a x + eps)) x) ->
-  (exists eps:posreal, locally (fun y => ex_RInt (fun t => f y t) (b x - eps) (b x + eps)) x) ->
+  (locally x (fun y => ex_RInt (fun t => f y t) (a x) (b x))) ->
+  (exists eps:posreal, locally x (fun y => ex_RInt (fun t => f y t) (a x - eps) (a x + eps))) ->
+  (exists eps:posreal, locally x (fun y => ex_RInt (fun t => f y t) (b x - eps) (b x + eps))) ->
   derivable_pt_lim a x da ->
   derivable_pt_lim b x db ->
-  (exists eps:posreal, locally
+  (exists eps:posreal, locally x
     (fun x0 : R =>
        forall t : R,
         Rmin (a x-eps) (b x -eps) <= t <= Rmax (a x+eps) (b x+eps) ->
-        ex_derive (fun u : R => f u t) x0) x) ->
+        ex_derive (fun u : R => f u t) x0)) ->
   (forall t : R,
           Rmin (a x) (b x) <= t <= Rmax (a x) (b x) ->
          continuity_2d_pt (fun u v : R => Derive (fun z : R => f z v) u) x t) -> 

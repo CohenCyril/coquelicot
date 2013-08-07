@@ -28,7 +28,7 @@ Open Scope R_scope.
 
 (** * Definitions *)
 
-Definition locally (P : R -> Prop) x :=
+Definition locally x (P : R -> Prop) :=
   exists delta : posreal, forall y, Rabs (y - x) < delta -> P y.
 
 Definition locally_2d (P : R -> R -> Prop) x y :=
@@ -40,7 +40,7 @@ Lemma locally_align :
   forall (P Q : R -> Prop) x,
   ( forall eps : posreal, (forall v, Rabs (v - x) < eps -> P v) ->
     forall u, Rabs (u - x) < eps -> Q u ) ->
-  locally P x -> locally Q x.
+  locally x P -> locally x Q.
 Proof.
 intros P Q x K (d,H).
 exists d => y Hy.
@@ -59,8 +59,8 @@ now apply (K d).
 Qed.
 
 Lemma locally_impl_strong :
-  forall (P Q : R -> Prop) x, locally (fun y => locally P y -> Q y) x ->
-  locally P x -> locally Q x.
+  forall (P Q : R -> Prop) x, locally x (fun y => locally y P -> Q y) ->
+  locally x P -> locally x Q.
 Proof.
 intros P Q x (dpq,Hpq) (dp,Hp).
 exists (mkposreal _ (Rmin_stable_in_posreal dp dpq)) => /= y Hy.
@@ -130,7 +130,7 @@ apply Rmin_l.
 Qed.
 
 Lemma locally_singleton :
-  forall (P : R -> Prop) x, locally P x -> P x.
+  forall (P : R -> Prop) x, locally x P -> P x.
 Proof.
 intros P x (D,H).
 apply H.
@@ -148,8 +148,8 @@ apply H ;
 Qed.
 
 Lemma locally_impl :
-  forall (P Q : R -> Prop) x, locally (fun y => P y -> Q y) x ->
-  locally P x -> locally Q x.
+  forall (P Q : R -> Prop) x, locally x (fun y => P y -> Q y) ->
+  locally x P -> locally x Q.
 Proof.
 intros P Q x (d,H).
 apply locally_impl_strong.
@@ -170,7 +170,7 @@ now apply locally_2d_singleton.
 Qed.
 
 Lemma locally_forall :
-  forall (P : R -> Prop) x, (forall y, P y) -> locally P x.
+  forall (P : R -> Prop) x, (forall y, P y) -> locally x P.
 Proof.
 intros P x Hp.
 now exists (mkposreal _ Rlt_0_1) => u _.
@@ -184,8 +184,8 @@ now exists (mkposreal _ Rlt_0_1) => u v _ _.
 Qed.
 
 Lemma locally_and :
-  forall (P Q : R -> Prop) x, locally P x -> locally Q x ->
-  locally (fun y => P y /\ Q y) x.
+  forall (P Q : R -> Prop) x, locally x P -> locally x Q ->
+  locally x (fun y => P y /\ Q y).
 Proof.
 intros P Q x H.
 apply: locally_impl.
@@ -208,7 +208,7 @@ Qed.
 Lemma locally_2d_1d_const_x :
   forall (P : R -> R -> Prop) x y,
   locally_2d P x y ->
-  locally (fun t => P x t) y.
+  locally y (fun t => P x t).
 intros P x y (d,Hd).
 exists d; intros z Hz.
 apply Hd.
@@ -220,7 +220,7 @@ Qed.
 Lemma locally_2d_1d_const_y :
   forall (P : R -> R -> Prop) x y,
   locally_2d P x y ->
-  locally (fun t => P t y) x.
+  locally x (fun t => P t y).
 intros P x y (d,Hd).
 exists d; intros z Hz.
 apply Hd.
@@ -234,7 +234,7 @@ Lemma locally_2d_1d_strong :
   forall (P : R -> R -> Prop) x y,
   locally_2d P x y ->
   locally_2d (fun u v => forall t, 0 <= t <= 1 ->
-    locally (fun z => locally_2d P (x + z * (u - x)) (y + z * (v - y))) t) x y.
+    locally t (fun z => locally_2d P (x + z * (u - x)) (y + z * (v - y)))) x y.
 Proof.
 intros P x y.
 apply locally_2d_align => eps HP u v Hu Hv t Ht.
@@ -328,7 +328,7 @@ Qed.
 Lemma continuity_pt_locally :
   forall f x,
   continuity_pt f x <->
-  forall eps : posreal, locally (fun u => Rabs (f u - f x) < eps) x.
+  forall eps : posreal, locally x (fun u => Rabs (f u - f x) < eps).
 Proof.
 intros f x.
 split.
@@ -354,7 +354,7 @@ Qed.
 Lemma locally_interval (P : R -> Prop) (x : R) (a b : Rbar) :
   Rbar_lt a x -> Rbar_lt x b 
   -> (forall (y : R), Rbar_lt a y -> Rbar_lt y b -> P y)
-    -> locally P x.
+    -> locally x P.
 Proof.
   move => Hax Hxb Hp.
   case: (Rbar_lt_locally _ _ _ Hax Hxb) => d Hd.
@@ -365,8 +365,8 @@ Qed.
 (** * Continuity *)
 
 Lemma locally_comp (P : R -> Prop) (f : R -> R) (x : R) :
-  locally P (f x) -> continuity_pt f x 
-  -> locally (fun x => P (f x)) x.
+  locally (f x) P -> continuity_pt f x
+  -> locally x (fun x => P (f x)).
 Proof.
   move => Hp Hf.
   case: Hp => eps Hp.
@@ -385,7 +385,7 @@ Qed.
 Require Import Markov Lub.
 
 
-Lemma locally_ex_dec: forall P x, (forall x, P x \/ ~P x) -> locally P x -> {d:posreal| forall y, Rabs (y-x) < d -> P y}.
+Lemma locally_ex_dec: forall P x, (forall x, P x \/ ~P x) -> locally x P -> {d:posreal| forall y, Rabs (y-x) < d -> P y}.
 Proof.
 intros P x P_dec H.
 set (Q := fun z => forall y,  Rabs (y-x) < z -> P y).
@@ -499,7 +499,7 @@ Qed.
 Lemma derivable_pt_lim_locally :
   forall f x l,
   derivable_pt_lim f x l <->
-  forall eps : posreal, locally (fun y => y <> x -> Rabs ((f y - f x) / (y - x) - l) < eps) x.
+  forall eps : posreal, locally x (fun y => y <> x -> Rabs ((f y - f x) / (y - x) - l) < eps).
 Proof.
 intros f x l.
 split.

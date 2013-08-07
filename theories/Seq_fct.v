@@ -198,7 +198,7 @@ Qed.
 (** ** Limits, integrals and differentiability *)
 
 Definition is_open (D : R -> Prop) :=
-  forall x, D x -> locally D x.
+  forall x, D x -> locally x D.
 Definition is_connex (D : R -> Prop) :=
   forall a b x, D a -> D b -> a <= x <= b -> D x.
 
@@ -401,8 +401,8 @@ Proof.
     move => x Hx n h Hh.
     rewrite {2}/rn ; case: (Req_EM_T h 0) => [-> | Hh0].
     move => eps.
-    suff H : locally (fun y : R => y <> 0 ->
-      Rabs ((fn n (x + y) - fn n x) / y - Derive (fn n) x) < eps) 0.
+    suff H : locally 0 (fun y : R => y <> 0 ->
+      Rabs ((fn n (x + y) - fn n x) / y - Derive (fn n) x) < eps).
     case: H => d H.
     exists d => y Hy Hxy.
     rewrite /rn ; case: Req_EM_T => // _ ; by apply H.

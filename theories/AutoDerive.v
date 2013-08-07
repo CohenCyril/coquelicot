@@ -229,10 +229,10 @@ Fixpoint interp_domain (l : seq R) (d : domain) : Prop :=
   | Continuous2 m n f => continuity_2d_pt (fun x y => interp (set_nth R0 (set_nth R0 l n y) m x) f) (nth R0 l m) (nth R0 l n)
   | Integrable f e1 e2 => ex_RInt (fun x => interp (x :: l) f) (interp l e1) (interp l e2)
   | ParamIntegrable n f e1 e2 =>
-    locally (fun y => ex_RInt (fun t => interp (t :: set_nth R0 l n y) f) (interp l e1) (interp l e2)) (nth R0 l n)
+    locally (nth R0 l n) (fun y => ex_RInt (fun t => interp (t :: set_nth R0 l n y) f) (interp l e1) (interp l e2))
   | LocallyParamIntegrable n f e =>
     let a := interp l e in
-    exists eps : posreal, locally (fun y => ex_RInt (fun t => interp (t :: set_nth R0 l n y) f) (a - eps) (a + eps)) (nth R0 l n)
+    exists eps : posreal, locally (nth R0 l n) (fun y => ex_RInt (fun t => interp (t :: set_nth R0 l n y) f) (a - eps) (a + eps))
   | And ld => foldr (fun d acc => interp_domain l d /\ acc) True ld
   | Forall e1 e2 s =>
     let a1 := interp l e1 in let a2 := interp l e2 in
@@ -240,7 +240,7 @@ Fixpoint interp_domain (l : seq R) (d : domain) : Prop :=
     interp_domain (t :: l) s
   | Forone e s => interp_domain (interp l e :: l) s
   | Locally n s =>
-    locally (fun x => interp_domain (set_nth R0 l n x) s) (nth R0 l n)
+    locally (nth R0 l n) (fun x => interp_domain (set_nth R0 l n x) s)
   | Locally2 m n s =>
     locally_2d (fun x y => interp_domain (set_nth R0 (set_nth R0 l n y) m x) s) (nth R0 l m) (nth R0 l n)
   | ForallWide n e1 e2 s =>
@@ -939,7 +939,7 @@ destruct (D e1 (S n)) as (a1,b1).
 destruct (D e2 n) as (a2,b2).
 destruct (D e3 n) as (a3,b3).
 (* . *)
-assert (HexI: forall f x, locally (fun x => continuity_pt f x) x -> exists eps : posreal, ex_RInt f (x - eps) (x + eps)).
+assert (HexI: forall f x, locally x (fun x => continuity_pt f x) -> exists eps : posreal, ex_RInt f (x - eps) (x + eps)).
 clear => f x [eps H].
 exists (pos_div_2 eps).
 apply ex_RInt_Reals_1.
@@ -1072,8 +1072,8 @@ now apply is_const_correct.
 now apply is_const_correct.
 rewrite 2!interp_set_nth.
 destruct H3 as (d,H3).
-assert (H3': locally (fun x => forall t, Rmin (interp l e2) (interp l e3) <= t <= Rmax (interp l e2) (interp l e3) ->
-  interp_domain (set_nth 0 (t :: l) (S n) x) b1) (nth 0 l n)).
+assert (H3': locally (nth R0 l n) (fun x => forall t, Rmin (interp l e2) (interp l e3) <= t <= Rmax (interp l e2) (interp l e3) ->
+  interp_domain (set_nth 0 (t :: l) (S n) x) b1)).
 exists d => y Hy t Ht.
 apply H3.
 split.

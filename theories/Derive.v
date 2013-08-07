@@ -93,7 +93,7 @@ end.
 
 Lemma is_derive_ext_loc :
   forall f g x l,
-  locally (fun t => f t = g t) x ->
+  locally x (fun t => f t = g t) ->
   is_derive f x l -> is_derive g x l.
 Proof.
 intros f g x l Heq Hf.
@@ -107,7 +107,7 @@ exact: H.
 Qed.
 Lemma ex_derive_ext_loc :
   forall f g x,
-  locally (fun t => f t = g t) x ->
+  locally x (fun t => f t = g t) ->
   ex_derive f x -> ex_derive g x.
 Proof.
 intros f g x Hfg (l,Hf).
@@ -116,7 +116,7 @@ apply: is_derive_ext_loc Hfg Hf.
 Qed.
 Lemma Derive_ext_loc :
   forall f g x,
-  locally (fun t => f t = g t) x ->
+  locally x (fun t => f t = g t) ->
   Derive f x = Derive g x.
 Proof.
 intros f g x Hfg.
@@ -1150,7 +1150,7 @@ Qed.
 (** Alternate definition of differentiability *)
 
 Definition derivable_pt_lim_aux (f : R -> R) (x l : R) :=
-  forall eps : posreal, locally (fun y => Rabs (f y - f x - l * (y-x)) <= eps * Rabs (y-x)) x.
+  forall eps : posreal, locally x (fun y => Rabs (f y - f x - l * (y-x)) <= eps * Rabs (y-x)).
 
 Lemma equiv_deriv_pt_lim_0 : forall f x l,
   derivable_pt_lim f x l -> derivable_pt_lim_aux f x l.
@@ -1254,7 +1254,7 @@ Qed.
 
 Lemma Derive_n_ext_loc :
   forall f g n x,
-  locally (fun t => f t = g t) x ->
+  locally x (fun t => f t = g t) ->
   Derive_n f n x = Derive_n g n x.
 Proof.
 intros f g n x Heq.
@@ -1267,7 +1267,7 @@ now apply Derive_ext_loc.
 Qed.
 Lemma ex_derive_n_ext_loc :
   forall f g n x,
-  locally (fun t => f t = g t) x ->
+  locally x (fun t => f t = g t) ->
   ex_derive_n f n x -> ex_derive_n g n x.
 Proof.
 intros f g n x Heq.
@@ -1281,7 +1281,7 @@ by apply Derive_n_ext_loc.
 Qed.
 Lemma is_derive_n_ext_loc :
   forall f g n x l,
-  locally (fun t => f t = g t) x ->
+  locally x (fun t => f t = g t) ->
   is_derive_n f n x l -> is_derive_n g n x l.
 Proof.
   intros f g n x l Heq.
@@ -1334,7 +1334,7 @@ now apply Derive_ext.
 Qed.
 
 Lemma is_derive_Sn (f : R -> R) (n : nat) (x l : R) :
-  locally (ex_derive f) x -> 
+  locally x (ex_derive f) -> 
   (is_derive_n f (S n) x l <-> is_derive_n (Derive f) n x l).
 Proof.
   move => Hf.
@@ -1385,8 +1385,8 @@ Qed.
 (** Addition of functions *)
 
 Lemma Derive_n_plus (f g : R -> R) (n : nat) (x : R) :
-  locally (fun y => forall k, (k <= n)%nat -> ex_derive_n f k y) x ->
-  locally (fun y => forall k, (k <= n)%nat -> ex_derive_n g k y) x ->
+  locally x (fun y => forall k, (k <= n)%nat -> ex_derive_n f k y) ->
+  locally x (fun y => forall k, (k <= n)%nat -> ex_derive_n g k y) ->
   Derive_n (fun x => f x + g x) n x = Derive_n f n x + Derive_n g n x.
 Proof.
   elim: n x => /= [ | n IH] x [rf Hf] [rg Hg].
@@ -1428,8 +1428,8 @@ Proof.
   by apply le_refl.  
 Qed.
 Lemma ex_derive_n_plus (f g : R -> R) (n : nat) (x : R) :
-  locally (fun y => forall k, (k <= n)%nat -> ex_derive_n f k y) x ->
-  locally (fun y => forall k, (k <= n)%nat -> ex_derive_n g k y) x ->
+  locally x (fun y => forall k, (k <= n)%nat -> ex_derive_n f k y) ->
+  locally x (fun y => forall k, (k <= n)%nat -> ex_derive_n g k y) ->
   ex_derive_n (fun x => f x + g x) n x.
 Proof.
   case: n x => /= [ | n] x Hf Hg.
@@ -1448,8 +1448,8 @@ Proof.
   by apply (Hy (S n)).
 Qed.
 Lemma is_derive_n_plus (f g : R -> R) (n : nat) (x lf lg : R) :
-  locally (fun y => forall k, (k <= n)%nat -> ex_derive_n f k y) x ->
-  locally (fun y => forall k, (k <= n)%nat -> ex_derive_n g k y) x ->
+  locally x (fun y => forall k, (k <= n)%nat -> ex_derive_n f k y) ->
+  locally x (fun y => forall k, (k <= n)%nat -> ex_derive_n g k y) ->
   is_derive_n f n x lf -> is_derive_n g n x lg ->
   is_derive_n (fun x => f x + g x) n x (lf + lg).
 Proof.
@@ -1468,8 +1468,8 @@ Qed.
 (** Subtraction of functions *)
 
 Lemma Derive_n_minus (f g : R -> R) (n : nat) (x : R) :
-  locally (fun y => forall k, (k <= n)%nat -> ex_derive_n f k y) x ->
-  locally (fun y => forall k, (k <= n)%nat -> ex_derive_n g k y) x ->
+  locally x (fun y => forall k, (k <= n)%nat -> ex_derive_n f k y) ->
+  locally x (fun y => forall k, (k <= n)%nat -> ex_derive_n g k y) ->
   Derive_n (fun x => f x - g x) n x = Derive_n f n x - Derive_n g n x.
 Proof.
   move => Hf Hg.
@@ -1480,8 +1480,8 @@ Proof.
   apply ex_derive_n_opp ; by apply Hg.
 Qed.
 Lemma ex_derive_n_minus (f g : R -> R) (n : nat) (x : R) :
-  locally (fun y => forall k, (k <= n)%nat -> ex_derive_n f k y) x ->
-  locally (fun y => forall k, (k <= n)%nat -> ex_derive_n g k y) x ->
+  locally x (fun y => forall k, (k <= n)%nat -> ex_derive_n f k y) ->
+  locally x (fun y => forall k, (k <= n)%nat -> ex_derive_n g k y) ->
   ex_derive_n (fun x => f x - g x) n x.
 Proof.
   move => Hf Hg.
@@ -1491,8 +1491,8 @@ Proof.
   apply ex_derive_n_opp ; by apply Hg.
 Qed.
 Lemma is_derive_n_minus (f g : R -> R) (n : nat) (x lf lg : R) :
-  locally (fun y => forall k, (k <= n)%nat -> ex_derive_n f k y) x ->
-  locally (fun y => forall k, (k <= n)%nat -> ex_derive_n g k y) x ->
+  locally x (fun y => forall k, (k <= n)%nat -> ex_derive_n f k y) ->
+  locally x (fun y => forall k, (k <= n)%nat -> ex_derive_n g k y) ->
   is_derive_n f n x lf -> is_derive_n g n x lg ->
   is_derive_n (fun x => f x - g x) n x (lf - lg).
 Proof.
@@ -1561,7 +1561,7 @@ Qed.
 (** Composition with linear functions *)
 
 Lemma Derive_n_comp_scal (f : R -> R) (a : R) (n : nat) (x : R) :
-  locally (fun x => forall k, (k <= n)%nat -> ex_derive_n f k x) (a * x) ->
+  locally (a * x) (fun x => forall k, (k <= n)%nat -> ex_derive_n f k x) ->
   Derive_n (fun y => f (a * y)) n x  = (a ^ n * Derive_n f n (a * x)).
 Proof.
   case: (Req_dec a 0) => [ -> _ | Ha] /=.
@@ -1633,7 +1633,7 @@ Proof.
   rewrite /r1 ; apply Rmin_r.
 Qed.
 Lemma ex_derive_n_comp_scal (f : R -> R) (a : R) (n : nat) (x : R) :
-  locally (fun x => forall k, (k <= n)%nat -> ex_derive_n f k x) (a * x)
+  locally (a * x) (fun x => forall k, (k <= n)%nat -> ex_derive_n f k x)
   -> ex_derive_n (fun y => f (a * y)) n x.
 Proof.
   case: n f x => /= [ | n] f x Hf.
@@ -1687,7 +1687,7 @@ Proof.
   by [].
 Qed.
 Lemma is_derive_n_comp_scal (f : R -> R) (a : R) (n : nat) (x l : R) :
-  locally (fun x => forall k, (k <= n)%nat -> ex_derive_n f k x) (a * x)
+  locally (a * x) (fun x => forall k, (k <= n)%nat -> ex_derive_n f k x)
   -> is_derive_n f n (a * x) l
   -> is_derive_n (fun y => f (a * y)) n x (a ^ n * l).
 Proof.
@@ -1701,7 +1701,7 @@ Proof.
 Qed.
 
 Lemma Derive_n_comp_opp (f : R -> R) (n : nat) (x : R) :
-  locally (fun y => (forall k, (k <= n)%nat -> ex_derive_n f k y)) (- x) ->
+  locally (- x) (fun y => (forall k, (k <= n)%nat -> ex_derive_n f k y)) ->
   Derive_n (fun y => f (- y)) n x  = ((-1) ^ n * Derive_n f n (-x)).
 Proof.
   move => Hf.
@@ -1712,7 +1712,7 @@ Proof.
   move => t ; by replace (-1*t) with (-t) by ring.
 Qed.
 Lemma ex_derive_n_comp_opp (f : R -> R) (n : nat) (x : R) :
-  locally (fun y => (forall k, (k <= n)%nat -> ex_derive_n f k y)) (- x) ->
+  locally (- x) (fun y => (forall k, (k <= n)%nat -> ex_derive_n f k y)) ->
   ex_derive_n (fun y => f (- y)) n x.
 Proof.
   move => Hf.
@@ -1722,7 +1722,7 @@ Proof.
   by replace (-1*x) with (-x) by ring.
 Qed.
 Lemma is_derive_n_comp_opp (f : R -> R) (n : nat) (x l : R) :
-  locally (fun y => (forall k, (k <= n)%nat -> ex_derive_n f k y)) (- x) ->
+  locally (- x) (fun y => (forall k, (k <= n)%nat -> ex_derive_n f k y)) ->
   is_derive_n f n (-x) l ->
   is_derive_n (fun y => f (- y)) n x ((-1)^n * l).
 Proof.

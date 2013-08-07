@@ -2239,7 +2239,7 @@ Qed.
 
 Lemma continuity_pt_ext_loc :
   forall f g x,
-  (locally (fun x => f x = g x) x) ->
+  (locally x (fun x => f x = g x)) ->
   continuity_pt f x -> continuity_pt g x.
 Proof.
 intros f g x Heq Cf eps Heps.
