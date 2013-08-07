@@ -646,7 +646,7 @@ Qed.
 
 (** * Rbar_locally *)
 
-Definition Rbar_locally (P : R -> Prop) (a : Rbar) :=
+Definition Rbar_locally (a : Rbar) (P : R -> Prop) :=
   match a with
     | Finite a => exists delta : posreal, 
 	forall x, Rabs (x-a) < delta -> x <> a -> P x
@@ -655,14 +655,14 @@ Definition Rbar_locally (P : R -> Prop) (a : Rbar) :=
   end.
 
 Lemma Rbar_locally_forall (P : R -> Prop) (a : Rbar) :
-  (forall x, P x) -> Rbar_locally P a.
+  (forall x, P x) -> Rbar_locally a P.
 Proof.
   case: a => [a | | ] H ;
   exists (mkposreal _ Rlt_0_1) => /= x _ ; by intuition.
 Qed.
 
 Lemma Rbar_locally_const (a : Rbar) (P : Prop) :
-  Rbar_locally (fun _ => P) a -> P.
+  Rbar_locally a (fun _ => P) -> P.
 Proof.
   case: a => [a | | ] [d H].
   apply (H (a+d/2)).
@@ -681,8 +681,8 @@ Proof.
 Qed.
 
 Lemma Rbar_locally_imply (P Q : R -> Prop) (a : Rbar) :
-  Rbar_locally (fun x => P x -> Q x) a -> Rbar_locally P a
-    -> Rbar_locally Q a.
+  Rbar_locally a (fun x => P x -> Q x) -> Rbar_locally a P
+    -> Rbar_locally a Q.
 Proof.
   case: a => /= [a | | ] [d0 Hpq] [d1 Hp].
   have Hd : 0 < Rmin d0 d1.
@@ -707,8 +707,8 @@ Proof.
 Qed.
 
 Lemma Rbar_locally_and (P Q : R -> Prop) (a : Rbar) :
-  Rbar_locally P a -> Rbar_locally Q a
-    -> Rbar_locally (fun x => P x /\ Q x) a.
+  Rbar_locally a P -> Rbar_locally a Q
+    -> Rbar_locally a (fun x => P x /\ Q x).
 Proof.
   case: a => /= [a | | ] [d0 Hp] [d1 Hq].
   have Hd : 0 < Rmin d0 d1.
@@ -733,30 +733,30 @@ Proof.
 Qed.
 
 Lemma Rbar_locally_and_1 (P Q : R -> Prop) (a : Rbar) :
-  Rbar_locally (fun x => P x /\ Q x) a 
-    -> Rbar_locally P a.
+  Rbar_locally a (fun x => P x /\ Q x)
+    -> Rbar_locally a P.
 Proof.
   case: a => /= [a | | ] [d0 Hp] ;
   exists d0 => H ; by apply Hp.
 Qed.
 
 Lemma Rbar_locally_and_2 (P Q : R -> Prop) (a : Rbar) :
-  Rbar_locally (fun x => P x /\ Q x) a 
-    -> Rbar_locally Q a.
+  Rbar_locally a (fun x => P x /\ Q x)
+    -> Rbar_locally a Q.
 Proof.
   case: a => /= [a | | ] [d0 Hp] ;
   exists d0 => H ; by apply Hp.
 Qed.
 
 Lemma Rbar_locally_or_1 (P Q : R -> Prop) (a : Rbar) :
-  Rbar_locally P a -> Rbar_locally (fun x => P x \/ Q x) a.
+  Rbar_locally a P -> Rbar_locally a (fun x => P x \/ Q x).
 Proof.
   apply Rbar_locally_imply, Rbar_locally_forall => x Hx.
   by left.
 Qed.
 
 Lemma Rbar_locally_or_2 (P Q : R -> Prop) (a : Rbar) :
-  Rbar_locally Q a -> Rbar_locally (fun x => P x \/ Q x) a.
+  Rbar_locally a Q -> Rbar_locally a (fun x => P x \/ Q x).
 Proof.
   apply Rbar_locally_imply, Rbar_locally_forall => x Hx.
   by right.
@@ -771,7 +771,7 @@ Definition Rbar_loc_seq (x : Rbar) (n : nat) := match x with
   end.
 
 Lemma Rbar_loc_seq_carac (P : R -> Prop) (x : Rbar) :
-  Rbar_locally P x 
+  Rbar_locally x P
     -> (exists N, forall n, (N <= n)%nat -> P (Rbar_loc_seq x n)).
 Proof.
   case: x => /= [x | | ] [delta Hp].

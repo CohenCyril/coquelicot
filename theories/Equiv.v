@@ -25,17 +25,17 @@ Require Import Rbar Rcomplements Locally.
 (** * Definitions of equivalent and dominant *)
 
 Definition is_domin (f : R -> R) (a : Rbar) (g : R -> R) :=
-  forall eps : posreal, Rbar_locally (fun x => Rabs (g x) <= eps * Rabs (f x)) a.
+  forall eps : posreal, Rbar_locally a (fun x => Rabs (g x) <= eps * Rabs (f x)).
 Definition is_equiv (f g : R -> R) (a : Rbar) :=
   is_domin g a (fun x => g x - f x).
 
 (** To be dominant is a partial strict order *)
 Lemma domin_anti_sym (f : R -> R) (a : Rbar) :
-  Rbar_locally (fun x => f x <> 0) a -> ~ is_domin f a f.
+  Rbar_locally a (fun x => f x <> 0) -> ~ is_domin f a f.
 Proof.
   intros Hf H ;
   move: (H (pos_div_2 (mkposreal _ Rlt_0_1))) => {H} /= H.
-  have H0 : Rbar_locally (fun x => ~ (Rabs (f x) <= 1/2 * Rabs (f x))) a.
+  have H0 : Rbar_locally a (fun x => ~ (Rabs (f x) <= 1/2 * Rabs (f x))).
     move: Hf ; apply Rbar_locally_imply, Rbar_locally_forall.
     intros x Hf ; apply Rlt_not_le.
     apply Rminus_lt ; field_simplify ;
@@ -89,7 +89,7 @@ Lemma domin_rw_l (f1 f2 g : R -> R) (a : Rbar) :
 Proof.
   move => Hf ; split => Hfg.
 (* Cas facile *)
-  have : forall eps : posreal, Rbar_locally (fun x => Rabs (f1 x) <= (eps + 1) * Rabs (f2 x)) a.
+  have : forall eps : posreal, Rbar_locally a (fun x => Rabs (f1 x) <= (eps + 1) * Rabs (f2 x)).
     move => eps.
     move: (Hf eps) => {Hf}.
     apply Rbar_locally_imply, Rbar_locally_forall => x Hf.
@@ -112,7 +112,7 @@ Proof.
   apply Rlt_le, is_pos_div_2.
   by apply Hf.
 (* Cas compliqué *)
-  have : forall eps : posreal, Rbar_locally (fun x => (1-eps) * Rabs (f2 x) <= Rabs (f1 x)) a.
+  have : forall eps : posreal, Rbar_locally a (fun x => (1-eps) * Rabs (f2 x) <= Rabs (f1 x)).
     move => eps.
     move: (Hf eps) => {Hf}.
     apply Rbar_locally_imply, Rbar_locally_forall => x Hf.
@@ -312,7 +312,7 @@ Proof.
   apply domin_scal_l.
   by apply Hc.
   move => eps /=.
-  have : Rbar_locally (fun x : R => Rabs (c * (g x - f x)) <= eps * Rabs (g x)) a.
+  have : Rbar_locally a (fun x : R => Rabs (c * (g x - f x)) <= eps * Rabs (g x)).
   apply (domin_scal_r g (fun x => g x - f x) a c).
   by apply H.
   apply Rbar_locally_imply, Rbar_locally_forall => x.
@@ -378,11 +378,11 @@ Proof.
 Qed.
 
 Lemma domin_inv (f g : R -> R) (a : Rbar) :
-  Rbar_locally (fun x => g x <> 0) a -> is_domin f a g 
+  Rbar_locally a (fun x => g x <> 0) -> is_domin f a g
     -> is_domin (fun x => / g x) a (fun x => / f x).
 Proof.
   intros Hg H eps.
-  have Hf : Rbar_locally (fun x => f x <> 0) a.
+  have Hf : Rbar_locally a (fun x => f x <> 0).
     move: (Rbar_locally_and _ _ _ Hg (H (mkposreal _ Rlt_0_1))) => /=.
     apply Rbar_locally_imply, Rbar_locally_forall => x {Hg H} [Hg H].
     case: (Req_dec (f x) 0) => Hf.
@@ -424,11 +424,11 @@ Proof.
 Qed.
 
 Lemma equiv_inv (f g : R -> R) (a : Rbar) :
-  Rbar_locally (fun x => g x <> 0) a -> is_equiv f g a 
+  Rbar_locally a (fun x => g x <> 0) -> is_equiv f g a
     -> is_equiv (fun x => / f x) (fun x => / g x) a.
 Proof.
   intros Hg H.
-  have Hf : Rbar_locally (fun x => f x <> 0) a.
+  have Hf : Rbar_locally a (fun x => f x <> 0).
     move: (Rbar_locally_and _ _ _ Hg (H (pos_div_2 (mkposreal _ Rlt_0_1)))) => /=.
     apply Rbar_locally_imply, Rbar_locally_forall => x {Hg H} [Hg H].
     case: (Req_dec (f x) 0) => Hf.

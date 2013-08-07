@@ -31,9 +31,9 @@ Require Import Compactness Limit.
 Definition is_lim (f : R -> R) (x l : Rbar) :=
   match l with
     | Finite l => 
-      forall eps : posreal, Rbar_locally (fun y => Rabs (f y - l) < eps) x
-    | p_infty => forall M : R, Rbar_locally (fun y => M < f y) x
-    | m_infty => forall M : R, Rbar_locally (fun y => f y < M) x
+      forall eps : posreal, Rbar_locally x (fun y => Rabs (f y - l) < eps)
+    | p_infty => forall M : R, Rbar_locally x (fun y => M < f y)
+    | m_infty => forall M : R, Rbar_locally x (fun y => f y < M)
   end.
 Definition ex_lim (f : R -> R) (x : Rbar) := exists l : Rbar, is_lim f x l.
 Definition ex_finite_lim (f : R -> R) (x : Rbar) := exists l : R, is_lim f x l.
@@ -205,7 +205,7 @@ end.
 (** Extensionality *)
 
 Lemma is_lim_ext_loc (f g : R -> R) (x l : Rbar) :
-  Rbar_locally (fun y => f y = g y) x
+  Rbar_locally x (fun y => f y = g y)
   -> is_lim f x l -> is_lim g x l.
 Proof.
   case: l => [l | | ] /= Heq Hf eps ;
@@ -216,7 +216,7 @@ Proof.
   by apply Rbar_locally_forall => y ->.
 Qed.
 Lemma ex_lim_ext_loc (f g : R -> R) (x : Rbar) :
-  Rbar_locally (fun y => f y = g y) x
+  Rbar_locally x (fun y => f y = g y)
   -> ex_lim f x -> ex_lim g x.
 Proof.
   move => H [l Hf].
@@ -224,7 +224,7 @@ Proof.
   by apply is_lim_ext_loc with f.
 Qed.
 Lemma Lim_ext_loc (f g : R -> R) (x : Rbar) :
-  Rbar_locally (fun y => f y = g y) x
+  Rbar_locally x (fun y => f y = g y)
   -> Lim g x = Lim f x.
 Proof.
   move => H.
@@ -262,7 +262,7 @@ Qed.
 (** Composition *)
 
 Lemma is_lim_comp (f g : R -> R) (x k l : Rbar) : 
-  is_lim f l k -> is_lim g x l -> Rbar_locally (fun y => Finite (g y) <> l) x
+  is_lim f l k -> is_lim g x l -> Rbar_locally x (fun y => Finite (g y) <> l)
     -> is_lim (fun x => f (g x)) x k.
 Proof.
   case: k => [k | | ] /= Hf Hg Hg' ;
@@ -436,7 +436,7 @@ Proof.
   by apply Rlt_le_trans with (2 := Rmin_l e2 e3).
 Qed.
 Lemma ex_lim_comp (f g : R -> R) (x : Rbar) : 
-  ex_lim f (Lim g x) -> ex_lim g x -> Rbar_locally (fun y => Finite (g y) <> Lim g x) x
+  ex_lim f (Lim g x) -> ex_lim g x -> Rbar_locally x (fun y => Finite (g y) <> Lim g x)
     -> ex_lim (fun x => f (g x)) x.
 Proof.
   intros.
@@ -447,7 +447,7 @@ Proof.
   by apply H1.
 Qed.
 Lemma Lim_comp (f g : R -> R) (x : Rbar) : 
-  ex_lim f (Lim g x) -> ex_lim g x -> Rbar_locally (fun y => Finite (g y) <> Lim g x) x
+  ex_lim f (Lim g x) -> ex_lim g x -> Rbar_locally x (fun y => Finite (g y) <> Lim g x)
     -> Lim (fun x => f (g x)) x = Lim f (Lim g x).
 Proof.
   intros.
@@ -664,7 +664,7 @@ Lemma is_lim_inv (f : R -> R) (x l : Rbar) :
   is_lim f x l -> l <> 0 -> is_lim (fun y => / f y) x (Rbar_inv l).
 Proof.
   move => Hf Hl.
-  suff Hf' : Rbar_locally (fun y => Rabs (f y) > Rabs (real l) / 2) x.
+  suff Hf' : Rbar_locally x (fun y => Rabs (f y) > Rabs (real l) / 2).
   wlog: l f Hf Hf' Hl / (Rbar_lt 0 l) => [Hw | Hl'].
     case: (Rbar_le_lt_dec l 0) => Hl'.
     case: Hl' => // Hl'.
@@ -1287,7 +1287,7 @@ Qed.
 
 Lemma is_lim_le_loc (f g : R -> R) (x lf lg : Rbar) :
   is_lim f x lf -> is_lim g x lg
-  -> Rbar_locally (fun y => f y <= g y) x
+  -> Rbar_locally x (fun y => f y <= g y)
   -> Rbar_le lf lg.
 Proof.
   case: lf => [lf | | ] /= Hf ;
@@ -1349,7 +1349,7 @@ Qed.
 
 Lemma is_lim_le_p_loc (f g : R -> R) (x : Rbar) :
   is_lim f x p_infty
-  -> Rbar_locally (fun y => f y <= g y) x
+  -> Rbar_locally x (fun y => f y <= g y)
   -> is_lim g x p_infty.
 Proof.
   move => Hf Hfg M.
@@ -1363,7 +1363,7 @@ Qed.
 
 Lemma is_lim_le_m_loc (f g : R -> R) (x : Rbar) :
   is_lim f x m_infty
-  -> Rbar_locally (fun y => g y <= f y) x
+  -> Rbar_locally x (fun y => g y <= f y)
   -> is_lim g x m_infty.
 Proof.
   move => Hf Hfg M.
@@ -1378,7 +1378,7 @@ Qed.
 
 Lemma is_lim_le_le_loc (f g h : R -> R) (x : Rbar) (l : R) :
   is_lim f x l -> is_lim g x l
-  -> Rbar_locally (fun y => f y <= h y <= g y) x
+  -> Rbar_locally x (fun y => f y <= h y <= g y)
   -> is_lim h x l.
 Proof.
   move => /= Hf Hg H eps.
@@ -1907,7 +1907,7 @@ Proof.
   case Hla: la Hy Hfa => [la' | | ] [Hy _] Hfa //.
   apply Rminus_lt_0 in Hy ;
   move: (Hfa (mkposreal _ Hy)) => {Hfa} Hfa ; simpl in Hfa.
-  have : Rbar_locally (fun y0 : R => f y0 < y) a.
+  have : Rbar_locally a (fun y0 : R => f y0 < y).
   move: Hfa ; apply Rbar_locally_imply, Rbar_locally_forall => z Hz.
   apply (Rplus_lt_reg_r (-la')).
   rewrite ?(Rplus_comm (-la')).
