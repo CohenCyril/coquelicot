@@ -28,8 +28,110 @@ Open Scope R_scope.
 
 (** * Definitions *)
 
+Class Filter {T : Type} (F : (T -> Prop) -> Prop) := {
+  filter_true : F (fun x => True) ;
+  filter_and : forall P Q : T -> Prop, F P -> F Q -> F (fun x => P x /\ Q x) ;
+  filter_imp : forall P Q : T -> Prop, (forall x, P x -> Q x) -> F P -> F Q
+}.
+
+Definition filter_le {T : Type} (F G : (T -> Prop) -> Prop) :=
+  forall P, G P -> F P.
+
+Lemma filter_le_refl :
+  forall T F, @filter_le T F F.
+Proof.
+now intros T F P.
+Qed.
+
+Lemma filter_le_trans :
+  forall T F G H, @filter_le T F G -> filter_le G H -> filter_le F H.
+Proof.
+intros T F G H FG GH P K.
+now apply FG, GH.
+Qed.
+
+Definition filtermap {T U : Type} (f : T -> U) (F : (T -> Prop) -> Prop) :=
+  fun P => F (fun x => P (f x)).
+
+Global Instance filtermap_filter : forall T U f F, @Filter T F ->
+  @Filter U (filtermap f F).
+Proof.
+intros T U f F FF.
+constructor.
+- apply FF.
+- intros P Q HP HQ.
+  now apply FF.
+- intros P Q H HP.
+  unfold filtermap.
+  apply (filter_imp (fun x => P (f x))).
+  intros x Hx.
+  now apply H.
+  exact HP.
+Qed.
+
+Definition filterlim {T U : Type} (f : T -> U) F G :=
+  filter_le (filtermap f F) G.
+
+Lemma filterlim_compose :
+  forall T U V (f : T -> U) (g : U -> V) F G H,
+  filterlim f F G -> filterlim g G H ->
+  filterlim (fun x => g (f x)) F H.
+Proof.
+intros T U V f g F G H FG GH P HP.
+unfold filtermap.
+apply (FG (fun x => P (g x))).
+now apply GH.
+Qed.
+
 Definition locally x (P : R -> Prop) :=
   exists delta : posreal, forall y, Rabs (y - x) < delta -> P y.
+
+Global Instance locally_filter : forall x, Filter (locally x).
+Proof.
+intros x.
+constructor.
+- now exists (mkposreal _ Rlt_0_1).
+- intros P Q [dP HP] [dQ HQ].
+  exists (mkposreal _ (Rmin_stable_in_posreal dP dQ)).
+  simpl.
+  intros y Hy.
+  split.
+  apply HP.
+  apply Rlt_le_trans with (1 := Hy).
+  apply Rmin_l.
+  apply HQ.
+  apply Rlt_le_trans with (1 := Hy).
+  apply Rmin_r.
+- intros P Q H [dP HP].
+  exists dP.
+  intros y Hy.
+  apply H.
+  now apply HP.
+Qed.
+
+Definition eventually (P : nat -> Prop) :=
+  exists N : nat, forall n, (N <= n)%nat -> P n.
+
+Global Instance eventually_filter : Filter eventually.
+Proof.
+constructor.
+- now exists 0%nat.
+- intros P Q [NP HP] [NQ HQ].
+  exists (max NP NQ).
+  intros n Hn.
+  split.
+  apply HP.
+  apply le_trans with (2 := Hn).
+  apply Max.le_max_l.
+  apply HQ.
+  apply le_trans with (2 := Hn).
+  apply Max.le_max_r.
+- intros P Q H [NP HP].
+  exists NP.
+  intros n Hn.
+  apply H.
+  now apply HP.
+Qed.
 
 Definition locally_2d (P : R -> R -> Prop) x y :=
   exists delta : posreal, forall u v, Rabs (u - x) < delta -> Rabs (v - y) < delta -> P u v.
@@ -347,6 +449,29 @@ split.
 apply cond_pos.
 intros h [Zh Hh].
 exact: H.
+Qed.
+
+Lemma continuity_pt_filterlim :
+  forall f x,
+  continuity_pt f x <->
+  filterlim f (locally x) (locally (f x)).
+Proof.
+intros f x.
+split.
+intros Cf P [eps He].
+destruct (proj1 (continuity_pt_locally f x) Cf eps) as [d Hd].
+exists d => y Hy.
+apply He.
+now apply Hd.
+intros H.
+apply continuity_pt_locally.
+intros eps.
+destruct (H (fun y => Rabs (y - f x) < eps)) as [d Hd].
+now exists eps.
+exists d.
+intros y Hy.
+apply Hd.
+now apply Hy.
 Qed.
 
 (** * Intervals *)
