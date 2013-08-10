@@ -118,8 +118,7 @@ apply is_lim_ in Lf.
 apply filterlim_compose with (2 := Lf).
 intros P HP.
 destruct x as [x| |] ; try now apply Lu.
-specialize (Lu (fun y => y <> x -> P y)).
-specialize (Lu HP).
+specialize (Lu _ HP).
 unfold filtermap in Lu |- *.
 generalize (filter_and _ _ Hu Lu).
 apply filter_imp.
@@ -191,12 +190,12 @@ Lemma is_lim_ext_loc (f g : R -> R) (x l : Rbar) :
   Rbar_locally x (fun y => f y = g y)
   -> is_lim f x l -> is_lim g x l.
 Proof.
-  case: l => [l | | ] /= Heq Hf eps ;
-  move: (Hf eps) => {Hf} ;
-  apply Rbar_locally_imply ;
-  move: Heq ;
-  apply Rbar_locally_imply ;
-  by apply Rbar_locally_forall => y ->.
+intros Hext Hf.
+apply is_lim_ in Hf.
+apply is_lim_.
+revert Hext Hf.
+apply filterlim_ext_loc.
+apply Rbar_locally_filter.
 Qed.
 Lemma ex_lim_ext_loc (f g : R -> R) (x : Rbar) :
   Rbar_locally x (fun y => f y = g y)
@@ -244,179 +243,26 @@ Qed.
 
 (** Composition *)
 
-Lemma is_lim_comp (f g : R -> R) (x k l : Rbar) : 
+Lemma is_lim_comp (f g : R -> R) (x k l : Rbar) :
   is_lim f l k -> is_lim g x l -> Rbar_locally x (fun y => Finite (g y) <> l)
     -> is_lim (fun x => f (g x)) x k.
 Proof.
-  case: k => [k | | ] /= Hf Hg Hg' ;
-  move => e0 ;
-  case: (l) (Hf e0) Hg Hg' => {Hf l} [l | | ] /= [e1 Hf] Hg Hg' ;
-  case: (x) Hf (Hg e1) Hg' => {Hg x} [x | | ] /= Hf [e2 Hg] [e3 Hg'].
-(* l, k, x \in R *)
-  exists (mkposreal _ (Rmin_stable_in_posreal e2 e3)) => /= y Hy Hxy.
-  apply Hf.
-  apply Hg.
-  by apply Rlt_le_trans with (2 := Rmin_l e2 e3).
-  by apply Hxy.
-  apply Rbar_finite_neq, Hg'.
-  by apply Rlt_le_trans with (2 := Rmin_r e2 e3).
-  by apply Hxy.
-(* l, k \in R /\ x = p_infty *)
-  exists (Rmax e2 e3) => /= y Hy.
-  apply Hf.
-  apply Hg.
-  by apply Rle_lt_trans with (1 := Rmax_l e2 e3).
-  apply Rbar_finite_neq, Hg'.
-  by apply Rle_lt_trans with (1 := Rmax_r e2 e3).
-(* l, k \in R /\ x = m_infty *)
-  exists (Rmin e2 e3) => /= y Hy.
-  apply Hf.
-  apply Hg.
-  by apply Rlt_le_trans with (2 := Rmin_l e2 e3).
-  apply Rbar_finite_neq, Hg'.
-  by apply Rlt_le_trans with (2 := Rmin_r e2 e3).
-(* l = p_infty /\ k, x \in R *)
-  exists (mkposreal _ (Rmin_stable_in_posreal e2 e3)) => /= y Hy Hxy.
-  apply Hf.
-  apply Hg.
-  by apply Rlt_le_trans with (2 := Rmin_l e2 e3).
-  by apply Hxy.
-(* l = p_infty /\ k \in R /\ x = p_infty *)
-  exists (Rmax e2 e3) => /= y Hy.
-  apply Hf.
-  apply Hg.
-  by apply Rle_lt_trans with (1 := Rmax_l e2 e3).
-(* l = p_infty /\ k \in R /\ x = m_infty *)
-  exists (Rmin e2 e3) => /= y Hy.
-  apply Hf.
-  apply Hg.
-  by apply Rlt_le_trans with (2 := Rmin_l e2 e3).
-(* l = m_infty /\ k, x \in R *)
-  exists (mkposreal _ (Rmin_stable_in_posreal e2 e3)) => /= y Hy Hxy.
-  apply Hf.
-  apply Hg.
-  by apply Rlt_le_trans with (2 := Rmin_l e2 e3).
-  by apply Hxy.
-(* l = m_infty /\ k \in R /\ x = p_infty *)
-  exists (Rmax e2 e3) => /= y Hy.
-  apply Hf.
-  apply Hg.
-  by apply Rle_lt_trans with (1 := Rmax_l e2 e3).
-(* l = m_infty /\ k \in R /\ x = m_infty *)
-  exists (Rmin e2 e3) => /= y Hy.
-  apply Hf.
-  apply Hg.
-  by apply Rlt_le_trans with (2 := Rmin_l e2 e3).
-(* l, x \in R /\ k = p_infty *)
-  exists (mkposreal _ (Rmin_stable_in_posreal e2 e3)) => /= y Hy Hxy.
-  apply Hf.
-  apply Hg.
-  by apply Rlt_le_trans with (2 := Rmin_l e2 e3).
-  by apply Hxy.
-  apply Rbar_finite_neq, Hg'.
-  by apply Rlt_le_trans with (2 := Rmin_r e2 e3).
-  by apply Hxy.
-(* l \in R /\ k = p_infty /\ x = p_infty *)
-  exists (Rmax e2 e3) => /= y Hy.
-  apply Hf.
-  apply Hg.
-  by apply Rle_lt_trans with (1 := Rmax_l e2 e3).
-  apply Rbar_finite_neq, Hg'.
-  by apply Rle_lt_trans with (1 := Rmax_r e2 e3).
-(* l \in R /\ k = p_infty /\ x = m_infty *)
-  exists (Rmin e2 e3) => /= y Hy.
-  apply Hf.
-  apply Hg.
-  by apply Rlt_le_trans with (2 := Rmin_l e2 e3).
-  apply Rbar_finite_neq, Hg'.
-  by apply Rlt_le_trans with (2 := Rmin_r e2 e3).
-(* l = p_infty /\ k = p_infty /\ x \in R *)
-  exists (mkposreal _ (Rmin_stable_in_posreal e2 e3)) => /= y Hy Hxy.
-  apply Hf.
-  apply Hg.
-  by apply Rlt_le_trans with (2 := Rmin_l e2 e3).
-  by apply Hxy.
-(* l = p_infty /\ k = p_infty /\ x = p_infty *)
-  exists (Rmax e2 e3) => /= y Hy.
-  apply Hf.
-  apply Hg.
-  by apply Rle_lt_trans with (1 := Rmax_l e2 e3).
-(* l = p_infty /\ k = p_infty /\ x = m_infty *)
-  exists (Rmin e2 e3) => /= y Hy.
-  apply Hf.
-  apply Hg.
-  by apply Rlt_le_trans with (2 := Rmin_l e2 e3).
-(* l = m_infty /\ k = p_infty /\ x \in R *)
-  exists (mkposreal _ (Rmin_stable_in_posreal e2 e3)) => /= y Hy Hxy.
-  apply Hf.
-  apply Hg.
-  by apply Rlt_le_trans with (2 := Rmin_l e2 e3).
-  by apply Hxy.
-(* l = m_infty /\ k = p_infty /\ x = p_infty *)
-  exists (Rmax e2 e3) => /= y Hy.
-  apply Hf.
-  apply Hg.
-  by apply Rle_lt_trans with (1 := Rmax_l e2 e3).
-(* l = m_infty /\ k = p_infty /\ x = m_infty *)
-  exists (Rmin e2 e3) => /= y Hy.
-  apply Hf.
-  apply Hg.
-  by apply Rlt_le_trans with (2 := Rmin_l e2 e3).
-(* l, x \in R /\ k = p_infty *)
-  exists (mkposreal _ (Rmin_stable_in_posreal e2 e3)) => /= y Hy Hxy.
-  apply Hf.
-  apply Hg.
-  by apply Rlt_le_trans with (2 := Rmin_l e2 e3).
-  by apply Hxy.
-  apply Rbar_finite_neq, Hg'.
-  by apply Rlt_le_trans with (2 := Rmin_r e2 e3).
-  by apply Hxy.
-(* l \in R /\ k = p_infty /\ x = p_infty *)
-  exists (Rmax e2 e3) => /= y Hy.
-  apply Hf.
-  apply Hg.
-  by apply Rle_lt_trans with (1 := Rmax_l e2 e3).
-  apply Rbar_finite_neq, Hg'.
-  by apply Rle_lt_trans with (1 := Rmax_r e2 e3).
-(* l \in R /\ k = p_infty /\ x = m_infty *)
-  exists (Rmin e2 e3) => /= y Hy.
-  apply Hf.
-  apply Hg.
-  by apply Rlt_le_trans with (2 := Rmin_l e2 e3).
-  apply Rbar_finite_neq, Hg'.
-  by apply Rlt_le_trans with (2 := Rmin_r e2 e3).
-(* l = p_infty /\ k = p_infty /\ x \in R *)
-  exists (mkposreal _ (Rmin_stable_in_posreal e2 e3)) => /= y Hy Hxy.
-  apply Hf.
-  apply Hg.
-  by apply Rlt_le_trans with (2 := Rmin_l e2 e3).
-  by apply Hxy.
-(* l = p_infty /\ k = p_infty /\ x = p_infty *)
-  exists (Rmax e2 e3) => /= y Hy.
-  apply Hf.
-  apply Hg.
-  by apply Rle_lt_trans with (1 := Rmax_l e2 e3).
-(* l = p_infty /\ k = p_infty /\ x = m_infty *)
-  exists (Rmin e2 e3) => /= y Hy.
-  apply Hf.
-  apply Hg.
-  by apply Rlt_le_trans with (2 := Rmin_l e2 e3).
-(* l = m_infty /\ k = p_infty /\ x \in R *)
-  exists (mkposreal _ (Rmin_stable_in_posreal e2 e3)) => /= y Hy Hxy.
-  apply Hf.
-  apply Hg.
-  by apply Rlt_le_trans with (2 := Rmin_l e2 e3).
-  by apply Hxy.
-(* l = m_infty /\ k = p_infty /\ x = p_infty *)
-  exists (Rmax e2 e3) => /= y Hy.
-  apply Hf.
-  apply Hg.
-  by apply Rle_lt_trans with (1 := Rmax_l e2 e3).
-(* l = m_infty /\ k = p_infty /\ x = m_infty *)
-  exists (Rmin e2 e3) => /= y Hy.
-  apply Hf.
-  apply Hg.
-  by apply Rlt_le_trans with (2 := Rmin_l e2 e3).
+intros Lf Lg Hg.
+apply is_lim_ in Lf.
+apply is_lim_ in Lg.
+apply is_lim_.
+revert Lf.
+apply filterlim_compose.
+intros P HP.
+destruct l as [l| |] ; try now apply Lg.
+specialize (Lg _ HP).
+unfold filtermap in Lg |- *.
+generalize (filter_and _ _ Hg Lg).
+apply filter_imp.
+intros n [H Hi].
+apply Hi.
+contradict H.
+now apply f_equal.
 Qed.
 Lemma ex_lim_comp (f g : R -> R) (x : Rbar) : 
   ex_lim f (Lim g x) -> ex_lim g x -> Rbar_locally x (fun y => Finite (g y) <> Lim g x)
