@@ -28,6 +28,9 @@ Require Import Compactness Limit.
 
 (** ** Definition *)
 
+Definition is_lim' (f : R -> R) (x l : Rbar) :=
+  filterlim f (Rbar_locally x) (Rbar_locally' l).
+
 Definition is_lim (f : R -> R) (x l : Rbar) :=
   match l with
     | Finite l => 
@@ -38,6 +41,40 @@ Definition is_lim (f : R -> R) (x l : Rbar) :=
 Definition ex_lim (f : R -> R) (x : Rbar) := exists l : Rbar, is_lim f x l.
 Definition ex_finite_lim (f : R -> R) (x : Rbar) := exists l : R, is_lim f x l.
 Definition Lim (f : R -> R) (x : Rbar) := Lim_seq (fun n => f (Rbar_loc_seq x n)).
+
+Lemma is_lim_ :
+  forall f x l,
+  is_lim f x l <-> is_lim' f x l.
+Proof.
+destruct l as [l| |] ; split.
+- intros H P [eps LP].
+  unfold filtermap.
+  generalize (H eps).
+  apply filter_imp.
+  intros u.
+  apply LP.
+- intros H eps.
+  apply (H (fun y => Rabs (y - l) < eps)).
+  now exists eps.
+- intros H P [M LP].
+  unfold filtermap.
+  generalize (H M).
+  apply filter_imp.
+  intros u.
+  apply LP.
+- intros H M.
+  apply (H (fun y => M < y)).
+  now exists M.
+- intros H P [M LP].
+  unfold filtermap.
+  generalize (H M).
+  apply filter_imp.
+  intros u.
+  apply LP.
+- intros H M.
+  apply (H (fun y => y < M)).
+  now exists M.
+Qed.
 
 (** Equivalence with standard library Reals *)
 
@@ -70,80 +107,26 @@ Qed.
 (** Uniqueness *)
 
 Lemma is_lim_comp_seq (f : R -> R) (x l : Rbar) :
-  is_lim f x l -> (forall u : nat -> R, 
-    (exists N, forall n, (N <= n)%nat -> Finite (u n) <> x) ->
-    is_lim_seq u x -> is_lim_seq (fun n => f (u n)) l).
+  is_lim f x l -> forall u : nat -> R,
+  eventually (fun n => Finite (u n) <> x) ->
+  is_lim_seq u x -> is_lim_seq (fun n => f (u n)) l.
 Proof.
-  case: l => [l | | ] /= ; case: x => [x | | ] /= Hf u Hu0 Hu.
-(* l,x \in R *)
-  move => eps.
-  case: (Hf eps) => {Hf} delta Hf.
-  case: Hu0 => N0 Hu0.
-  case: (Hu delta) => {Hu} N1 Hu.
-  exists (N0 + N1)%nat => n Hn.
-  apply Hf.
-  apply Hu ; by apply le_trans with (1 := le_plus_r N0 N1).
-  apply Rbar_finite_neq, Hu0 ; by apply le_trans with (1 := le_plus_l N0 N1).
-(* l \in R /\ x = p_infty *)
-  move => eps.
-  case: (Hf eps) => {Hf} M Hf.
-  case: (Hu M) => {Hu} N Hu.
-  exists N => n Hn.
-  apply Hf.
-  by apply Hu.
-(* l \in R /\ x = m_infty *)
-  move => eps.
-  case: (Hf eps) => {Hf} M Hf.
-  case: (Hu M) => {Hu} N Hu.
-  exists N => n Hn.
-  apply Hf.
-  by apply Hu.
-(* l = p_infty /\ x \in R *)
-  move => M.
-  case: (Hf M) => {Hf} delta Hf.
-  case: Hu0 => N0 Hu0.
-  case: (Hu delta) => {Hu} N1 Hu.
-  exists (N0 + N1)%nat => n Hn.
-  apply Hf.
-  apply Hu ; by apply le_trans with (1 := le_plus_r N0 N1).
-  apply Rbar_finite_neq, Hu0 ; by apply le_trans with (1 := le_plus_l N0 N1).
-(* l = p_infty /\ x = p_infty *)
-  move => M.
-  case: (Hf M) => {Hf} M' Hf.
-  case: (Hu M') => {Hu} N Hu.
-  exists N => n Hn.
-  apply Hf.
-  apply Hu ; by apply Hn.
-(* l = p_infty /\ x = m_infty *)
-  move => M.
-  case: (Hf M) => {Hf} M' Hf.
-  case: (Hu M') => {Hu} N Hu.
-  exists N => n Hn.
-  apply Hf.
-  apply Hu ; by apply Hn.
-(* l = m_infty /\ x \in R *)
-  move => M.
-  case: (Hf M) => {Hf} delta Hf.
-  case: Hu0 => N0 Hu0.
-  case: (Hu delta) => {Hu} N1 Hu.
-  exists (N0 + N1)%nat => n Hn.
-  apply Hf.
-  apply Hu ; by apply le_trans with (1 := le_plus_r N0 N1).
-  apply Rbar_finite_neq, Hu0 ; by apply le_trans with (1 := le_plus_l N0 N1).
-(* l = m_infty /\ x = p_infty *)
-  move => M.
-  case: (Hf M) => {Hf} M' Hf.
-  case: (Hu M') => {Hu} N Hu.
-  exists N => n Hn.
-  apply Hf.
-  apply Hu ; by apply Hn.
-(* l = m_infty /\ x = m_infty *)
-  move => M.
-  case: (Hf M) => {Hf} M' Hf.
-  case: (Hu M') => {Hu} N Hu.
-  exists N => n Hn.
-  apply Hf.
-  apply Hu ; by apply Hn.
+intros Lf u Hu Lu.
+apply is_lim_seq_.
+apply is_lim_seq_ in Lu.
+apply is_lim_ in Lf.
+apply filterlim_compose with (2 := Lf).
+intros P HP.
+destruct x as [x| |] ; try now apply Lu.
+specialize (Lu (fun y => y <> x -> P y)).
+specialize (Lu HP).
+unfold filtermap in Lu |- *.
+generalize (filter_and _ _ Hu Lu).
+apply filter_imp.
+intros n [H Hi].
+apply Hi.
+contradict H.
+now apply f_equal.
 Qed.
 
 Lemma is_lim_unique (f : R -> R) (x l : Rbar) :

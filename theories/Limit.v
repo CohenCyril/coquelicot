@@ -1028,6 +1028,9 @@ Qed.
 
 (** ** Definition *)
 
+Definition is_lim_seq' (u : nat -> R) (l : Rbar) :=
+  filterlim u eventually (Rbar_locally' l).
+
 Definition is_lim_seq (u : nat -> R) (l : Rbar) :=
   match l with
     | Finite l => forall eps : posreal, exists N : nat, forall n : nat,
@@ -1042,6 +1045,40 @@ Definition ex_finite_lim_seq (u : nat -> R) :=
 Definition Lim_seq (u : nat -> R) : Rbar := 
   Rbar_div_pos (Rbar_plus (LimSup_seq u) (LimInf_seq u))
     {| pos := 2; cond_pos := Rlt_R0_R2 |}.
+
+Lemma is_lim_seq_ :
+  forall u l,
+  is_lim_seq u l <-> is_lim_seq' u l.
+Proof.
+destruct l as [l| |] ; split.
+- intros H P [eps LP].
+  destruct (H eps) as [N HN].
+  exists N => n Hn.
+  apply LP.
+  now apply HN.
+- intros LP eps.
+  specialize (LP (fun y => Rabs (y - l) < eps)).
+  apply LP.
+  now exists eps.
+- intros H P [M LP].
+  destruct (H M) as [N HN].
+  exists N => n Hn.
+  apply LP.
+  now apply HN.
+- intros LP M.
+  specialize (LP (fun y => M < y)).
+  apply LP.
+  now exists M.
+- intros H P [M LP].
+  destruct (H M) as [N HN].
+  exists N => n Hn.
+  apply LP.
+  now apply HN.
+- intros LP M.
+  specialize (LP (fun y => y < M)).
+  apply LP.
+  now exists M.
+Qed.
 
 (** Equivalence with standard library Reals *)
 
@@ -1133,13 +1170,12 @@ Lemma is_lim_seq_ext_loc (u v : nat -> R) (l : Rbar) :
     -> is_lim_seq u l -> is_lim_seq v l.
 Proof.
   move => Hext Hu.
-  apply is_LimSup_LimInf_lim_seq.
-  apply is_LimSup_seq_ext_loc with u.
-  by [].
-  by apply is_lim_LimSup_seq.
-  apply is_LimInf_seq_ext_loc with u.
-  by [].
-  by apply is_lim_LimInf_seq.
+  apply is_lim_seq_ in Hu.
+  apply is_lim_seq_.
+  revert Hu.
+  apply filterlim_ext_loc.
+  apply eventually_filter.
+  exact Hext.
 Qed.
 Lemma ex_lim_seq_ext_loc (u v : nat -> R) : 
   (exists N, forall n, (N <= n)%nat -> u n = v n)

@@ -83,6 +83,21 @@ apply (FG (fun x => P (g x))).
 now apply GH.
 Qed.
 
+Lemma filterlim_ext_loc :
+  forall T U (f g : T -> U) (F G : _ -> Prop),
+  Filter F ->
+  F (fun x => f x = g x) ->
+  filterlim f F G ->
+  filterlim g F G.
+Proof.
+intros T U f g F G HF Efg Lf P GP.
+specialize (Lf P GP).
+unfold filtermap.
+generalize (filter_and _ _ Efg Lf).
+apply filter_imp.
+now intros x [-> H].
+Qed.
+
 Definition locally x (P : R -> Prop) :=
   exists delta : posreal, forall y, Rabs (y - x) < delta -> P y.
 
@@ -489,6 +504,15 @@ Qed.
 
 (** * Continuity *)
 
+Lemma locally_comp' (P : R -> Prop) (f : R -> R) (x : R) :
+  locally (f x) P -> continuity_pt f x
+  -> locally x (fun x => P (f x)).
+Proof.
+intros Lf Cf.
+apply continuity_pt_filterlim in Cf.
+now apply Cf.
+Qed.
+
 Lemma locally_comp (P : R -> Prop) (f : R -> R) (x : R) :
   locally (f x) P -> continuity_pt f x
   -> locally x (fun x => P (f x)).
@@ -650,6 +674,68 @@ Definition Rbar_locally (a : Rbar) (P : R -> Prop) :=
   match a with
     | Finite a => exists delta : posreal, 
 	forall x, Rabs (x-a) < delta -> x <> a -> P x
+    | p_infty => exists M : R, forall x, M < x -> P x
+    | m_infty => exists M : R, forall x, x < M -> P x
+  end.
+
+Global Instance Rbar_locally_filter : forall x, Filter (Rbar_locally x).
+Proof.
+intros [x| |] ; constructor.
+- now exists (mkposreal _ Rlt_0_1).
+- intros P Q [dP HP] [dQ HQ].
+  exists (mkposreal _ (Rmin_stable_in_posreal dP dQ)).
+  simpl.
+  intros y Hy H.
+  split.
+  apply HP with (2 := H).
+  apply Rlt_le_trans with (1 := Hy).
+  apply Rmin_l.
+  apply HQ with (2 := H).
+  apply Rlt_le_trans with (1 := Hy).
+  apply Rmin_r.
+- intros P Q H [dP HP].
+  exists dP.
+  intros y Hy H'.
+  apply H.
+  now apply HP.
+- now exists 0.
+- intros P Q [MP HP] [MQ HQ].
+  exists (Rmax MP MQ).
+  intros y Hy.
+  split.
+  apply HP.
+  apply Rle_lt_trans with (2 := Hy).
+  apply Rmax_l.
+  apply HQ.
+  apply Rle_lt_trans with (2 := Hy).
+  apply Rmax_r.
+- intros P Q H [dP HP].
+  exists dP.
+  intros y Hy.
+  apply H.
+  now apply HP.
+- now exists 0.
+- intros P Q [MP HP] [MQ HQ].
+  exists (Rmin MP MQ).
+  intros y Hy.
+  split.
+  apply HP.
+  apply Rlt_le_trans with (1 := Hy).
+  apply Rmin_l.
+  apply HQ.
+  apply Rlt_le_trans with (1 := Hy).
+  apply Rmin_r.
+- intros P Q H [dP HP].
+  exists dP.
+  intros y Hy.
+  apply H.
+  now apply HP.
+Qed.
+
+Definition Rbar_locally' (a : Rbar) (P : R -> Prop) :=
+  match a with
+    | Finite a => exists delta : posreal,
+	forall x, Rabs (x-a) < delta -> P x
     | p_infty => exists M : R, forall x, M < x -> P x
     | m_infty => exists M : R, forall x, x < M -> P x
   end.
