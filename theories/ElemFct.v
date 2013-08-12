@@ -267,6 +267,19 @@ Proof.
   by apply Hx.
 Qed.
 
+Lemma is_lim_ln_0' : filterlim ln (at_right 0) (Rbar_locally' m_infty).
+Proof.
+intros P [M HM].
+exists (mkposreal (exp M) (exp_pos _)) => x /= Hx Hx0.
+apply HM.
+rewrite <- (ln_exp M).
+apply ln_increasing.
+exact Hx0.
+rewrite Rminus_0_r Rabs_pos_eq in Hx.
+exact Hx.
+now apply Rlt_le.
+Qed.
+
 Lemma is_lim_ln_0 : is_lim (fun y => ln (Rabs y)) 0 m_infty.
 Proof.
   move => eps.

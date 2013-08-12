@@ -29,10 +29,20 @@ Open Scope R_scope.
 (** * Definitions *)
 
 Class Filter {T : Type} (F : (T -> Prop) -> Prop) := {
-  filter_true : F (fun x => True) ;
+  filter_true : F (fun _ => True) ;
   filter_and : forall P Q : T -> Prop, F P -> F Q -> F (fun x => P x /\ Q x) ;
   filter_imp : forall P Q : T -> Prop, (forall x, P x -> Q x) -> F P -> F Q
 }.
+
+Lemma filter_forall :
+  forall {T : Type} F {FF: @Filter T F} (P : T -> Prop),
+  (forall x, P x) -> F P.
+Proof.
+intros.
+apply filter_imp with (fun _ => True).
+easy.
+apply filter_true.
+Qed.
 
 Definition filter_le {T : Type} (F G : (T -> Prop) -> Prop) :=
   forall P, G P -> F P.
@@ -57,10 +67,11 @@ Global Instance filtermap_filter : forall T U f F, @Filter T F ->
   @Filter U (filtermap f F).
 Proof.
 intros T U f F FF.
+unfold filtermap.
 constructor.
-- apply FF.
+- apply filter_true.
 - intros P Q HP HQ.
-  now apply FF.
+  now apply filter_and.
 - intros P Q H HP.
   unfold filtermap.
   apply (filter_imp (fun x => P (f x))).
@@ -147,6 +158,34 @@ constructor.
   apply H.
   now apply HP.
 Qed.
+
+Definition within {T : Type} D (F : (T -> Prop) -> Prop) (P : T -> Prop) :=
+  F (fun x => D x -> P x).
+
+Global Instance within_filter : forall T D F, Filter F -> Filter (@within T D F).
+Proof.
+intros T D F FF.
+unfold within.
+constructor.
+- now apply filter_forall.
+- intros P Q WP WQ.
+  apply filter_imp with (fun x => (D x -> P x) /\ (D x -> Q x)).
+  intros x [HP HQ] HD.
+  split.
+  now apply HP.
+  now apply HQ.
+  now apply filter_and.
+- intros P Q H FP.
+  apply filter_imp with (fun x => (D x -> P x) /\ (P x -> Q x)).
+  intros x [H1 H2] HD.
+  apply H2, H1, HD.
+  apply filter_and.
+  exact FP.
+  now apply filter_forall.
+Qed.
+
+Notation at_left x := (within (fun u : R => Rlt u x) (locally x)).
+Notation at_right x := (within (fun u : R => Rlt x u) (locally x)).
 
 Definition locally_2d (P : R -> R -> Prop) x y :=
   exists delta : posreal, forall u v, Rabs (u - x) < delta -> Rabs (v - y) < delta -> P u v.
