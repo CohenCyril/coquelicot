@@ -4240,8 +4240,7 @@ apply H.
 exact Hab.
 now rewrite Rmin_comm Rmax_comm.
 now rewrite Rmin_comm Rmax_comm.
-apply: locally_impl H3.
-apply locally_forall => y H3.
+apply: filter_imp H3 => y H3.
 now apply ex_RInt_swap.
 now apply ex_RInt_swap.
 (* *)
@@ -4266,7 +4265,7 @@ apply Rabs_pos_lt.
 apply Rgt_not_eq.
 now apply Rgt_minus.
 move: (Cdf' (mkposreal _ H')) => {Cdf'} [d1 Cdf].
-move: (locally_and _ _ _ Df If) => {Df If} [d2 DIf].
+generalize (filter_and _ _ Df If). move => {Df If} [d2 DIf].
 exists (mkposreal _ (Rmin_stable_in_posreal d1 (pos_div_2 d2))) => /= y Hy.
 assert (D1: ex_RInt (fun t => f y t) a b).
 apply DIf.
@@ -4428,10 +4427,8 @@ Lemma RInt_Chasles_bound_comp_l_loc :
 Proof.
 intros f a b x Hab (eps,Hae) Ca.
 move /continuity_pt_locally: Ca => Ca.
-apply: locally_impl (Ca eps).
-apply: locally_impl Hab.
-apply: locally_impl Hae.
-apply locally_forall => y Hae Hab Hy.
+generalize (filter_and _ _ (Ca eps) (filter_and _ _ Hab Hae)).
+apply: filter_imp => {Ca Hae Hab} y [Hy [Hab Hae]].
 apply RInt_Chasles with (2 := Hab).
 apply ex_RInt_inside with (1 := Hae).
 now apply Rlt_le.
@@ -4453,12 +4450,9 @@ intros f a b x Hab (ea,Hae) (eb,Hbe) Ca Cb.
 move /continuity_pt_locally: Ca => Ca.
 move /continuity_pt_locally: Cb => Cb.
 set (e := mkposreal _ (Rmin_stable_in_posreal ea eb)).
-apply: locally_impl (Ca e).
-apply: locally_impl (Cb e).
-apply: locally_impl Hab.
-apply: locally_impl Hae.
-apply: locally_impl Hbe.
-apply locally_forall => y Hbe Hae Hab Hby Hay.
+generalize (filter_and _ _ (filter_and _ _ (Ca e) (Cb e))
+  (filter_and _ _ Hab (filter_and _ _ Hae Hbe))).
+apply: filter_imp => {Ca Cb Hab Hae Hbe} y [[Hay Hby] [Hab [Hae Hbe]]].
 apply RInt_Chasles.
 apply ex_RInt_inside with (1 := Hae).
 apply Rlt_le.
@@ -4492,13 +4486,13 @@ apply is_derive_ext_loc with (fun x0 => comp (fun y => RInt f y (a x)) a x0
 (* *)
 unfold comp.
 apply RInt_Chasles_bound_comp_loc.
-now apply locally_forall.
+exact: filter_forall.
 destruct Ia as (d1,H1).
 exists d1.
-now apply locally_forall.
+exact: filter_forall.
 destruct Ib as (d2,H2).
 exists d2.
-now apply locally_forall.
+exact: filter_forall.
 apply derivable_continuous_pt.
 eexists ; eassumption.
 apply derivable_continuous_pt.
@@ -4794,8 +4788,7 @@ apply derivable_pt_lim_RInt_param_bound_comp_aux1; try easy.
 exists d0; exact Ia.
 destruct Df as (d,Hd).
 exists d.
-apply locally_impl with (2:=Hd).
-apply locally_forall.
+apply: filter_imp Hd.
 intros y H t Ht.
 apply H.
 split.
@@ -4814,8 +4807,7 @@ exact Da.
 (* *)
 apply derivable_pt_lim_param.
 destruct Df as (d,Df).
-apply locally_impl with (2:= Df).
-apply locally_forall.
+apply: filter_imp Df.
 intros y Hy t Ht; apply Hy.
 split.
 apply Rle_trans with (2:=proj1 Ht).
@@ -4859,14 +4851,12 @@ replace (RInt (fun t : R => Derive (fun u => f u t) x) a (b x) +f x (b x)*db) wi
       (- ((RInt (fun t : R => Derive (fun u : R => f u t) x) (b x) a) + - f x (b x)*db)).
 apply derivable_pt_lim_opp.
 apply derivable_pt_lim_RInt_param_bound_comp_aux2; try easy.
-apply locally_impl with (2:=If).
-apply locally_forall.
+apply: filter_imp If.
 intros y H.
 now apply ex_RInt_swap.
 destruct Df as (e,H).
 exists e.
-apply locally_impl with (2:=H).
-apply locally_forall.
+apply: filter_imp H.
 intros y H' t Ht.
 apply H'.
 now rewrite Rmin_comm Rmax_comm.
@@ -4924,8 +4914,7 @@ intros y Hy.
 apply ex_RInt_point.
 destruct Df as (e,H).
 exists e.
-apply locally_impl with (2:=H).
-apply locally_forall.
+apply: filter_imp H.
 intros y H' t Ht.
 apply H'.
 split.
@@ -4954,8 +4943,7 @@ now right.
 apply derivable_pt_lim_RInt_param_bound_comp_aux3; try easy.
 destruct Df as (e,H).
 exists e.
-apply locally_impl with (2:=H).
-apply locally_forall.
+apply: filter_imp H.
 intros y H' t Ht.
 apply H'.
 split.

@@ -222,7 +222,7 @@ Lemma is_lim_ext (f g : R -> R) (x l : Rbar) :
 Proof.
   move => H.
   apply is_lim_ext_loc.
-  by apply Rbar_locally_forall.
+  exact: filter_forall.
 Qed.
 Lemma ex_lim_ext (f g : R -> R) (x : Rbar) :
   (forall y, f y = g y) 
@@ -238,7 +238,7 @@ Lemma Lim_ext (f g : R -> R) (x : Rbar) :
 Proof.
   move => H.
   apply Lim_ext_loc.
-  by apply Rbar_locally_forall.
+  exact: filter_forall.
 Qed.
 
 (** Composition *)
@@ -343,8 +343,7 @@ Lemma is_lim_opp (f : R -> R) (x l : Rbar) :
 Proof.
   case: l => [l | | ] Hf eps ;
   [move: (Hf eps) | move: (Hf (-eps)) | move : (Hf (-eps))] => {Hf} ;
-  apply Rbar_locally_imply ;
-  apply Rbar_locally_forall => y Hf.
+  apply filter_imp => y Hf.
   by rewrite /Rminus -Ropp_plus_distr Rabs_Ropp.
   apply Ropp_lt_cancel ; by rewrite Ropp_involutive.
   apply Ropp_lt_cancel ; by rewrite Ropp_involutive.
@@ -384,37 +383,32 @@ Proof.
     by rewrite Rbar_plus_comm.
   case: lf Hl => [lf | | ] //= ; case: lg => [lg | | ] => //= Hl Hf Hg _ eps ;
   try by case: Hl.
-  move: (Hg (pos_div_2 eps)) => {Hg} ; apply Rbar_locally_imply.
-  move: (Hf (pos_div_2 eps)) => {Hf} ; apply Rbar_locally_imply.
-  apply Rbar_locally_forall => y Hf Hg.
+  generalize (filter_and _ _ (Hf (pos_div_2 eps)) (Hg (pos_div_2 eps))).
+  apply filter_imp => {Hf Hg} y [Hf Hg].
   rewrite (double_var eps).
   replace (f y + g y - (lf + lg)) with ((f y - lf) + (g y - lg)) by ring.
   apply Rle_lt_trans with (1 := Rabs_triang _ _).
   by apply Rplus_lt_compat.
-  move: (Hg (eps - (lf - 1))) => {Hg} ; apply Rbar_locally_imply.
-  move: (Hf (mkposreal _ Rlt_0_1)) => {Hf} ; apply Rbar_locally_imply.
-  apply Rbar_locally_forall => y /= Hf Hg.
+  generalize (filter_and _ _ (Hf (mkposreal _ Rlt_0_1)) (Hg (eps - (lf - 1)))).
+  apply filter_imp => {Hf Hg} /= y [Hf Hg].
   apply Rabs_lt_between' in Hf.
   replace (eps) with ((lf - 1) + (eps - (lf - 1))) by ring.
   apply Rplus_lt_compat.
   by apply Hf.
   by apply Hg.
-  move: (Hg (eps / 2)) => {Hg} ; apply Rbar_locally_imply.
-  move: (Hf (eps / 2)) => {Hf} ; apply Rbar_locally_imply.
-  apply Rbar_locally_forall => y /= Hf Hg.
+  generalize (filter_and _ _ (Hf (eps / 2)) (Hg (eps / 2))).
+  apply filter_imp => {Hf Hg} y [Hf Hg].
   rewrite (double_var eps).
   by apply Rplus_lt_compat.
-  move: (Hg (mkposreal _ Rlt_0_1)) => {Hg} ; apply Rbar_locally_imply.
-  move: (Hf (eps - (lg + 1))) => {Hf} ; apply Rbar_locally_imply.
-  apply Rbar_locally_forall => y /= Hf Hg.
+  generalize (filter_and _ _ (Hf (eps - (lg + 1))) (Hg (mkposreal _ Rlt_0_1))).
+  apply filter_imp => {Hf Hg} y [Hf Hg].
   apply Rabs_lt_between' in Hg.
   replace (eps) with ((eps - (lg + 1)) + (lg + 1)) by ring.
   apply Rplus_lt_compat.
   by apply Hf.
   by apply Hg.
-  move: (Hg (eps / 2)) => {Hg} ; apply Rbar_locally_imply.
-  move: (Hf (eps / 2)) => {Hf} ; apply Rbar_locally_imply.
-  apply Rbar_locally_forall => y /= Hf Hg.
+  generalize (filter_and _ _ (Hf (eps / 2)) (Hg (eps / 2))).
+  apply filter_imp => {Hf Hg} y [Hf Hg].
   rewrite (double_var eps).
   by apply Rplus_lt_compat.
 Qed.
@@ -499,7 +493,7 @@ Proof.
     case: Hl' => // Hl'.
     search_lim.
     apply is_lim_ext_loc with (fun y => -/- (f y)).
-    move: Hf' ; apply Rbar_locally_imply ; apply Rbar_locally_forall => y Hy.
+    move: Hf' ; apply filter_imp => y Hy.
     field.
     suff H : Rabs (f y) <> 0.
       contradict H ; by rewrite H Rabs_R0.
@@ -511,7 +505,7 @@ Proof.
     apply Hw.
     apply is_lim_opp.
     by apply Hf.
-    move: Hf' ; apply Rbar_locally_imply ; apply Rbar_locally_forall => y Hy.
+    move: Hf' ; apply filter_imp => y Hy.
     by rewrite Rbar_opp_real ?Rabs_Ropp.
     contradict Hl.
     by rewrite -(Rbar_opp_involutive l) Hl /= Ropp_0.
@@ -523,8 +517,8 @@ Proof.
   case: l Hl Hl' Hf Hf' => [l | | ] //= Hl Hl' Hf Hf' eps.
   set e := eps * Rabs ((l / 2) * l).
   suff He : 0 < e.
-  move: (Hf (mkposreal _ He)) => {Hf} /= ; apply Rbar_locally_imply.
-  move: Hf' ; apply Rbar_locally_imply, Rbar_locally_forall => y Hf' Hf.
+  generalize (filter_and _ _ (Hf (mkposreal _ He)) Hf').
+  apply filter_imp => {Hf Hf'} y /= [Hf Hf'].
   field_simplify (/ f y - / l) ; [ | split => // ; apply Rbar_finite_neq => //].
   rewrite Rabs_div.
   replace (- f y + l) with (-(f y - l)) by ring ;
@@ -572,9 +566,8 @@ Proof.
   apply (is_pos_div_2 (mkposreal _ Hl')).
   by apply Hl'.
   
-  move: (Hf (/eps)) ; apply Rbar_locally_imply.
-  move: (Hf 0) => {Hf} ; apply Rbar_locally_imply.
-  apply Rbar_locally_forall => y Hf0 Hf.
+  generalize (filter_and _ _ (Hf (/eps)) (Hf 0)).
+  apply filter_imp => {Hf} y [Hf Hf0].
   rewrite Rminus_0_r Rabs_Rinv.
   replace (pos eps) with (/ / eps).
   apply Rinv_lt_contravar.
@@ -589,8 +582,8 @@ Proof.
 
   case: l Hf Hl => [l | | ] /= Hf Hl.
   apply Rbar_finite_neq, Rabs_pos_lt in Hl.
-  move: (Hf (pos_div_2 (mkposreal _ Hl))) => /= {Hf} ; apply Rbar_locally_imply.
-  apply Rbar_locally_forall => y Hf.
+  move: (Hf (pos_div_2 (mkposreal _ Hl))) => /= {Hf}.
+  apply filter_imp => y Hf.
   apply Rabs_lt_between' in Hf.
   case: Hf ; rewrite /(Rabs l).
   case: Rcase_abs => Hl' Hf1 Hf2 ;
@@ -610,13 +603,13 @@ Proof.
   apply Rdiv_le_0_compat.
   by apply Rge_le.
   by apply Rlt_0_2.
-  move: (Hf 0) ; apply Rbar_locally_imply.
-  apply Rbar_locally_forall => y {Hf} Hf.
+  move: (Hf 0).
+  apply filter_imp => y {Hf} Hf.
   rewrite Rabs_R0 /Rdiv Rmult_0_l Rabs_pos_eq.
   by [].
   by apply Rlt_le.
-  move: (Hf 0) ; apply Rbar_locally_imply.
-  apply Rbar_locally_forall => y {Hf} Hf.
+  move: (Hf 0).
+  apply filter_imp => y {Hf} Hf.
   rewrite Rabs_R0 /Rdiv Rmult_0_l Rabs_left.
   apply Ropp_lt_cancel ; by rewrite Ropp_0 Ropp_involutive.
   by [].
@@ -647,10 +640,9 @@ Proof.
   case: Rle_dec (Rle_refl 0) => // H _.
   case: Rle_lt_or_eq_dec (Rlt_irrefl 0) => // {H} _ _.
   case: lg => [lg | | ] //= Hf Hg _ eps.
-  move: (Hg (mkposreal _ Rlt_0_1)) => {Hg} /= ; apply Rbar_locally_imply.
   suff Hef : 0 < eps / (1 + Rabs lg).
-  move: (Hf (mkposreal _ Hef)) => {Hf} /= ; apply Rbar_locally_imply.
-  apply Rbar_locally_forall => y Hf Hg.
+  generalize (filter_and _ _ (Hf (mkposreal _ Hef)) (Hg (mkposreal _ Rlt_0_1))).
+  apply filter_imp => {Hf Hg} /= y [Hf Hg].
   rewrite Rmult_0_l Rminus_0_r Rabs_mult.
   apply Rle_lt_trans with (1 := Rabs_triang_inv _ _) in Hg.
   apply Rlt_minus_l in Hg.
@@ -676,9 +668,8 @@ Proof.
   case: Rle_lt_or_eq_dec (Rlt_irrefl 0) => // {H} _ _.
   case: lf Hlf => [lf | | ] //= Hlf Hf Hg _ eps.
   suff Heg : 0 < eps / (1 + Rabs lf).
-  move: (Hg (mkposreal _ Heg)) => {Hg} /= ; apply Rbar_locally_imply.
-  move: (Hf (mkposreal _ Rlt_0_1)) => {Hf} /= ; apply Rbar_locally_imply.
-  apply Rbar_locally_forall => y Hf Hg.
+  generalize (filter_and _ _ (Hf (mkposreal _ Rlt_0_1)) (Hg (mkposreal _ Heg))).
+  apply filter_imp => {Hf Hg} /= y [Hf Hg].
   rewrite Rmult_0_l Rminus_0_r Rabs_mult.
   apply Rle_lt_trans with (1 := Rabs_triang_inv _ _) in Hf.
   apply Rlt_minus_l in Hf.
@@ -820,9 +811,8 @@ Proof.
   set eg := eps / 2 / (ef + Rabs lf).
   suff Hef : 0 < ef.
   suff Heg : 0 < eg.
-  move: (Hg (mkposreal _ Heg)) => {Hg} ; apply Rbar_locally_imply.
-  move: (Hf (mkposreal _ Hef)) => {Hf} ; apply Rbar_locally_imply.
-  apply Rbar_locally_forall => y /= Hf Hg.
+  generalize (filter_and _ _ (Hf (mkposreal _ Hef)) (Hg (mkposreal _ Heg))).
+  apply filter_imp => {Hf Hg} y /= [Hf Hg].
   replace (f y * g y - lf * lg) with (f y * (g y - lg) + (f y - lf) * lg) by ring.
   apply Rle_lt_trans with (1 := Rabs_triang _ _).
   rewrite ?Rabs_mult (double_var eps).
@@ -855,9 +845,8 @@ Proof.
   case: Rle_dec (Rlt_le _ _ Hlf) Hm => Hlf' _ Hm //=.
   case: Rle_lt_or_eq_dec (Rlt_not_eq _ _ Hlf) Hm => _ _ _ //=.
   move => M.
-  move: (Hg (Rmax 0 M / (lf / 2))) => {Hg} ; apply Rbar_locally_imply.
-  move: (Hf (pos_div_2 (mkposreal _ Hlf))) => /= {Hf} ; apply Rbar_locally_imply.
-  apply Rbar_locally_forall => y Hf Hg.
+  generalize (filter_and _ _ (Hf (pos_div_2 (mkposreal _ Hlf))) (Hg (Rmax 0 M / (lf / 2)))).
+  apply filter_imp => {Hf Hg} /= y [Hf Hg].
   apply Rabs_lt_between' in Hf ; case: Hf => Hf _ ; field_simplify in Hf.
   rewrite Rdiv_1 in Hf.
   replace M with ((lf / 2) * (M / (lf / 2))) by (field ; apply Rgt_not_eq, Hlf).
@@ -877,9 +866,8 @@ Proof.
   clear Hm.
   
   move => M.
-  move: (Hg 1) => {Hg} ; apply Rbar_locally_imply.
-  move: (Hf (Rmax 0 M)) => {Hf} ; apply Rbar_locally_imply.
-  apply Rbar_locally_forall => y Hf Hg.
+  generalize (filter_and _ _ (Hf (Rmax 0 M)) (Hg 1)).
+  apply filter_imp => {Hf Hg} y [Hf Hg].
   apply Rle_lt_trans with (1 := Rmax_r 0 M).
   rewrite -(Rmult_1_r (Rmax 0 M)).
   apply Rmult_le_0_lt_compat.
@@ -1127,11 +1115,9 @@ Proof.
   apply Rnot_lt_le => H.
   apply Rminus_lt_0 in H.
   apply (Rbar_locally_const x).
-  move: Hfg ; apply Rbar_locally_imply.
-  move: (Hg (pos_div_2 (mkposreal _ H))) => {Hg} ; apply Rbar_locally_imply.
-  move: (Hf (pos_div_2 (mkposreal _ H))) => {Hf} ; apply Rbar_locally_imply.
-  apply Rbar_locally_forall => y /= Hf Hg.
-  apply Rlt_not_le.
+  generalize (filter_and _ _ Hfg (filter_and _ _ (Hf (pos_div_2 (mkposreal _ H))) (Hg (pos_div_2 (mkposreal _ H))))).
+  apply filter_imp => {Hfg Hf Hg} /= y [Hfg [Hf Hg]].
+  apply: Rlt_not_le Hfg.
   apply Rlt_trans with ((lf + lg) / 2).
   replace ((lf + lg) / 2) with (lg + (lf - lg) / 2) by field.
   apply Rabs_lt_between'.
@@ -1142,35 +1128,29 @@ Proof.
 
   left => /=.
   apply (Rbar_locally_const x).
-  move: Hfg ; apply Rbar_locally_imply.
-  move: (Hg (lf - (Rabs lf + 1))) => {Hg} ; apply Rbar_locally_imply.
-  move: (Hf (mkposreal _ (Rle_lt_0_plus_1 _ (Rabs_pos lf)))) => {Hf} ; apply Rbar_locally_imply.
-  apply Rbar_locally_forall => y /= Hf Hg.
-  apply Rlt_not_le.
+  generalize (filter_and _ _ Hfg (filter_and _ _ (Hf (mkposreal _ (Rle_lt_0_plus_1 _ (Rabs_pos lf)))) (Hg (lf - (Rabs lf + 1))))).
+  apply filter_imp => {Hfg Hf Hg} /= y [Hfg [Hf Hg]].
+  apply: Rlt_not_le Hfg.
   apply Rlt_trans with (lf - (Rabs lf + 1)).
   apply Hg.
   apply Rabs_lt_between'.
   apply Hf.
-  
+
   left => /=.
   apply (Rbar_locally_const x).
-  move: Hfg ; apply Rbar_locally_imply.
-  move: (Hg (mkposreal _ (Rle_lt_0_plus_1 _ (Rabs_pos lg)))) => {Hg} ; apply Rbar_locally_imply.
-  move: (Hf (lg + (Rabs lg + 1))) => {Hf} ; apply Rbar_locally_imply.
-  apply Rbar_locally_forall => y /= Hf Hg.
-  apply Rlt_not_le.
+  generalize (filter_and _ _ Hfg (filter_and _ _ (Hf (lg + (Rabs lg + 1))) (Hg (mkposreal _ (Rle_lt_0_plus_1 _ (Rabs_pos lg)))))).
+  apply filter_imp => {Hfg Hf Hg} /= y [Hfg [Hf Hg]].
+  apply: Rlt_not_le Hfg.
   apply Rlt_trans with (lg + (Rabs lg + 1)).
   apply Rabs_lt_between'.
   apply Hg.
   apply Hf.
-  
+
   left => /=.
   apply (Rbar_locally_const x).
-  move: Hfg ; apply Rbar_locally_imply.
-  move: (Hg 0) => {Hg} ; apply Rbar_locally_imply.
-  move: (Hf 0) => {Hf} ; apply Rbar_locally_imply.
-  apply Rbar_locally_forall => y /= Hf Hg.
-  apply Rlt_not_le.
+  generalize (filter_and _ _ Hfg (filter_and _ _ (Hf 0) (Hg 0))).
+  apply filter_imp => {Hfg Hf Hg} y [Hfg [Hf Hg]].
+  apply: Rlt_not_le Hfg.
   apply Rlt_trans with 0.
   apply Hg.
   apply Hf.
@@ -1182,12 +1162,9 @@ Lemma is_lim_le_p_loc (f g : R -> R) (x : Rbar) :
   -> is_lim g x p_infty.
 Proof.
   move => Hf Hfg M.
-  move: Hfg ; apply Rbar_locally_imply.
-  move: (Hf M) => {Hf} ; apply Rbar_locally_imply.
-  apply Rbar_locally_forall => y Hf Hg.
-  apply Rlt_le_trans with (f y).
-  by apply Hf.
-  by apply Hg.
+  generalize (filter_and _ _ Hfg (Hf M)).
+  apply filter_imp => {Hfg Hf} y [Hf Hg].
+  now apply Rlt_le_trans with (f y).
 Qed.
 
 Lemma is_lim_le_m_loc (f g : R -> R) (x : Rbar) :
@@ -1196,12 +1173,9 @@ Lemma is_lim_le_m_loc (f g : R -> R) (x : Rbar) :
   -> is_lim g x m_infty.
 Proof.
   move => Hf Hfg M.
-  move: Hfg ; apply Rbar_locally_imply.
-  move: (Hf M) => {Hf} ; apply Rbar_locally_imply.
-  apply Rbar_locally_forall => y Hf Hg.
-  apply Rle_lt_trans with (f y).
-  by apply Hg.
-  by apply Hf.
+  generalize (filter_and _ _ Hfg (Hf M)).
+  apply filter_imp => {Hfg Hf} y [Hf Hg].
+  now apply Rle_lt_trans with (f y).
 Qed.
 
 
@@ -1211,10 +1185,8 @@ Lemma is_lim_le_le_loc (f g h : R -> R) (x : Rbar) (l : R) :
   -> is_lim h x l.
 Proof.
   move => /= Hf Hg H eps.
-  move: H ; apply Rbar_locally_imply.
-  move: (Hg eps) => {Hg} ; apply Rbar_locally_imply.
-  move: (Hf eps) => {Hf} ; apply Rbar_locally_imply.
-  apply Rbar_locally_forall => y Hf Hg H.
+  generalize (filter_and _ _ H (filter_and _ _ (Hf eps) (Hg eps))).
+  apply filter_imp => {H Hf Hg} y [H [Hf Hg]].
   apply Rabs_lt_between' ; split.
   apply Rlt_le_trans with (2 := proj1 H).
   by apply Rabs_lt_between', Hf.
@@ -1737,7 +1709,7 @@ Proof.
   apply Rminus_lt_0 in Hy ;
   move: (Hfa (mkposreal _ Hy)) => {Hfa} Hfa ; simpl in Hfa.
   have : Rbar_locally a (fun y0 : R => f y0 < y).
-  move: Hfa ; apply Rbar_locally_imply, Rbar_locally_forall => z Hz.
+  move: Hfa ; apply filter_imp => z Hz.
   apply (Rplus_lt_reg_r (-la')).
   rewrite ?(Rplus_comm (-la')).
   apply Rle_lt_trans with (1 := Rle_abs _).

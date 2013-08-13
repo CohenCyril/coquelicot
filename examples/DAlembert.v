@@ -144,9 +144,9 @@ auto_derive_2.
 split.
 apply Iu1.
 repeat split.
-apply Locally.locally_forall.
+apply: filter_forall.
 apply Cu1.
-apply Locally.locally_forall.
+apply: filter_forall.
 apply Cu1.
 repeat split ; apply Du1.
 unfold beta20, Rminus.
@@ -162,9 +162,9 @@ auto_derive.
 split.
 apply Iu1.
 repeat split.
-apply Locally.locally_forall.
+apply: filter_forall.
 apply Cu1.
-apply Locally.locally_forall.
+apply: filter_forall.
 apply Cu1.
 unfold beta01, Rminus, Rdiv.
 now field.
@@ -179,9 +179,9 @@ auto_derive_2.
 split.
 apply Iu1.
 repeat split.
-apply Locally.locally_forall.
+apply: filter_forall.
 apply Cu1.
-apply Locally.locally_forall.
+apply: filter_forall.
 apply Cu1.
 repeat split ; apply Du1.
 unfold beta02, Rminus, Rdiv.
@@ -211,11 +211,11 @@ intros t' u' _ _.
 repeat split.
 apply continuity_implies_ex_Rint => y.
 admit. (* cont 2D -> 1D *)
-apply locally_forall => y.
+apply: filter_forall => y.
 admit. (* cont 2D -> 1D *)
-apply locally_forall => y.
+apply: filter_forall => y.
 admit. (* cont 2D -> 1D *)
-apply locally_forall => y.
+apply: filter_forall => y.
 apply continuity_implies_ex_Rint => z.
 apply derivable_continuous_pt.
 admit. (* ??? *)
@@ -227,7 +227,7 @@ intros t' u' _ _.
 repeat split.
 admit.
 admit.
-apply locally_forall => y.
+apply: filter_forall => y.
 admit.
 intros t' _.
 admit.
@@ -248,14 +248,14 @@ apply locally_2d_forall => y z.
 admit.
 intros t' _.
 admit.
-apply locally_forall => y.
+apply: filter_forall => y.
 admit.
-apply locally_forall => y.
+apply: filter_forall => y.
 apply continuity_implies_ex_Rint => z.
 admit.
 exists (mkposreal _ Rlt_0_1).
 simpl.
-apply locally_forall => y.
+apply: filter_forall => y.
 apply continuity_implies_ex_Rint => z.
 admit.
 exists (mkposreal _ Rlt_0_1).
@@ -264,9 +264,9 @@ intros t' u' _ _.
 repeat split.
 apply continuity_implies_ex_Rint => y.
 admit.
-apply locally_forall => y.
+apply: filter_forall => y.
 admit.
-apply locally_forall => y.
+apply: filter_forall => y.
 admit.
 repeat split.
 apply locally_2d_forall => y z.
@@ -275,19 +275,19 @@ apply locally_2d_forall => y z.
 admit.
 intros x' _.
 admit.
-apply locally_forall => y.
+apply: filter_forall => y.
 admit.
-apply locally_forall => y.
+apply: filter_forall => y.
 admit.
-apply locally_forall => y.
+apply: filter_forall => y.
 apply continuity_implies_ex_Rint => z.
 admit.
 exists (mkposreal _ Rlt_0_1).
-apply locally_forall => y.
+apply: filter_forall => y.
 apply continuity_implies_ex_Rint => z.
 admit.
 exists (mkposreal _ Rlt_0_1).
-apply locally_forall => y.
+apply: filter_forall => y.
 apply continuity_implies_ex_Rint => z.
 admit.
 exists (mkposreal _ Rlt_0_1).
@@ -297,13 +297,13 @@ apply locally_2d_forall => y z.
 admit.
 intros t' _.
 admit.
-apply locally_forall => y.
+apply: filter_forall => y.
 admit.
-apply locally_forall => y.
+apply: filter_forall => y.
 apply continuity_implies_ex_Rint => z.
 admit.
 exists (mkposreal _ Rlt_0_1).
-apply locally_forall => y.
+apply: filter_forall => y.
 apply continuity_implies_ex_Rint => z.
 admit.
 exists (mkposreal _ Rlt_0_1).

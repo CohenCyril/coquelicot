@@ -303,17 +303,6 @@ apply H ;
   apply cond_pos.
 Qed.
 
-Lemma locally_impl :
-  forall (P Q : R -> Prop) x, locally x (fun y => P y -> Q y) ->
-  locally x P -> locally x Q.
-Proof.
-intros P Q x (d,H).
-apply locally_impl_strong.
-exists d => y Hy Hp.
-apply H => //.
-now apply locally_singleton.
-Qed.
-
 Lemma locally_2d_impl :
   forall (P Q : R -> R -> Prop) x y, locally_2d (fun u v => P u v -> Q u v) x y ->
   locally_2d P x y -> locally_2d Q x y.
@@ -325,29 +314,11 @@ apply H => //.
 now apply locally_2d_singleton.
 Qed.
 
-Lemma locally_forall :
-  forall (P : R -> Prop) x, (forall y, P y) -> locally x P.
-Proof.
-intros P x Hp.
-now exists (mkposreal _ Rlt_0_1) => u _.
-Qed.
-
 Lemma locally_2d_forall :
   forall (P : R -> R -> Prop) x y, (forall u v, P u v) -> locally_2d P x y.
 Proof.
 intros P x y Hp.
 now exists (mkposreal _ Rlt_0_1) => u v _ _.
-Qed.
-
-Lemma locally_and :
-  forall (P Q : R -> Prop) x, locally x P -> locally x Q ->
-  locally x (fun y => P y /\ Q y).
-Proof.
-intros P Q x H.
-apply: locally_impl.
-apply: locally_impl H.
-apply locally_forall.
-now split.
 Qed.
 
 Lemma locally_2d_and :
@@ -372,7 +343,6 @@ rewrite Rminus_eq_0 Rabs_R0; apply cond_pos.
 exact Hz.
 Qed.
 
-
 Lemma locally_2d_1d_const_y :
   forall (P : R -> R -> Prop) x y,
   locally_2d P x y ->
@@ -383,8 +353,6 @@ apply Hd.
 exact Hz.
 rewrite Rminus_eq_0 Rabs_R0; apply cond_pos.
 Qed.
-
-
 
 Lemma locally_2d_1d_strong :
   forall (P : R -> R -> Prop) x y,
@@ -448,7 +416,7 @@ field_simplify.
 apply Rle_refl.
 now apply Rgt_not_eq.
 (* *)
-apply locally_forall => z.
+apply: filter_forall => z.
 exists eps => p q.
 replace (u - x) with 0.
 replace (v - y) with 0.
@@ -779,13 +747,6 @@ Definition Rbar_locally' (a : Rbar) (P : R -> Prop) :=
     | m_infty => exists M : R, forall x, x < M -> P x
   end.
 
-Lemma Rbar_locally_forall (P : R -> Prop) (a : Rbar) :
-  (forall x, P x) -> Rbar_locally a P.
-Proof.
-  case: a => [a | | ] H ;
-  exists (mkposreal _ Rlt_0_1) => /= x _ ; by intuition.
-Qed.
-
 Lemma Rbar_locally_const (a : Rbar) (P : Prop) :
   Rbar_locally a (fun _ => P) -> P.
 Proof.
@@ -803,58 +764,6 @@ Proof.
   by apply Rlt_plus_1.
   apply (H (d-1)).
   by apply Rlt_minus_l, Rlt_plus_1.
-Qed.
-
-Lemma Rbar_locally_imply (P Q : R -> Prop) (a : Rbar) :
-  Rbar_locally a (fun x => P x -> Q x) -> Rbar_locally a P
-    -> Rbar_locally a Q.
-Proof.
-  case: a => /= [a | | ] [d0 Hpq] [d1 Hp].
-  have Hd : 0 < Rmin d0 d1.
-    apply Rmin_case ; [by apply d0 | by apply d1].
-  exists (mkposreal (Rmin d0 d1) Hd) => /= x H Hxa.
-  apply: Hpq.
-  apply Rlt_le_trans with (1 := H), Rmin_l.
-  apply: Hxa.
-  apply: Hp.
-  apply Rlt_le_trans with (1 := H), Rmin_r.
-  apply: Hxa.
-  exists (Rmax d0 d1) => /= x H.
-  apply: Hpq.
-  apply Rle_lt_trans with (2 := H), Rmax_l.
-  apply: Hp.
-  apply Rle_lt_trans with (2 := H), Rmax_r.
-  exists (Rmin d0 d1) => /= x H.
-  apply: Hpq.
-  apply Rlt_le_trans with (1 := H), Rmin_l.
-  apply: Hp.
-  apply Rlt_le_trans with (1 := H), Rmin_r.
-Qed.
-
-Lemma Rbar_locally_and (P Q : R -> Prop) (a : Rbar) :
-  Rbar_locally a P -> Rbar_locally a Q
-    -> Rbar_locally a (fun x => P x /\ Q x).
-Proof.
-  case: a => /= [a | | ] [d0 Hp] [d1 Hq].
-  have Hd : 0 < Rmin d0 d1.
-    apply Rmin_case ; [by apply d0 | by apply d1].
-  exists (mkposreal (Rmin d0 d1) Hd) => /= x H Hxa ; split.
-  apply: Hp.
-  apply Rlt_le_trans with (1 := H), Rmin_l.
-  apply: Hxa.
-  apply: Hq.
-  apply Rlt_le_trans with (1 := H), Rmin_r.
-  apply: Hxa.
-  exists (Rmax d0 d1) => /= x H ; split.
-  apply: Hp.
-  apply Rle_lt_trans with (2 := H), Rmax_l.
-  apply: Hq.
-  apply Rle_lt_trans with (2 := H), Rmax_r.
-  exists (Rmin d0 d1) => /= x H ; split.
-  apply: Hp.
-  apply Rlt_le_trans with (1 := H), Rmin_l.
-  apply: Hq.
-  apply Rlt_le_trans with (1 := H), Rmin_r.
 Qed.
 
 Lemma Rbar_locally_and_1 (P Q : R -> Prop) (a : Rbar) :
@@ -876,14 +785,14 @@ Qed.
 Lemma Rbar_locally_or_1 (P Q : R -> Prop) (a : Rbar) :
   Rbar_locally a P -> Rbar_locally a (fun x => P x \/ Q x).
 Proof.
-  apply Rbar_locally_imply, Rbar_locally_forall => x Hx.
+  apply filter_imp => x Hx.
   by left.
 Qed.
 
 Lemma Rbar_locally_or_2 (P Q : R -> Prop) (a : Rbar) :
   Rbar_locally a Q -> Rbar_locally a (fun x => P x \/ Q x).
 Proof.
-  apply Rbar_locally_imply, Rbar_locally_forall => x Hx.
+  apply filter_imp => x Hx.
   by right.
 Qed.
 

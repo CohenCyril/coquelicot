@@ -36,14 +36,14 @@ Proof.
   intros Hf H ;
   move: (H (pos_div_2 (mkposreal _ Rlt_0_1))) => {H} /= H.
   have H0 : Rbar_locally a (fun x => ~ (Rabs (f x) <= 1/2 * Rabs (f x))).
-    move: Hf ; apply Rbar_locally_imply, Rbar_locally_forall.
+    move: Hf ; apply filter_imp.
     intros x Hf ; apply Rlt_not_le.
     apply Rminus_lt ; field_simplify ;
     rewrite Rdiv_1 /Rdiv Ropp_mult_distr_l_reverse ;
     apply Ropp_lt_gt_0_contravar, Rdiv_lt_0_compat.
     by apply Rabs_pos_lt.
     by apply Rlt_R0_R2.
-  move: (Rbar_locally_and _ _ _ H H0) => {H H0} H.
+  generalize (filter_and _ _ H H0) => {H H0} H.
   case: a {Hf} H => [a | | ] /= [delta H].
   case: (H (a + delta / 2)).
   ring_simplify (a + delta / 2 - a).
@@ -68,8 +68,8 @@ Lemma domin_trans (f g h : R -> R) (a : Rbar) :
   is_domin f a g -> is_domin g a h -> is_domin f a h.
 Proof.
   move => Hfg Hgh eps.
-  apply (Rbar_locally_imply (fun x => (Rabs (h x) <= sqrt eps * Rabs (g x)) /\ (Rabs (g x) <= sqrt eps * Rabs (f x)))).
-  apply Rbar_locally_forall => x [H0 H1].
+  apply (filter_imp (fun x => (Rabs (h x) <= sqrt eps * Rabs (g x)) /\ (Rabs (g x) <= sqrt eps * Rabs (f x)))).
+  intros x [H0 H1].
   apply Rle_trans with (1 := H0).
   rewrite -{2}(sqrt_sqrt eps).
   rewrite Rmult_assoc.
@@ -77,7 +77,7 @@ Proof.
   by apply sqrt_pos.
   apply H1.
   by apply Rlt_le, eps.
-  apply Rbar_locally_and.
+  apply filter_and.
   by apply (Hgh (mkposreal (sqrt eps) (sqrt_lt_R0 _ (cond_pos eps)))).
   by apply (Hfg (mkposreal (sqrt eps) (sqrt_lt_R0 _ (cond_pos eps)))).
 Qed.
@@ -92,7 +92,7 @@ Proof.
   have : forall eps : posreal, Rbar_locally a (fun x => Rabs (f1 x) <= (eps + 1) * Rabs (f2 x)).
     move => eps.
     move: (Hf eps) => {Hf}.
-    apply Rbar_locally_imply, Rbar_locally_forall => x Hf.
+    apply filter_imp => x Hf.
     rewrite Rmult_plus_distr_r Rmult_1_l.
     replace (Rabs (f1 x)) with ((Rabs (f1 x) - Rabs (f2 x)) + Rabs (f2 x)) by ring.
     apply Rplus_le_compat_r.
@@ -101,9 +101,9 @@ Proof.
     by apply Rabs_triang_inv.
   move => {Hf} Hf eps.
   move: (Hf (mkposreal _ Rlt_0_1)) (Hfg (pos_div_2 eps)) => /= {Hf Hfg} Hf Hfg.
-  move: (Rbar_locally_and _ _ _ Hf Hfg) => {Hf Hfg}.
-  apply Rbar_locally_imply.
-  apply Rbar_locally_forall => x [Hf Hfg].
+  generalize (filter_and _ _ Hf Hfg) => {Hf Hfg}.
+  apply filter_imp.
+  intros x [Hf Hfg].
   apply Rle_trans with (1 := Hfg).
   pattern (pos eps) at 2 ;
   replace (pos eps) with ((eps/2)*2) by field.
@@ -115,7 +115,7 @@ Proof.
   have : forall eps : posreal, Rbar_locally a (fun x => (1-eps) * Rabs (f2 x) <= Rabs (f1 x)).
     move => eps.
     move: (Hf eps) => {Hf}.
-    apply Rbar_locally_imply, Rbar_locally_forall => x Hf.
+    apply filter_imp => x Hf.
     rewrite Rmult_minus_distr_r Rmult_1_l.
     replace (Rabs (f1 x)) with (Rabs (f2 x) - (Rabs (f2 x) - Rabs (f1 x))) by ring.
     apply Rplus_le_compat_l.
@@ -124,9 +124,9 @@ Proof.
     by apply Rabs_triang_inv.
   move => {Hf} Hf eps.
   move: (Hf (pos_div_2 (mkposreal _ Rlt_0_1))) (Hfg (pos_div_2 eps)) => /= {Hf Hfg} Hf Hfg.
-  move: (Rbar_locally_and _ _ _ Hf Hfg) => {Hf Hfg}.
-  apply Rbar_locally_imply.
-  apply Rbar_locally_forall => x [Hf Hfg].
+  generalize (filter_and _ _ Hf Hfg) => {Hf Hfg}.
+  apply filter_imp.
+  intros x [Hf Hfg].
   replace (1 - 1 / 2) with (/2) in Hf by field.
   apply Rle_trans with (1 := Hfg).
   rewrite Rmult_assoc.
@@ -141,7 +141,7 @@ Proof.
   intros H.
   apply (domin_rw_l _ _ (fun x : R => f x - g x) _ H).
   move => eps ; move: (H eps).
-  apply Rbar_locally_imply, Rbar_locally_forall => x Hx.
+  apply filter_imp => x Hx.
   by rewrite -Rabs_Ropp Ropp_minus_distr'.
 Qed.
 
@@ -155,10 +155,9 @@ Proof.
   rewrite /is_domin in Hg Hf.
   specialize (Hg (mkposreal _ Rlt_0_1)); simpl in Hg.
   specialize (Hf (pos_div_2 eps)).
-  apply Rbar_locally_imply with (2:=Hf).
-  apply Rbar_locally_imply with (2:=Hg).
-  apply Rbar_locally_forall.
-  intros x H1 H2.
+  generalize (filter_and _ _ Hf Hg).
+  apply filter_imp.
+  intros x [H2 H1].
   replace (g1 x) with (-(g2 x - g1 x) + g2 x) by ring.
   apply Rle_trans with (1:=Rabs_triang _ _).
   rewrite Rabs_Ropp.
@@ -184,7 +183,7 @@ Lemma equiv_refl (f : R -> R) (a : Rbar) :
   is_equiv f f a.
 Proof.
   move => eps /=.
-  apply Rbar_locally_forall => x.
+  apply: filter_forall => x.
   rewrite Rminus_eq_0 Rabs_R0.
   apply Rmult_le_pos.
   by apply Rlt_le, eps.
@@ -200,8 +199,8 @@ Proof.
   move: (fun c => domin_rw_l _ _ c _ Hgh) => Hgh'.
   apply Hgh' => {Hgh'} eps.
   apply equiv_sym in Hgh.
-  move: (Rbar_locally_and _ _ _ (Hfg (pos_div_2 eps)) (Hgh (pos_div_2 eps))) => {Hfg Hgh}.
-  apply Rbar_locally_imply, Rbar_locally_forall => x /= [Hfg Hgh].
+  generalize (filter_and _ _ (Hfg (pos_div_2 eps)) (Hgh (pos_div_2 eps))) => {Hfg Hgh}.
+  apply filter_imp => x /= [Hfg Hgh].
   replace (h x - f x) with ((g x - f x) - (g x - h x)) by ring.
   apply Rle_trans with (1 := Rabs_triang _ _).
   rewrite Rabs_Ropp (double_var eps) Rmult_plus_distr_r.
@@ -226,7 +225,7 @@ Lemma equiv_carac_1 (f g : R -> R) (a : Rbar) :
 Proof.
   intros o Ho Hgo.
   intro eps ; move: (Hgo eps).
-  apply Rbar_locally_imply, Rbar_locally_forall => x.
+  apply filter_imp => x.
   replace (o x) with (f x - g x).
   by rewrite -(Rabs_Ropp (f x - g x)) Ropp_minus_distr'.
   rewrite Ho ; ring.
@@ -245,10 +244,10 @@ Proof.
     case: Hc => Hc.
     apply Ropp_0_gt_lt_contravar in Hc.
     move: (Hw _ Hc) => {Hw} H eps ; move: (H eps).
-    apply Rbar_locally_imply, Rbar_locally_forall => x.
+    apply filter_imp => x.
     by rewrite Ropp_mult_distr_l_reverse Rabs_Ropp.
     rewrite Hc => {c Hc Hw} eps.
-    apply Rbar_locally_forall => x.
+    apply: filter_forall => x.
     rewrite Rmult_0_l Rabs_R0.
     apply Rmult_le_pos.
     by apply Rlt_le, eps.
@@ -259,7 +258,7 @@ Proof.
     by apply eps.
     by apply Hc.
   move: (H (mkposreal _ He)) => /= {H}.
-  apply Rbar_locally_imply, Rbar_locally_forall => x H.
+  apply filter_imp => x H.
   rewrite Rabs_mult (Rabs_right c).
   replace (eps * Rabs (f x)) with (c*(eps / c * Rabs (f x))).
   apply Rmult_le_compat_l.
@@ -278,7 +277,7 @@ Proof.
     by apply eps.
     by apply Rabs_pos_lt.
   move: (H (mkposreal _ He)) => /= {H}.
-  apply Rbar_locally_imply, Rbar_locally_forall => x Hx.
+  apply filter_imp => x Hx.
   by rewrite Rabs_mult -Rmult_assoc.
 Qed.
 
@@ -287,9 +286,9 @@ Lemma domin_plus (f g1 g2 : R -> R) (a : Rbar) :
     -> is_domin f a (fun x => g1 x + g2 x).
 Proof.
   intros Hg1 Hg2 eps.
-  move: (Rbar_locally_and _ _ _ (Hg1 (pos_div_2 eps)) (Hg2 (pos_div_2 eps))) 
+  generalize (filter_and _ _ (Hg1 (pos_div_2 eps)) (Hg2 (pos_div_2 eps))) 
     => /= {Hg1 Hg2}.
-  apply Rbar_locally_imply, Rbar_locally_forall => x [Hg1 Hg2].
+  apply filter_imp => x [Hg1 Hg2].
   apply Rle_trans with (1 := Rabs_triang _ _).
   replace (eps * Rabs (f x)) 
     with (eps / 2 * Rabs (f x) + eps / 2 * Rabs (f x))
@@ -305,7 +304,7 @@ Proof.
   case: (Req_dec c 0) ; move => Hc H.
 (* c = 0 *)
   rewrite Hc => {c Hc}.
-  move => eps /= ; apply Rbar_locally_forall => x.
+  move => eps /= ; apply: filter_forall => x.
   rewrite ?Rmult_0_l Rminus_0_r Rabs_R0 Rmult_0_r.
   apply Rle_refl.
 (* c <> 0 *)
@@ -315,7 +314,7 @@ Proof.
   have : Rbar_locally a (fun x : R => Rabs (c * (g x - f x)) <= eps * Rabs (g x)).
   apply (domin_scal_r g (fun x => g x - f x) a c).
   by apply H.
-  apply Rbar_locally_imply, Rbar_locally_forall => x.
+  apply filter_imp => x.
   by rewrite Rmult_minus_distr_l.
 Qed.
 
@@ -324,7 +323,7 @@ Lemma equiv_plus (f o : R -> R) (a : Rbar) :
 Proof.
   intros H eps.
   move: (H eps) => {H}.
-  apply Rbar_locally_imply, Rbar_locally_forall => x Hx.
+  apply filter_imp => x Hx.
   ring_simplify (f x - (f x + o x)).
   by rewrite Rabs_Ropp.
 Qed.
@@ -339,7 +338,7 @@ Proof.
   move => H eps.
   move: (H eps) => {H} H.
   move: H.
-  apply Rbar_locally_imply, Rbar_locally_forall => x H1.
+  apply filter_imp => x H1.
   rewrite ?Rabs_mult.
   rewrite -Rmult_assoc.
   apply Rmult_le_compat_r.
@@ -353,7 +352,7 @@ Lemma domin_mult_l (f g h : R -> R) (a : Rbar) :
 Proof.
   intros => eps.
   move: (domin_mult_r f g h a H eps).
-  apply Rbar_locally_imply, Rbar_locally_forall => x.
+  apply filter_imp => x.
   by rewrite ?(Rmult_comm (h x)).
 Qed.
 
@@ -364,8 +363,8 @@ Proof.
   move => H1 H2 eps.
   move: (H1 (mkposreal _ (sqrt_lt_R0 _ (cond_pos eps))))
     (H2 (mkposreal _ (sqrt_lt_R0 _ (cond_pos eps)))) => {H1 H2} /= H1 H2.
-  move: (Rbar_locally_and _ _ _ H1 H2) => {H1 H2}.
-  apply Rbar_locally_imply, Rbar_locally_forall => x [H1 H2].
+  generalize (filter_and _ _ H1 H2) => {H1 H2}.
+  apply filter_imp => x [H1 H2].
   rewrite ?Rabs_mult.
   rewrite -(sqrt_sqrt _ (Rlt_le _ _ (cond_pos eps))).
   replace (sqrt eps * sqrt eps * (Rabs (f1 x) * Rabs (f2 x))) 
@@ -383,16 +382,16 @@ Lemma domin_inv (f g : R -> R) (a : Rbar) :
 Proof.
   intros Hg H eps.
   have Hf : Rbar_locally a (fun x => f x <> 0).
-    move: (Rbar_locally_and _ _ _ Hg (H (mkposreal _ Rlt_0_1))) => /=.
-    apply Rbar_locally_imply, Rbar_locally_forall => x {Hg H} [Hg H].
+    generalize (filter_and _ _ Hg (H (mkposreal _ Rlt_0_1))) => /=.
+    apply filter_imp => x {Hg H} [Hg H].
     case: (Req_dec (f x) 0) => Hf.
     rewrite Hf Rabs_R0 Rmult_0_r in H.
     apply Rlt_not_le in H.
     move => _ ; apply H.
     by apply Rabs_pos_lt.
     by [].
-  move: (Rbar_locally_and _ _ _ (H eps) (Rbar_locally_and _ _ _ Hf Hg)) => {H Hf Hg}.
-  apply Rbar_locally_imply, Rbar_locally_forall => x [H [Hf Hg]].
+  generalize (filter_and _ _ (H eps) (filter_and _ _ Hf Hg)) => {H Hf Hg}.
+  apply filter_imp => x [H [Hf Hg]].
   rewrite ?Rabs_Rinv => //.
   replace (/ Rabs (f x)) 
     with (Rabs (g x) / (Rabs (f x) * Rabs (g x)))
@@ -429,8 +428,8 @@ Lemma equiv_inv (f g : R -> R) (a : Rbar) :
 Proof.
   intros Hg H.
   have Hf : Rbar_locally a (fun x => f x <> 0).
-    move: (Rbar_locally_and _ _ _ Hg (H (pos_div_2 (mkposreal _ Rlt_0_1)))) => /=.
-    apply Rbar_locally_imply, Rbar_locally_forall => x {Hg H} [Hg H].
+    generalize (filter_and _ _ Hg (H (pos_div_2 (mkposreal _ Rlt_0_1)))) => /=.
+    apply filter_imp => x {Hg H} [Hg H].
     case: (Req_dec (f x) 0) => Hf.
     rewrite Hf Rminus_0_r in H.
     apply Rle_not_lt in H.
@@ -442,10 +441,11 @@ Proof.
     by intuition.
     by[].
   apply equiv_sym in H.
-  move => eps ; 
-  move: (H eps) ; apply Rbar_locally_imply ;
-  move: Hf ; apply Rbar_locally_imply ;
-  move: Hg ; apply Rbar_locally_imply, Rbar_locally_forall => {H} x Hg Hf H.
+  move => eps.
+  generalize (filter_and _ _ (filter_and _ _ Hf Hg) (H eps)).
+  clear.
+  apply filter_imp.
+  intros x [[Hf Hg] H].
   replace (/ g x - / f x) 
     with ((f x - g x) / (f x * g x)).
   rewrite Rabs_div ?Rabs_Rinv ?Rabs_mult //.
