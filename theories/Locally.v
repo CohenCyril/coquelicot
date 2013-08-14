@@ -774,36 +774,6 @@ Proof.
   by apply Rlt_minus_l, Rlt_plus_1.
 Qed.
 
-Lemma Rbar_locally_and_1 (P Q : R -> Prop) (a : Rbar) :
-  Rbar_locally a (fun x => P x /\ Q x)
-    -> Rbar_locally a P.
-Proof.
-  case: a => /= [a | | ] [d0 Hp] ;
-  exists d0 => H ; by apply Hp.
-Qed.
-
-Lemma Rbar_locally_and_2 (P Q : R -> Prop) (a : Rbar) :
-  Rbar_locally a (fun x => P x /\ Q x)
-    -> Rbar_locally a Q.
-Proof.
-  case: a => /= [a | | ] [d0 Hp] ;
-  exists d0 => H ; by apply Hp.
-Qed.
-
-Lemma Rbar_locally_or_1 (P Q : R -> Prop) (a : Rbar) :
-  Rbar_locally a P -> Rbar_locally a (fun x => P x \/ Q x).
-Proof.
-  apply filter_imp => x Hx.
-  by left.
-Qed.
-
-Lemma Rbar_locally_or_2 (P Q : R -> Prop) (a : Rbar) :
-  Rbar_locally a Q -> Rbar_locally a (fun x => P x \/ Q x).
-Proof.
-  apply filter_imp => x Hx.
-  by right.
-Qed.
-
 (** A particular sequence converging to a point *)
 
 Definition Rbar_loc_seq (x : Rbar) (n : nat) := match x with
