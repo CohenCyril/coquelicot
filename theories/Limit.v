@@ -2556,9 +2556,11 @@ Lemma is_lim_seq_continuous (f : R -> R) (u : nat -> R) (l : R) :
   -> is_lim_seq (fun n => f (u n)) (f l).
 Proof.
   move => Cf Hu.
-  apply is_lim_seq_Reals, continuity_seq.
-  apply Cf.
-  by apply is_lim_seq_Reals.
+  apply is_lim_seq_.
+  apply continuity_pt_filterlim in Cf.
+  apply is_lim_seq_ in Hu.
+  apply filterlim_compose with (1 := Hu).
+  exact Cf.
 Qed.
 
 (** Absolute value *)

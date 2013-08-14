@@ -747,6 +747,14 @@ Definition Rbar_locally' (a : Rbar) (P : R -> Prop) :=
     | m_infty => exists M : R, forall x, x < M -> P x
   end.
 
+Global Instance Rbar_locally'_filter : forall x, Filter (Rbar_locally' x).
+Proof.
+intros [x| |].
+- apply locally_filter.
+- exact (Rbar_locally_filter p_infty).
+- exact (Rbar_locally_filter m_infty).
+Qed.
+
 Lemma Rbar_locally_const (a : Rbar) (P : Prop) :
   Rbar_locally a (fun _ => P) -> P.
 Proof.
