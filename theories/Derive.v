@@ -1259,7 +1259,8 @@ pattern x ; apply locally_singleton.
 induction n.
 exact Heq.
 apply: locally_impl_strong IHn.
-apply: locally_align Heq => d Heq y Hy IHn.
+apply: filter_forall.
+intros t H.
 now apply Derive_ext_loc.
 Qed.
 Lemma ex_derive_n_ext_loc :
