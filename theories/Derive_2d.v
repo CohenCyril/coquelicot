@@ -35,10 +35,10 @@ Lemma differentiable_pt_lim_ext : forall f1 f2 x y lx ly,
 Proof.
   intros f1 f2 x y lx ly H H1 eps.
   apply: locally_2d_impl (H1 eps) => {H1}.
-  apply: locally_2d_align (H).
-  intros e Heq u v  Hu Hv H0.
-  apply locally_2d_singleton in H.
-  now rewrite -H -Heq.
+  rewrite (locally_2d_singleton _ _ _ H).
+  apply: locally_2d_impl H.
+  apply locally_2d_forall.
+  now intros u v ->.
 Qed.
 
 Definition differentiable_pt (f : R -> R -> R) (x y : R) :=
