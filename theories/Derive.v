@@ -37,15 +37,15 @@ Definition Derive (f : R -> R) (x : R) := real (Lim (fun h => (f (x+h) - f x)/h)
 Lemma is_derive_unique f x l :
   is_derive f x l -> Derive f x = l.
 Proof.
-  intros.
-  apply (uniqueness_step1 f x).
-  apply is_lim_Reals_0.
-  apply Lim_correct'.
-  exists l.
-  apply is_lim_Reals_1.
-  
-  apply uniqueness_step2, H.
-  apply uniqueness_step2, H.
+  intros H.
+  apply (@f_equal _ _ real _ l).
+  apply is_lim_unique.
+  intros eps.
+  destruct (H eps (cond_pos _)) as [d Hd].
+  exists d => h.
+  rewrite Rminus_0_r.
+  intros Hu Zu.
+  now apply Hd.
 Qed.
 
 Lemma Derive_correct f x :
