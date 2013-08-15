@@ -275,7 +275,7 @@ apply HM.
 rewrite <- (ln_exp M).
 apply ln_increasing.
 exact Hx0.
-rewrite Rminus_0_r Rabs_pos_eq in Hx.
+rewrite /distR Rminus_0_r Rabs_pos_eq in Hx.
 exact Hx.
 now apply Rlt_le.
 Qed.

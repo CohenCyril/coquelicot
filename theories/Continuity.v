@@ -2040,7 +2040,7 @@ Qed.
 
 Lemma continuity_pt_ext_loc :
   forall f g x,
-  (locally x (fun x => f x = g x)) ->
+  locally x (fun x => f x = g x) ->
   continuity_pt f x -> continuity_pt g x.
 Proof.
 intros f g x Heq Cf eps Heps.
@@ -2055,7 +2055,8 @@ intros u Hu.
 rewrite -2?Heq.
 apply Hd2 ; intuition.
 apply Rlt_le_trans with (1 := H0), Rmin_l.
-rewrite Rminus_eq_0 Rabs_R0 ; by apply d0.
+rewrite distance_eq_0.
+apply cond_pos.
 apply Rlt_le_trans with (1 := proj2 Hu), Rmin_r.
 Qed.
 

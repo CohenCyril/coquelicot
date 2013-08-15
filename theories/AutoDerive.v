@@ -1009,7 +1009,7 @@ now apply IHe3.
 rewrite 2!interp_set_nth.
 apply derivable_pt_lim_RInt with (1 := Hi).
 now apply HexI.
-now apply locally_singleton.
+exact: locally_singleton.
 clear C2.
 case C3: (is_const e3 n).
 (* . *)
@@ -1030,7 +1030,7 @@ now apply IHe2.
 rewrite 2!interp_set_nth.
 apply derivable_pt_lim_RInt' with (1 := Hi).
 now apply HexI.
-now apply locally_singleton.
+exact: locally_singleton.
 (* . *)
 clear C3.
 simpl.
@@ -1049,9 +1049,9 @@ now apply HexI.
 rewrite interp_set_nth.
 now apply HexI.
 rewrite interp_set_nth.
-now apply locally_singleton.
+exact: locally_singleton.
 rewrite interp_set_nth.
-now apply locally_singleton.
+exact: locally_singleton.
 now apply IHe2.
 now apply IHe3.
 case C2: (is_const e2 n).

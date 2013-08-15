@@ -4276,7 +4276,7 @@ apply Rlt_eps2_eps.
 apply cond_pos.
 assert (D2: ex_RInt (fun t => f x t) a b).
 apply DIf.
-rewrite /Rminus Rplus_opp_r Rabs_R0.
+rewrite distance_eq_0.
 apply cond_pos.
 rewrite -RInt_minus //.
 rewrite Rmult_comm.
@@ -4612,6 +4612,7 @@ apply derivable_pt_lim_param.
 exists (pos_div_2 d4).
 intros y Hy t Ht.
 apply Df.
+unfold distR.
 replace (y-x) with ((y-u)+(u-x)) by ring.
 apply Rle_lt_trans with (1:=Rabs_triang _ _).
 rewrite (double_var d4).
@@ -4644,6 +4645,7 @@ exists (pos_div_2 d2).
 intros y Hy.
 apply ex_RInt_inside with (a x) d1.
 apply Ia.
+unfold distR.
 replace (y-x) with ((y-u)+(u-x)) by ring.
 apply Rle_lt_trans with (1:=Rabs_triang _ _).
 rewrite (double_var d2).
@@ -4715,6 +4717,7 @@ eexists; eapply derivable_pt_lim_param.
 exists (pos_div_2 d2).
 intros y Hy t Ht.
 apply Df.
+unfold distR.
 replace (y-x) with ((y-u)+(u-x)) by ring.
 apply Rle_lt_trans with (1:=Rabs_triang _ _).
 rewrite (double_var d2).
@@ -4762,6 +4765,7 @@ exists (pos_div_2 d4).
 intros y Hy.
 apply ex_RInt_inside with (a x) d0.
 apply Ia.
+unfold distR.
 replace (y-x) with ((y-u)+(u-x)) by ring.
 apply Rle_lt_trans with (1:=Rabs_triang _ _).
 rewrite (double_var d4).

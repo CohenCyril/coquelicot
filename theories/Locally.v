@@ -28,6 +28,12 @@ Open Scope R_scope.
 
 (** * Definitions *)
 
+Class Distance {T : Type} (d : T -> T -> R) := {
+  distance_ge_0 : forall a b, 0 <= d a b ;
+  distance_triangle : forall a b c, d a c <= d a b + d b c ;
+  distance_eq_0 : forall a, d a a = 0
+}.
+
 Class Filter {T : Type} (F : (T -> Prop) -> Prop) := {
   filter_true : F (fun _ => True) ;
   filter_and : forall P Q : T -> Prop, F P -> F Q -> F (fun x => P x /\ Q x) ;
@@ -109,6 +115,42 @@ apply filter_imp.
 now intros x [-> H].
 Qed.
 
+Definition locally_dist {T : Type} (d : T -> R) (P : T -> Prop) :=
+  exists delta : posreal, forall y, d y < delta -> P y.
+
+Global Instance locally_dist_filter : forall T (d : T -> R), Filter (locally_dist d).
+Proof.
+intros T d.
+constructor.
+- now exists (mkposreal _ Rlt_0_1).
+- intros P Q [dP HP] [dQ HQ].
+  exists (mkposreal _ (Rmin_stable_in_posreal dP dQ)).
+  simpl.
+  intros y Hy.
+  split.
+  apply HP.
+  apply Rlt_le_trans with (1 := Hy).
+  apply Rmin_l.
+  apply HQ.
+  apply Rlt_le_trans with (1 := Hy).
+  apply Rmin_r.
+- intros P Q H [dP HP].
+  exists dP.
+  intros y Hy.
+  apply H.
+  now apply HP.
+Qed.
+
+Definition locally {T : Type} {d : T -> T -> R} {Hd : Distance d} (x : T) :=
+  locally_dist (d x).
+
+Global Instance locally_filter : forall T d Hd (x : T), Filter (@locally T d Hd x).
+Proof.
+intros T d Hd x.
+apply locally_dist_filter.
+Qed.
+
+(*
 Definition locally x (P : R -> Prop) :=
   exists delta : posreal, forall y, Rabs (y - x) < delta -> P y.
 
@@ -134,6 +176,7 @@ constructor.
   apply H.
   now apply HP.
 Qed.
+*)
 
 Definition eventually (P : nat -> Prop) :=
   exists N : nat, forall n, (N <= n)%nat -> P n.
@@ -184,24 +227,29 @@ constructor.
   now apply filter_forall.
 Qed.
 
-Notation at_left x := (within (fun u : R => Rlt u x) (locally x)).
-Notation at_right x := (within (fun u : R => Rlt x u) (locally x)).
+Definition distR x y := Rabs (y - x).
+
+Global Instance distR_distance : Distance distR.
+Proof.
+unfold distR.
+constructor.
+- intros a b.
+  apply Rabs_pos.
+- intros a b c.
+  replace (c - a) with (b - a + (c - b)) by ring.
+  apply Rabs_triang.
+- intros a.
+  rewrite /Rminus Rplus_opp_r.
+  apply Rabs_R0.
+Qed.
+
+Notation at_left x := (within (fun u : R => Rlt u x) (@locally R distR distR_distance (x)%R)).
+Notation at_right x := (within (fun u : R => Rlt x u) (@locally R distR distR_distance (x)%R)).
 
 Definition locally_2d (P : R -> R -> Prop) x y :=
   exists delta : posreal, forall u v, Rabs (u - x) < delta -> Rabs (v - y) < delta -> P u v.
 
 (** * Logical connective *)
-
-Lemma locally_align :
-  forall (P Q : R -> Prop) x,
-  ( forall eps : posreal, (forall v, Rabs (v - x) < eps -> P v) ->
-    forall u, Rabs (u - x) < eps -> Q u ) ->
-  locally x P -> locally x Q.
-Proof.
-intros P Q x K (d,H).
-exists d => y Hy.
-now apply (K d).
-Qed.
 
 Lemma locally_2d_align :
   forall (P Q : R -> R -> Prop) x y,
@@ -214,29 +262,18 @@ exists d => u v Hu Hv.
 now apply (K d).
 Qed.
 
-Lemma locally_impl_strong :
-  forall (P Q : R -> Prop) x, locally x (fun y => locally y P -> Q y) ->
-  locally x P -> locally x Q.
+Lemma locally_open :
+  forall T d Hd x (P : T -> Prop),
+  @locally T d Hd x P -> @locally T d Hd x (fun y => locally y P).
 Proof.
-intros P Q x (dpq,Hpq) (dp,Hp).
-exists (mkposreal _ (Rmin_stable_in_posreal dp dpq)) => /= y Hy.
-apply Hpq.
-apply Rlt_le_trans with (1 := Hy).
-apply Rmin_r.
-set (d := mkposreal _ (Rlt_Rminus _ _ Hy)).
-exists d => z Hz.
+intros T d Hd x P [dp Hp].
+exists dp.
+intros y Hy.
+exists (mkposreal _ (Rlt_Rminus _ _ Hy)) => /= z Hz.
 apply Hp.
-replace (z - x) with ((z - y) + (y - x)) by ring.
-apply Rle_lt_trans with (1 := Rabs_triang _ _).
-replace (pos dp) with (d + (dp - d)) by ring.
-apply Rplus_lt_le_compat with (1 := Hz).
-simpl.
-apply Rplus_le_reg_r with (- (Rabs (y - x))).
-ring_simplify.
-apply Rge_le.
-apply Rge_minus.
-apply Rle_ge.
-apply Rmin_l.
+apply Rle_lt_trans with (1 := distance_triangle x y z).
+replace (pos dp) with (d x y + (dp - d x y)) by ring.
+now apply Rplus_lt_compat_l.
 Qed.
 
 Lemma locally_2d_impl_strong :
@@ -286,11 +323,12 @@ apply Rmin_l.
 Qed.
 
 Lemma locally_singleton :
-  forall (P : R -> Prop) x, locally x P -> P x.
+  forall T d Hd x (P : T -> Prop),
+  @locally T d Hd x P -> P x.
 Proof.
-intros P x (D,H).
+intros T d Hd P x [dp H].
 apply H.
-rewrite /Rminus Rplus_opp_r Rabs_R0.
+rewrite distance_eq_0.
 apply cond_pos.
 Qed.
 
@@ -336,6 +374,7 @@ Lemma locally_2d_1d_const_x :
   forall (P : R -> R -> Prop) x y,
   locally_2d P x y ->
   locally y (fun t => P x t).
+Proof.
 intros P x y (d,Hd).
 exists d; intros z Hz.
 apply Hd.
@@ -347,6 +386,7 @@ Lemma locally_2d_1d_const_y :
   forall (P : R -> R -> Prop) x y,
   locally_2d P x y ->
   locally x (fun t => P t y).
+Proof.
 intros P x y (d,Hd).
 exists d; intros z Hz.
 apply Hd.
@@ -446,7 +486,7 @@ apply locally_2d_1d_strong in H.
 apply: locally_2d_impl H.
 apply locally_2d_forall => u v H t Ht.
 specialize (H t Ht).
-now apply locally_singleton in H.
+apply: locally_singleton H.
 Qed.
 
 Lemma continuity_pt_locally :
@@ -499,9 +539,9 @@ Qed.
 (** * Intervals *)
 
 Lemma locally_interval (P : R -> Prop) (x : R) (a b : Rbar) :
-  Rbar_lt a x -> Rbar_lt x b 
-  -> (forall (y : R), Rbar_lt a y -> Rbar_lt y b -> P y)
-    -> locally x P.
+  Rbar_lt a x -> Rbar_lt x b ->
+  (forall (y : R), Rbar_lt a y -> Rbar_lt y b -> P y) ->
+  locally x P.
 Proof.
   move => Hax Hxb Hp.
   case: (Rbar_lt_locally _ _ _ Hax Hxb) => d Hd.
@@ -511,37 +551,24 @@ Qed.
 
 (** * Continuity *)
 
-Lemma locally_comp' (P : R -> Prop) (f : R -> R) (x : R) :
-  locally (f x) P -> continuity_pt f x
-  -> locally x (fun x => P (f x)).
+Lemma locally_comp (P : R -> Prop) (f : R -> R) (x : R) :
+  locally (f x) P -> continuity_pt f x ->
+  locally x (fun x => P (f x)).
 Proof.
 intros Lf Cf.
 apply continuity_pt_filterlim in Cf.
 now apply Cf.
 Qed.
 
-Lemma locally_comp (P : R -> Prop) (f : R -> R) (x : R) :
-  locally (f x) P -> continuity_pt f x
-  -> locally x (fun x => P (f x)).
-Proof.
-  move => Hp Hf.
-  case: Hp => eps Hp.
-  case: (Hf eps) => {Hf} [ | d [Hd Hf]].
-  by apply eps.
-  exists (mkposreal _ Hd) => /= y Hy.
-  apply Hp.
-  case: (Req_dec x y) => [<- | Hxy].
-  rewrite Rminus_eq_0 Rabs_R0 ; apply eps.
-  apply Hf ; repeat split ; intuition.
-Qed.
-
-
 (** * locally in Set *)
 
 Require Import Markov Lub.
 
-
-Lemma locally_ex_dec: forall P x, (forall x, P x \/ ~P x) -> locally x P -> {d:posreal| forall y, Rabs (y-x) < d -> P y}.
+Lemma locally_ex_dec :
+  forall P (x : R),
+  (forall x, P x \/ ~P x) ->
+  locally x P ->
+  {d:posreal | forall y, Rabs (y-x) < d -> P y}.
 Proof.
 intros P x P_dec H.
 set (Q := fun z => forall y,  Rabs (y-x) < z -> P y).
@@ -651,7 +678,6 @@ destruct H as (d1,Hd1).
 now destruct (H1 d1).
 Qed.
 
-
 Lemma derivable_pt_lim_locally :
   forall f x l,
   derivable_pt_lim f x l <->
@@ -665,8 +691,9 @@ exists d => y Hy Zy.
 specialize (H (y - x) (Rminus_eq_contra _ _ Zy) Hy).
 now ring_simplify (x + (y - x)) in H.
 intros H eps He.
-move: (H (mkposreal _ He)) => {H} [d H].
+move: (H (mkposreal _ He)) => {H} /= [d H].
 exists d => h Zh Hh.
+unfold distR in H.
 specialize (H (x + h)).
 ring_simplify (x + h - x) in H.
 apply H => //.
@@ -750,7 +777,7 @@ Definition Rbar_locally' (a : Rbar) (P : R -> Prop) :=
 Global Instance Rbar_locally'_filter : forall x, Filter (Rbar_locally' x).
 Proof.
 intros [x| |].
-- apply locally_filter.
+- apply: locally_filter.
 - exact (Rbar_locally_filter p_infty).
 - exact (Rbar_locally_filter m_infty).
 Qed.

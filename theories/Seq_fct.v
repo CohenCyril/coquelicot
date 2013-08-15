@@ -394,14 +394,14 @@ Proof.
     move => x Hx h Hh.
     case: (Ho _ Hh) => d Hd.
     exists d => /= y Hy.
-    apply Hd ; ring_simplify (x + y - (x + h)).
+    apply Hd ; unfold distR ; ring_simplify (x + y - (x + h)).
     by apply Hy.
 
   have Crn : forall x, D x -> forall n h, D (x+h) -> is_lim (rn x n) h (rn x n h).
     move => x Hx n h Hh.
     rewrite {2}/rn ; case: (Req_EM_T h 0) => [-> | Hh0].
     move => eps.
-    suff H : locally 0 (fun y : R => y <> 0 ->
+    suff H : @locally _ _ distR_distance 0 (fun y : R => y <> 0 ->
       Rabs ((fn n (x + y) - fn n x) / y - Derive (fn n) x) < eps).
     case: H => d H.
     exists d => y Hy Hxy.
@@ -410,7 +410,7 @@ Proof.
     apply Derive_correct in Edn.
     case: (Edn eps (cond_pos eps)) => {Edn} delta Edn.
     exists delta => y Hy Hxy.
-    rewrite Rminus_0_r in Hy.
+    rewrite /distR Rminus_0_r in Hy.
     by apply Edn.
     
     have H : continuity_pt (fun h => ((fn n (x + h) - fn n x) / h)) h.
@@ -539,11 +539,13 @@ Proof.
   apply ex_finite_lim_seq_correct, CVU_CVS_dom with D.
   exact: Hfn.
   apply Ho.
+  unfold distR.
   ring_simplify (x + h - x) ; apply Rlt_le_trans with (1 := Hh), Rmin_r.
   apply ex_finite_lim_seq_correct, CVU_CVS_dom with D.
   exact: Hfn.
   apply Ho.
-  rewrite Rminus_eq_0 Rabs_R0 ; by apply dx.
+  rewrite distance_eq_0.
+  apply cond_pos.
   apply (CVU_CVS_dom fn D) in Hfn ; rewrite /CVS_dom in Hfn.
   move: (fun H => Lim_seq_correct' _ (Hfn (x+h) (Ho _ H))) => F.
   move: (fun H => Lim_seq_correct' _ (Hfn (x) (Ho _ H))) => F0.
@@ -552,8 +554,10 @@ Proof.
   exists (real (Lim_seq (fun n : nat => fn n (x + h)))
     - real (Lim_seq (fun n : nat => fn n x))) ; by simpl.
   apply F0.
-  rewrite Rminus_eq_0 Rabs_R0 ; by apply dx.
+  rewrite distance_eq_0.
+  apply cond_pos.
   apply F.
+  unfold distR.
   ring_simplify (x + h - x).
   apply Rlt_le_trans with (1 := Hh), Rmin_r.
   apply (CVU_CVS_dom fn D) in Hfn ; rewrite /CVS_dom in Hfn.
@@ -563,8 +567,10 @@ Proof.
   rewrite (is_lim_seq_unique  (fun n : nat => fn n (x)) (real (Lim_seq (fun n : nat => fn n (x))))).
   by [].
   apply F0.
-  rewrite Rminus_eq_0 Rabs_R0 ; by apply dx.
+  rewrite distance_eq_0.
+  apply cond_pos.
   apply F.
+  unfold distR.
   ring_simplify (x + h - x).
   apply Rlt_le_trans with (1 := Hh), Rmin_r.
   
@@ -607,12 +613,14 @@ Proof.
   apply ex_finite_lim_seq_correct, CVU_CVS_dom with D.
   exact: Hfn.
   apply Ho.
+  unfold distR.
   ring_simplify (x + h - x) ; rewrite -(Rminus_0_r h) ;
   apply Rlt_le_trans with (1 := Hh0), Rmin_r.
   apply ex_finite_lim_seq_correct, CVU_CVS_dom with D.
   exact: Hfn.
   apply Ho.
-  rewrite Rminus_eq_0 Rabs_R0 ; by apply dx.
+  rewrite distance_eq_0.
+  apply cond_pos.
   apply (CVU_CVS_dom fn D) in Hfn ; rewrite /CVS_dom in Hfn.
   move: (fun H => Lim_seq_correct' _ (Hfn (x+h) (Ho _ H))) => F.
   move: (fun H => Lim_seq_correct' _ (Hfn (x) (Ho _ H))) => F0.
@@ -621,8 +629,10 @@ Proof.
   exists (real (Lim_seq (fun n : nat => fn n (x + h)))
     - real (Lim_seq (fun n : nat => fn n x))) ; by simpl.
   apply F0.
-  rewrite Rminus_eq_0 Rabs_R0 ; by apply dx.
+  rewrite distance_eq_0.
+  apply cond_pos.
   apply F.
+  unfold distR.
   ring_simplify (x + h - x).
   rewrite Rminus_0_r in Hh0.
   apply Rlt_le_trans with (1 := Hh0), Rmin_r.
@@ -633,8 +643,10 @@ Proof.
   rewrite (is_lim_seq_unique  (fun n : nat => fn n (x)) (real (Lim_seq (fun n : nat => fn n (x))))).
   by [].
   apply F0.
-  rewrite Rminus_eq_0 Rabs_R0 ; by apply dx.
+  rewrite distance_eq_0.
+  apply cond_pos.
   apply F.
+  unfold distR.
   ring_simplify (x + h - x).
   rewrite Rminus_0_r in Hh0.
   apply Rlt_le_trans with (1 := Hh0), Rmin_r.
