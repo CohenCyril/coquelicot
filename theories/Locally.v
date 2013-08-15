@@ -246,8 +246,80 @@ Qed.
 Notation at_left x := (within (fun u : R => Rlt u x) (@locally R distR distR_distance (x)%R)).
 Notation at_right x := (within (fun u : R => Rlt x u) (@locally R distR distR_distance (x)%R)).
 
+Fixpoint Tn (n : nat) (T : Type) : Type :=
+  match n with
+  | O => unit
+  | S n => prod T (Tn n T)
+  end.
+
+Fixpoint Fn (n : nat) (T U : Type) : Type :=
+  match n with
+  | O => U
+  | S n => T -> Fn n T U
+  end.
+
+Fixpoint distTn (n : nat) (T : Type) (d : T -> T -> R) : Tn n T -> Tn n T -> R :=
+  match n with
+  | O => fun _ _ => 0
+  | S n => fun x y =>
+    let (xh,xt) := x in
+    let (yh,yt) := y in
+    Rmax (d xh yh) (distTn n T d xt yt)
+  end.
+
+Global Instance distTn_distance : forall n T d, Distance d -> Distance (distTn n T d).
+Proof.
+intros n T d Hd.
+induction n as [|n IHn] ; simpl ; constructor.
+- intros _ _.
+  apply Rle_refl.
+- intros _ _ _.
+  simpl.
+  rewrite Rplus_0_r.
+  apply Rle_refl.
+- intros _.
+  reflexivity.
+- intros [ah a] [bh b].
+  apply Rmax_case ; apply distance_ge_0.
+- intros [ah a] [bh b] [ch c].
+  apply Rmax_case.
+  apply Rle_trans with (d ah bh + d bh ch).
+  apply distance_triangle.
+  apply Rplus_le_compat ; apply Rmax_l.
+  apply Rle_trans with (distTn n T d a b + distTn n T d b c).
+  apply distance_triangle.
+  apply Rplus_le_compat ; apply Rmax_r.
+- intros [ah a].
+  apply Rmax_case ; apply distance_eq_0.
+Qed.
+
 Definition locally_2d (P : R -> R -> Prop) x y :=
   exists delta : posreal, forall u v, Rabs (u - x) < delta -> Rabs (v - y) < delta -> P u v.
+
+Lemma locally_2d_locally :
+  forall P x y,
+  locally_2d P x y <-> locally ((x,(y,tt)) : Tn 2 R) (fun z : Tn 2 R => let '(x,(y,_)) := z in P x y).
+Proof.
+intros P x y.
+split ; intros [d H] ; exists d.
+- rewrite /= /distR.
+  intros [u [v _]] H'.
+  apply H.
+  apply Rle_lt_trans with (2 := H').
+  apply Rmax_l.
+  apply Rle_lt_trans with (2 := H').
+  rewrite (Rmax_left _ 0).
+  apply Rmax_r.
+  apply Rabs_pos.
+- intros u v Hu Hv.
+  rewrite /= /distR in H.
+  apply (H (u,(v,tt))).
+  apply Rmax_case.
+  exact Hu.
+  apply Rmax_case.
+  exact Hv.
+  apply cond_pos.
+Qed.
 
 (** * Logical connective *)
 
@@ -615,7 +687,6 @@ elimtype False.
 destruct H as (d1,Hd1).
 now destruct (H1 d1).
 Qed.
-
 
 Lemma locally_2d_ex_dec: forall P x y, (forall x y, P x y \/ ~P x y) -> locally_2d P x y
    -> {d:posreal| forall u v, Rabs (u-x) < d -> Rabs (v-y) < d -> P u v}.
