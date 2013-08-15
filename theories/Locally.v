@@ -115,6 +115,18 @@ apply filter_imp.
 now intros x [-> H].
 Qed.
 
+Lemma filterlim_ext :
+  forall T U (f g : T -> U) (F G : _ -> Prop),
+  Filter F ->
+  (forall x, f x = g x) ->
+  filterlim f F G ->
+  filterlim g F G.
+Proof.
+intros T U f g F G HF Efg.
+apply: filterlim_ext_loc.
+exact: filter_forall.
+Qed.
+
 Definition locally_dist {T : Type} (d : T -> R) (P : T -> Prop) :=
   exists delta : posreal, forall y, d y < delta -> P y.
 

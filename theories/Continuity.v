@@ -1834,6 +1834,28 @@ Qed.
 Definition continuity_2d_pt f x y :=
   forall eps : posreal, locally_2d (fun u v => Rabs (f u v - f x y) < eps) x y.
 
+Lemma continuity_2d_pt_filterlim :
+  forall f x y,
+  continuity_2d_pt f x y <->
+  filterlim (fun z : Locally.Tn 2 R => let '(x,(y,_)) := z in f x y) (@locally (Locally.Tn 2 R) _ _ (x,(y,tt))) (locally (f x y)).
+Proof.
+split.
+- intros Cf P [eps He].
+  specialize (Cf eps).
+  apply locally_2d_locally in Cf.
+  apply: filter_imp Cf.
+  simpl.
+  intros [u [v _]].
+  apply He.
+- intros Cf eps.
+  apply locally_2d_locally.
+  specialize (Cf (fun z => Rabs (z - f x y) < eps)).
+  unfold filtermap in Cf.
+  apply: filter_imp (Cf _).
+  now intros [u [v _]].
+  now exists eps.
+Qed.
+
 Lemma uniform_continuity_2d :
   forall f a b c d,
   (forall x y, a <= x <= b -> c <= y <= d -> continuity_2d_pt f x y) ->
@@ -2043,21 +2065,11 @@ Lemma continuity_pt_ext_loc :
   locally x (fun x => f x = g x) ->
   continuity_pt f x -> continuity_pt g x.
 Proof.
-intros f g x Heq Cf eps Heps.
-destruct (Cf eps Heps) as (d,(Hd1,Hd2)).
-case: Heq => d0 Heq.
-exists (Rmin d d0).
-split.
-apply Rmin_case.
-exact Hd1.
-by apply d0.
-intros u Hu.
-rewrite -2?Heq.
-apply Hd2 ; intuition.
-apply Rlt_le_trans with (1 := H0), Rmin_l.
-rewrite distance_eq_0.
-apply cond_pos.
-apply Rlt_le_trans with (1 := proj2 Hu), Rmin_r.
+intros f g x Heq Cf.
+apply continuity_pt_filterlim in Cf.
+apply continuity_pt_filterlim.
+rewrite -(locally_singleton _ _ _ _ _ Heq).
+apply: filterlim_ext_loc Heq Cf.
 Qed.
 
 Lemma continuity_pt_ext :
@@ -2065,25 +2077,9 @@ Lemma continuity_pt_ext :
   (forall x, f x = g x) ->
   continuity_pt f x -> continuity_pt g x.
 Proof.
-intros f g x Heq Cf eps Heps.
-destruct (Cf eps Heps) as (d,(Hd1,Hd2)).
-exists d.
-split.
-exact Hd1.
-intros u Hu.
-rewrite -2!Heq.
-now apply Hd2.
-Qed.
-
-Lemma continuity_2d_pt_ext :
-  forall f g x y,
-  (forall x y, f x y = g x y) ->
-  continuity_2d_pt f x y -> continuity_2d_pt g x y.
-Proof.
-intros f g x y Heq Cf eps.
-apply: locally_2d_impl (Cf eps).
-apply locally_2d_forall => u v.
-now rewrite 2!Heq.
+intros f g x Heq.
+apply continuity_pt_ext_loc.
+exact: filter_forall.
 Qed.
 
 Lemma continuity_2d_pt_ext_loc :
@@ -2091,33 +2087,44 @@ Lemma continuity_2d_pt_ext_loc :
   locally_2d (fun u v => f u v = g u v) x y ->
   continuity_2d_pt f x y -> continuity_2d_pt g x y.
 Proof.
-intros f g x y H1 H2 eps.
-specialize (locally_2d_and _ _ _ _ H1 (H2 eps)).
-apply locally_2d_impl.
-apply locally_2d_forall.
-intros u v (H3,H4).
-rewrite <- H3.
-apply locally_2d_singleton in H1.
-rewrite <- H1.
-exact H4.
+intros f g x y Heq Cf.
+apply locally_2d_locally in Heq.
+apply continuity_2d_pt_filterlim in Cf.
+apply continuity_2d_pt_filterlim.
+rewrite -(locally_singleton _ _ _ _ _ Heq).
+apply: filterlim_ext_loc Cf.
+apply: filter_imp Heq.
+simpl.
+now intros [u [v _]].
+Qed.
+
+Lemma continuity_2d_pt_ext :
+  forall f g x y,
+  (forall x y, f x y = g x y) ->
+  continuity_2d_pt f x y -> continuity_2d_pt g x y.
+Proof.
+intros f g x y Heq.
+apply continuity_2d_pt_ext_loc.
+apply locally_2d_locally.
+apply: filter_forall.
+now intros [u [v _]].
 Qed.
 
 (** *** Composition *)
 
 Lemma continuity_1d_2d_pt_comp :
- forall f g x y,
-   continuity_pt f (g x y) ->
-   continuity_2d_pt g x y ->
-   continuity_2d_pt (fun x y => f (g x y)) x y.
-intros f g x y cf cg eps.
-destruct (cf eps (cond_pos eps)) as [delta [deltapos Pf]].
-destruct (cg (mkposreal _ deltapos)) as [gamma Pg].
-exists gamma; intros u v cu cv.
-destruct (Req_EM_T (g x y) (g u v)) as [eqg | neqg].
- solve[rewrite eqg Rminus_eq_0 Rabs_R0; apply cond_pos].
-apply (Pf (g u v)).
-split;[solve[unfold D_x, no_cond; tauto] | ].
-apply (Pg u v); assumption.
+  forall f g x y,
+  continuity_pt f (g x y) ->
+  continuity_2d_pt g x y ->
+  continuity_2d_pt (fun x y => f (g x y)) x y.
+Proof.
+intros f g x y Cf Cg.
+apply continuity_pt_filterlim in Cf.
+apply continuity_2d_pt_filterlim in Cg.
+apply continuity_2d_pt_filterlim.
+apply: (filterlim_ext _ _ (fun z : Locally.Tn 2 R => f (let '(x,(y,_)) := z in g x y))).
+now intros [u [v _]].
+apply: filterlim_compose Cg Cf.
 Qed.
 
 (** *** Additive operators *)
