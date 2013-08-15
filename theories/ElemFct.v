@@ -47,6 +47,25 @@ Qed.
 
 (** * Inverse function *)
 
+Lemma is_lim_Rinv_0' : filterlim Rinv (at_right 0) (Rbar_locally' p_infty).
+Proof.
+  intros P [M HM].
+  have Hd : 0 < / Rmax 1 M.
+    apply Rinv_0_lt_compat.
+    apply Rlt_le_trans with (2 := Rmax_l _ _).
+    by apply Rlt_0_1.
+  exists (mkposreal _ Hd) => x /= Hx Hx0.
+  apply HM.
+  apply Rle_lt_trans with (1 := Rmax_r 1 M).
+  replace (Rmax 1 M) with (/ / Rmax 1 M)
+  by (field ; apply Rgt_not_eq, Rlt_le_trans with (2 := Rmax_l _ _), Rlt_0_1).
+  apply Rinv_lt_contravar.
+  apply Rdiv_lt_0_compat with (1 := Hx0).
+  apply Rlt_le_trans with (2 := Rmax_l _ _), Rlt_0_1.
+  rewrite /distR Rminus_0_r Rabs_pos_eq // in Hx.
+  exact: Rlt_le.
+Qed.
+
 Lemma is_lim_Rinv_0 : is_lim (fun x => / Rabs x) 0 p_infty.
 Proof.
   move => M.
