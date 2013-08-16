@@ -1837,7 +1837,7 @@ Definition continuity_2d_pt f x y :=
 Lemma continuity_2d_pt_filterlim :
   forall f x y,
   continuity_2d_pt f x y <->
-  filterlim (fun z : Locally.Tn 2 R => let '(x,(y,_)) := z in f x y) (@locally (Locally.Tn 2 R) _ _ (x,(y,tt))) (locally (f x y)).
+  filterlim (fun z : R * R => let (x,y) := z in f x y) (locally (x,y)) (locally (f x y)).
 Proof.
 split.
 - intros Cf P [eps He].
@@ -1845,10 +1845,32 @@ split.
   apply locally_2d_locally in Cf.
   apply: filter_imp Cf.
   simpl.
-  intros [u [v _]].
+  intros [u v].
   apply He.
 - intros Cf eps.
   apply locally_2d_locally.
+  specialize (Cf (fun z => Rabs (z - f x y) < eps)).
+  unfold filtermap in Cf.
+  apply: filter_imp (Cf _).
+  now intros [u v].
+  now exists eps.
+Qed.
+
+Lemma continuity_2d_pt_filterlim' :
+  forall f x y,
+  continuity_2d_pt f x y <->
+  filterlim (fun z : Locally.Tn 2 R => let '(x,(y,_)) := z in f x y) (@locally (Locally.Tn 2 R) _ _ (x,(y,tt))) (locally (f x y)).
+Proof.
+split.
+- intros Cf P [eps He].
+  specialize (Cf eps).
+  apply locally_2d_locally' in Cf.
+  apply: filter_imp Cf.
+  simpl.
+  intros [u [v _]].
+  apply He.
+- intros Cf eps.
+  apply locally_2d_locally'.
   specialize (Cf (fun z => Rabs (z - f x y) < eps)).
   unfold filtermap in Cf.
   apply: filter_imp (Cf _).
@@ -2037,6 +2059,14 @@ Qed.
 
 (** Identity *)
 
+Lemma continuity_pt_id :
+  forall x, continuity_pt (fun x => x) x.
+Proof.
+intros x.
+apply continuity_pt_filterlim.
+now intros P.
+Qed.
+
 Lemma continuity_2d_pt_id1 :
   forall x y, continuity_2d_pt (fun u v => u) x y.
 Proof.
@@ -2094,8 +2124,7 @@ apply continuity_2d_pt_filterlim.
 rewrite -(locally_singleton _ _ _ _ _ Heq).
 apply: filterlim_ext_loc Cf.
 apply: filter_imp Heq.
-simpl.
-now intros [u [v _]].
+now intros [u v].
 Qed.
 
 Lemma continuity_2d_pt_ext :
@@ -2107,7 +2136,7 @@ intros f g x y Heq.
 apply continuity_2d_pt_ext_loc.
 apply locally_2d_locally.
 apply: filter_forall.
-now intros [u [v _]].
+now intros [u v].
 Qed.
 
 (** *** Composition *)
@@ -2122,22 +2151,20 @@ intros f g x y Cf Cg.
 apply continuity_pt_filterlim in Cf.
 apply continuity_2d_pt_filterlim in Cg.
 apply continuity_2d_pt_filterlim.
-apply: (filterlim_ext _ _ (fun z : Locally.Tn 2 R => f (let '(x,(y,_)) := z in g x y))).
-now intros [u [v _]].
+apply: (filterlim_ext _ _ (fun z : R * R => f (let (x,y) := z in g x y))).
+now intros [u v].
 apply: filterlim_compose Cg Cf.
 Qed.
 
 (** *** Additive operators *)
 
 Lemma continuity_2d_pt_opp (f : R -> R -> R) (x y : R) :
-    continuity_2d_pt f x y ->
-    continuity_2d_pt (fun u v => - f u v) x y.
+  continuity_2d_pt f x y ->
+  continuity_2d_pt (fun u v => - f u v) x y.
 Proof.
-  move => Hf eps ;
-  case: (Hf eps) => {Hf} delta Hf ;
-  exists delta => u v Hu Hv.
-  rewrite /Rminus -Ropp_plus_distr Rabs_Ropp.
-  by apply Hf.
+apply continuity_1d_2d_pt_comp.
+apply continuity_pt_opp.
+apply continuity_pt_id.
 Qed.
 
 Lemma continuity_2d_pt_plus (f g : R -> R -> R) (x y : R) :

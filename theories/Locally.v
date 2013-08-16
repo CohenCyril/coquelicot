@@ -162,34 +162,6 @@ intros T d Hd x.
 apply locally_dist_filter.
 Qed.
 
-(*
-Definition locally x (P : R -> Prop) :=
-  exists delta : posreal, forall y, Rabs (y - x) < delta -> P y.
-
-Global Instance locally_filter : forall x, Filter (locally x).
-Proof.
-intros x.
-constructor.
-- now exists (mkposreal _ Rlt_0_1).
-- intros P Q [dP HP] [dQ HQ].
-  exists (mkposreal _ (Rmin_stable_in_posreal dP dQ)).
-  simpl.
-  intros y Hy.
-  split.
-  apply HP.
-  apply Rlt_le_trans with (1 := Hy).
-  apply Rmin_l.
-  apply HQ.
-  apply Rlt_le_trans with (1 := Hy).
-  apply Rmin_r.
-- intros P Q H [dP HP].
-  exists dP.
-  intros y Hy.
-  apply H.
-  now apply HP.
-Qed.
-*)
-
 Definition eventually (P : nat -> Prop) :=
   exists N : nat, forall n, (N <= n)%nat -> P n.
 
@@ -270,6 +242,30 @@ Fixpoint Fn (n : nat) (T U : Type) : Type :=
   | S n => T -> Fn n T U
   end.
 
+Definition dist_prod (T U : Type) (dT : T -> T -> R) (dU : U -> U -> R) (x y : T * U) :=
+  let (xt,xu) := x in let (yt,yu) := y in
+  Rmax (dT xt yt) (dU xu yu).
+
+Global Instance dist_prod_distance : forall T U dT dU, Distance dT -> Distance dU ->
+  Distance (dist_prod T U dT dU).
+Proof.
+intros T U dT dU HT HU.
+unfold dist_prod.
+constructor.
+- intros [xt xu] [yt yu].
+  apply Rmax_case ; apply distance_ge_0.
+- intros [xt xu] [yt yu] [zt zu].
+  apply Rmax_case.
+  apply Rle_trans with (dT xt yt + dT yt zt).
+  apply distance_triangle.
+  apply Rplus_le_compat ; apply Rmax_l.
+  apply Rle_trans with (dU xu yu + dU yu zu).
+  apply distance_triangle.
+  apply Rplus_le_compat ; apply Rmax_r.
+- intros [xt xu].
+  apply Rmax_case ; apply distance_eq_0.
+Qed.
+
 Fixpoint distTn (n : nat) (T : Type) (d : T -> T -> R) : Tn n T -> Tn n T -> R :=
   match n with
   | O => fun _ _ => 0
@@ -282,7 +278,8 @@ Fixpoint distTn (n : nat) (T : Type) (d : T -> T -> R) : Tn n T -> Tn n T -> R :
 Global Instance distTn_distance : forall n T d, Distance d -> Distance (distTn n T d).
 Proof.
 intros n T d Hd.
-induction n as [|n IHn] ; simpl ; constructor.
+induction n as [|n IHn] ; simpl.
+constructor.
 - intros _ _.
   apply Rle_refl.
 - intros _ _ _.
@@ -291,24 +288,32 @@ induction n as [|n IHn] ; simpl ; constructor.
   apply Rle_refl.
 - intros _.
   reflexivity.
-- intros [ah a] [bh b].
-  apply Rmax_case ; apply distance_ge_0.
-- intros [ah a] [bh b] [ch c].
-  apply Rmax_case.
-  apply Rle_trans with (d ah bh + d bh ch).
-  apply distance_triangle.
-  apply Rplus_le_compat ; apply Rmax_l.
-  apply Rle_trans with (distTn n T d a b + distTn n T d b c).
-  apply distance_triangle.
-  apply Rplus_le_compat ; apply Rmax_r.
-- intros [ah a].
-  apply Rmax_case ; apply distance_eq_0.
+now apply dist_prod_distance.
 Qed.
 
 Definition locally_2d (P : R -> R -> Prop) x y :=
   exists delta : posreal, forall u v, Rabs (u - x) < delta -> Rabs (v - y) < delta -> P u v.
 
 Lemma locally_2d_locally :
+  forall P x y,
+  locally_2d P x y <-> locally (x,y) (fun z => let (x,y) := z in P x y).
+Proof.
+intros P x y.
+split ; intros [d H] ; exists d.
+- rewrite /= /distR.
+  intros [u v] H'.
+  apply H.
+  apply Rle_lt_trans with (2 := H').
+  apply Rmax_l.
+  apply Rle_lt_trans with (2 := H').
+  apply Rmax_r.
+- intros u v Hu Hv.
+  rewrite /= /distR in H.
+  apply (H (u,v)).
+  now apply Rmax_case.
+Qed.
+
+Lemma locally_2d_locally' :
   forall P x y,
   locally_2d P x y <-> locally ((x,(y,tt)) : Tn 2 R) (fun z : Tn 2 R => let '(x,(y,_)) := z in P x y).
 Proof.
