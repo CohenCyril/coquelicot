@@ -365,52 +365,6 @@ replace (pos dp) with (d x y + (dp - d x y)) by ring.
 now apply Rplus_lt_compat_l.
 Qed.
 
-Lemma locally_2d_impl_strong :
-  forall (P Q : R -> R -> Prop) x y, locally_2d (fun u v => locally_2d P u v -> Q u v) x y ->
-  locally_2d P x y -> locally_2d Q x y.
-Proof.
-intros P Q x y (dpq,Hpq) (dp,Hp).
-exists (mkposreal _ (Rmin_stable_in_posreal dp dpq)) => /= u v Hu Hv.
-apply Hpq.
-apply Rlt_le_trans with (1 := Hu).
-apply Rmin_r.
-apply Rlt_le_trans with (1 := Hv).
-apply Rmin_r.
-assert (Huv: Rmax (Rabs (u - x)) (Rabs (v - y)) < Rmin dp dpq).
-now apply Rmax_case.
-set (d := mkposreal _ (Rlt_Rminus _ _ Huv)).
-exists d => w z Hw Hz.
-apply Hp.
-replace (w - x) with ((w - u) + (u - x)) by ring.
-apply Rle_lt_trans with (1 := Rabs_triang _ _).
-replace (pos dp) with (d + (dp - d)) by ring.
-apply Rplus_lt_le_compat with (1 := Hw).
-simpl.
-apply Rplus_le_reg_r with (- Rmax (Rabs (u - x)) (Rabs (v - y))).
-ring_simplify.
-apply Rle_trans with R0.
-apply Rle_minus.
-apply Rmax_l.
-apply Rge_le.
-apply Rge_minus.
-apply Rle_ge.
-apply Rmin_l.
-replace (z - y) with ((z - v) + (v - y)) by ring.
-apply Rle_lt_trans with (1 := Rabs_triang _ _).
-replace (pos dp) with (d + (dp - d)) by ring.
-apply Rplus_lt_le_compat with (1 := Hz).
-simpl.
-apply Rplus_le_reg_r with (- Rmax (Rabs (u - x)) (Rabs (v - y))).
-ring_simplify.
-apply Rle_trans with R0.
-apply Rle_minus.
-apply Rmax_r.
-apply Rge_le.
-apply Rge_minus.
-apply Rle_ge.
-apply Rmin_l.
-Qed.
-
 Lemma locally_singleton :
   forall T d Hd x (P : T -> Prop),
   @locally T d Hd x P -> P x.
@@ -421,13 +375,28 @@ rewrite distance_eq_0.
 apply cond_pos.
 Qed.
 
+Lemma locally_2d_impl_strong :
+  forall (P Q : R -> R -> Prop) x y, locally_2d (fun u v => locally_2d P u v -> Q u v) x y ->
+  locally_2d P x y -> locally_2d Q x y.
+Proof.
+intros P Q x y Li LP.
+apply locally_2d_locally in Li.
+apply locally_2d_locally in LP.
+apply locally_open in LP.
+apply locally_2d_locally.
+generalize (filter_and _ _ Li LP).
+apply: filter_imp.
+intros [u v] [H1 H2].
+apply H1.
+now apply locally_2d_locally.
+Qed.
+
 Lemma locally_2d_singleton :
   forall (P : R -> R -> Prop) x y, locally_2d P x y -> P x y.
 Proof.
-intros P x y (D,H).
-apply H ;
-  rewrite /Rminus Rplus_opp_r Rabs_R0 ;
-  apply cond_pos.
+intros P x y LP.
+apply locally_2d_locally in LP.
+apply: locally_singleton LP.
 Qed.
 
 Lemma locally_2d_impl :
@@ -578,6 +547,23 @@ specialize (H t Ht).
 apply: locally_singleton H.
 Qed.
 
+Lemma filterlim_locally :
+  forall (T U : Type) F (FF : Filter F) dU (DU : Distance dU) (f : T -> U) x,
+  filterlim f F (locally (f x)) <->
+  forall eps : posreal, F (fun y => dU (f x) (f y) < eps).
+Proof.
+intros.
+unfold filterlim, filter_le, filtermap.
+split.
+- intros Cf eps.
+  apply (Cf (fun y => dU (f x) y < eps)).
+  now exists eps.
+- intros Cf P [eps He].
+  apply: filter_imp (Cf eps).
+  intros t.
+  apply He.
+Qed.
+
 Lemma continuity_pt_locally :
   forall f x,
   continuity_pt f x <->
@@ -608,21 +594,10 @@ Lemma continuity_pt_filterlim :
   filterlim f (locally x) (locally (f x)).
 Proof.
 intros f x.
-split.
-intros Cf P [eps He].
-destruct (proj1 (continuity_pt_locally f x) Cf eps) as [d Hd].
-exists d => y Hy.
-apply He.
-now apply Hd.
-intros H.
+eapply iff_trans.
 apply continuity_pt_locally.
-intros eps.
-destruct (H (fun y => Rabs (y - f x) < eps)) as [d Hd].
-now exists eps.
-exists d.
-intros y Hy.
-apply Hd.
-now apply Hy.
+apply iff_sym.
+apply: filterlim_locally.
 Qed.
 
 (** * Intervals *)
