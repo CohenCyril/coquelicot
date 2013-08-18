@@ -2167,27 +2167,45 @@ apply continuity_pt_opp.
 apply continuity_pt_id.
 Qed.
 
+Lemma continuity_2d_pt_plus' :
+  forall x y : R,
+  continuity_2d_pt Rplus x y.
+Proof.
+intros x y eps.
+exists (pos_div_2 eps).
+intros u v Hu Hv.
+replace (u + v - (x + y)) with ((u - x) + (v - y)) by ring.
+apply Rle_lt_trans with (1 := Rabs_triang _ _).
+replace (pos eps) with (eps / 2 + eps / 2) by field.
+now apply Rplus_lt_compat.
+Qed.
+
 Lemma continuity_2d_pt_plus (f g : R -> R -> R) (x y : R) :
     continuity_2d_pt f x y ->
     continuity_2d_pt g x y ->
     continuity_2d_pt (fun u v => f u v + g u v) x y.
 Proof.
-  intros cf cg eps.
-  destruct (cf (pos_div_2 eps)) as [delta1 P1].
-  destruct (cg (pos_div_2 eps)) as [delta2 P2].
-  assert (m0 : 0 < Rmin delta1 delta2).
-    destruct delta1 as [d1 d1p]; destruct delta2 as [d2 d2p].
-    simpl in d1p, d2p |- *; apply Rmin_glb_lt; assumption.
-  exists (mkposreal _ m0); simpl; intros u v ux vy.
-  replace (f u v + g u v - (f x y + g x y)) with
-    ((f u v - f x y) + (g u v - g x y)) by ring.
-  apply Rle_lt_trans with (1 := Rabs_triang _ _).
-  replace (pos eps) with (pos_div_2 eps + pos_div_2 eps) by (simpl; field).
-  apply Rplus_lt_compat;[apply P1 | apply P2].
-   solve[apply Rlt_le_trans with (1 := ux); apply Rmin_l].
-  solve[apply Rlt_le_trans with (1 := vy); apply Rmin_l].
- solve[apply Rlt_le_trans with (1 := ux); apply Rmin_r].
-solve[apply Rlt_le_trans with (1 := vy); apply Rmin_r].
+intros Cf Cg.
+apply continuity_2d_pt_filterlim in Cf.
+apply continuity_2d_pt_filterlim in Cg.
+apply continuity_2d_pt_filterlim.
+apply: (filterlim_ext _ _ (fun z : R * R =>
+  (fun z : R * R => let (x,y) := z in Rplus x y) (let (x,y) := z in (f x y, g x y)))).
+now intros [u v].
+apply (filterlim_compose _ _ _ _ (fun z : R * R => let (x,y) := z in Rplus x y) _ (locally (f x y, g x y))).
+intros P [eps HP].
+generalize (proj1 (filterlim_locally _ _ _ _ _ _ _ (x,y)) Cf eps).
+move => {Cf} Cf.
+generalize (proj1 (filterlim_locally _ _ _ _ _ _ _ (x,y)) Cg eps).
+move => {Cg} Cg.
+generalize (filter_and _ _ Cf Cg).
+apply: filter_imp => {Cf Cg}.
+intros [u v] [Hf Hg].
+apply HP.
+simpl.
+now apply Rmax_case.
+apply continuity_2d_pt_filterlim.
+apply continuity_2d_pt_plus'.
 Qed.
 
 Lemma continuity_2d_pt_minus (f g : R -> R -> R) (x y : R) :
