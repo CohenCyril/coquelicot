@@ -28,12 +28,6 @@ Open Scope R_scope.
 
 (** * Definitions *)
 
-Class Distance {T : Type} (d : T -> T -> R) := {
-  distance_ge_0 : forall a b, 0 <= d a b ;
-  distance_triangle : forall a b c, d a c <= d a b + d b c ;
-  distance_eq_0 : forall a, d a a = 0
-}.
-
 Class Filter {T : Type} (F : (T -> Prop) -> Prop) := {
   filter_true : F (fun _ => True) ;
   filter_and : forall P Q : T -> Prop, F P -> F Q -> F (fun x => P x /\ Q x) ;
@@ -41,7 +35,7 @@ Class Filter {T : Type} (F : (T -> Prop) -> Prop) := {
 }.
 
 Lemma filter_forall :
-  forall {T : Type} F {FF: @Filter T F} (P : T -> Prop),
+  forall {T : Type} {F} {FF: @Filter T F} (P : T -> Prop),
   (forall x, P x) -> F P.
 Proof.
 intros.
@@ -153,12 +147,33 @@ constructor.
   now apply HP.
 Qed.
 
-Definition locally {T : Type} {d : T -> T -> R} {Hd : Distance d} (x : T) :=
-  locally_dist (d x).
+Class MetricSpace T := {
+  distance : T -> T -> R ;
+  distance_refl : forall a, distance a a = 0 ;
+  distance_comm : forall a b, distance a b = distance b a ;
+  distance_triangle : forall a b c, distance a c <= distance a b + distance b c
+}.
 
-Global Instance locally_filter : forall T d Hd (x : T), Filter (@locally T d Hd x).
+Lemma distance_ge_0 :
+  forall {T} {MT : MetricSpace T} (a b : T),
+  0 <= distance a b.
 Proof.
-intros T d Hd x.
+intros T MT a b.
+apply Rmult_le_reg_l with 2.
+apply Rlt_0_2.
+rewrite Rmult_0_r.
+rewrite -(distance_refl a).
+rewrite Rmult_plus_distr_r Rmult_1_l.
+rewrite -> (distance_comm a b) at 2.
+apply distance_triangle.
+Qed.
+
+Definition locally {T} {MT : MetricSpace T} (x : T) :=
+  locally_dist (distance x).
+
+Global Instance locally_filter : forall T (MT : MetricSpace T) (x : T), Filter (locally x).
+Proof.
+intros T MT x.
 apply locally_dist_filter.
 Qed.
 
@@ -213,22 +228,40 @@ Qed.
 
 Definition distR x y := Rabs (y - x).
 
-Global Instance distR_distance : Distance distR.
+Lemma distR_refl :
+  forall x, distR x x = 0.
 Proof.
-unfold distR.
-constructor.
-- intros a b.
-  apply Rabs_pos.
-- intros a b c.
-  replace (c - a) with (b - a + (c - b)) by ring.
-  apply Rabs_triang.
-- intros a.
-  rewrite /Rminus Rplus_opp_r.
-  apply Rabs_R0.
+intros x.
+rewrite /distR /Rminus Rplus_opp_r.
+apply Rabs_R0.
 Qed.
 
-Notation at_left x := (within (fun u : R => Rlt u x) (@locally R distR distR_distance (x)%R)).
-Notation at_right x := (within (fun u : R => Rlt x u) (@locally R distR distR_distance (x)%R)).
+Lemma distR_comm :
+  forall x y, distR x y = distR y x.
+Proof.
+intros x y.
+apply Rabs_minus_sym.
+Qed.
+
+Lemma distR_triangle :
+  forall x y z, distR x z <= distR x y + distR y z.
+Proof.
+intros x y z.
+unfold distR.
+replace (z - x) with (y - x + (z - y)) by ring.
+apply Rabs_triang.
+Qed.
+
+Global Instance R_metric : MetricSpace R.
+Proof.
+apply (Build_MetricSpace R distR).
+- exact distR_refl.
+- exact distR_comm.
+- exact distR_triangle.
+Defined.
+
+Notation at_left x := (within (fun u : R => Rlt u x) (locally (x)%R)).
+Notation at_right x := (within (fun u : R => Rlt x u) (locally (x)%R)).
 
 Fixpoint Tn (n : nat) (T : Type) : Type :=
   match n with
@@ -242,54 +275,112 @@ Fixpoint Fn (n : nat) (T U : Type) : Type :=
   | S n => T -> Fn n T U
   end.
 
-Definition dist_prod (T U : Type) (dT : T -> T -> R) (dU : U -> U -> R) (x y : T * U) :=
+Definition dist_prod {T U : Type} (dT : T -> T -> R) (dU : U -> U -> R) (x y : T * U) :=
   let (xt,xu) := x in let (yt,yu) := y in
   Rmax (dT xt yt) (dU xu yu).
 
-Global Instance dist_prod_distance : forall T U dT dU, Distance dT -> Distance dU ->
-  Distance (dist_prod T U dT dU).
+Lemma dist_prod_refl :
+  forall {T U} {MT : MetricSpace T} {MU : MetricSpace U} (x : T * U),
+  dist_prod distance distance x x = 0.
 Proof.
-intros T U dT dU HT HU.
+intros T U MT MU [xt xu].
 unfold dist_prod.
-constructor.
-- intros [xt xu] [yt yu].
-  apply Rmax_case ; apply distance_ge_0.
-- intros [xt xu] [yt yu] [zt zu].
-  apply Rmax_case.
-  apply Rle_trans with (dT xt yt + dT yt zt).
-  apply distance_triangle.
-  apply Rplus_le_compat ; apply Rmax_l.
-  apply Rle_trans with (dU xu yu + dU yu zu).
-  apply distance_triangle.
-  apply Rplus_le_compat ; apply Rmax_r.
-- intros [xt xu].
-  apply Rmax_case ; apply distance_eq_0.
+apply Rmax_case ; apply distance_refl.
 Qed.
 
-Fixpoint distTn (n : nat) (T : Type) (d : T -> T -> R) : Tn n T -> Tn n T -> R :=
+Lemma dist_prod_comm :
+  forall {T U} {MT : MetricSpace T} {MU : MetricSpace U} (x y : T * U),
+  dist_prod distance distance x y = dist_prod distance distance y x.
+Proof.
+intros T U MT MU [xt xu] [yt yu].
+unfold dist_prod.
+rewrite distance_comm.
+apply f_equal.
+apply distance_comm.
+Qed.
+
+Lemma dist_prod_triangle :
+  forall {T U} {MT : MetricSpace T} {MU : MetricSpace U} (x y z : T * U),
+  dist_prod distance distance x z <= dist_prod distance distance x y + dist_prod distance distance y z.
+Proof.
+intros T U MT MU [xt xu] [yt yu] [zt zu].
+unfold dist_prod.
+apply Rmax_case.
+apply Rle_trans with (distance xt yt + distance yt zt).
+apply distance_triangle.
+apply Rplus_le_compat ; apply Rmax_l.
+apply Rle_trans with (distance xu yu + distance yu zu).
+apply distance_triangle.
+apply Rplus_le_compat ; apply Rmax_r.
+Qed.
+
+Global Instance prod_metric : forall T U, MetricSpace T -> MetricSpace U -> MetricSpace (T * U).
+Proof.
+intros T U MT MU.
+apply (Build_MetricSpace _ (dist_prod distance distance)).
+- exact dist_prod_refl.
+- exact dist_prod_comm.
+- exact dist_prod_triangle.
+Defined.
+
+Fixpoint dist_pow (n : nat) (T : Type) (d : T -> T -> R) : Tn n T -> Tn n T -> R :=
   match n with
   | O => fun _ _ => 0
   | S n => fun x y =>
     let (xh,xt) := x in
     let (yh,yt) := y in
-    Rmax (d xh yh) (distTn n T d xt yt)
+    Rmax (d xh yh) (dist_pow n T d xt yt)
   end.
 
-Global Instance distTn_distance : forall n T d, Distance d -> Distance (distTn n T d).
+Lemma dist_pow_refl :
+  forall {T} {MT : MetricSpace T} n x,
+  dist_pow n T distance x x = 0.
 Proof.
-intros n T d Hd.
-induction n as [|n IHn] ; simpl.
-constructor.
-- intros _ _.
-  apply Rle_refl.
-- intros _ _ _.
-  simpl.
-  rewrite Rplus_0_r.
-  apply Rle_refl.
-- intros _.
-  reflexivity.
-now apply dist_prod_distance.
+induction n.
+reflexivity.
+intros [x xn].
+simpl.
+rewrite distance_refl IHn.
+now apply Rmax_case.
 Qed.
+
+Lemma dist_pow_comm :
+  forall {T} {MT : MetricSpace T} n x y,
+  dist_pow n T distance x y = dist_pow n T distance y x.
+Proof.
+induction n.
+reflexivity.
+intros [x xn] [y yn].
+simpl.
+now rewrite distance_comm IHn.
+Qed.
+
+Lemma dist_pow_triangle :
+  forall {T} {MT : MetricSpace T} n x y z,
+  dist_pow n T distance x z <= dist_pow n T distance x y +  dist_pow n T distance y z.
+Proof.
+induction n.
+simpl.
+intros _ _ _.
+rewrite Rplus_0_r.
+apply Rle_refl.
+intros [x xn] [y yn] [z zn].
+simpl.
+apply Rmax_case.
+apply Rle_trans with (1 := distance_triangle x y z).
+apply Rplus_le_compat ; apply Rmax_l.
+apply Rle_trans with (1 := IHn xn yn zn).
+apply Rplus_le_compat ; apply Rmax_r.
+Qed.
+
+Global Instance pow_metric : forall T, MetricSpace T -> forall n, MetricSpace (Tn n T).
+Proof.
+intros T MT n.
+apply (Build_MetricSpace _ (dist_pow n T distance)).
+- exact (dist_pow_refl n).
+- exact (dist_pow_comm n).
+- exact (dist_pow_triangle n).
+Defined.
 
 Definition locally_2d (P : R -> R -> Prop) x y :=
   exists delta : posreal, forall u v, Rabs (u - x) < delta -> Rabs (v - y) < delta -> P u v.
@@ -352,26 +443,26 @@ now apply (K d).
 Qed.
 
 Lemma locally_open :
-  forall T d Hd x (P : T -> Prop),
-  @locally T d Hd x P -> @locally T d Hd x (fun y => locally y P).
+  forall {T} {MT : MetricSpace T} x (P : T -> Prop),
+  locally x P -> locally x (fun y => locally y P).
 Proof.
-intros T d Hd x P [dp Hp].
+intros T MT x P [dp Hp].
 exists dp.
 intros y Hy.
 exists (mkposreal _ (Rlt_Rminus _ _ Hy)) => /= z Hz.
 apply Hp.
 apply Rle_lt_trans with (1 := distance_triangle x y z).
-replace (pos dp) with (d x y + (dp - d x y)) by ring.
+replace (pos dp) with (distance x y + (dp - distance x y)) by ring.
 now apply Rplus_lt_compat_l.
 Qed.
 
 Lemma locally_singleton :
-  forall T d Hd x (P : T -> Prop),
-  @locally T d Hd x P -> P x.
+  forall {T} {MT : MetricSpace T} x (P : T -> Prop),
+  locally x P -> P x.
 Proof.
-intros T d Hd P x [dp H].
+intros T MT P x [dp H].
 apply H.
-rewrite distance_eq_0.
+rewrite distance_refl.
 apply cond_pos.
 Qed.
 
@@ -548,15 +639,15 @@ apply: locally_singleton H.
 Qed.
 
 Lemma filterlim_locally :
-  forall (T U : Type) F (FF : Filter F) dU (DU : Distance dU) (f : T -> U) x,
+  forall {T U} {MU : MetricSpace U} {F} {FF : Filter F} (f : T -> U) x,
   filterlim f F (locally (f x)) <->
-  forall eps : posreal, F (fun y => dU (f x) (f y) < eps).
+  forall eps : posreal, F (fun y => distance (f x) (f y) < eps).
 Proof.
-intros.
+intros T U MU F FF f x.
 unfold filterlim, filter_le, filtermap.
 split.
 - intros Cf eps.
-  apply (Cf (fun y => dU (f x) y < eps)).
+  apply (Cf (fun y => distance (f x) y < eps)).
   now exists eps.
 - intros Cf P [eps He].
   apply: filter_imp (Cf eps).
@@ -756,6 +847,7 @@ now ring_simplify (x + (y - x)) in H.
 intros H eps He.
 move: (H (mkposreal _ He)) => {H} /= [d H].
 exists d => h Zh Hh.
+simpl in H.
 unfold distR in H.
 specialize (H (x + h)).
 ring_simplify (x + h - x) in H.

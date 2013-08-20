@@ -4276,7 +4276,7 @@ apply Rlt_eps2_eps.
 apply cond_pos.
 assert (D2: ex_RInt (fun t => f x t) a b).
 apply DIf.
-rewrite distance_eq_0.
+rewrite distance_refl.
 apply cond_pos.
 rewrite -RInt_minus //.
 rewrite Rmult_comm.
@@ -4612,12 +4612,9 @@ apply derivable_pt_lim_param.
 exists (pos_div_2 d4).
 intros y Hy t Ht.
 apply Df.
-unfold distR.
-replace (y-x) with ((y-u)+(u-x)) by ring.
-apply Rle_lt_trans with (1:=Rabs_triang _ _).
+apply Rle_lt_trans with (1 := distance_triangle x u y).
 rewrite (double_var d4).
-apply Rplus_lt_compat.
-exact Hy.
+apply Rplus_lt_compat with (2 := Hy).
 apply Rlt_le_trans with (1:=Hu).
 apply Rle_trans with (1:=Rmin_r _ _).
 apply Rle_trans with (1:=Rmin_l _ _).
@@ -4645,12 +4642,9 @@ exists (pos_div_2 d2).
 intros y Hy.
 apply ex_RInt_inside with (a x) d1.
 apply Ia.
-unfold distR.
-replace (y-x) with ((y-u)+(u-x)) by ring.
-apply Rle_lt_trans with (1:=Rabs_triang _ _).
+apply Rle_lt_trans with (1 := distance_triangle x u y).
 rewrite (double_var d2).
-apply Rplus_lt_compat.
-exact Hy.
+apply Rplus_lt_compat with (2 := Hy).
 apply Rlt_le_trans with (1:=Hu).
 apply Rle_trans with (1:=Rmin_l _ _).
 apply Rle_trans with (1:=Rmin_r _ _).
@@ -4717,12 +4711,9 @@ eexists; eapply derivable_pt_lim_param.
 exists (pos_div_2 d2).
 intros y Hy t Ht.
 apply Df.
-unfold distR.
-replace (y-x) with ((y-u)+(u-x)) by ring.
-apply Rle_lt_trans with (1:=Rabs_triang _ _).
+apply Rle_lt_trans with (1 := distance_triangle x u y).
 rewrite (double_var d2).
-apply Rplus_lt_compat.
-exact Hy.
+apply Rplus_lt_compat with (2 := Hy).
 apply Rlt_le_trans with (1:=Hu).
 apply Rle_trans with (1:=Rmin_l _ _).
 apply Rmin_r.
@@ -4765,12 +4756,9 @@ exists (pos_div_2 d4).
 intros y Hy.
 apply ex_RInt_inside with (a x) d0.
 apply Ia.
-unfold distR.
-replace (y-x) with ((y-u)+(u-x)) by ring.
-apply Rle_lt_trans with (1:=Rabs_triang _ _).
+apply Rle_lt_trans with (1 := distance_triangle x u y).
 rewrite (double_var d4).
-apply Rplus_lt_compat.
-exact Hy.
+apply Rplus_lt_compat with (2 := Hy).
 apply Rlt_le_trans with (1:=Hu).
 apply Rle_trans with (1:=Rmin_r _ _).
 apply Rle_trans with (1:=Rmin_r _ _).

@@ -1859,7 +1859,7 @@ Qed.
 Lemma continuity_2d_pt_filterlim' :
   forall f x y,
   continuity_2d_pt f x y <->
-  filterlim (fun z : Locally.Tn 2 R => let '(x,(y,_)) := z in f x y) (@locally (Locally.Tn 2 R) _ _ (x,(y,tt))) (locally (f x y)).
+  filterlim (fun z : Locally.Tn 2 R => let '(x,(y,_)) := z in f x y) (@locally (Locally.Tn 2 R) _ (x,(y,tt))) (locally (f x y)).
 Proof.
 split.
 - intros Cf P [eps He].
@@ -2098,7 +2098,7 @@ Proof.
 intros f g x Heq Cf.
 apply continuity_pt_filterlim in Cf.
 apply continuity_pt_filterlim.
-rewrite -(locally_singleton _ _ _ _ _ Heq).
+rewrite -(locally_singleton _ _ Heq).
 apply: filterlim_ext_loc Heq Cf.
 Qed.
 
@@ -2121,7 +2121,7 @@ intros f g x y Heq Cf.
 apply locally_2d_locally in Heq.
 apply continuity_2d_pt_filterlim in Cf.
 apply continuity_2d_pt_filterlim.
-rewrite -(locally_singleton _ _ _ _ _ Heq).
+rewrite -(locally_singleton _ _ Heq).
 apply: filterlim_ext_loc Cf.
 apply: filter_imp Heq.
 now intros [u v].
@@ -2194,9 +2194,9 @@ apply: (filterlim_ext _ _ (fun z : R * R =>
 now intros [u v].
 apply (filterlim_compose _ _ _ _ (fun z : R * R => let (x,y) := z in Rplus x y) _ (locally (f x y, g x y))).
 intros P [eps HP].
-generalize (proj1 (filterlim_locally _ _ _ _ _ _ _ (x,y)) Cf eps).
+generalize (proj1 (filterlim_locally _ (x,y)) Cf eps).
 move => {Cf} Cf.
-generalize (proj1 (filterlim_locally _ _ _ _ _ _ _ (x,y)) Cg eps).
+generalize (proj1 (filterlim_locally _ (x,y)) Cg eps).
 move => {Cg} Cg.
 generalize (filter_and _ _ Cf Cg).
 apply: filter_imp => {Cf Cg}.
@@ -2297,9 +2297,9 @@ apply: (filterlim_ext _ _ (fun z : R * R =>
 now intros [u v].
 apply (filterlim_compose _ _ _ _ (fun z : R * R => let (x,y) := z in Rmult x y) _ (locally (f x y, g x y))).
 intros P [eps HP].
-generalize (proj1 (filterlim_locally _ _ _ _ _ _ _ (x,y)) Cf eps).
+generalize (proj1 (filterlim_locally _ (x,y)) Cf eps).
 move => {Cf} Cf.
-generalize (proj1 (filterlim_locally _ _ _ _ _ _ _ (x,y)) Cg eps).
+generalize (proj1 (filterlim_locally _ (x,y)) Cg eps).
 move => {Cg} Cg.
 generalize (filter_and _ _ Cf Cg).
 apply: filter_imp => {Cf Cg}.

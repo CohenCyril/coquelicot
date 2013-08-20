@@ -101,7 +101,7 @@ apply derivable_pt_lim_locally => eps.
 move /derivable_pt_lim_locally :Hf => Hf.
 generalize (filter_and _ _ Heq (Hf eps)).
 apply filter_imp => {Hf} y [-> Hf].
-by rewrite -(locally_singleton _ _ _ _ _ Heq).
+by rewrite -(locally_singleton _ _ Heq).
 Qed.
 Lemma ex_derive_ext_loc :
   forall f g x,
@@ -126,8 +126,9 @@ case: Hfg => delta Hfg.
 exists delta => h Hh.
 rewrite ?Hfg.
 reflexivity.
-rewrite distance_eq_0.
+rewrite distance_refl.
 apply cond_pos.
+simpl.
 unfold distR.
 ring_simplify (x + h - x).
 by rewrite Rminus_0_r in Hh.
@@ -885,8 +886,9 @@ Proof.
   apply Derive_correct in Hf.
   apply is_derive_ext_loc with (fun x => f (real a) + (x - real a) * Derive f (real a)).
   case: (Rbar_lt_locally m_infty a x) => // d Hd.
-  exists d => y Hy ; rewrite /extension_C1 ; apply Hd in Hy ; simpl in Hy.
-  case: Hy => _ Hy.
+  exists d => y Hy ; rewrite /extension_C1.
+  specialize (Hd _ Hy).
+  case: Hd => _ Hd.
   case: Rbar_le_dec => //= ; intros.
   contradict a0 ; by apply Rbar_lt_not_le.
   search_derive.
@@ -909,8 +911,9 @@ Proof.
   apply Derive_correct in Hf.
   apply is_derive_ext_loc with (fun x => f (real b) + (x - real b) * Derive f (real b)).
   case: (Rbar_lt_locally b p_infty x) => // d Hd.
-  exists d => y Hy ; rewrite /extension_C1 ; apply Hd in Hy ; simpl in Hy.
-  case: Hy => Hy _.
+  exists d => y Hy ; rewrite /extension_C1.
+  specialize (Hd _ Hy).
+  case: Hd => Hd _.
   repeat case: Rbar_le_dec => //= ; intros.
   contradict a0 ; by apply Rbar_lt_not_le.
   contradict Hab ; apply Rbar_lt_not_le, Rbar_lt_trans with y => // ;
@@ -1202,6 +1205,7 @@ Proof.
   rewrite H1 ;
     apply H.
   apply (Df (x+h)).
+  simpl.
   rewrite /distR H1 ;
     apply H0.
     rewrite H1 ; apply H.
@@ -1258,7 +1262,7 @@ Lemma Derive_n_ext_loc :
   Derive_n f n x = Derive_n g n x.
 Proof.
 intros f g n x Heq.
-pattern x ; apply locally_singleton with (Hd:=distR_distance).
+pattern x ; apply locally_singleton.
 induction n.
 exact Heq.
 apply (locally_open _ _) in IHn.
@@ -1395,12 +1399,14 @@ Proof.
   apply Derive_ext_loc.
   set r := (mkposreal _ (Rmin_stable_in_posreal rf rg)) ;
   exists r => y Hy.
+  simpl in Hy.
   apply Rabs_lt_between' in Hy.
   case: Hy ; move/Rlt_Rminus => Hy1 ; move/Rlt_Rminus => Hy2.
   set r0 := mkposreal _ (Rmin_pos _ _ Hy1 Hy2).
   apply IH ;
   exists r0 => z Hz k Hk.
   apply Hf.
+  simpl in Hz.
   apply Rabs_lt_between' in Hz.
   rewrite /Rminus -Rmax_opp_Rmin Rplus_max_distr_l (Rplus_min_distr_l y) in Hz.
   case: Hz ; move => Hz1 Hz2.
@@ -1411,6 +1417,7 @@ Proof.
   apply Rlt_le_trans with (1 := Hz) => /= ; by apply Rmin_l.
   by apply le_trans with (1 := Hk), le_n_Sn.
   apply Hg.
+  simpl in Hz.
   apply Rabs_lt_between' in Hz.
   rewrite /Rminus -Rmax_opp_Rmin Rplus_max_distr_l (Rplus_min_distr_l y) in Hz.
   case: Hz ; move => Hz1 Hz2.
@@ -1421,11 +1428,11 @@ Proof.
   apply Rlt_le_trans with (1 := Hz) => /= ; by apply Rmin_r.
   by apply le_trans with (1 := Hk), le_n_Sn.
   apply Hf with (k := (S n)).
-  rewrite distance_eq_0.
+  rewrite distance_refl.
   apply cond_pos.
   by apply le_refl.
   apply Hg with (k := S n).
-  rewrite distance_eq_0.
+  rewrite distance_refl.
   apply cond_pos.
   by apply le_refl.
 Qed.
@@ -1576,7 +1583,7 @@ Proof.
   by apply Derive_const.
 
   move => Hf.
-  apply (locally_singleton _ _ _ _ (fun x => Derive_n (fun y : R => f (a * y)) n x = a ^ n * Derive_n f n (a * x))).
+  apply (locally_singleton _ (fun x => Derive_n (fun y : R => f (a * y)) n x = a ^ n * Derive_n f n (a * x))).
   elim: n Hf => [ | n IH] Hf.
   apply: filter_forall => /= y ; ring.
 
@@ -1600,7 +1607,7 @@ Proof.
   rewrite (Derive_ext (Rmult a) (fun x => a * x)) => //.
   rewrite Derive_scal Derive_id ; ring.
   apply Hf with (k := S n).
-  rewrite /distR -Rmult_minus_distr_l Rabs_mult.
+  rewrite /= /distR -Rmult_minus_distr_l Rabs_mult.
   apply Rlt_le_trans with (Rabs a * r1).
   apply Rmult_lt_compat_l.
   by apply Rabs_pos_lt.
@@ -1611,6 +1618,7 @@ Proof.
   by apply lt_n_Sn.
   apply ex_derive_ext with (2 := ex_derive_scal id a y (ex_derive_id _)).
   by [].
+  simpl in Hy.
   apply Rabs_lt_between' in Hy.
   case: Hy => Hy1 Hy2.
   apply Rlt_Rminus in Hy1.
@@ -1622,6 +1630,7 @@ Proof.
   move => t Ht.
   apply IH.
   apply Rabs_lt_between'.
+  simpl in Ht.
   apply Rabs_lt_between' in Ht.
   simpl in Ht.
   split.

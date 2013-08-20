@@ -1281,7 +1281,7 @@ assert (forall k t, (k <= S n)%nat -> 0 <= t <= 1 ->
 intros k t Hk Ht.
 specialize (HH t Ht).
 revert HH.
-pattern t ; apply locally_singleton with (Hd := distR_distance).
+pattern t ; apply locally_singleton.
 induction k.
 rewrite /C /partial_derive /g /=.
 apply: filter_forall.
