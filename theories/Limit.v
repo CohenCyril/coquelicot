@@ -724,8 +724,8 @@ Qed.
 (** Extensionality *)
 
 Lemma is_LimSup_seq_ext_loc (u v : nat -> R) (l : Rbar) :
-  (exists N, forall n, (N <= n)%nat -> u n = v n)
-  -> is_LimSup_seq u l -> is_LimSup_seq v l.
+  eventually (fun n => u n = v n) ->
+  is_LimSup_seq u l -> is_LimSup_seq v l.
 Proof.
   case: l => [l | | ] /= [Next Hext] Hu.
   move => eps.
@@ -754,8 +754,8 @@ Proof.
 Qed.
 
 Lemma is_LimInf_seq_ext_loc (u v : nat -> R) (l : Rbar) :
-  (exists N, forall n, (N <= n)%nat -> u n = v n)
-  -> is_LimInf_seq u l -> is_LimInf_seq v l.
+  eventually (fun n => u n = v n) ->
+  is_LimInf_seq u l -> is_LimInf_seq v l.
 Proof.
   case => N Hext Hu.
   apply is_LimSup_opp_LimInf_seq.
@@ -1164,9 +1164,9 @@ Qed.
 
 (** Extensionality *)
 
-Lemma is_lim_seq_ext_loc (u v : nat -> R) (l : Rbar) : 
-  (exists N, forall n, (N <= n)%nat -> u n = v n) 
-    -> is_lim_seq u l -> is_lim_seq v l.
+Lemma is_lim_seq_ext_loc (u v : nat -> R) (l : Rbar) :
+  eventually (fun n => u n = v n) ->
+  is_lim_seq u l -> is_lim_seq v l.
 Proof.
   move => Hext Hu.
   apply is_lim_seq_ in Hu.
@@ -1176,15 +1176,15 @@ Proof.
   apply eventually_filter.
   exact Hext.
 Qed.
-Lemma ex_lim_seq_ext_loc (u v : nat -> R) : 
-  (exists N, forall n, (N <= n)%nat -> u n = v n)
-    -> ex_lim_seq u -> ex_lim_seq v.
+Lemma ex_lim_seq_ext_loc (u v : nat -> R) :
+  eventually (fun n => u n = v n) ->
+  ex_lim_seq u -> ex_lim_seq v.
 Proof.
   move => H [l H0].
   exists l ; by apply is_lim_seq_ext_loc with u.
 Qed.
-Lemma Lim_seq_ext_loc (u v : nat -> R) : 
-  (exists N, forall n, (N <= n)%nat -> u n = v n) -> 
+Lemma Lim_seq_ext_loc (u v : nat -> R) :
+  eventually (fun n => u n = v n) ->
   Lim_seq u = Lim_seq v.
 Proof.
   intros.
@@ -1631,12 +1631,12 @@ Qed.
 
 (** *** Order *)
 
-Lemma is_lim_seq_le_loc (u v : nat -> R) (l1 l2 : Rbar) : 
-  is_lim_seq u l1 -> is_lim_seq v l2
-  -> (exists N, forall n, (N <= n)%nat -> u n <= v n)
-  -> Rbar_le l1 l2.
+Lemma is_lim_seq_le_loc (u v : nat -> R) (l1 l2 : Rbar) :
+  eventually (fun n => u n <= v n) ->
+  is_lim_seq u l1 -> is_lim_seq v l2 ->
+  Rbar_le l1 l2.
 Proof.
-  move => Hu Hv H.
+  move => H Hu Hv.
   apply Rbar_not_lt_le => Hl.
   case: l1 l2 Hu Hv Hl => [lu | | ] ;
   case => [lv | | ] //= Hu Hv Hl.
@@ -1712,12 +1712,12 @@ Proof.
   by apply Rle_lt_trans with (1 := proj2 (Hle _)), Hw.
 Qed.
 
-Lemma is_lim_seq_le_p_loc (u v : nat -> R) : 
-  is_lim_seq u p_infty
-  -> (exists N, forall n, (N <= n)%nat -> u n <= v n) 
-  -> is_lim_seq v p_infty.
+Lemma is_lim_seq_le_p_loc (u v : nat -> R) :
+  eventually (fun n => u n <= v n) ->
+  is_lim_seq u p_infty ->
+  is_lim_seq v p_infty.
 Proof.
-  move => Hu H M.
+  move => H Hu M.
   case: H => N H.
   case: (Hu M) => {Hu} /= Nu Hu.
   exists (N+Nu)%nat => n Hn.
@@ -1727,11 +1727,11 @@ Proof.
 Qed.
 
 Lemma is_lim_seq_le_m_loc (u v : nat -> R) : 
-  is_lim_seq u m_infty
-  -> (exists N, forall n, (N <= n)%nat -> v n <= u n) 
-  -> is_lim_seq v m_infty.
+  eventually (fun n => v n <= u n) ->
+  is_lim_seq u m_infty ->
+  is_lim_seq v m_infty.
 Proof.
-  move => Hu H M.
+  move => H Hu M.
   case: H => N H.
   case: (Hu M) => {Hu} /= Nu Hu.
   exists (N+Nu)%nat => n Hn.
@@ -1979,10 +1979,10 @@ Proof.
     move => n ; by apply Rplus_comm.
     by apply (Hw l2 p_infty).
     apply is_lim_seq_le_p_loc with v.
-    by [].
     case: (Hu 0) => {Hu} N Hu.
     exists N => n Hn.
     apply Rminus_le_0 ; ring_simplify ; by apply Rlt_le, Hu.
+    by [].
   case: l1 l2 Hu Hv Hp Hl1 => [l1 | | ] ;
   case => [l2 | | ] //= Hu Hv _ _.
   move => M.
