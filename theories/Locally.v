@@ -276,8 +276,7 @@ Fixpoint Fn (n : nat) (T U : Type) : Type :=
   end.
 
 Definition dist_prod {T U : Type} (dT : T -> T -> R) (dU : U -> U -> R) (x y : T * U) :=
-  let (xt,xu) := x in let (yt,yu) := y in
-  Rmax (dT xt yt) (dU xu yu).
+  Rmax (dT (fst x) (fst y)) (dU (snd x) (snd y)).
 
 Lemma dist_prod_refl :
   forall {T U} {MT : MetricSpace T} {MU : MetricSpace U} (x : T * U),
@@ -327,9 +326,7 @@ Fixpoint dist_pow (n : nat) (T : Type) (d : T -> T -> R) : Tn n T -> Tn n T -> R
   match n with
   | O => fun _ _ => 0
   | S n => fun x y =>
-    let (xh,xt) := x in
-    let (yh,yt) := y in
-    Rmax (d xh yh) (dist_pow n T d xt yt)
+    Rmax (d (fst x) (fst y)) (dist_pow n T d (snd x) (snd y))
   end.
 
 Lemma dist_pow_refl :
@@ -387,7 +384,7 @@ Definition locally_2d (P : R -> R -> Prop) x y :=
 
 Lemma locally_2d_locally :
   forall P x y,
-  locally_2d P x y <-> locally (x,y) (fun z => let (x,y) := z in P x y).
+  locally_2d P x y <-> locally (x,y) (fun z => P (fst z) (snd z)).
 Proof.
 intros P x y.
 split ; intros [d H] ; exists d.
@@ -399,19 +396,19 @@ split ; intros [d H] ; exists d.
   apply Rle_lt_trans with (2 := H').
   apply Rmax_r.
 - intros u v Hu Hv.
-  rewrite /= /distR in H.
+  rewrite /= /dist_prod /distR in H.
   apply (H (u,v)).
   now apply Rmax_case.
 Qed.
 
 Lemma locally_2d_locally' :
   forall P x y,
-  locally_2d P x y <-> locally ((x,(y,tt)) : Tn 2 R) (fun z : Tn 2 R => let '(x,(y,_)) := z in P x y).
+  locally_2d P x y <-> locally ((x,(y,tt)) : Tn 2 R) (fun z : Tn 2 R => P (fst z) (fst (snd z))).
 Proof.
 intros P x y.
 split ; intros [d H] ; exists d.
 - rewrite /= /distR.
-  intros [u [v _]] H'.
+  move => [u [v t]] /= {t} H'.
   apply H.
   apply Rle_lt_trans with (2 := H').
   apply Rmax_l.
