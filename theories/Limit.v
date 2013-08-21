@@ -590,7 +590,6 @@ Lemma is_LimSup_opp_LimInf_seq (u : nat -> R) (l : Rbar) :
   is_LimSup_seq (fun n => - u n) (Rbar_opp l) 
     <-> is_LimInf_seq u l.
 Proof.
-Proof.
   case: l => [l | | ] /= ; split => Hl.
 (* l \in R *)
 (* * -> *)
@@ -1401,40 +1400,32 @@ Qed.
 
 (** Subsequences *)
 
+Lemma eventually_subseq :
+  forall phi,
+  (forall n, (phi n < phi (S n))%nat) ->
+  filterlim phi eventually eventually.
+Proof.
+intros phi Hphi P [N HP].
+exists N.
+intros n Hn.
+apply HP.
+apply le_trans with (1 := Hn).
+clear -Hphi.
+induction n as [|n IH].
+apply le_O_n.
+apply lt_le_S.
+now apply le_lt_trans with (1 := IH).
+Qed.
+
 Lemma is_lim_seq_subseq (u : nat -> R) (l : Rbar) (phi : nat -> nat) :
   (forall n, (phi n < phi (S n))%nat) -> is_lim_seq u l
     -> is_lim_seq (fun n => u (phi n)) l.
 Proof.
-  move => Hphi Hu.
-
-  have Hphi' : forall n : nat, (n <= phi n)%nat.
-    elim => [ | n IH].
-    by apply le_O_n.
-    apply lt_le_S.
-    apply le_lt_trans with (1 := IH).
-    by apply Hphi.
-
-  case: l Hu => [l | | ] Hu.
-  move => eps.
-  case: (Hu eps) => {Hu} N Hu.
-  exists N => n Hn.
-  apply Hu.
-  apply le_trans with (1 := Hn).
-  by apply Hphi'.
-  
-  move => M.
-  case: (Hu M) => {Hu} N Hu.
-  exists N => n Hn.
-  apply Hu.
-  apply le_trans with (1 := Hn).
-  by apply Hphi'.
-  
-  move => M.
-  case: (Hu M) => {Hu} N Hu.
-  exists N => n Hn.
-  apply Hu.
-  apply le_trans with (1 := Hn).
-  by apply Hphi'.
+intros Hphi Hu.
+apply is_lim_seq_ in Hu.
+apply is_lim_seq_.
+apply: filterlim_compose Hu.
+exact: eventually_subseq.
 Qed.
 Lemma ex_lim_seq_subseq (u : nat -> R) (phi : nat -> nat) :
   (forall n, (phi n < phi (S n))%nat) -> ex_lim_seq u

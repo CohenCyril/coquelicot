@@ -243,26 +243,36 @@ Qed.
 
 (** Composition *)
 
+Lemma is_lim_comp' :
+  forall {T} {F} {FF : @Filter T F} (f : T -> R) (g : R -> R) (x l : Rbar),
+  filterlim f F (Rbar_locally' x) -> is_lim g x l ->
+  F (fun y => Finite (f y) <> x) ->
+  filterlim (fun y => g (f y)) F (Rbar_locally' l).
+Proof.
+intros T F FF f g x l Lf Lg Hf.
+apply is_lim_ in Lg.
+revert Lg.
+apply filterlim_compose.
+intros P HP.
+destruct x as [x| |] ; try now apply Lf.
+specialize (Lf _ HP).
+unfold filtermap in Lf |- *.
+generalize (filter_and _ _ Hf Lf).
+apply filter_imp.
+intros y [H Hi].
+apply Hi.
+contradict H.
+now apply f_equal.
+Qed.
+
 Lemma is_lim_comp (f g : R -> R) (x k l : Rbar) :
   is_lim f l k -> is_lim g x l -> Rbar_locally x (fun y => Finite (g y) <> l)
     -> is_lim (fun x => f (g x)) x k.
 Proof.
 intros Lf Lg Hg.
-apply is_lim_ in Lf.
-apply is_lim_ in Lg.
 apply is_lim_.
-revert Lf.
-apply filterlim_compose.
-intros P HP.
-destruct l as [l| |] ; try now apply Lg.
-specialize (Lg _ HP).
-unfold filtermap in Lg |- *.
-generalize (filter_and _ _ Hg Lg).
-apply filter_imp.
-intros n [H Hi].
-apply Hi.
-contradict H.
-now apply f_equal.
+apply: is_lim_comp' Lf Hg.
+now apply is_lim_.
 Qed.
 Lemma ex_lim_comp (f g : R -> R) (x : Rbar) : 
   ex_lim f (Lim g x) -> ex_lim g x -> Rbar_locally x (fun y => Finite (g y) <> Lim g x)
