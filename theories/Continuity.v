@@ -1085,15 +1085,9 @@ Qed.
 Lemma is_lim_continuity (f : R -> R) (x : R) :
   continuity_pt f x -> is_lim f x (f x).
 Proof.
-  move => Hf eps.
-  case: (Hf eps (cond_pos eps)) => {Hf} /= d [Hd Hf].
-  exists (mkposreal _ Hd) => /= y Hy Hxy.
-  apply Hf.
-  split.
-  split.
-  by [].
-  by apply sym_not_eq.
-  by apply Hy.
+intros cf.
+apply is_lim_.
+now apply continuity_pt_filterlim'.
 Qed.
 Lemma ex_lim_continuity (f : R -> R) (x : R) :
   continuity_pt f x -> ex_finite_lim f x.

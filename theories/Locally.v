@@ -177,6 +177,32 @@ intros T MT x.
 apply locally_dist_filter.
 Qed.
 
+Definition locally' {T} {MT : MetricSpace T} (x : T) (P : T -> Prop) :=
+  locally_dist (distance x) (fun y => y <> x -> P y).
+
+Global Instance locally'_filter : forall T (MT : MetricSpace T) (x : T), Filter (locally' x).
+Proof.
+intros T MT x.
+constructor.
+- now exists (mkposreal _ Rlt_0_1).
+- intros P Q [dP HP] [dQ HQ].
+  exists (mkposreal _ (Rmin_stable_in_posreal dP dQ)).
+  simpl.
+  intros y Hy Hy'.
+  split.
+  apply HP with (2 := Hy').
+  apply Rlt_le_trans with (1 := Hy).
+  apply Rmin_l.
+  apply HQ with (2 := Hy').
+  apply Rlt_le_trans with (1 := Hy).
+  apply Rmin_r.
+- intros P Q H [dP HP].
+  exists dP.
+  intros y Hy Hy'.
+  apply H.
+  now apply HP.
+Qed.
+
 Definition eventually (P : nat -> Prop) :=
   exists N : nat, forall n, (N <= n)%nat -> P n.
 
@@ -676,6 +702,33 @@ intros h [Zh Hh].
 exact: H.
 Qed.
 
+Lemma continuity_pt_locally' :
+  forall f x,
+  continuity_pt f x <->
+  forall eps : posreal, locally' x (fun u => Rabs (f u - f x) < eps).
+Proof.
+intros f x.
+split.
+intros H eps.
+move: (H eps (cond_pos eps)) => {H} [d [H1 H2]].
+rewrite /= /R_dist /D_x /no_cond in H2.
+exists (mkposreal d H1) => y H H'.
+destruct (Req_dec x y) as [<-|Hxy].
+rewrite /Rminus Rplus_opp_r Rabs_R0.
+apply cond_pos.
+by apply H2.
+intros H eps He.
+move: (H (mkposreal _ He)) => {H} [d H].
+exists d.
+split.
+apply cond_pos.
+intros h [Zh Hh].
+apply H.
+exact Hh.
+apply proj2 in Zh.
+now contradict Zh.
+Qed.
+
 Lemma continuity_pt_filterlim :
   forall f x,
   continuity_pt f x <->
@@ -684,6 +737,18 @@ Proof.
 intros f x.
 eapply iff_trans.
 apply continuity_pt_locally.
+apply iff_sym.
+apply: filterlim_locally.
+Qed.
+
+Lemma continuity_pt_filterlim' :
+  forall f x,
+  continuity_pt f x <->
+  filterlim f (locally' x) (locally (f x)).
+Proof.
+intros f x.
+eapply iff_trans.
+apply continuity_pt_locally'.
 apply iff_sym.
 apply: filterlim_locally.
 Qed.
