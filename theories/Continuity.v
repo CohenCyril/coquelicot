@@ -104,29 +104,43 @@ Proof.
   split ; [apply is_lim_Reals_1|apply is_lim_Reals_0].
 Qed.
 
-(** Uniqueness *)
+(** Composition *)
 
-Lemma is_lim_comp_seq (f : R -> R) (x l : Rbar) :
-  is_lim f x l -> forall u : nat -> R,
-  eventually (fun n => Finite (u n) <> x) ->
-  is_lim_seq u x -> is_lim_seq (fun n => f (u n)) l.
+Lemma is_lim_comp' :
+  forall {T} {F} {FF : @Filter T F} (f : T -> R) (g : R -> R) (x l : Rbar),
+  filterlim f F (Rbar_locally' x) -> is_lim g x l ->
+  F (fun y => Finite (f y) <> x) ->
+  filterlim (fun y => g (f y)) F (Rbar_locally' l).
 Proof.
-intros Lf u Hu Lu.
-apply is_lim_seq_.
-apply is_lim_seq_ in Lu.
-apply is_lim_ in Lf.
-apply filterlim_compose with (2 := Lf).
+intros T F FF f g x l Lf Lg Hf.
+apply is_lim_ in Lg.
+revert Lg.
+apply filterlim_compose.
 intros P HP.
-destruct x as [x| |] ; try now apply Lu.
-specialize (Lu _ HP).
-unfold filtermap in Lu |- *.
-generalize (filter_and _ _ Hu Lu).
+destruct x as [x| |] ; try now apply Lf.
+specialize (Lf _ HP).
+unfold filtermap in Lf |- *.
+generalize (filter_and _ _ Hf Lf).
 apply filter_imp.
-intros n [H Hi].
+intros y [H Hi].
 apply Hi.
 contradict H.
 now apply f_equal.
 Qed.
+
+Lemma is_lim_comp_seq (f : R -> R) (u : nat -> R) (x l : Rbar) :
+  is_lim f x l ->
+  eventually (fun n => Finite (u n) <> x) ->
+  is_lim_seq u x -> is_lim_seq (fun n => f (u n)) l.
+Proof.
+intros Lf Hu Lu.
+apply is_lim_seq_.
+apply: is_lim_comp' Hu.
+now apply is_lim_seq_.
+exact Lf.
+Qed.
+
+(** Uniqueness *)
 
 Lemma is_lim_unique (f : R -> R) (x l : Rbar) :
   is_lim f x l -> Lim f x = l.
@@ -134,7 +148,7 @@ Proof.
   intros.
   unfold Lim.
   rewrite (is_lim_seq_unique _ l) //.
-  apply (is_lim_comp_seq f x l H).
+  apply (is_lim_comp_seq f _ x l H).
   exists 1%nat => n Hn.
   case: x {H} => [x | | ] //=.
   apply Rbar_finite_neq, Rgt_not_eq, Rminus_lt_0.
@@ -242,28 +256,6 @@ Proof.
 Qed.
 
 (** Composition *)
-
-Lemma is_lim_comp' :
-  forall {T} {F} {FF : @Filter T F} (f : T -> R) (g : R -> R) (x l : Rbar),
-  filterlim f F (Rbar_locally' x) -> is_lim g x l ->
-  F (fun y => Finite (f y) <> x) ->
-  filterlim (fun y => g (f y)) F (Rbar_locally' l).
-Proof.
-intros T F FF f g x l Lf Lg Hf.
-apply is_lim_ in Lg.
-revert Lg.
-apply filterlim_compose.
-intros P HP.
-destruct x as [x| |] ; try now apply Lf.
-specialize (Lf _ HP).
-unfold filtermap in Lf |- *.
-generalize (filter_and _ _ Hf Lf).
-apply filter_imp.
-intros y [H Hi].
-apply Hi.
-contradict H.
-now apply f_equal.
-Qed.
 
 Lemma is_lim_comp (f g : R -> R) (x k l : Rbar) :
   is_lim f l k -> is_lim g x l -> Rbar_locally x (fun y => Finite (g y) <> l)
