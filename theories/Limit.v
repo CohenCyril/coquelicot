@@ -1171,10 +1171,7 @@ Proof.
   move => Hext Hu.
   apply is_lim_seq_ in Hu.
   apply is_lim_seq_.
-  revert Hu.
-  apply filterlim_ext_loc.
-  apply eventually_filter.
-  exact Hext.
+  exact: filterlim_ext_loc Hu.
 Qed.
 Lemma ex_lim_seq_ext_loc (u v : nat -> R) :
   eventually (fun n => u n = v n) ->

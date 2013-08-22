@@ -209,7 +209,6 @@ apply is_lim_ in Hf.
 apply is_lim_.
 revert Hext Hf.
 apply filterlim_ext_loc.
-apply Rbar_locally_filter.
 Qed.
 Lemma ex_lim_ext_loc (f g : R -> R) (x : Rbar) :
   Rbar_locally x (fun y => f y = g y)

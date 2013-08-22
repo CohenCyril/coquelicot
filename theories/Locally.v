@@ -100,13 +100,12 @@ now apply GH.
 Qed.
 
 Lemma filterlim_ext_loc :
-  forall T U (f g : T -> U) (F G : _ -> Prop),
-  Filter F ->
+  forall {T U F G} {FF : Filter F} (f g : T -> U),
   F (fun x => f x = g x) ->
   filterlim f F G ->
   filterlim g F G.
 Proof.
-intros T U f g F G HF Efg Lf P GP.
+intros T U F G FF f g Efg Lf P GP.
 specialize (Lf P GP).
 unfold filtermap.
 generalize (filter_and _ _ Efg Lf).
@@ -115,15 +114,14 @@ now intros x [-> H].
 Qed.
 
 Lemma filterlim_ext :
-  forall T U (f g : T -> U) (F G : _ -> Prop),
-  Filter F ->
+  forall {T U F G} {FF : Filter F} (f g : T -> U),
   (forall x, f x = g x) ->
   filterlim f F G ->
   filterlim g F G.
 Proof.
-intros T U f g F G HF Efg.
-apply: filterlim_ext_loc.
-exact: filter_forall.
+intros T U F G FF f g Efg.
+apply filterlim_ext_loc.
+now apply filter_forall.
 Qed.
 
 (** ** Filters for pairs *)
