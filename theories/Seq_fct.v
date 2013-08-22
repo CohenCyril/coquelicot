@@ -872,8 +872,8 @@ Proof.
     by [].
     by rewrite IH.
     apply Lim_seq_correct', H1.
-    simpl ; ring.
-  
+    easy.
+
   have H3 : forall y, Boule 0 r y -> ex_series (fun n => Rabs (fn n y)).
   move => y Hy.
   move: H1 ; apply Comp_ex_series.

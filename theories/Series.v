@@ -864,7 +864,7 @@ Proof.
   replace 1 with ((1+1)/2) by field ; rewrite /k0.
   apply Rmult_lt_compat_r ; by intuition.
   apply Rle_trans with (2 := H N (le_refl _)) ; by apply Rabs_pos.
-  simpl ; ring.
+  easy.
 Qed.
 
 Lemma not_ex_series_DAlembert (a : nat -> R) (l : R) :

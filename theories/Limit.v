@@ -1956,9 +1956,9 @@ Proof.
   case Hlp: (Rbar_plus l1 l2) Hl => [l | | ] Hl Hu Hv Hp ;
   try by case: Hl.
   
-(* l1 + l2 \in R *)  
+(* l1 + l2 \in R *)
   case: l1 l2 Hlp Hu Hv Hp => [l1 | | ] ;
-  case => [l2 | | ] //= Hlp Hu Hv <- {l Hlp Hl}.
+  case => [l2 | | ] //= Hlp Hu Hv ; case => <- {l Hlp Hl}.
   move => eps.
   case: (Hu (pos_div_2 eps)) => {Hu} Nu Hu.
   case: (Hv (pos_div_2 eps)) => {Hv} Nv Hv.
@@ -2196,7 +2196,7 @@ Proof.
     case: (Rbar_le_lt_dec 0 l1) => Hl1 Hu Hv H.
     by apply Hw.
     apply is_lim_seq_opp.
-    rewrite -Rbar_mult_opp_r.
+    rewrite -Rbar_mult_opp_l.
     apply is_lim_seq_ext with (fun n => - u n * v n).
     move => n ; ring.
     apply Hw.
@@ -2205,13 +2205,13 @@ Proof.
     by apply Rbar_lt_le.
     by apply -> is_lim_seq_opp.
     by [].
-    rewrite Rbar_mult_opp_r.
-    by apply is_Rbar_mult_opp_r.
+    rewrite Rbar_mult_opp_l.
+    by apply is_Rbar_mult_opp_l.
   wlog: l2 v / (Rbar_le 0 l2) => [Hw | ].
     case: (Rbar_le_lt_dec 0 l2) => Hl1 Hl2 Hu Hv H.
     by apply Hw.
     apply is_lim_seq_opp.
-    rewrite -Rbar_mult_opp_l.
+    rewrite -Rbar_mult_opp_r.
     apply is_lim_seq_ext with (fun n => u n * - v n).
     move => n ; ring.
     apply Hw.
@@ -2221,8 +2221,8 @@ Proof.
     by [].
     by [].
     by apply -> is_lim_seq_opp.
-    rewrite Rbar_mult_opp_l.
-    by apply is_Rbar_mult_opp_l.
+    rewrite Rbar_mult_opp_r.
+    by apply is_Rbar_mult_opp_r.
   wlog: l1 l2 u v / (Rbar_le l1 l2) => [Hw | ].
     case: (Rbar_le_lt_dec l1 l2) => Hl Hl1 Hl2 Hu Hv H.
     by apply Hw.
@@ -2358,19 +2358,19 @@ Proof.
   case: Rle_lt_or_eq_dec (Rlt_irrefl 0) => // _ _.
   case: Rle_dec (Rle_refl 0) => // H _.
   case: Rle_lt_or_eq_dec (Rlt_irrefl 0) => // _ _.
-  
+
   apply is_lim_seq_mult.
   by apply is_lim_seq_const.
   by [].
   case: (lu) => [x | | ] //=.
   case: Rle_dec => // H.
   case: Rle_lt_or_eq_dec => //.
-  by apply sym_not_eq.
-  by apply Rnot_le_lt.
+  intros H'.
+  now elim Ha.
   case: Rle_dec => // H.
   case: Rle_lt_or_eq_dec => //.
-  by apply sym_not_eq.
-  by apply Rnot_le_lt.
+  intros H'.
+  now elim Ha.
 Qed.
 Lemma ex_lim_seq_scal_l (u : nat -> R) (a : R) :
   ex_lim_seq u -> ex_lim_seq (fun n => a * u n).

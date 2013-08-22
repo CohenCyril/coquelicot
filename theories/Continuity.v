@@ -639,6 +639,7 @@ Lemma is_lim_mult (f g : R -> R) (x lf lg : Rbar) :
   -> is_lim (fun y => f y * g y) x (Rbar_mult lf lg).
 Proof.
   case: (Rbar_eq_dec lf 0) => [ -> /= | Hlf].
+  unfold is_Rbar_mult, Rbar_mult, Rbar_mult'.
   case: Rle_dec (Rle_refl 0) => // H _.
   case: Rle_lt_or_eq_dec (Rlt_irrefl 0) => // {H} _ _.
   case: lg => [lg | | ] //= Hf Hg _ eps.
@@ -663,9 +664,10 @@ Proof.
   apply Rplus_lt_le_0_compat.
   by apply Rlt_0_1.
   by apply Rabs_pos.
-  
+
   case: (Rbar_eq_dec lg 0) => [ -> /= | Hlg].
   rewrite Rbar_mult_comm ; rewrite is_Rbar_mult_comm => /=.
+  unfold is_Rbar_mult, Rbar_mult, Rbar_mult'.
   case: Rle_dec (Rle_refl 0) => // H _.
   case: Rle_lt_or_eq_dec (Rlt_irrefl 0) => // {H} _ _.
   case: lf Hlf => [lf | | ] //= Hlf Hf Hg _ eps.
@@ -928,9 +930,7 @@ Proof.
   case: l {Hf} => [l | | ] //= ;
   case: Rle_dec => // H.
   case: Rle_lt_or_eq_dec => //.
-  by apply Rnot_le_lt.
   case: Rle_lt_or_eq_dec => //.
-  by apply Rnot_le_lt.
 Qed.
 Lemma ex_lim_scal_l (f : R -> R) (a : R) (x : Rbar) :
   ex_lim f x -> ex_lim (fun y => a * f y) x.
