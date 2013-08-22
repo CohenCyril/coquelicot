@@ -26,7 +26,9 @@ Require Import List.
 
 Open Scope R_scope.
 
-(** * Definitions *)
+(** * Filters *)
+
+(** ** Definitions *)
 
 Class Filter {T : Type} (F : (T -> Prop) -> Prop) := {
   filter_true : F (fun _ => True) ;
@@ -63,8 +65,9 @@ Qed.
 Definition filtermap {T U : Type} (f : T -> U) (F : (T -> Prop) -> Prop) :=
   fun P => F (fun x => P (f x)).
 
-Global Instance filtermap_filter : forall T U f F, @Filter T F ->
-  @Filter U (filtermap f F).
+Global Instance filtermap_filter :
+  forall T U (f : T -> U) (F : (T -> Prop) -> Prop),
+  Filter F -> Filter (filtermap f F).
 Proof.
 intros T U f F FF.
 unfold filtermap.
@@ -79,6 +82,8 @@ constructor.
   now apply H.
   exact HP.
 Qed.
+
+(** ** Continuity expressed with filters *)
 
 Definition filterlim {T U : Type} (f : T -> U) F G :=
   filter_le (filtermap f F) G.
@@ -121,6 +126,166 @@ apply: filterlim_ext_loc.
 exact: filter_forall.
 Qed.
 
+(** ** Filters for pairs *)
+
+Inductive filter_prod {T U : Type} (F G : _ -> Prop) (P : T * U -> Prop) : Prop :=
+  Filter_prod (Q : T -> Prop) (R : U -> Prop) :
+    F Q -> G R -> (forall x y, Q x -> R y -> P (x, y)) -> filter_prod F G P.
+
+Global Instance filter_prod_filter :
+  forall T U (F : (T -> Prop) -> Prop) (G : (U -> Prop) -> Prop),
+  Filter F -> Filter G -> Filter (filter_prod F G).
+Proof.
+intros T U F G FF FG.
+constructor.
+- exists (fun _ => True) (fun _ => True).
+  apply filter_true.
+  apply filter_true.
+  easy.
+- intros P Q [AP BP P1 P2 P3] [AQ BQ Q1 Q2 Q3].
+  exists (fun x => AP x /\ AQ x) (fun x => BP x /\ BQ x).
+  now apply filter_and.
+  now apply filter_and.
+  intros x y [Px Qx] [Py Qy].
+  split.
+  now apply P3.
+  now apply Q3.
+- intros P Q HI [AP BP P1 P2 P3].
+  exists AP BP ; try easy.
+  intros x y Hx Hy.
+  apply HI.
+  now apply P3.
+Qed.
+
+Lemma filterlim_fst :
+  forall {T U F G} {FG : Filter G},
+  filterlim (@fst T U) (filter_prod F G) F.
+Proof.
+intros T U F G FG P HP.
+exists P (fun _ => True) ; try easy.
+apply filter_true.
+Qed.
+
+Lemma filterlim_snd :
+  forall {T U F G} {FF : Filter F},
+  filterlim (@snd T U) (filter_prod F G) G.
+Proof.
+intros T U F G FF P HP.
+exists (fun _ => True) P ; try easy.
+apply filter_true.
+Qed.
+
+Lemma filterlim_pair :
+  forall {T U V F G H} {FF : Filter F},
+  forall (f : T -> U) (g : T -> V),
+  filterlim f F G ->
+  filterlim g F H ->
+  filterlim (fun x => (f x, g x)) F (filter_prod G H).
+Proof.
+intros T U V F G H FF f g Cf Cg P [A B GA HB HP].
+unfold filtermap.
+apply (filter_imp (fun x => A (f x) /\ B (g x))).
+intros x [Af Bg].
+now apply HP.
+apply filter_and.
+now apply Cf.
+now apply Cg.
+Qed.
+
+Lemma filterlim_compose_2 :
+  forall {T U V W F G H I} {FF : Filter F},
+  forall (f : T -> U) (g : T -> V) (h : U -> V -> W),
+  filterlim f F G ->
+  filterlim g F H ->
+  filterlim (fun x => h (fst x) (snd x)) (filter_prod G H) I ->
+  filterlim (fun x => h (f x) (g x)) F I.
+Proof.
+intros T U V W F G H I FF f g h Cf Cg Ch.
+change (fun x => h (f x) (g x)) with (fun x => h (fst (f x, g x)) (snd (f x, g x))).
+apply: filterlim_compose Ch.
+now apply filterlim_pair.
+Qed.
+
+(** ** Specific filters *)
+
+(** Eventually = "for integers large enough" *)
+
+Definition eventually (P : nat -> Prop) :=
+  exists N : nat, forall n, (N <= n)%nat -> P n.
+
+Global Instance eventually_filter : Filter eventually.
+Proof.
+constructor.
+- now exists 0%nat.
+- intros P Q [NP HP] [NQ HQ].
+  exists (max NP NQ).
+  intros n Hn.
+  split.
+  apply HP.
+  apply le_trans with (2 := Hn).
+  apply Max.le_max_l.
+  apply HQ.
+  apply le_trans with (2 := Hn).
+  apply Max.le_max_r.
+- intros P Q H [NP HP].
+  exists NP.
+  intros n Hn.
+  apply H.
+  now apply HP.
+Qed.
+
+(** Restriction of a filter to a domain *)
+
+Definition within {T : Type} D (F : (T -> Prop) -> Prop) (P : T -> Prop) :=
+  F (fun x => D x -> P x).
+
+Global Instance within_filter : forall T D F, Filter F -> Filter (@within T D F).
+Proof.
+intros T D F FF.
+unfold within.
+constructor.
+- now apply filter_forall.
+- intros P Q WP WQ.
+  apply filter_imp with (fun x => (D x -> P x) /\ (D x -> Q x)).
+  intros x [HP HQ] HD.
+  split.
+  now apply HP.
+  now apply HQ.
+  now apply filter_and.
+- intros P Q H FP.
+  apply filter_imp with (fun x => (D x -> P x) /\ (P x -> Q x)).
+  intros x [H1 H2] HD.
+  apply H2, H1, HD.
+  apply filter_and.
+  exact FP.
+  now apply filter_forall.
+Qed.
+
+(** * Metric spaces *)
+
+Class MetricSpace T := {
+  distance : T -> T -> R ;
+  distance_refl : forall a, distance a a = 0 ;
+  distance_comm : forall a b, distance a b = distance b a ;
+  distance_triangle : forall a b c, distance a c <= distance a b + distance b c
+}.
+
+Lemma distance_ge_0 :
+  forall {T} {MT : MetricSpace T} (a b : T),
+  0 <= distance a b.
+Proof.
+intros T MT a b.
+apply Rmult_le_reg_l with 2.
+apply Rlt_0_2.
+rewrite Rmult_0_r.
+rewrite -(distance_refl a).
+rewrite Rmult_plus_distr_r Rmult_1_l.
+rewrite -> (distance_comm a b) at 2.
+apply distance_triangle.
+Qed.
+
+(** ** Filters for open balls *)
+
 Definition locally_dist {T : Type} (d : T -> R) (P : T -> Prop) :=
   exists delta : posreal, forall y, d y < delta -> P y.
 
@@ -145,27 +310,6 @@ constructor.
   intros y Hy.
   apply H.
   now apply HP.
-Qed.
-
-Class MetricSpace T := {
-  distance : T -> T -> R ;
-  distance_refl : forall a, distance a a = 0 ;
-  distance_comm : forall a b, distance a b = distance b a ;
-  distance_triangle : forall a b c, distance a c <= distance a b + distance b c
-}.
-
-Lemma distance_ge_0 :
-  forall {T} {MT : MetricSpace T} (a b : T),
-  0 <= distance a b.
-Proof.
-intros T MT a b.
-apply Rmult_le_reg_l with 2.
-apply Rlt_0_2.
-rewrite Rmult_0_r.
-rewrite -(distance_refl a).
-rewrite Rmult_plus_distr_r Rmult_1_l.
-rewrite -> (distance_comm a b) at 2.
-apply distance_triangle.
 Qed.
 
 Definition locally {T} {MT : MetricSpace T} (x : T) :=
@@ -203,54 +347,7 @@ constructor.
   now apply HP.
 Qed.
 
-Definition eventually (P : nat -> Prop) :=
-  exists N : nat, forall n, (N <= n)%nat -> P n.
-
-Global Instance eventually_filter : Filter eventually.
-Proof.
-constructor.
-- now exists 0%nat.
-- intros P Q [NP HP] [NQ HQ].
-  exists (max NP NQ).
-  intros n Hn.
-  split.
-  apply HP.
-  apply le_trans with (2 := Hn).
-  apply Max.le_max_l.
-  apply HQ.
-  apply le_trans with (2 := Hn).
-  apply Max.le_max_r.
-- intros P Q H [NP HP].
-  exists NP.
-  intros n Hn.
-  apply H.
-  now apply HP.
-Qed.
-
-Definition within {T : Type} D (F : (T -> Prop) -> Prop) (P : T -> Prop) :=
-  F (fun x => D x -> P x).
-
-Global Instance within_filter : forall T D F, Filter F -> Filter (@within T D F).
-Proof.
-intros T D F FF.
-unfold within.
-constructor.
-- now apply filter_forall.
-- intros P Q WP WQ.
-  apply filter_imp with (fun x => (D x -> P x) /\ (D x -> Q x)).
-  intros x [HP HQ] HD.
-  split.
-  now apply HP.
-  now apply HQ.
-  now apply filter_and.
-- intros P Q H FP.
-  apply filter_imp with (fun x => (D x -> P x) /\ (P x -> Q x)).
-  intros x [H1 H2] HD.
-  apply H2, H1, HD.
-  apply filter_and.
-  exact FP.
-  now apply filter_forall.
-Qed.
+(** ** [R] is a metric space *)
 
 Definition distR x y := Rabs (y - x).
 
@@ -288,6 +385,8 @@ Defined.
 
 Notation at_left x := (within (fun u : R => Rlt u x) (locally (x)%R)).
 Notation at_right x := (within (fun u : R => Rlt x u) (locally (x)%R)).
+
+(** ** Products of metric spaces *)
 
 Fixpoint Tn (n : nat) (T : Type) : Type :=
   match n with
@@ -405,6 +504,8 @@ apply (Build_MetricSpace _ (dist_pow n T distance)).
 - exact (dist_pow_triangle n).
 Defined.
 
+(** ** Currified variant of locally for R^2 *)
+
 Definition locally_2d (P : R -> R -> Prop) x y :=
   exists delta : posreal, forall u v, Rabs (u - x) < delta -> Rabs (v - y) < delta -> P u v.
 
@@ -451,8 +552,6 @@ split ; intros [d H] ; exists d.
   exact Hv.
   apply cond_pos.
 Qed.
-
-(** * Logical connective *)
 
 Lemma locally_2d_align :
   forall (P Q : R -> R -> Prop) x y,
@@ -661,6 +760,8 @@ specialize (H t Ht).
 apply: locally_singleton H.
 Qed.
 
+(** ** Relations between filters and continuity over R. *)
+
 Lemma filterlim_locally :
   forall {T U} {MU : MetricSpace U} {F} {FF : Filter F} (f : T -> U) x,
   filterlim f F (locally (f x)) <->
@@ -753,7 +854,16 @@ apply iff_sym.
 apply: filterlim_locally.
 Qed.
 
-(** * Intervals *)
+Lemma locally_comp (P : R -> Prop) (f : R -> R) (x : R) :
+  locally (f x) P -> continuity_pt f x ->
+  locally x (fun x => P (f x)).
+Proof.
+intros Lf Cf.
+apply continuity_pt_filterlim in Cf.
+now apply Cf.
+Qed.
+
+(** ** Intervals *)
 
 Lemma locally_interval (P : R -> Prop) (x : R) (a b : Rbar) :
   Rbar_lt a x -> Rbar_lt x b ->
@@ -764,17 +874,6 @@ Proof.
   case: (Rbar_lt_locally _ _ _ Hax Hxb) => d Hd.
   exists d => y Hy.
   apply Hp ; by apply Hd.
-Qed.
-
-(** * Continuity *)
-
-Lemma locally_comp (P : R -> Prop) (f : R -> R) (x : R) :
-  locally (f x) P -> continuity_pt f x ->
-  locally x (fun x => P (f x)).
-Proof.
-intros Lf Cf.
-apply continuity_pt_filterlim in Cf.
-now apply Cf.
 Qed.
 
 (** * locally in Set *)
@@ -919,7 +1018,7 @@ apply Rplus_eq_reg_l with x.
 now rewrite Rplus_0_r.
 Qed.
 
-(** * Rbar_locally *)
+(** * Filters for Rbar *)
 
 Definition Rbar_locally (a : Rbar) (P : R -> Prop) :=
   match a with
