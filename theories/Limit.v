@@ -1895,6 +1895,27 @@ Qed.
 
 (** Opposite *)
 
+Lemma filterlim_opp :
+  forall x,
+  filterlim Ropp (Rbar_locally' x) (Rbar_locally' (Rbar_opp x)).
+Proof.
+intros [x| |] P [eps He].
+- exists eps.
+  intros y Hy.
+  apply He.
+  by rewrite /Rminus Ropp_involutive Rplus_comm Rabs_minus_sym.
+- exists (-eps).
+  intros y Hy.
+  apply He.
+  apply Ropp_lt_cancel.
+  by rewrite Ropp_involutive.
+- exists (-eps).
+  intros y Hy.
+  apply He.
+  apply Ropp_lt_cancel.
+  by rewrite Ropp_involutive.
+Qed.
+
 Lemma is_lim_seq_opp (u : nat -> R) (l : Rbar) :
   is_lim_seq u l <-> is_lim_seq (fun n => -u n) (Rbar_opp l).
 Proof.
@@ -1930,66 +1951,116 @@ Proof.
 Qed.
 
 (** Addition *)
-Lemma is_lim_seq_plus (u v : nat -> R) (l1 l2 : Rbar) :
-  is_lim_seq u l1 -> is_lim_seq v l2 -> 
-    is_Rbar_plus l1 l2 (Rbar_plus l1 l2) ->
-    is_lim_seq (fun n => u n + v n) (Rbar_plus l1 l2).
+
+Lemma filterlim_plus :
+  forall x y,
+  Rbar_plus' x y <> None ->
+  filterlim (fun z => fst z + snd z) (filter_prod (Rbar_locally' x) (Rbar_locally' y)) (Rbar_locally' (Rbar_plus x y)).
 Proof.
-  wlog: l1 l2 u v / (Rbar_le 0 (Rbar_plus l1 l2)) => [Hw | Hl].
-    case: (Rbar_le_lt_dec 0 (Rbar_plus l1 l2)) => Hl Hu Hv Hp.
+  intros x y.
+  wlog: x y / (Rbar_le 0 (Rbar_plus x y)).
+    intros Hw.
+    case: (Rbar_le_lt_dec 0 (Rbar_plus x y)) => Hz Hp.
     by apply Hw.
-    apply is_lim_seq_opp.
-    rewrite -Rbar_plus_opp.
-    apply is_lim_seq_ext with (fun n => - u n + - v n).
-    move => n ; ring.
+    apply (filterlim_ext (fun z => - (- fst z + - snd z))).
+    intros z.
+    ring.
+    rewrite -(Rbar_opp_involutive (Rbar_plus x y)).
+    eapply filterlim_compose.
+    2: apply filterlim_opp.
+    assert (Hw' : filterlim (fun z => fst z + snd z) (filter_prod (Rbar_locally' (Rbar_opp x)) (Rbar_locally' (Rbar_opp y))) (Rbar_locally' (Rbar_plus (Rbar_opp x) (Rbar_opp y)))).
     apply Hw.
     rewrite Rbar_plus_opp.
+    replace (Finite 0) with (Rbar_opp 0) by apply (f_equal Finite), Ropp_0.
     apply Rbar_opp_le.
-    rewrite Rbar_opp_involutive /= Ropp_0.
     by left.
-    by apply -> is_lim_seq_opp.
-    by apply -> is_lim_seq_opp.
-    by rewrite Rbar_plus_opp is_Rbar_plus_opp.
-  case Hlp: (Rbar_plus l1 l2) Hl => [l | | ] Hl Hu Hv Hp ;
-  try by case: Hl.
-  
-(* l1 + l2 \in R *)
-  case: l1 l2 Hlp Hu Hv Hp => [l1 | | ] ;
-  case => [l2 | | ] //= Hlp Hu Hv ; case => <- {l Hlp Hl}.
-  move => eps.
-  case: (Hu (pos_div_2 eps)) => {Hu} Nu Hu.
-  case: (Hv (pos_div_2 eps)) => {Hv} Nv Hv.
-  exists (Nu + Nv)%nat => n Hn.
-  replace (u n + v n - (l1 + l2))
-    with ((u n - l1) + (v n - l2)) by ring.
+    revert Hp.
+    clear.
+    now destruct x as [x| |] ; destruct y as [y| |].
+    clear Hw.
+    rewrite -Rbar_plus_opp.
+    intros P HP.
+    specialize (Hw' P HP).
+    destruct Hw' as [Q R H1 H2 H3].
+    exists (fun x => Q (- x)) (fun x => R (- x)).
+    now apply filterlim_opp.
+    now apply filterlim_opp.
+    intros u v HQ HR.
+    exact (H3 _ _ HQ HR).
+
+  unfold Rbar_plus.
+  case Hlp: Rbar_plus' => [[z| |]|] Hz Hp ;
+  try by case: Hz.
+
+(* x + y \in R *)
+  case: x y Hlp Hz {Hp} => [x| |] ;
+  case => [y| |] //= ; case => <- Hlp.
+  intros P [eps He].
+  exists (fun u => Rabs (u - x) < pos_div_2 eps) (fun v => Rabs (v - y) < pos_div_2 eps).
+  now exists (pos_div_2 eps).
+  now exists (pos_div_2 eps).
+  intros u v Hu Hv.
+  simpl.
+  apply He.
+  replace (u + v - (x + y)) with ((u - x) + (v - y)) by ring.
   rewrite (double_var eps) ;
   apply Rle_lt_trans with (1 := Rabs_triang _ _), Rplus_lt_compat.
-  apply Hu ; by intuition.
-  apply Hv ; by intuition.
+  now apply Hu.
+  now apply Hv.
 
-(* l1 + l2 = p_infty *)
-  wlog: l1 l2 u v Hu Hv Hp {Hlp Hl} /(is_finite l1) => [Hw | Hl1].
-    case: l1 l2 Hu Hv Hp {Hl Hlp} => [l1 | | ] ;
-    case => [l2 | | ] // Hu Hv Hp.
-    by apply (Hw l1 p_infty).
-    apply is_lim_seq_ext with (fun n => v n + u n).
-    move => n ; by apply Rplus_comm.
-    by apply (Hw l2 p_infty).
-    apply is_lim_seq_le_p_loc with v.
-    case: (Hu 0) => {Hu} N Hu.
-    exists N => n Hn.
-    apply Rminus_le_0 ; ring_simplify ; by apply Rlt_le, Hu.
-    by [].
-  case: l1 l2 Hu Hv Hp Hl1 => [l1 | | ] ;
-  case => [l2 | | ] //= Hu Hv _ _.
-  move => M.
-  case: (Hu (mkposreal _ Rlt_0_1)) => {Hu} /= Nu Hu.
-  case: (Hv (M - (l1 - 1))) => {Hv} /= Nv Hv.
-  exists (Nu + Nv)%nat => n Hn.
-  replace M with ((l1 - 1) + (M - (l1 - 1))) by ring.
+(* x + y = p_infty *)
+  wlog: x y Hlp {Hp Hz} / (is_finite x) => [Hw|Hx].
+    case: x y Hlp {Hp Hz} => [x| |] ;
+    case => [y| |] // _.
+    now apply (Hw x p_infty).
+    assert (Hw': filterlim (fun z => fst z + snd z) (filter_prod (Rbar_locally' y) (Rbar_locally' p_infty)) (Rbar_locally' p_infty)).
+    exact: Hw.
+    intros P HP.
+    specialize (Hw' P HP).
+    destruct Hw' as [Q R H1 H2 H3].
+    exists R Q ; try assumption.
+    intros u v Hu Hv.
+    rewrite Rplus_comm.
+    now apply (H3 v u).
+    clear Hw.
+    intros P [N HN].
+    exists (fun x => N/2 < x) (fun x => N/2 < x).
+    now exists (N/2).
+    now exists (N/2).
+    intros x y Hx Hy.
+    simpl.
+    apply HN.
+    rewrite (double_var N).
+    now apply Rplus_lt_compat.
+  case: x y Hlp Hx => [x| |] ;
+  case => [y| | ] //= _ _.
+  intros P [N HN].
+  exists (fun u => Rabs (u - x) < 1) (fun v => N - x + 1 < v).
+  now exists (mkposreal _ Rlt_0_1).
+  now exists (N - x + 1).
+  intros u v Hu Hv.
+  simpl.
+  apply HN.
+  replace N with (x - 1 + (N - x + 1)) by ring.
   apply Rplus_lt_compat.
-  apply Rabs_lt_between', Hu ; by intuition.
-  apply Hv ; by intuition.
+  now apply Rabs_lt_between'.
+  exact Hv.
+Qed.
+
+Lemma is_lim_seq_plus (u v : nat -> R) (l1 l2 : Rbar) :
+  is_lim_seq u l1 -> is_lim_seq v l2 ->
+  is_Rbar_plus l1 l2 (Rbar_plus l1 l2) ->
+  is_lim_seq (fun n => u n + v n) (Rbar_plus l1 l2).
+Proof.
+intros Hu Hv Hp.
+apply is_lim_seq_ in Hu.
+apply is_lim_seq_ in Hv.
+apply is_lim_seq_.
+eapply filterlim_compose_2 ; try eassumption.
+apply filterlim_plus.
+contradict Hp.
+unfold is_Rbar_plus, Rbar_plus.
+now rewrite Hp.
 Qed.
 Lemma ex_lim_seq_plus (u v : nat -> R) :
   ex_lim_seq u -> ex_lim_seq v 

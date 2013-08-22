@@ -370,48 +370,15 @@ Lemma is_lim_plus (f g : R -> R) (x lf lg : Rbar) :
   -> is_Rbar_plus lf lg (Rbar_plus lf lg)
   -> is_lim (fun y => f y + g y) x (Rbar_plus lf lg).
 Proof.
-  wlog: lf lg f g / (Rbar_le lf lg) => [Hw | Hl].
-    case: (Rbar_le_lt_dec lf lg) => Hl Hf Hg Hfg.
-    by apply Hw.
-    apply is_lim_ext with (fun y : R => g y + f y).
-    move => y ; by apply Rplus_comm.
-    rewrite Rbar_plus_comm.
-    apply Hw.
-    by apply Rbar_lt_le.
-    by apply Hg.
-    by apply Hf.
-    apply is_Rbar_plus_comm.
-    by rewrite Rbar_plus_comm.
-  case: lf Hl => [lf | | ] //= ; case: lg => [lg | | ] => //= Hl Hf Hg _ eps ;
-  try by case: Hl.
-  generalize (filter_and _ _ (Hf (pos_div_2 eps)) (Hg (pos_div_2 eps))).
-  apply filter_imp => {Hf Hg} y [Hf Hg].
-  rewrite (double_var eps).
-  replace (f y + g y - (lf + lg)) with ((f y - lf) + (g y - lg)) by ring.
-  apply Rle_lt_trans with (1 := Rabs_triang _ _).
-  by apply Rplus_lt_compat.
-  generalize (filter_and _ _ (Hf (mkposreal _ Rlt_0_1)) (Hg (eps - (lf - 1)))).
-  apply filter_imp => {Hf Hg} /= y [Hf Hg].
-  apply Rabs_lt_between' in Hf.
-  replace (eps) with ((lf - 1) + (eps - (lf - 1))) by ring.
-  apply Rplus_lt_compat.
-  by apply Hf.
-  by apply Hg.
-  generalize (filter_and _ _ (Hf (eps / 2)) (Hg (eps / 2))).
-  apply filter_imp => {Hf Hg} y [Hf Hg].
-  rewrite (double_var eps).
-  by apply Rplus_lt_compat.
-  generalize (filter_and _ _ (Hf (eps - (lg + 1))) (Hg (mkposreal _ Rlt_0_1))).
-  apply filter_imp => {Hf Hg} y [Hf Hg].
-  apply Rabs_lt_between' in Hg.
-  replace (eps) with ((eps - (lg + 1)) + (lg + 1)) by ring.
-  apply Rplus_lt_compat.
-  by apply Hf.
-  by apply Hg.
-  generalize (filter_and _ _ (Hf (eps / 2)) (Hg (eps / 2))).
-  apply filter_imp => {Hf Hg} y [Hf Hg].
-  rewrite (double_var eps).
-  by apply Rplus_lt_compat.
+intros Cf Cg Hp.
+apply is_lim_ in Cf.
+apply is_lim_ in Cg.
+apply is_lim_.
+eapply filterlim_compose_2 ; try eassumption.
+apply filterlim_plus.
+contradict Hp.
+unfold is_Rbar_plus, Rbar_plus.
+now rewrite Hp.
 Qed.
 Lemma ex_lim_plus (f g : R -> R) (x : Rbar) :
   ex_lim f x -> ex_lim g x
@@ -2160,19 +2127,6 @@ apply continuity_pt_opp.
 apply continuity_pt_id.
 Qed.
 
-Lemma continuity_2d_pt_plus' :
-  forall x y : R,
-  continuity_2d_pt Rplus x y.
-Proof.
-intros x y eps.
-exists (pos_div_2 eps).
-intros u v Hu Hv.
-replace (u + v - (x + y)) with ((u - x) + (v - y)) by ring.
-apply Rle_lt_trans with (1 := Rabs_triang _ _).
-replace (pos eps) with (eps / 2 + eps / 2) by field.
-now apply Rplus_lt_compat.
-Qed.
-
 Lemma continuity_2d_pt_plus (f g : R -> R -> R) (x y : R) :
   continuity_2d_pt f x y ->
   continuity_2d_pt g x y ->
@@ -2182,22 +2136,10 @@ intros Cf Cg.
 apply continuity_2d_pt_filterlim in Cf.
 apply continuity_2d_pt_filterlim in Cg.
 apply continuity_2d_pt_filterlim.
-apply (filterlim_compose _ _ _ (fun z : R * R => (f (fst z) (snd z), g (fst z) (snd z)))
-  (fun z : R * R => Rplus (fst z) (snd z)) _ (locally (f x y, g x y))).
-intros P [eps HP].
-generalize (proj1 (filterlim_locally _ (x,y)) Cf eps).
-move => {Cf} Cf.
-generalize (proj1 (filterlim_locally _ (x,y)) Cg eps).
-move => {Cg} Cg.
-generalize (filter_and _ _ Cf Cg).
-apply: filter_imp => {Cf Cg}.
-intros [u v] [Hf Hg].
-apply HP.
-simpl.
-unfold dist_prod, distR.
-now apply Rmax_case.
-apply continuity_2d_pt_filterlim.
-apply continuity_2d_pt_plus'.
+eapply filterlim_compose_2.
+apply Cf.
+apply Cg.
+now apply (filterlim_plus (f x y) (g x y)).
 Qed.
 
 Lemma continuity_2d_pt_minus (f g : R -> R -> R) (x y : R) :
