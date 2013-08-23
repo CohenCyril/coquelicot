@@ -133,40 +133,21 @@ Definition Rbar_mult' (x y : Rbar) :=
 Definition Rbar_mult (x y : Rbar) :=
   match Rbar_mult' x y with Some z => z | None => Finite 0 end.
 Arguments Rbar_mult !x !y /.
-Definition is_Rbar_mult (x y z : Rbar) : Prop :=
-  Rbar_mult' x y = Some z.
-Arguments is_Rbar_mult !x !y / z.
+Definition ex_Rbar_mult (x y : Rbar) : Prop :=
+  match Rbar_mult' x y with Some _ => True | None => False end.
+Arguments ex_Rbar_mult !x !y /.
 Definition Rbar_mult_pos (x : Rbar) (y : posreal) :=
   match x with
     | Finite x => Finite (x*y)
     | _ => x
   end.
 
-Lemma Rbar_mult_correct (x y z : Rbar) :
-  is_Rbar_mult x y z -> Rbar_mult x y = z.
-Proof.
-  case: x => [x | | ] ; case: y => [y | | ] ; case: z => [z | | ] //= ;
-  (try case: Rle_dec => // H) ;
-  (try case: Rle_lt_or_eq_dec => // H).
-  by case => ->.
-Qed.
-Lemma Rbar_mult_pos_correct (x : Rbar) (y : posreal) (z : Rbar) :
-  is_Rbar_mult x (Finite y) z -> Rbar_mult_pos x y = z.
-Proof.
-  case: x => [x | | ] ; case: z => [z | | ] //= ;
-  (try case: Rle_dec => // Hp) ;
-  (try case: Rle_lt_or_eq_dec => // Hp).
-  by case => ->.
-  elim Hp ; apply Rlt_le, y.
-  elim Hp ; apply Rlt_le, y.
-Qed.
-
 Definition Rbar_div (x y : Rbar) : Rbar :=
   Rbar_mult x (Rbar_inv y).
 Arguments Rbar_div !x !y /.
-Definition is_Rbar_div (x y z : Rbar) : Prop :=
-  is_Rbar_mult x (Rbar_inv y) z.
-Arguments is_Rbar_div !x !y / z.
+Definition ex_Rbar_div (x y : Rbar) : Prop :=
+  ex_Rbar_mult x (Rbar_inv y).
+Arguments ex_Rbar_div !x !y /.
 Definition Rbar_div_pos (x : Rbar) (y : posreal) :=
   match x with
     | Finite x => Finite (x/y)
@@ -530,27 +511,6 @@ Proof.
   by rewrite Rmult_comm.
 Qed.
 
-Lemma is_Rbar_mult_comm (x y z : Rbar) :
-  is_Rbar_mult x y z <-> is_Rbar_mult y x z.
-Proof.
-  unfold is_Rbar_mult.
-  by rewrite Rbar_mult'_comm.
-Qed.
-
-Lemma is_Rbar_mult_pos_p (x : Rbar) :
-  Rbar_lt (Finite 0) x -> is_Rbar_mult x p_infty p_infty.
-Proof.
-  case: x => [x | | ] //=.
-  intros H.
-  case Rle_dec => H'.
-  case Rle_lt_or_eq_dec => //.
-  intros H''.
-  elim (Rlt_irrefl 0).
-  by rewrite {2}H''.
-  elim H'.
-  now apply Rlt_le.
-Qed.
-
 Lemma Rbar_mult'_opp_r (x y : Rbar) :
   Rbar_mult' x (Rbar_opp y) = match Rbar_mult' x y with Some z => Some (Rbar_opp z) | None => None end.
 Proof.
@@ -608,30 +568,6 @@ Proof.
   now apply Rnot_le_lt.
 Qed.
 
-Lemma is_Rbar_mult_opp_r (x y z : Rbar) :
-  is_Rbar_mult x (Rbar_opp y) (Rbar_opp z) <-> is_Rbar_mult x y z.
-Proof.
-  unfold is_Rbar_mult.
-  rewrite Rbar_mult'_opp_r.
-  case Rbar_mult' => //.
-  intros z'.
-  split ; case => H.
-  apply f_equal.
-  now apply Rbar_opp_eq.
-  by rewrite H.
-Qed.
-Lemma is_Rbar_mult_opp_l (x y z : Rbar) :
-  is_Rbar_mult (Rbar_opp x) y (Rbar_opp z) <-> is_Rbar_mult x y z.
-Proof.
-  rewrite ?(is_Rbar_mult_comm _ y).
-  by apply is_Rbar_mult_opp_r.
-Qed.
-Lemma is_Rbar_mult_opp (x y z : Rbar) :
-  is_Rbar_mult (Rbar_opp x) (Rbar_opp y) z <-> is_Rbar_mult x y z.
-Proof.
-  by rewrite -is_Rbar_mult_opp_l Rbar_opp_involutive is_Rbar_mult_opp_r.
-Qed.
-
 Lemma Rbar_mult_comm (x y : Rbar) :
   Rbar_mult x y = Rbar_mult y x.
 Proof.
@@ -687,26 +623,6 @@ Proof.
   right ; by apply Rbar_mult_pos_eq.
   left ; by apply Rbar_mult_pos_lt with z.
   right ; by apply Rbar_mult_pos_eq with z.
-Qed.
-
-(** *** Rbar_div *)
-
-Lemma is_Rbar_div_f (x y : R) :
-  is_Rbar_div (Finite x) (Finite y) (Finite (x/y)).
-Proof.
-  by simpl.
-Qed.
-Lemma is_Rbar_div_f_p (x : R) :
-  is_Rbar_div (Finite x) p_infty (Finite 0).
-Proof.
-  simpl.
-  by rewrite Rmult_0_r.
-Qed.
-Lemma is_Rbar_div_f_m (x : R) :
-  is_Rbar_div (Finite x) m_infty (Finite 0).
-Proof.
-  simpl.
-  by rewrite Rmult_0_r.
 Qed.
 
 (** Rbar_div_pos *)

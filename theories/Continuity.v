@@ -465,7 +465,7 @@ Qed.
 
 Lemma is_lim_mult (f g : R -> R) (x lf lg : Rbar) :
   is_lim f x lf -> is_lim g x lg ->
-  is_Rbar_mult lf lg (Rbar_mult lf lg) ->
+  ex_Rbar_mult lf lg ->
   is_lim (fun y => f y * g y) x (Rbar_mult lf lg).
 Proof.
 intros Cf Cg Hp.
@@ -473,35 +473,25 @@ apply is_lim_ in Cf.
 apply is_lim_ in Cg.
 apply is_lim_.
 eapply filterlim_compose_2 ; try eassumption.
-apply filterlim_mult.
-contradict Hp.
-unfold is_Rbar_mult, Rbar_mult.
-now rewrite Hp.
+now apply filterlim_mult.
 Qed.
 Lemma ex_lim_mult (f g : R -> R) (x : Rbar) :
-  ex_lim f x -> ex_lim g x
-  -> (exists l, is_Rbar_mult (Lim f x) (Lim g x) l)
-  -> ex_lim (fun y => f y * g y) x.
+  ex_lim f x -> ex_lim g x ->
+  ex_Rbar_mult (Lim f x) (Lim g x) ->
+  ex_lim (fun y => f y * g y) x.
 Proof.
-  move/Lim_correct => Hf ; move/Lim_correct => Hg [l Hl].
-  exists l.
-  rewrite -(Rbar_mult_correct _ _ _ Hl).
-  apply is_lim_mult.
-  by apply Hf.
-  by apply Hg.
-  by rewrite (Rbar_mult_correct _ _ _ Hl).
+  move/Lim_correct => Hf ; move/Lim_correct => Hg Hl.
+  exists (Rbar_mult (Lim f x) (Lim g x)).
+  now apply is_lim_mult.
 Qed.
 Lemma Lim_mult (f g : R -> R) (x : Rbar) :
-  ex_lim f x -> ex_lim g x
-  -> (exists l, is_Rbar_mult (Lim f x) (Lim g x) l)
-  -> Lim (fun y => f y * g y) x = Rbar_mult (Lim f x) (Lim g x).
+  ex_lim f x -> ex_lim g x ->
+  ex_Rbar_mult (Lim f x) (Lim g x) ->
+  Lim (fun y => f y * g y) x = Rbar_mult (Lim f x) (Lim g x).
 Proof.
-  move/Lim_correct => Hf ; move/Lim_correct => Hg [l Hl].
+  move/Lim_correct => Hf ; move/Lim_correct => Hg Hl.
   apply is_lim_unique.
-  apply is_lim_mult.
-  by apply Hf.
-  by apply Hg.
-  by rewrite (Rbar_mult_correct _ _ _ Hl).
+  now apply is_lim_mult.
 Qed.
 
 (** Scalar multiplication *)
@@ -570,50 +560,32 @@ Qed.
 (** Division *)
 
 Lemma is_lim_div (f g : R -> R) (x lf lg : Rbar) :
-  is_lim f x lf -> is_lim g x lg -> lg <> 0
-  -> is_Rbar_div lf lg (Rbar_div lf lg)
-  -> is_lim (fun y => f y / g y) x (Rbar_div lf lg).
+  is_lim f x lf -> is_lim g x lg -> lg <> 0 ->
+  ex_Rbar_div lf lg ->
+  is_lim (fun y => f y / g y) x (Rbar_div lf lg).
 Proof.
   move => Hf Hg Hlg Hl.
-  apply is_lim_mult.
-  by apply Hf.
-  apply is_lim_inv.
-  by apply Hg.
-  by apply Hlg.
-  by apply Hl.
+  apply is_lim_mult ; try assumption.
+  now apply is_lim_inv.
 Qed.
 Lemma ex_lim_div (f g : R -> R) (x : Rbar) :
-  ex_lim f x -> ex_lim g x -> Lim g x <> 0
-  -> (exists l, is_Rbar_div (Lim f x) (Lim g x) l)
-  -> ex_lim (fun y => f y / g y) x.
+  ex_lim f x -> ex_lim g x -> Lim g x <> 0 ->
+  ex_Rbar_div (Lim f x) (Lim g x) ->
+  ex_lim (fun y => f y / g y) x.
 Proof.
   move => Hf Hg Hlg Hl.
-  apply ex_lim_mult.
-  by apply Hf.
-  apply ex_lim_inv.
-  by apply Hg.
-  by apply Hlg.
-  rewrite Lim_inv.
-  by apply Hl.
-  by apply Hg.
-  by apply Hlg.
+  apply ex_lim_mult ; try assumption.
+  now apply ex_lim_inv.
+  now rewrite Lim_inv.
 Qed.
 Lemma Lim_div (f g : R -> R) (x : Rbar) :
-  ex_lim f x -> ex_lim g x -> Lim g x <> 0
-  -> (exists l, is_Rbar_div (Lim f x) (Lim g x) l)
-  -> Lim (fun y => f y / g y) x = Rbar_div (Lim f x) (Lim g x).
+  ex_lim f x -> ex_lim g x -> Lim g x <> 0 ->
+  ex_Rbar_div (Lim f x) (Lim g x) ->
+  Lim (fun y => f y / g y) x = Rbar_div (Lim f x) (Lim g x).
 Proof.
   move => Hf Hg Hlg Hl.
-  rewrite Lim_mult.
-  by rewrite Lim_inv.
-  by apply Hf.
-  apply ex_lim_inv.
-  by apply Hg.
-  by apply Hlg.
-  rewrite Lim_inv.
-  by apply Hl.
-  by apply Hg.
-  by apply Hlg.
+  apply is_lim_unique.
+  apply is_lim_div ; try apply Lim_correct ; assumption.
 Qed.
 
 (** Composition by linear functions *)
