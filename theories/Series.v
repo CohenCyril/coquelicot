@@ -939,23 +939,17 @@ Proof.
   apply Rlt_not_eq.
   apply Rle_lt_trans with (2 := Hq).
   apply Rle_abs.
-  evar (l : Rbar).
-  replace (Finite (/(1-q))) with l.
+  replace (Finite (/ (1 - q))) with (Rbar_mult (Rbar_minus 1 0) (/ (1 - q))).
   apply is_lim_seq_mult.
   apply is_lim_seq_minus.
   by apply is_lim_seq_const.
   apply (is_lim_seq_incr_1 (fun n => q^n)).
   by apply is_lim_seq_geom.
-  by simpl.
+  easy.
   by apply is_lim_seq_const.
   by simpl.
-  rewrite /l /=.
   apply Rbar_finite_eq.
-  field.
-  apply Rminus_eq_contra.
-  apply Rgt_not_eq.
-  apply Rle_lt_trans with (2 := Hq).
-  apply Rle_abs.
+  ring.
 Qed.
 Lemma ex_series_geom (q : R) :
   Rabs q < 1 -> ex_series (fun n => q ^ n).

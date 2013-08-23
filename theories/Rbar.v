@@ -82,21 +82,15 @@ Definition Rbar_plus' (x y : Rbar) :=
 Definition Rbar_plus (x y : Rbar) :=
   match Rbar_plus' x y with Some z => z | None => Finite 0 end.
 Arguments Rbar_plus !x !y /.
-Definition is_Rbar_plus (x y z : Rbar) : Prop :=
-  Rbar_plus' x y = Some z.
-Arguments is_Rbar_plus !x !y / z.
-Lemma Rbar_plus_correct (x y z : Rbar) :
-  is_Rbar_plus x y z -> Rbar_plus x y = z.
-Proof.
-  case: x => [x | | ] ; case: y => [y | | ] ; case: z => [z | | ] //=.
-  by case => ->.
-Qed.
+Definition ex_Rbar_plus (x y : Rbar) : Prop :=
+  match Rbar_plus' x y with Some _ => True | None => False end.
+Arguments ex_Rbar_plus !x !y /.
 
 Definition Rbar_minus (x y : Rbar) := Rbar_plus x (Rbar_opp y).
 Arguments Rbar_minus !x !y /.
-Definition is_Rbar_minus (x y z : Rbar) : Prop :=
-  is_Rbar_plus x (Rbar_opp y) z.
-Arguments is_Rbar_minus !x !y / z.
+Definition ex_Rbar_minus (x y : Rbar) : Prop :=
+  ex_Rbar_plus x (Rbar_opp y).
+Arguments ex_Rbar_minus !x !y /.
 
 (** *** Multiplicative operators *)
 
@@ -459,55 +453,18 @@ Qed.
 
 (** *** Rbar_plus *)
 
-Lemma is_Rbar_plus_comm (x y z : Rbar) :
-  is_Rbar_plus x y z <-> is_Rbar_plus y x z.
+Lemma Rbar_plus'_comm :
+  forall x y, Rbar_plus' x y = Rbar_plus' y x.
 Proof.
-  case: x => [x | | ] ;
-  case: y => [y | | ] ;
-  case: z => [z | | ] //=.
-  by rewrite Rplus_comm.
+intros [x| |] [y| |] ; try reflexivity.
+apply (f_equal (fun x => Some (Finite x))), Rplus_comm.
 Qed.
 
-Lemma is_Rbar_plus_p :
-  is_Rbar_plus p_infty p_infty p_infty.
+Lemma ex_Rbar_plus_comm :
+  forall x y,
+  ex_Rbar_plus x y -> ex_Rbar_plus y x.
 Proof.
-  by simpl.
-Qed.
-
-Lemma is_Rbar_plus_p_f (x : R) :
-  is_Rbar_plus p_infty (Finite x) p_infty.
-Proof.
-  by simpl.
-Qed.
-Lemma is_Rbar_plus_f_p (x : R) :
-  is_Rbar_plus (Finite x) p_infty p_infty.
-Proof.
-  by simpl.
-Qed.
-
-Lemma is_Rbar_plus_0_r (x : Rbar) :
-  is_Rbar_plus x (Finite 0) x.
-Proof.
-  case: x => [x | | ] //=.
-  by rewrite Rplus_0_r.
-Qed.
-
-Lemma is_Rbar_plus_0_l (y : Rbar) :
-  is_Rbar_plus (Finite 0) y y.
-Proof.
-  rewrite is_Rbar_plus_comm ; by apply is_Rbar_plus_0_r.
-Qed.
-
-Lemma is_Rbar_plus_opp (x y z : Rbar) :
-  is_Rbar_plus (Rbar_opp x) (Rbar_opp y) (Rbar_opp z)
-    <-> is_Rbar_plus x y z.
-Proof.
-  case: x => [x | | ] ;
-  case: y => [y | | ] ;
-  case: z => [z | | ] //=.
-  rewrite -Ropp_plus_distr ; split ; case => H.
-  by rewrite -(Ropp_involutive z) -H Ropp_involutive.
-  by rewrite H.
+now intros [x| |] [y| |].
 Qed.
 
 Lemma Rbar_plus_0_r (x : Rbar) : Rbar_plus x (Finite 0) = x.
@@ -560,27 +517,6 @@ Lemma Rbar_plus_opp (x y : Rbar) :
 Proof.
   case: x => [x | | ] ;
   case: y => [y | | ] //= ; apply f_equal ; ring.
-Qed.
-
-(** *** Rbar_minus *)
-
-Lemma is_Rbar_minus_f_p (x : R) :
-  is_Rbar_minus (Finite x) p_infty m_infty.
-Proof.
-  by simpl.
-Qed.
-
-Lemma is_Rbar_minus_0_r (x : Rbar) :
-  is_Rbar_minus x (Finite 0) x.
-Proof.
-  case: x => [x | | ] //=.
-  by rewrite Ropp_0 Rplus_0_r.
-Qed.
-Lemma is_Rbar_minus_0_l (x : Rbar) :
-  is_Rbar_minus (Finite 0) x (Rbar_opp x).
-Proof.
-  case: x => [x | | ] //=.
-  by rewrite Rplus_0_l.
 Qed.
 
 (** ** Multiplicative *)

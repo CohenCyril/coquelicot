@@ -365,64 +365,51 @@ Qed.
 (** Addition *)
 
 Lemma is_lim_plus (f g : R -> R) (x lf lg : Rbar) :
-  is_lim f x lf -> is_lim g x lg
-  -> is_Rbar_plus lf lg (Rbar_plus lf lg)
-  -> is_lim (fun y => f y + g y) x (Rbar_plus lf lg).
+  is_lim f x lf -> is_lim g x lg ->
+  ex_Rbar_plus lf lg ->
+  is_lim (fun y => f y + g y) x (Rbar_plus lf lg).
 Proof.
 intros Cf Cg Hp.
 apply is_lim_ in Cf.
 apply is_lim_ in Cg.
 apply is_lim_.
 eapply filterlim_compose_2 ; try eassumption.
-apply filterlim_plus.
-contradict Hp.
-unfold is_Rbar_plus, Rbar_plus.
-now rewrite Hp.
+now apply filterlim_plus.
 Qed.
 Lemma ex_lim_plus (f g : R -> R) (x : Rbar) :
-  ex_lim f x -> ex_lim g x
-  -> (exists l, is_Rbar_plus (Lim f x) (Lim g x) l)
-  -> ex_lim (fun y => f y + g y) x.
+  ex_lim f x -> ex_lim g x ->
+  ex_Rbar_plus (Lim f x) (Lim g x) ->
+  ex_lim (fun y => f y + g y) x.
 Proof.
-  move/Lim_correct => Hf ; move/Lim_correct => Hg [l Hl].
-  exists l.
-  rewrite -(Rbar_plus_correct _ _ _ Hl).
-  apply is_lim_plus.
-  by apply Hf.
-  by apply Hg.
-  by rewrite (Rbar_plus_correct _ _ _ Hl).
+  move/Lim_correct => Hf ; move/Lim_correct => Hg Hl.
+  exists (Rbar_plus (Lim f x) (Lim g x)).
+  now apply is_lim_plus.
 Qed.
 Lemma Lim_plus (f g : R -> R) (x : Rbar) :
-  ex_lim f x -> ex_lim g x
-  -> (exists l, is_Rbar_plus (Lim f x) (Lim g x) l)
-  -> Lim (fun y => f y + g y) x = Rbar_plus (Lim f x) (Lim g x).
+  ex_lim f x -> ex_lim g x ->
+  ex_Rbar_plus (Lim f x) (Lim g x) ->
+  Lim (fun y => f y + g y) x = Rbar_plus (Lim f x) (Lim g x).
 Proof.
-  move/Lim_correct => Hf ; move/Lim_correct => Hg [l Hl].
+  move/Lim_correct => Hf ; move/Lim_correct => Hg Hl.
   apply is_lim_unique.
-  apply is_lim_plus.
-  by apply Hf.
-  by apply Hg.
-  by rewrite (Rbar_plus_correct _ _ _ Hl).
+  now apply is_lim_plus.
 Qed.
 
 (** Subtraction *)
 
 Lemma is_lim_minus (f g : R -> R) (x lf lg : Rbar) :
-  is_lim f x lf -> is_lim g x lg
-  -> is_Rbar_minus lf lg (Rbar_minus lf lg)
-  -> is_lim (fun y => f y - g y) x (Rbar_minus lf lg).
+  is_lim f x lf -> is_lim g x lg ->
+  ex_Rbar_minus lf lg ->
+  is_lim (fun y => f y - g y) x (Rbar_minus lf lg).
 Proof.
   move => Hf Hg Hl.
-  apply is_lim_plus.
-  by apply Hf.
-  apply is_lim_opp.
-  by apply Hg.
-  by apply Hl.
+  apply is_lim_plus ; try assumption.
+  now apply is_lim_opp.
 Qed.
 Lemma ex_lim_minus (f g : R -> R) (x : Rbar) :
-  ex_lim f x -> ex_lim g x
-  -> (exists l, is_Rbar_minus (Lim f x) (Lim g x) l)
-  -> ex_lim (fun y => f y - g y) x.
+  ex_lim f x -> ex_lim g x ->
+  ex_Rbar_minus (Lim f x) (Lim g x) ->
+  ex_lim (fun y => f y - g y) x.
 Proof.
   move => Hf Hg Hl.
   apply ex_lim_plus.
@@ -433,9 +420,9 @@ Proof.
   by apply Hl.
 Qed.
 Lemma Lim_minus (f g : R -> R) (x : Rbar) :
-  ex_lim f x -> ex_lim g x
-  -> (exists l, is_Rbar_minus (Lim f x) (Lim g x) l)
-  -> Lim (fun y => f y - g y) x = Rbar_minus (Lim f x) (Lim g x).
+  ex_lim f x -> ex_lim g x ->
+  ex_Rbar_minus (Lim f x) (Lim g x) ->
+  Lim (fun y => f y - g y) x = Rbar_minus (Lim f x) (Lim g x).
 Proof.
   move => Hf Hg Hl.
   rewrite Lim_plus.

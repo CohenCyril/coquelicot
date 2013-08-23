@@ -552,8 +552,7 @@ Proof.
   move: (fun H => Lim_seq_correct' _ (Hfn (x) (Ho _ H))) => F0.
   rewrite (is_lim_seq_unique _ (real (Lim_seq (fun n : nat => fn n (x + h))))).
   rewrite (is_lim_seq_unique  (fun n : nat => fn n (x)) (real (Lim_seq (fun n : nat => fn n (x))))).
-  exists (real (Lim_seq (fun n : nat => fn n (x + h)))
-    - real (Lim_seq (fun n : nat => fn n x))) ; by simpl.
+  easy.
   apply F0.
   rewrite distance_refl.
   apply cond_pos.
@@ -630,8 +629,7 @@ Proof.
   move: (fun H => Lim_seq_correct' _ (Hfn (x) (Ho _ H))) => F0.
   rewrite (is_lim_seq_unique _ (real (Lim_seq (fun n : nat => fn n (x + h))))).
   rewrite (is_lim_seq_unique  (fun n : nat => fn n (x)) (real (Lim_seq (fun n : nat => fn n (x))))).
-  exists (real (Lim_seq (fun n : nat => fn n (x + h)))
-    - real (Lim_seq (fun n : nat => fn n x))) ; by simpl.
+  easy.
   apply F0.
   rewrite distance_refl.
   apply cond_pos.
