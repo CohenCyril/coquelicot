@@ -1115,6 +1115,18 @@ Proof.
   by apply Rlt_minus_l, Rlt_plus_1.
 Qed.
 
+Lemma Rbar_locally_le :
+  forall x, filter_le (Rbar_locally x) (Rbar_locally' x).
+Proof.
+intros [x| |] P [eps HP] ; exists eps ; intros ; now apply HP.
+Qed.
+
+Lemma Rbar_locally_le_finite :
+  forall x : R, filter_le (Rbar_locally x) (locally x).
+Proof.
+intros x P [eps HP] ; exists eps ; intros ; now apply HP.
+Qed.
+
 (** A particular sequence converging to a point *)
 
 Definition Rbar_loc_seq (x : Rbar) (n : nat) := match x with
@@ -1123,10 +1135,11 @@ Definition Rbar_loc_seq (x : Rbar) (n : nat) := match x with
     | m_infty => - INR n
   end.
 
-Lemma Rbar_loc_seq_carac (P : R -> Prop) (x : Rbar) :
-  Rbar_locally x P
-    -> (exists N, forall n, (N <= n)%nat -> P (Rbar_loc_seq x n)).
+Lemma filterlim_Rbar_loc_seq :
+  forall x, filterlim (Rbar_loc_seq x) eventually (Rbar_locally x).
 Proof.
+  intros x P.
+  unfold Rbar_loc_seq.
   case: x => /= [x | | ] [delta Hp].
 (* x \in R *)
   case: (nfloor_ex (/delta)) => [ | N [_ HN]].

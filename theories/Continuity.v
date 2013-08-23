@@ -225,8 +225,7 @@ Proof.
   move => H.
   apply sym_eq.
   apply Lim_seq_ext_loc.
-  move: H.
-  apply Rbar_loc_seq_carac.
+  apply: filterlim_Rbar_loc_seq H.
 Qed.
 
 Lemma is_lim_ext (f g : R -> R) (x l : Rbar) :

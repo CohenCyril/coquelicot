@@ -2890,25 +2890,8 @@ Qed.
 Lemma is_lim_seq_Rbar_loc_seq (x : Rbar) :
   is_lim_seq (Rbar_loc_seq x) x.
 Proof.
-  case: x => [x | | ].
-  evar (l : Rbar).
-  pattern (Finite x) at 2.
-  replace (Finite x) with l.
-  apply is_lim_seq_plus.
-  by apply is_lim_seq_const.
-  apply is_lim_seq_inv.
-  apply is_lim_seq_plus.
-  by apply is_lim_seq_INR.
-  by apply is_lim_seq_const.
-  by [].
-  by [].
-  by [].
-  rewrite /l /= ; by apply Rbar_finite_eq, Rplus_0_r.
-  apply is_lim_seq_INR.
-  evar (l : Rbar).
-  pattern m_infty at 2.
-  replace m_infty with l.
-  apply -> is_lim_seq_opp ; simpl.
-  by apply is_lim_seq_INR.
-  by [].
+  apply is_lim_seq_.
+  intros P HP.
+  apply filterlim_Rbar_loc_seq.
+  apply: Rbar_locally_le HP.
 Qed.

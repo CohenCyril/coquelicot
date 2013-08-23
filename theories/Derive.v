@@ -120,18 +120,15 @@ Proof.
 intros f g x Hfg.
 rewrite /Derive /Lim.
 apply f_equal, Lim_seq_ext_loc.
-apply (Rbar_loc_seq_carac (fun h => (f (x + h) - f x) / h =
-  (g (x + h) - g x) / h) (Rbar.Finite 0)) => /=.
-case: Hfg => delta Hfg.
-exists delta => h Hh.
-rewrite ?Hfg.
-reflexivity.
-rewrite distance_refl.
-apply cond_pos.
-simpl.
-unfold distR.
-ring_simplify (x + h - x).
-by rewrite Rminus_0_r in Hh.
+apply (filterlim_Rbar_loc_seq 0 (fun h => (f (x + h) - f x) / h = (g (x + h) - g x) / h)).
+apply (filter_imp (fun h => f (x + h) = g (x + h))).
+intros h ->.
+by rewrite (locally_singleton _ _ Hfg).
+destruct Hfg as [eps He].
+exists eps => h H Hh.
+apply He.
+rewrite /= /distR.
+now replace (x + h - x) with (h - 0) by ring.
 Qed.
 
 Lemma is_derive_ext :
