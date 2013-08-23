@@ -454,133 +454,11 @@ Qed.
 Lemma is_lim_inv (f : R -> R) (x l : Rbar) :
   is_lim f x l -> l <> 0 -> is_lim (fun y => / f y) x (Rbar_inv l).
 Proof.
-  move => Hf Hl.
-  suff Hf' : Rbar_locally x (fun y => Rabs (f y) > Rabs (real l) / 2).
-  wlog: l f Hf Hf' Hl / (Rbar_lt 0 l) => [Hw | Hl'].
-    case: (Rbar_le_lt_dec l 0) => Hl'.
-    case: Hl' => // Hl'.
-    search_lim.
-    apply is_lim_ext_loc with (fun y => -/- (f y)).
-    move: Hf' ; apply filter_imp => y Hy.
-    field.
-    suff H : Rabs (f y) <> 0.
-      contradict H ; by rewrite H Rabs_R0.
-    apply Rgt_not_eq ; apply Rle_lt_trans with (2 := Hy).
-    apply Rdiv_le_0_compat.
-    by apply Rabs_pos.
-    by apply Rlt_0_2.
-    apply is_lim_opp.
-    apply Hw.
-    apply is_lim_opp.
-    by apply Hf.
-    move: Hf' ; apply filter_imp => y Hy.
-    by rewrite Rbar_opp_real ?Rabs_Ropp.
-    contradict Hl.
-    by rewrite -(Rbar_opp_involutive l) Hl /= Ropp_0.
-    apply Rbar_opp_lt ; by rewrite Rbar_opp_involutive /= Ropp_0.
-    case: (l) Hl => [r | | ] /= Hl ; apply Rbar_finite_eq ; field ;
-    by apply Rbar_finite_neq.
-    by apply Hw.
-
-  case: l Hl Hl' Hf Hf' => [l | | ] //= Hl Hl' Hf Hf' eps.
-  set e := eps * Rabs ((l / 2) * l).
-  suff He : 0 < e.
-  generalize (filter_and _ _ (Hf (mkposreal _ He)) Hf').
-  apply filter_imp => {Hf Hf'} y /= [Hf Hf'].
-  field_simplify (/ f y - / l) ; [ | split => // ; apply Rbar_finite_neq => //].
-  rewrite Rabs_div.
-  replace (- f y + l) with (-(f y - l)) by ring ;
-  rewrite Rabs_Ropp.
-  apply Rlt_div_l.
-  apply Rabs_pos_lt.
-  apply Rmult_integral_contrapositive_currified.
-  suff H : Rabs (f y) <> 0.
-    contradict H ; by rewrite H Rabs_R0.
-  apply Rgt_not_eq ; apply Rle_lt_trans with (2 := Hf').
-  apply Rdiv_le_0_compat.
-  by apply Rabs_pos.
-  by apply Rlt_0_2.
-  by apply Rbar_finite_neq.
-  apply Rlt_le_trans with (1 := Hf).
-  apply Rmult_le_compat_l.
-  by apply Rlt_le, eps.
-  rewrite Rabs_mult Rabs_mult.
-  apply Rmult_le_compat_r.
-  by apply Rabs_pos.
-  rewrite (Rabs_div _ _ (Rgt_not_eq _ _ Rlt_0_2)).
-  rewrite (Rabs_pos_eq 2 (Rlt_le _ _ Rlt_0_2)).
-  apply Rlt_le, Hf'.
-  apply Rmult_integral_contrapositive_currified.
-  suff H : Rabs (f y) <> 0.
-    contradict H ; by rewrite H Rabs_R0.
-  apply Rgt_not_eq ; apply Rle_lt_trans with (2 := Hf').
-  apply Rdiv_le_0_compat.
-  by apply Rabs_pos.
-  by apply Rlt_0_2.
-  by apply Rbar_finite_neq.
-  suff H : Rabs (f y) <> 0.
-    apply Rbar_finite_neq ;
-    contradict H ; by rewrite H /= Rabs_R0.
-  apply Rgt_not_eq ; apply Rle_lt_trans with (2 := Hf').
-  apply Rdiv_le_0_compat.
-  by apply Rabs_pos.
-  by apply Rlt_0_2.
-  apply Rmult_lt_0_compat.
-  by apply eps.
-  apply Rabs_pos_lt.
-  apply Rbar_finite_neq in Hl.
-  apply Rgt_not_eq.
-  apply Rmult_lt_0_compat.
-  apply (is_pos_div_2 (mkposreal _ Hl')).
-  by apply Hl'.
-  
-  generalize (filter_and _ _ (Hf (/eps)) (Hf 0)).
-  apply filter_imp => {Hf} y [Hf Hf0].
-  rewrite Rminus_0_r Rabs_Rinv.
-  replace (pos eps) with (/ / eps).
-  apply Rinv_lt_contravar.
-  apply Rmult_lt_0_compat.
-  by apply Rinv_0_lt_compat, eps.
-  apply Rabs_pos_lt, Rgt_not_eq, Hf0.
-  rewrite Rabs_pos_eq.
-  by apply Hf.
-  by apply Rlt_le.
-  field ; apply Rgt_not_eq, eps.
-  by apply Rgt_not_eq.
-
-  case: l Hf Hl => [l | | ] /= Hf Hl.
-  apply Rbar_finite_neq, Rabs_pos_lt in Hl.
-  move: (Hf (pos_div_2 (mkposreal _ Hl))) => /= {Hf}.
-  apply filter_imp => y Hf.
-  apply Rabs_lt_between' in Hf.
-  case: Hf ; rewrite /(Rabs l).
-  case: Rcase_abs => Hl' Hf1 Hf2 ;
-  field_simplify in Hf1 ; rewrite Rdiv_1 in Hf1 ;
-  field_simplify in Hf2 ; rewrite Rdiv_1 in Hf2.
-  rewrite Rabs_left.
-  rewrite /Rdiv Ropp_mult_distr_l_reverse.
-  apply Ropp_lt_contravar.
-  by apply Hf2.
-  apply Rlt_trans with (1 := Hf2).
-  apply Rlt_div_l.
-  by apply Rlt_0_2.
-  by rewrite Rmult_0_l.
-  rewrite Rabs_pos_eq.
-  by [].
-  apply Rlt_le, Rle_lt_trans with (2 := Hf1).
-  apply Rdiv_le_0_compat.
-  by apply Rge_le.
-  by apply Rlt_0_2.
-  move: (Hf 0).
-  apply filter_imp => y {Hf} Hf.
-  rewrite Rabs_R0 /Rdiv Rmult_0_l Rabs_pos_eq.
-  by [].
-  by apply Rlt_le.
-  move: (Hf 0).
-  apply filter_imp => y {Hf} Hf.
-  rewrite Rabs_R0 /Rdiv Rmult_0_l Rabs_left.
-  apply Ropp_lt_cancel ; by rewrite Ropp_0 Ropp_involutive.
-  by [].
+  intros Hf Hl.
+  apply is_lim_ in Hf.
+  apply is_lim_.
+  apply filterlim_compose with (1 := Hf).
+  now apply filterlim_inv.
 Qed.
 Lemma ex_lim_inv (f : R -> R) (x : Rbar) :
   ex_lim f x -> Lim f x <> 0 -> ex_lim (fun y => / f y) x.
@@ -1932,10 +1810,9 @@ intros Cf Df.
 apply continuity_2d_pt_filterlim in Cf.
 apply continuity_2d_pt_filterlim.
 apply filterlim_compose with (1 := Cf).
-apply continuity_pt_filterlim.
-apply continuity_pt_inv.
-apply continuity_pt_id.
-exact Df.
+apply (filterlim_inv (f x y)).
+contradict Df.
+now injection Df.
 Qed.
 
 Lemma continuity_2d_pt_mult (f g : R -> R -> R) (x y : R) :

@@ -2130,108 +2130,111 @@ Qed.
 
 (** Inverse *)
 
-Lemma is_lim_seq_inv (u : nat -> R) (l : Rbar) :
-  is_lim_seq u l 
-    -> l <> 0 -> 
-    is_lim_seq (fun n => / u n) (Rbar_inv l).
+Lemma filterlim_inv :
+  forall l : Rbar, l <> 0 ->
+  filterlim Rinv (Rbar_locally' l) (Rbar_locally' (Rbar_inv l)).
 Proof.
-  wlog: l u / (Rbar_lt 0 l) => [Hw |].
+  intros l.
+  wlog: l / (Rbar_lt 0 l).
+    intros Hw.
     case: (Rbar_lt_le_dec 0 l) => Hl.
     by apply Hw.
-    case: Hl => // Hl Hu Hl0.
-    apply is_lim_seq_opp.
+    case: Hl => // Hl Hl0.
+    rewrite -(Rbar_opp_involutive (Rbar_inv l)).
     replace (Rbar_opp (Rbar_inv l)) with (Rbar_inv (Rbar_opp l))
     by (case: (l) Hl0 => [x | | ] //= Hl0 ; apply f_equal ;
       field ; contradict Hl0 ; by apply f_equal).
-    apply is_lim_seq_ext_loc with (fun n => / (- u n)).
-    case: l Hl Hu {Hl0} => [l | | ] //= Hl Hu.
+    apply (filterlim_ext_loc (fun x => (- / - x))).
+    case: l Hl {Hl0} => [l| |] //= Hl.
     apply Ropp_0_gt_lt_contravar in Hl.
-    case: (Hu (mkposreal _ Hl)) => /= {Hu} N H.
-    exists N => n Hn.
+    exists (mkposreal _ Hl) => /= x H.
     field ; apply Rlt_not_eq.
-    move: (H n Hn) => {H} H.
     apply Rabs_lt_between' in H.
     apply Rlt_le_trans with (1 := proj2 H), Req_le.
-    ring.
-    case: (Hu 0) => /= {Hu} N H.
-    exists N => n Hn.
-    field ; apply Rlt_not_eq.
-    by apply H.
+    apply Rplus_opp_r.
+    exists 0 => x H.
+    field ; by apply Rlt_not_eq.
+    eapply filterlim_compose.
+    2: apply filterlim_opp.
+    eapply filterlim_compose.
+    apply filterlim_opp.
     apply Hw.
     apply Rbar_opp_lt.
     rewrite Rbar_opp_involutive /= Ropp_0 ; by apply Hl.
-    by apply -> is_lim_seq_opp.
     contradict Hl0.
     rewrite -(Rbar_opp_involutive l) Hl0 /= ; apply f_equal ; ring.
-  case: l => [l | | ] //= Hl Hu _.
-  move => eps.
-  case: (Hu (pos_div_2 (mkposreal _ Hl))) => /= N1 H1.
-  move: (fun n Hn => proj1 (proj1 (Rabs_lt_between' _ _ _) (H1 n Hn)))
-    => {H1} H1.
-  suff He : 0 < eps * Rabs ((l - l / 2) * l).
-  case: (Hu (mkposreal _ He)) => {Hu} /= N Hu.
-  exists (N1 + N)%nat => n Hn.
-  replace (/ u n - / l) with (- (u n - l) / (u n * l)).
-Focus 2.
-field ; split ; apply Rgt_not_eq => //.
-apply Rlt_trans with (l / 2).
-apply Rdiv_lt_0_compat ; intuition.
-apply Rle_lt_trans with (l - l / 2).
-apply Req_le ; field.
-apply H1 ; intuition.
+  case: l => [l| |] //= Hl _.
+  (* l \in R *)
+  assert (H1: 0 < l / 2).
+  apply Rdiv_lt_0_compat with (1 := Hl).
+  apply Rlt_R0_R2.
+  intros P [eps HP].
+  suff He : 0 < Rmin (eps * ((l / 2) * l)) (l / 2).
+  exists (mkposreal _ He) => x /= Hx.
+  apply HP.
+  assert (H2: l / 2 < x).
+  apply Rle_lt_trans with (l - l / 2).
+  apply Req_le ; field.
+  apply Rabs_lt_between'.
+  apply Rlt_le_trans with (1 := Hx).
+  apply Rmin_r.
+  assert (H3: 0 < x).
+  now apply Rlt_trans with (l / 2).
+  replace (/ x - / l) with (- (x - l) / (x * l)).
   rewrite Rabs_div.
   rewrite Rabs_Ropp.
   apply Rlt_div_l.
   apply Rabs_pos_lt, Rgt_not_eq.
-  apply Rmult_lt_0_compat.
-  apply Rlt_trans with (l / 2).
-  apply Rdiv_lt_0_compat ; intuition.
-  apply Rle_lt_trans with (l - l / 2).
-  apply Req_le ; field.
-  apply H1 ; intuition.
-  by [].
-  apply Rlt_le_trans with (eps * Rabs ((l - l / 2) * l)).
-  apply Hu ; intuition.
+  now apply Rmult_lt_0_compat.
+  apply Rlt_le_trans with (eps * ((l / 2) * l)).
+  apply Rlt_le_trans with (1 := Hx).
+  apply Rmin_l.
   apply Rmult_le_compat_l.
   apply Rlt_le, eps.
-  rewrite ?Rabs_mult.
+  rewrite Rabs_mult.
+  rewrite (Rabs_pos_eq l).
   apply Rmult_le_compat_r.
-  apply Rabs_pos.
+  now apply Rlt_le.
   apply Rle_trans with (2 := Rle_abs _).
-  rewrite Rabs_pos_eq.
-  apply Rlt_le, H1 ; intuition.
-  field_simplify ; rewrite Rdiv_1 ; apply Rlt_le, Rdiv_lt_0_compat ; intuition.
+  now apply Rlt_le.
+  now apply Rlt_le.
   apply Rgt_not_eq.
+  now apply Rmult_lt_0_compat.
+  field ; split ; apply Rgt_not_eq => //.
+  apply Rmin_case.
   apply Rmult_lt_0_compat.
-  apply Rlt_trans with (l / 2).
-  apply Rdiv_lt_0_compat ; intuition.
-  apply Rle_lt_trans with (l - l / 2).
-  apply Req_le ; field.
-  apply H1 ; intuition.
-  by [].
-  apply Rmult_lt_0_compat.
-  by apply eps.
-  apply Rabs_pos_lt, Rgt_not_eq.
-  apply Rmult_lt_0_compat.
-  field_simplify ; rewrite Rdiv_1 ; apply Rdiv_lt_0_compat ; intuition.
-  by [].
-  move => eps.
-  case: (Hu (/eps)) => {Hu} N Hu.
-  exists N => n Hn.
+  apply cond_pos.
+  now apply Rmult_lt_0_compat.
+  exact H1.
+  (* l = p_infty *)
+  intros P [eps HP].
+  exists (/eps) => n Hn.
+  apply HP.
   rewrite Rminus_0_r Rabs_Rinv.
-  replace (pos eps) with (/ / eps).
+  rewrite -(Rinv_involutive eps).
   apply Rinv_lt_contravar.
   apply Rmult_lt_0_compat.
   apply Rinv_0_lt_compat, eps.
   apply Rabs_pos_lt, Rgt_not_eq, Rlt_trans with (/eps).
   apply Rinv_0_lt_compat, eps.
-  by apply Hu.
+  exact Hn.
   apply Rlt_le_trans with (2 := Rle_abs _).
-  by apply Hu.
-  field ; apply Rgt_not_eq, eps.
+  exact Hn.
+  apply Rgt_not_eq, eps.
   apply Rgt_not_eq, Rlt_trans with (/eps).
   apply Rinv_0_lt_compat, eps.
-  by apply Hu.
+  exact Hn.
+Qed.
+
+Lemma is_lim_seq_inv (u : nat -> R) (l : Rbar) :
+  is_lim_seq u l -> l <> 0 ->
+  is_lim_seq (fun n => / u n) (Rbar_inv l).
+Proof.
+intros Hu Hl.
+apply is_lim_seq_ in Hu.
+apply is_lim_seq_.
+apply filterlim_compose with (1 := Hu).
+now apply filterlim_inv.
 Qed.
 Lemma ex_lim_seq_inv (u : nat -> R) :
   ex_lim_seq u
