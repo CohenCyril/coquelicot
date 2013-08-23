@@ -1348,6 +1348,12 @@ Qed.
 
 (** Identity *)
 
+Lemma filterlim_id :
+  forall T (F : (T -> Prop) -> Prop), filterlim (fun x => x) F F.
+Proof.
+now intros T F P HP.
+Qed.
+
 Lemma is_lim_seq_INR :
   is_lim_seq INR p_infty.
 Proof.
@@ -1376,11 +1382,24 @@ Qed.
 
 (** Constants *)
 
+Lemma filterlim_const :
+  forall {T U} {MU : MetricSpace U} {F : (T -> Prop) -> Prop} {FF : Filter F},
+  forall a : U, filterlim (fun _ => a) F (locally a).
+Proof.
+intros T U MU F FF a P [eps HP].
+unfold filtermap.
+apply filter_forall.
+intros _.
+apply HP.
+rewrite distance_refl.
+apply cond_pos.
+Qed.
+
 Lemma is_lim_seq_const (a : R) :
   is_lim_seq (fun n => a) a.
 Proof.
-  intros eps ; exists O ; intros.
-  unfold Rminus ; rewrite (Rplus_opp_r a) Rabs_R0 ; apply eps.
+apply is_lim_seq_.
+apply (@filterlim_const nat R R_metric _ _ a).
 Qed.
 Lemma ex_lim_seq_const (a : R) :
   ex_lim_seq (fun n => a).
@@ -1834,7 +1853,6 @@ Proof.
   move => M ; exists O => n Hn ; by apply Hl.
 Qed.
 
-
 Lemma ex_finite_lim_seq_decr (u : nat -> R) (M : R) :
   (forall n, (u (S n)) <= (u n)) -> (forall n, M <= u n)
     -> ex_finite_lim_seq u.
@@ -1889,7 +1907,6 @@ Proof.
   replace (u n - - l) with (-(- u n - l)) by ring.
   rewrite Rabs_Ropp ; by apply Hu.
 Qed.
-
 
 (** *** Additive operators *)
 
@@ -2469,36 +2486,59 @@ Qed.
 
 (** Multiplication by a scalar *)
 
-Lemma is_lim_seq_scal_l (u : nat -> R) (a : R) (lu : Rbar) :
-  is_lim_seq u lu -> 
-    is_lim_seq (fun n => a * u n) (Rbar_mult a lu).
+Lemma filterlim_scal_l :
+  forall (a : R) (l : Rbar),
+  filterlim (Rmult a) (Rbar_locally' l) (Rbar_locally' (Rbar_mult a l)).
 Proof.
-  move => Hu.
-  case: (Req_dec a 0) => Ha.
-  rewrite Ha => {a Ha}.
-  apply is_lim_seq_ext with (fun n => 0).
-  move => n ; by rewrite Rmult_0_l.
-  replace (Rbar_mult 0 lu) with (Finite 0).
-  by apply is_lim_seq_const.
-  case: (lu) => [x | | ] //=.
+  intros a l.
+  case: (Req_dec a 0) => [->|Ha].
+  apply (filterlim_ext (fun _ => 0)).
+  intros x.
+  apply sym_eq, Rmult_0_l.
+  replace (Rbar_mult 0 l) with (Finite 0).
+  change (Rbar_locally' 0) with (locally 0).
+  apply filterlim_const.
+  case: l => [x| |] //=.
   by rewrite Rmult_0_l.
   case: Rle_dec (Rle_refl 0) => // H _.
   case: Rle_lt_or_eq_dec (Rlt_irrefl 0) => // _ _.
   case: Rle_dec (Rle_refl 0) => // H _.
   case: Rle_lt_or_eq_dec (Rlt_irrefl 0) => // _ _.
+  eapply filterlim_compose_2.
+  apply filterlim_const.
+  apply filterlim_id.
+  apply filterlim_mult.
+  case: l => [x| |] //=.
+  case: Rle_dec => // H.
+  case: Rle_lt_or_eq_dec => //.
+  intros H'.
+  now elim Ha.
+  case: Rle_dec => // H.
+  case: Rle_lt_or_eq_dec => //.
+  intros H'.
+  now elim Ha.
+Qed.
 
-  apply is_lim_seq_mult.
-  by apply is_lim_seq_const.
-  by [].
-  case: (lu) => [x | | ] //=.
-  case: Rle_dec => // H.
-  case: Rle_lt_or_eq_dec => //.
-  intros H'.
-  now elim Ha.
-  case: Rle_dec => // H.
-  case: Rle_lt_or_eq_dec => //.
-  intros H'.
-  now elim Ha.
+Lemma filterlim_scal_r :
+  forall (a : R) (l : Rbar),
+  filterlim (fun x => Rmult x a) (Rbar_locally' l) (Rbar_locally' (Rbar_mult l a)).
+Proof.
+intros a l.
+apply (filterlim_ext (fun x => a * x)).
+apply Rmult_comm.
+rewrite Rbar_mult_comm.
+apply filterlim_scal_l.
+Qed.
+
+Lemma is_lim_seq_scal_l (u : nat -> R) (a : R) (lu : Rbar) :
+  is_lim_seq u lu ->
+  is_lim_seq (fun n => a * u n) (Rbar_mult a lu).
+Proof.
+intros Hu.
+apply is_lim_seq_ in Hu.
+apply is_lim_seq_.
+apply filterlim_compose with (1 := Hu).
+apply filterlim_scal_l.
 Qed.
 Lemma ex_lim_seq_scal_l (u : nat -> R) (a : R) :
   ex_lim_seq u -> ex_lim_seq (fun n => a * u n).
@@ -2544,6 +2584,7 @@ Proof.
   case: (Rle_lt_or_eq_dec 0 a Ha') (Rlt_not_eq _ _ Ha) => //= _ _ ;
   apply f_equal ; field.
 Qed.
+
 Lemma is_lim_seq_scal_r (u : nat -> R) (a : R) (lu : Rbar) :
   is_lim_seq u lu -> 
     is_lim_seq (fun n => u n * a) (Rbar_mult lu a).
@@ -2615,9 +2656,7 @@ Proof.
   rewrite /Rbar_div (Rbar_mult_correct _ _ l) //.
 Qed.
 
-
 (** *** Additional limits *)
-
 
 Lemma ex_lim_seq_adj (u v : nat -> R) :
   (forall n, u n <= u (S n)) -> (forall n, v (S n) <= v n)
@@ -2684,26 +2723,39 @@ Qed.
 
 (** Absolute value *)
 
+Lemma filterlim_abs :
+  forall l : Rbar,
+  filterlim Rabs (Rbar_locally' l) (Rbar_locally' (Rbar_abs l)).
+Proof.
+  case => [l| |] /=.
+
+  intros P [eps HP].
+  exists eps => x Hx.
+  apply HP.
+  apply Rle_lt_trans with (2 := Hx).
+  apply Rabs_triang_inv2.
+
+  intros P [N HP].
+  exists N => x Hx.
+  apply HP.
+  apply Rlt_le_trans with (1 := Hx).
+  apply Rle_abs.
+
+  intros P [N HP].
+  exists (-N) => x Hx.
+  apply HP.
+  apply Rlt_le_trans with (2 := Rabs_maj2 _), Ropp_lt_cancel.
+  by rewrite Ropp_involutive.
+Qed.
+
 Lemma is_lim_seq_abs (u : nat -> R) (l : Rbar) :
   is_lim_seq u l -> is_lim_seq (fun n => Rabs (u n)) (Rbar_abs l).
 Proof.
-  case: l => [l | | ] /= Hu.
-
-  move => eps.
-  case: (Hu eps) => {Hu} N Hu.
-  exists N => n Hn.
-  by apply Rle_lt_trans with (1 := Rabs_triang_inv2 _ _), Hu.
-  
-  move => M.
-  case: (Hu M) => {Hu} N Hu.
-  exists N => n Hn.
-  by apply Rlt_le_trans with (2 := Rle_abs _), Hu.
-  
-  move => M.
-  case: (Hu (-M)) => {Hu} N Hu.
-  exists N => n Hn.
-  apply Rlt_le_trans with (2 := Rabs_maj2 _), Ropp_lt_cancel.
-  rewrite Ropp_involutive ; by apply Hu.
+intros Hu.
+apply is_lim_seq_ in Hu.
+apply is_lim_seq_.
+apply filterlim_compose with (1 := Hu).
+apply filterlim_abs.
 Qed.
 Lemma ex_lim_seq_abs (u : nat -> R) :
   ex_lim_seq u -> ex_lim_seq (fun n => Rabs (u n)).
