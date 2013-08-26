@@ -292,11 +292,10 @@ Qed.
 Lemma is_lim_id (x : Rbar) :
   is_lim (fun y => y) x x.
 Proof.
-  case: x => [x | | ] /=.
-  move => eps.
-  by exists eps.
-  move => M ; by exists M.
-  move => M ; by exists M.
+apply is_lim_.
+intros P HP.
+apply filterlim_id.
+now apply Rbar_locally_le.
 Qed.
 Lemma ex_lim_id (x : Rbar) :
   ex_lim (fun y => y) x.
@@ -316,10 +315,9 @@ Qed.
 Lemma is_lim_const (a : R) (x : Rbar) :
   is_lim (fun _ => a) x a.
 Proof.
-  case: x => [x | | ] /= eps ; exists (mkposreal _ Rlt_0_1) => /= ;
-  intros ;
-  rewrite Rminus_eq_0 Rabs_R0 ;
-  by apply eps.
+apply is_lim_.
+intros P HP.
+now apply filterlim_const.
 Qed.
 Lemma ex_lim_const (a : R) (x : Rbar) :
   ex_lim (fun _ => a) x.
@@ -341,12 +339,12 @@ Qed.
 Lemma is_lim_opp (f : R -> R) (x l : Rbar) :
   is_lim f x l -> is_lim (fun y => - f y) x (Rbar_opp l).
 Proof.
-  case: l => [l | | ] Hf eps ;
-  [move: (Hf eps) | move: (Hf (-eps)) | move : (Hf (-eps))] => {Hf} ;
-  apply filter_imp => y Hf.
-  by rewrite /Rminus -Ropp_plus_distr Rabs_Ropp.
-  apply Ropp_lt_cancel ; by rewrite Ropp_involutive.
-  apply Ropp_lt_cancel ; by rewrite Ropp_involutive.
+intros Cf.
+apply is_lim_ in Cf.
+apply is_lim_.
+eapply filterlim_compose.
+apply Cf.
+apply filterlim_opp.
 Qed.
 Lemma ex_lim_opp (f : R -> R) (x : Rbar) :
   ex_lim f x -> ex_lim (fun y => - f y) x.
