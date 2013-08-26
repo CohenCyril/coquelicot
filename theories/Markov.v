@@ -169,7 +169,7 @@ Proof.
   now destruct (H n).
 Qed.
 
-(** * Corollaries *)
+(** ** Corollaries *)
 
 Lemma Markov_cor1 : forall P : nat -> Prop, (forall n, {P n}+{~P n}) ->
   (~ forall n : nat, ~ P n) -> exists n : nat, P n.
@@ -189,4 +189,45 @@ Proof.
   contradict H0.
   intros (n,H1).
   contradict H1 ; apply H0.
+Qed.
+
+(** * Excluded-middle and decidability *)
+
+Lemma EM_dec :
+  forall P : Prop, {not (not P)} + {not P}.
+Proof.
+intros P.
+set (E := fun x => x = 0 \/ (x = 1 /\ P)).
+destruct (completeness E) as [x H].
+- exists 1.
+  intros x [->|[-> _]].
+  apply Rle_0_1.
+  apply Rle_refl.
+- exists 0.
+  now left.
+destruct (Rle_lt_dec 1 x) as [H'|H'].
+- left.
+  intros HP.
+  elim Rle_not_lt with (1 := H').
+  apply Rle_lt_trans with (2 := Rlt_0_1).
+  apply H.
+  intros y [->|[_ Hy]].
+  apply Rle_refl.
+  now elim HP.
+- right.
+  intros HP.
+  apply Rlt_not_le with (1 := H').
+  apply H.
+  right.
+  now split.
+Qed.
+
+Lemma EM_dec' :
+  forall P : Prop, P \/ not P -> {P} + {not P}.
+Proof.
+intros P HP.
+destruct (EM_dec P) as [H|H].
+- left.
+  now destruct HP.
+- now right.
 Qed.
