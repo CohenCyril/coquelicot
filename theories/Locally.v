@@ -36,14 +36,28 @@ Class Filter {T : Type} (F : (T -> Prop) -> Prop) := {
   filter_imp : forall P Q : T -> Prop, (forall x, P x -> Q x) -> F P -> F Q
 }.
 
+Class ProperFilter {T : Type} (F : (T -> Prop) -> Prop) := {
+  filter_ex : forall P, F P -> exists x, P x ;
+  filter_filter :> Filter F
+}.
+
 Lemma filter_forall :
   forall {T : Type} {F} {FF: @Filter T F} (P : T -> Prop),
   (forall x, P x) -> F P.
 Proof.
-intros.
+intros T F FF P H.
 apply filter_imp with (fun _ => True).
 easy.
 apply filter_true.
+Qed.
+
+Lemma filter_const :
+  forall {T : Type} {F} {FF: @ProperFilter T F} (P : Prop),
+  F (fun _ => P) -> P.
+Proof.
+intros T F FF P H.
+destruct (filter_ex (fun _ => P) H) as [_ H'].
+exact H'.
 Qed.
 
 Definition filter_le {T : Type} (F G : (T -> Prop) -> Prop) :=
@@ -211,8 +225,13 @@ Qed.
 Definition eventually (P : nat -> Prop) :=
   exists N : nat, forall n, (N <= n)%nat -> P n.
 
-Global Instance eventually_filter : Filter eventually.
+Global Instance eventually_filter : ProperFilter eventually.
 Proof.
+constructor.
+  intros P [N H].
+  exists N.
+  apply H.
+  apply le_refl.
 constructor.
 - now exists 0%nat.
 - intros P Q [NP HP] [NQ HQ].
@@ -237,7 +256,8 @@ Qed.
 Definition within {T : Type} D (F : (T -> Prop) -> Prop) (P : T -> Prop) :=
   F (fun x => D x -> P x).
 
-Global Instance within_filter : forall T D F, Filter F -> Filter (@within T D F).
+Global Instance within_filter :
+  forall T D F, Filter F -> Filter (@within T D F).
 Proof.
 intros T D F FF.
 unfold within.
@@ -287,7 +307,8 @@ Qed.
 Definition locally_dist {T : Type} (d : T -> R) (P : T -> Prop) :=
   exists delta : posreal, forall y, d y < delta -> P y.
 
-Global Instance locally_dist_filter : forall T (d : T -> R), Filter (locally_dist d).
+Global Instance locally_dist_filter :
+  forall T (d : T -> R), Filter (locally_dist d).
 Proof.
 intros T d.
 constructor.
@@ -313,16 +334,24 @@ Qed.
 Definition locally {T} {MT : MetricSpace T} (x : T) :=
   locally_dist (distance x).
 
-Global Instance locally_filter : forall T (MT : MetricSpace T) (x : T), Filter (locally x).
+Global Instance locally_filter :
+  forall T (MT : MetricSpace T) (x : T), ProperFilter (locally x).
 Proof.
 intros T MT x.
+constructor.
+  intros P [eps H].
+  exists x.
+  apply H.
+  rewrite distance_refl.
+  apply cond_pos.
 apply locally_dist_filter.
 Qed.
 
 Definition locally' {T} {MT : MetricSpace T} (x : T) (P : T -> Prop) :=
   locally_dist (distance x) (fun y => y <> x -> P y).
 
-Global Instance locally'_filter : forall T (MT : MetricSpace T) (x : T), Filter (locally' x).
+Global Instance locally'_filter :
+  forall T (MT : MetricSpace T) (x : T), Filter (locally' x).
 Proof.
 intros T MT x.
 constructor.
@@ -1026,9 +1055,21 @@ Definition Rbar_locally (a : Rbar) (P : R -> Prop) :=
     | m_infty => exists M : R, forall x, x < M -> P x
   end.
 
-Global Instance Rbar_locally_filter : forall x, Filter (Rbar_locally x).
+Global Instance Rbar_locally_filter :
+  forall x, ProperFilter (Rbar_locally x).
 Proof.
-intros [x| |] ; constructor.
+intros [x| |] ; (constructor ; [idtac | constructor]).
+- intros P [eps HP].
+  exists (x + eps / 2).
+  apply HP.
+  ring_simplify (x + eps / 2 - x).
+  rewrite Rabs_pos_eq.
+  apply Rminus_lt_0.
+  replace (eps - eps / 2) with (eps / 2) by field.
+  apply is_pos_div_2.
+  apply Rlt_le, is_pos_div_2.
+  apply Rgt_not_eq, Rminus_lt_0 ; ring_simplify.
+  apply is_pos_div_2.
 - now exists (mkposreal _ Rlt_0_1).
 - intros P Q [dP HP] [dQ HQ].
   exists (mkposreal _ (Rmin_stable_in_posreal dP dQ)).
@@ -1046,6 +1087,10 @@ intros [x| |] ; constructor.
   intros y Hy H'.
   apply H.
   now apply HP.
+- intros P [N HP].
+  exists (N + 1).
+  apply HP.
+  apply Rlt_plus_1.
 - now exists 0.
 - intros P Q [MP HP] [MQ HQ].
   exists (Rmax MP MQ).
@@ -1062,6 +1107,10 @@ intros [x| |] ; constructor.
   intros y Hy.
   apply H.
   now apply HP.
+- intros P [N HP].
+  exists (N - 1).
+  apply HP.
+  apply Rlt_minus_l, Rlt_plus_1.
 - now exists 0.
 - intros P Q [MP HP] [MQ HQ].
   exists (Rmin MP MQ).
@@ -1088,31 +1137,13 @@ Definition Rbar_locally' (a : Rbar) (P : R -> Prop) :=
     | m_infty => exists M : R, forall x, x < M -> P x
   end.
 
-Global Instance Rbar_locally'_filter : forall x, Filter (Rbar_locally' x).
+Global Instance Rbar_locally'_filter :
+  forall x, ProperFilter (Rbar_locally' x).
 Proof.
 intros [x| |].
 - apply: locally_filter.
 - exact (Rbar_locally_filter p_infty).
 - exact (Rbar_locally_filter m_infty).
-Qed.
-
-Lemma Rbar_locally_const (a : Rbar) (P : Prop) :
-  Rbar_locally a (fun _ => P) -> P.
-Proof.
-  case: a => [a | | ] [d H].
-  apply (H (a+d/2)).
-  ring_simplify (a + d / 2 - a).
-  rewrite Rabs_pos_eq.
-  apply Rminus_lt_0.
-  field_simplify ; rewrite Rdiv_1.
-  by apply is_pos_div_2.
-  apply Rlt_le, is_pos_div_2.
-  apply Rgt_not_eq, Rminus_lt_0 ; ring_simplify.
-  by apply is_pos_div_2.
-  apply (H (d+1)).
-  by apply Rlt_plus_1.
-  apply (H (d-1)).
-  by apply Rlt_minus_l, Rlt_plus_1.
 Qed.
 
 Lemma Rbar_locally_le :

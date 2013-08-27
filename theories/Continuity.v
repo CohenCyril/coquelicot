@@ -678,7 +678,7 @@ Proof.
   apply Rbar_finite_le.
   apply Rnot_lt_le => H.
   apply Rminus_lt_0 in H.
-  apply (Rbar_locally_const x).
+  apply (filter_const (F := Rbar_locally x)).
   generalize (filter_and _ _ Hfg (filter_and _ _ (Hf (pos_div_2 (mkposreal _ H))) (Hg (pos_div_2 (mkposreal _ H))))).
   apply filter_imp => {Hfg Hf Hg} /= y [Hfg [Hf Hg]].
   apply: Rlt_not_le Hfg.
@@ -691,7 +691,7 @@ Proof.
   apply Hf.
 
   left => /=.
-  apply (Rbar_locally_const x).
+  apply (filter_const (F := Rbar_locally x)).
   generalize (filter_and _ _ Hfg (filter_and _ _ (Hf (mkposreal _ (Rle_lt_0_plus_1 _ (Rabs_pos lf)))) (Hg (lf - (Rabs lf + 1))))).
   apply filter_imp => {Hfg Hf Hg} /= y [Hfg [Hf Hg]].
   apply: Rlt_not_le Hfg.
@@ -701,7 +701,7 @@ Proof.
   apply Hf.
 
   left => /=.
-  apply (Rbar_locally_const x).
+  apply (filter_const (F := Rbar_locally x)).
   generalize (filter_and _ _ Hfg (filter_and _ _ (Hf (lg + (Rabs lg + 1))) (Hg (mkposreal _ (Rle_lt_0_plus_1 _ (Rabs_pos lg)))))).
   apply filter_imp => {Hfg Hf Hg} /= y [Hfg [Hf Hg]].
   apply: Rlt_not_le Hfg.
@@ -711,7 +711,7 @@ Proof.
   apply Hf.
 
   left => /=.
-  apply (Rbar_locally_const x).
+  apply (filter_const (F := Rbar_locally x)).
   generalize (filter_and _ _ Hfg (filter_and _ _ (Hf 0) (Hg 0))).
   apply filter_imp => {Hfg Hf Hg} y [Hfg [Hf Hg]].
   apply: Rlt_not_le Hfg.
