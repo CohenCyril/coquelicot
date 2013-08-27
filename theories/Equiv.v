@@ -24,18 +24,19 @@ Require Import Rbar Rcomplements Locally.
 
 (** * Definitions of equivalent and dominant *)
 
-Definition is_domin (f : R -> R) (a : Rbar) (g : R -> R) :=
-  forall eps : posreal, Rbar_locally a (fun x => Rabs (g x) <= eps * Rabs (f x)).
-Definition is_equiv (f g : R -> R) (a : Rbar) :=
-  is_domin g a (fun x => g x - f x).
+Definition is_domin {T} (F : (T -> Prop) -> Prop) (f g : T -> R) :=
+  forall eps : posreal, F (fun x => Rabs (g x) <= eps * Rabs (f x)).
+Definition is_equiv {T} (F : (T -> Prop) -> Prop) (f g : T -> R) :=
+  is_domin F g (fun x => g x - f x).
 
 (** To be dominant is a partial strict order *)
-Lemma domin_anti_sym (f : R -> R) (a : Rbar) :
-  Rbar_locally a (fun x => f x <> 0) -> ~ is_domin f a f.
+Lemma domin_antisym :
+  forall {T} {F : (T -> Prop) -> Prop} {FF : ProperFilter F} (f : T -> R),
+  F (fun x => f x <> 0) -> ~ is_domin F f f.
 Proof.
-  intros Hf H ;
+  intros T F FF f Hf H.
   move: (H (pos_div_2 (mkposreal _ Rlt_0_1))) => {H} /= H.
-  have H0 : Rbar_locally a (fun x => ~ (Rabs (f x) <= 1/2 * Rabs (f x))).
+  have H0 : F (fun x => ~ (Rabs (f x) <= 1/2 * Rabs (f x))).
     move: Hf ; apply filter_imp.
     intros x Hf ; apply Rlt_not_le.
     apply Rminus_lt ; field_simplify ;
@@ -43,31 +44,16 @@ Proof.
     apply Ropp_lt_gt_0_contravar, Rdiv_lt_0_compat.
     by apply Rabs_pos_lt.
     by apply Rlt_R0_R2.
-  generalize (filter_and _ _ H H0) => {H H0} H.
-  case: a {Hf} H => [a | | ] /= [delta H].
-  case: (H (a + delta / 2)).
-  ring_simplify (a + delta / 2 - a).
-  rewrite Rabs_pos_eq.
-  apply Rminus_lt_0 ; field_simplify ; rewrite Rdiv_1.
-  by apply is_pos_div_2.
-  by apply Rlt_le, is_pos_div_2.
-  apply Rgt_not_eq, Rminus_lt_0 ; field_simplify ; rewrite Rdiv_1.
-  by apply is_pos_div_2.
-  by [].
-  case: (H (delta+1)).
-  by apply Rlt_plus_1.
-  by [].
-  case: (H (delta-1)).
-  pattern delta at 2 ;
-  replace delta with ((delta+1)-1) by ring.
-  by apply Rplus_lt_compat_r, Rlt_plus_1.
-  by [].
+  apply filter_const.
+  generalize (filter_and _ _ H H0) => {H H0}.
+  now apply filter_imp.
 Qed.
 
-Lemma domin_trans (f g h : R -> R) (a : Rbar) :
-  is_domin f a g -> is_domin g a h -> is_domin f a h.
+Lemma domin_trans :
+  forall {T} {F : (T -> Prop) -> Prop} {FF : Filter F} (f g h : T -> R),
+  is_domin F f g -> is_domin F g h -> is_domin F f h.
 Proof.
-  move => Hfg Hgh eps.
+  intros T F FF f g h Hfg Hgh eps.
   apply (filter_imp (fun x => (Rabs (h x) <= sqrt eps * Rabs (g x)) /\ (Rabs (g x) <= sqrt eps * Rabs (f x)))).
   intros x [H0 H1].
   apply Rle_trans with (1 := H0).
@@ -84,12 +70,14 @@ Qed.
 
 (** Relations between domination and equivalence *)
 
-Lemma domin_rw_l (f1 f2 g : R -> R) (a : Rbar) :
-  is_equiv f1 f2 a -> (is_domin f1 a g <-> is_domin f2 a g).
+Lemma domin_rw_l :
+  forall {T} {F : (T -> Prop) -> Prop} {FF : Filter F} (f1 f2 g : T -> R),
+  is_equiv F f1 f2 -> (is_domin F f1 g <-> is_domin F f2 g).
 Proof.
-  move => Hf ; split => Hfg.
+  intros T F FF f1 f2 g Hf.
+  split => Hfg.
 (* Cas facile *)
-  have : forall eps : posreal, Rbar_locally a (fun x => Rabs (f1 x) <= (eps + 1) * Rabs (f2 x)).
+  have : forall eps : posreal, F (fun x => Rabs (f1 x) <= (eps + 1) * Rabs (f2 x)).
     move => eps.
     move: (Hf eps) => {Hf}.
     apply filter_imp => x Hf.
@@ -112,7 +100,7 @@ Proof.
   apply Rlt_le, is_pos_div_2.
   by apply Hf.
 (* Cas compliqué *)
-  have : forall eps : posreal, Rbar_locally a (fun x => (1-eps) * Rabs (f2 x) <= Rabs (f1 x)).
+  have : forall eps : posreal, F (fun x => (1-eps) * Rabs (f2 x) <= Rabs (f1 x)).
     move => eps.
     move: (Hf eps) => {Hf}.
     apply filter_imp => x Hf.
@@ -135,21 +123,23 @@ Proof.
   by apply Hf.
 Qed.
 
-Lemma equiv_sym (f g : R -> R) (a : Rbar) :
-  is_equiv f g a -> is_equiv g f a.
+Lemma equiv_sym :
+  forall {T} {F : (T -> Prop) -> Prop} {FF : Filter F} (f g : T -> R),
+  is_equiv F f g -> is_equiv F g f.
 Proof.
-  intros H.
-  apply (domin_rw_l _ _ (fun x : R => f x - g x) _ H).
+  intros T F FF f g H.
+  apply (domin_rw_l _ _ (fun x => f x - g x) H).
   move => eps ; move: (H eps).
   apply filter_imp => x Hx.
   by rewrite -Rabs_Ropp Ropp_minus_distr'.
 Qed.
 
-
-Lemma domin_rw_r (f g1 g2 : R -> R) (a : Rbar) :
-  is_equiv g1 g2 a -> (is_domin f a g1 <-> is_domin f a g2).
+Lemma domin_rw_r :
+  forall {T} {F : (T -> Prop) -> Prop} {FF : Filter F} (f g1 g2 : T -> R),
+  is_equiv F g1 g2 -> (is_domin F f g1 <-> is_domin F f g2).
 Proof.
-  assert (forall g1 g2,  is_equiv g1 g2 a -> is_domin f a g2 -> is_domin f a g1).
+  intros T F FF f g1 g2.
+  assert (forall g1 g2,  is_equiv F g1 g2 -> is_domin F f g2 -> is_domin F f g1).
   clear g1 g2; intros g1 g2 Hg Hf eps.
   rewrite /is_equiv in Hg.
   rewrite /is_domin in Hg Hf.
@@ -175,14 +165,13 @@ Proof.
   now apply H.
 Qed.
 
-
-
 (** To be equivalent is an equivalence relation *)
 
-Lemma equiv_refl (f : R -> R) (a : Rbar) :
-  is_equiv f f a.
+Lemma equiv_refl :
+  forall {T} {F : (T -> Prop) -> Prop} {FF : Filter F} (f : T -> R),
+  is_equiv F f f.
 Proof.
-  move => eps /=.
+  intros T F FF f eps.
   apply: filter_forall => x.
   rewrite Rminus_eq_0 Rabs_R0.
   apply Rmult_le_pos.
@@ -190,14 +179,13 @@ Proof.
   by apply Rabs_pos.
 Qed.
 
-
-
-Lemma equiv_trans (f g h : R -> R) (a : Rbar) :
-  is_equiv f g a -> is_equiv g h a -> is_equiv f h a.
+Lemma equiv_trans :
+  forall {T} {F : (T -> Prop) -> Prop} {FF : Filter F} (f g h : T -> R),
+  is_equiv F f g -> is_equiv F g h -> is_equiv F f h.
 Proof.
-  intros Hfg Hgh.
-  move: (fun c => domin_rw_l _ _ c _ Hgh) => Hgh'.
-  apply Hgh' => {Hgh'} eps.
+  intros T F FF f g h Hfg Hgh.
+  apply (fun c => domin_rw_l _ _ c Hgh).
+  intros eps.
   apply equiv_sym in Hgh.
   generalize (filter_and _ _ (Hfg (pos_div_2 eps)) (Hgh (pos_div_2 eps))) => {Hfg Hgh}.
   apply filter_imp => x /= [Hfg Hgh].
@@ -207,23 +195,24 @@ Proof.
   by apply Rplus_le_compat.
 Qed.
 
-Lemma equiv_carac_0 (f g : R -> R) (a : Rbar) :
-  is_equiv f g a 
-    -> {o : R -> R | (forall x : R, f x = g x + o x) /\ is_domin g a o }.
+Lemma equiv_carac_0 :
+  forall {T} {F : (T -> Prop) -> Prop} {FF : Filter F} (f g : T -> R),
+  is_equiv F f g ->
+  {o : T -> R | (forall x : T, f x = g x + o x) /\ is_domin F g o }.
 Proof.
-  intro H.
+  intros T F FF f g H.
   exists (fun x => f x - g x).
   split.
   intro x ; ring.
-  apply (domin_rw_l _ _ _ _ H).
+  apply (domin_rw_l _ _ _ H).
   by apply equiv_sym.
 Qed.
 
-Lemma equiv_carac_1 (f g : R -> R) (a : Rbar) :
-  forall (o : R -> R), (forall x : R, f x = g x + o x) -> is_domin g a o
-    -> is_equiv f g a.
+Lemma equiv_carac_1 :
+  forall {T} {F : (T -> Prop) -> Prop} {FF : Filter F} (f g o : T -> R),
+  (forall x, f x = g x + o x) -> is_domin F g o -> is_equiv F f g.
 Proof.
-  intros o Ho Hgo.
+  intros T F FF f g o Ho Hgo.
   intro eps ; move: (Hgo eps).
   apply filter_imp => x.
   replace (o x) with (f x - g x).
@@ -234,10 +223,11 @@ Qed.
 (** * Vector space *)
 (** is_domin is a vector space *)
 
-Lemma domin_scal_r (f g : R -> R) (a : Rbar) (c : R) :
-  is_domin f a g -> is_domin f a (fun x => c * g x).
+Lemma domin_scal_r :
+  forall {T} {F : (T -> Prop) -> Prop} {FF : Filter F} (f g : T -> R) (c : R),
+  is_domin F f g -> is_domin F f (fun x => c * g x).
 Proof.
-  move => H.
+  intros T F FF f g c H.
   wlog: c / (0 < c) => [Hw  {H} | Hc].
     case: (Rlt_le_dec 0 c) => Hc.
     by apply Hw.
@@ -268,10 +258,11 @@ Proof.
   by apply Rle_ge, Rlt_le.
 Qed.
 
-Lemma domin_scal_l (f g : R -> R) (a : Rbar) (c : R) :
-  c <> 0 -> is_domin f a g -> is_domin (fun x => c * f x) a g.
+Lemma domin_scal_l :
+  forall {T} {F : (T -> Prop) -> Prop} {FF : Filter F} (f g : T -> R) (c : R),
+  c <> 0 -> is_domin F f g -> is_domin F (fun x => c * f x) g.
 Proof.
-  intros Hc H eps.
+  intros T F FF f g c Hc H eps.
   have He : (0 < eps * Rabs c).
     apply Rmult_lt_0_compat.
     by apply eps.
@@ -281,11 +272,11 @@ Proof.
   by rewrite Rabs_mult -Rmult_assoc.
 Qed.
 
-Lemma domin_plus (f g1 g2 : R -> R) (a : Rbar) :
-  is_domin f a g1 -> is_domin f a g2 
-    -> is_domin f a (fun x => g1 x + g2 x).
+Lemma domin_plus :
+  forall {T} {F : (T -> Prop) -> Prop} {FF : Filter F} (f g1 g2 : T -> R),
+  is_domin F f g1 -> is_domin F f g2 -> is_domin F f (fun x => g1 x + g2 x).
 Proof.
-  intros Hg1 Hg2 eps.
+  intros T F FF f g1 g2 Hg1 Hg2 eps.
   generalize (filter_and _ _ (Hg1 (pos_div_2 eps)) (Hg2 (pos_div_2 eps))) 
     => /= {Hg1 Hg2}.
   apply filter_imp => x [Hg1 Hg2].
@@ -298,9 +289,11 @@ Qed.
 
 (** is_equiv is compatible with the vector space structure *)
 
-Lemma equiv_scal (f g : R -> R) (a : Rbar) (c : R) :
-  is_equiv f g a -> is_equiv (fun x => c * f x) (fun x => c * g x) a.
+Lemma equiv_scal :
+  forall {T} {F : (T -> Prop) -> Prop} {FF : Filter F} (f g : T -> R) (c : R),
+  is_equiv F f g -> is_equiv F (fun x => c * f x) (fun x => c * g x).
 Proof.
+  intros T F FF f g c.
   case: (Req_dec c 0) ; move => Hc H.
 (* c = 0 *)
   rewrite Hc => {c Hc}.
@@ -311,17 +304,18 @@ Proof.
   apply domin_scal_l.
   by apply Hc.
   move => eps /=.
-  have : Rbar_locally a (fun x : R => Rabs (c * (g x - f x)) <= eps * Rabs (g x)).
-  apply (domin_scal_r g (fun x => g x - f x) a c).
+  have : F (fun x => Rabs (c * (g x - f x)) <= eps * Rabs (g x)).
+  apply (domin_scal_r g (fun x => g x - f x) c).
   by apply H.
   apply filter_imp => x.
   by rewrite Rmult_minus_distr_l.
 Qed.
 
-Lemma equiv_plus (f o : R -> R) (a : Rbar) :
-  is_domin f a o -> is_equiv (fun x => f x + o x) f a.
+Lemma equiv_plus :
+  forall {T} {F : (T -> Prop) -> Prop} {FF : Filter F} (f o : T -> R),
+  is_domin F f o -> is_equiv F (fun x => f x + o x) f.
 Proof.
-  intros H eps.
+  intros T F FF f o H eps.
   move: (H eps) => {H}.
   apply filter_imp => x Hx.
   ring_simplify (f x - (f x + o x)).
@@ -331,13 +325,12 @@ Qed.
 (** * Multiplication and inverse *)
 (** Domination *)
 
-Lemma domin_mult_r (f g h : R -> R) (a : Rbar) :
-  is_domin f a g 
-    -> is_domin (fun x => f x * h x) a (fun x => g x * h x).
+Lemma domin_mult_r :
+  forall {T} {F : (T -> Prop) -> Prop} {FF : Filter F} (f g h : T -> R),
+  is_domin F f g -> is_domin F (fun x => f x * h x) (fun x => g x * h x).
 Proof.
-  move => H eps.
-  move: (H eps) => {H} H.
-  move: H.
+  intros T F FF f g h H eps.
+  move: (H eps) => {H}.
   apply filter_imp => x H1.
   rewrite ?Rabs_mult.
   rewrite -Rmult_assoc.
@@ -346,21 +339,22 @@ Proof.
   by apply H1.
 Qed.
 
-Lemma domin_mult_l (f g h : R -> R) (a : Rbar) :
-  is_domin f a g 
-    -> is_domin (fun x => h x * f x) a (fun x => h x * g x).
+Lemma domin_mult_l :
+  forall {T} {F : (T -> Prop) -> Prop} {FF : Filter F} (f g h : T -> R),
+  is_domin F f g -> is_domin F (fun x => h x * f x) (fun x => h x * g x).
 Proof.
-  intros => eps.
-  move: (domin_mult_r f g h a H eps).
+  intros T F FF f g h H eps.
+  generalize (domin_mult_r f g h H eps).
   apply filter_imp => x.
   by rewrite ?(Rmult_comm (h x)).
 Qed.
 
-Lemma domin_mult (f1 f2 g1 g2 : R -> R) (a : Rbar) :
-  is_domin f1 a g1 -> is_domin f2 a g2 
-    -> is_domin (fun x => f1 x * f2 x) a (fun x => g1 x * g2 x).
+Lemma domin_mult :
+  forall {T} {F : (T -> Prop) -> Prop} {FF : Filter F} (f1 f2 g1 g2 : T -> R),
+  is_domin F f1 g1 -> is_domin F f2 g2 ->
+  is_domin F (fun x => f1 x * f2 x) (fun x => g1 x * g2 x).
 Proof.
-  move => H1 H2 eps.
+  intros T F FF f1 f2 g1 g2 H1 H2 eps.
   move: (H1 (mkposreal _ (sqrt_lt_R0 _ (cond_pos eps))))
     (H2 (mkposreal _ (sqrt_lt_R0 _ (cond_pos eps)))) => {H1 H2} /= H1 H2.
   generalize (filter_and _ _ H1 H2) => {H1 H2}.
@@ -376,12 +370,13 @@ Proof.
   by apply H2.
 Qed.
 
-Lemma domin_inv (f g : R -> R) (a : Rbar) :
-  Rbar_locally a (fun x => g x <> 0) -> is_domin f a g
-    -> is_domin (fun x => / g x) a (fun x => / f x).
+Lemma domin_inv :
+  forall {T} {F : (T -> Prop) -> Prop} {FF : Filter F} (f g : T -> R),
+  F (fun x => g x <> 0) -> is_domin F f g ->
+  is_domin F (fun x => / g x) (fun x => / f x).
 Proof.
-  intros Hg H eps.
-  have Hf : Rbar_locally a (fun x => f x <> 0).
+  intros T F FF f g Hg H eps.
+  have Hf : F (fun x => f x <> 0).
     generalize (filter_and _ _ Hg (H (mkposreal _ Rlt_0_1))) => /=.
     apply filter_imp => x {Hg H} [Hg H].
     case: (Req_dec (f x) 0) => Hf.
@@ -406,13 +401,14 @@ Qed.
 
 (** Equivalence *)
 
-Lemma equiv_mult (f1 f2 g1 g2 : R -> R) (a : Rbar) :
-  is_equiv f1 g1 a -> is_equiv f2 g2 a
-    -> is_equiv (fun x => f1 x * f2 x) (fun x => g1 x * g2 x) a.
+Lemma equiv_mult :
+  forall {T} {F : (T -> Prop) -> Prop} {FF : Filter F} (f1 f2 g1 g2 : T -> R),
+  is_equiv F f1 g1 -> is_equiv F f2 g2 ->
+  is_equiv F (fun x => f1 x * f2 x) (fun x => g1 x * g2 x).
 Proof.
-  intros H1 H2.
-  case: (equiv_carac_0 _ _ _ H1) => {H1} o1 [H1 Ho1].
-  case: (equiv_carac_0 _ _ _ H2) => {H2} o2 [H2 Ho2].
+  intros T F FF f1 f2 g1 g2 H1 H2.
+  case: (equiv_carac_0 _ _ H1) => {H1} o1 [H1 Ho1].
+  case: (equiv_carac_0 _ _ H2) => {H2} o2 [H2 Ho2].
   apply equiv_carac_1 with (fun x => o1 x * g2 x + g1 x * o2 x + o1 x * o2 x).
   move => x ; rewrite H1 H2 ; ring.
   apply domin_plus.
@@ -422,12 +418,13 @@ Proof.
   by apply domin_mult.
 Qed.
 
-Lemma equiv_inv (f g : R -> R) (a : Rbar) :
-  Rbar_locally a (fun x => g x <> 0) -> is_equiv f g a
-    -> is_equiv (fun x => / f x) (fun x => / g x) a.
+Lemma equiv_inv :
+  forall {T} {F : (T -> Prop) -> Prop} {FF : Filter F} (f g : T -> R),
+  F (fun x => g x <> 0) -> is_equiv F f g ->
+  is_equiv F (fun x => / f x) (fun x => / g x).
 Proof.
-  intros Hg H.
-  have Hf : Rbar_locally a (fun x => f x <> 0).
+  intros T F FF f g Hg H.
+  have Hf : F (fun x => f x <> 0).
     generalize (filter_and _ _ Hg (H (pos_div_2 (mkposreal _ Rlt_0_1)))) => /=.
     apply filter_imp => x {Hg H} [Hg H].
     case: (Req_dec (f x) 0) => Hf.
@@ -443,7 +440,7 @@ Proof.
   apply equiv_sym in H.
   move => eps.
   generalize (filter_and _ _ (filter_and _ _ Hf Hg) (H eps)).
-  clear.
+  clear -FF.
   apply filter_imp.
   intros x [[Hf Hg] H].
   replace (/ g x - / f x) 
