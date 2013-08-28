@@ -790,15 +790,15 @@ Qed.
 (** ** Relations between filters and continuity over R. *)
 
 Lemma filterlim_locally :
-  forall {T U} {MU : MetricSpace U} {F} {FF : Filter F} (f : T -> U) x,
-  filterlim f F (locally (f x)) <->
-  forall eps : posreal, F (fun y => distance (f x) (f y) < eps).
+  forall {T U} {MU : MetricSpace U} {F} {FF : Filter F} (f : T -> U) y,
+  filterlim f F (locally y) <->
+  forall eps : posreal, F (fun x => distance y (f x) < eps).
 Proof.
-intros T U MU F FF f x.
+intros T U MU F FF f y.
 unfold filterlim, filter_le, filtermap.
 split.
 - intros Cf eps.
-  apply (Cf (fun y => distance (f x) y < eps)).
+  apply (Cf (fun x => distance y x < eps)).
   now exists eps.
 - intros Cf P [eps He].
   apply: filter_imp (Cf eps).
