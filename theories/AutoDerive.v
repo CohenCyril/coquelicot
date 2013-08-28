@@ -1799,4 +1799,14 @@ Ltac auto_derive :=
     specialize (H v) ;
     refine (eq_ind _ (derivable_pt_lim _ _) (H _) _ _) ;
     clear H
+  | |- ex_derive ?f ?v =>
+    eexists ;
+    auto_derive_fun f ;
+    let H := fresh "H" in
+    intro H ;
+    apply (H v) ;
+    clear H
+  | |- derivable_pt ?f ?v =>
+    apply ex_derive_Reals_0 ;
+    auto_derive
   end.
