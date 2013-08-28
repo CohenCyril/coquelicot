@@ -38,7 +38,8 @@ Inductive bop :=
 Inductive uop :=
   | Eopp
   | Einv
-  | Efct : forall (f f' : R -> R) (df : R -> Prop), (forall x, df x -> is_derive f x (f' x)) -> uop.
+  | Efct : forall (f f' : R -> R), (forall x, is_derive f x (f' x)) -> uop
+  | Efct' : forall (f f' : R -> R) (df : R -> Prop), (forall x, df x -> is_derive f x (f' x)) -> uop.
 
 Inductive expr :=
   | Var : nat -> expr
@@ -129,7 +130,7 @@ Fixpoint interp (l : seq R) (e : expr) : R :=
   | Subst e1 e2 => interp (set_nth R0 l 0 (interp l e2)) e1
   | Cst c => c
   | Binary o e1 e2 => match o with Eplus => Rplus | Emult => Rmult end (interp l e1) (interp l e2)
-  | Unary o e => match o with Eopp => Ropp | Einv => Rinv | Efct f f' df H => f end (interp l e)
+  | Unary o e => match o with Eopp => Ropp | Einv => Rinv | Efct f f' H => f | Efct' f f' df H => f end (interp l e)
   | Int e1 e2 e3 => RInt (fun x => interp (x :: l) e1) (interp l e2) (interp l e3)
   end.
 
@@ -652,7 +653,8 @@ Fixpoint D (e : expr) n {struct e} : expr * domain :=
     match u with
     | Eopp => (Unary Eopp a, b)
     | Einv => (Binary Emult (Unary Eopp a) (Unary Einv (Binary Emult e e)), And (b:: (Partial (fun x => x <> 0) e) :: nil))
-    | Efct f f' df H => (Binary Emult a (AppExt 1 f' [:: e]), And (b :: (Partial df e) :: nil)  )
+    | Efct f f' H => (Binary Emult a (AppExt 1 f' [:: e]), b)
+    | Efct' f f' df H => (Binary Emult a (AppExt 1 f' [:: e]), And (b :: (Partial df e) :: nil))
     end
   | Int f e1 e2 =>
     let '(a1,b1) := D e1 n in
@@ -919,6 +921,13 @@ rewrite -(interp_set_nth n l e) in H0 |-*.
 apply derivable_pt_lim_inv.
 now apply IHe.
 exact H0.
+simpl.
+intros f f' Df H.
+rewrite -(interp_set_nth n l e).
+rewrite Rmult_comm.
+apply derivable_pt_lim_comp.
+now apply IHe.
+now apply Df.
 simpl.
 intros f f' df Df (H,(H0,_)).
 rewrite -(interp_set_nth n l e) in H0 |-*.
@@ -1609,65 +1618,68 @@ exists (mkposreal _ Rlt_0_1) => u v Hu Hv.
 now apply H.
 Qed.
 
-Class UnaryDiff f := {UnaryDiff_f' : R -> R ; UnaryDiff_df : R -> Prop ;
-   UnaryDiff_H : forall x, UnaryDiff_df x -> is_derive f x (UnaryDiff_f' x)}.
+Class UnaryDiff f := {UnaryDiff_f' : R -> R ;
+  UnaryDiff_H : forall x, is_derive f x (UnaryDiff_f' x)}.
+Class UnaryDiff' f := {UnaryDiff'_f' : R -> R ; UnaryDiff'_df : R -> Prop ;
+  UnaryDiff'_H : forall x, UnaryDiff'_df x -> is_derive f x (UnaryDiff'_f' x)}.
+
 Global Instance UnaryDiff_exp : UnaryDiff exp.
 Proof.
-  exists exp (fun _ => True).
-  move => x _ ; by apply derivable_pt_lim_exp.
+  exists exp.
+  move => x ; by apply derivable_pt_lim_exp.
 Defined.
 Global Instance UnaryDiff_pow : forall n : nat, UnaryDiff (fun x => pow x n).
 Proof.
   intro n.
-  exists (fun x => INR n * x ^ (Peano.pred n)) (fun _ => True).
-  move => x _ ; by apply derivable_pt_lim_pow.
+  exists (fun x => INR n * x ^ (Peano.pred n)).
+  move => x ; by apply derivable_pt_lim_pow.
 Defined.
-Global Instance UnaryDiff_Rabs : UnaryDiff Rabs.
+Global Instance UnaryDiff_Rabs : UnaryDiff' Rabs.
 Proof.
   exists (fun x => sign x) (fun x => x <> 0).
   move => x Hx0 ; by apply derivable_pt_lim_Rabs.
 Defined.
 Global Instance UnaryDiff_Rsqr : UnaryDiff Rsqr.
 Proof.
-  exists (fun x => 2 * x) (fun _ => True).
-  move => x _ ; by apply derivable_pt_lim_Rsqr.
+  exists (fun x => 2 * x).
+  move => x ; by apply derivable_pt_lim_Rsqr.
 Defined.
 Global Instance UnaryDiff_cosh : UnaryDiff cosh.
 Proof.
-  exists sinh (fun _ => True).
-  move => x _ ; by apply derivable_pt_lim_cosh.
+  exists sinh.
+  move => x ; by apply derivable_pt_lim_cosh.
 Defined.
 Global Instance UnaryDiff_sinh : UnaryDiff sinh.
 Proof.
-  exists (fun x => cosh x) (fun _ => True).
-  move => x _ ; by apply derivable_pt_lim_sinh.
+  exists (fun x => cosh x).
+  move => x ; by apply derivable_pt_lim_sinh.
 Defined.
-Global Instance UnaryDiff_ps_atan : UnaryDiff ps_atan.
+Global Instance UnaryDiff_ps_atan : UnaryDiff' ps_atan.
 Proof.
   exists (fun x => /(1+x^2)) (fun x => -1 < x < 1).
   move => x Hx ; by apply derivable_pt_lim_ps_atan.
 Defined.
 Global Instance UnaryDiff_atan : UnaryDiff atan.
 Proof.
-  exists (fun x => /(1+x^2)) (fun _ => True).
-  move => x _ ; by apply derivable_pt_lim_atan.
+  exists (fun x => /(1+x^2)).
+  move => x ; by apply derivable_pt_lim_atan.
 Defined.
-Global Instance UnaryDiff_ln : UnaryDiff ln.
+Global Instance UnaryDiff_ln : UnaryDiff' ln.
 Proof.
   exists (fun x => /x) (fun x => 0 < x).
   move => x Hx ; by apply derivable_pt_lim_ln.
 Defined.
 Global Instance UnaryDiff_cos : UnaryDiff cos.
 Proof.
-  exists (fun x => - sin x ) (fun _ => True).
-  move => x _ ; by apply derivable_pt_lim_cos.
+  exists (fun x => - sin x ).
+  move => x ; by apply derivable_pt_lim_cos.
 Defined.
 Global Instance UnaryDiff_sin : UnaryDiff sin.
 Proof.
-  exists cos (fun _ => True).
-  move => x _ ; by apply derivable_pt_lim_sin.
+  exists cos.
+  move => x ; by apply derivable_pt_lim_sin.
 Defined.
-Global Instance UnaryDiff_sqrt : UnaryDiff sqrt.
+Global Instance UnaryDiff_sqrt : UnaryDiff' sqrt.
 Proof.
   exists (fun x => / (2 * sqrt x)) (fun x => 0 < x).
   move => x Hx ; by apply derivable_pt_lim_sqrt.
@@ -1741,7 +1753,11 @@ Ltac reify fct nb :=
     | ?f ?a =>
       let e := reify a nb in
       let ud := constr:(_ : UnaryDiff f) in
-      constr:(Unary (Efct f (@UnaryDiff_f' f ud) (@UnaryDiff_df f ud) (@UnaryDiff_H f ud)) e)
+      constr:(Unary (Efct f (@UnaryDiff_f' f ud) (@UnaryDiff_H f ud)) e)
+    | ?f ?a =>
+      let e := reify a nb in
+      let ud := constr:(_ : UnaryDiff' f) in
+      constr:(Unary (Efct f (@UnaryDiff'_f' f ud) (@UnaryDiff'_df f ud) (@UnaryDiff'_H f ud)) e)
     | _ =>
       match reify_aux fct (Nil expr) O with
       | (?f,?le,?k) => constr:(AppExt k f le)
