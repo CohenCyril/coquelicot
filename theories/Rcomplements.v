@@ -1801,3 +1801,15 @@ Proof.
   exact Hx.
   apply Rinv_0_lt_compat ; exact Hy.
 Qed.
+
+(** * Other *)
+
+Lemma derivable_pt_lim_atan :
+  forall x, derivable_pt_lim atan x (/(1 + x^2)).
+Proof.
+intros x.
+apply derive_pt_eq_1 with (derivable_pt_atan x).
+replace (x ^ 2) with (x * x) by ring.
+rewrite -(Rmult_1_l (Rinv _)).
+apply derive_pt_atan.
+Qed.

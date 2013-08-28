@@ -1647,6 +1647,11 @@ Proof.
   exists (fun x => /(1+x^2)) (fun x => -1 < x < 1).
   move => x Hx ; by apply derivable_pt_lim_ps_atan.
 Defined.
+Global Instance UnaryDiff_atan : UnaryDiff atan.
+Proof.
+  exists (fun x => /(1+x^2)) (fun _ => True).
+  move => x _ ; by apply derivable_pt_lim_atan.
+Defined.
 Global Instance UnaryDiff_ln : UnaryDiff ln.
 Proof.
   exists (fun x => /x) (fun x => 0 < x).
