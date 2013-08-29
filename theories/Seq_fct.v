@@ -884,6 +884,14 @@ Proof.
   exists r0 => e He ; set eps := mkposreal e He.
   case: (H2 eps) => {H2} N H2.
   exists N => n y Hn Hy.
+
+  have H4 : Boule 0 r y.
+  rewrite /Boule /= in Hy |- *.
+  apply Rle_lt_trans with (1 := Rabs_triang_inv _ _) in Hy.
+  rewrite /Rminus ?(Rplus_comm _ (-Rabs x)) in Hy.
+  apply Rplus_lt_reg_l in Hy.
+  by rewrite Rminus_0_r.
+
   apply Rle_lt_trans with (2 := H2 (S n) (le_trans _ _ _ (le_n_Sn _) (le_n_S _ _ Hn))).
   rewrite Rminus_0_r /SP.
   rewrite (Series_decal_n (fun k : nat => fn k y) (S n)) /=.
@@ -897,30 +905,15 @@ Proof.
   apply ex_series_ext with (fun n0 : nat => Rabs (fn (S (n) + n0)%nat y)).
     move => n0 ; by rewrite plus_Sn_m.
   apply (ex_series_decal_n (fun n => Rabs (fn n y))).
-  apply H3.
-  rewrite /Boule /= in Hy |- *.
-  apply Rle_lt_trans with (1 := Rabs_triang_inv _ _) in Hy.
-  rewrite /Rminus ?(Rplus_comm _ (-Rabs x)) in Hy.
-  apply Rplus_lt_reg_r in Hy.
-  by rewrite Rminus_0_r.
+  by apply H3.
   apply Series_compar.
   move => k ; split.
   by apply Rabs_pos.
-  apply H0.
-  rewrite /Boule /= in Hy |- *.
-  apply Rle_lt_trans with (1 := Rabs_triang_inv _ _) in Hy.
-  rewrite /Rminus ?(Rplus_comm _ (-Rabs x)) in Hy.
-  apply Rplus_lt_reg_r in Hy.
-  by rewrite Rminus_0_r.
+  by apply H0.
   apply ex_series_ext with (fun k : nat => An (S n + k)%nat).
   move => k ; by rewrite plus_Sn_m.
   by apply ex_series_decal_n.
   by apply lt_O_Sn.
   apply ex_series_Rabs.
-  apply H3.
-  rewrite /Boule /= in Hy |- *.
-  apply Rle_lt_trans with (1 := Rabs_triang_inv _ _) in Hy.
-  rewrite /Rminus ?(Rplus_comm _ (-Rabs x)) in Hy.
-  apply Rplus_lt_reg_r in Hy.
-  by rewrite Rminus_0_r.
+  by apply H3.
 Qed.

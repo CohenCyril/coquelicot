@@ -1089,7 +1089,7 @@ Proof.
     by apply Hz.
   apply Rlt_le, Rle_lt_trans with y.
   by apply Hz.
-  apply Rplus_lt_reg_r with (-(f x)).
+  apply Rplus_lt_reg_l with (-(f x)).
   apply Ropp_lt_cancel.
   apply Rle_lt_trans with (1 := Rle_abs _).
   rewrite Rabs_Ropp Ropp_plus_distr Ropp_involutive Rplus_comm.
@@ -1129,7 +1129,7 @@ Proof.
     by apply Hz.
   apply Rlt_le, Rle_lt_trans with y.
   by apply Hz.
-  apply Rplus_lt_reg_r with (-(f x)).
+  apply Rplus_lt_reg_l with (-(f x)).
   apply Ropp_lt_cancel.
   apply Rle_lt_trans with (1 := Rle_abs _).
   rewrite Rabs_Ropp Ropp_plus_distr Ropp_involutive Rplus_comm.
@@ -1220,7 +1220,7 @@ Proof.
     by [].
   apply Rlt_le, Rle_lt_trans with y.
   by apply Hz.
-  apply Rplus_lt_reg_r with (- lb').
+  apply Rplus_lt_reg_l with (- lb').
   apply Ropp_lt_cancel.
   apply Rle_lt_trans with (1 := Rle_abs _).
   rewrite Rabs_Ropp Ropp_plus_distr Ropp_involutive Rplus_comm.
@@ -1236,7 +1236,7 @@ Proof.
     by [].
   apply Rlt_le, Rle_lt_trans with y.
   by apply Hz.
-  apply Rplus_lt_reg_r with (- lb').
+  apply Rplus_lt_reg_l with (- lb').
   apply Ropp_lt_cancel.
   apply Rle_lt_trans with (1 := Rle_abs _).
   rewrite Rabs_Ropp Ropp_plus_distr Ropp_involutive Rplus_comm.

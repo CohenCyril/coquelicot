@@ -723,6 +723,21 @@ Qed.
 
 (** Order *)
 
+Lemma Rplus_lt_reg_l :
+  forall x y z, x + y < x + z -> y < z.
+Proof.
+intros x y z.
+apply Rplus_lt_reg_r.
+Qed.
+
+Lemma Rplus_lt_reg_r :
+  forall x y z, y + x < z + x -> y < z.
+Proof.
+intros x y z H.
+apply Rplus_lt_reg_r with x.
+now rewrite 2!(Rplus_comm x).
+Qed.
+
 Lemma Rmax_le_compat : forall a b c d, a <= b -> c <= d -> Rmax a c <= Rmax b d.
 Proof.
   intros.

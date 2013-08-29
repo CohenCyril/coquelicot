@@ -694,9 +694,8 @@ Proof.
   exists (mkposreal _ Hd) => y Hy ; simpl in Hy.
   case: a b Hax Hxb Hd_val => [a | | ] ;
   case => [b | | ] //= Hax Hxb Hd_val ; split => //.
-  apply Rplus_lt_reg_r with (-x) ;
-  rewrite -(Rplus_comm y).
-  replace (-x+a) with (-(x-a)) by ring.
+  apply Rplus_lt_reg_r with (-x).
+  replace (a+-x) with (-(x-a)) by ring.
   apply (Rabs_lt_between (y - x)).
   apply Rlt_le_trans with (1 := Hy), Rbar_finite_le.
   rewrite -Hd_val /Rbar_min ; case: Rbar_le_dec => // H.
@@ -709,8 +708,7 @@ Proof.
   rewrite -Hd_val /Rbar_min ; case: Rbar_le_dec => // H.
   by right.
   apply Rplus_lt_reg_r with (-x).
-  rewrite -(Rplus_comm y).
-  replace (-x+a) with (-(x-a)) by ring.
+  replace (a+-x) with (-(x-a)) by ring.
   apply (Rabs_lt_between (y - x)).
   apply Rlt_le_trans with (1 := Hy), Rbar_finite_le.
   rewrite -Hd_val /Rbar_min ; case: Rbar_le_dec => // H.

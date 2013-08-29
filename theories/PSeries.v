@@ -1612,7 +1612,7 @@ Proof.
     rewrite -(Rminus_eq_0 ((x-Rmin r0 r1))) /Rminus ;
     by apply Rplus_lt_compat_r , Hy.
     exists (mkposreal _ H) => /= z Hz.
-    apply Rabs_lt_between' ; split ; apply (Rplus_lt_reg_r (-y)) ; simpl.
+    apply Rabs_lt_between' ; split ; apply (Rplus_lt_reg_l (-y)) ; simpl.
     apply Ropp_lt_cancel.
     apply Rle_lt_trans with (1 := Rabs_maj2 _).
     rewrite Ropp_plus_distr ?Ropp_involutive (Rplus_comm (-y)).

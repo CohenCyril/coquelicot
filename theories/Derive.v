@@ -614,9 +614,8 @@ intros f a eps Hf' b.
 unfold Rabs at 1 3.
 case Rcase_abs; intros H1 H2.
 destruct (MVT_cor2 f (Derive f) b a).
-apply Rplus_lt_reg_r with (-a).
-ring_simplify.
-now rewrite Rplus_comm.
+rewrite -(Rplus_0_l a).
+now apply Rlt_minus_l.
 intros c Hc.
 apply Derive_correct.
 apply Hf'.
