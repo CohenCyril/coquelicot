@@ -218,6 +218,42 @@ apply: filterlim_compose Ch.
 now apply filterlim_pair.
 Qed.
 
+(** ** Open sets using filters *)
+
+Definition open_for {T} (F : T -> ((T -> Prop) -> Prop)) (D : T -> Prop) :=
+  forall x, D x -> F x D.
+
+Lemma open_true :
+  forall {T F} {FF : forall x : T, Filter (F x)},
+  open_for F (fun x => True).
+Proof.
+intros T F FF x _.
+apply filter_true.
+Qed.
+
+Lemma open_and :
+  forall {T F} {FF : forall x : T, Filter (F x)} D E,
+  open_for F D -> open_for F E -> open_for F (fun x => D x /\ E x).
+Proof.
+intros T F FF D E HD HE x [Dx Ex].
+specialize (HD _ Dx).
+specialize (HE _ Ex).
+now apply filter_and.
+Qed.
+
+Lemma open_or :
+  forall {T F} {FF : forall x : T, Filter (F x)} D E,
+  open_for F D -> open_for F E -> open_for F (fun x => D x \/ E x).
+Proof.
+intros T F FF D E HD HE x [Dx|Ex].
+specialize (HD _ Dx).
+apply: filter_imp HD.
+now left.
+specialize (HE _ Ex).
+apply: filter_imp HE.
+now right.
+Qed.
+
 (** ** Specific filters *)
 
 (** Eventually = "for integers large enough" *)
@@ -1156,6 +1192,46 @@ Lemma Rbar_locally_le_finite :
   forall x : R, filter_le (Rbar_locally x) (locally x).
 Proof.
 intros x P [eps HP] ; exists eps ; intros ; now apply HP.
+Qed.
+
+Lemma open_Rbar_lt :
+  forall y, open_for Rbar_locally' (fun u => Rbar_lt u y).
+Proof.
+intros [y| |].
+- intros [x| |] Hxy.
+  apply Rminus_lt_0 in Hxy.
+  exists (mkposreal _ Hxy).
+  simpl.
+  intros u Hu.
+  apply Rabs_lt_between in Hu.
+  apply Rplus_lt_reg_r with (1 := proj2 Hu).
+  easy.
+  now exists y.
+- intros x _.
+  now apply filter_forall.
+- intros x Hx.
+  now destruct x.
+Qed.
+
+Lemma open_Rbar_gt :
+  forall y, open_for Rbar_locally' (fun u => Rbar_lt y u).
+Proof.
+intros [y| |].
+- intros [x| |] Hxy.
+  apply Rminus_lt_0 in Hxy.
+  exists (mkposreal _ Hxy).
+  simpl.
+  intros u Hu.
+  apply Rabs_lt_between in Hu.
+  apply Rplus_lt_reg_r with (- x).
+  generalize (proj1 Hu).
+  now rewrite Ropp_minus_distr.
+  now exists y.
+  easy.
+- intros x Hx.
+  now destruct x.
+- intros x _.
+  now apply filter_forall.
 Qed.
 
 (** A particular sequence converging to a point *)
