@@ -259,11 +259,6 @@ Proof.
   exists (((2 - 2) - 2 * ln x) / x ^ 2) ; apply Dfab.
   by [].
   by apply Rlt_le.
-  move => x y H0x Hxy Hy1.
-  rewrite ?Rabs_pos_eq.
-  by apply Variation_1.
-  by apply Rlt_le, Rlt_trans with x.
-  by apply Rlt_le.
   by apply Rlt_0_1.
   split => //.
   apply Rminus_lt_0 ; ring_simplify ; by apply Rlt_0_1.
@@ -297,9 +292,6 @@ Proof.
   apply derivable_continuous_pt.
   exists (((2 - 2) - 2 * ln x) / x ^ 2) ; apply Dfab.
   by apply Rlt_trans with (1 := Rlt_0_1).
-  move => x y H0x Hxy Hy1.
-  apply Ropp_lt_contravar.
-  by apply Variation_2.
   by [].
   split ; apply Rminus_lt_0 ; ring_simplify ; by apply Rlt_0_1.
   move => x [H0x [Hx1 Hfx]].

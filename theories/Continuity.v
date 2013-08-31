@@ -815,370 +815,180 @@ Qed.
 Lemma IVT_Rbar_incr (f : R -> R) (a b la lb : Rbar) (y : R) :
   is_lim f a la -> is_lim f b lb
   -> (forall (x : R), Rbar_lt a x -> Rbar_lt x b -> continuity_pt f x)
-  -> (forall (x y : R), Rbar_lt a x -> x < y -> Rbar_lt y b -> f x < f y)
   -> Rbar_lt a b
   -> Rbar_lt la y /\ Rbar_lt y lb
   -> {x : R | Rbar_lt a x /\ Rbar_lt x b /\ f x = y}.
 Proof.
-  move => Hfa Hfb Cf Crf Hab Hy.
-  
-  suff Hex : (exists x : R, Rbar_lt a x /\ Rbar_lt x b /\ f x <= y).
-  suff Hbound : bound (fun x => Rbar_lt a x /\ Rbar_lt x b /\ f x <= y).
-  case: (completeness _ Hbound Hex) => x [Hub Hlub].
-  exists x.
-
-  have Hax : Rbar_lt a x.
-    destruct Hex as [x' Hx'].
-    apply Rbar_lt_le_trans with x'.
-    apply Hx'.
-    apply Rbar_finite_le.
-    now apply Hub.
-  split => //.
-  have Hxb : Rbar_lt x b.
+intros Hfa Hfb Cf Hab Hy.
+assert (Hb' : exists b' : R, Rbar_lt b' b /\
+        is_upper_bound (fun x => Rbar_lt a x /\ Rbar_lt x b /\ f x <= y) b').
+{ assert (Hfb' : Rbar_locally b (fun x => y < f x)).
     apply is_lim_ in Hfb.
-    destruct b as [b| |] ; try easy.
-    destruct (Hfb (fun u => y < u)) as [eps He].
+    apply Hfb.
     now apply (open_Rbar_gt' _ y).
-    apply Rbar_le_lt_trans with (b - eps).
-    apply Rbar_finite_le.
-    apply Hlub.
-    clear -He.
-    intros u [Hu1 [Hu2 Hu3]].
+  clear -Hab Hfb'.
+  destruct b as [b| |].
+  - destruct Hfb' as [eps He].
+    exists (b - eps).
+    split.
+    apply Rminus_lt_0.
+    replace (b - (b - eps)) with (pos eps) by ring.
+    apply cond_pos.
+    intros u [_ [H1 H2]].
     apply Rnot_lt_le.
-    intros H.
-    apply Rle_not_lt with (1 := Hu3).
+    intros Hu.
+    apply Rle_not_lt with (1 := H2).
     apply He.
     apply Rabs_lt_between'.
     split.
-    exact H.
-    apply Rlt_le_trans with (1 := Hu2).
-    rewrite -{1}[b]Rplus_0_r.
-    apply Rplus_le_compat_l.
+    exact Hu.
+    apply Rlt_le_trans with (1 := H1).
     apply Rlt_le.
+    apply Rminus_lt_0.
+    replace (b + eps - b) with (pos eps) by ring.
     apply cond_pos.
     now apply Rlt_not_eq.
-    rewrite -{2}[b]Rminus_0_r.
-    apply Rplus_lt_compat_l.
-    apply Ropp_lt_contravar.
-    apply cond_pos.
-    clear -Hab.
-    now destruct a.
-  split => //.
-  move: (Cf _ Hax Hxb) => Hfx.
-  apply is_lim_continuity in Hfx.
-  apply Rle_antisym.
-  apply Rnot_lt_le => H.
-  apply Rminus_lt_0 in H.
-  case: (Hfx (mkposreal _ H)) => {Hfx} /= delta Hfx.
-  apply Rminus_lt_0 in H.
-  case Ha : a Hlub Crf Hax => [a' | | ] Hlub Crf //= Hax.
-  absurd (Rmax (x - delta / 2) ((x+a')/2) < x).
-  apply Rle_not_lt.
-  apply Hlub => z Hz.
-  suff H0 : f z <= f (Rmax (x - delta / 2) ((x + a') / 2)).
-    apply Rnot_lt_le ; contradict H0 ; apply Rlt_not_le.
-    apply: Crf.
-    apply Rlt_le_trans with (2 := Rmax_r _ _).
-    pattern a' at 1 ; replace a' with ((a'+a') / 2) by field.
-    apply Rmult_lt_compat_r ; intuition.
-    by apply H0.
-    by apply Hz.
-  apply Rlt_le, Rle_lt_trans with y.
-  by apply Hz.
-  apply Rplus_lt_reg_l with (-(f x)).
-  apply Ropp_lt_cancel.
-  apply Rle_lt_trans with (1 := Rle_abs _).
-  rewrite Rabs_Ropp Ropp_plus_distr Ropp_involutive Rplus_comm.
-  apply Hfx.
-  rewrite /Rminus Rplus_max_distr_r.
-  ring_simplify (x + - (delta / 2) + - x).
-  field_simplify ((x + a') / 2 + - x).
-  replace ((-x+a') / 2) with (-((x-a')/2)) by field.
-  rewrite Rmax_opp_Rmin Rabs_Ropp Rabs_pos_eq.
-  apply Rle_lt_trans with (1 := Rmin_l _ _).
-  apply Rminus_lt_0 ; field_simplify ; rewrite Rdiv_1 ;
-  by apply is_pos_div_2.
-  apply Rlt_le, Rmin_case.
-  by apply is_pos_div_2.
-  apply Rdiv_lt_0_compat.
-  by apply -> Rminus_lt_0.
-  by apply Rlt_0_2.
-  apply Rlt_not_eq.
-  apply Rmax_case.
-  apply Rminus_lt_0 ; field_simplify ; rewrite Rdiv_1 ;
-  by apply is_pos_div_2.
-  pattern x at 2 ; replace x with ((x+x)/2) by field.
-  apply Rmult_lt_compat_r ; intuition.
-  apply Rmax_case.
-  apply Rminus_lt_0 ; field_simplify ; rewrite Rdiv_1 ;
-  by apply is_pos_div_2.
-  pattern x at 2 ; replace x with ((x+x)/2) by field.
-  apply Rmult_lt_compat_r ; intuition.
-  absurd ((x - delta / 2) < x).
-  apply Rle_not_lt.
-  apply Hlub => z Hz.
-  suff H0 : f z <= f (x - delta / 2).
-    apply Rnot_lt_le ; contradict H0 ; apply Rlt_not_le.
-    apply: Crf.
-    by [].
-    by apply H0.
-    by apply Hz.
-  apply Rlt_le, Rle_lt_trans with y.
-  by apply Hz.
-  apply Rplus_lt_reg_l with (-(f x)).
-  apply Ropp_lt_cancel.
-  apply Rle_lt_trans with (1 := Rle_abs _).
-  rewrite Rabs_Ropp Ropp_plus_distr Ropp_involutive Rplus_comm.
-  apply Hfx.
-  ring_simplify (x - (delta / 2) - x).
-  rewrite Rabs_Ropp Rabs_pos_eq.
-  apply Rminus_lt_0 ; field_simplify ; rewrite Rdiv_1 ;
-  by apply is_pos_div_2.
-  apply Rlt_le, is_pos_div_2.
-  apply Rlt_not_eq.
-  apply Rminus_lt_0 ; field_simplify ; rewrite Rdiv_1 ;
-  by apply is_pos_div_2.
-  apply Rminus_lt_0 ; field_simplify ; rewrite Rdiv_1 ;
-  by apply is_pos_div_2.
-
-  apply Rnot_lt_le => H.
-  apply Rminus_lt_0 in H.
-  case: (Hfx (mkposreal _ H)) => {Hfx} /= delta Hfx.
-  apply Rminus_lt_0 in H.
-  case Hb : b Hub Crf Hxb => [b' | | ] Hub Crf //= Hxb.
-  absurd (x < Rmin (x + delta / 2) ((x+b')/2)).
-  apply Rle_not_lt.
-  apply Hub ; repeat split.
-  apply Rbar_lt_trans with x.
-  by apply Hax.
-  rewrite /Rmin ; case: Rle_dec => H0.
-  apply Rminus_lt_0 ; ring_simplify ; by apply is_pos_div_2.
-  pattern x at 1 ; replace x with ((x+x)/2) by field.
-  apply Rmult_lt_compat_r ; intuition.
-  apply Rle_lt_trans with (1 := Rmin_r _ _).
-  pattern b' at 2 ; replace b' with ((b'+b')/2) by field.
-  apply Rmult_lt_compat_r ; intuition.
-  apply Rlt_le, Rplus_lt_reg_r with (-(f x)).
-  rewrite ?(Rplus_comm ((- f x))).
-  apply Rle_lt_trans with (1 := Rle_abs _).
-  apply Hfx.
-  rewrite /Rminus Rplus_min_distr_r.
-  ring_simplify (x + delta / 2 + - x).
-  field_simplify ((x + b') / 2 + - x).
+  - destruct Hfb' as [M HM].
+    exists M.
+    repeat split.
+    intros u [_ [H1 H2]].
+    apply Rnot_lt_le.
+    intros Hu.
+    apply Rle_not_lt with (1 := H2).
+    now apply HM.
+  - now destruct a. }
+assert (Hex : exists x : R, Rbar_lt a x /\ Rbar_lt x b /\ f x <= y).
+{ assert (Hfa' : Rbar_locally a (fun x => Rbar_lt x b /\ f x < y)).
+    apply filter_and.
+    apply Rbar_locally_le.
+    now apply open_Rbar_lt'.
+    apply is_lim_ in Hfa.
+    apply (Hfa (fun u => u < y)).
+    now apply (open_Rbar_lt' _ y).
+  clear -Hab Hfa'.
+  destruct a as [a| |].
+  - destruct Hfa' as [eps He].
+    exists (a + eps / 2).
+    assert (Ha : a < a + eps / 2).
+      apply Rminus_lt_0.
+      replace (a + eps / 2 - a) with (eps / 2) by ring.
+      apply is_pos_div_2.
+    split.
+    exact Ha.
+    assert (H : Rbar_lt (a + eps / 2) b /\ (f (a + eps / 2) < y)).
+      apply He.
+      replace (a + eps / 2 - a) with (eps / 2) by ring.
+      rewrite Rabs_pos_eq.
+      apply Rlt_eps2_eps.
+      apply cond_pos.
+      apply Rlt_le.
+      apply is_pos_div_2.
+      now apply Rgt_not_eq.
+    destruct H as [H1 H2].
+    split.
+    exact H1.
+    now apply Rlt_le.
+  - easy.
+  - destruct Hfa' as [M HM].
+    exists (M - 1).
+    assert (H : Rbar_lt (M - 1) b /\ f (M - 1) < y).
+      apply HM.
+      apply Rminus_lt_0.
+      replace (M - (M - 1)) with 1 by ring.
+      apply Rlt_0_1.
+    destruct H as [H1 H2].
+    repeat split.
+    exact H1.
+    now apply Rlt_le. }
+destruct (completeness (fun x => Rbar_lt a x /\ Rbar_lt x b /\ f x <= y)) as [x [Hub Hlub]].
+destruct Hb' as [b' Hb'].
+now exists b'.
+exact Hex.
+exists x.
+destruct Hb' as [b' [Hb Hb']].
+destruct Hex as [x' Hx'].
+assert (Hax : Rbar_lt a x).
+  apply Rbar_lt_le_trans with x'.
+  apply Hx'.
+  apply Rbar_finite_le.
+  now apply Hub.
+assert (Hxb : Rbar_lt x b).
+  apply Rbar_le_lt_trans with b'.
+  apply Rbar_finite_le.
+  now apply Hlub.
+  exact Hb.
+repeat split ; try assumption.
+specialize (Cf _ Hax Hxb).
+apply continuity_pt_filterlim in Cf.
+destruct (total_order_T (f x) y) as [[H|H]|H].
+- assert (H': locally x (fun u => (Rbar_lt a u /\ Rbar_lt u b) /\ f u < y)).
+    apply filter_and.
+    apply filter_open.
+    apply open_and.
+    apply open_Rbar_gt.
+    apply open_Rbar_lt.
+    now split.
+    apply (Cf (fun u => u < y)).
+    apply filter_open with (2 := H).
+    apply open_lt.
+  destruct H' as [eps H'].
+  elim Rle_not_lt with x (x + eps / 2).
+  apply Hub.
+  destruct (H' (x + eps / 2)) as [[H1 H2] H3].
+  simpl.
+  unfold distR.
+  replace (x + eps / 2 - x) with (eps / 2) by ring.
   rewrite Rabs_pos_eq.
-  apply Rle_lt_trans with (1 := Rmin_l _ _).
-  apply Rminus_lt_0 ; field_simplify ; rewrite Rdiv_1 ; by apply is_pos_div_2.
-  apply Rmin_case.
-  by apply Rlt_le, is_pos_div_2.
-  apply Rlt_le, Rdiv_lt_0_compat.
-  by rewrite Rplus_comm -Rminus_lt_0.
-  by apply Rlt_0_2.
-  apply Rgt_not_eq.
-  apply Rmin_case.
-  apply Rminus_lt_0 ; ring_simplify ; by apply is_pos_div_2.
-  pattern x at 2 ; replace x with ((x+x)/2) by field.
-  apply Rmult_lt_compat_r ; intuition.
-  apply Rmin_case.
-  apply Rminus_lt_0 ; ring_simplify ; by apply is_pos_div_2.
-  pattern x at 1 ; replace x with ((x+x)/2) by field.
-  apply Rmult_lt_compat_r ; intuition.
-  absurd (x < (x + delta / 2)).
-  apply Rle_not_lt.
-  apply Hub ; repeat split.
-  apply Rbar_lt_trans with x.
-  by apply Hax.
-  apply Rminus_lt_0 ; ring_simplify ; by apply is_pos_div_2.
-  apply Rlt_le, Rplus_lt_reg_r with (-(f x)).
-  rewrite ?(Rplus_comm ((- f x))).
-  apply Rle_lt_trans with (1 := Rle_abs _).
-  apply Hfx.
-  ring_simplify (x + delta / 2 - x).
-  rewrite Rabs_pos_eq.
-  apply Rminus_lt_0 ; field_simplify ; rewrite Rdiv_1 ; by apply is_pos_div_2.
-  by apply Rlt_le, is_pos_div_2.
-  apply Rgt_not_eq.
-  apply Rminus_lt_0 ; ring_simplify ; by apply is_pos_div_2.
-  apply Rminus_lt_0 ; ring_simplify ; by apply is_pos_div_2.
-  case Hb : b Hab Hfb Crf => [b' | | ] Hab Hfb Crf // ; try by case Ha : a Hab.
-  exists b' => z Hz.
-  apply Rlt_le, Hz.
-  case Hlb : lb Hy Hfb => [lb' | | ] [_ Hy] Hfb //.
-  apply Rminus_lt_0 in Hy.
-  case: (Hfb (mkposreal _ Hy)) => {Hfb} /= d Hfb.
-  case Ha: a Hab Crf => [a' | | ] //= Hab Crf.
-  exists (Rmax (d+1) (a'+ 1)) => z Hz.
-  suff H : f z <= f (Rmax (d + 1) (a' + 1)).
-    apply Rnot_lt_le ; contradict H ; apply Rlt_not_le.
-    apply: Crf.
-    apply Rlt_le_trans with (2 := Rmax_r _ _).
-    apply Rminus_lt_0 ; ring_simplify ; by apply Rlt_0_1.
-    by apply H.
-    by [].
-  apply Rlt_le, Rle_lt_trans with y.
-  by apply Hz.
-  apply Rplus_lt_reg_l with (- lb').
-  apply Ropp_lt_cancel.
-  apply Rle_lt_trans with (1 := Rle_abs _).
-  rewrite Rabs_Ropp Ropp_plus_distr Ropp_involutive Rplus_comm.
-  apply Hfb.
-  apply Rlt_le_trans with (2 := Rmax_l _ _).
-  apply Rminus_lt_0 ; ring_simplify ; by apply Rlt_0_1.
-  exists (d+1) => z Hz.
-  suff H : f z <= f (d + 1).
-    apply Rnot_lt_le ; contradict H ; apply Rlt_not_le.
-    apply: Crf.
-    by [].
-    by apply H.
-    by [].
-  apply Rlt_le, Rle_lt_trans with y.
-  by apply Hz.
-  apply Rplus_lt_reg_l with (- lb').
-  apply Ropp_lt_cancel.
-  apply Rle_lt_trans with (1 := Rle_abs _).
-  rewrite Rabs_Ropp Ropp_plus_distr Ropp_involutive Rplus_comm.
-  apply Hfb.
-  apply Rminus_lt_0 ; ring_simplify ; by apply Rlt_0_1.
-  case: (Hfb y) => {Hfb} /= d Hfb.
-  case Ha: a Hab Crf => [a' | | ] //= Hab Crf.
-  exists (Rmax (d+1) (a'+ 1)) => z Hz.
-  suff H : f z <= f (Rmax (d + 1) (a' + 1)).
-    apply Rnot_lt_le ; contradict H ; apply Rlt_not_le.
-    apply: Crf.
-    apply Rlt_le_trans with (2 := Rmax_r _ _).
-    apply Rminus_lt_0 ; ring_simplify ; by apply Rlt_0_1.
-    by apply H.
-    by [].
-  apply Rlt_le, Rle_lt_trans with y.
-  by apply Hz.
-  apply Hfb.
-  apply Rlt_le_trans with (2 := Rmax_l _ _).
-  apply Rminus_lt_0 ; ring_simplify ; by apply Rlt_0_1.
-  exists (d+1) => z Hz.
-  suff H : f z <= f (d + 1).
-    apply Rnot_lt_le ; contradict H ; apply Rlt_not_le.
-    apply: Crf.
-    by [].
-    by apply H.
-    by [].
-  apply Rlt_le, Rle_lt_trans with y.
-  by apply Hz.
-  apply Hfb.
-  apply Rminus_lt_0 ; ring_simplify ; by apply Rlt_0_1.
-  
-  case Hla: la Hy Hfa => [la' | | ] [Hy _] Hfa //.
-  apply Rminus_lt_0 in Hy ;
-  move: (Hfa (mkposreal _ Hy)) => {Hfa} Hfa ; simpl in Hfa.
-  have : Rbar_locally a (fun y0 : R => f y0 < y).
-  move: Hfa ; apply filter_imp => z Hz.
-  apply (Rplus_lt_reg_r (-la')).
-  rewrite ?(Rplus_comm (-la')).
-  apply Rle_lt_trans with (1 := Rle_abs _).
-  apply Hz.
-  move => {Hfa} Hfa.
-  case Ha : a Hab Hfa => [a' | | ] Hab [d Hfa] // ;
-  case Hb : b Hab => [b' | | ] Hab //.
-  exists (Rmin (a'+d/2) ((a'+b')/2)) ; repeat split.
-  apply Rmin_case.
-  apply Rminus_lt_0 ; ring_simplify ; by apply is_pos_div_2.
-  pattern a' at 1 ; replace a' with ((a'+a')/2) by field.
-  apply Rmult_lt_compat_r ; intuition.
-  apply Rle_lt_trans with (1 := Rmin_r _ _).
-  pattern b' at 2 ; replace b' with ((b'+b')/2) by field.
-  apply Rmult_lt_compat_r ; intuition.
-  apply Rlt_le, Hfa.
-  rewrite Rabs_pos_eq.
-  apply Rle_lt_trans with (1 := Rplus_le_compat_r _ _ _ (Rmin_l _ _)).
-  apply Rminus_lt_0 ; field_simplify ; rewrite Rdiv_1 ; by apply is_pos_div_2.
-  apply Rmin_case ; field_simplify ; rewrite Rdiv_1.
-  apply Rlt_le, is_pos_div_2.
-  apply Rlt_le, Rdiv_lt_0_compat, Rlt_0_2.
-  by rewrite Rplus_comm -Rminus_lt_0.
-  apply Rgt_not_eq, Rminus_lt_0, Rmin_case ;
-  field_simplify ; rewrite Rdiv_1.
-  by apply is_pos_div_2.
-  apply Rdiv_lt_0_compat, Rlt_0_2.
-  by rewrite Rplus_comm -Rminus_lt_0.
-  exists (a'+d/2) ; repeat split.
-  apply Rminus_lt_0 ; ring_simplify ; by apply is_pos_div_2.
-  apply Rlt_le, Hfa.
-  rewrite Rabs_pos_eq.
-  apply Rminus_lt_0 ; field_simplify ; rewrite Rdiv_1 ; by apply is_pos_div_2.
-  ring_simplify.
-  apply Rlt_le, is_pos_div_2.
-  apply Rgt_not_eq, Rminus_lt_0 ;
-  field_simplify ; rewrite Rdiv_1.
-  by apply is_pos_div_2.
-  exists (Rmin (d-1) (b'-1)) ; repeat split.
-  apply Rle_lt_trans with (1 := Rmin_r _ _).
-  apply Rminus_lt_0 ; ring_simplify ; apply Rlt_0_1.
-  apply Rlt_le, Hfa.
-  apply Rle_lt_trans with (1 := Rmin_l _ _).
-  apply Rminus_lt_0 ; ring_simplify ; apply Rlt_0_1.
-  exists ((d-1)) ; repeat split.
-  apply Rlt_le, Hfa.
-  apply Rminus_lt_0 ; ring_simplify ; apply Rlt_0_1.
-  move: (Hfa y) => {Hfa} Hfa.
-  case Ha : a Hab Hfa => [a' | | ] Hab [d Hfa] // ;
-  case Hb : b Hab => [b' | | ] Hab //.
-  exists (Rmin (a'+d/2) ((a'+b')/2)) ; repeat split.
-  apply Rmin_case.
-  apply Rminus_lt_0 ; ring_simplify ; by apply is_pos_div_2.
-  pattern a' at 1 ; replace a' with ((a'+a')/2) by field.
-  apply Rmult_lt_compat_r ; intuition.
-  apply Rle_lt_trans with (1 := Rmin_r _ _).
-  pattern b' at 2 ; replace b' with ((b'+b')/2) by field.
-  apply Rmult_lt_compat_r ; intuition.
-  apply Rlt_le, Hfa.
-  rewrite Rabs_pos_eq.
-  apply Rle_lt_trans with (1 := Rplus_le_compat_r _ _ _ (Rmin_l _ _)).
-  apply Rminus_lt_0 ; field_simplify ; rewrite Rdiv_1 ; by apply is_pos_div_2.
-  apply Rmin_case ; field_simplify ; rewrite Rdiv_1.
-  apply Rlt_le, is_pos_div_2.
-  apply Rlt_le, Rdiv_lt_0_compat, Rlt_0_2.
-  by rewrite Rplus_comm -Rminus_lt_0.
-  apply Rgt_not_eq, Rminus_lt_0, Rmin_case ;
-  field_simplify ; rewrite Rdiv_1.
-  by apply is_pos_div_2.
-  apply Rdiv_lt_0_compat, Rlt_0_2.
-  by rewrite Rplus_comm -Rminus_lt_0.
-  exists (a'+d/2) ; repeat split.
-  apply Rminus_lt_0 ; ring_simplify ; by apply is_pos_div_2.
-  apply Rlt_le, Hfa.
-  rewrite Rabs_pos_eq.
-  apply Rminus_lt_0 ; field_simplify ; rewrite Rdiv_1 ; by apply is_pos_div_2.
-  ring_simplify.
-  apply Rlt_le, is_pos_div_2.
-  apply Rgt_not_eq, Rminus_lt_0 ;
-  field_simplify ; rewrite Rdiv_1.
-  by apply is_pos_div_2.
-  exists (Rmin (d-1) (b'-1)) ; repeat split.
-  apply Rle_lt_trans with (1 := Rmin_r _ _).
-  apply Rminus_lt_0 ; ring_simplify ; apply Rlt_0_1.
-  apply Rlt_le, Hfa.
-  apply Rle_lt_trans with (1 := Rmin_l _ _).
-  apply Rminus_lt_0 ; ring_simplify ; apply Rlt_0_1.
-  exists ((d-1)) ; repeat split.
-  apply Rlt_le, Hfa.
-  apply Rminus_lt_0 ; ring_simplify ; apply Rlt_0_1.
+  apply Rlt_eps2_eps.
+  apply cond_pos.
+  apply Rlt_le.
+  apply is_pos_div_2.
+  split.
+  exact H1.
+  split.
+  exact H2.
+  now apply Rlt_le.
+  apply Rminus_lt_0.
+  replace (x + eps / 2 - x) with (eps / 2) by ring.
+  apply is_pos_div_2.
+- exact H.
+- assert (H': locally x (fun u => y < f u)).
+    apply (Cf (fun u => y < u)).
+    apply filter_open with (2 := H).
+    apply open_gt.
+  destruct H' as [eps H'].
+  elim Rle_not_lt with (x - eps) x.
+  apply Hlub.
+  intros u Hfu.
+  apply Rnot_lt_le.
+  intros Hu.
+  apply Rle_not_lt with (1 := proj2 (proj2 Hfu)).
+  apply H'.
+  apply Rabs_lt_between'.
+  split.
+  exact Hu.
+  apply Rle_lt_trans with (1 := Hub u Hfu).
+  apply Rminus_lt_0.
+  replace (x + eps - x) with (pos eps) by ring.
+  apply cond_pos.
+  apply Rminus_lt_0.
+  replace (x - (x - eps)) with (pos eps) by ring.
+  apply cond_pos.
 Qed.
 
 Lemma IVT_Rbar_decr (f : R -> R) (a b la lb : Rbar) (y : R) :
   is_lim f a la -> is_lim f b lb
   -> (forall (x : R), Rbar_lt a x -> Rbar_lt x b -> continuity_pt f x)
-  -> (forall (x y : R), Rbar_lt a x -> x < y -> Rbar_lt y b -> f y < f x)
   -> Rbar_lt a b
   -> Rbar_lt lb y /\ Rbar_lt y la
   -> {x : R | Rbar_lt a x /\ Rbar_lt x b /\ f x = y}.
 Proof.
-  move => Hla Hlb Cf Hf Hab Hy.
+  move => Hla Hlb Cf Hab Hy.
   case: (IVT_Rbar_incr (fun x => - f x) a b (Rbar_opp la) (Rbar_opp lb) (-y)).
   by apply is_lim_opp.
   by apply is_lim_opp.
   move => x Hax Hxb.
   by apply continuity_pt_opp, Cf.
-  move => x z Hax Hxz Hzb.
-  apply Ropp_lt_contravar.
-  by apply Hf.
   by apply Hab.
   split ; apply Rbar_opp_lt ;
   rewrite Rbar_opp_involutive /Rbar_opp Ropp_involutive ;
