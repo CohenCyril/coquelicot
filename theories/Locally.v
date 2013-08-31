@@ -1329,47 +1329,119 @@ Proof.
 intros x P [eps HP] ; exists eps ; intros ; now apply HP.
 Qed.
 
-Lemma open_Rbar_lt :
-  forall y x, Rbar_lt x y -> Rbar_locally' x (fun u => Rbar_lt u y).
+(** * Some open sets of R and Rbar *)
+
+Lemma open_lt :
+  forall y, open (fun u => u < y).
 Proof.
-intros [y| |].
-- intros [x| |] Hxy.
-  apply Rminus_lt_0 in Hxy.
-  exists (mkposreal _ Hxy).
+intros y x Hxy.
+apply Rminus_lt_0 in Hxy.
+apply (Open_spec _ _ _ (ball x (mkposreal _ Hxy))).
+- exists x.
+  now eexists.
+- unfold ball.
+  now rewrite distance_refl.
+- unfold ball.
   simpl.
   intros u Hu.
   apply Rabs_lt_between in Hu.
   apply Rplus_lt_reg_r with (1 := proj2 Hu).
-  easy.
-  now exists y.
-- intros x _.
-  now apply filter_forall.
-- intros x Hx.
-  now destruct x.
 Qed.
 
-Lemma open_Rbar_gt :
-  forall y x, Rbar_lt y x -> Rbar_locally' x (fun u => Rbar_lt y u).
+Lemma open_gt :
+  forall y, open (fun u => y < u).
 Proof.
-intros [y| |].
-- intros [x| |] Hxy.
-  apply Rminus_lt_0 in Hxy.
-  exists (mkposreal _ Hxy).
+intros y x Hxy.
+apply Rminus_lt_0 in Hxy.
+apply (Open_spec _ _ _ (ball x (mkposreal _ Hxy))).
+- exists x.
+  now eexists.
+- unfold ball.
+  now rewrite distance_refl.
+- unfold ball.
   simpl.
   intros u Hu.
   apply Rabs_lt_between in Hu.
   apply Rplus_lt_reg_r with (- x).
   generalize (proj1 Hu).
   now rewrite Ropp_minus_distr.
-  now exists y.
-  easy.
-- intros x Hx.
-  now destruct x.
-- intros x _.
-  now apply filter_forall.
 Qed.
 
-(** A particular sequence converging to a point *)
+Lemma open_neq :
+  forall y, open (fun u => u <> y).
+Proof.
+intros y.
+apply (open_ext (fun u => u < y \/ y < u)).
+intros u.
+split.
+apply Rlt_dichotomy_converse.
+apply Rdichotomy.
+apply open_or.
+apply open_lt.
+apply open_gt.
+Qed.
+
+Lemma open_Rbar_lt :
+  forall y, open (fun u : R => Rbar_lt u y).
+Proof.
+intros [y| |].
+- apply open_lt.
+- intros x _.
+  exists (ball x (mkposreal _ Rlt_0_1)).
+  exists x.
+  now eexists.
+  unfold ball.
+  rewrite distance_refl.
+  apply cond_pos.
+  easy.
+- apply open_false.
+Qed.
+
+Lemma open_Rbar_gt :
+  forall y, open (fun u : R => Rbar_lt y u).
+Proof.
+intros [y| |].
+- apply open_gt.
+- apply open_false.
+- intros x _.
+  exists (ball x (mkposreal _ Rlt_0_1)).
+  exists x.
+  now eexists.
+  unfold ball.
+  rewrite distance_refl.
+  apply cond_pos.
+  easy.
+Qed.
+
+Lemma open_Rbar_lt' :
+  forall x y, Rbar_lt x y -> Rbar_locally' x (fun u => Rbar_lt u y).
+Proof.
+intros [x| |] y Hxy.
+- change (locally x (fun u => Rbar_lt u y)).
+  apply filter_open with (2 := Hxy).
+  apply open_Rbar_lt.
+- easy.
+- destruct y as [y| |].
+  now exists y.
+  now apply filter_forall.
+  easy.
+Qed.
+
+Lemma open_Rbar_gt' :
+  forall x y, Rbar_lt y x -> Rbar_locally' x (fun u => Rbar_lt y u).
+Proof.
+intros [x| |] y Hxy.
+- change (locally x (fun u => Rbar_lt y u)).
+  apply filter_open with (2 := Hxy).
+  apply open_Rbar_gt.
+- destruct y as [y| |].
+  now exists y.
+  easy.
+  now apply filter_forall.
+- now destruct y as [y| |].
+Qed.
+
+(** * A canonic sequence converging to a point of Rbar *)
 
 Definition Rbar_loc_seq (x : Rbar) (n : nat) := match x with
     | Finite x => x + / (INR n + 1)

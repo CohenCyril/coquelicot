@@ -838,7 +838,7 @@ Proof.
     apply is_lim_ in Hfb.
     destruct b as [b| |] ; try easy.
     destruct (Hfb (fun u => y < u)) as [eps He].
-    now apply (open_Rbar_gt y).
+    now apply (open_Rbar_gt' _ y).
     apply Rbar_le_lt_trans with (b - eps).
     apply Rbar_finite_le.
     apply Hlub.
@@ -1392,27 +1392,17 @@ exists d; intros.
 now apply Hd.
 Qed.
 
-Lemma continuity_2d_pt_neq_0 (f : R -> R -> R) (x y : R) :
-  continuity_2d_pt f x y -> f x y <> 0
-  -> locally_2d (fun u v => f u v <> 0) x y.
+Lemma continuity_2d_pt_neq_0 :
+  forall f x y,
+  continuity_2d_pt f x y -> f x y <> 0 ->
+  locally_2d (fun u v => f u v <> 0) x y.
 Proof.
-  wlog: f / (f x y > 0) => [Hw Cf Hf' | Hf Cf _].
-    case: (Rlt_le_dec 0 (f x y)) => Hf.
-    by apply Hw.
-    case: Hf => // Hf.
-    apply locally_2d_impl with (fun u v => - f u v <> 0).
-    apply locally_2d_forall => u v H.
-    contradict H ; by rewrite H Ropp_0.
-    apply Hw.
-    apply Ropp_lt_cancel ; by rewrite Ropp_involutive Ropp_0.
-    move => eps ; case: (Cf eps) => {Cf} delta Cf ; exists delta => u v Hu Hv.
-    rewrite /Rminus -Ropp_plus_distr Rabs_Ropp.
-    by apply Cf.
-    contradict Hf' ; by rewrite -(Ropp_involutive (f _ _)) Hf' Ropp_0.
-  case: (Cf (mkposreal _ Hf)) => {Cf} /= delta Cf.
-  exists delta => u v Hu Hv.
-  move: (Cf u v Hu Hv) ; move/Rabs_lt_between' => {Cf} [Cf _].
-  ring_simplify in Cf ; by apply Rgt_not_eq.
+intros f x y Cf H.
+apply continuity_2d_pt_filterlim in Cf.
+apply locally_2d_locally.
+apply (Cf (fun y => y <> 0)).
+apply filter_open with (2 := H).
+apply open_neq.
 Qed.
 
 (** ** Operations *)
