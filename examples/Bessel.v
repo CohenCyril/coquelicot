@@ -98,7 +98,7 @@ Proof.
   by rewrite CV_Bessel1.
 Qed.
 
-Lemma is_derive_2_Bessel1 (n : nat) (x : R) : 
+Lemma is_derive_2_Bessel1 (n : nat) (x : R) :
   is_derive_n (Bessel1 n) 2 x
     (((x/2)^(S (S n)) * PSeries (PS_derive (PS_derive (Bessel1_seq n))) ((x / 2) ^ 2))
     + ((INR (2*n+1)/2) * (x/2)^n * PSeries (PS_derive (Bessel1_seq n)) ((x / 2) ^ 2))
@@ -108,7 +108,7 @@ Proof.
   apply is_derive_ext
     with (fun x => ((x / 2) ^ S n * PSeries (PS_derive (Bessel1_seq n)) ((x / 2) ^ 2)
     + (INR n)/2 * (x / 2) ^ pred n * PSeries (Bessel1_seq n) ((x / 2) ^ 2))).
-  move => y ; 
+  move => y ;
   by apply sym_eq, is_derive_unique, is_derive_Bessel1.
   auto_derive.
   repeat split.
@@ -130,7 +130,7 @@ Proof.
   rewrite /Derive_n (is_derive_unique _ _ _ (is_derive_2_Bessel1 _ _)) ;
   rewrite /Bessel1 plus_INR ?mult_INR ; simpl INR.
   set y := x/2 ; replace x with (2 * y) by (unfold y ; field).
-  
+
   replace ((2 * y) ^ 2 *
     (y ^ S (S n) * PSeries (PS_derive (PS_derive (Bessel1_seq n))) (y ^ 2) +
     (2 * INR n + 1) / 2 * y ^ n * PSeries (PS_derive (Bessel1_seq n)) (y ^ 2) +
@@ -151,9 +151,9 @@ Proof.
   field_simplify.
   field.
   field.
-  
+
   apply Rmult_eq_0_compat_l.
-  
+
   rewrite -PSeries_incr_1 -PSeries_scal_l -?PSeries_plus.
 
   unfold PS_derive, PS_incr_1, PS_scal_l, PS_plus.
@@ -194,7 +194,7 @@ Proof.
   rewrite (is_derive_unique _ _ _ (is_derive_Bessel1 _ _)) /Bessel1.
   set y := (x / 2).
   replace x with (2 * y) by (unfold y ; field).
-  
+
 (* Supprimer les PSeries *)
   have Hy : y <> 0.
   unfold y ; contradict Hx.
@@ -237,10 +237,10 @@ Proof.
   clear Hn ; simpl pred.
   rewrite /Bessel1 S_INR.
   replace ((x / 2) ^ S (S n) * PSeries (Bessel1_seq (S (S n))) ((x / 2) ^ 2) +
-      (x / 2) ^ n * PSeries (Bessel1_seq n) ((x / 2) ^ 2)) 
+      (x / 2) ^ n * PSeries (Bessel1_seq n) ((x / 2) ^ 2))
     with ((x/2)^n *
       ((x/2)^2 * PSeries (Bessel1_seq (S (S n))) ((x / 2) ^ 2) +
-      PSeries (Bessel1_seq n) ((x / 2) ^ 2))) 
+      PSeries (Bessel1_seq n) ((x / 2) ^ 2)))
     by (simpl ; ring).
   replace (2 * (INR n + 1) / x *
       ((x / 2) ^ S n * PSeries (Bessel1_seq (S n)) ((x / 2) ^ 2)))
@@ -256,7 +256,7 @@ Focus 2. (* ex_pseries (PS_incr_n (Bessel1_seq n) n) (x / 2) *)
 (* egalité *)
   rewrite /PS_plus /PS_scal_l /PS_incr_1 /Bessel1_seq ;
   case: k => [ | k] ;
-  rewrite ?plus_0_r -?plus_n_Sm ?plus_Sn_m 
+  rewrite ?plus_0_r -?plus_n_Sm ?plus_Sn_m
     /fact -/fact ?mult_INR ?S_INR ?plus_INR /=.
   field.
   rewrite -?S_INR ; split ;
@@ -275,10 +275,10 @@ Proof.
   by apply lt_irrefl in Hn.
   clear Hn ; simpl pred.
   replace ((x / 2) ^ S (S n) * PSeries (Bessel1_seq (S (S n))) ((x / 2) ^ 2) -
-      (x / 2) ^ n * PSeries (Bessel1_seq n) ((x / 2) ^ 2)) 
+      (x / 2) ^ n * PSeries (Bessel1_seq n) ((x / 2) ^ 2))
     with ((x/2)^n *
       ((x/2)^2 * PSeries (Bessel1_seq (S (S n))) ((x / 2) ^ 2) -
-      PSeries (Bessel1_seq n) ((x / 2) ^ 2))) 
+      PSeries (Bessel1_seq n) ((x / 2) ^ 2)))
     by (simpl ; ring).
   replace (-2 *((x / 2) ^ S (S n) * PSeries (PS_derive (Bessel1_seq (S n))) ((x / 2) ^ 2) +
       INR (S n) / 2 * (x / 2) ^ n * PSeries (Bessel1_seq (S n)) ((x / 2) ^ 2)))

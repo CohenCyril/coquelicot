@@ -33,7 +33,7 @@ Definition is_lim' (f : R -> R) (x l : Rbar) :=
 
 Definition is_lim (f : R -> R) (x l : Rbar) :=
   match l with
-    | Finite l => 
+    | Finite l =>
       forall eps : posreal, Rbar_locally x (fun y => Rabs (f y - l) < eps)
     | p_infty => forall M : R, Rbar_locally x (fun y => M < f y)
     | m_infty => forall M : R, Rbar_locally x (fun y => f y < M)
@@ -237,7 +237,7 @@ Proof.
   exact: filter_forall.
 Qed.
 Lemma ex_lim_ext (f g : R -> R) (x : Rbar) :
-  (forall y, f y = g y) 
+  (forall y, f y = g y)
   -> ex_lim f x -> ex_lim g x.
 Proof.
   move => H [l Hf].
@@ -264,7 +264,7 @@ apply is_lim_.
 apply: is_lim_comp' Lf Hg.
 now apply is_lim_.
 Qed.
-Lemma ex_lim_comp (f g : R -> R) (x : Rbar) : 
+Lemma ex_lim_comp (f g : R -> R) (x : Rbar) :
   ex_lim f (Lim g x) -> ex_lim g x -> Rbar_locally x (fun y => Finite (g y) <> Lim g x)
     -> ex_lim (fun x => f (g x)) x.
 Proof.
@@ -275,7 +275,7 @@ Proof.
   by apply Lim_correct.
   by apply H1.
 Qed.
-Lemma Lim_comp (f g : R -> R) (x : Rbar) : 
+Lemma Lim_comp (f g : R -> R) (x : Rbar) :
   ex_lim f (Lim g x) -> ex_lim g x -> Rbar_locally x (fun y => Finite (g y) <> Lim g x)
     -> Lim (fun x => f (g x)) x = Lim f (Lim g x).
 Proof.
@@ -509,7 +509,7 @@ Proof.
   case: Rle_lt_or_eq_dec (Rlt_irrefl 0) => //.
   case: Rle_dec (Rle_refl 0) => //= H _.
   case: Rle_lt_or_eq_dec (Rlt_irrefl 0) => //.
-  
+
   apply is_lim_mult.
   by apply is_lim_const.
   by apply Hf.
@@ -630,7 +630,7 @@ Proof.
   exists l ; by apply is_lim_comp_lin.
 Qed.
 Lemma Lim_comp_lin (f : R -> R) (a b : R) (x : Rbar) :
-  ex_lim f (Rbar_plus (Rbar_mult a x) b) -> a <> 0 -> 
+  ex_lim f (Rbar_plus (Rbar_mult a x) b) -> a <> 0 ->
   Lim (fun y => f (a * y + b)) x = Lim f (Rbar_plus (Rbar_mult a x) b).
 Proof.
   move => Hf Ha.
@@ -674,7 +674,7 @@ Proof.
   case: lf => [lf | | ] /= Hf ;
   case: lg => [lg | | ] /= Hg Hfg ;
   try by [left | right].
-  
+
   apply Rbar_finite_le.
   apply Rnot_lt_le => H.
   apply Rminus_lt_0 in H.
@@ -761,7 +761,7 @@ Qed.
 (** ** Generalized intermediate value theorem *)
 
 Lemma IVT_gen (f : R -> R) (a b y : R) :
-  continuity f 
+  continuity f
   -> Rmin (f a) (f b) <= y <= Rmax (f a) (f b)
   -> { x : R | Rmin a b <= x <= Rmax a b /\ f x = y }.
 Proof.

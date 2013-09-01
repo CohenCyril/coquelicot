@@ -44,7 +44,7 @@ Comme la tangente (BC) à la courbe en ce point admet pour coefficient directeur
 
 (** 1.b *)
 
-Lemma Dfab (a b : R) : forall x, 0 < x 
+Lemma Dfab (a b : R) : forall x, 0 < x
   -> is_derive (fab a b) x (((b - a) - b * ln x) / x ^ 2).
 Proof.
   move => x Hx.
@@ -58,7 +58,7 @@ Proof.
   by apply Hx.
   by apply derivable_pt_lim_id.
   by apply Rgt_not_eq.
-  simpl. 
+  simpl.
   unfold Rsqr.
   field.
   by apply Rgt_not_eq.

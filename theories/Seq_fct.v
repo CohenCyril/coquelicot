@@ -33,11 +33,11 @@ Definition CVS_dom (fn : nat -> R -> R) (D : R -> Prop) :=
   forall x : R, D x -> ex_finite_lim_seq (fun n => fn n x).
 
 Definition CVU_dom (fn : nat -> R -> R) (D : R -> Prop) :=
-  forall eps : posreal, exists N : nat, 
+  forall eps : posreal, exists N : nat,
   forall (n : nat) (x : R), D x -> (N <= n)%nat
     -> Rabs ((fn n x) - real (Lim_seq (fun n => fn n x))) < (eps).
 Definition CVU_cauchy (fn : nat -> R -> R) (D : R -> Prop) :=
-  forall eps : posreal, exists N : nat, 
+  forall eps : posreal, exists N : nat,
   forall (n m : nat) (x : R), D x -> (N <= n)%nat -> (N <= m)%nat
     -> Rabs (fn n x - fn m x) < eps.
 
@@ -61,7 +61,7 @@ Proof.
   simpl.
   rewrite -/(Rminus (fn n y) (f y)) -Ropp_minus_distr' Rabs_Ropp.
   by apply Hcvu.
-  
+
   move => e He ; set eps := mkposreal e He.
   case: (Hcvu eps) => {Hcvu} N Hcvu.
   exists N => n y Hn Hy.
@@ -89,7 +89,7 @@ Proof.
   case: (H (pos_div_2 eps)) => {H} N /= H.
   exists N => n m x Hx Hn Hm.
   rewrite (double_var eps).
-  replace (fn n x - fn m x) 
+  replace (fn n x - fn m x)
     with ((fn n x - real (Lim_seq (fun n0 : nat => fn n0 x)))
       - (fn m x - real (Lim_seq (fun n0 : nat => fn n0 x))))
     by ring.
@@ -113,7 +113,7 @@ Proof.
   case: (Hls (pos_div_2 eps)) => {Hls Hli} /= H0 [N0 H1] ; split.
   case: (H0 N) => {H0} m [Hm H0].
   apply Rlt_trans with (fn m x - eps/2).
-  replace (ls - eps) 
+  replace (ls - eps)
     with ((ls - eps / 2) - eps/2)
     by field.
   by apply Rplus_lt_compat_r.
@@ -135,7 +135,7 @@ Proof.
   apply Rplus_lt_compat_r.
   apply H1 ; by intuition.
   replace (fn n x) with (eps/2 + (fn n x - eps/2)) by ring.
-  replace (fn (n + N0)%nat x - eps / 2) 
+  replace (fn (n + N0)%nat x - eps / 2)
     with ((fn (n + N0)%nat x - fn n x) + (fn n x - eps/2))
     by ring.
   apply Rplus_lt_compat_r.
@@ -146,7 +146,7 @@ Proof.
   replace (fn n x) with (fn m x + (fn n x - fn m x)) by ring.
   apply Rplus_lt_compat_l.
   apply Rle_lt_trans with (1 := Rle_abs _) ; by apply H.
-  replace (li + eps) 
+  replace (li + eps)
     with ((li + eps / 2) + eps/2)
     by field.
   by apply Rplus_lt_compat_r.
@@ -163,7 +163,7 @@ Proof.
   contradict H0.
   apply Rle_not_lt, Rlt_le.
   replace (fn m x) with (eps/2 + (fn m x - eps/2)) by ring.
-  replace (fn n x - eps / 2) 
+  replace (fn n x - eps / 2)
     with ((fn n x - fn m x) + (fn m x - eps/2)) by ring.
   apply Rplus_lt_compat_r, Rle_lt_trans with (1 := Rle_abs _) ; by apply H.
   case: (Hls (fn n x + eps / 2) N) => {Hls} m [Hm H0].
@@ -177,7 +177,7 @@ Proof.
   replace (fn (N + N0)%nat x)
     with (eps/2 + (fn (N + N0)%nat x - eps/2))
     by ring.
-  replace (fn n x - eps / 2) 
+  replace (fn n x - eps / 2)
     with ((fn n x - fn (N+N0)%nat x) + (fn (N+N0)%nat x - eps/2)) by ring.
   apply Rplus_lt_compat_r.
   apply Rle_lt_trans with (1 := Rle_abs _).
@@ -206,7 +206,7 @@ Lemma CVU_limits_open (fn : nat -> R -> R) (D : R -> Prop) :
   is_open D
   -> CVU_dom fn D
   -> (forall x n, D x -> ex_finite_lim (fn n) x)
-  -> forall x, D x -> ex_finite_lim_seq (fun n => real (Lim (fn n) x)) 
+  -> forall x, D x -> ex_finite_lim_seq (fun n => real (Lim (fn n) x))
     /\ ex_finite_lim (fun y => real (Lim_seq (fun n => fn n y))) x
     /\ real (Lim_seq (fun n => real (Lim (fn n) x)))
       = real (Lim (fun y => real (Lim_seq (fun n => fn n y))) x).
@@ -240,7 +240,7 @@ Proof.
       rewrite -(Rplus_0_l (d0/2)) {2}(double_var d0).
       by apply Rplus_lt_compat_r, is_pos_div_2.
     move : (Ho y Hy) => {Ho Hy} Hy.
-    replace (ln - lm) 
+    replace (ln - lm)
       with (- (fn n y - ln) + (fn m y - lm) + (fn n y - fn m y))
       by ring.
     rewrite (double_var eps) ;
@@ -323,7 +323,7 @@ Lemma CVU_cont_open (fn : nat -> R -> R) (D : R -> Prop) :
     -> forall x, D x -> continuity_pt (fun y => real (Lim_seq (fun n => fn n y))) x.
 Proof.
   move => Ho Hfn Hc x Hx.
-  case: (fun H => CVU_limits_open fn D Ho Hfn H x Hx) 
+  case: (fun H => CVU_limits_open fn D Ho Hfn H x Hx)
     => [{x Hx} x n Hx | Hex_s [Hex_f Heq]].
   exists (fn n x) => eps.
   case: (Hc n x Hx eps (cond_pos eps)) => {Hc} d [Hd Hc].
@@ -363,14 +363,14 @@ Qed.
   -> (forall n, forall x, a <= x <= b -> continuity_pt (fn n) x)
   -> (forall n x, a <= x <= b -> is_derive (Fn n) x (fn n x)) -> (forall n, Fn n a = 0)
   -> (forall x, a <= x <= b -> is_derive F x (Lim_seq (fun n => fn n x))) -> (F a = 0)
-  -> CVU_dom Fn (fun x => a <= x <= b) 
+  -> CVU_dom Fn (fun x => a <= x <= b)
     /\ (forall x, a <= x <= b -> Lim_seq (fun n => Fn n x) = F x).
 
 Lemma CVU_Rint (fn : nat -> R -> R) (a b : R) (Hab : a < b) :
   CVU_dom fn (fun x => a <= x <= b)
   -> (forall n, forall x, a <= x <= b -> continuity_pt (fn n) x)
-  -> CVU_dom (fun n x => RInt (fn n) a x) (fun x => a <= x <= b) 
-    /\ (forall x, a <= x <= b -> 
+  -> CVU_dom (fun n x => RInt (fn n) a x) (fun x => a <= x <= b)
+    /\ (forall x, a <= x <= b ->
   Lim_seq (fun n => RInt (fn n) a x) = RInt (fun y => Lim_seq (fun n => fn n y)) a x).
 *)
 Lemma CVU_Derive (fn : nat -> R -> R) (D : R -> Prop) :
@@ -384,12 +384,12 @@ Lemma CVU_Derive (fn : nat -> R -> R) (D : R -> Prop) :
          (real (Lim_seq (fun n => Derive (fn n) x))))).
 Proof.
   move => Ho Hc Hfn Edn Cdn Hdn.
-  
+
   set rn := fun x n h => match (Req_EM_T h 0) with
     | left _ => Derive (fn n) x
     | right _ => (fn n (x+h) - fn n x)/h
   end.
-  
+
   have Ho' : forall x : R, D x -> is_open (fun h : R => D (x + h)).
     move => x Hx h Hh.
     case: (Ho _ Hh) => d Hd.
@@ -412,7 +412,7 @@ Proof.
     exists delta => y Hy Hxy.
     rewrite /= /distR Rminus_0_r in Hy.
     by apply Edn.
-    
+
     have H : continuity_pt (fun h => ((fn n (x + h) - fn n x) / h)) h.
       apply derivable_continuous_pt.
       apply derivable_pt_div.
@@ -425,7 +425,7 @@ Proof.
       exact: derivable_pt_const.
       exact: derivable_pt_id.
       exact: Hh0.
-    
+
     move => eps.
     case: (H eps (cond_pos eps)) => {H} d [Hd H].
     have Hd0 : 0 < Rmin d (Rabs h).
@@ -494,16 +494,16 @@ Proof.
   have Lrn : forall x, D x -> (forall (y : R) (n : nat),
     (fun h : R => D (x + h)) y -> ex_finite_lim (rn x n) y).
     intros ; exists (rn x n y) ; by intuition.
-  
+
   move => x Hx.
-  
+
   case: (CVU_limits_open (rn x) _ (Ho' x Hx) (Hrn x Hx) (Lrn x Hx) 0) => [ | H [H0 H1]].
   by rewrite Rplus_0_r.
-  
+
   have : ex_derive (fun y : R => real (Lim_seq (fun n : nat => fn n y))) x
     /\ Derive (fun y : R => real (Lim_seq (fun n : nat => fn n y))) x
       = real (Lim_seq (fun n : nat => Derive (fn n) x)).
-  
+
   split.
   case: H0 => df H0.
   exists df => e He.
@@ -535,7 +535,7 @@ Proof.
     rewrite /Rdiv Rmult_0_l.
     case: Rle_dec => // Hh1.
     case: Rle_lt_or_eq_dec => //.
-  
+
   apply ex_finite_lim_seq_correct, CVU_CVS_dom with D.
   exact: Hfn.
   apply Ho.
@@ -575,7 +575,7 @@ Proof.
   unfold distR.
   ring_simplify (x + h - x).
   apply Rlt_le_trans with (1 := Hh), Rmin_r.
-  
+
   rewrite /Derive.
   replace (Lim_seq (fun n : nat => real (Lim (fun h : R => (fn n (x + h) - fn n x) / h) 0)))
     with (Lim_seq (fun n : nat => real (Lim (rn x n) 0))).
@@ -611,7 +611,7 @@ Proof.
     rewrite /Rdiv Rmult_0_l.
     case: Rle_dec => // Hh1.
     case: Rle_lt_or_eq_dec => //.
-  
+
   apply ex_finite_lim_seq_correct, CVU_CVS_dom with D.
   exact: Hfn.
   apply Ho.
@@ -665,7 +665,7 @@ Proof.
   exists delta => y Hy Hy0.
   move: (H2 y Hy Hy0).
   rewrite {1}/rn ; by case: Req_EM_T.
-  
+
   case => H2 H3.
   rewrite -H3.
   by apply Derive_correct.
@@ -683,7 +683,7 @@ Proof.
   set AB := fun x => a <= x <= b.
   set f : R -> R := (fun y : R => Lim_seq (fun n : nat => fn n y)).
   move => Hab Hcvs Cfn Cf Hfn.
-  
+
   have CUf : uniform_continuity f AB.
     apply Heine.
     by apply compact_P3.
@@ -704,7 +704,7 @@ Proof.
   move: (interval_finite_subdiv_between  a b (pos_div_2 eta) (Rlt_le _ _ Hab)).
   case: (interval_finite_subdiv a b (pos_div_2 eta) (Rlt_le _ _ Hab)) =>
     a_ Ha_ /= Ha_0.
-  have : exists N, forall n i, (N <= n)%nat -> (i < seq.size a_)%nat 
+  have : exists N, forall n i, (N <= n)%nat -> (i < seq.size a_)%nat
     -> Rabs (fn n (seq.nth 0 a_ i) - f (seq.nth 0 a_ i)) < eps.
     case: a_ Ha_ Ha_0 => [ | a0 a_] Ha_ /= Ha_0.
     contradict Hab.
@@ -828,7 +828,7 @@ Qed.
 (** ** Series of functions *)
 
 Lemma CVN_CVU_r (fn : nat -> R -> R) (r : posreal) :
-  CVN_r fn r -> forall x, (Rabs x < r) -> exists e : posreal, 
+  CVN_r fn r -> forall x, (Rabs x < r) -> exists e : posreal,
     CVU (fun n => SP fn n) (fun x => Series (fun n => fn n x)) x e.
 Proof.
   case => An [l [H H0]] x Hx.
@@ -849,7 +849,7 @@ Proof.
     apply Rle_trans with (Rabs (fn (S n) 0)).
     by apply Rabs_pos.
     apply H0 ; rewrite /Boule Rminus_0_r Rabs_R0 ; by apply r.
-  
+
   have H2 : is_lim_seq (fun n => Series (fun k => An (n + k)%nat)) 0.
     apply is_lim_seq_incr_1.
     apply is_lim_seq_ext with (fun n => Series An - sum_f_R0 An n).

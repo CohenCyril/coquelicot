@@ -484,7 +484,7 @@ Qed.
 (** Composition of functions *)
 
 Lemma ex_derive_comp (f g : R -> R) (x : R) :
-  ex_derive f (g x) -> ex_derive g x 
+  ex_derive f (g x) -> ex_derive g x
     -> ex_derive (fun x => f (g x)) x.
 Proof.
 intros (df,Df) (dg,Dg).
@@ -492,7 +492,7 @@ exists (df * dg).
 now apply derivable_pt_lim_comp.
 Qed.
 Lemma Derive_comp (f g : R -> R) (x : R) :
-  ex_derive f (g x) -> ex_derive g x 
+  ex_derive f (g x) -> ex_derive g x
     -> Derive (fun x => f (g x)) x = Derive f (g x) * Derive g x.
 Proof.
 intros Df Dg.
@@ -533,7 +533,7 @@ Proof.
   exists c ; split.
   split ; by apply Rlt_le, Hc.
   replace (Derive f c) with (derive_pt f c (pr1 c Hc)).
-  move: H ; rewrite {1 2}/id /a0 /b0 /Rmin /Rmax ; 
+  move: H ; rewrite {1 2}/id /a0 /b0 /Rmin /Rmax ;
   case: Rle_dec => Hab0 H.
   rewrite Rmult_comm H -(pr_nu _ _ (derivable_pt_id _)) derive_pt_id.
   ring.
@@ -546,7 +546,7 @@ Proof.
   apply sym_eq, is_derive_unique, Hl.
 Qed.
 
-Lemma incr_function (f : R -> R) (a b : Rbar) : 
+Lemma incr_function (f : R -> R) (a b : Rbar) :
   (forall (x : R), Rbar_lt a x -> Rbar_lt x b -> ex_derive f x)
   -> ((forall (x : R), Rbar_lt a x -> Rbar_lt x b -> Derive f x > 0)
     -> (forall (x y : R), Rbar_lt a x -> x < y -> Rbar_lt y b -> f x < f y)).
@@ -575,7 +575,7 @@ Proof.
   by apply -> Rminus_lt_0.
 Qed.
 
-Lemma incr_function_le (f : R -> R) (a b : Rbar) : 
+Lemma incr_function_le (f : R -> R) (a b : Rbar) :
   (forall (x : R), Rbar_le a x -> Rbar_le x b -> (ex_derive f) x)
   -> ((forall (x : R), Rbar_le a x -> Rbar_le x b -> Derive f x > 0)
     -> (forall (x y : R), Rbar_le a x -> x < y -> Rbar_le y b -> f x < f y)).
@@ -682,9 +682,9 @@ Qed.
 
 (** * Newton integration *)
 
-Lemma fn_eq_Derive_eq: forall f g a b, 
+Lemma fn_eq_Derive_eq: forall f g a b,
   continuity_pt f a -> continuity_pt f b ->
-  continuity_pt g a -> continuity_pt g b -> 
+  continuity_pt g a -> continuity_pt g b ->
   (forall x, a < x < b -> ex_derive f x) ->
   (forall x, a < x < b -> ex_derive g x) ->
   (forall x, a < x < b -> Derive f x = Derive g x) ->
@@ -875,7 +875,7 @@ Proof.
   rewrite (is_derive_unique _ _ _ Hf) ; ring.
 Qed.
 Lemma extension_C1_is_derive_a (f : R -> R) (a : R) (b : Rbar) (x : R) :
-  Rbar_le a b -> x <= a -> (ex_derive f a) -> 
+  Rbar_le a b -> x <= a -> (ex_derive f a) ->
   is_derive (extension_C1 f a b) x (Derive f a).
 Proof.
   move => Hab ; case => [Hax | -> {x}] Hf ;
@@ -895,12 +895,12 @@ Proof.
   apply derivable_pt_lim_id.
   apply derivable_pt_lim_const.
   simpl ; ring.
-  
+
   apply extension_C1_is_derive => //.
   by right.
 Qed.
 Lemma extension_C1_is_derive_b (f : R -> R) (a : Rbar) (b x : R) :
-  Rbar_le a b -> b <= x -> (ex_derive f b) -> 
+  Rbar_le a b -> b <= x -> (ex_derive f b) ->
   is_derive (extension_C1 f a b) x (Derive f b).
 Proof.
   move => Hab ; case => [Hxb | <- {x}] Hf ;
@@ -922,7 +922,7 @@ Proof.
   apply derivable_pt_lim_id.
   apply derivable_pt_lim_const.
   simpl ; ring.
-  
+
   apply extension_C1_is_derive => //.
   by right.
 Qed.
@@ -947,7 +947,7 @@ Proof.
   by right.
   by apply Rbar_not_le_lt in Hxb.
   case: a Hax Hab Hf => [a | | ] // Hax Hab Hf ; case: Hab => //.
-  
+
   case: a Hab Hax Hf => [a | | ] Hab //= Hax Hf.
   exists (Derive f a).
   apply extension_C1_is_derive_a => //.
@@ -957,7 +957,7 @@ Proof.
   by right.
   by left.
   by apply Rbar_not_le_lt in Hax.
-  
+
   case: a Hab Hf => [a | | ] //= ;
   case: b => [b | | ] //= Hab Hf.
   rewrite -Hab in Hf |- * => {b Hab}.
@@ -983,7 +983,7 @@ Proof.
   apply ex_derive_minus.
   apply ex_derive_id.
   apply ex_derive_const.
-  
+
   apply ex_derive_ext with (fun y => f 0 + (y - 0) * Derive f 0).
   move => t ; rewrite /extension_C1.
   repeat case: Rbar_le_dec => // ; intros.
@@ -1053,7 +1053,7 @@ Proof.
   case: a Hax Hab Hf => [a | | ] Hax Hab Hf // ; try by case: Hab.
   apply continuity_pt_ext with (fun _ => Derive f 0).
     move => t.
-    rewrite (Derive_ext (extension_C1 f m_infty m_infty) 
+    rewrite (Derive_ext (extension_C1 f m_infty m_infty)
       (fun y => f (real m_infty) + (y - real m_infty) * Derive f (real m_infty))).
     apply sym_eq ; search_derive.
     apply derivable_pt_lim_plus.
@@ -1102,7 +1102,7 @@ Proof.
   rewrite -Hab in Hf |- * => {b Hab}.
   apply continuity_pt_ext with (fun _ => Derive f a).
   move => t.
-  rewrite (Derive_ext (extension_C1 f a a) 
+  rewrite (Derive_ext (extension_C1 f a a)
       (fun y => f (real a) + (y - real a) * Derive f (real a))).
   apply sym_eq ; search_derive.
     apply derivable_pt_lim_plus.
@@ -1130,7 +1130,7 @@ Proof.
   case: b Hab Hf => [b | | ] Hab Hf // ; try by case: Hab.
   apply continuity_pt_ext with (fun _ => Derive f 0).
     move => t.
-    rewrite (Derive_ext (extension_C1 f p_infty p_infty) 
+    rewrite (Derive_ext (extension_C1 f p_infty p_infty)
       (fun y => f (real p_infty) + (y - real p_infty) * Derive f (real p_infty))).
     apply sym_eq ; search_derive.
     apply derivable_pt_lim_plus.
@@ -1334,7 +1334,7 @@ now apply Derive_ext.
 Qed.
 
 Lemma is_derive_Sn (f : R -> R) (n : nat) (x l : R) :
-  locally x (ex_derive f) -> 
+  locally x (ex_derive f) ->
   (is_derive_n f (S n) x l <-> is_derive_n (Derive f) n x l).
 Proof.
   move => Hf.
@@ -1647,7 +1647,7 @@ Lemma ex_derive_n_comp_scal (f : R -> R) (a : R) (n : nat) (x : R) :
 Proof.
   case: n f x => /= [ | n] f x Hf.
   by [].
-  
+
   case: (Req_dec a 0) => Ha.
   rewrite Ha => {a Ha Hf}.
   apply ex_derive_ext with (fun _ => Derive_n (fun y : R => f (0 * y)) n 0).
@@ -1656,7 +1656,7 @@ Proof.
   rewrite -?(Derive_ext _ _ _ IH).
   by rewrite ?Derive_const.
   by apply ex_derive_const.
-  
+
   apply ex_derive_ext_loc with (fun x => a^n * Derive_n f n (a * x)).
   case: Hf => r Hf.
   have Hr0 : 0 < r / Rabs a.
@@ -1849,7 +1849,7 @@ apply derivable_pt_lim_plus.
 apply IHn.
 now apply lt_le_weak.
 apply derivable_pt_lim_opp.
-apply (derivable_pt_lim_mult (fun x0 => ((y - x0) ^ S n / INR (fact (S n)))) 
+apply (derivable_pt_lim_mult (fun x0 => ((y - x0) ^ S n / INR (fact (S n))))
   (fun x0 => Derive_n f (S n) x0)).
 replace (- (y - t) ^ n / INR (fact n)) with
    (/ INR (fact (S n)) * (INR (S n)*(y - t) ^ n*(0-1))).

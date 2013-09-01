@@ -104,7 +104,7 @@ Qed.
 
 
 
-Lemma continuity_implies_ex_Rint: forall f a b, 
+Lemma continuity_implies_ex_Rint: forall f a b,
    (forall x, continuity_pt f x) -> ex_RInt f a b.
 intros f a b H.
 case (Rle_or_lt a b); intros H1.

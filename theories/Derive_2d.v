@@ -147,7 +147,7 @@ Qed.
 
 Lemma derivable_differentiable_pt_lim : forall f x y l2,
   locally_2d (fun u v => ex_derive (fun z => f z v) u) x y ->
-  is_derive (fun z => f x z) y l2 -> 
+  is_derive (fun z => f x z) y l2 ->
   continuity_2d_pt (fun u v => Derive (fun z => f z v) u) x y ->
   differentiable_pt_lim f x y (Derive (fun u => f u y) x) l2.
 Proof.
@@ -214,7 +214,7 @@ Proof.
 Qed.
 
 
-(* old version 
+(* old version
 Lemma derivable_differentiable_pt_lim : forall f x y,
   locally_2d (fun u v => ex_derive (fun z => f z v) u) x y ->
   locally_2d (fun u v => ex_derive (fun z => f u z) v) x y ->
@@ -321,7 +321,7 @@ Proof.
 Qed.
 
 Lemma differentiable_pt_lim_unique (f : R -> R -> R) (x y : R) (lx ly : R) :
-  differentiable_pt_lim f x y lx ly 
+  differentiable_pt_lim f x y lx ly
     -> Derive (fun x => f x y) x = lx /\ Derive (fun y => f x y) y = ly.
 Proof.
   move => Df ; split ; apply is_derive_unique => e He ;
@@ -346,7 +346,7 @@ Proof.
   apply Rdiv_lt_0_compat ; by intuition.
   rewrite Rminus_eq_0 Rabs_R0 ; by apply Rabs_pos.
   by [].
-  
+
   replace ((f x (y + h) - f x y) / h - ly)
     with ((f x (y + h) - f x y - (lx * (x - x) + ly * ((y + h) - y))) / h)
     by (by field).
@@ -581,7 +581,7 @@ Definition partial_derive (m k : nat) (f : R -> R -> R) : R -> R -> R :=
   fun x y => Derive_n (fun t => Derive_n (fun z => f t z) k y) m x.
 
 Definition differential (p : nat) (f : R -> R -> R) (x y dx dy : R) : R :=
-  sum_f_R0 
+  sum_f_R0
     (fun m =>
       C p m *
       partial_derive m (p - m)%nat f x y *
@@ -776,7 +776,7 @@ Fixpoint ex_diff_n f n x y :=
   end.
 
 Lemma ex_diff_n_ext_loc: forall f g n x y,
-    locally_2d (fun u v =>  f u v = g u v) x y 
+    locally_2d (fun u v =>  f u v = g u v) x y
       -> ex_diff_n f n x y -> ex_diff_n g n x y.
 intros f g n; revert f g.
 induction n.
@@ -836,7 +836,7 @@ Qed.
 
 
 
-Lemma ex_diff_n_deriv_aux1: forall f n x y, 
+Lemma ex_diff_n_deriv_aux1: forall f n x y,
   ex_diff_n f (S n) x y -> ex_diff_n (fun u v => Derive (fun z => f z v) u) n x y.
 Proof.
 intros f n x y.
@@ -849,7 +849,7 @@ repeat split; apply H.
 Qed.
 
 
-Lemma ex_diff_n_deriv_aux2: forall f n x y, 
+Lemma ex_diff_n_deriv_aux2: forall f n x y,
   ex_diff_n f (S n) x y -> ex_diff_n (fun u v => Derive (fun z => f u z) v) n x y.
 Proof.
 intros f n x y.
@@ -900,7 +900,7 @@ Qed.
 
 
 Lemma ex_diff_n_ex_deriv_inf_1 : forall n p k, (p+k < n)%nat -> forall f x y,
-    ex_diff_n f n x y -> 
+    ex_diff_n f n x y ->
     ex_derive  (fun z : R => partial_derive p k f z y) x.
 Proof.
 intros n p; case p; clear p.
@@ -953,7 +953,7 @@ Qed.
 
 
 Lemma ex_diff_n_ex_deriv_inf_2 : forall n p k, (p+k < n)%nat -> forall f x y,
-  ex_diff_n f n x y -> 
+  ex_diff_n f n x y ->
   ex_derive (fun z => partial_derive p k f x z) y.
 Proof.
 intros n p; case p; clear p.
@@ -1023,7 +1023,7 @@ intros n0; simpl; intros H; apply H.
 Qed.
 
 
-Lemma Derive_partial_derive_aux1: forall p f x y, 
+Lemma Derive_partial_derive_aux1: forall p f x y,
   locally_2d (ex_diff_n f (S p)) x y ->
    partial_derive  1 p f x y = partial_derive 0 p (partial_derive  1 0 f) x y.
 Proof.
@@ -1043,12 +1043,12 @@ rewrite plus_comm.
 rewrite -Derive_n_comp.
 reflexivity.
 rewrite IHp.
-apply trans_eq with 
+apply trans_eq with
   (partial_derive 0 p (partial_derive 0 1 (partial_derive 1 0 f)) x y).
 unfold partial_derive.
 simpl.
 apply Derive_n_ext_loc.
-cut (locally_2d (fun u v => 
+cut (locally_2d (fun u v =>
          Derive (fun x0 : R => Derive (fun x1 : R => f x0 x1) v) u =
          Derive (fun x0 : R => Derive (fun x1 : R => f x1 x0) u) v) x y).
 apply locally_2d_1d_const_x.
@@ -1096,7 +1096,7 @@ rewrite plus_0_l.
 omega.
 Qed.
 
-Lemma Derive_partial_derive_aux2: forall p k f x y, 
+Lemma Derive_partial_derive_aux2: forall p k f x y,
   locally_2d (ex_diff_n f (p+S k)) x y ->
   partial_derive 0 1 (partial_derive p k f) x y =
      partial_derive p (S k) f x y.
@@ -1112,7 +1112,7 @@ rewrite plus_0_l.
 replace (S p) with (p+1)%nat by apply plus_comm.
 easy.
 now left.
-apply trans_eq with 
+apply trans_eq with
   (partial_derive p 0 (partial_derive 0 (S k) (partial_derive 1 0 f)) x y).
 apply partial_derive_ext_loc.
 apply locally_2d_impl_strong with (2:=Y).
@@ -1133,12 +1133,12 @@ apply partial_derive_ext_loc.
 apply locally_2d_impl_strong with (2:=Y).
 apply locally_2d_forall.
 intros u v H.
-apply trans_eq with 
+apply trans_eq with
  (partial_derive p 0 (partial_derive 0 k (partial_derive 1 0 f)) u v).
 rewrite (partial_derive_add_zero _ _ 0%nat).
 now rewrite plus_0_l plus_0_r.
 now right.
-apply trans_eq with 
+apply trans_eq with
  (partial_derive p 0 (partial_derive 1 k f) u v).
 apply partial_derive_ext_loc.
 apply locally_2d_impl_strong with (2:=H).
@@ -1159,7 +1159,7 @@ now left.
 apply locally_2d_impl with (2:=Y).
 apply locally_2d_forall.
 intros u'' v''.
-replace (p+ S k)%nat with ((S p+S k)-(1+0))%nat. 
+replace (p+ S k)%nat with ((S p+S k)-(1+0))%nat.
 apply ex_diff_n_deriv.
 rewrite plus_0_r.
 apply le_plus_trans; apply lt_le_S; apply lt_0_Sn.
@@ -1168,7 +1168,7 @@ omega.
 Qed.
 
 
-Lemma Derive_partial_derive: forall p k f x y, 
+Lemma Derive_partial_derive: forall p k f x y,
   locally_2d (ex_diff_n f (p+S k)) x y ->
   Derive (fun v : R => partial_derive p k f x v) y =
      partial_derive p (S k) f x y.

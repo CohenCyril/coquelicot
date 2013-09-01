@@ -35,7 +35,7 @@ Definition Rbar_is_lower_bound (E : Rbar -> Prop) (l : Rbar) :=
   forall x, E x -> Rbar_le l x.
 
 Lemma Rbar_ub_lb (E : Rbar -> Prop) (l : Rbar) :
-  Rbar_is_upper_bound (fun x => E (Rbar_opp x)) (Rbar_opp l) 
+  Rbar_is_upper_bound (fun x => E (Rbar_opp x)) (Rbar_opp l)
     <-> Rbar_is_lower_bound E l.
 Proof.
   split => Hl x Hx.
@@ -48,7 +48,7 @@ Proof.
 Qed.
 
 Lemma Rbar_lb_ub (E : Rbar -> Prop) (l : Rbar) :
-  Rbar_is_lower_bound (fun x => E (Rbar_opp x)) (Rbar_opp l) 
+  Rbar_is_lower_bound (fun x => E (Rbar_opp x)) (Rbar_opp l)
     <-> Rbar_is_upper_bound E l.
 Proof.
   split => Hl x Hx.
@@ -77,7 +77,7 @@ Proof.
 Qed.
 
 Lemma Rbar_ub_Finite (E : Rbar -> Prop) (l : R) :
-  Rbar_is_upper_bound E l -> 
+  Rbar_is_upper_bound E l ->
     is_upper_bound (fun (x : R) => E x) l.
 Proof.
   intros H x Ex.
@@ -116,7 +116,7 @@ Proof.
   apply Rbar_le_trans with (y := x) ; [apply Hl | apply Hu] ; auto.
 Qed.
 
-Lemma Rbar_lb_eq_ub (E : Rbar -> Prop) (l : Rbar) : 
+Lemma Rbar_lb_eq_ub (E : Rbar -> Prop) (l : Rbar) :
   Rbar_is_lower_bound E l -> Rbar_is_upper_bound E l -> forall x, E x -> x = l.
 Proof.
   intros Hl Hu x Hx.
@@ -126,7 +126,7 @@ Qed.
 (** Decidability *)
 
 Lemma Rbar_ub_dec (E : Rbar -> Prop) (Hp : ~ E p_infty) :
-  {M : R | Rbar_is_upper_bound E M} 
+  {M : R | Rbar_is_upper_bound E M}
     + {(forall (M : R), ~Rbar_is_upper_bound E M)}.
 Proof.
   set (G n := fun x => x = 0 \/ (E (Finite x) /\ x <= INR n)).
@@ -212,7 +212,7 @@ Definition is_lower_bound (E : R -> Prop) (l : R) :=
   forall x, E x -> l <= x.
 
 Lemma Rbar_ub_R_ub (E : R -> Prop) (l : R) :
-  Rbar_is_upper_bound (fun x => is_finite x /\ E x) l 
+  Rbar_is_upper_bound (fun x => is_finite x /\ E x) l
   <-> is_upper_bound E l.
 Proof.
   split => [H x Hx | H x [<- Hx]] ; apply Rbar_finite_le, H => // ;
@@ -235,7 +235,7 @@ Proof.
   move => H ; right => l Hl ; apply: H ; apply Rbar_ub_R_ub, Hl.
 Qed.
 Lemma l_bound_dec (E : R -> Prop) :
-  {l : R | is_lower_bound E l} + 
+  {l : R | is_lower_bound E l} +
     {(forall l, ~ is_lower_bound E l)}.
 Proof.
   case: (Rbar_lb_dec (fun x => is_finite x /\ E x)).
@@ -287,14 +287,14 @@ Qed.
 (** Definitions *)
 
 Definition Rbar_is_lub (E : Rbar -> Prop) (l : Rbar) :=
-  Rbar_is_upper_bound E l /\ 
+  Rbar_is_upper_bound E l /\
     (forall b : Rbar, Rbar_is_upper_bound E b -> Rbar_le l b).
 Definition Rbar_is_glb (E : Rbar -> Prop) (l : Rbar) :=
-  Rbar_is_lower_bound E l /\ 
+  Rbar_is_lower_bound E l /\
     (forall b : Rbar, Rbar_is_lower_bound E b -> Rbar_le b l).
 
 Lemma Rbar_lub_glb (E : Rbar -> Prop) (l : Rbar) :
-  Rbar_is_lub (fun x => E (Rbar_opp x)) (Rbar_opp l) 
+  Rbar_is_lub (fun x => E (Rbar_opp x)) (Rbar_opp l)
     <-> Rbar_is_glb E l.
 Proof.
   split ; [intros (ub, lub) | intros (lb, glb)] ; split.
@@ -307,7 +307,7 @@ Proof.
 Qed.
 
 Lemma Rbar_glb_lub (E : Rbar -> Prop) (l : Rbar) :
-  Rbar_is_glb (fun x => E (Rbar_opp x)) (Rbar_opp l) 
+  Rbar_is_glb (fun x => E (Rbar_opp x)) (Rbar_opp l)
     <-> Rbar_is_lub E l.
 Proof.
   split ; [ intros (lb, glb) | intros (ub, lub)] ; split.
@@ -321,7 +321,7 @@ Qed.
 
 (** Existence *)
 
-Lemma Rbar_ex_lub_ne (E : Rbar -> Prop) : {E p_infty} + {~ E p_infty} -> 
+Lemma Rbar_ex_lub_ne (E : Rbar -> Prop) : {E p_infty} + {~ E p_infty} ->
   (exists (x : R), E x) -> {l : Rbar | Rbar_is_lub E l}.
 Proof.
   intros Hp Hex ; destruct Hp as [Hp|Hp].
@@ -360,7 +360,7 @@ Proof.
   contradict Hb ; apply Rbar_lt_not_le ; simpl ; auto.
 Qed.
 
-Lemma Rbar_ex_glb_ne (E : Rbar -> Prop) : {E m_infty} + {~ E m_infty} -> 
+Lemma Rbar_ex_glb_ne (E : Rbar -> Prop) : {E m_infty} + {~ E m_infty} ->
   (exists (x : R), E x) -> {l : Rbar | Rbar_is_glb E l}.
 Proof.
   intros Hm Hex ;
@@ -372,9 +372,9 @@ Qed.
 
 (** Functions *)
 
-Definition Rbar_lub_ne (E : Rbar -> Prop) (Hp : {E p_infty} + {~ E p_infty}) 
+Definition Rbar_lub_ne (E : Rbar -> Prop) (Hp : {E p_infty} + {~ E p_infty})
   (Hex : exists (x : R), E x) := projT1 (Rbar_ex_lub_ne E Hp Hex).
-Definition Rbar_glb_ne (E : Rbar -> Prop) (Hp : {E m_infty} + {~ E m_infty}) 
+Definition Rbar_glb_ne (E : Rbar -> Prop) (Hp : {E m_infty} + {~ E m_infty})
   (Hex : exists (x : R), E x) := projT1 (Rbar_ex_glb_ne E Hp Hex).
 
 Lemma Rbar_opp_glb_lub (E : Rbar -> Prop) Hp Hm Hex1 Hex2 :
@@ -383,7 +383,7 @@ Proof.
   unfold Rbar_glb_ne ; case (Rbar_ex_glb_ne _ _ _) ; simpl ; intros g [Hg Hg'] ;
   unfold Rbar_lub_ne ; case (Rbar_ex_lub_ne _ _ _) ; simpl ; intros l [Hl Hl'] ;
   apply Rbar_le_antisym.
-  apply Rbar_opp_le ; rewrite Rbar_opp_involutive ; apply Hl', Rbar_lb_ub ; 
+  apply Rbar_opp_le ; rewrite Rbar_opp_involutive ; apply Hl', Rbar_lb_ub ;
   rewrite Rbar_opp_involutive ; auto.
   apply Hg', Rbar_lb_ub ; auto.
 Qed.
@@ -395,11 +395,11 @@ Proof.
   apply Rbar_le_antisym.
   apply Hl', Rbar_lb_ub ; rewrite Rbar_opp_involutive ;
   apply (Rbar_is_lb_subset _ E) ; auto ; intros x ; rewrite Rbar_opp_involutive ; auto.
-  apply Rbar_opp_le ; rewrite Rbar_opp_involutive ; apply Hg', Rbar_ub_lb ; 
+  apply Rbar_opp_le ; rewrite Rbar_opp_involutive ; apply Hg', Rbar_ub_lb ;
   rewrite Rbar_opp_involutive ; auto.
 Qed.
 
-Lemma Rbar_is_lub_ne_unique (E : Rbar -> Prop) (Hp : {E p_infty} + {~ E p_infty}) 
+Lemma Rbar_is_lub_ne_unique (E : Rbar -> Prop) (Hp : {E p_infty} + {~ E p_infty})
   (Hex : exists (x : R), E x) (l : Rbar) :
   Rbar_is_lub E l -> Rbar_lub_ne E Hp Hex = l.
 Proof.
@@ -410,7 +410,7 @@ Proof.
   apply H0, H.
   apply H, H0.
 Qed.
-Lemma Rbar_is_glb_ne_unique (E : Rbar -> Prop) (Hp : {E m_infty} + {~ E m_infty}) 
+Lemma Rbar_is_glb_ne_unique (E : Rbar -> Prop) (Hp : {E m_infty} + {~ E m_infty})
   (Hex : exists (x : R), E x) (l : Rbar) :
   Rbar_is_glb E l -> Rbar_glb_ne E Hp Hex = l.
 Proof.
@@ -452,16 +452,16 @@ Lemma Rbar_is_lub_unique (E1 E2 : Rbar -> Prop) (l1 l2 : Rbar) :
   (forall x, E1 x <-> E2 x) -> (Rbar_is_lub E1 l1) -> (Rbar_is_lub E2 l2)
   -> l1 = l2.
 Proof.
-  intros Hs H1 H2 ; apply Rbar_le_antisym ; 
-  [apply (Rbar_is_lub_subset E1 E2) | apply (Rbar_is_lub_subset E2 E1) ] ; auto ; intros x H ; 
+  intros Hs H1 H2 ; apply Rbar_le_antisym ;
+  [apply (Rbar_is_lub_subset E1 E2) | apply (Rbar_is_lub_subset E2 E1) ] ; auto ; intros x H ;
   apply Hs ; auto.
 Qed.
 Lemma Rbar_is_glb_unique (E1 E2 : Rbar -> Prop) (l1 l2 : Rbar) :
   (forall x, E1 x <-> E2 x) -> (Rbar_is_glb E1 l1) -> (Rbar_is_glb E2 l2)
   -> l1 = l2.
 Proof.
-  intros Hs H1 H2 ; apply Rbar_le_antisym ; 
-  [apply (Rbar_is_glb_subset E1 E2) | apply (Rbar_is_glb_subset E2 E1) ] ; auto ; intros x H ; 
+  intros Hs H1 H2 ; apply Rbar_le_antisym ;
+  [apply (Rbar_is_glb_subset E1 E2) | apply (Rbar_is_glb_subset E2 E1) ] ; auto ; intros x H ;
   apply Hs ; auto.
 Qed.
 
@@ -530,7 +530,7 @@ Qed.
 
 (** Existence *)
 
-Lemma ex_lub_Rbar_ne (E : R -> Prop) (Hex : exists x, E x) : 
+Lemma ex_lub_Rbar_ne (E : R -> Prop) (Hex : exists x, E x) :
   {l : Rbar | is_lub_Rbar E l}.
 Proof.
   case: (Rbar_ex_lub_ne (fun x => is_finite x /\ E x)) => [ | | l Hl].
@@ -590,8 +590,8 @@ Proof.
   move => H ; rewrite /Lub_Rbar_ne ;
   case: (ex_lub_Rbar_ne E1 pr1) => {pr1} l1 H1 ;
   case: (ex_lub_Rbar_ne E2 pr2) => {pr2} l2 H2 /=.
-  apply Rbar_le_antisym ; 
-  [ apply (is_lub_Rbar_subset E2 E1) 
+  apply Rbar_le_antisym ;
+  [ apply (is_lub_Rbar_subset E2 E1)
   | apply (is_lub_Rbar_subset E1 E2)] => //= x ; by apply H.
 Qed.
 Lemma Glb_Rbar_ne_eqset (E1 E2 : R -> Prop) pr1 pr2 :
@@ -600,8 +600,8 @@ Proof.
   move => H ; rewrite /Glb_Rbar_ne ;
   case: (ex_glb_Rbar_ne E1 pr1) => {pr1} l1 H1 ;
   case: (ex_glb_Rbar_ne E2 pr2) => {pr2} l2 H2 /=.
-  apply Rbar_le_antisym ; 
-  [ apply (is_glb_Rbar_subset E1 E2) 
+  apply Rbar_le_antisym ;
+  [ apply (is_glb_Rbar_subset E1 E2)
   | apply (is_glb_Rbar_subset E2 E1)] => //= x ; by apply H.
 Qed.
 
@@ -655,12 +655,12 @@ Lemma Empty_correct_2 (E : R -> Prop) :
   (forall x, ~ E x) -> Empty E.
 Proof.
   move => H ; split ;
-  rewrite /Glb_Rbar_ne /Lub_Rbar_ne ; 
+  rewrite /Glb_Rbar_ne /Lub_Rbar_ne ;
   [ case : (ex_lub_Rbar_ne (fun x : R => x = 0 \/ E x) (not_empty_0 E)) => s0 Hs0 ;
-  case : (ex_glb_Rbar_ne (fun x : R => x = 0 \/ E x) (not_empty_0 E)) => i0 Hi0 /= 
+  case : (ex_glb_Rbar_ne (fun x : R => x = 0 \/ E x) (not_empty_0 E)) => i0 Hi0 /=
   | case : (ex_lub_Rbar_ne (fun x : R => x = 1 \/ E x) (not_empty_1 E)) => s1 Hs1 ;
   case : (ex_glb_Rbar_ne (fun x : R => x = 1 \/ E x) (not_empty_1 E)) => i1 Hi1 /=].
-  have : (i0 = Finite 0) ; last move => -> ; 
+  have : (i0 = Finite 0) ; last move => -> ;
   apply: Rbar_le_antisym.
   apply Hi0 ; by left.
   apply Hi0 => y ; case => H0.
@@ -670,7 +670,7 @@ Proof.
   rewrite H0 ; by right.
   contradict H0 ; apply H.
   apply Hs0 ; by left.
-  have : (i1 = Finite 1) ; last move => -> ; 
+  have : (i1 = Finite 1) ; last move => -> ;
   apply: Rbar_le_antisym.
   apply Hi1 ; by left.
   apply Hi1 => y ; case => H1.
@@ -682,12 +682,12 @@ Proof.
   apply Hs1 ; by left.
 Qed.
 
-Lemma Empty_dec (E : R -> Prop) : 
+Lemma Empty_dec (E : R -> Prop) :
   {~Empty E}+{Empty E}.
 Proof.
-  case: (Rbar_eq_dec (Lub_Rbar_ne _ (not_empty_0 E)) (Glb_Rbar_ne _ (not_empty_0 E))) => H0 ; 
+  case: (Rbar_eq_dec (Lub_Rbar_ne _ (not_empty_0 E)) (Glb_Rbar_ne _ (not_empty_0 E))) => H0 ;
     [ | left].
-  case: (Rbar_eq_dec (Lub_Rbar_ne _ (not_empty_1 E)) (Glb_Rbar_ne _ (not_empty_1 E))) => H1 ; 
+  case: (Rbar_eq_dec (Lub_Rbar_ne _ (not_empty_1 E)) (Glb_Rbar_ne _ (not_empty_1 E))) => H1 ;
     [by right | left].
   contradict H1 ; apply H1.
   contradict H0 ; apply H0.
@@ -729,8 +729,8 @@ Proof.
   move => H ; rewrite /Lub_Rbar ;
   case: (Lub_Rbar_ex E1 pr1) => {pr1} l1 H1 ;
   case: (Lub_Rbar_ex E2 pr2) => {pr2} l2 H2 /=.
-  apply Rbar_le_antisym ; 
-  [ apply (is_lub_Rbar_subset E2 E1) 
+  apply Rbar_le_antisym ;
+  [ apply (is_lub_Rbar_subset E2 E1)
   | apply (is_lub_Rbar_subset E1 E2)] => //= x ; by apply H.
 Qed.
 
@@ -757,7 +757,7 @@ Proof.
   move => H ; rewrite /Glb_Rbar ;
   case: (Glb_Rbar_ex E1 pr1) => {pr1} l1 H1 ;
   case: (Glb_Rbar_ex E2 pr2) => {pr2} l2 H2 /=.
-  apply Rbar_le_antisym ; 
-  [ apply (is_glb_Rbar_subset E1 E2) 
+  apply Rbar_le_antisym ;
+  [ apply (is_glb_Rbar_subset E1 E2)
   | apply (is_glb_Rbar_subset E2 E1)] => //= x ; by apply H.
 Qed.

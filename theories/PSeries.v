@@ -77,7 +77,7 @@ Qed.
 (** Extensionality *)
 
 Lemma is_pseries_ext (a b : nat -> R) (x l : R) :
-  (forall n, a n = b n) -> (is_pseries a x l) 
+  (forall n, a n = b n) -> (is_pseries a x l)
     -> is_pseries b x l.
 Proof.
   move => Heq Ha.
@@ -155,7 +155,7 @@ Proof.
   elim => /= [ | n IH].
   by rewrite Rmult_1_r.
   by rewrite Rmult_0_l Rmult_0_r Rabs_R0 Rplus_0_r.
-  by apply is_lim_seq_const.  
+  by apply is_lim_seq_const.
 Qed.
 
 Definition CV_radius (a : nat -> R) : Rbar :=
@@ -175,9 +175,9 @@ Proof.
   rewrite /CV_radius /Lub_Rbar_ne ;
   case: ex_lub_Rbar_ne => cv /= [ub lub].
   split.
-  
+
   move => r /= [M Hr].
-  
+
   have : forall y, Rabs y < Rabs r -> (CV_disk a) y.
     move => y Hy ; rewrite /CV_disk /=.
   set l := (Rabs (y / r)).
@@ -209,9 +209,9 @@ Proof.
   have Hr0 : Rabs r <> 0.
     apply Rgt_not_eq, Rle_lt_trans with (2 := Hy), Rabs_pos.
   contradict Hr0 ; by rewrite Hr0 Rabs_R0.
-  
+
   move => H.
-  
+
   have : forall y, Rabs y < Rabs r -> Rbar_le (Finite (y)) cv.
   move => y Hy.
   apply ub.
@@ -270,9 +270,9 @@ Proof.
   apply Hb.
   apply ex_series_lim_0 in Hx.
   case: (Hx (mkposreal _ Rlt_0_1)) => /= {Hx} N Hx.
-  
-  set M := fix f N := match N with 
-    | O => Rabs (a O * x ^ O) 
+
+  set M := fix f N := match N with
+    | O => Rabs (a O * x ^ O)
     | S n => Rmax (f n) (Rabs (a (n) * x ^ (n))) end.
   exists (Rmax (M N) 1) => n.
   case: (le_lt_dec N n) => Hn.
@@ -325,9 +325,9 @@ Proof.
   contradict H.
 
   case: (H (mkposreal _ Rlt_0_1)) => /= {Hx} N Hx.
-  
-  set M := fix f N := match N with 
-    | O => Rabs (a O * x ^ O) 
+
+  set M := fix f N := match N with
+    | O => Rabs (a O * x ^ O)
     | S n => Rmax (f n) (Rabs (a (n) * x ^ (n))) end.
   exists (Rmax (M N) 1) => n.
   case: (le_lt_dec N n) => Hn.
@@ -363,7 +363,7 @@ Qed.
 (** ** Convergence criteria *)
 (** D'Alembert criterion for power series *)
 
-Lemma CV_disk_DAlembert_aux (a : nat -> R) (x k : R) : 
+Lemma CV_disk_DAlembert_aux (a : nat -> R) (x k : R) :
   x <> 0 -> (forall n, a n <> 0) ->
   (is_lim_seq (fun n => Rabs (a (S n) / a n)) k
     <-> is_lim_seq (fun n => Rabs ((a (S n) * x^(S n)) / (a n * x ^ n))) (Rabs x * k)).
@@ -401,7 +401,7 @@ Qed.
 Lemma CV_disk_DAlembert (a : nat -> R) (x:R) l :
   (forall n:nat, a n <> 0) ->
   is_lim_seq (fun n:nat => Rabs (a (S n) / a n)) (Finite l) ->
-  (l = 0 \/ (l <> 0 /\ Rabs x < / l)) 
+  (l = 0 \/ (l <> 0 /\ Rabs x < / l))
     -> CV_disk a x.
 Proof.
   move => Ha Hl H.
@@ -413,7 +413,7 @@ Proof.
   by rewrite Rmult_1_r.
   by rewrite Rmult_0_l Rmult_0_r Rabs_R0 Rplus_0_r.
   apply is_lim_seq_const.
-  
+
   apply ex_series_DAlembert with (Rabs x * l).
   case: H => H.
   rewrite H Rmult_0_r ; by apply Rlt_0_1.
@@ -477,7 +477,7 @@ Proof.
   case => [cv | | ] /= [ub lub] Hnot_ex H ; try by auto.
   suff H0 : cv < ((cv+/l)/2) < /l.
   absurd (ex_series (fun n => Rabs (a n * ((cv+/l)/2)^n))).
-  
+
   suff H1 : cv < Rabs ((cv + / l) / 2).
   move: (Hnot_ex ((cv + / l) / 2) H1) => {Hnot_ex} Hnot_ex.
   contradict Hnot_ex ; by apply ex_series_lim_0, ex_series_Rabs.
@@ -512,7 +512,7 @@ Proof.
 Qed.
 
 Lemma CV_radius_infinite_DAlembert (a : nat -> R) :
-  (forall n:nat, a n <> 0) -> 
+  (forall n:nat, a n <> 0) ->
   is_lim_seq (fun n:nat => Rabs (a (S n) / a n)) 0 ->
   CV_radius a = p_infty.
 Proof.
@@ -532,7 +532,7 @@ Proof.
       by rewrite Rmult_1_r.
       by rewrite Rmult_0_l Rmult_0_r Rabs_R0 Rplus_0_r.
       by apply is_lim_seq_const.
-      
+
     apply ex_series_DAlembert with 0.
     by apply Rlt_0_1.
     move => n ; apply Rmult_integral_contrapositive_currified.
@@ -566,7 +566,7 @@ Proof.
   exists (Series (fun n => Rabs (a n * r ^ n))) ; split.
   rewrite -(Rabs_pos_eq r (Rlt_le _ _ (cond_pos r))) in Hr.
   apply CV_disk_inside in Hr.
-  apply Lim_seq_correct' in Hr ; 
+  apply Lim_seq_correct' in Hr ;
   rewrite -/(Series (fun n : nat => Rabs (a n * r ^ n))) in Hr.
   move => e He.
   case: (Hr (mkposreal e He)) => /= {Hr} N Hr.
@@ -644,7 +644,7 @@ Proof.
 Qed.
 
 Lemma CV_radius_Reals_2 (a : nat -> R) (x : R) :
-  Rbar_lt (Finite (Rabs x)) (CV_radius a) 
+  Rbar_lt (Finite (Rabs x)) (CV_radius a)
   -> exists r : posreal, CVU (fun n x => sum_f_R0 (fun k => a k * x ^ k) n) (PSeries a) x r.
 Proof.
   move => Hx.
@@ -684,7 +684,7 @@ Lemma is_pseries_plus (a b : nat -> R) (x la lb : R) :
     -> is_pseries (PS_plus a b) x (la + lb).
 Proof.
   move => Ha Hb.
-  apply is_lim_seq_ext 
+  apply is_lim_seq_ext
     with (fun n => (sum_f_R0 (fun k => a k * x ^ k) n) + (sum_f_R0 (fun k => b k * x ^ k) n)).
   elim => [ | n IH].
   simpl ; rewrite /PS_plus ; ring.
@@ -710,7 +710,7 @@ Proof.
 Qed.
 
 Lemma CV_disk_plus (a b : nat -> R) (x : R) :
-  (CV_disk a x) -> (CV_disk b x) 
+  (CV_disk a x) -> (CV_disk b x)
   -> (CV_disk (PS_plus a b) x).
 Proof.
   move => Ha Hb.
@@ -728,8 +728,8 @@ Proof.
   have Hab0 := CV_radius_ge_0 (PS_plus a b).
   have Hmin_0 : Rbar_le (Finite 0) (Rbar_min (CV_radius a) (CV_radius b)).
     rewrite /Rbar_min ; by case: Rbar_le_dec => H.
-  apply is_lub_Rbar_subset 
-    with (CV_disk (PS_plus a b)) 
+  apply is_lub_Rbar_subset
+    with (CV_disk (PS_plus a b))
     (fun x => (CV_disk a x) /\ (CV_disk b x)).
   move => x [Ha Hb] ; by apply CV_disk_plus.
   rewrite /CV_radius /Lub_Rbar_ne ; by case: ex_lub_Rbar_ne.
@@ -841,7 +841,7 @@ Proof.
 Qed.
 
 Lemma CV_disk_scal_l (c : R) (a : nat -> R) (x : R) :
-  (CV_disk a x) 
+  (CV_disk a x)
   -> (CV_disk (PS_scal_l c a) x).
 Proof.
   move => Ha.
@@ -889,7 +889,7 @@ Proof.
 Qed.
 
 Lemma CV_disk_scal_r (c : R) (a : nat -> R) (x : R) :
-  (CV_disk a x) 
+  (CV_disk a x)
   -> (CV_disk (PS_scal_r c a) x).
 Proof.
   move => Ha.
@@ -956,7 +956,7 @@ Fixpoint PS_incr_n (a : nat -> R) (n k : nat) : R :=
     | S n => PS_incr_1 (PS_incr_n a n) k
   end.
 Lemma PS_incr_n_simplify (a : nat -> R) (n k : nat) :
-  PS_incr_n a n k = 
+  PS_incr_n a n k =
   match (le_lt_dec n k) with
     | left _ => a (k-n)%nat
     | right _ => 0
@@ -1006,7 +1006,7 @@ Qed.
 Definition PS_decr_1 (a : nat -> R) (n : nat) : R :=
   a (S n).
 Lemma is_pseries_decr_1 (a : nat -> R) (x l : R) :
-  x <> 0 -> is_pseries a x l 
+  x <> 0 -> is_pseries a x l
     -> is_pseries (PS_decr_1 a) x ((l - a O) / x).
 Proof.
   move => Hx Ha eps.
@@ -1042,7 +1042,7 @@ Proof.
   exists ((l-a O)/x) ; by apply is_pseries_decr_1.
 Qed.
 Lemma PSeries_decr_1 (a : nat -> R) (x : R) :
-  ex_pseries a x 
+  ex_pseries a x
     -> PSeries a x = a O + x * PSeries (PS_decr_1 a) x.
 Proof.
   move => Ha.
@@ -1068,7 +1068,7 @@ Qed.
 Definition PS_decr_n (a : nat -> R) (n k : nat) : R :=
   a (n + k)%nat.
 Lemma is_pseries_decr_n (a : nat -> R) (n : nat) (x l : R) :
-  x <> 0 -> (0 < n)%nat -> is_pseries a x l 
+  x <> 0 -> (0 < n)%nat -> is_pseries a x l
     -> is_pseries (PS_decr_n a n) x ((l - sum_f_R0 (fun k => a k * x^k) (n-1)%nat)/x^n).
 Proof.
   move => Hx Hn Ha.
@@ -1120,7 +1120,7 @@ Proof.
   by [].
 Qed.
 Lemma PSeries_decr_n_aux (a : nat -> R) (n : nat) (x : R) :
-  (forall k : nat, (k < n)%nat -> a k = 0) 
+  (forall k : nat, (k < n)%nat -> a k = 0)
     -> PSeries a x = x^n * PSeries (PS_decr_n a n) x.
 Proof.
   elim: n => /= [ | n IH] Ha.
@@ -1150,20 +1150,20 @@ Proof.
   ring_simplify (a (S n) * (0 * 0 ^ n)) ;
   by rewrite Rabs_R0 Rplus_0_r.
   by apply is_lim_seq_const.
-  
+
   apply ex_finite_lim_seq_correct in Hx.
   apply ex_finite_lim_seq_correct.
   case: Hx => Hex Hl.
   apply ex_lim_seq_incr_1 in Hex.
   rewrite -Lim_seq_incr_1 in Hl.
   split.
-  apply ex_lim_seq_ext 
+  apply ex_lim_seq_ext
     with (fun n => sum_f_R0 (fun k : nat => Rabs (PS_incr_1 a k * x ^ k)) (S n) / Rabs x).
   elim => /= [ | n <-] ;
   rewrite ?Rmult_1_r ?Rmult_0_r ?Rabs_R0 ?Rplus_0_l ?Rabs_mult ; field ;
   by apply Rabs_no_R0.
   by apply ex_lim_seq_scal_r.
-  rewrite -(Lim_seq_ext 
+  rewrite -(Lim_seq_ext
     (fun n => sum_f_R0 (fun k : nat => Rabs (PS_incr_1 a k * x ^ k)) (S n) / Rabs x)).
   rewrite Lim_seq_scal_r.
   case: (Lim_seq
@@ -1172,7 +1172,7 @@ Proof.
   elim => /= [ | n <-] ;
   rewrite ?Rmult_1_r ?Rmult_0_r ?Rabs_R0 ?Rplus_0_l ?Rabs_mult ; field ;
   by apply Rabs_no_R0.
-  
+
   exists (0).
   apply is_lim_seq_ext with (fun _ => 0).
   elim => /= [ | n <-].
@@ -1180,13 +1180,13 @@ Proof.
   ring_simplify (a n * (0 * 0 ^ n)) ;
   by rewrite Rabs_R0 Rplus_0_r.
   by apply is_lim_seq_const.
-  
+
   apply ex_finite_lim_seq_correct in Hx.
   apply ex_finite_lim_seq_correct.
   case: Hx => Hex Hl.
   split.
   apply ex_lim_seq_incr_1.
-  apply ex_lim_seq_ext 
+  apply ex_lim_seq_ext
     with (fun n => sum_f_R0 (fun k : nat => Rabs (a k * x ^ k)) n * Rabs x).
   elim => /= [ | n <-] ;
   rewrite ?Rmult_1_r ?Rmult_0_r ?Rabs_R0 ?Rplus_0_l ?Rabs_mult ; field ;
@@ -1208,7 +1208,7 @@ Definition PS_mult (a b : nat -> R) n :=
   sum_f_R0 (fun k => a k * b (n - k)%nat) n.
 
 Lemma is_pseries_mult (a b : nat -> R) (x la lb : R) :
-  is_pseries a x la -> is_pseries b x lb 
+  is_pseries a x la -> is_pseries b x lb
   -> Rbar_lt (Rabs x) (CV_radius a) -> Rbar_lt (Rabs x) (CV_radius b)
   -> is_pseries (PS_mult a b) x (la * lb).
 Proof.
@@ -1236,9 +1236,9 @@ Lemma is_pseries_odd_even (a : nat -> R) (x l1 l2 : R) :
 Proof.
 rewrite /is_pseries.
   move => H1 H2.
-  apply is_lim_seq_ext with (fun n => 
+  apply is_lim_seq_ext with (fun n =>
     (sum_f_R0 (fun k : nat => a (2 * k)%nat * (x ^ 2) ^ k) (div2 n)) +
-    x * match n with | O => 0 
+    x * match n with | O => 0
     | S n => (sum_f_R0 (fun k : nat => a (2 * k + 1)%nat * (x ^ 2) ^ k) (div2 n)) end).
   case => [ | n].
   simpl ; ring.
@@ -1249,7 +1249,7 @@ rewrite /is_pseries.
   rewrite ?double_S /sum_f_R0 -/sum_f_R0.
   rewrite /double /= ; ring.
   rewrite -pow_mult.
-  replace (2 * S n)%nat with (S (S (double n))) 
+  replace (2 * S n)%nat with (S (S (double n)))
     by (rewrite -double_S /double ; ring).
   replace (S (S (double n)) + 1)%nat with (S (S (S (double n)))) by ring.
   move => <- ; simpl ; ring.
@@ -1259,9 +1259,9 @@ rewrite /is_pseries.
   rewrite ?double_S /sum_f_R0 -/sum_f_R0.
   rewrite /double /= ; ring.
   rewrite -?pow_mult.
-  replace (2 * S n)%nat with (S (S (double n))) 
+  replace (2 * S n)%nat with (S (S (double n)))
     by (rewrite -double_S /double ; ring).
-  replace (2 * S (S n))%nat with (S (S (S (S (double n))))) 
+  replace (2 * S (S n))%nat with (S (S (S (S (double n)))))
     by (rewrite -double_S /double ; ring).
   replace (S (S (double n)) + 1)%nat with (S (S (S (double n)))) by ring.
   move => <- ; simpl ; ring.
@@ -1413,12 +1413,12 @@ Qed.
 (** ** Continuity *)
 
 Lemma PSeries_continuity (a : nat -> R) (x : R) :
-  Rbar_lt (Finite (Rabs x)) (CV_radius a) 
+  Rbar_lt (Finite (Rabs x)) (CV_radius a)
     -> continuity_pt (PSeries a) x.
 Proof.
   move => H.
   case: (CV_radius_Reals_2 a x H) => r H0.
-  apply (CVU_continuity 
+  apply (CVU_continuity
     (fun (n : nat) (x : R) => sum_f_R0 (fun k : nat => a k * x ^ k) n)
     (PSeries a) x r H0).
   move => n y Hy.
@@ -1448,7 +1448,7 @@ Proof.
   exists (Rmax (Rabs (a O)) (Rabs x * M)) ; case => /= [ | n].
   rewrite Rmult_1_r ; by apply Rmax_l.
   apply Rle_trans with (2 := Rmax_r _ _).
-  replace (a (S n) * (x * x ^ n)) 
+  replace (a (S n) * (x * x ^ n))
     with (x  * ((PS_derive a n * x ^ n) / INR (S n)))
     by (rewrite /PS_derive ; field ; apply not_0_INR, sym_not_eq, O_S).
   rewrite Rabs_mult ; apply Rmult_le_compat_l.
@@ -1461,9 +1461,9 @@ Proof.
   apply Rmult_le_compat_l.
   by apply Rle_trans with (2 := Ha O), Rabs_pos.
   by apply Rle_trans with (2 := Rle_abs _), (le_INR 1), le_n_S, le_O_n.
-  
+
   apply H => x [M Hx].
-  
+
   have H1 : Rbar_le (Finite 0) (CV_radius (PS_derive a)).
     apply H0 ; exists (Rabs (PS_derive a O)) ; case => /= [ | n].
     rewrite Rmult_1_r ; by apply Rle_refl.
@@ -1474,7 +1474,7 @@ Proof.
     by apply Rbar_finite_le.
     by apply H1.
     by apply Hw.
-  
+
   suff : forall y, 0 < y < x -> Rbar_le (Finite y) (CV_radius (PS_derive a)).
     case: (CV_radius (PS_derive a)) H1 => [l | | ] /= H1 H2.
     apply Rbar_not_lt_le => /= H3.
@@ -1513,7 +1513,7 @@ Proof.
     apply Rabs_lt_between'.
     replace (INR (S (S n)) / x / (INR (S n) / x))
       with (INR (S (S n)) / (INR (S n)))
-      by (field ; split ; [apply Rgt_not_eq, Rlt_trans with y ; by apply Hy | 
+      by (field ; split ; [apply Rgt_not_eq, Rlt_trans with y ; by apply Hy |
        by apply Rgt_not_eq, lt_0_INR, lt_O_Sn]).
     rewrite Rabs_pos_eq.
     split.
@@ -1562,8 +1562,8 @@ Proof.
       rewrite ?Rmult_assoc -(Rmult_minus_distr_l (a (S n))) ;
       apply Rmult_eq_0_compat_l ;
       rewrite Rmult_comm Rmult_assoc -(Rmult_minus_distr_l (INR (S n))) ;
-      apply Rmult_eq_0_compat_l, Rminus_diag_eq ; 
-      elim: n => /= [ | n IH] ; [ring 
+      apply Rmult_eq_0_compat_l, Rminus_diag_eq ;
+      elim: n => /= [ | n IH] ; [ring
       | rewrite -IH ; field ; apply Rgt_not_eq, Rlt_trans with y ; by apply Hy]).
     rewrite Rabs_mult ; apply Rmult_le_compat.
     by apply Rabs_pos.
@@ -1573,7 +1573,7 @@ Proof.
     apply Rle_trans with 1.
     move: (HN n Hn) ; rewrite Rminus_0_r ; by apply Rlt_le.
     move: (HN n Hn) => {HN Hn} ;
-    elim: N => [ | N IH] H2. 
+    elim: N => [ | N IH] H2.
     simpl ; by apply Rle_refl.
     apply Rle_trans with (1 := IH H2) ;
     rewrite /My -/My ; by apply Rmax_r.
@@ -1619,7 +1619,7 @@ Proof.
     apply Rlt_le_trans with (1 := Hz).
     exact: Rmin_r.
     apply Rle_lt_trans with (1 := Rle_abs _).
-    rewrite ?(Rplus_comm (-y)). 
+    rewrite ?(Rplus_comm (-y)).
     apply Rlt_le_trans with (1 := Hz).
     exact: Rmin_l.
 
@@ -1637,23 +1637,23 @@ Proof.
     exact: Hy.
     apply Rle_lt_trans with (1 := Rabs_maj2 _).
     exact: Hx0.
-    
+
   have Hfn : CVU_dom
     (fun (n : nat) (y : R) => sum_f_R0 (fun k : nat => a k * y ^ k) n) D.
     apply CVU_dom_include with (Boule x r0).
     move => y Hy.
     by apply Rlt_le_trans with (1 := Hy), Rmin_l.
     exact: Hr0.
-  
+
   have Idn : (forall (n : nat) (x : R), (0 < n)%nat ->
     is_derive (fun (y : R) =>
-      sum_f_R0 (fun k : nat => a k * y ^ k) n) x 
+      sum_f_R0 (fun k : nat => a k * y ^ k) n) x
       (sum_f_R0 (fun k : nat => (PS_derive a) k * x ^ k) (pred n))).
     case => [ y Hn | n y _ ].
     by apply lt_irrefl in Hn.
     elim: n => [ | n] ; simpl pred ; rewrite /sum_f_R0 -/sum_f_R0.
     replace (PS_derive a 0 * y ^ 0)
-      with (0 + a 1%nat * (1 * 1 + y * 0)) 
+      with (0 + a 1%nat * (1 * 1 + y * 0))
       by (rewrite /PS_derive /= ; ring).
     apply derivable_pt_lim_plus.
     simpl ; by apply derivable_pt_lim_const.
@@ -1667,8 +1667,8 @@ Proof.
       with (a (S (S n)) * (INR (S (S n)) * y^S n))
       by ring.
     by apply derivable_pt_lim_scal, derivable_pt_lim_pow.
-  
-  have Edn : (forall (n : nat) (x : R), D x -> 
+
+  have Edn : (forall (n : nat) (x : R), D x ->
     ex_derive (fun (y : R) =>
       sum_f_R0 (fun k : nat => a k * y ^ k) n) x).
     case => [ | n] y Hy.
@@ -1676,7 +1676,7 @@ Proof.
     exists (sum_f_R0 (fun k : nat => PS_derive a k * y ^ k) (pred (S n))).
     apply (Idn (S n) y).
     by apply lt_O_Sn.
-    
+
   have Cdn : (forall (n : nat) (x : R), D x ->
     continuity_pt
       (Derive ((fun (n0 : nat) (y : R) =>
@@ -1725,7 +1725,7 @@ Proof.
     rewrite (is_derive_unique _ _ _ (Idn (S n) y (lt_O_Sn _))).
     rewrite (is_derive_unique _ _ _ (Idn (S m) y (lt_O_Sn _))).
     by apply Hr1.
-  
+
   have Hx' : D x.
     by rewrite /D /Boule /= Rminus_eq_0 Rabs_R0.
   have H := (CVU_Derive (fun n y => (sum_f_R0 (fun k : nat => a k * y ^ k)) n) D Ho Hc Hfn Edn Cdn Hdn x Hx').
@@ -1790,9 +1790,9 @@ Proof.
   by rewrite CV_radius_derive.
 Qed.
 
-Definition PS_derive_n (n : nat) (a : nat -> R) := 
+Definition PS_derive_n (n : nat) (a : nat -> R) :=
   (fun k => (INR (fact (k + n)%nat) / INR (fact k)) * a (k + n)%nat).
-  
+
 Lemma is_derive_n_PSeries (n : nat) (a : nat -> R) :
   forall x, Rbar_lt (Rabs x) (CV_radius a)
     -> is_derive_n (PSeries a) n x (PSeries (PS_derive_n n a) x).
@@ -1805,7 +1805,7 @@ Proof.
   apply Rgt_not_eq.
   by apply INR_fact_lt_0.
   simpl ; rewrite /PS_derive_n /=.
-  apply is_derive_ext_loc 
+  apply is_derive_ext_loc
     with (PSeries (fun k : nat => INR (fact (k + n)) / INR (fact k) * a (k + n)%nat)).
   case Ha : (CV_radius a) => [cva | | ].
   move: (Hx) ; rewrite Ha ; move/Rminus_lt_0 => Hx0.
@@ -1935,9 +1935,9 @@ Proof.
 Qed.
 
 Lemma mk_pseries (f : R -> R) (M : R) (r : Rbar) :
-  (forall n x, Rbar_lt (Finite (Rabs x)) r 
+  (forall n x, Rbar_lt (Finite (Rabs x)) r
     -> (ex_derive_n f n x) /\ Rabs (Derive_n f n x) <= M)
-  -> forall x, Rbar_lt (Finite (Rabs x)) r 
+  -> forall x, Rbar_lt (Finite (Rabs x)) r
     -> is_pseries (fun n => Derive_n f n 0 / INR (fact n))  x (f x).
 Proof.
   move => Hd x Hx.
@@ -1969,7 +1969,7 @@ Proof.
 
    move: (Hw _ Hx (fun x => f (-x)) Hf (Ropp_0_gt_lt_contravar _ Hx')) => {Hw} Hw.
    rewrite Ropp_involutive in Hw.
-    
+
     move => eps.
     case: (Hw eps) => {Hw} N Hw.
     exists N => n Hn.
@@ -1992,7 +1992,7 @@ Proof.
     elim (S m) => /= [ | {m} m IH].
     ring.
     rewrite -IH ; ring.
-    rewrite Ropp_0 ; 
+    rewrite Ropp_0 ;
     exists (mkposreal r (Rle_lt_trans _ _ _ (Rabs_pos _) Hx)) => /= y Hy k Hk.
     rewrite /distR Rminus_0_r in Hy.
     by apply (Hd k).
@@ -2020,11 +2020,11 @@ Proof.
     apply (Hd k y).
     apply Rabs_lt_between.
     by split.
-    
+
     rewrite Rabs_mult -RPow_abs Rabs_Ropp Rabs_R1 pow1 Rmult_1_l.
     apply Hd.
     by rewrite Rabs_Ropp.
-    
+
     apply Rabs_lt_between in Hx.
     case: Hx => Hx1 Hx2.
     apply Rminus_lt_0 in Hx1.
@@ -2041,7 +2041,7 @@ Proof.
     apply (Hd k y).
     apply Rabs_lt_between.
     by split.
-    
+
   move => eps.
   have : exists N, forall n, (N <= n)%nat -> r ^ (S n) * M / INR (fact (S n)) < eps.
     have H : is_lim_seq (fun n => r ^ n * M / INR (fact n)) 0.
@@ -2090,10 +2090,10 @@ Proof.
     apply Rle_lt_trans with (2 := H n Hn).
     rewrite Rminus_0_r.
     exact: Rle_abs.
-    
+
   case => N HN.
   exists N => n Hn.
-  
+
   case: (Taylor_Lagrange f n 0 x).
     by apply Hx'.
     move => t Ht k Hk.
@@ -2139,7 +2139,7 @@ Proof.
   apply Rlt_le, Hx'.
   apply Rlt_le, Hy.
   elim: (n) => /= [ | m ->] ; rewrite /Rdiv ; ring.
-  
+
 Qed.
 
 (** ** Riemann integrability *)

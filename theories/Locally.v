@@ -1220,7 +1220,7 @@ Qed.
 
 Definition Rbar_locally (a : Rbar) (P : R -> Prop) :=
   match a with
-    | Finite a => exists delta : posreal, 
+    | Finite a => exists delta : posreal,
 	forall x, Rabs (x-a) < delta -> x <> a -> P x
     | p_infty => exists M : R, forall x, M < x -> P x
     | m_infty => exists M : R, forall x, x < M -> P x

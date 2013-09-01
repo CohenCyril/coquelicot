@@ -277,11 +277,11 @@ Lemma domin_plus :
   is_domin F f g1 -> is_domin F f g2 -> is_domin F f (fun x => g1 x + g2 x).
 Proof.
   intros T F FF f g1 g2 Hg1 Hg2 eps.
-  generalize (filter_and _ _ (Hg1 (pos_div_2 eps)) (Hg2 (pos_div_2 eps))) 
+  generalize (filter_and _ _ (Hg1 (pos_div_2 eps)) (Hg2 (pos_div_2 eps)))
     => /= {Hg1 Hg2}.
   apply filter_imp => x [Hg1 Hg2].
   apply Rle_trans with (1 := Rabs_triang _ _).
-  replace (eps * Rabs (f x)) 
+  replace (eps * Rabs (f x))
     with (eps / 2 * Rabs (f x) + eps / 2 * Rabs (f x))
     by field.
   by apply Rplus_le_compat.
@@ -361,7 +361,7 @@ Proof.
   apply filter_imp => x [H1 H2].
   rewrite ?Rabs_mult.
   rewrite -(sqrt_sqrt _ (Rlt_le _ _ (cond_pos eps))).
-  replace (sqrt eps * sqrt eps * (Rabs (f1 x) * Rabs (f2 x))) 
+  replace (sqrt eps * sqrt eps * (Rabs (f1 x) * Rabs (f2 x)))
     with ((sqrt eps * Rabs (f1 x))*(sqrt eps * Rabs (f2 x))) by ring.
   apply Rmult_le_compat.
   by apply Rabs_pos.
@@ -388,7 +388,7 @@ Proof.
   generalize (filter_and _ _ (H eps) (filter_and _ _ Hf Hg)) => {H Hf Hg}.
   apply filter_imp => x [H [Hf Hg]].
   rewrite ?Rabs_Rinv => //.
-  replace (/ Rabs (f x)) 
+  replace (/ Rabs (f x))
     with (Rabs (g x) / (Rabs (f x) * Rabs (g x)))
     by (field ; split ; by apply Rabs_no_R0).
   replace (eps * / Rabs (g x))
@@ -431,7 +431,7 @@ Proof.
     rewrite Hf Rminus_0_r in H.
     apply Rle_not_lt in H.
     move => _ ; apply H.
-    apply Rminus_lt ; field_simplify ; rewrite Rdiv_1 /Rdiv Ropp_mult_distr_l_reverse ; 
+    apply Rminus_lt ; field_simplify ; rewrite Rdiv_1 /Rdiv Ropp_mult_distr_l_reverse ;
     apply Ropp_lt_gt_0_contravar.
     apply Rmult_lt_0_compat.
     by apply Rabs_pos_lt.
@@ -443,7 +443,7 @@ Proof.
   clear -FF.
   apply filter_imp.
   intros x [[Hf Hg] H].
-  replace (/ g x - / f x) 
+  replace (/ g x - / f x)
     with ((f x - g x) / (f x * g x)).
   rewrite Rabs_div ?Rabs_Rinv ?Rabs_mult //.
   apply Rle_div_l.

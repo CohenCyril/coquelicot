@@ -125,7 +125,7 @@ Qed.
 (** Extensionality *)
 
 Lemma is_series_ext (a b : nat -> R) (l : R) :
-  (forall n, a n = b n) -> (is_series a l) 
+  (forall n, a n = b n) -> (is_series a l)
     -> is_series b l.
 Proof.
   move => Heq.
@@ -195,7 +195,7 @@ Proof.
   by apply le_Sn_0 in Hn.
   apply le_S_n in Hn.
   rewrite decomp_sum /=.
-  replace (a 0%nat + sum_f_R0 (fun i : nat => a (S i)) n - l) 
+  replace (a 0%nat + sum_f_R0 (fun i : nat => a (S i)) n - l)
     with(sum_f_R0 (fun k : nat => a (S k)) n - (l - a 0%nat)) by ring.
   by apply Ha.
   by apply lt_0_Sn.
@@ -257,7 +257,7 @@ Proof.
   by apply Series_correct, (ex_series_decal_1 a).
 Qed.
 Lemma Series_decal_n (a : nat -> R) (n : nat) :
-  (0 < n)%nat -> ex_series a 
+  (0 < n)%nat -> ex_series a
     -> Series a = sum_f_R0 a (pred n)  + Series (fun k => a (n + k)%nat).
 Proof.
   move => Hn Ha.
@@ -282,7 +282,7 @@ Proof.
   by apply lt_O_Sn.
 Qed.
 Lemma Series_decal_n_aux (a : nat -> R) (n : nat) :
-   (forall k, (k < n)%nat -> a k = 0) 
+   (forall k, (k < n)%nat -> a k = 0)
      -> Series a = Series (fun k => a (n + k)%nat).
 Proof.
   elim: n => [ | n IH] Ha.
@@ -374,12 +374,12 @@ Proof.
   by rewrite Hnm /R_dist Rminus_eq_0 Rabs_R0.
   by apply Hw.
   move: (Hb n m Hn Hm).
-  rewrite /R_dist (tech2 a m n Hnm) (tech2 b m n Hnm) ; 
-    ring_simplify (sum_f_R0 a m 
-    + sum_f_R0 (fun i : nat => a (S m + i)%nat) (n - S m) 
-    - sum_f_R0 a m) ; 
-    ring_simplify (sum_f_R0 b m 
-    + sum_f_R0 (fun i : nat => b (S m + i)%nat) (n - S m) 
+  rewrite /R_dist (tech2 a m n Hnm) (tech2 b m n Hnm) ;
+    ring_simplify (sum_f_R0 a m
+    + sum_f_R0 (fun i : nat => a (S m + i)%nat) (n - S m)
+    - sum_f_R0 a m) ;
+    ring_simplify (sum_f_R0 b m
+    + sum_f_R0 (fun i : nat => b (S m + i)%nat) (n - S m)
     - sum_f_R0 b m).
   apply Rle_lt_trans.
   apply Rle_trans with (2 := Rle_abs _).
@@ -397,7 +397,7 @@ Proof.
 Qed.
 
 Lemma Series_compar (a b : nat -> R) :
-  (forall n : nat, 0 <= a n <= b n) -> 
+  (forall n : nat, 0 <= a n <= b n) ->
    ex_series b -> Series a <= Series b.
 Proof.
   move => Hn Hb.
@@ -424,7 +424,7 @@ Lemma is_series_opp (a : nat -> R) (la : R) :
     -> is_series (fun n => - a n) (- la).
 Proof.
   move => Ha.
-  apply is_lim_seq_ext 
+  apply is_lim_seq_ext
     with (fun n => - (sum_f_R0 (fun k => a k) n)).
   elim => [ | n IH].
   simpl ; ring.
@@ -435,7 +435,7 @@ Proof.
   by simpl.
 Qed.
 Lemma ex_series_opp (a : nat -> R) :
-  ex_series a 
+  ex_series a
     -> ex_series (fun n => - a n).
 Proof.
   move => [la Ha].
@@ -459,7 +459,7 @@ Lemma is_series_plus (a b : nat -> R) (la lb : R) :
     -> is_series (fun n => a n + b n) (la + lb).
 Proof.
   move => Ha Hb.
-  apply is_lim_seq_ext 
+  apply is_lim_seq_ext
     with (fun n => (sum_f_R0 (fun k => a k) n) + (sum_f_R0 (fun k => b k) n)).
   elim => [ | n IH].
   simpl ; ring.
@@ -584,8 +584,8 @@ Lemma is_series_mult_pos (a b : nat -> R) (la lb : R) :
   -> is_series (fun n => sum_f_R0 (fun k => a k * b (n - k)%nat) n) (la * lb).
 Proof.
   move => Hla Hlb Ha Hb.
-  
-  have H0 : forall n, 
+
+  have H0 : forall n,
     sum_f_R0 (fun k : nat => sum_f_R0 (fun p : nat => a p * b (k - p)%nat) k) n
       <= sum_f_R0 a n * sum_f_R0 b n.
     case => [ | n].
@@ -611,7 +611,7 @@ Proof.
     elim: {1 5 8}n (le_refl n) => [ | m IH] Hm ; rewrite /sum_f_R0 -/sum_f_R0.
     rewrite -minus_n_O plus_0_l ; simpl pred.
     rewrite -?sum_f_rw_0.
-    replace (sum_f 0 (S (S n)) (fun p : nat => a p * b (S (S n) - p)%nat)) 
+    replace (sum_f 0 (S (S n)) (fun p : nat => a p * b (S (S n) - p)%nat))
       with ((sum_f 0 (S (S n)) (fun p : nat => a p * b (S (S n) - p)%nat) -
         (fun p : nat => a p * b (S (S n) - p)%nat) 0%nat)
         + a O * b (S (S n))) by (rewrite -minus_n_O ; ring).
@@ -691,10 +691,10 @@ Proof.
       apply Rminus_le_0 ; rewrite -sum_f_rw ; try by intuition.
       rewrite /sum_f minus_diag /sum_f_R0 -/sum_f_R0.
       apply cond_pos_sum => l ; by apply Rmult_le_pos.
-      
+
 
     rewrite /is_series.
-    apply is_lim_seq_le_le with (u := fun n => sum_f_R0 a (Div2.div2 n) * sum_f_R0 b (Div2.div2 n)) 
+    apply is_lim_seq_le_le with (u := fun n => sum_f_R0 a (Div2.div2 n) * sum_f_R0 b (Div2.div2 n))
     (w := fun n => sum_f_R0 a n * sum_f_R0 b n).
     by split.
     replace (Finite (la * lb)) with (Rbar_mult la lb) by auto.
@@ -715,7 +715,7 @@ Proof.
     replace (Div2.div2 (S (S k))) with (S (Div2.div2 k)) by auto.
     replace (2 * S (Div2.div2 k))%nat with (S (S (2 * Div2.div2 k))) by ring.
     by repeat apply le_n_S.
-    
+
     apply is_lim_seq_mult.
     by apply Hla.
     by apply Hlb.
@@ -733,12 +733,12 @@ Lemma is_series_mult (a b : nat -> R) (la lb : R) :
   -> is_series (fun n => sum_f_R0 (fun k => a k * b (n - k)%nat) n) (la * lb).
 Proof.
   move => Hla Hlb Ha Hb.
-  
+
   set ap := fun n => (a n + Rabs (a n)) / 2.
   set am := fun n => - (a n - Rabs (a n)) / 2.
   set bp := fun n => (b n + Rabs (b n)) / 2.
   set bm := fun n => - (b n - Rabs (b n)) / 2.
-  
+
   have Hap : forall n, 0 <= ap n.
     move => n ; apply Rdiv_le_0_compat.
     rewrite Rplus_comm ; apply Rle_minus_l ; rewrite Rminus_0_l.
@@ -779,8 +779,8 @@ Proof.
     apply ex_series_opp.
     apply ex_series_minus => //.
     by exists lb.
-    
-  
+
+
   apply is_series_ext with (fun n => sum_f_R0 (fun k : nat => ap k * bp (n - k)%nat) n
     - sum_f_R0 (fun k : nat => am k * bp (n - k)%nat) n
     - sum_f_R0 (fun k : nat => ap k * bm (n - k)%nat) n
@@ -809,7 +809,7 @@ Qed.
 (** * D'Alembert criterion *)
 
 Lemma ex_series_DAlembert (a : nat -> R) (k : R) :
-  k < 1 -> (forall n, a n <> 0) 
+  k < 1 -> (forall n, a n <> 0)
     -> is_lim_seq (fun n => Rabs (a (S n) / a n)) k
       -> ex_series (fun n => Rabs (a n)).
 Proof.
@@ -822,7 +822,7 @@ Proof.
     move => {H} /= Hk1 N H.
     exists N => n Hn.
     move: (H n Hn) => {H} H.
-    apply Rabs_lt_between' in H ; case: H => _ H ; 
+    apply Rabs_lt_between' in H ; case: H => _ H ;
     field_simplify in H ; rewrite Rdiv_1 in H ; by apply Rlt_le.
   case => {H} N H.
   apply ex_series_decal_n with N.
@@ -836,7 +836,7 @@ Proof.
   rewrite plus_0_r /Rdiv Rinv_r.
   rewrite Rabs_R1 ; by apply Rle_refl.
   by apply Ha.
-  replace (Rabs (a (N + S n)%nat / a N)) 
+  replace (Rabs (a (N + S n)%nat / a N))
     with (Rabs (a (S (N + n))/a (N+n)%nat) * Rabs (a (N + n)%nat / a N)).
   simpl ; apply Rmult_le_compat.
   by apply Rabs_pos.
@@ -893,7 +893,7 @@ Proof.
   have : forall n, Rabs (a N) * k ^ n <= Rabs (a (n + N)%nat).
     elim => /= [ | n IH].
     rewrite Rmult_1_r ; by apply Rle_refl.
-    replace (Rabs (a (S (n + N)))) 
+    replace (Rabs (a (S (n + N))))
       with (Rabs (a (S (n+N)) / a (n+N)%nat) * Rabs (a (n+N)%nat))
       by (rewrite -Rabs_mult ; apply f_equal ; by field).
     replace (Rabs (a N) * (k * k ^ n)) with (k * (Rabs (a N) * k ^ n)) by ring.

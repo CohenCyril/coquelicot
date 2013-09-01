@@ -34,7 +34,7 @@ Proof.
   intros.
   exists (up (x-1)) ; split.
   assert (Rw : x = 1 + (x-1)) ; [ring | rewrite {2}Rw => {Rw}].
-  assert (Rw :IZR (up (x - 1))  = (IZR (up (x - 1)) - (x - 1)) + (x-1)) ; 
+  assert (Rw :IZR (up (x - 1))  = (IZR (up (x - 1)) - (x - 1)) + (x-1)) ;
     [ring | rewrite Rw ; clear Rw].
   apply Rplus_le_compat_r, (proj2 (archimed _)).
   assert (Rw : x = (x-1) + 1) ; [ring | rewrite {1}Rw ; clear Rw].
@@ -547,9 +547,9 @@ Qed.
 Lemma sum_f_R0_skip (u : nat -> R) (n : nat) :
   sum_f_R0 (fun k => u (n - k)%nat) n = sum_f_R0 u n.
 Proof.
-  suff H : forall n m, (n < m)%nat 
+  suff H : forall n m, (n < m)%nat
     -> sum_f n m (fun k => u ((m - k) + n)%nat) = sum_f n m u.
-  
+
   case: n => [ | n] //.
   move: (H _ _ (lt_O_Sn n)) => {H} H.
   rewrite /sum_f in H.
@@ -566,7 +566,7 @@ Proof.
   rewrite /sum_f_R0 -/sum_f_R0 -IH.
   apply f_equal.
   by rewrite plus_0_r.
-  
+
   move => {n} n m H.
   elim: m u H => [ | m IH] u H //.
   apply lt_n_Sm_le, le_lt_eq_dec in H ; case: H IH => [H IH | -> _ {n}] //.
@@ -583,7 +583,7 @@ Proof.
   rewrite plus_0_l NPeano.Nat.sub_add ; intuition.
   rewrite IH ; try by intuition.
   by rewrite minus_diag plus_0_l.
-  
+
   rewrite /sum_f.
   rewrite -minus_Sn_m ; try by intuition.
   rewrite minus_diag.
@@ -1010,7 +1010,7 @@ Lemma Rabs_le_between_Rmax : forall x m M,
   m <= x <= M -> Rabs x <= Rmax M (-m).
 Proof.
   intros x m M Hx.
-  unfold Rabs ; 
+  unfold Rabs ;
   destruct Rcase_abs as [H|H].
   apply Rle_trans with (2 := RmaxLess2 _ _).
   apply Ropp_le_contravar, Hx.
@@ -1022,7 +1022,7 @@ Lemma Rabs_lt_between_Rmax : forall x m M,
   m < x < M -> Rabs x < Rmax M (-m).
 Proof.
   intros x m M Hx.
-  unfold Rabs ; 
+  unfold Rabs ;
   destruct Rcase_abs as [H|H].
   apply Rlt_le_trans with (2 := RmaxLess2 _ _).
   apply Ropp_lt_contravar, Hx.
@@ -1073,7 +1073,7 @@ Qed.
 
 Lemma is_pos_div_2 (eps : posreal) : 0 < eps / 2.
 Proof.
-  unfold Rdiv ; apply Rmult_lt_0_compat ; 
+  unfold Rdiv ; apply Rmult_lt_0_compat ;
   [apply eps | apply Rinv_0_lt_compat, Rlt_0_2].
 Qed.
 Definition pos_div_2 (eps : posreal) := mkposreal _ (is_pos_div_2 eps).
@@ -1091,7 +1091,7 @@ Definition sign (x : R) :=
 
 Lemma Ropp_sign (x : R) : sign (-x) = - sign x.
 Proof.
-  rewrite /sign ; 
+  rewrite /sign ;
   case: Rle_dec => H ; case: Rle_dec => H0.
   have: ~ (0 < - x).
     apply Rle_not_lt, Ropp_le_cancel ; intuition.
@@ -1148,7 +1148,7 @@ Proof.
   by ring_simplify.
   by apply Ropp_0_gt_lt_contravar.
   have Hy : 0 < y.
-  apply Rnot_le_lt ; 
+  apply Rnot_le_lt ;
   contradict Hxy ;
   apply Rle_not_lt.
   rewrite -(Rmult_0_r x).
@@ -1215,7 +1215,7 @@ Proof.
   move => Hab.
   suff Hn : 0 <= (b - a) / eps.
   set n : nat := nfloor ((b - a) / eps) Hn.
-  
+
   case: (Req_EM_T (INR n) ((b - a) / eps)) => Hdec.
 
   set l : seq R := mkseq (fun k => a + INR k * eps) (S n).
@@ -1259,7 +1259,7 @@ Proof.
   by apply lt_n_O in Hj.
   by apply lt_n_O in Hj.
   by apply IH, lt_S_n.
-  
+
   set l : seq R := rcons (mkseq (fun k => a + INR k * eps) (S n)) b.
   exists l.
   split.
@@ -1350,7 +1350,7 @@ Proof.
   case: l Hi Hl => /= [ | x0 l] Hi Hl.
   by apply lt_n_O in Hi.
   apply Hl ; by intuition.
-  
+
   elim: l Hl {i Hi} => [ | x0 l IH] Hl n m Hnm Hm.
   by apply lt_n_O in Hm.
   case: n m Hnm Hm => [ | n] m //= Hnm Hm.
@@ -1387,7 +1387,7 @@ Proof.
     [| case => s0 [t0 H]].
     elim: (s) (h) => {s h Hn IH} [| h s IH] h0.
       exists [::] ; by exists h0.
-    case: (IH h) => s0 [t0 H] ; exists (h0::s0) ; exists t0 ; 
+    case: (IH h) => s0 [t0 H] ; exists (h0::s0) ; exists t0 ;
     by rewrite rcons_cons -H.
   rewrite H ; apply Hr, IH, eq_add_S ; by rewrite -(size_rcons s0 t0) -H.
 Qed.
@@ -1399,7 +1399,7 @@ Proof.
     [| case => s0 [t0 H]].
     elim: s h => [| h s IH] h0.
       exists [::] ; by exists h0.
-    case: (IH h) => s0 [t0 H] ; exists (h0::s0) ; exists t0 ; 
+    case: (IH h) => s0 [t0 H] ; exists (h0::s0) ; exists t0 ;
     by rewrite rcons_cons -H.
   by rewrite H.
 Qed.
@@ -1408,13 +1408,13 @@ Proof.
   rewrite size_rcons /= ; apply lt_O_Sn.
 Qed.
 
-Lemma foldr_rcons {T T0 : Type} : forall (f : T0 -> T -> T) x0 s t, 
+Lemma foldr_rcons {T T0 : Type} : forall (f : T0 -> T -> T) x0 s t,
   foldr f x0 (rcons s t) = foldr f (f t x0) s.
 Proof.
   move => f x0 s ; elim: s x0 => //= t s IH x0 t0 ;
   by rewrite IH.
 Qed.
-Lemma foldl_rcons {T T0 : Type} : forall (f : T -> T0 -> T) x0 s t, 
+Lemma foldl_rcons {T T0 : Type} : forall (f : T -> T0 -> T) x0 s t,
   foldl f x0 (rcons s t) = f (foldl f x0 s) t.
 Proof.
   move => f x0 s ; elim: s x0 => //= t s IH x0 t0 ;
@@ -1510,7 +1510,7 @@ Lemma head_rcons {T : Type} (x0 : T) (s : seq T) (t : T) : head x0 (rcons s t) =
 Proof.
   case: s x0 t => //.
 Qed.
-Lemma behead_rcons {T : Type} (s : seq T) (t : T) : 
+Lemma behead_rcons {T : Type} (s : seq T) (t : T) :
   (0 < size s)%nat ->  behead (rcons s t) = rcons (behead s) t.
 Proof.
   case: s t => // t Hi ; contradict Hi ; apply lt_n_O.

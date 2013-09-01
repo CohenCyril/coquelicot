@@ -170,8 +170,8 @@ Proof.
   exists 0 ; by apply is_lim_exp_m.
 Qed.
 
-Lemma Lim_exp (x : Rbar) : 
-  Lim (fun y => exp y) x = 
+Lemma Lim_exp (x : Rbar) :
+  Lim (fun y => exp y) x =
     match x with
       | Finite x => exp x
       | p_infty => p_infty
