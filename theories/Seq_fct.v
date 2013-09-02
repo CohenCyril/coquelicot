@@ -33,9 +33,8 @@ Definition CVS_dom (fn : nat -> R -> R) (D : R -> Prop) :=
   forall x : R, D x -> ex_finite_lim_seq (fun n => fn n x).
 
 Definition CVU_dom (fn : nat -> R -> R) (D : R -> Prop) :=
-  forall eps : posreal, exists N : nat,
-  forall (n : nat) (x : R), D x -> (N <= n)%nat
-    -> Rabs ((fn n x) - real (Lim_seq (fun n => fn n x))) < (eps).
+  forall eps : posreal, eventually (fun n => forall x : R,
+    D x -> Rabs ((fn n x) - real (Lim_seq (fun n => fn n x))) < eps).
 Definition CVU_cauchy (fn : nat -> R -> R) (D : R -> Prop) :=
   forall eps : posreal, exists N : nat,
   forall (n m : nat) (x : R), D x -> (N <= n)%nat -> (N <= m)%nat
@@ -58,7 +57,7 @@ Proof.
     by apply Hcvu.
   move => [e He] /=.
   case: (Hcvu e He) => {Hcvu} N Hcvu.
-  exists N => n y Hy Hn.
+  exists N => n Hn y Hy.
   rewrite (is_lim_seq_unique (fun n0 : nat => fn n0 y) _ (Hf y Hy)).
   simpl.
   rewrite -/(Rminus (fn n y) (f y)) -Ropp_minus_distr' Rabs_Ropp.
@@ -67,7 +66,7 @@ Proof.
   move => e He ; set eps := mkposreal e He.
   case: (Hcvu eps) => {Hcvu} N Hcvu.
   exists N => n y Hn Hy.
-  move: (Hcvu n y Hy Hn).
+  move: (Hcvu n Hn y Hy).
   rewrite -(H y Hy) /=.
   by rewrite -Ropp_minus_distr' Rabs_Ropp.
 Qed.
@@ -102,7 +101,7 @@ Proof.
 (* CVU_cauchy -> CVU_dom *)
   rewrite /Lim_seq.
   case: (H (pos_div_2 eps)) => {H} N /= H.
-  exists N => n x Hx Hn.
+  exists N => n Hn x Hx.
   rewrite /LimSup_seq ; case: ex_LimSup_seq ; case => [ls | | ] /= Hls.
   rewrite /LimInf_seq ; case: ex_LimInf_seq ; case => [li | | ] /= Hli.
   replace (fn n x - (ls + li) / 2)
@@ -193,10 +192,10 @@ Lemma CVU_dom_include (fn : nat -> R -> R) (D1 D2 : R -> Prop) :
 Proof.
   move => H H1 eps.
   case: (H1 eps) => {H1} N H1.
-  exists N => n x Hx Hn.
-  apply: H1.
+  exists N => n Hn x Hx.
+  apply H1.
+  exact Hn.
   by apply H.
-  exact: Hn.
 Qed.
 
 (** ** Limits, integrals and differentiability *)
@@ -295,7 +294,7 @@ Proof.
     case: (Hfn (pos_div_2 (pos_div_2 eps))) => {Hfn} /= n1 Hfn.
     case: (H (pos_div_2 (pos_div_2 eps))) => {H} /= n2 H.
     set n := (n1 + n2)%nat.
-    move: (fun y Hy => Hfn n y Hy (le_plus_l _ _)) => {Hfn} Hfn.
+    move: (fun y Hy => Hfn n (le_plus_l _ _) y Hy) => {Hfn} Hfn.
     move: (H n (le_plus_r _ _)) => {H} H.
     move: (Hex x n Hx) => {Hex} Hex.
     apply Lim_correct' in Hex.
@@ -710,8 +709,8 @@ Proof.
     by apply compact_P3.
     by apply Cf.
   suff H : forall eps : posreal, exists N : nat,
-    forall (n : nat) (x : R), AB x ->
-    (N <= n)%nat -> Rabs (fn n x - Lim_seq (fun n0 : nat => fn n0 x)) < 5 * eps.
+    forall n : nat, (N <= n)%nat -> forall x : R, AB x ->
+    Rabs (fn n x - Lim_seq (fun n0 : nat => fn n0 x)) < 5 * eps.
     move => eps.
     replace (pos eps) with (5 * (eps / 5)) by field.
     suff He : 0 < eps / 5.
@@ -753,7 +752,7 @@ Proof.
     apply Hcvs ; by intuition.
     apply HN0 ; by intuition.
   case => N HN.
-  exists N => n x Hx Hn.
+  exists N => n Hn x Hx.
   have : exists i, (S i < seq.size a_)%nat /\ seq.nth 0 a_ i <= x <= seq.nth 0 a_ (S i).
     case: a_ Ha_ Ha_0 {HN} => [ | a0 a_] Ha_ /= Ha_0.
     contradict Hab.
