@@ -200,13 +200,11 @@ Qed.
 
 (** ** Limits, integrals and differentiability *)
 
-Definition is_open (D : R -> Prop) :=
-  forall x, D x -> locally x D.
-Definition is_connex (D : R -> Prop) :=
+Definition is_connected (D : R -> Prop) :=
   forall a b x, D a -> D b -> a <= x <= b -> D x.
 
 Lemma CVU_limits_open (fn : nat -> R -> R) (D : R -> Prop) :
-  is_open D
+  open D
   -> CVU_dom fn D
   -> (forall x n, D x -> ex_finite_lim (fn n) x)
   -> forall x, D x -> ex_finite_lim_seq (fun n => real (Lim (fn n) x))
@@ -214,7 +212,10 @@ Lemma CVU_limits_open (fn : nat -> R -> R) (D : R -> Prop) :
     /\ real (Lim_seq (fun n => real (Lim (fn n) x)))
       = real (Lim (fun y => real (Lim_seq (fun n => fn n y))) x).
 Proof.
-  move => Ho Hfn Hex x Hx.
+  move => Ho' Hfn Hex x Hx.
+  assert (Ho : forall x, D x -> locally x D).
+    now apply filter_open.
+  clear Ho'.
   have H : ex_finite_lim_seq (fun n : nat => real (Lim (fn n) x)).
     apply CVU_dom_cauchy in Hfn.
     apply ex_lim_seq_cauchy_corr => eps.
@@ -325,7 +326,7 @@ Proof.
   by apply sym_eq, (f_equal real), is_lim_unique.
 Qed.
 Lemma CVU_cont_open (fn : nat -> R -> R) (D : R -> Prop) :
-  is_open D ->
+  open D ->
   CVU_dom fn D ->
   (forall n, forall x, D x -> continuity_pt (fn n) x)
     -> forall x, D x -> continuity_pt (fun y => real (Lim_seq (fun n => fn n y))) x.
@@ -386,7 +387,7 @@ Lemma CVU_Rint (fn : nat -> R -> R) (a b : R) (Hab : a < b) :
   Lim_seq (fun n => RInt (fn n) a x) = RInt (fun y => Lim_seq (fun n => fn n y)) a x).
 *)
 Lemma CVU_Derive (fn : nat -> R -> R) (D : R -> Prop) :
-  is_open D -> is_connex D
+  open D -> is_connected D
   -> CVU_dom fn D
   -> (forall n x, D x -> ex_derive (fn n) x)
   -> (forall n x, D x -> continuity_pt (Derive (fn n)) x)
@@ -402,9 +403,11 @@ Proof.
     | right _ => (fn n (x+h) - fn n x)/h
   end.
 
-  have Ho' : forall x : R, D x -> is_open (fun h : R => D (x + h)).
-    move => x Hx h Hh.
-    case: (Ho _ Hh) => d Hd.
+  assert (Ho' : forall x : R, D x -> open (fun h : R => D (x + h))).
+    intros x Dx.
+    apply filter_open.
+    intros h Hh.
+    destruct (proj1 (filter_open D) Ho _ Hh) as [d Hd].
     exists d => /= y Hy.
     apply Hd ; simpl ; unfold distR ; ring_simplify (x + y - (x + h)).
     by apply Hy.
@@ -523,7 +526,7 @@ Proof.
   exists df => e He.
   apply is_lim_spec in H0.
   case: (H0 (mkposreal e He)) => {H0} /= delta H0.
-  case: (Ho x Hx) => {Ho} dx Ho.
+  destruct (proj1 (filter_open D) Ho x Hx) as [dx Hd].
   have H2 : 0 < Rmin delta dx.
     apply Rmin_case ; [by apply delta | by apply dx].
   exists (mkposreal _ H2) => /= h Hh0 Hh.
@@ -553,18 +556,18 @@ Proof.
 
   apply ex_finite_lim_seq_correct, CVU_CVS_dom with D.
   exact: Hfn.
-  apply Ho.
+  apply Hd.
   simpl.
   unfold distR.
   ring_simplify (x + h - x) ; apply Rlt_le_trans with (1 := Hh), Rmin_r.
   apply ex_finite_lim_seq_correct, CVU_CVS_dom with D.
   exact: Hfn.
-  apply Ho.
+  apply Hd.
   rewrite distance_refl.
   apply cond_pos.
   apply (CVU_CVS_dom fn D) in Hfn ; rewrite /CVS_dom in Hfn.
-  move: (fun H => Lim_seq_correct' _ (Hfn (x+h) (Ho _ H))) => F.
-  move: (fun H => Lim_seq_correct' _ (Hfn (x) (Ho _ H))) => F0.
+  move: (fun H => Lim_seq_correct' _ (Hfn (x+h) (Hd _ H))) => F.
+  move: (fun H => Lim_seq_correct' _ (Hfn (x) (Hd _ H))) => F0.
   rewrite (is_lim_seq_unique _ (real (Lim_seq (fun n : nat => fn n (x + h))))).
   rewrite (is_lim_seq_unique  (fun n : nat => fn n (x)) (real (Lim_seq (fun n : nat => fn n (x))))).
   easy.
@@ -577,8 +580,8 @@ Proof.
   ring_simplify (x + h - x).
   apply Rlt_le_trans with (1 := Hh), Rmin_r.
   apply (CVU_CVS_dom fn D) in Hfn ; rewrite /CVS_dom in Hfn.
-  move: (fun H => Lim_seq_correct' _ (Hfn (x+h) (Ho _ H))) => F.
-  move: (fun H => Lim_seq_correct' _ (Hfn (x) (Ho _ H))) => F0.
+  move: (fun H => Lim_seq_correct' _ (Hfn (x+h) (Hd _ H))) => F.
+  move: (fun H => Lim_seq_correct' _ (Hfn (x) (Hd _ H))) => F0.
   rewrite (is_lim_seq_unique _ (real (Lim_seq (fun n : nat => fn n (x + h))))).
   rewrite (is_lim_seq_unique  (fun n : nat => fn n (x)) (real (Lim_seq (fun n : nat => fn n (x))))).
   by [].
@@ -602,7 +605,7 @@ Proof.
   intros eps.
   apply is_lim_spec in H0.
   case: (H0 eps) => {H0} delta H0.
-  case: (Ho x Hx) => {Ho} dx Ho.
+  destruct (proj1 (filter_open D) Ho x Hx) as [dx Hd].
   have H2 : 0 < Rmin delta dx.
     apply Rmin_case ; [by apply delta | by apply dx].
   exists (mkposreal _ H2) => /= h Hh0 Hh.
@@ -632,19 +635,19 @@ Proof.
 
   apply ex_finite_lim_seq_correct, CVU_CVS_dom with D.
   exact: Hfn.
-  apply Ho.
+  apply Hd.
   simpl.
   unfold distR.
   ring_simplify (x + h - x) ; rewrite -(Rminus_0_r h) ;
   apply Rlt_le_trans with (1 := Hh0), Rmin_r.
   apply ex_finite_lim_seq_correct, CVU_CVS_dom with D.
   exact: Hfn.
-  apply Ho.
+  apply Hd.
   rewrite distance_refl.
   apply cond_pos.
   apply (CVU_CVS_dom fn D) in Hfn ; rewrite /CVS_dom in Hfn.
-  move: (fun H => Lim_seq_correct' _ (Hfn (x+h) (Ho _ H))) => F.
-  move: (fun H => Lim_seq_correct' _ (Hfn (x) (Ho _ H))) => F0.
+  move: (fun H => Lim_seq_correct' _ (Hfn (x+h) (Hd _ H))) => F.
+  move: (fun H => Lim_seq_correct' _ (Hfn (x) (Hd _ H))) => F0.
   rewrite (is_lim_seq_unique _ (real (Lim_seq (fun n : nat => fn n (x + h))))).
   rewrite (is_lim_seq_unique  (fun n : nat => fn n (x)) (real (Lim_seq (fun n : nat => fn n (x))))).
   easy.
@@ -658,8 +661,8 @@ Proof.
   rewrite Rminus_0_r in Hh0.
   apply Rlt_le_trans with (1 := Hh0), Rmin_r.
   apply (CVU_CVS_dom fn D) in Hfn ; rewrite /CVS_dom in Hfn.
-  move: (fun H => Lim_seq_correct' _ (Hfn (x+h) (Ho _ H))) => F.
-  move: (fun H => Lim_seq_correct' _ (Hfn (x) (Ho _ H))) => F0.
+  move: (fun H => Lim_seq_correct' _ (Hfn (x+h) (Hd _ H))) => F.
+  move: (fun H => Lim_seq_correct' _ (Hfn (x) (Hd _ H))) => F0.
   rewrite (is_lim_seq_unique _ (real (Lim_seq (fun n : nat => fn n (x + h))))).
   rewrite (is_lim_seq_unique  (fun n : nat => fn n (x)) (real (Lim_seq (fun n : nat => fn n (x))))).
   by [].

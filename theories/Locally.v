@@ -315,18 +315,25 @@ Qed.
 
 (** ** Open sets and filters *)
 
-Class FilterCompatibility {T} {TT : TopologicalSpace T} (F : T -> (T -> Prop) -> Prop) :=
-  filter_compat : forall P x, basis P -> P x -> F x P.
+Class FilterCompatibility {T} {TT : TopologicalSpace T} (F : T -> (T -> Prop) -> Prop) := {
+  filter_compat1 : forall P x, basis P -> P x -> F x P ;
+  filter_compat2 : forall P x, F x P -> exists Q, basis Q /\ Q x /\ forall y, Q y -> P y
+}.
 
 Lemma filter_open :
   forall {T} {TT : TopologicalSpace T},
   forall {F} {FF : forall x, Filter (F x)} {FC : FilterCompatibility F},
-  forall D, open D -> forall x, D x -> F x D.
+  forall D, open D <-> forall x, D x -> F x D.
 Proof.
-intros T TT F FF FC D OD x Dx.
-destruct (OD x Dx) as [P BP Px PD].
-apply filter_imp with (1 := PD).
-now apply FC.
+intros T TT F FF FC D.
+split.
+- intros OD x Dx.
+  destruct (OD x Dx) as [P BP Px PD].
+  apply filter_imp with (1 := PD).
+  now apply filter_compat1.
+- intros H x Dx.
+  destruct (filter_compat2 D x (H x Dx)) as [Q [BQ [Qx HQP]]].
+  now exists Q.
 Qed.
 
 (** ** Specific filters *)
@@ -508,15 +515,27 @@ Qed.
 Global Instance locally_compat :
   forall T (MT : MetricSpace T), FilterCompatibility locally.
 Proof.
-intros T MT P x [c [eps B]] Px.
-assert (H := proj2 (B x) Px).
-exists (mkposreal _ (Rlt_Rminus _ _ H)).
-simpl.
-intros z Hz.
-apply B.
-apply Rle_lt_trans with (1 := distance_triangle c x z).
-replace (pos eps) with (distance c x + (eps - distance c x)) by ring.
-now apply Rplus_lt_compat_l.
+intros T MT.
+split.
+- intros P x [c [eps B]] Px.
+  assert (H := proj2 (B x) Px).
+  exists (mkposreal _ (Rlt_Rminus _ _ H)).
+  simpl.
+  intros z Hz.
+  apply B.
+  apply Rle_lt_trans with (1 := distance_triangle c x z).
+  replace (pos eps) with (distance c x + (eps - distance c x)) by ring.
+  now apply Rplus_lt_compat_l.
+- intros P x [e He].
+  exists (ball x e).
+  repeat split.
+  exists x.
+  now exists e.
+  unfold ball.
+  rewrite distance_refl.
+  apply cond_pos.
+  intros y Hy.
+  now apply He.
 Qed.
 
 Definition locally' {T} {MT : MetricSpace T} (x : T) (P : T -> Prop) :=

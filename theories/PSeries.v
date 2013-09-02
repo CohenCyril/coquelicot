@@ -1619,7 +1619,8 @@ Proof.
 
   set D := (Boule x (mkposreal _ Hr)).
 
-  have Ho : is_open D.
+  assert (Ho : open D).
+    apply filter_open.
     move => y Hy.
     apply Rabs_lt_between' in Hy ; simpl in Hy.
     have H : 0 < Rmin ((x+Rmin r0 r1)-y) (y-(x-Rmin r0 r1)).
@@ -1639,7 +1640,7 @@ Proof.
     apply Rlt_le_trans with (1 := Hz).
     exact: Rmin_l.
 
-  have Hc : is_connex D.
+  have Hc : is_connected D.
     move => x0 y z Hx0 Hy Hx0yz.
     rewrite /D.
     case: Hx0yz => H1 H2.
@@ -1709,7 +1710,7 @@ Proof.
     case => [ | n] y Hy.
     simpl ; by apply continuity_pt_const => z.
     move => e He ; case: (Cdn n y Hy e He) => {Cdn} d [Hd Cdn].
-    case: (Ho y Hy) => d0 Hd0.
+    destruct (proj1 (filter_open D) Ho y Hy) as [d0 Hd0].
     have Hd1 : 0 < Rmin d d0.
       apply Rmin_case ; [exact: Hd | by apply d0].
     exists (mkposreal _ Hd1) ; split.
