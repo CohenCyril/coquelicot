@@ -1437,46 +1437,47 @@ now apply le_lt_trans with (1 := IH).
 Qed.
 
 Lemma is_lim_seq_subseq (u : nat -> R) (l : Rbar) (phi : nat -> nat) :
-  (forall n, (phi n < phi (S n))%nat) -> is_lim_seq u l
-    -> is_lim_seq (fun n => u (phi n)) l.
+  filterlim phi eventually eventually ->
+  is_lim_seq u l ->
+  is_lim_seq (fun n => u (phi n)) l.
 Proof.
 intros Hphi.
-apply filterlim_compose.
-now apply eventually_subseq.
+now apply filterlim_compose.
 Qed.
 Lemma ex_lim_seq_subseq (u : nat -> R) (phi : nat -> nat) :
-  (forall n, (phi n < phi (S n))%nat) -> ex_lim_seq u
-    -> ex_lim_seq (fun n => u (phi n)).
+  filterlim phi eventually eventually ->
+  ex_lim_seq u ->
+  ex_lim_seq (fun n => u (phi n)).
 Proof.
   move => Hphi [l Hu].
   exists l.
   by apply is_lim_seq_subseq.
 Qed.
 Lemma Lim_seq_subseq (u : nat -> R) (phi : nat -> nat) :
-  (forall n, (phi n < phi (S n))%nat) -> ex_lim_seq u
-    -> Lim_seq (fun n => u (phi n)) = Lim_seq u.
+  filterlim phi eventually eventually ->
+  ex_lim_seq u ->
+  Lim_seq (fun n => u (phi n)) = Lim_seq u.
 Proof.
   move => Hphi Hu.
   apply is_lim_seq_unique.
   apply is_lim_seq_subseq.
-  by apply Hphi.
+  exact Hphi.
   by apply Lim_seq_correct.
 Qed.
 
 Lemma is_lim_seq_incr_1 (u : nat -> R) (l : Rbar) :
   is_lim_seq u l <-> is_lim_seq (fun n => u (S n)) l.
 Proof.
-  split ; move => H.
-  apply is_lim_seq_subseq.
-  move => n ; by apply lt_n_Sn.
-  by apply H.
-  apply is_lim_seq_spec in H.
-  apply is_lim_seq_spec.
-  case: l H => [l | | ] H eps ;
-  case: (H eps) => {H} N H ;
-  exists (S N) ;
-  case => [ | n] Hn ; intuition ;
-  by apply le_Sn_0 in Hn.
+split ; intros H P HP ; destruct (H P HP) as [N HN].
+- exists N.
+  intros n Hn.
+  apply HN.
+  now apply le_S.
+- exists (S N).
+  intros n Hn.
+  destruct n as [|n] ; try easy.
+  apply HN.
+  now apply le_S_n.
 Qed.
 Lemma ex_lim_seq_incr_1 (u : nat -> R) :
   ex_lim_seq u <-> ex_lim_seq (fun n => u (S n)).
@@ -1743,34 +1744,90 @@ Qed.
 Lemma is_lim_seq_le (u v : nat -> R) (l1 l2 : Rbar) :
   (forall n, u n <= v n) -> is_lim_seq u l1 -> is_lim_seq v l2 -> Rbar_le l1 l2.
 Proof.
-  move => Heq Hu Hv.
-  apply (is_lim_seq_le_loc u v) => //.
-  by exists O.
+  intros H.
+  apply filterlim_le.
+  now apply filter_forall.
+Qed.
+
+Lemma filterlim_ge_p_infty :
+  forall {T F} {FF : Filter F} (f g : T -> R),
+  F (fun x => f x <= g x) ->
+  filterlim f F (Rbar_locally p_infty) ->
+  filterlim g F (Rbar_locally p_infty).
+Proof.
+intros T F FF f g H Hf.
+intros P [M HM].
+assert (H' : Rbar_locally p_infty (fun y => M < y)).
+  now exists M.
+unfold filtermap.
+generalize (filter_and _ _ H (Hf _ H')).
+apply filter_imp.
+intros x [H1 H2].
+apply HM.
+now apply Rlt_le_trans with (f x).
+Qed.
+
+Lemma filterlim_le_m_infty :
+  forall {T F} {FF : Filter F} (f g : T -> R),
+  F (fun x => g x <= f x) ->
+  filterlim f F (Rbar_locally m_infty) ->
+  filterlim g F (Rbar_locally m_infty).
+Proof.
+intros T F FF f g H Hf.
+intros P [M HM].
+assert (H' : Rbar_locally m_infty (fun y => y < M)).
+  now exists M.
+unfold filtermap.
+generalize (filter_and _ _ H (Hf _ H')).
+apply filter_imp.
+intros x [H1 H2].
+apply HM.
+now apply Rle_lt_trans with (f x).
+Qed.
+
+Lemma filterlim_le_le :
+  forall {T F} {FF : Filter F} (f g h : T -> R) (l : Rbar),
+  F (fun x => f x <= g x <= h x) ->
+  filterlim f F (Rbar_locally l) ->
+  filterlim h F (Rbar_locally l) ->
+  filterlim g F (Rbar_locally l).
+Proof.
+intros T F FF f g h l H Hf Hh.
+destruct l as [l| |].
+- intros P [eps He].
+  assert (H' : Rbar_locally l (fun y => Rabs (y - l) < eps)).
+    now exists eps.
+  unfold filterlim, filter_le, filtermap in Hf, Hh |- *.
+  generalize (filter_and _ _ H (filter_and _ _ (Hf _ H') (Hh _ H'))).
+  apply filter_imp.
+  intros x [H1 [H2 H3]].
+  apply He.
+  apply Rabs_lt_between'.
+  split.
+  apply Rlt_le_trans with (2 := proj1 H1).
+  now apply Rabs_lt_between'.
+  apply Rle_lt_trans with (1 := proj2 H1).
+  now apply Rabs_lt_between'.
+- apply filterlim_ge_p_infty with (2 := Hf).
+  apply: filter_imp H.
+  now intros x [H _].
+- apply filterlim_le_m_infty with (2 := Hh).
+  apply: filter_imp H.
+  now intros x [_ H].
+Qed.
+
+Lemma is_lim_seq_le_le_loc (u v w : nat -> R) (l : Rbar) :
+  eventually (fun n => u n <= v n <= w n) -> is_lim_seq u l -> is_lim_seq w l -> is_lim_seq v l.
+Proof.
+  apply filterlim_le_le.
 Qed.
 
 Lemma is_lim_seq_le_le (u v w : nat -> R) (l : Rbar) :
   (forall n, u n <= v n <= w n) -> is_lim_seq u l -> is_lim_seq w l -> is_lim_seq v l.
 Proof.
-  intros Hle Hu Hw.
-  apply is_lim_seq_spec in Hu.
-  apply is_lim_seq_spec in Hw.
-  apply is_lim_seq_spec.
-  destruct l as [l| |].
-  move => eps.
-  generalize (filter_and _ _ (Hu eps) (Hw eps)).
-  apply filter_imp.
-  move => {Hu Hw} n [Hu Hw].
-  apply Rabs_lt_between' in Hu.
-  apply Rabs_lt_between' in Hw.
-  apply Rabs_lt_between' ; split.
-  by apply Rlt_le_trans with (1 := proj1 Hu), Hle.
-  by apply Rle_lt_trans with (2 := proj2 Hw), Hle.
-  move => M ; case: (Hu M) => {Hu} N Hu.
-  exists N =>n Hn.
-  by apply Rlt_le_trans with (2 := proj1 (Hle _)), Hu.
-  move => M ; case: (Hw M) => {Hw} N Hw.
-  exists N =>n Hn.
-  by apply Rle_lt_trans with (1 := proj2 (Hle _)), Hw.
+  intros H.
+  apply filterlim_le_le.
+  now apply filter_forall.
 Qed.
 
 Lemma is_lim_seq_le_p_loc (u v : nat -> R) :
@@ -1778,14 +1835,7 @@ Lemma is_lim_seq_le_p_loc (u v : nat -> R) :
   is_lim_seq u p_infty ->
   is_lim_seq v p_infty.
 Proof.
-  intros H Hu.
-  apply is_lim_seq_spec in Hu.
-  apply is_lim_seq_spec.
-  intros M.
-  generalize (filter_and _ _ H (Hu M)).
-  apply filter_imp.
-  intros n [H' Hu'].
-  now apply Rlt_le_trans with (u n).
+  apply filterlim_ge_p_infty.
 Qed.
 
 Lemma is_lim_seq_le_m_loc (u v : nat -> R) :
@@ -1793,14 +1843,7 @@ Lemma is_lim_seq_le_m_loc (u v : nat -> R) :
   is_lim_seq u m_infty ->
   is_lim_seq v m_infty.
 Proof.
-  intros H Hu.
-  apply is_lim_seq_spec in Hu.
-  apply is_lim_seq_spec.
-  intros M.
-  generalize (filter_and _ _ H (Hu M)).
-  apply filter_imp.
-  intros n [H' Hu'].
-  now apply Rle_lt_trans with (u n).
+  apply filterlim_le_m_infty.
 Qed.
 
 Lemma is_lim_seq_decr_compare (u : nat -> R) (l : R) :

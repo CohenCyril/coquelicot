@@ -134,14 +134,14 @@ Qed.
 Lemma is_lim_exp_p : is_lim (fun y => exp y) p_infty p_infty.
 Proof.
   apply is_lim_le_p_loc with (fun y => 1 + y).
+  exists 0 => y Hy.
+  by apply Rlt_le, exp_ineq1.
   pattern p_infty at 2.
   replace p_infty with (Rbar_plus 1 p_infty) by auto.
   apply is_lim_plus.
   apply is_lim_const.
   apply is_lim_id.
   by [].
-  exists 0 => y Hy.
-  by apply Rlt_le, exp_ineq1.
 Qed.
 
 Lemma is_lim_exp_m : is_lim (fun y => exp y) m_infty 0.
@@ -189,6 +189,29 @@ Qed.
 Lemma is_lim_div_exp_p : is_lim (fun y => exp y / y) p_infty p_infty.
 Proof.
   apply is_lim_le_p_loc with (fun y => (1 + y + y^2 / 2)/y).
+  exists 0 => y Hy.
+  apply Rmult_le_compat_r.
+  by apply Rlt_le, Rinv_0_lt_compat.
+  rewrite /exp.
+  rewrite /exist_exp.
+  case: Alembert_C3 => /= x Hx.
+  rewrite /Pser /infinite_sum in Hx.
+  apply Rnot_lt_le => H.
+  case: (Hx _ (proj1 (Rminus_lt_0 _ _) H)) => N {Hx} Hx.
+  move: (Hx _ (le_plus_r 2 N)) => {Hx}.
+  apply Rle_not_lt.
+  apply Rle_trans with (2 := Rle_abs _).
+  apply Rplus_le_compat_r.
+  elim: N => [ | n IH].
+  simpl ; apply Req_le ; field.
+  apply Rle_trans with (1 := IH).
+  rewrite -plus_n_Sm ; move: (2 + n)%nat => {n IH} n.
+  rewrite /sum_f_R0 -/sum_f_R0.
+  rewrite Rplus_comm ; apply Rle_minus_l ; rewrite Rminus_eq_0.
+  apply Rmult_le_pos.
+  apply Rlt_le, Rinv_0_lt_compat, INR_fact_lt_0.
+  apply pow_le.
+  by apply Rlt_le.
   evar (l : Rbar).
   pattern p_infty at 2.
   replace p_infty with l.
@@ -216,29 +239,6 @@ Proof.
   rewrite /l /=.
   case: Rle_dec (Rlt_le _ _ (Rinv_0_lt_compat 2 (Rlt_0_2))) => //= H _.
   case: Rle_lt_or_eq_dec (Rlt_not_eq _ _ (Rinv_0_lt_compat 2 (Rlt_0_2))) => //= H _.
-  exists 0 => y Hy.
-  apply Rmult_le_compat_r.
-  by apply Rlt_le, Rinv_0_lt_compat.
-  rewrite /exp.
-  rewrite /exist_exp.
-  case: Alembert_C3 => /= x Hx.
-  rewrite /Pser /infinite_sum in Hx.
-  apply Rnot_lt_le => H.
-  case: (Hx _ (proj1 (Rminus_lt_0 _ _) H)) => N {Hx} Hx.
-  move: (Hx _ (le_plus_r 2 N)) => {Hx}.
-  apply Rle_not_lt.
-  apply Rle_trans with (2 := Rle_abs _).
-  apply Rplus_le_compat_r.
-  elim: N => [ | n IH].
-  simpl ; apply Req_le ; field.
-  apply Rle_trans with (1 := IH).
-  rewrite -plus_n_Sm ; move: (2 + n)%nat => {n IH} n.
-  rewrite /sum_f_R0 -/sum_f_R0.
-  rewrite Rplus_comm ; apply Rle_minus_l ; rewrite Rminus_eq_0.
-  apply Rmult_le_pos.
-  apply Rlt_le, Rinv_0_lt_compat, INR_fact_lt_0.
-  apply pow_le.
-  by apply Rlt_le.
 Qed.
 
 Lemma is_lim_mul_exp_m : is_lim (fun y => y * exp y) m_infty 0.
@@ -360,16 +360,7 @@ Proof.
     apply Rmin_case.
     apply Rlt_0_1.
     apply Hx.
-  search_lim.
   apply (is_lim_le_le_loc (fun _ => 0) (fun y => 2/sqrt y)).
-  apply is_lim_const.
-  search_lim.
-  apply is_lim_div.
-  apply is_lim_const.
-  apply is_lim_sqrt_p.
-  by [].
-  by [].
-  simpl ; by rewrite Rmult_0_r.
   exists 1 => x Hx.
   split.
   apply Rdiv_le_0_compat.
@@ -403,7 +394,14 @@ Proof.
   by apply Rlt_trans with (1 := Rlt_0_1).
   apply sqrt_lt_R0.
   by apply Rlt_trans with (1 := Rlt_0_1).
+  apply is_lim_const.
+  search_lim.
+  apply is_lim_div.
+  apply is_lim_const.
+  apply is_lim_sqrt_p.
   by [].
+  by [].
+  simpl ; by rewrite Rmult_0_r.
 Qed.
 
 Lemma is_lim_div_ln1p_0 : is_lim (fun y => ln (1+y) / y) 0 1.

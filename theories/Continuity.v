@@ -655,50 +655,27 @@ Proof.
 Qed.
 
 Lemma is_lim_le_p_loc (f g : R -> R) (x : Rbar) :
-  is_lim f x p_infty
-  -> Rbar_locally' x (fun y => f y <= g y)
-  -> is_lim g x p_infty.
+  Rbar_locally' x (fun y => f y <= g y) ->
+  is_lim f x p_infty ->
+  is_lim g x p_infty.
 Proof.
-  intros Hf Hfg.
-  apply is_lim_spec in Hf.
-  apply is_lim_spec.
-  intros M.
-  generalize (filter_and _ _ Hfg (Hf M)).
-  apply filter_imp => {Hfg Hf} y [Hf Hg].
-  now apply Rlt_le_trans with (f y).
+  apply filterlim_ge_p_infty.
 Qed.
 
 Lemma is_lim_le_m_loc (f g : R -> R) (x : Rbar) :
-  is_lim f x m_infty
-  -> Rbar_locally' x (fun y => g y <= f y)
-  -> is_lim g x m_infty.
+  Rbar_locally' x (fun y => g y <= f y) ->
+  is_lim f x m_infty ->
+  is_lim g x m_infty.
 Proof.
-  intros Hf Hfg.
-  apply is_lim_spec in Hf.
-  apply is_lim_spec.
-  intros M.
-  generalize (filter_and _ _ Hfg (Hf M)).
-  apply filter_imp => {Hfg Hf} y [Hf Hg].
-  now apply Rle_lt_trans with (f y).
+  apply filterlim_le_m_infty.
 Qed.
 
-Lemma is_lim_le_le_loc (f g h : R -> R) (x : Rbar) (l : R) :
-  is_lim f x l -> is_lim g x l
-  -> Rbar_locally' x (fun y => f y <= h y <= g y)
-  -> is_lim h x l.
+Lemma is_lim_le_le_loc (f g h : R -> R) (x : Rbar) (l : Rbar) :
+  Rbar_locally' x (fun y => f y <= h y <= g y) ->
+  is_lim f x l -> is_lim g x l ->
+  is_lim h x l.
 Proof.
-  intros Hf Hg H.
-  apply is_lim_spec in Hf.
-  apply is_lim_spec in Hg.
-  apply is_lim_spec.
-  intros eps.
-  generalize (filter_and _ _ H (filter_and _ _ (Hf eps) (Hg eps))).
-  apply filter_imp => {H Hf Hg} y [H [Hf Hg]].
-  apply Rabs_lt_between' ; split.
-  apply Rlt_le_trans with (2 := proj1 H).
-  by apply Rabs_lt_between', Hf.
-  apply Rle_lt_trans with (1 := proj2 H).
-  by apply Rabs_lt_between', Hg.
+  apply filterlim_le_le.
 Qed.
 
 (** ** Generalized intermediate value theorem *)
