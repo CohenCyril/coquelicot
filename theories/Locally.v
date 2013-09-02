@@ -173,6 +173,7 @@ Qed.
 Definition filtermap {T U : Type} (f : T -> U) (F : (T -> Prop) -> Prop) :=
   fun P => F (fun x => P (f x)).
 
+(*
 Global Instance filtermap_filter :
   forall T U (f : T -> U) (F : (T -> Prop) -> Prop),
   Filter F -> Filter (filtermap f F).
@@ -190,6 +191,7 @@ constructor.
   now apply H.
   exact HP.
 Qed.
+*)
 
 (** ** Continuity expressed with filters *)
 
@@ -202,7 +204,6 @@ Lemma filterlim_compose :
   filterlim (fun x => g (f x)) F H.
 Proof.
 intros T U V f g F G H FG GH P HP.
-unfold filtermap.
 apply (FG (fun x => P (g x))).
 now apply GH.
 Qed.
@@ -215,8 +216,8 @@ Lemma filterlim_ext_loc :
 Proof.
 intros T U F G FF f g Efg Lf P GP.
 specialize (Lf P GP).
-unfold filtermap.
 generalize (filter_and _ _ Efg Lf).
+unfold filtermap.
 apply filter_imp.
 now intros x [-> H].
 Qed.
@@ -966,7 +967,6 @@ Lemma filterlim_locally :
   forall eps : posreal, F (fun x => distance y (f x) < eps).
 Proof.
 intros T U MU F FF f y.
-unfold filterlim, filter_le, filtermap.
 split.
 - intros Cf eps.
   apply (Cf (fun x => distance y x < eps)).
