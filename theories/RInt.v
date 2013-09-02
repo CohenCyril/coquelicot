@@ -1699,6 +1699,8 @@ Proof.
 
     Focus 2.
     suff H : is_lim_seq (RInt_val f b a) (-If).
+      apply is_lim_seq_spec in H.
+      apply is_lim_seq_spec.
       move => eps ; case: (H eps) => {H} N H ; exists N => n Hn.
       rewrite RInt_val_swap.
       replace (- RInt_val f b a n - If) with (- (RInt_val f b a n - - If)) by ring.
@@ -1721,6 +1723,7 @@ Proof.
       move => n ; rewrite /RInt_val ; field ; apply Rgt_not_eq ; by intuition.
     rewrite -Hab in Hex |- * => {Hab b}.
     replace If with 0.
+    apply is_lim_seq_spec.
     move => eps ; exists O => n _.
     rewrite H.
     rewrite Rminus_0_r Rabs_R0 ; apply eps.
@@ -1749,6 +1752,7 @@ Proof.
     rewrite /Rmin ; by case: Rle_dec (Rle_refl a).
     rewrite /Rmax ; by case: Rle_dec (Rle_refl a).
 (* * Preuve dans la cas a < b *)
+  apply is_lim_seq_spec.
   move => eps.
   case: (Hex eps) => {Hex} alpha Hex.
 (* ** Trouver N *)

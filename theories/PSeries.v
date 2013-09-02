@@ -65,9 +65,11 @@ Lemma is_pseries_Reals (a : nat -> R) (x l : R) :
 Proof.
   split => H.
   move => e He ; set eps := mkposreal e He.
+  apply is_lim_seq_spec in H.
   case: (H eps) => {H} N H.
   exists N => n Hn.
   by apply H.
+  apply is_lim_seq_spec.
   move => eps.
   case: (H eps (cond_pos eps)) => {H} N H.
   exists N => n Hn.
@@ -269,6 +271,7 @@ Proof.
   apply lub => x Hx.
   apply Hb.
   apply ex_series_lim_0 in Hx.
+  apply is_lim_seq_spec in Hx.
   case: (Hx (mkposreal _ Rlt_0_1)) => /= {Hx} N Hx.
 
   set M := fix f N := match N with
@@ -324,6 +327,7 @@ Proof.
     by rewrite Rabs_mult RPow_abs Rabs_Rabsolu -Rabs_mult.
   contradict H.
 
+  apply is_lim_seq_spec in H.
   case: (H (mkposreal _ Rlt_0_1)) => /= {Hx} N Hx.
 
   set M := fix f N := match N with
@@ -569,6 +573,7 @@ Proof.
   apply Lim_seq_correct' in Hr ;
   rewrite -/(Series (fun n : nat => Rabs (a n * r ^ n))) in Hr.
   move => e He.
+  apply is_lim_seq_spec in Hr.
   case: (Hr (mkposreal e He)) => /= {Hr} N Hr.
   exists N => n Hn.
   replace (sum_f_R0 (fun k : nat => Rabs (Rabs (a k * r ^ k))) n)
@@ -603,7 +608,9 @@ Proof.
     apply H0 ; rewrite /Boule Rabs_pos_eq Rminus_0_r.
     by apply Hy.
     by apply Rlt_le, Hy.
-    exists l => eps.
+    exists l.
+    apply is_lim_seq_spec.
+    intros eps.
     case: (H eps (cond_pos eps)) => N {H} H.
     exists N => n Hn.
     replace (sum_f_R0 (fun k : nat => An k) n)
@@ -1009,11 +1016,14 @@ Lemma is_pseries_decr_1 (a : nat -> R) (x l : R) :
   x <> 0 -> is_pseries a x l
     -> is_pseries (PS_decr_1 a) x ((l - a O) / x).
 Proof.
-  move => Hx Ha eps.
+  move => Hx Ha.
+  apply is_lim_seq_spec.
+  intros eps.
   have He : 0 < eps * Rabs x.
     apply Rmult_lt_0_compat.
     by apply eps.
     by apply Rabs_pos_lt.
+  apply is_lim_seq_spec in Ha.
   case: (Ha (mkposreal _ He)) => /= {Ha} N Ha.
   exists N => n Hn.
   rewrite /PS_decr_1.
@@ -1267,6 +1277,8 @@ rewrite /is_pseries.
   move => <- ; simpl ; ring.
   apply (is_lim_seq_plus _ _ l1 (x*l2)).
 (* a(2k)x^(2k) *)
+  apply is_lim_seq_spec in H1.
+  apply is_lim_seq_spec.
   move => eps ; case: (H1 eps) => {H1} N H1.
   exists (double N) => n Hn.
   apply H1.
@@ -1289,6 +1301,8 @@ rewrite /is_pseries.
   by apply le_S_n, le_S_n.
 (* a(2k+1)x^(2k+1) *)
   apply (is_lim_seq_scal_l _ x l2) => //.
+  apply is_lim_seq_spec in H2.
+  apply is_lim_seq_spec.
   move => eps ; case: (H2 eps) => {H1 H2} N H2.
   exists (S (double N)) => n Hn.
   case: n Hn => [ | n] Hn.
@@ -1506,6 +1520,7 @@ Proof.
     apply Rgt_not_eq, Rdiv_lt_0_compat.
     by apply lt_0_INR, lt_O_Sn.
     apply Rlt_trans with y ; by apply Hy.
+    apply is_lim_seq_spec.
     move => eps.
     case: (nfloor_ex (/eps)) => [ | N HN].
     by apply Rlt_le, Rinv_0_lt_compat, eps.
@@ -1548,6 +1563,7 @@ Proof.
     apply Rlt_le, Rdiv_lt_0_compat.
     by apply Hy.
     apply Rlt_trans with y ; by apply Hy.
+    apply is_lim_seq_spec in H2.
     case: (H2 (mkposreal _ (Rlt_0_1))) ;
     simpl pos => {H2} N HN.
     set My := fix f n := match n with
@@ -1742,6 +1758,7 @@ Proof.
   move => y Hy.
   apply sym_eq.
   apply is_lim_seq_unique.
+  apply is_lim_seq_spec.
   move => eps.
   case: (Hr1 eps (cond_pos eps)) => {Hr1} N Hr1.
   exists N => n Hn.
@@ -1750,6 +1767,7 @@ Proof.
   move => y Hy.
   apply sym_eq.
   apply is_lim_seq_unique.
+  apply is_lim_seq_spec.
   move => eps.
   case: (Hr0 eps (cond_pos eps)) => {Hr0} N Hr0.
   exists N => n Hn.
@@ -1758,6 +1776,7 @@ Proof.
   move => y Hy.
   apply sym_eq.
   apply is_lim_seq_unique.
+  apply is_lim_seq_spec.
   move => eps.
   case: (Hr1 eps (cond_pos eps)) => {Hr1} N Hr1.
   exists N => n Hn.
@@ -1970,6 +1989,8 @@ Proof.
    move: (Hw _ Hx (fun x => f (-x)) Hf (Ropp_0_gt_lt_contravar _ Hx')) => {Hw} Hw.
    rewrite Ropp_involutive in Hw.
 
+    apply is_lim_seq_spec in Hw.
+    apply is_lim_seq_spec.
     move => eps.
     case: (Hw eps) => {Hw} N Hw.
     exists N => n Hn.
@@ -2042,6 +2063,7 @@ Proof.
     apply Rabs_lt_between.
     by split.
 
+  apply is_lim_seq_spec.
   move => eps.
   have : exists N, forall n, (N <= n)%nat -> r ^ (S n) * M / INR (fact (S n)) < eps.
     have H : is_lim_seq (fun n => r ^ n * M / INR (fact n)) 0.
@@ -2085,6 +2107,7 @@ Proof.
     move => n ; rewrite /Rdiv ; ring.
     exact: is_lim_seq_const.
     apply is_lim_seq_incr_1 in H.
+    apply is_lim_seq_spec in H.
     case: (H eps) => {H} N H.
     exists N => n Hn.
     apply Rle_lt_trans with (2 := H n Hn).

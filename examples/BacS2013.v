@@ -23,7 +23,7 @@ COPYING file for more details.
 (** https://www.lri.fr/~lelay/Bac2013/Bac_S_2013_Metropole.pdf *)
 
 Require Import Reals ssreflect.
-Require Import Rcomplements Rbar.
+Require Import Rcomplements Rbar Locally.
 Require Import Derive RInt Continuity Limit ElemFct.
 
 Ltac pos_rat :=
@@ -137,6 +137,13 @@ Qed.
 
 (** 2.b. *)
 
+(*
+Lemma filterlim_abs_0 :
+  forall f : R -> R,
+  is_lim (fun x => f (Rabs x)) 0 <->
+  filterlim
+*)
+
 Lemma Lim_f_0 : is_lim (fun x => f (Rabs x)) 0 m_infty.
 Proof.
   search_lim.
@@ -145,10 +152,14 @@ Proof.
   apply is_lim_plus.
   by apply is_lim_const.
   apply is_lim_scal_l.
+  eapply filterlim_compose.
+  apply filterlim_abs_0.
   by apply is_lim_ln_0.
   simpl ;
   case: Rle_dec (Rlt_le _ _ Rlt_0_2) => // H _ ;
   case: Rle_lt_or_eq_dec (Rlt_not_eq _ _ Rlt_0_2) => //.
+  eapply filterlim_compose.
+  apply filterlim_abs_0.
   by apply is_lim_Rinv_0.
   simpl ;
   case: Rle_dec (Rlt_le _ _ Rlt_0_2) => // H _ ;

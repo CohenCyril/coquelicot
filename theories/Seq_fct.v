@@ -49,7 +49,9 @@ Lemma CVU_dom_Reals (fn : nat -> R -> R) (f : R -> R) (x : R) (r : posreal) :
 Proof.
   split ; move => Hcvu.
   have Hf : forall y, Boule x r y -> is_lim_seq (fun n => fn n y) (f y).
-    move => y Hy [e He] /=.
+    move => y Hy.
+    apply is_lim_seq_spec.
+    move => [e He] /=.
     case: (Hcvu e He) => {Hcvu} N Hcvu.
     exists N => n Hn.
     rewrite -Ropp_minus_distr' Rabs_Ropp.
@@ -76,7 +78,9 @@ Lemma CVU_CVS_dom (fn : nat -> R -> R) (D : R -> Prop) :
   CVU_dom fn D -> CVS_dom fn D.
 Proof.
   move => Hcvu x Hx.
-  exists (real (Lim_seq (fun n => fn n x))) => eps.
+  exists (real (Lim_seq (fun n => fn n x))).
+  apply is_lim_seq_spec.
+  intros eps.
   case: (Hcvu eps) => {Hcvu} N Hcvu.
   exists N => n Hn.
   by apply Hcvu.
@@ -221,6 +225,8 @@ Proof.
     rewrite (is_lim_unique _ _ _ Hex_n).
     case: (Hex x m Hx) => {Hex} lm Hex_m ;
     rewrite (is_lim_unique _ _ _ Hex_m).
+    apply is_lim_spec in Hex_n.
+    apply is_lim_spec in Hex_m.
     case: (Hex_n (pos_div_2 (pos_div_2 eps))) => {Hex_n} /= dn Hex_n.
     case: (Hex_m (pos_div_2 (pos_div_2 eps))) => {Hex_m} /= dm Hex_m.
     case: (Ho x Hx) => {Ho} d0 Ho.
@@ -283,7 +289,9 @@ Proof.
   apply Lim_seq_correct' in H.
   move: (real (Lim_seq (fun n : nat => real (Lim (fn n) x)))) H => l H.
   have H0 : is_lim (fun y : R => real (Lim_seq (fun n : nat => fn n y))) x l.
+    apply is_lim_spec.
     move => eps.
+    apply is_lim_seq_spec in H.
     case: (Hfn (pos_div_2 (pos_div_2 eps))) => {Hfn} /= n1 Hfn.
     case: (H (pos_div_2 (pos_div_2 eps))) => {H} /= n2 H.
     set n := (n1 + n2)%nat.
@@ -291,6 +299,7 @@ Proof.
     move: (H n (le_plus_r _ _)) => {H} H.
     move: (Hex x n Hx) => {Hex} Hex.
     apply Lim_correct' in Hex.
+    apply is_lim_spec in Hex.
     case: (Hex (pos_div_2 eps)) => {Hex} /= d1 Hex.
     case: (Ho x Hx) => {Ho} /= d0 Ho.
     have Hd : 0 < Rmin d0 d1.
@@ -325,7 +334,9 @@ Proof.
   move => Ho Hfn Hc x Hx.
   case: (fun H => CVU_limits_open fn D Ho Hfn H x Hx)
     => [{x Hx} x n Hx | Hex_s [Hex_f Heq]].
-  exists (fn n x) => eps.
+  exists (fn n x).
+  apply is_lim_spec.
+  intros eps.
   case: (Hc n x Hx eps (cond_pos eps)) => {Hc} d [Hd Hc].
   exists (mkposreal d Hd) => /= y Hy Hxy.
   apply (Hc y).
@@ -339,6 +350,7 @@ Proof.
   replace (Lim_seq (fun n : nat => real (Lim (fn n) x)))
     with (Lim_seq (fun n : nat => (fn n) x)) in Hex_f.
   move => e He.
+  apply is_lim_spec in Hex_f.
   case: (Hex_f (mkposreal e He)) => {Hex_f} /= delta Hex_f.
   exists delta ; split => [ | y [[_ Hxy] Hy]].
   by apply delta.
@@ -348,6 +360,7 @@ Proof.
   apply Lim_seq_ext => n.
   replace (fn n x) with (real (fn n x)) by auto.
   apply sym_eq, f_equal, is_lim_unique.
+  apply is_lim_spec.
   move => eps.
   case: (Hc n x Hx eps (cond_pos eps)) => {Hc} d [Hd Hc].
   exists (mkposreal d Hd) => /= y Hy Hxy.
@@ -400,6 +413,7 @@ Proof.
   have Crn : forall x, D x -> forall n h, D (x+h) -> is_lim (rn x n) h (rn x n h).
     move => x Hx n h Hh.
     rewrite {2}/rn ; case: (Req_EM_T h 0) => [-> | Hh0].
+    apply is_lim_spec.
     move => eps.
     suff H : @locally _ R_metric 0 (fun y : R => y <> 0 ->
       Rabs ((fn n (x + y) - fn n x) / y - Derive (fn n) x) < eps).
@@ -426,6 +440,7 @@ Proof.
       exact: derivable_pt_id.
       exact: Hh0.
 
+    apply is_lim_spec.
     move => eps.
     case: (H eps (cond_pos eps)) => {H} d [Hd H].
     have Hd0 : 0 < Rmin d (Rabs h).
@@ -507,6 +522,7 @@ Proof.
   split.
   case: H0 => df H0.
   exists df => e He.
+  apply is_lim_spec in H0.
   case: (H0 (mkposreal e He)) => {H0} /= delta H0.
   case: (Ho x Hx) => {Ho} dx Ho.
   have H2 : 0 < Rmin delta dx.
@@ -582,7 +598,10 @@ Proof.
   rewrite H1.
   case: H0 => drn H0.
   rewrite (is_lim_unique _ _ _ H0).
-  apply f_equal, is_lim_unique => eps.
+  apply f_equal, is_lim_unique.
+  apply is_lim_spec.
+  intros eps.
+  apply is_lim_spec in H0.
   case: (H0 eps) => {H0} delta H0.
   case: (Ho x Hx) => {Ho} dx Ho.
   have H2 : 0 < Rmin delta dx.
@@ -660,7 +679,9 @@ Proof.
   have Hx' : D (x + 0).
     by rewrite Rplus_0_r.
   rewrite (is_lim_unique _ _ _ (Crn x Hx n 0 Hx')).
+  apply is_lim_spec.
   move: (Crn x Hx n 0 Hx') => H2 eps.
+  apply is_lim_spec in H2.
   case: (H2 eps) => {H2} delta H2.
   exists delta => y Hy Hy0.
   move: (H2 y Hy Hy0).
@@ -713,6 +734,7 @@ Proof.
     elim: (a_) (a0) Ha_0 => /= [ | x1 l IH] x0 Hl.
     move: (Hcvs x0 (Hl O (lt_n_Sn _))) ;
     move/Lim_seq_correct' => {Hcvs} Hcvs.
+    apply is_lim_seq_spec in Hcvs.
     case: (Hcvs eps) => {Hcvs} N Hcvs.
     exists N => n i Hn Hi.
     case: i Hi => /= [ | i] Hi.
@@ -724,6 +746,7 @@ Proof.
     move => N0 HN0.
     move: (Hcvs x0 (Hl O (lt_O_Sn _))) ;
     move/Lim_seq_correct' => {Hcvs} Hcvs.
+    apply is_lim_seq_spec in Hcvs.
     case: (Hcvs eps) => {Hcvs} N Hcvs.
     exists (N + N0)%nat => n i Hn Hi.
     case: i Hi => /= [ | i ] Hi.
@@ -882,6 +905,7 @@ Proof.
   apply Rminus_lt_0 in Hx.
   set r0 := mkposreal _ Hx.
   exists r0 => e He ; set eps := mkposreal e He.
+  apply is_lim_seq_spec in H2.
   case: (H2 eps) => {H2} N H2.
   exists N => n y Hn Hy.
 

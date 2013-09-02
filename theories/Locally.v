@@ -1218,7 +1218,7 @@ Qed.
 
 (** * Filters for Rbar *)
 
-Definition Rbar_locally (a : Rbar) (P : R -> Prop) :=
+Definition Rbar_locally' (a : Rbar) (P : R -> Prop) :=
   match a with
     | Finite a => exists delta : posreal,
 	forall x, Rabs (x-a) < delta -> x <> a -> P x
@@ -1226,8 +1226,8 @@ Definition Rbar_locally (a : Rbar) (P : R -> Prop) :=
     | m_infty => exists M : R, forall x, x < M -> P x
   end.
 
-Global Instance Rbar_locally_filter :
-  forall x, ProperFilter (Rbar_locally x).
+Global Instance Rbar_locally'_filter :
+  forall x, ProperFilter (Rbar_locally' x).
 Proof.
 intros [x| |] ; (constructor ; [idtac | constructor]).
 - intros P [eps HP].
@@ -1300,31 +1300,30 @@ intros [x| |] ; (constructor ; [idtac | constructor]).
   now apply HP.
 Qed.
 
-Definition Rbar_locally' (a : Rbar) (P : R -> Prop) :=
+Definition Rbar_locally (a : Rbar) (P : R -> Prop) :=
   match a with
-    | Finite a => exists delta : posreal,
-	forall x, Rabs (x-a) < delta -> P x
+    | Finite a => locally a P
     | p_infty => exists M : R, forall x, M < x -> P x
     | m_infty => exists M : R, forall x, x < M -> P x
   end.
 
-Global Instance Rbar_locally'_filter :
-  forall x, ProperFilter (Rbar_locally' x).
+Global Instance Rbar_locally_filter :
+  forall x, ProperFilter (Rbar_locally x).
 Proof.
 intros [x| |].
-- apply: locally_filter.
-- exact (Rbar_locally_filter p_infty).
-- exact (Rbar_locally_filter m_infty).
+- apply locally_filter.
+- exact (Rbar_locally'_filter p_infty).
+- exact (Rbar_locally'_filter m_infty).
 Qed.
 
-Lemma Rbar_locally_le :
-  forall x, filter_le (Rbar_locally x) (Rbar_locally' x).
+Lemma Rbar_locally'_le :
+  forall x, filter_le (Rbar_locally' x) (Rbar_locally x).
 Proof.
 intros [x| |] P [eps HP] ; exists eps ; intros ; now apply HP.
 Qed.
 
-Lemma Rbar_locally_le_finite :
-  forall x : R, filter_le (Rbar_locally x) (locally x).
+Lemma Rbar_locally'_le_finite :
+  forall x : R, filter_le (Rbar_locally' x) (locally x).
 Proof.
 intros x P [eps HP] ; exists eps ; intros ; now apply HP.
 Qed.
@@ -1414,7 +1413,7 @@ intros [y| |].
 Qed.
 
 Lemma open_Rbar_lt' :
-  forall x y, Rbar_lt x y -> Rbar_locally' x (fun u => Rbar_lt u y).
+  forall x y, Rbar_lt x y -> Rbar_locally x (fun u => Rbar_lt u y).
 Proof.
 intros [x| |] y Hxy.
 - change (locally x (fun u => Rbar_lt u y)).
@@ -1428,7 +1427,7 @@ intros [x| |] y Hxy.
 Qed.
 
 Lemma open_Rbar_gt' :
-  forall x y, Rbar_lt y x -> Rbar_locally' x (fun u => Rbar_lt y u).
+  forall x y, Rbar_lt y x -> Rbar_locally x (fun u => Rbar_lt y u).
 Proof.
 intros [x| |] y Hxy.
 - change (locally x (fun u => Rbar_lt y u)).
@@ -1450,7 +1449,7 @@ Definition Rbar_loc_seq (x : Rbar) (n : nat) := match x with
   end.
 
 Lemma filterlim_Rbar_loc_seq :
-  forall x, filterlim (Rbar_loc_seq x) eventually (Rbar_locally x).
+  forall x, filterlim (Rbar_loc_seq x) eventually (Rbar_locally' x).
 Proof.
   intros x P.
   unfold Rbar_loc_seq.

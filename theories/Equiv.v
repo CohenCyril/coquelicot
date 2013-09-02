@@ -460,8 +460,8 @@ Qed.
 Lemma filterlim_equiv :
   forall {T} {F : (T -> Prop) -> Prop} {FF : Filter F} (f g : T -> R) (l : Rbar),
   is_equiv F f g ->
-  filterlim f F (Rbar_locally' l) ->
-  filterlim g F (Rbar_locally' l).
+  filterlim f F (Rbar_locally l) ->
+  filterlim g F (Rbar_locally l).
 Proof.
 intros T F FF f g [l| |] Hfg Hf P [eps HP] ;
   apply equiv_sym in Hfg ;
@@ -472,7 +472,7 @@ intros T F FF f g [l| |] Hfg Hf P [eps HP] ;
   apply Rplus_le_lt_0_compat.
   apply Rabs_pos.
   apply Rlt_0_1.
-  assert (Hl: Rbar_locally' l (fun y : R => Rabs (y - l) < eps/2 /\ Rabs y <= Rabs l + 1)).
+  assert (Hl: Rbar_locally l (fun y : R => Rabs (y - l) < eps/2 /\ Rabs y <= Rabs l + 1)).
   assert (H: 0 < Rmin (eps / 2) 1).
   apply Rmin_case.
   apply is_pos_div_2.
@@ -493,6 +493,8 @@ intros T F FF f g [l| |] Hfg Hf P [eps HP] ;
   simpl.
   intros x [H1 [H2 H3]].
   apply HP.
+  simpl.
+  unfold distR.
   replace (g x - l) with ((f x - l) + -(f x - g x)) by ring.
   apply Rle_lt_trans with (1 := Rabs_triang _ _).
   replace (pos eps) with (eps / 2 + eps / 2 / (Rabs l + 1) * (Rabs l + 1)).

@@ -78,12 +78,14 @@ Lemma is_series_equiv (a : nat -> R) (l : R) :
   is_series a l <-> infinite_sum a l.
 Proof.
   split => H.
+  apply is_lim_seq_spec in H.
   move => e He ; set eps := mkposreal e He.
   case: (H eps) => /= {H} N H.
   exists N => n Hn.
   replace (sum_f_R0 a n) with (sum_f_R0 (fun k : nat => a k) n)
     by (elim: (n) => //= k -> //).
   by apply (H n Hn).
+  apply is_lim_seq_spec.
   move => eps.
   case: (H eps (cond_pos eps)) => {H} N H.
   exists N => n Hn.
@@ -98,6 +100,7 @@ Proof.
   exists (Series a) ; case: H => l H.
   replace (Series a) with l.
   move => e He ; set eps := mkposreal e He.
+  apply is_lim_seq_spec in H.
   case: (H eps) => /= {H} N H.
   exists N => n Hn.
   replace (sum_f_R0 a n) with (sum_f_R0 (fun k : nat => a k) n)
@@ -114,6 +117,7 @@ Lemma ex_series_equiv_1 (a : nat -> R) :
 Proof.
   case => l H.
   exists l.
+  apply is_lim_seq_spec.
   move => eps.
   case: (H eps (cond_pos eps)) => {H} N H.
   exists N => n Hn.
@@ -158,7 +162,9 @@ Lemma is_series_incr_1 (a : nat -> R) (l : R) :
   is_series a (l + a O)
     -> is_series (fun k => a (S k)%nat) l.
 Proof.
-  move => Ha eps.
+  move /is_lim_seq_spec => Ha.
+  apply is_lim_seq_spec.
+  intros eps.
   case: (Ha eps) => {Ha} N Ha.
   exists N => n Hn.
   replace (sum_f_R0 (fun k : nat => a (S k)) n - l)
@@ -189,7 +195,9 @@ Qed.
 Lemma is_series_decr_1 (a : nat -> R) (l : R) :
   is_series (fun k => a (S k)%nat) (l - a O) -> is_series a l.
 Proof.
-  move => Ha eps.
+  move /is_lim_seq_spec => Ha.
+  apply is_lim_seq_spec.
+  intros eps.
   case: (Ha eps) => {Ha} N Ha.
   exists (S N) ; elim => [ | n IH] Hn.
   by apply le_Sn_0 in Hn.
@@ -310,7 +318,9 @@ Qed.
 Lemma ex_series_lim_0 (a : nat -> R) :
   ex_series a -> is_lim_seq a 0.
 Proof.
-  move => Hs eps.
+  intros Hs.
+  apply is_lim_seq_spec.
+  intros eps.
   apply Cauchy_ex_series in Hs.
   case: (Hs eps (cond_pos eps)) => {Hs} N Hs.
   exists (S N) ; case => [ | n] Hn.
@@ -701,6 +711,8 @@ Proof.
     suff H : is_lim_seq
       (fun n : nat => sum_f_R0 a n * sum_f_R0 b n)
       (Rbar_mult la lb).
+    apply is_lim_seq_spec in H.
+    apply is_lim_seq_spec.
     move => eps.
     case: (H eps) => {H} N H.
     exists (S (2 * N))%nat => n Hn.
@@ -815,6 +827,7 @@ Lemma ex_series_DAlembert (a : nat -> R) (k : R) :
 Proof.
   move => Hk Ha H.
   have : exists N, forall n, (N <= n)%nat -> Rabs (a (S n) / a n) <= (k+1)/2.
+    apply is_lim_seq_spec in H.
     case: (fun He => H (mkposreal ((1-k)/2) He)).
       move: (fun He => is_pos_div_2 (mkposreal (1-k) He)) => /= He ;
       apply: He.
@@ -879,6 +892,7 @@ Proof.
     rewrite -(Rmult_0_l (/2)) ; apply Rmult_lt_compat_r ; try by intuition.
     rewrite Rplus_comm ; by apply Rlt_minus.
   have : exists N, forall n, (N <= n)%nat -> k <= Rabs (a (S n) / a n).
+    apply is_lim_seq_spec in Hda.
     case: (fun H => Hda (mkposreal ((l-1)/2) H)) => [ | /= {Hda} H N Hda].
     apply Rdiv_lt_0_compat.
     by apply -> Rminus_lt_0.

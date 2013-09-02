@@ -40,6 +40,7 @@ Proof.
   intros H.
   apply (@f_equal _ _ real _ l).
   apply is_lim_unique.
+  apply is_lim_spec.
   intros eps.
   destruct (H eps (cond_pos _)) as [d Hd].
   exists d => h.

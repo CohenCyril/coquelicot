@@ -28,23 +28,23 @@ Require Import Compactness Limit.
 
 (** ** Definition *)
 
-Definition is_lim' (f : R -> R) (x l : Rbar) :=
-  filterlim f (Rbar_locally x) (Rbar_locally' l).
-
 Definition is_lim (f : R -> R) (x l : Rbar) :=
+  filterlim f (Rbar_locally' x) (Rbar_locally l).
+
+Definition is_lim' (f : R -> R) (x l : Rbar) :=
   match l with
     | Finite l =>
-      forall eps : posreal, Rbar_locally x (fun y => Rabs (f y - l) < eps)
-    | p_infty => forall M : R, Rbar_locally x (fun y => M < f y)
-    | m_infty => forall M : R, Rbar_locally x (fun y => f y < M)
+      forall eps : posreal, Rbar_locally' x (fun y => Rabs (f y - l) < eps)
+    | p_infty => forall M : R, Rbar_locally' x (fun y => M < f y)
+    | m_infty => forall M : R, Rbar_locally' x (fun y => f y < M)
   end.
 Definition ex_lim (f : R -> R) (x : Rbar) := exists l : Rbar, is_lim f x l.
 Definition ex_finite_lim (f : R -> R) (x : Rbar) := exists l : R, is_lim f x l.
 Definition Lim (f : R -> R) (x : Rbar) := Lim_seq (fun n => f (Rbar_loc_seq x n)).
 
-Lemma is_lim_ :
+Lemma is_lim_spec :
   forall f x l,
-  is_lim f x l <-> is_lim' f x l.
+  is_lim' f x l <-> is_lim f x l.
 Proof.
 destruct l as [l| |] ; split.
 - intros H P [eps LP].
@@ -81,22 +81,25 @@ Qed.
 Lemma is_lim_Reals_0 (f : R -> R) (x l : R) :
   is_lim f x l -> limit1_in f (fun y => y <> x) l x.
 Proof.
-  intros H e He ; set (eps := mkposreal e He).
-  elim (H eps) ; clear H ; intros (d,Hd) H.
-  exists d ; split ; [apply Hd | ].
-  intros y Hy ; apply (H y).
-  apply Hy.
-  apply Hy.
+  intros H e He.
+  apply is_lim_spec in H.
+  destruct (H (mkposreal e He)) as [d Hd].
+  exists d ; split.
+  apply cond_pos.
+  intros y [H1 H2].
+  now apply (Hd y).
 Qed.
 Lemma is_lim_Reals_1 (f : R -> R) (x l : R) :
   limit1_in f (fun y => y <> x) l x -> is_lim f x l.
 Proof.
-  intros H (e,He).
-  elim (H e He) ; clear H ; intros d (Hd,H) ; set (delta := mkposreal d Hd).
-  exists delta ; intros y Hy Hxy ; apply (H y).
-  split.
-  by apply Hxy.
-  by apply Hy.
+  intros H.
+  apply is_lim_spec.
+  intros [e He].
+  destruct (H e He) as [d [Hd H']].
+  exists (mkposreal d Hd).
+  intros y Hy Hxy.
+  apply (H' y).
+  now split.
 Qed.
 Lemma is_lim_Reals f x l :
   limit1_in f (fun y => y <> x) l x <-> is_lim f x l.
@@ -108,12 +111,11 @@ Qed.
 
 Lemma is_lim_comp' :
   forall {T} {F} {FF : @Filter T F} (f : T -> R) (g : R -> R) (x l : Rbar),
-  filterlim f F (Rbar_locally' x) -> is_lim g x l ->
+  filterlim f F (Rbar_locally x) -> is_lim g x l ->
   F (fun y => Finite (f y) <> x) ->
-  filterlim (fun y => g (f y)) F (Rbar_locally' l).
+  filterlim (fun y => g (f y)) F (Rbar_locally l).
 Proof.
 intros T F FF f g x l Lf Lg Hf.
-apply is_lim_ in Lg.
 revert Lg.
 apply filterlim_compose.
 intros P HP.
@@ -134,10 +136,7 @@ Lemma is_lim_comp_seq (f : R -> R) (u : nat -> R) (x l : Rbar) :
   is_lim_seq u x -> is_lim_seq (fun n => f (u n)) l.
 Proof.
 intros Lf Hu Lu.
-apply is_lim_seq_.
-apply: is_lim_comp' Hu.
-now apply is_lim_seq_.
-exact Lf.
+exact: is_lim_comp' Hu.
 Qed.
 
 (** Uniqueness *)
@@ -201,17 +200,13 @@ end.
 (** Extensionality *)
 
 Lemma is_lim_ext_loc (f g : R -> R) (x l : Rbar) :
-  Rbar_locally x (fun y => f y = g y)
+  Rbar_locally' x (fun y => f y = g y)
   -> is_lim f x l -> is_lim g x l.
 Proof.
-intros Hext Hf.
-apply is_lim_ in Hf.
-apply is_lim_.
-revert Hext Hf.
 apply filterlim_ext_loc.
 Qed.
 Lemma ex_lim_ext_loc (f g : R -> R) (x : Rbar) :
-  Rbar_locally x (fun y => f y = g y)
+  Rbar_locally' x (fun y => f y = g y)
   -> ex_lim f x -> ex_lim g x.
 Proof.
   move => H [l Hf].
@@ -219,7 +214,7 @@ Proof.
   by apply is_lim_ext_loc with f.
 Qed.
 Lemma Lim_ext_loc (f g : R -> R) (x : Rbar) :
-  Rbar_locally x (fun y => f y = g y)
+  Rbar_locally' x (fun y => f y = g y)
   -> Lim g x = Lim f x.
 Proof.
   move => H.
@@ -256,16 +251,14 @@ Qed.
 (** Composition *)
 
 Lemma is_lim_comp (f g : R -> R) (x k l : Rbar) :
-  is_lim f l k -> is_lim g x l -> Rbar_locally x (fun y => Finite (g y) <> l)
+  is_lim f l k -> is_lim g x l -> Rbar_locally' x (fun y => Finite (g y) <> l)
     -> is_lim (fun x => f (g x)) x k.
 Proof.
 intros Lf Lg Hg.
-apply is_lim_.
-apply: is_lim_comp' Lf Hg.
-now apply is_lim_.
+exact: is_lim_comp' Lf Hg.
 Qed.
 Lemma ex_lim_comp (f g : R -> R) (x : Rbar) :
-  ex_lim f (Lim g x) -> ex_lim g x -> Rbar_locally x (fun y => Finite (g y) <> Lim g x)
+  ex_lim f (Lim g x) -> ex_lim g x -> Rbar_locally' x (fun y => Finite (g y) <> Lim g x)
     -> ex_lim (fun x => f (g x)) x.
 Proof.
   intros.
@@ -276,7 +269,7 @@ Proof.
   by apply H1.
 Qed.
 Lemma Lim_comp (f g : R -> R) (x : Rbar) :
-  ex_lim f (Lim g x) -> ex_lim g x -> Rbar_locally x (fun y => Finite (g y) <> Lim g x)
+  ex_lim f (Lim g x) -> ex_lim g x -> Rbar_locally' x (fun y => Finite (g y) <> Lim g x)
     -> Lim (fun x => f (g x)) x = Lim f (Lim g x).
 Proof.
   intros.
@@ -292,10 +285,9 @@ Qed.
 Lemma is_lim_id (x : Rbar) :
   is_lim (fun y => y) x x.
 Proof.
-apply is_lim_.
 intros P HP.
 apply filterlim_id.
-now apply Rbar_locally_le.
+now apply Rbar_locally'_le.
 Qed.
 Lemma ex_lim_id (x : Rbar) :
   ex_lim (fun y => y) x.
@@ -315,7 +307,6 @@ Qed.
 Lemma is_lim_const (a : R) (x : Rbar) :
   is_lim (fun _ => a) x a.
 Proof.
-apply is_lim_.
 intros P HP.
 now apply filterlim_const.
 Qed.
@@ -340,8 +331,6 @@ Lemma is_lim_opp (f : R -> R) (x l : Rbar) :
   is_lim f x l -> is_lim (fun y => - f y) x (Rbar_opp l).
 Proof.
 intros Cf.
-apply is_lim_ in Cf.
-apply is_lim_.
 eapply filterlim_compose.
 apply Cf.
 apply filterlim_opp.
@@ -368,9 +357,6 @@ Lemma is_lim_plus (f g : R -> R) (x lf lg : Rbar) :
   is_lim (fun y => f y + g y) x (Rbar_plus lf lg).
 Proof.
 intros Cf Cg Hp.
-apply is_lim_ in Cf.
-apply is_lim_ in Cg.
-apply is_lim_.
 eapply filterlim_compose_2 ; try eassumption.
 now apply filterlim_plus.
 Qed.
@@ -439,8 +425,6 @@ Lemma is_lim_inv (f : R -> R) (x l : Rbar) :
   is_lim f x l -> l <> 0 -> is_lim (fun y => / f y) x (Rbar_inv l).
 Proof.
   intros Hf Hl.
-  apply is_lim_ in Hf.
-  apply is_lim_.
   apply filterlim_compose with (1 := Hf).
   now apply filterlim_inv.
 Qed.
@@ -467,9 +451,6 @@ Lemma is_lim_mult (f g : R -> R) (x lf lg : Rbar) :
   is_lim (fun y => f y * g y) x (Rbar_mult lf lg).
 Proof.
 intros Cf Cg Hp.
-apply is_lim_ in Cf.
-apply is_lim_ in Cg.
-apply is_lim_.
 eapply filterlim_compose_2 ; try eassumption.
 now apply filterlim_mult.
 Qed.
@@ -646,7 +627,6 @@ Lemma is_lim_continuity (f : R -> R) (x : R) :
   continuity_pt f x -> is_lim f x (f x).
 Proof.
 intros cf.
-apply is_lim_.
 now apply continuity_pt_filterlim'.
 Qed.
 Lemma ex_lim_continuity (f : R -> R) (x : R) :
@@ -667,65 +647,22 @@ Qed.
 (** *** Order *)
 
 Lemma is_lim_le_loc (f g : R -> R) (x lf lg : Rbar) :
-  is_lim f x lf -> is_lim g x lg
-  -> Rbar_locally x (fun y => f y <= g y)
-  -> Rbar_le lf lg.
+  Rbar_locally' x (fun y => f y <= g y) ->
+  is_lim f x lf -> is_lim g x lg ->
+  Rbar_le lf lg.
 Proof.
-  case: lf => [lf | | ] /= Hf ;
-  case: lg => [lg | | ] /= Hg Hfg ;
-  try by [left | right].
-
-  apply Rbar_finite_le.
-  apply Rnot_lt_le => H.
-  apply Rminus_lt_0 in H.
-  apply (filter_const (F := Rbar_locally x)).
-  generalize (filter_and _ _ Hfg (filter_and _ _ (Hf (pos_div_2 (mkposreal _ H))) (Hg (pos_div_2 (mkposreal _ H))))).
-  apply filter_imp => {Hfg Hf Hg} /= y [Hfg [Hf Hg]].
-  apply: Rlt_not_le Hfg.
-  apply Rlt_trans with ((lf + lg) / 2).
-  replace ((lf + lg) / 2) with (lg + (lf - lg) / 2) by field.
-  apply Rabs_lt_between'.
-  apply Hg.
-  replace ((lf + lg) / 2) with (lf - (lf - lg) / 2) by field.
-  apply Rabs_lt_between'.
-  apply Hf.
-
-  left => /=.
-  apply (filter_const (F := Rbar_locally x)).
-  generalize (filter_and _ _ Hfg (filter_and _ _ (Hf (mkposreal _ (Rle_lt_0_plus_1 _ (Rabs_pos lf)))) (Hg (lf - (Rabs lf + 1))))).
-  apply filter_imp => {Hfg Hf Hg} /= y [Hfg [Hf Hg]].
-  apply: Rlt_not_le Hfg.
-  apply Rlt_trans with (lf - (Rabs lf + 1)).
-  apply Hg.
-  apply Rabs_lt_between'.
-  apply Hf.
-
-  left => /=.
-  apply (filter_const (F := Rbar_locally x)).
-  generalize (filter_and _ _ Hfg (filter_and _ _ (Hf (lg + (Rabs lg + 1))) (Hg (mkposreal _ (Rle_lt_0_plus_1 _ (Rabs_pos lg)))))).
-  apply filter_imp => {Hfg Hf Hg} /= y [Hfg [Hf Hg]].
-  apply: Rlt_not_le Hfg.
-  apply Rlt_trans with (lg + (Rabs lg + 1)).
-  apply Rabs_lt_between'.
-  apply Hg.
-  apply Hf.
-
-  left => /=.
-  apply (filter_const (F := Rbar_locally x)).
-  generalize (filter_and _ _ Hfg (filter_and _ _ (Hf 0) (Hg 0))).
-  apply filter_imp => {Hfg Hf Hg} y [Hfg [Hf Hg]].
-  apply: Rlt_not_le Hfg.
-  apply Rlt_trans with 0.
-  apply Hg.
-  apply Hf.
+  apply filterlim_le.
 Qed.
 
 Lemma is_lim_le_p_loc (f g : R -> R) (x : Rbar) :
   is_lim f x p_infty
-  -> Rbar_locally x (fun y => f y <= g y)
+  -> Rbar_locally' x (fun y => f y <= g y)
   -> is_lim g x p_infty.
 Proof.
-  move => Hf Hfg M.
+  intros Hf Hfg.
+  apply is_lim_spec in Hf.
+  apply is_lim_spec.
+  intros M.
   generalize (filter_and _ _ Hfg (Hf M)).
   apply filter_imp => {Hfg Hf} y [Hf Hg].
   now apply Rlt_le_trans with (f y).
@@ -733,22 +670,28 @@ Qed.
 
 Lemma is_lim_le_m_loc (f g : R -> R) (x : Rbar) :
   is_lim f x m_infty
-  -> Rbar_locally x (fun y => g y <= f y)
+  -> Rbar_locally' x (fun y => g y <= f y)
   -> is_lim g x m_infty.
 Proof.
-  move => Hf Hfg M.
+  intros Hf Hfg.
+  apply is_lim_spec in Hf.
+  apply is_lim_spec.
+  intros M.
   generalize (filter_and _ _ Hfg (Hf M)).
   apply filter_imp => {Hfg Hf} y [Hf Hg].
   now apply Rle_lt_trans with (f y).
 Qed.
 
-
 Lemma is_lim_le_le_loc (f g h : R -> R) (x : Rbar) (l : R) :
   is_lim f x l -> is_lim g x l
-  -> Rbar_locally x (fun y => f y <= h y <= g y)
+  -> Rbar_locally' x (fun y => f y <= h y <= g y)
   -> is_lim h x l.
 Proof.
-  move => /= Hf Hg H eps.
+  intros Hf Hg H.
+  apply is_lim_spec in Hf.
+  apply is_lim_spec in Hg.
+  apply is_lim_spec.
+  intros eps.
   generalize (filter_and _ _ H (filter_and _ _ (Hf eps) (Hg eps))).
   apply filter_imp => {H Hf Hg} y [H [Hf Hg]].
   apply Rabs_lt_between' ; split.
@@ -822,8 +765,7 @@ Proof.
 intros Hfa Hfb Cf Hab Hy.
 assert (Hb' : exists b' : R, Rbar_lt b' b /\
         is_upper_bound (fun x => Rbar_lt a x /\ Rbar_lt x b /\ f x <= y) b').
-{ assert (Hfb' : Rbar_locally b (fun x => y < f x)).
-    apply is_lim_ in Hfb.
+{ assert (Hfb' : Rbar_locally' b (fun x => y < f x)).
     apply Hfb.
     now apply (open_Rbar_gt' _ y).
   clear -Hab Hfb'.
@@ -858,11 +800,10 @@ assert (Hb' : exists b' : R, Rbar_lt b' b /\
     now apply HM.
   - now destruct a. }
 assert (Hex : exists x : R, Rbar_lt a x /\ Rbar_lt x b /\ f x <= y).
-{ assert (Hfa' : Rbar_locally a (fun x => Rbar_lt x b /\ f x < y)).
+{ assert (Hfa' : Rbar_locally' a (fun x => Rbar_lt x b /\ f x < y)).
     apply filter_and.
-    apply Rbar_locally_le.
+    apply Rbar_locally'_le.
     now apply open_Rbar_lt'.
-    apply is_lim_ in Hfa.
     apply (Hfa (fun u => u < y)).
     now apply (open_Rbar_lt' _ y).
   clear -Hab Hfa'.

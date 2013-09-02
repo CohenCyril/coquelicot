@@ -37,6 +37,7 @@ Proof.
   rewrite (proj1 (sign_lt_0 x)) => //.
   by apply Rabs_derive_2.
 Qed.
+
 Lemma continuity_pt_Rabs (x : R) :
   continuity_pt Rabs x.
 Proof.
@@ -45,9 +46,25 @@ Proof.
   by apply Rle_lt_trans with (1 := Rabs_triang_inv2 _ _).
 Qed.
 
+Lemma filterlim_abs_0 :
+  filterlim Rabs (Rbar_locally' 0) (at_right 0).
+Proof.
+intros P [eps HP].
+exists eps.
+intros x Hx Hx'.
+apply HP.
+simpl.
+unfold distR.
+revert Hx.
+rewrite 2!Rminus_0_r.
+now rewrite Rabs_Rabsolu.
+now apply Rabs_pos_lt.
+Qed.
+
 (** * Inverse function *)
 
-Lemma is_lim_Rinv_0' : filterlim Rinv (at_right 0) (Rbar_locally' p_infty).
+Lemma is_lim_Rinv_0 :
+  filterlim Rinv (at_right 0) (Rbar_locally p_infty).
 Proof.
   intros P [M HM].
   have Hd : 0 < / Rmax 1 M.
@@ -66,28 +83,11 @@ Proof.
   exact: Rlt_le.
 Qed.
 
-Lemma is_lim_Rinv_0 : is_lim (fun x => / Rabs x) 0 p_infty.
-Proof.
-  move => M.
-  have Hd : 0 < / Rmax 1 M.
-    apply Rinv_0_lt_compat.
-    apply Rlt_le_trans with (2 := Rmax_l _ _).
-    by apply Rlt_0_1.
-  exists (mkposreal _ Hd) => x /= Hx Hx0.
-  apply Rle_lt_trans with (1 := Rmax_r 1 M).
-  replace (Rmax 1 M) with (/ / Rmax 1 M)
-  by (field ; apply Rgt_not_eq, Rlt_le_trans with (2 := Rmax_l _ _), Rlt_0_1).
-  apply Rinv_lt_contravar.
-  apply Rdiv_lt_0_compat.
-  by apply Rabs_pos_lt.
-  apply Rlt_le_trans with (2 := Rmax_l _ _), Rlt_0_1.
-  by rewrite Rminus_0_r in Hx.
-Qed.
-
 (** * Square root function *)
 
 Lemma is_lim_sqrt_p : is_lim sqrt p_infty p_infty.
 Proof.
+  apply is_lim_spec.
   move => M.
   exists ((Rmax 0 M)²) => x Hx.
   apply Rle_lt_trans with (1 := Rmax_r 0 M).
@@ -266,6 +266,7 @@ Qed.
 
 Lemma is_lim_div_expm1_0 : is_lim (fun y => (exp y - 1) / y) 0 1.
 Proof.
+  apply is_lim_spec.
   move => eps.
   case: (derivable_pt_lim_exp_0 eps (cond_pos eps)) => delta H.
   exists delta => y Hy Hy0.
@@ -278,6 +279,7 @@ Qed.
 
 Lemma is_lim_ln_p : is_lim (fun y => ln y) p_infty p_infty.
 Proof.
+  apply is_lim_spec.
   move => M.
   exists (exp M) => x Hx.
   rewrite -(ln_exp M).
@@ -286,7 +288,8 @@ Proof.
   by apply Hx.
 Qed.
 
-Lemma is_lim_ln_0' : filterlim ln (at_right 0) (Rbar_locally' m_infty).
+Lemma is_lim_ln_0 :
+  filterlim ln (at_right 0) (Rbar_locally m_infty).
 Proof.
 intros P [M HM].
 exists (mkposreal (exp M) (exp_pos _)) => x /= Hx Hx0.
@@ -297,17 +300,6 @@ exact Hx0.
 rewrite /distR Rminus_0_r Rabs_pos_eq in Hx.
 exact Hx.
 now apply Rlt_le.
-Qed.
-
-Lemma is_lim_ln_0 : is_lim (fun y => ln (Rabs y)) 0 m_infty.
-Proof.
-  move => eps.
-  exists (mkposreal (exp eps) (exp_pos _)) => x /= Hx Hx0.
-  rewrite -(ln_exp eps).
-  apply ln_increasing.
-  by apply Rabs_pos_lt.
-  rewrite Rminus_0_r in Hx.
-  by apply Hx.
 Qed.
 
 Lemma is_lim_div_ln_p : is_lim (fun y => ln y / y) p_infty 0.
@@ -416,6 +408,7 @@ Qed.
 
 Lemma is_lim_div_ln1p_0 : is_lim (fun y => ln (1+y) / y) 0 1.
 Proof.
+  apply is_lim_spec.
   move => eps.
   case: (derivable_pt_lim_ln 1 (Rlt_0_1) eps (cond_pos eps)) => delta H.
   exists delta => y Hy Hy0.
@@ -428,6 +421,7 @@ Qed.
 
 Lemma is_lim_sinc_0 : is_lim (fun x => sin x / x) 0 1.
 Proof.
+  apply is_lim_spec.
   move => eps.
   case: (derivable_pt_lim_sin_0 eps (cond_pos eps)) => delta H.
   exists delta => y Hy Hy0.
