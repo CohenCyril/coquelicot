@@ -374,7 +374,7 @@ Proof.
   by apply is_inf_seq_glb.
 Qed.
 
-Lemma Rbar_sup_opp_inf (u : nat -> Rbar) :
+Lemma Sup_opp_inf (u : nat -> Rbar) :
   Sup_seq u = Rbar_opp (Inf_seq (fun n => Rbar_opp (u n))).
 Proof.
   rewrite /Inf_seq ; case: (ex_inf_seq _) => iu Hiu /=.
@@ -385,13 +385,92 @@ Qed.
 Lemma Inf_opp_sup (u : nat -> Rbar) :
   Inf_seq u = Rbar_opp (Sup_seq (fun n => Rbar_opp (u n))).
 Proof.
-  rewrite Rbar_sup_opp_inf Rbar_opp_involutive.
+  rewrite Sup_opp_inf Rbar_opp_involutive.
   rewrite /Inf_seq.
   repeat (case: ex_inf_seq ; intros) => /=.
   apply is_inf_seq_glb in p.
   apply is_inf_seq_glb in p0.
   move: p p0 ; apply Rbar_is_glb_unique.
   move => x1 ; split ; case => n -> ; exists n ; by rewrite Rbar_opp_involutive.
+Qed.
+
+Lemma Sup_seq_scal_l (a : R) (u : nat -> Rbar) : 0 <= a ->
+  Sup_seq (fun n => Rbar_mult a (u n)) = Rbar_mult a (Sup_seq u).
+Proof.
+  case => Ha.
+(* 0 < a *)
+  rewrite /Sup_seq.
+  case: ex_sup_seq => al Hau.
+  case: ex_sup_seq => l Hu.
+  simpl projT1.
+  apply Rbar_le_antisym.
+
+  apply is_sup_seq_lub in Hau.
+  apply is_sup_seq_lub in Hu.
+  apply Hau => _ [n ->].
+  suff : Rbar_le (u n) l.
+    case: (u n) => [un | | ] ; case: (l) => [l' | | ] /= ; try (by case) ;
+    try (case: Rle_dec (Rlt_le _ _ Ha) => //= Ha' _ ;
+    case: Rle_lt_or_eq_dec (Rlt_not_eq _ _ Ha) => //= _ _ _ ; by left).
+  move/Rbar_finite_le => H ; apply Rbar_finite_le, Rmult_le_compat_l => // ;
+  by apply Rlt_le.
+  apply Hu.
+  by exists n.
+  
+  suff : Rbar_le l (Rbar_div_pos al (mkposreal a Ha)).
+  case: (al) => [al' | | ] ; case: (l) => [l' | | ] /= ; try (by case) ;
+    try (case: Rle_dec (Rlt_le _ _ Ha) => //= Ha' _ ;
+    case: Rle_lt_or_eq_dec (Rlt_not_eq _ _ Ha) => //= _ _ _ ; by left).
+  move/Rbar_finite_le => H ; rewrite Rmult_comm ;
+  apply Rbar_finite_le, Rle_div_r => //.
+  move => _ ; by left.
+  apply is_sup_seq_lub in Hau.
+  apply is_sup_seq_lub in Hu.
+  apply Hu => _ [n ->].
+  suff : Rbar_le (Rbar_mult a (u n)) al.
+    case: (u n) => [un | | ] ; case: (al) => [al' | | ] /= ; try (by case) ;
+    try (case: Rle_dec (Rlt_le _ _ Ha) => //= Ha' _ ;
+    case: Rle_lt_or_eq_dec (Rlt_not_eq _ _ Ha) => //= _ _ ; try (by case) ; by left).
+  move/Rbar_finite_le => H ; rewrite Rmult_comm in H ;
+  apply Rbar_finite_le, Rle_div_r => //.
+  move => _ ; by left.
+  apply Hau.
+  by exists n.
+  
+(* a = 0 *)
+  rewrite -Ha. 
+  transitivity (Sup_seq (fun _ => 0)).
+  apply Sup_seq_ext.
+  move => n ; case: (u n) => [un | | ] /=.
+  apply f_equal ; ring.
+  case: Rle_dec (Rle_refl 0) => //= H _.
+  case: Rle_lt_or_eq_dec (Rle_not_lt _ _ H) => //= H _.
+  case: Rle_dec (Rle_refl 0) => //= H _.
+  case: Rle_lt_or_eq_dec (Rle_not_lt _ _ H) => //= H _.
+  
+  transitivity 0.
+  apply is_sup_seq_unique.
+  move => eps ; split => /=.
+  move => _ ; ring_simplify ; by apply eps.
+  exists 0%nat ; apply Rminus_lt_0 ; ring_simplify ; by apply eps.
+  
+  case: (Sup_seq u) => [l | | ] /=.
+  apply f_equal ; ring.
+  case: Rle_dec (Rle_refl 0) => //= H _.
+  case: Rle_lt_or_eq_dec (Rle_not_lt _ _ H) => //= H _.
+  case: Rle_dec (Rle_refl 0) => //= H _.
+  case: Rle_lt_or_eq_dec (Rle_not_lt _ _ H) => //= H _.
+Qed.
+Lemma Inf_seq_scal_l (a : R) (u : nat -> Rbar) : 0 <= a ->
+  Inf_seq (fun n => Rbar_mult a (u n)) = Rbar_mult a (Inf_seq u).
+Proof.
+  move => Ha.
+  rewrite Inf_opp_sup.
+  rewrite -(Sup_seq_ext (fun n => Rbar_mult a (Rbar_opp (u n)))).
+  rewrite Sup_seq_scal_l.
+  by rewrite -Rbar_mult_opp_r -(Inf_opp_sup u).
+  by [].
+  move => n ; by rewrite Rbar_mult_opp_r.
 Qed.
 
 (** ** Order *)
@@ -821,6 +900,23 @@ Proof.
   by apply is_sup_seq_unique.
 Qed.
 
+Lemma LimSup_InfSup_seq (u : nat -> R) :
+  LimSup_seq u = Inf_seq (fun m => Sup_seq (fun n => u (n + m)%nat)).
+Proof.
+  apply is_LimSup_seq_unique.
+  apply is_LimSup_infSup_seq.
+  rewrite /Inf_seq.
+  by case: ex_inf_seq.
+Qed.
+Lemma LimInf_SupInf_seq (u : nat -> R) :
+  LimInf_seq u = Sup_seq (fun m => Inf_seq (fun n => u (n + m)%nat)).
+Proof.
+  apply is_LimInf_seq_unique.
+  apply is_LimInf_supInf_seq.
+  rewrite /Sup_seq.
+  by case: ex_sup_seq.
+Qed.
+
 (** ** Operations and order *)
 
 Lemma is_LimSup_LimInf_seq_le (u : nat -> R) (ls li : Rbar) :
@@ -867,20 +963,16 @@ Qed.
 Lemma LimSup_seq_opp (u : nat -> R) :
   LimSup_seq (fun n => - u n) = Rbar_opp (LimInf_seq u).
 Proof.
-  rewrite /LimInf_seq ; case: ex_LimInf_seq => /= li Hli.
-  apply is_LimSup_opp_LimInf_seq in Hli.
-  rewrite /LimSup_seq ; case: ex_LimSup_seq => /= ls Hls.
-  rewrite -(is_LimSup_seq_unique _ _ Hls).
-  by apply is_LimSup_seq_unique.
+  rewrite LimSup_InfSup_seq LimInf_SupInf_seq.
+  rewrite Inf_opp_sup ; apply f_equal, Sup_seq_ext => m.
+  rewrite Inf_opp_sup ; by apply f_equal, Sup_seq_ext => n.
 Qed.
 Lemma LimInf_seq_opp (u : nat -> R) :
   LimInf_seq (fun n => - u n) = Rbar_opp (LimSup_seq u).
 Proof.
-  rewrite /LimInf_seq ; case: ex_LimInf_seq => /= li Hli.
-  rewrite /LimSup_seq ; case: ex_LimSup_seq => /= ls Hls.
-  apply is_LimInf_opp_LimSup_seq in Hls.
-  rewrite -(is_LimInf_seq_unique _ _ Hli).
-  by apply is_LimInf_seq_unique.
+  rewrite LimSup_InfSup_seq LimInf_SupInf_seq.
+  rewrite Sup_opp_inf ; apply f_equal, Inf_seq_ext => m.
+  rewrite Sup_opp_inf ; by apply f_equal, Inf_seq_ext => n.
 Qed.
 
 (** Scalar multplication *)

@@ -57,6 +57,13 @@ Proof.
   apply is_series_unique.
   by apply Ha.
 Qed.
+Lemma PSeries_correct (a : nat -> R) (x : R) :
+  ex_pseries a x -> is_pseries a x (PSeries a x).
+Proof.
+  move => Ha.
+  apply Series_correct.
+  by apply Ha.
+Qed.
 
 (** Equivalence with standard library Reals *)
 
@@ -311,6 +318,13 @@ Proof.
     apply CV_disk_le.
     by apply Rlt_le, Rlt_le_trans with (2 := Rle_abs _).
   by case: (ex_series_dec (fun n => Rabs (a n * x ^ n))).
+Qed.
+Lemma CV_radius_inside (a : nat -> R) (x : R) :
+  Rbar_lt (Finite (Rabs x)) (CV_radius a)
+    -> ex_pseries a x.
+Proof.
+  move => Ha.
+  by apply CV_disk_correct, CV_disk_inside.
 Qed.
 
 Lemma CV_disk_outside (a : nat -> R) (x : R) :
@@ -1237,6 +1251,22 @@ Proof.
   by apply CV_disk_inside.
   by apply CV_disk_inside.
 Qed.
+Lemma ex_pseries_mult (a b : nat -> R) (x : R) :
+  Rbar_lt (Rabs x) (CV_radius a) -> Rbar_lt (Rabs x) (CV_radius b)
+  -> ex_pseries (PS_mult a b) x.
+Proof.
+  move => Ha Hb.
+  exists ((PSeries a x) * (PSeries b x)).
+  apply is_pseries_mult => // ; by apply PSeries_correct, CV_radius_inside.
+Qed.
+Lemma PSeries_mult (a b : nat -> R) (x : R) :
+  Rbar_lt (Rabs x) (CV_radius a) -> Rbar_lt (Rabs x) (CV_radius b)
+  -> PSeries (PS_mult a b) x = PSeries a x * PSeries b x.
+Proof.
+  move => Ha Hb.
+  apply is_pseries_unique.
+  apply is_pseries_mult => // ; by apply PSeries_correct, CV_radius_inside.
+Qed.
 
 (** Sums on even and odd *)
 
@@ -1353,6 +1383,27 @@ Proof.
   rewrite -{2}(Lim_seq_const 0) /=.
   apply Lim_seq_ext.
   elim => /= [ | n ->] ; ring.
+Qed.
+Lemma CV_radius_const_0 : CV_radius (fun _ => 0) = p_infty.
+Proof.
+  suff : forall x, Rbar_le (Rabs x) (CV_radius (fun _ : nat => 0)).
+  case H : (CV_radius (fun _ : nat => 0)) => [cv | | ] //= H0.
+  case: (Rle_lt_dec 0 cv) => Hcv.
+  move: (H0 (cv + 1)) => {H0} H0.
+  contradict H0 ; apply Rbar_lt_not_le => /=.
+  apply Rlt_le_trans with (2 := Rle_abs _).
+  apply Rminus_lt_0 ; ring_simplify ; by apply Rlt_0_1.
+  contradict Hcv ; apply (Rbar_le_not_lt cv 0).
+  rewrite -Rabs_R0.
+  by apply H0.
+  move: (H0 0) => {H0} H0.
+  contradict H0 ; by apply Rbar_lt_not_le.
+  move => x ; apply Rbar_not_lt_le => Hx.
+  apply CV_disk_outside in Hx.
+  apply: Hx.
+  apply is_lim_seq_ext with (fun _ => 0).
+  move => n ; ring.
+  by apply is_lim_seq_const.
 Qed.
 
 Definition PS_opp (a : nat -> R) (n : nat) : R := - a n.
@@ -1890,6 +1941,22 @@ Proof.
   move => H.
   apply is_derive_n_unique.
   by apply is_derive_n_PSeries.
+Qed.
+
+Lemma CV_radius_derive_n (n : nat) (a : nat -> R) :
+  CV_radius (PS_derive_n n a) = CV_radius a.
+Proof.
+  elim: n a => [ | n IH] /= a.
+  apply CV_radius_ext.
+  move => k ; rewrite /PS_derive_n /=.
+  rewrite plus_0_r ; field.
+  by apply INR_fact_neq_0.
+  rewrite -(CV_radius_derive a).
+  rewrite -(IH (PS_derive a)).
+  apply CV_radius_ext.
+  move => k ; rewrite /PS_derive_n /PS_derive.
+  rewrite -plus_n_Sm /fact -/fact mult_INR ; field.
+  by apply INR_fact_neq_0.
 Qed.
 
 Lemma Derive_n_coef (a : nat -> R) (n : nat) :

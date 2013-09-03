@@ -452,7 +452,7 @@ Proof.
   exists (-la).
   by apply is_series_opp.
 Qed.
-Lemma Series_opp (a b : nat -> R) :
+Lemma Series_opp (a : nat -> R) :
   Series (fun n => - a n) = - Series a.
 Proof.
   rewrite /Series
