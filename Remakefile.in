@@ -50,9 +50,10 @@ html/index.html: $(OBJS)
 doc: html/index.html
 
 deps.dot: $(addprefix theories/,$(FILES))
-	(echo "digraph {" ;
+	(echo "digraph coquelicot_deps {" ;
 	(cd theories ; @COQDEP@ -I . $(FILES)) | sed -e 's/[.]vo.*: [^ ]*[.]v//' |
 	while read src dst; do
+	  echo $src "[URL=\"Coquelicot.$src.html\"];"
 	  for d in $dst; do
 	    echo $src "->" ${d%.vo} ";"
 	  done
