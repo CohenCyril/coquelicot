@@ -1,4 +1,4 @@
-AC_INIT([Coquelicot], [1.0.0],
+AC_INIT([Coquelicot], [1.1.0],
         [Catherine Lelay <catherine.lelay@inria.fr>],
         [coquelicot])
 

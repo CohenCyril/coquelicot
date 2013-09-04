@@ -49,6 +49,16 @@ html/index.html: $(OBJS)
 
 doc: html/index.html
 
+deps.dot: $(addprefix theories/,$(FILES))
+	(echo "digraph {" ;
+	(cd theories ; @COQDEP@ -I . $(FILES)) | sed -e 's/[.]vo.*: [^ ]*[.]v//' |
+	while read src dst; do
+	  for d in $dst; do
+	    echo $src "->" ${d%.vo} ";"
+	  done
+	done ;
+	echo "}") | tred > $@
+
 EXAMPLES = \
 	BacS2013.v \
 	Bessel.v \
