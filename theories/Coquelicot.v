@@ -105,7 +105,7 @@ Require Export Derive_2d Equiv ElemFct Limit.
 Require Export Locally Lub Markov PSeries Rbar Rcomplements.
 Require Export RInt Seq_fct Series SF_seq.
 
-(** # <img src="deps.png"> # *)
+(** #<img src="deps.png" usemap="##coquelicot_deps" /># *)
 
 (**
 This file is part of the Coquelicot formalization of real
