@@ -47,13 +47,23 @@ html/index.html: $(OBJS)
 	  --external http://ssr2.msr-inria.inria.fr/doc/ssreflect-1.4/ Ssreflect \
 	  $(addprefix theories/,$(FILES))
 
-doc: html/index.html
+doc: html/index.html deps.dot
+	dot -Tcmapx -odeps.map -Tpng -odeps.png deps.dot
+	echo "<img src="deps.png" usemap=#coquelicot_deps>\n" > deps2.map;
+	cat deps.map >> deps2.map;
+	sed '/<img src="deps.png">/ {
+	   r deps2.map
+	   d }' <  html/Coquelicot.Coquelicot.html > tmp.html
+	mv -f tmp.html html/Coquelicot.Coquelicot.html
+	mv deps.png html/
+	rm -f deps.map deps2.map
+
 
 deps.dot: $(addprefix theories/,$(FILES))
 	(echo "digraph coquelicot_deps {" ;
+	 echo "node [shape = ellipse, style=filled, URL=\"./Coquelicot.\N.html\", color=black, fillcolor=cornflowerblue];";
 	(cd theories ; @COQDEP@ -I . $(FILES)) | sed -e 's/[.]vo.*: [^ ]*[.]v//' |
 	while read src dst; do
-	  echo $src "[URL=\"Coquelicot.$src.html\"];"
 	  for d in $dst; do
 	    echo $src "->" ${d%.vo} ";"
 	  done
