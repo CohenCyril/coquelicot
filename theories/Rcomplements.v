@@ -1089,7 +1089,18 @@ Definition sign (x : R) :=
     | right _ => -1
   end.
 
-Lemma Ropp_sign (x : R) : sign (-x) = - sign x.
+Lemma sign_0 : sign 0 = 0.
+Proof.
+unfold sign.
+destruct Rle_dec as [H|H].
+destruct (Rle_lt_or_eq_dec 0 0 H) as [H'|H'].
+elim (Rlt_irrefl _ H').
+exact H'.
+elim H.
+apply Rle_refl.
+Qed.
+
+Lemma sign_opp (x : R) : sign (-x) = - sign x.
 Proof.
   rewrite /sign ;
   case: Rle_dec => H ; case: Rle_dec => H0.
@@ -1124,7 +1135,7 @@ Qed.
 
 Lemma sign_lt_0 (x : R) : x < 0 <-> sign x = -1.
 Proof.
-  rewrite -(Ropp_involutive x) Ropp_sign Ropp_involutive ; split => Hx.
+  rewrite -(Ropp_involutive x) sign_opp Ropp_involutive ; split => Hx.
   apply f_equal.
   apply sign_0_lt.
   by apply Ropp_0_gt_lt_contravar.
@@ -1143,7 +1154,7 @@ Proof.
     rewrite -Hx Rmult_0_l in Hxy.
     by apply Rlt_irrefl in Hxy.
   rewrite -(Ropp_involutive (sign x)) -(Ropp_involutive (sign y)).
-  rewrite -(Ropp_sign x) -(Ropp_sign y).
+  rewrite -(sign_opp x) -(sign_opp y).
   apply f_equal, Hw.
   by ring_simplify.
   by apply Ropp_0_gt_lt_contravar.
@@ -1176,7 +1187,7 @@ Proof.
     case: Rle_lt_or_eq_dec (Rlt_irrefl 0) => // _ _.
     by rewrite Rmult_0_l.
     rewrite -(Ropp_involutive x).
-    rewrite Ropp_sign Ropp_mult_distr_l_reverse Ropp_sign Hw.
+    rewrite sign_opp Ropp_mult_distr_l_reverse sign_opp Hw.
     ring.
     by apply Ropp_0_gt_lt_contravar.
   wlog: y / (0 < y) => [Hw | Hy].
@@ -1189,7 +1200,7 @@ Proof.
     case: Rle_lt_or_eq_dec (Rlt_irrefl 0) => // _ _.
     by rewrite Rmult_0_r.
     rewrite -(Ropp_involutive y).
-    rewrite Ropp_sign Ropp_mult_distr_r_reverse Ropp_sign Hw.
+    rewrite sign_opp Ropp_mult_distr_r_reverse sign_opp Hw.
     ring.
     by apply Ropp_0_gt_lt_contravar.
   have Hxy : 0 < x * y.
