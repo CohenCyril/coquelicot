@@ -397,6 +397,18 @@ constructor.
   now apply filter_forall.
 Qed.
 
+Lemma filterlim_within_ext :
+  forall {T U F G} {FF : Filter F} D (f g : T -> U),
+  (forall x, D x -> f x = g x) ->
+  filterlim f (within D F) G ->
+  filterlim g (within D F) G.
+Proof.
+intros T U F G FF D f g Efg.
+apply filterlim_ext_loc.
+unfold within.
+now apply filter_forall.
+Qed.
+
 (** * Metric spaces *)
 
 Class MetricSpace T := {
