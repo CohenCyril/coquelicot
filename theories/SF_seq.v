@@ -469,13 +469,13 @@ Qed.
 (** * Definition of RInt_seq *)
 
 Definition RInt_seq {T : Type} (s : SF_seq) (Tplus : T -> T -> T)
-  (Tmult : T -> R -> T) x0 :=
-  foldr Tplus x0 (pairmap (fun x y => (Tmult (snd y) (fst y - fst x))) (SF_h s,x0) (SF_t s)).
+  (Tmult : R -> T -> T) x0 :=
+  foldr Tplus x0 (pairmap (fun x y => (Tmult (fst y - fst x) (snd y))) (SF_h s,x0) (SF_t s)).
 
 Lemma RInt_seq_cons {T : Type} h (s : SF_seq) (Tplus : T -> T -> T)
-  (Tmult : T -> R -> T) x0 :
+  (Tmult : R -> T -> T) x0 :
   RInt_seq (SF_cons h s) Tplus Tmult x0 = Tplus
-    (Tmult (snd h) (SF_h s - fst h)) (RInt_seq s Tplus Tmult x0).
+    (Tmult (SF_h s - fst h) (snd h)) (RInt_seq s Tplus Tmult x0).
 Proof.
   rewrite /RInt_seq //=.
   apply SF_cons_dec with (s := s) => {s} [x1 | h0 s] //=.
@@ -743,6 +743,7 @@ Proof.
   rewrite /RiemannInt_SF ; case: Rle_dec => // [_ | H].
   move: pr ; apply SF_cons_ind with (s := s) => {s} [x0 | h s IH] pr //=.
   rewrite /= -IH /RInt_seq /= => {IH}.
+  rewrite Rmult_comm.
   by apply SF_cons_dec with (s := s).
   apply pr.
   contradict H ; rewrite -nth_last -nth0 ; move: (le_refl (ssrnat.predn (size (SF_lx s)))) ;
@@ -991,14 +992,14 @@ Qed.
 
 (** * Specific step functions using unif_part *)
 
-Definition SF_val_ly (f : R -> R) (a b : R) (n : nat) : seq R :=
+Definition SF_val_ly {T} (f : R -> T) (a b : R) (n : nat) : seq T :=
   behead (pairmap (fun x y => f ((x+y)/2)) 0 (unif_part a b n)).
-Definition SF_val_seq (f : R -> R) (a b : R) (n : nat) : SF_seq :=
+Definition SF_val_seq {T} (f : R -> T) (a b : R) (n : nat) : SF_seq :=
   SF_seq_f2 (fun x y => f ((x+y)/2)) (unif_part a b n) 0.
-Definition SF_val_fun (f : R -> R) (a b : R) (n : nat) (x : R) : R :=
-  SF_fun_f2 (fun x y => f ((x+y)/2)) (unif_part a b n) (0,0) x.
+Definition SF_val_fun {T z} (f : R -> T) (a b : R) (n : nat) (x : R) : T :=
+  SF_fun_f2 (fun x y => f ((x+y)/2)) (unif_part a b n) (0,z) x.
 
-Lemma SF_val_ly_bound (f : R -> R) (a b : R) (n : nat) :
+Lemma SF_val_ly_bound {T} (f : R -> T) (a b : R) (n : nat) :
   SF_val_ly f a b n = rev (SF_val_ly f b a n).
 Proof.
   rewrite /SF_val_ly (unif_part_bound b a).
@@ -1014,9 +1015,9 @@ Proof.
 Qed.
 
 Lemma ad_SF_val_fun (f : R -> R) (a b : R) (n : nat) :
-  ((a <= b) -> adapted_couple (SF_val_fun f a b n) a b
+  ((a <= b) -> adapted_couple (SF_val_fun (z:=R0) f a b n) a b
       (seq2Rlist (unif_part a b n)) (seq2Rlist (SF_val_ly f a b n)))
-  /\ (~(a <= b) -> adapted_couple (SF_val_fun f b a n) a b
+  /\ (~(a <= b) -> adapted_couple (SF_val_fun (z:=R0) f b a n) a b
       (seq2Rlist (unif_part b a n)) (seq2Rlist (SF_val_ly f b a n))).
 Proof.
   wlog : a b / (a <= b) => Hw.
@@ -1044,10 +1045,10 @@ Qed.
 Definition sf_SF_val_fun (f : R -> R) (a b : R) (n : nat) : StepFun a b.
 Proof.
   case : (Rle_dec a b) => Hab.
-  exists (SF_val_fun f a b n) ;
+  exists (SF_val_fun (z:=R0) f a b n) ;
   exists (seq2Rlist (unif_part a b n)) ;
   exists (seq2Rlist (SF_val_ly f a b n)) ; by apply ad_SF_val_fun.
-  exists (SF_val_fun f b a n) ;
+  exists (SF_val_fun (z:=R0) f b a n) ;
   exists (seq2Rlist (unif_part b a n)) ;
   exists (seq2Rlist (SF_val_ly f b a n)) ; by apply ad_SF_val_fun.
 Defined.
@@ -1071,7 +1072,7 @@ Proof.
 Qed.
 
 Lemma SF_val_fun_rw (f : R -> R) (a b : R) (n : nat) (x : R) (Hx : a <= x <= b) :
-  SF_val_fun f a b n x =
+  SF_val_fun (z:=R0) f a b n x =
     match (unif_part_nat a b n x Hx) with
       | inleft H => f (a + (INR (projT1 H) + /2) * (b-a) / (INR n + 1))
       | inright _ => f (a + (INR n + /2) * (b-a) / (INR n + 1))
