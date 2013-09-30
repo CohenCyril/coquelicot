@@ -184,16 +184,130 @@ Qed.
 
 (** * Definition of RInt *)
 
+Lemma Riemann_fine_unif_part :
+  forall (f : R -> R -> R) (a b : R) (n : nat),
+  (forall a b, a <= b -> a <= f a b <= b) ->
+  a <= b ->
+  seq_step (SF_lx (SF_seq_f2 f (unif_part a b n) 0)) <= (b - a) / (INR n + 1) /\
+  pointed_subdiv (SF_seq_f2 f (unif_part a b n) 0) /\
+  SF_h (SF_seq_f2 f (unif_part a b n) 0) = a /\
+  last (SF_h (SF_seq_f2 f (unif_part a b n) 0)) (SF_lx (SF_seq_f2 f (unif_part a b n) 0)) = b.
+Proof.
+intros f a b n Hf Hab.
+assert (Hab' : 0 <= (b - a) / (INR n + 1)).
+  apply Rdiv_le_0_compat.
+  apply -> Rminus_le_0.
+  apply Hab.
+  apply INRp1_pos.
+unfold pointed_subdiv.
+rewrite SF_lx_f2.
+change (head 0 (unif_part a b n) :: behead (unif_part a b n)) with (unif_part a b n).
+split ; [|split ; [|split]].
+- cut (forall i, (S i < size (unif_part a b n))%nat ->
+    nth 0 (unif_part a b n) (S i) - nth 0 (unif_part a b n) i = (b - a) / (INR n + 1)).
+  + induction (unif_part a b n) as [|x0 l IHl].
+    now intros _.
+    intros H.
+    destruct l as [|x1 l].
+    easy.
+    change (seq_step _) with (Rmax (Rabs (x1 - x0)) (seq_step (x1 :: l))).
+    apply Rmax_case.
+    apply Req_le.
+    rewrite (H 0%nat).
+    now apply Rabs_pos_eq.
+    apply lt_n_S.
+    apply lt_0_Sn.
+    apply IHl.
+    intros i Hi.
+    apply (H (S i)).
+    now apply lt_n_S.
+  + rewrite size_mkseq.
+    intros i Hi.
+    rewrite !nth_mkseq.
+    rewrite S_INR.
+    unfold Rdiv.
+    ring.
+    apply SSR_leq.
+    now apply lt_le_weak.
+    now apply SSR_leq.
+- unfold pointed_subdiv.
+  rewrite SF_size_f2.
+  rewrite size_mkseq.
+  intros i Hi.
+  rewrite SF_ly_f2.
+  rewrite nth_behead.
+  rewrite (nth_pairmap 0).
+  change (nth 0 (0 :: unif_part a b n) (S i)) with (nth 0 (unif_part a b n) i).
+  rewrite !nth_mkseq.
+  apply Hf.
+  apply Rminus_le_0.
+  rewrite S_INR.
+  unfold Rdiv.
+  replace (a + (INR i + 1) * (b - a) * / (INR n + 1) - (a + INR i * (b - a) * / (INR n + 1)))
+    with ((b - a) * / (INR n + 1)) by ring.
+  exact Hab'.
+  apply SSR_leq.
+  now apply le_n_S.
+  apply SSR_leq.
+  apply le_n_S.
+  now apply lt_le_weak.
+  rewrite size_mkseq.
+  apply SSR_leq.
+  now apply le_n_S.
+- simpl.
+  unfold Rdiv.
+  ring.
+- rewrite -nth_last.
+  rewrite size_mkseq nth_mkseq.
+  rewrite S_INR.
+  field.
+  apply Rgt_not_eq.
+  apply INRp1_pos.
+  apply SSR_leq.
+  apply le_refl.
+Qed.
+
 Definition Riemann_fine (a b : R) :=
   within (fun ptd => pointed_subdiv ptd /\ SF_h ptd = Rmin a b /\ last (SF_h ptd) (SF_lx ptd) = Rmax a b)
     (locally_dist (fun ptd => seq_step (SF_lx ptd))).
 
 Global Instance Riemann_fine_filter :
-  forall a b, Filter (Riemann_fine a b).
+  forall a b, ProperFilter (Riemann_fine a b).
 Proof.
 intros a b.
-apply within_filter.
-apply locally_dist_filter.
+constructor.
+- intros P [alpha H].
+  assert (Hab : Rmin a b <= Rmax a b).
+    apply Rmax_case.
+    apply Rmin_l.
+    apply Rmin_r.
+  assert (Hn : 0 <= ((Rmax a b - Rmin a b) / alpha)).
+    apply Rdiv_le_0_compat.
+    apply -> Rminus_le_0.
+    apply Hab.
+    apply cond_pos.
+  set n := (nfloor _ Hn).
+  exists (SF_seq_f2 (fun x y => x) (unif_part (Rmin a b) (Rmax a b) n) 0).
+  destruct (Riemann_fine_unif_part (fun x y => x) (Rmin a b) (Rmax a b) n).
+  intros u v Huv.
+  split.
+  apply Rle_refl.
+  exact Huv.
+  exact Hab.
+  apply H.
+  apply Rle_lt_trans with (1 := H0).
+  apply Rlt_div_l.
+  apply INRp1_pos.
+  unfold n, nfloor.
+  destruct nfloor_ex as [n' Hn'].
+  simpl.
+  rewrite Rmult_comm.
+  apply Rlt_div_l.
+  apply cond_pos.
+  apply Hn'.
+  exact H1.
+- apply within_filter.
+  apply locally_dist_filter.
 Qed.
 
 Definition is_RInt {V} {VV : VectorSpace V R} {MV : MetricSpace V} (f : R -> V) (a b : R) (If : V) :=
