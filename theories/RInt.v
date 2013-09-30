@@ -3284,28 +3284,8 @@ Qed.
 Lemma RInt_const (a b c : R) :
   RInt (fun _ => c) a b = c * (b-a).
 Proof.
-wlog: a b /(a <= b) => [Hw | Hab].
-  case: (Rle_lt_dec a b) => Hab.
-  by apply Hw.
-  rewrite -RInt_swap Hw.
-  ring.
-  by apply Rlt_le.
-rewrite /RInt ; case: Rle_dec => // _.
-replace (c * (b - a)) with (Rbar.real (Rbar.Finite (c * (b - a)))) by auto.
-rewrite -(Lim_seq_const (c * (b-a))).
-apply f_equal, Lim_seq_ext => n.
-rewrite /RInt_val.
-replace (seq.foldr _ 0 _) with (c * (INR n + 1)).
-simpl.
-field ; apply Rgt_not_eq, INRp1_pos.
-rewrite /SF_val_ly -S_INR.
-replace (S n) with (Peano.pred (seq.size (unif_part a b n))).
-elim: (unif_part a b n) => [ | x0] /=.
-ring.
-case => [ | x1 s] ; rewrite ?(S_INR (seq.size s)) => /= IH.
-ring.
-rewrite -IH /= ; ring.
-by rewrite seq.size_mkseq.
+apply is_RInt_unique.
+apply is_RInt_const.
 Qed.
 
 (** ** Scalar multiplication *)

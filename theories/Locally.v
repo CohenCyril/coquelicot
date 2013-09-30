@@ -1092,6 +1092,37 @@ apply continuity_pt_filterlim in Cf.
 now apply Cf.
 Qed.
 
+
+Lemma filterlim_locally_unique: forall {T U} {MU : MetricSpace U} {F} {FF: ProperFilter F}
+  (f:T -> U) l l', filterlim f F (locally l) ->  filterlim f F (locally l') -> distance l l' = 0.
+Proof.
+intros T U MU F FF f l l' Hl Hl'.
+destruct (Rle_lt_or_eq_dec 0 (distance l l')); try easy.
+apply distance_ge_0.
+exfalso.
+assert (M:0 < distance l l' / 2).
+apply Rdiv_lt_0_compat.
+assumption.
+apply Rlt_R0_R2.
+assert (H:locally l (fun x => distance l x < distance l l' / 2)).
+now exists (mkposreal _ M).
+assert (locally l' (fun x => distance l' x < distance l l' / 2)).
+now exists (mkposreal _ M).
+specialize (Hl _ H).
+specialize (Hl' _ H0).
+unfold filtermap in Hl, Hl'.
+apply filter_const.
+generalize (filter_and _ _ Hl Hl').
+apply filter_imp.
+intros x (H1,H2).
+apply (Rlt_irrefl (distance l l')).
+apply Rle_lt_trans with (1:=distance_triangle _ (f x) _).
+rewrite (double_var (distance l l')).
+apply Rplus_lt_compat.
+assumption.
+now rewrite distance_comm.
+Qed.
+
 (** ** Intervals *)
 
 Lemma locally_interval (P : R -> Prop) (x : R) (a b : Rbar) :
