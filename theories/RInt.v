@@ -3614,34 +3614,47 @@ rewrite -> is_RInt_unique with (1 := Hg).
 now apply is_RInt_plus.
 Qed.
 
-Lemma ex_RInt_minus :
-  forall f g a b, ex_RInt f a b -> ex_RInt g a b ->
-  ex_RInt (fun x => f x - g x) a b.
+Lemma is_RInt_minus :
+  forall V (MV : MetricVectorSpace V R) (f g : R -> V) (a b : R) (If Ig : V),
+  is_RInt f a b If ->
+  is_RInt g a b Ig ->
+  is_RInt (fun y => minus (f y) (g y)) a b (minus If Ig).
 Proof.
-intros f g a b If Ig.
-apply ex_RInt_Reals_1.
-apply Riemann_integrable_minus ; now apply ex_RInt_Reals_2.
+intros V MV f g a b If Ig Hf Hg.
+apply filterlim_ext with (fun ptd => (plus (scal (sign (b - a)) (Riemann_sum f ptd)) (scal (opp one) (scal (sign (b - a)) (Riemann_sum g ptd))))).
+intros ptd.
+rewrite Riemann_sum_minus.
+unfold minus.
+rewrite scal_opp_one.
+rewrite -scal_opp_r.
+apply sym_eq, @scal_distr_l.
+eapply filterlim_compose_2 with (1 := Hf).
+apply filterlim_compose with (1 := Hg).
+apply mvspace_scal.
+rewrite scal_opp_one.
+apply mvspace_plus.
+Qed.
+
+Lemma ex_RInt_minus :
+  forall V (MV : MetricVectorSpace V R) (f g : R -> V) (a b : R),
+  ex_RInt f a b ->
+  ex_RInt g a b ->
+  ex_RInt (fun y => minus (f y) (g y)) a b.
+Proof.
+intros V MV f g a b [If Hf] [Ig Hg].
+exists (minus If Ig).
+now apply is_RInt_minus.
 Qed.
 
 Lemma RInt_minus :
   forall f g a b, ex_RInt f a b -> ex_RInt g a b ->
   RInt (fun x => f x - g x) a b = RInt f a b - RInt g a b.
 Proof.
-intros f g a b If Ig.
-rewrite (RInt_Reals _ _ _ (ex_RInt_Reals_2 _ _ _ If)).
-rewrite (RInt_Reals _ _ _ (ex_RInt_Reals_2 _ _ _ Ig)).
-rewrite (RInt_Reals _ _ _ (ex_RInt_Reals_2 _ _ _ (ex_RInt_minus _ _ _ _ If Ig))).
-apply RiemannInt_minus.
-Qed.
-
-Lemma is_RInt_minus (f g : R -> R) (a b lf lg : R) :
-  is_RInt f a b lf -> is_RInt g a b lg ->
-  is_RInt (fun x => f x - g x) a b (lf - lg).
-Proof.
-  move => If Ig.
-  apply is_RInt_plus.
-  by [].
-  by apply is_RInt_opp.
+intros f g a b [If Hf] [Ig Hg].
+apply is_RInt_unique.
+rewrite -> is_RInt_unique with (1 := Hf).
+rewrite -> is_RInt_unique with (1 := Hg).
+now apply is_RInt_minus.
 Qed.
 
 (** ** Composition *)
@@ -4507,7 +4520,7 @@ apply cond_pos.
 rewrite -RInt_minus //.
 rewrite Rmult_comm.
 rewrite -RInt_scal //.
-assert (D3: ex_RInt (fun t => f y t - f x t) a b) by now apply (ex_RInt_minus (fun u => f y u) (fun u => f x u)).
+assert (D3: ex_RInt (fun t => f y t - f x t) a b) by now apply ex_RInt_minus.
 assert (D4: ex_RInt (fun t => (y - x) * Derive (fun u => f u t) x) a b) by now apply ex_RInt_scal.
 rewrite -RInt_minus //.
 assert (D5: ex_RInt (fun t => f y t - f x t - (y - x) * Derive (fun u => f u t) x) a b) by now apply ex_RInt_minus.
