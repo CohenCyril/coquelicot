@@ -3457,14 +3457,30 @@ Qed.
 
 (** ** Scalar multiplication *)
 
-Lemma ex_RInt_scal :
-  forall f l a b, ex_RInt f a b ->
-  ex_RInt (fun x => l * f x) a b.
+Lemma is_RInt_scal :
+  forall V (MV : MetricVectorSpace V R) (f : R -> V) (a b : R) (k : R) (If : V),
+  is_RInt f a b If ->
+  is_RInt (fun y => scal k (f y)) a b (scal k If).
 Proof.
-intros f l a b If.
-apply ex_RInt_Reals_1.
-apply Riemann_integrable_scal.
-now apply ex_RInt_Reals_2.
+intros V MV f a b k If Hf.
+apply filterlim_ext with (fun ptd => scal k (scal (sign (b - a)) (Riemann_sum f ptd))).
+intros ptd.
+rewrite Riemann_sum_scal.
+rewrite 2!scal_assoc.
+apply (f_equal (fun x => scal x _)).
+apply Rmult_comm.
+apply filterlim_compose with (1 := Hf).
+apply mvspace_scal.
+Qed.
+
+Lemma ex_RInt_scal :
+  forall V (VV : MetricVectorSpace V R) (f : R -> V) (a b : R) (k : R),
+  ex_RInt f a b ->
+  ex_RInt (fun y => scal k (f y)) a b.
+Proof.
+intros V VV f a b k [If Hf].
+exists (scal k If).
+now apply is_RInt_scal.
 Qed.
 
 Lemma RInt_scal :
@@ -3520,18 +3536,6 @@ by rewrite Ropp_0.
 case: Rle_dec => // H1.
 case: Rle_lt_or_eq_dec => H2 //=.
 by rewrite Ropp_0.
-Qed.
-
-Lemma is_RInt_scal (f : R -> R) (k a b l : R) :
-  is_RInt f a b l -> is_RInt (fun y => k * f y) a b (k * l).
-Proof.
-  move => If.
-  rewrite -(is_RInt_unique _ _ _ _ If).
-  rewrite -RInt_scal.
-  assert (Hex : ex_RInt f a b).
-    by exists l.
-  case: (ex_RInt_scal f k a b Hex) => kl H.
-  by rewrite (is_RInt_unique _ _ _ kl).
 Qed.
 
 (** ** Additive operators *)
