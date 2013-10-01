@@ -214,6 +214,24 @@ Proof.
   exact: IH.
 Qed.
 
+(** * Topological vector spaces *)
+
+Class MetricVectorSpace V K {FK : Field K} := {
+  mvspace_vector :> VectorSpace V K ;
+  mvspace_metric :> MetricSpace V ;
+  mvspace_plus : forall x y, filterlim (fun z => plus (fst z) (snd z)) (filter_prod (locally x) (locally y)) (locally (plus x y)) ;
+  mvspace_scal : forall x y, filterlim (fun z => scal x z) (locally y) (locally (scal x y))
+}.
+
+Global Instance R_metric_vector : MetricVectorSpace R R.
+Proof.
+econstructor.
+intros x y.
+now apply filterlim_plus with (x := Finite x) (y := Finite y).
+intros x y.
+apply filterlim_scal_l with (l := Finite y).
+Defined.
+
 (** * Definition of RInt *)
 
 Lemma Riemann_fine_unif_part :
@@ -342,9 +360,9 @@ constructor.
   apply locally_dist_filter.
 Qed.
 
-Definition is_RInt {V} {VV : VectorSpace V R} {MV : MetricSpace V} (f : R -> V) (a b : R) (If : V) :=
+Definition is_RInt {V} {VV : MetricVectorSpace V R} (f : R -> V) (a b : R) (If : V) :=
   filterlim (fun ptd => scal (sign (b-a)) (Riemann_sum f ptd)) (Riemann_fine a b) (locally If).
-Definition ex_RInt {V} {VV : VectorSpace V R} {MV : MetricSpace V} (f : R -> V) (a b : R) :=
+Definition ex_RInt {V} {VV : MetricVectorSpace V R} (f : R -> V) (a b : R) :=
   exists If : V, is_RInt f a b If.
 Definition RInt (f : R -> R) (a b : R) :=
   match Rle_dec a b with
@@ -355,10 +373,10 @@ Definition RInt (f : R -> R) (a b : R) :=
 (** The integral between a and a is null *)
 
 Lemma is_RInt_point :
-  forall V (VV : VectorSpace V R) (MV : MetricSpace V) (f : R -> V) (a : R),
+  forall V (VV : MetricVectorSpace V R) (f : R -> V) (a : R),
   is_RInt f a a zero.
 Proof.
-intros V VV MV f a.
+intros V VV f a.
 apply filterlim_locally.
 move => eps ; exists (mkposreal _ Rlt_0_1) => ptd _ _.
 rewrite Rminus_eq_0 sign_0 scal_zero_l.
@@ -367,10 +385,10 @@ apply eps.
 Qed.
 
 Lemma ex_RInt_point :
-  forall V (VV : VectorSpace V R) (MV : MetricSpace V) (f : R -> V) a,
+  forall V (VV : MetricVectorSpace V R) (f : R -> V) a,
   ex_RInt f a a.
 Proof.
-intros V VV MV f a.
+intros V VV f a.
 exists zero ; by apply is_RInt_point.
 Qed.
 
@@ -391,27 +409,30 @@ Qed.
 (** Swapping bounds *)
 
 Lemma is_RInt_swap :
-  forall f a b If,
+  forall V (VV : MetricVectorSpace V R) (f : R -> V) (a b : R) (If : V),
   is_RInt f b a If -> is_RInt f a b (opp If).
 Proof.
   unfold is_RInt.
-  intros f a b If HIf.
-  apply filterlim_ext with (fun ptd => -(sign (a - b) * Riemann_sum f ptd)).
+  intros V VV f a b If HIf.
+  rewrite -scal_opp_one.
+  apply filterlim_ext with (fun ptd => scal (opp one) (scal (sign (a - b)) (Riemann_sum f ptd))).
   intros x.
-  rewrite -(Ropp_minus_distr' b a) sign_opp.
-  apply sym_eq, Ropp_mult_distr_l_reverse.
+  rewrite scal_assoc.
+  apply (f_equal (fun s => scal s _)).
+  by rewrite -(Ropp_minus_distr' b a) sign_opp /= Ropp_mult_distr_l_reverse Rmult_1_l.
   unfold Riemann_fine.
   rewrite Rmin_comm Rmax_comm.
   apply filterlim_compose with (1 := HIf).
-  exact (filterlim_opp If).
+  apply mvspace_scal.
 Qed.
+
 Lemma ex_RInt_swap :
-  forall f a b,
+  forall V (VV : MetricVectorSpace V R) (f : R -> V) (a b : R),
   ex_RInt f a b -> ex_RInt f b a.
 Proof.
-  intros f a b.
+  intros V VV f a b.
   case => If HIf.
-  exists (-If).
+  exists (opp If).
   now apply is_RInt_swap.
 Qed.
 
