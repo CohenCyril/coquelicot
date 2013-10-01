@@ -3540,14 +3540,30 @@ Qed.
 
 (** ** Additive operators *)
 
-Lemma ex_RInt_opp :
-  forall f a b, ex_RInt f a b ->
-  ex_RInt (fun x => - f x) a b.
+Lemma is_RInt_opp :
+  forall V (MV : MetricVectorSpace V R) (f : R -> V) (a b : R) (If : V),
+  is_RInt f a b If ->
+  is_RInt (fun y => opp (f y)) a b (opp If).
 Proof.
-intros f a b If.
-apply ex_RInt_Reals_1.
-apply Riemann_integrable_opp.
-now apply ex_RInt_Reals_2.
+intros V MV f a b If Hf.
+apply filterlim_ext with (fun ptd => (scal (opp one) (scal (sign (b - a)) (Riemann_sum f ptd)))).
+intros ptd.
+rewrite Riemann_sum_opp.
+rewrite scal_opp_one.
+apply sym_eq, scal_opp_r.
+apply filterlim_compose with (1 := Hf).
+rewrite -scal_opp_one.
+apply mvspace_scal.
+Qed.
+
+Lemma ex_RInt_opp :
+  forall V (MV : MetricVectorSpace V R) (f : R -> V) (a b : R),
+  ex_RInt f a b ->
+  ex_RInt (fun x => opp (f x)) a b.
+Proof.
+intros V MV f a b [If Hf].
+exists (opp If).
+now apply is_RInt_opp.
 Qed.
 
 Lemma RInt_opp :
@@ -3559,16 +3575,6 @@ replace (-RInt f a b) with ((-1) * RInt f a b) by ring.
 rewrite -RInt_scal.
 apply RInt_ext => x _.
 ring.
-Qed.
-
-Lemma is_RInt_opp (f : R -> R) (a b l : R) :
-  is_RInt f a b l -> is_RInt (fun y => - f y) a b (-l).
-Proof.
-  move => If.
-  apply is_RInt_ext with (fun y => -1 * f y).
-  move => x _ ; ring.
-  replace (-l) with (-1 * l) by ring.
-  by apply is_RInt_scal.
 Qed.
 
 Lemma ex_RInt_plus :
