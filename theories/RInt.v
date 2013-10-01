@@ -92,6 +92,48 @@ Proof.
   move: Hhl ; rewrite -?(last_map (@fst R R)) /= => <- ; apply Hs.
 Qed.
 
+Lemma Riemann_sum_const :
+  forall V (VV : VectorSpace V R) (v : V) ptd,
+  Riemann_sum (fun _ => v) ptd = scal (last (SF_h ptd) (SF_lx ptd) - SF_h ptd) v.
+Proof.
+intros V VV v ptd.
+apply SF_cons_ind with (s := ptd) => {ptd} [x0 | [x0 y0] s IH] /=.
+by rewrite /Riemann_sum /RInt_seq /= Rminus_eq_0 scal_zero_l.
+rewrite Riemann_sum_cons IH /=.
+rewrite -scal_distr_r /=.
+apply (f_equal (fun x => scal x v)).
+ring.
+Qed.
+
+Lemma Riemann_sum_scal :
+  forall V (VV : VectorSpace V R) (a:R) (f : R -> V) ptd,
+  Riemann_sum (fun x => scal a (f x)) ptd = scal a (Riemann_sum f ptd).
+Proof.
+intros V VV a f ptd.
+apply SF_cons_ind with (s := ptd) => {ptd} /= [x0 | [x0 y0] s IH].
+rewrite /Riemann_sum /RInt_seq /=.
+apply sym_eq, scal_zero_r.
+rewrite !Riemann_sum_cons /= IH.
+rewrite scal_distr_l.
+apply f_equal with (f := fun v => plus v _).
+rewrite 2!scal_assoc.
+by rewrite /= Rmult_comm.
+Qed.
+
+Lemma Riemann_sum_opp :
+  forall V (VV : VectorSpace V R) (f : R -> V) ptd,
+  Riemann_sum (fun x => opp (f x)) ptd = opp (Riemann_sum f ptd).
+Proof.
+intros V VV f ptd.
+apply SF_cons_ind with (s := ptd) => {ptd} /= [x0 | [x0 y0] s IH].
+rewrite /Riemann_sum /RInt_seq /=.
+apply sym_eq, opp_zero.
+rewrite !Riemann_sum_cons /= IH.
+rewrite opp_plus.
+apply f_equal with (f := fun v => plus v (opp (Riemann_sum f s))).
+apply scal_opp_r.
+Qed.
+
 Lemma Riemann_sum_plus :
   forall V (VV : VectorSpace V R) (f g : R -> V) ptd,
   Riemann_sum (fun x => plus (f x) (g x)) ptd =
@@ -109,26 +151,16 @@ Proof.
   apply (f_equal (fun x => plus x (Riemann_sum g s))).
   apply plus_comm.
 Qed.
+
 Lemma Riemann_sum_minus :
   forall V (VV : VectorSpace V R) (f g : R -> V) ptd,
   Riemann_sum (fun x => minus (f x) (g x)) ptd =
     minus (Riemann_sum f ptd) (Riemann_sum g ptd).
 Proof.
-  intros V VV f g ptd.
-  apply SF_cons_ind with (s := ptd) => {ptd} /= [x0 | [x0 y0] s IH].
-  rewrite /Riemann_sum /RInt_seq /=.
-  apply sym_eq, minus_zero_r.
-  rewrite !Riemann_sum_cons /= IH.
-  unfold minus.
-  rewrite scal_distr_l.
-  rewrite -!plus_assoc.
-  apply f_equal.
-  rewrite opp_plus.
-  rewrite !plus_assoc.
-  apply (f_equal (fun x => plus x _)).
-  rewrite plus_comm.
-  apply f_equal.
-  apply scal_opp_r.
+intros V VV f g ptd.
+unfold minus.
+rewrite -Riemann_sum_opp.
+apply Riemann_sum_plus.
 Qed.
 
 Lemma Riemann_sum_abs (f g : R -> R) ptd : pointed_subdiv ptd ->
