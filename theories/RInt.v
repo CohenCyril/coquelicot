@@ -3313,11 +3313,12 @@ Qed.
 
 (** ** Extensionality *)
 
-Lemma is_RInt_ext (f g : R -> R) (a b l : R) :
+Lemma is_RInt_ext :
+  forall V (MV : MetricVectorSpace V R) (f g : R -> V) (a b : R) (l : V),
   (forall x, Rmin a b <= x <= Rmax a b -> f x = g x) ->
   is_RInt f a b l -> is_RInt g a b l.
 Proof.
-intros Heq.
+intros V MV f g a b l Heq.
 apply filterlim_within_ext.
 intros ptd [Hptd [Hhead Hlast]].
 apply f_equal.
@@ -3348,12 +3349,12 @@ by apply ptd_cons with (1 := Hptd).
 Qed.
 
 Lemma ex_RInt_ext :
-  forall f g a b,
+  forall V (MV : MetricVectorSpace V R) (f g : R -> V) (a b : R),
   (forall x, Rmin a b <= x <= Rmax a b -> f x = g x) ->
   ex_RInt f a b -> ex_RInt g a b.
 Proof.
-intros f g a b Heq If.
-case: If => If Hex ; exists If.
+intros V MV f g a b Heq [If Hex].
+exists If.
 revert Hex.
 now apply is_RInt_ext.
 Qed.
