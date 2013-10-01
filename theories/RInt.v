@@ -3414,43 +3414,48 @@ Qed.
 
 (** ** Constant functions *)
 
-Lemma is_RInt_const (v a b : R) :
-  is_RInt (fun _ => v) a b (v * (b - a)).
+Lemma is_RInt_const :
+  forall V (MV : MetricVectorSpace V R) (a b : R) (v : V),
+  is_RInt (fun _ => v) a b (scal (b - a) v).
 Proof.
-wlog: a b /(a < b) => [Hw | Hab].
-  case: (Rle_lt_dec a b) => Hab.
-  case: Hab => Hab.
-  by apply Hw.
-  rewrite Hab ; rewrite Rminus_eq_0 Rmult_0_r.
-  by apply is_RInt_point.
-  replace (v * (b - a)) with (-(v * (a - b))) by ring.
-  apply is_RInt_swap.
-  by apply Hw.
-apply filterlim_locally.
-move => eps ; exists (mkposreal _ Rlt_0_1) => ptd _.
-rewrite /Rmin /Rmax ; case: Rle_dec (Rlt_le _ _ Hab) => // _ _.
-rewrite /sign ; case: Rle_dec (Rlt_le _ _ (Rgt_minus _ _ Hab)) => // H _ ;
-case: Rle_lt_or_eq_dec (Rlt_not_eq _ _ (Rgt_minus _ _ Hab)) => // {H} _ _.
-rewrite scal_one.
-intros [_ [Ha Hb]].
-replace (Riemann_sum (fun _ => v) ptd) with (v * (b-a)).
-rewrite distance_refl.
-apply eps.
-rewrite -Ha -Hb => {Ha Hb} ;
-apply SF_seq.SF_cons_ind with (s := ptd) => {ptd} [ x0 | [x0 y0] s IH] /= .
-rewrite /Riemann_sum /SF_seq.RInt_seq /= ; ring.
-rewrite Riemann_sum_cons /= -IH /= ; ring.
+intros V MV a b v.
+apply filterlim_within_ext with (fun _ => scal (b - a) v).
+2: apply filterlim_const.
+intros ptd [_ [Hhead Hlast]].
+rewrite Riemann_sum_const.
+rewrite Hlast Hhead.
+rewrite scal_assoc.
+apply (f_equal (fun x => scal x v)).
+clear.
+unfold sign.
+destruct Rle_dec as [H|H].
+assert (K := proj2 (Rminus_le_0 a b) H).
+rewrite (Rmax_right _ _ K) (Rmin_left _ _ K).
+destruct Rle_lt_or_eq_dec as [H'|H'].
+apply sym_eq, Rmult_1_l.
+rewrite -H'.
+apply sym_eq, Rmult_0_l.
+assert (K : b <= a).
+apply Rnot_lt_le.
+contradict H.
+apply -> Rminus_le_0.
+now apply Rlt_le.
+rewrite (Rmax_left _ _ K) (Rmin_right _ _ K).
+simpl.
+ring.
 Qed.
 
 Lemma ex_RInt_const :
-  forall v a b, ex_RInt (fun _ => v) a b.
+  forall V (MV : MetricVectorSpace V R) (a b : R) (v : V),
+  ex_RInt (fun _ => v) a b.
 Proof.
-intros f a b.
-exists (f * (b-a)) ; by apply is_RInt_const.
+intros V MV a b v.
+exists (scal (b - a) v).
+apply is_RInt_const.
 Qed.
 
 Lemma RInt_const (a b c : R) :
-  RInt (fun _ => c) a b = c * (b-a).
+  RInt (fun _ => c) a b = (b - a) * c.
 Proof.
 apply is_RInt_unique.
 apply is_RInt_const.
@@ -3898,7 +3903,8 @@ Proof.
     apply is_RInt_const.
     rewrite ?Rmult_0_l Rplus_0_l in If.
     rewrite -(is_RInt_unique _ _ _ _ If).
-    rewrite RInt_point /l' ; ring.
+    rewrite RInt_point.
+    apply Rmult_0_r.
     by apply Hw.
   wlog: u a b / (u > 0) => [Hw | Hu _].
     case: (Rlt_le_dec 0 u) => Hu.
@@ -4167,7 +4173,7 @@ exact If.
 now left.
 (* *)
 rewrite (Rabs_right (b-a)).
-rewrite Rmult_comm; rewrite <- RInt_const.
+rewrite <- RInt_const.
 apply Rle_trans with (1:=RInt_abs _ _ _ Hab If).
 apply RInt_le.
 exact Hab.
