@@ -219,8 +219,8 @@ Qed.
 Class MetricVectorSpace V K {FK : Field K} := {
   mvspace_vector :> VectorSpace V K ;
   mvspace_metric :> MetricSpace V ;
-  mvspace_plus : forall x y, filterlim (fun z => plus (fst z) (snd z)) (filter_prod (locally x) (locally y)) (locally (plus x y)) ;
-  mvspace_scal : forall x y, filterlim (fun z => scal x z) (locally y) (locally (scal x y))
+  mvspace_plus : forall x y, filterlim (fun z : V * V => plus (fst z) (snd z)) (filter_prod (locally x) (locally y)) (locally (plus x y)) ;
+  mvspace_scal : forall x y, filterlim (fun z : V => scal x z) (locally y) (locally (scal x y))
 }.
 
 Global Instance R_metric_vector : MetricVectorSpace R R.
@@ -3577,39 +3577,41 @@ apply RInt_ext => x _.
 ring.
 Qed.
 
-Lemma ex_RInt_plus :
-  forall f g a b, ex_RInt f a b -> ex_RInt g a b ->
-  ex_RInt (fun x => f x + g x) a b.
+Lemma is_RInt_plus :
+  forall V (MV : MetricVectorSpace V R) (f g : R -> V) (a b : R) (If Ig : V),
+  is_RInt f a b If ->
+  is_RInt g a b Ig ->
+  is_RInt (fun y => plus (f y) (g y)) a b (plus If Ig).
 Proof.
-intros f g a b If Ig.
-apply ex_RInt_Reals_1.
-apply Riemann_integrable_plus ; now apply ex_RInt_Reals_2.
+intros V MV f g a b If Ig Hf Hg.
+apply filterlim_ext with (fun ptd => (plus (scal (sign (b - a)) (Riemann_sum f ptd)) (scal (sign (b - a)) (Riemann_sum g ptd)))).
+intros ptd.
+rewrite Riemann_sum_plus.
+apply sym_eq, @scal_distr_l.
+apply filterlim_compose_2 with (1 := Hf) (2 := Hg).
+apply mvspace_plus.
+Qed.
+
+Lemma ex_RInt_plus :
+  forall V (MV : MetricVectorSpace V R) (f g : R -> V) (a b : R),
+  ex_RInt f a b ->
+  ex_RInt g a b ->
+  ex_RInt (fun y => plus (f y) (g y)) a b.
+Proof.
+intros V MV f g a b [If Hf] [Ig Hg].
+exists (plus If Ig).
+now apply is_RInt_plus.
 Qed.
 
 Lemma RInt_plus :
   forall f g a b, ex_RInt f a b -> ex_RInt g a b ->
   RInt (fun x => f x + g x) a b = RInt f a b + RInt g a b.
 Proof.
-intros f g a b If Ig.
-rewrite (RInt_Reals _ _ _ (ex_RInt_Reals_2 _ _ _ If)).
-rewrite (RInt_Reals _ _ _ (ex_RInt_Reals_2 _ _ _ Ig)).
-rewrite (RInt_Reals _ _ _ (ex_RInt_Reals_2 _ _ _ (ex_RInt_plus _ _ _ _ If Ig))).
-apply RiemannInt_plus.
-Qed.
-
-Lemma is_RInt_plus (f g : R -> R) (a b lf lg : R) :
-  is_RInt f a b lf -> is_RInt g a b lg ->
-  is_RInt (fun x => f x + g x) a b (lf + lg).
-Proof.
-  move => If Ig.
-  rewrite -(is_RInt_unique _ _ _ _ If) -(is_RInt_unique _ _ _ _ Ig).
-  assert (Hf : ex_RInt f a b).
-    by exists lf.
-  assert (Hg : ex_RInt g a b).
-    by exists lg.
-  rewrite -RInt_plus => //.
-  case: (ex_RInt_plus _ _ _ _ Hf Hg) => l H.
-  by rewrite (is_RInt_unique _ _ _ _ H).
+intros f g a b [If Hf] [Ig Hg].
+apply is_RInt_unique.
+rewrite -> is_RInt_unique with (1 := Hf).
+rewrite -> is_RInt_unique with (1 := Hg).
+now apply is_RInt_plus.
 Qed.
 
 Lemma ex_RInt_minus :
