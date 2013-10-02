@@ -115,6 +115,15 @@ Proof.
 intros T TT x [].
 Qed.
 
+Inductive disjoint_spec {T} {TT : TopologicalSpace T} (x y : T) :=
+  Disjoint_spec P Q : basis P -> basis Q -> P x -> Q y ->
+    (forall z, P z -> Q z -> False) -> disjoint_spec x y.
+
+Class SeparatedSpace T := {
+  seperated_topological :> TopologicalSpace T ;
+  separated_disjoint : forall x y : T, x <> y -> disjoint_spec x y
+}.
+
 Class PerfectSpace T := {
   perfect_topological :> TopologicalSpace T ;
   perfect_open : forall x : T, exists O, open O /\ O x
@@ -192,6 +201,24 @@ constructor.
   exact HP.
 Qed.
 *)
+
+Definition is_filter_lim {T} {TT : TopologicalSpace T} (F : (T -> Prop) -> Prop) (x : T) :=
+  forall P, basis P -> P x -> F P.
+
+Lemma is_filter_lim_unique :
+  forall {T} {ST : SeparatedSpace T} {F} {FF : ProperFilter F} (x y : T),
+  is_filter_lim F x ->
+  is_filter_lim F y ->
+  not (x <> y).
+Proof.
+intros T ST F FF x y Fx Fy H.
+destruct (separated_disjoint x y H) as [P Q BP BQ Px Qy H'].
+apply filter_const.
+generalize (filter_and _ _ (Fx P BP Px) (Fy Q BQ Qy)).
+apply filter_imp.
+intros z [Pz Qz].
+now apply (H' z).
+Qed.
 
 (** ** Continuity expressed with filters *)
 
@@ -548,6 +575,23 @@ split.
   apply cond_pos.
   intros y Hy.
   now apply He.
+Qed.
+
+Lemma is_filter_lim_locally :
+  forall {T} {MT : MetricSpace T} (x : T),
+  is_filter_lim (locally x) x.
+Proof.
+intros T MT x P [y [eps H]] Px.
+assert (Dx: 0 < eps - distance y x).
+  apply Rplus_lt_reg_r with (distance y x).
+  ring_simplify.
+  now apply H.
+exists (mkposreal _ Dx).
+intros z Dz.
+apply H.
+apply Rle_lt_trans with (1 := distance_triangle _ x _).
+replace (pos eps) with (distance y x + (eps - distance y x)) by ring.
+apply Rplus_lt_compat_l with (1 := Dz).
 Qed.
 
 Definition locally' {T} {MT : MetricSpace T} (x : T) (P : T -> Prop) :=
