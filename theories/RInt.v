@@ -214,24 +214,6 @@ Proof.
   exact: IH.
 Qed.
 
-(** * Topological vector spaces *)
-
-Class MetricVectorSpace V K {FK : Field K} := {
-  mvspace_vector :> VectorSpace V K ;
-  mvspace_metric :> MetricSpace V ;
-  mvspace_plus : forall x y, filterlim (fun z : V * V => plus (fst z) (snd z)) (filter_prod (locally x) (locally y)) (locally (plus x y)) ;
-  mvspace_scal : forall x y, filterlim (fun z : V => scal x z) (locally y) (locally (scal x y))
-}.
-
-Global Instance R_metric_vector : MetricVectorSpace R R.
-Proof.
-econstructor.
-intros x y.
-now apply filterlim_plus with (x := Finite x) (y := Finite y).
-intros x y.
-apply filterlim_scal_l with (l := Finite y).
-Defined.
-
 (** * Definition of RInt *)
 
 Lemma Riemann_fine_unif_part :

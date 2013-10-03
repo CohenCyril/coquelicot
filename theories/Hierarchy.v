@@ -19,7 +19,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 COPYING file for more details.
 *)
 
-Require Import Reals.
+Require Import Reals Locally Limit Rbar.
 
 (** * Vector space *)
 
@@ -272,3 +272,45 @@ intros x y u.
 simpl.
 apply f_equal2 ; apply scal_distr_r.
 Defined.
+
+
+(** * Topological vector spaces *)
+
+Class MetricVectorSpace V K {FK : Field K} := {
+  mvspace_vector :> VectorSpace V K ;
+  mvspace_metric :> MetricSpace V ;
+  mvspace_plus : forall x y, filterlim (fun z : V * V => plus (fst z) (snd z)) (filter_prod (locally x) (locally y)) (locally (plus x y)) ;
+  mvspace_scal : forall x y, filterlim (fun z : V => scal x z) (locally y) (locally (scal x y))
+}.
+
+Global Instance R_metric_vector : MetricVectorSpace R R.
+Proof.
+econstructor.
+intros x y.
+now apply filterlim_plus with (x := Finite x) (y := Finite y).
+intros x y.
+apply filterlim_scal_l with (l := Finite y).
+Defined.
+
+(** * Normed spaces *)
+
+Class NormedAbelianGroup G := {
+  nagroup_abelian :> AbelianGroup G ;
+  norm : G -> R ;
+  norm_zero : norm zero = 0 ;
+  norm_opp : forall x, norm (opp x) = norm x ;
+  norm_triangle : forall x y, norm (plus x y) <= norm x + norm y
+}.
+
+Lemma norm_ge_0 :
+  forall {G} {NG : NormedAbelianGroup G} (x : G),
+  0 <= norm x.
+Proof.
+intros G NG x.
+apply Rmult_le_reg_r with (1 := Rlt_R0_R2).
+rewrite Rmult_0_l, <- norm_zero, <- (plus_opp_r x).
+apply Rle_trans with (1 := norm_triangle _ _).
+rewrite norm_opp.
+apply Req_le.
+ring.
+Qed.
