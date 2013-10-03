@@ -96,6 +96,16 @@ rewrite plus_zero_r.
 apply sym_eq, plus_opp_l.
 Qed.
 
+Lemma opp_opp :
+  forall {G} {GG : AbelianGroup G} (x : G),
+  opp (opp x) = x.
+Proof.
+intros G GG x.
+apply plus_reg_r with (GG := GG) (z := opp x).
+rewrite plus_opp_r.
+apply plus_opp_l.
+Qed.
+
 Class Field K := {
   field_group :> AbelianGroup K ;
   mult : K -> K -> K ;
