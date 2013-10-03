@@ -3264,6 +3264,15 @@ Proof.
   by apply ex_RInt_Reals_aux_2.
 Qed.
 
+Lemma RInt_correct (f : R -> R) (a b : R) :
+  ex_RInt f a b -> is_RInt f a b (RInt f a b).
+Proof.
+  case => If Hf.
+  replace (RInt f a b) with If.
+  by [].
+  apply sym_eq ; by apply is_RInt_unique.
+Qed.
+
 Ltac search_RInt := let l := fresh "l" in
 evar (l : R) ;
 match goal with
