@@ -621,6 +621,71 @@ constructor.
   now apply HP.
 Qed.
 
+(** ** Complete metric space *)
+
+Class CompleteMetricSpace T := {
+  complete_metric :> MetricSpace T ;
+  cauchy := fun (F : (T -> Prop) -> Prop) => forall eps, exists x, F (ball x eps) ;
+  complete_cauchy : forall F, ProperFilter F -> cauchy F -> exists x, is_filter_lim F x
+}.
+
+Lemma filterlim_locally_cauchy :
+  forall {T U} {CU : CompleteMetricSpace U} {F} {FF : ProperFilter F} (f : T -> U),
+  (forall eps : posreal, exists P, F P /\ forall u v : T, P u -> P v -> distance (f u) (f v) < eps) <->
+  exists y, filterlim f F (locally y).
+Proof.
+intros T U CU F FF f.
+split.
+- intros H.
+  destruct (complete_cauchy (filtermap f F)) as [y Hy].
+  + unfold filtermap.
+    split.
+    intros P FP.
+    destruct (filter_ex _ FP) as [x Hx].
+    now exists (f x).
+    split.
+    apply filter_true.
+    intros P Q.
+    apply filter_and.
+    intros P Q K.
+    apply filter_imp.
+    intros x.
+    apply K.
+  + intros eps.
+    destruct (H eps) as [P [FP H']].
+    destruct (filter_ex _ FP) as [x Hx].
+    exists (f x).
+    unfold filtermap.
+    generalize FP.
+    apply filter_imp.
+    intros x' Hx'.
+    now apply H'.
+  + exists y.
+    intros P [eps HP].
+    refine (_ (Hy (ball y eps) _ _)).
+    unfold filtermap.
+    apply filter_imp.
+    intros x Hx.
+    now apply HP.
+    exists y.
+    now exists eps.
+    unfold ball.
+    rewrite distance_refl.
+    apply cond_pos.
+- intros [y Hy] eps.
+  exists (fun x => ball y (pos_div_2 eps) (f x)).
+  split.
+  apply Hy.
+  now exists (pos_div_2 eps).
+  intros u v Hu Hv.
+  apply Rle_lt_trans with (1 := distance_triangle (f u) y (f v)).
+  rewrite (double_var eps).
+  apply Rplus_lt_compat.
+  rewrite distance_comm.
+  exact Hu.
+  exact Hv.
+Qed.
+
 (** ** [R] is a metric space *)
 
 Definition distR x y := Rabs (y - x).
