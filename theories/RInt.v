@@ -3656,60 +3656,32 @@ Qed.
 
 (** ** Composition *)
 
-Lemma is_RInt_comp_opp (f : R -> R) (a b l : R) :
-  is_RInt f (-a) (-b) l
-    -> is_RInt (fun y => - f (- y)) a b l.
+Lemma is_RInt_comp_opp :
+  forall {V} {MV : MetricVectorSpace V R} (f : R -> V) (a b : R) (l : V),
+  is_RInt f (-a) (-b) l ->
+  is_RInt (fun y => opp (f (- y))) a b l.
 Proof.
-  intros If.
-  apply filterlim_locally.
-  generalize (proj1 (filterlim_locally _ l) If).
-  clear If.
-  move => If eps.
-  case: (If eps) => {If} alp If.
-  exists alp => ptd Hstep [Hptd [Hh Hl]].
-  rewrite /Rminus -Ropp_plus_distr sign_opp in If.
+intros V MV f a b l Hf.
+intros P HP.
+destruct (Hf P HP) as [eps Heps].
+clear -Heps.
+exists eps.
+intros ptd Hstep [Hptd [Hh Hl]].
+rewrite Riemann_sum_opp.
+rewrite scal_opp_r -scal_opp_l /= -sign_opp.
+rewrite Ropp_plus_distr.
   set ptd' := (mkSF_seq (-SF_h ptd)
     (seq.map (fun X => (- fst X,- snd X)) (SF_t ptd))).
-  rewrite /= /distR.
-  rewrite Rabs_minus_sym.
-  replace (l - sign (b - a) * Riemann_sum (fun y : R => - f (- y)) ptd)
-    with (l + - (- sign (b + - a) * Riemann_sum f (SF_rev ptd'))).
-Focus 2.
-  apply Rminus_diag_uniq ; ring_simplify.
-  rewrite -Rmult_plus_distr_l.
-  apply Rmult_eq_0_compat_l.
-  replace (Riemann_sum (fun y : R => - f (- y)) ptd)
-    with (- Riemann_sum f (SF_rev ptd')).
-    ring.
-  revert ptd' ;
-  apply SF_cons_ind with (s := ptd) => /= [x0 | h ptd' IH].
-  rewrite /Riemann_sum /RInt_seq /=.
-  by apply Ropp_0.
-  rewrite Riemann_sum_cons.
-  rewrite (SF_rev_cons (-fst h, -snd h)
-    (mkSF_seq (- SF_h ptd') (seq.map (fun X : R * R => (- fst X, - snd X)) (SF_t ptd')))).
-  rewrite -IH => {IH}.
-  set s := {|
-        SF_h := - SF_h ptd';
-        SF_t := seq.map (fun X : R * R => (- fst X, - snd X)) (SF_t ptd') |}.
-  rewrite Riemann_sum_rcons.
-  rewrite SF_lx_rev.
-  have H : (forall s x0, last x0 (rev s) = head x0 s).
-    move => T s0 x0.
-    case: s0 => [ | x1 s0] //=.
-    rewrite rev_cons.
-    by rewrite last_rcons.
-  rewrite H /= ; ring.
+replace (Riemann_sum (fun x => f (-x)) ptd) with (Riemann_sum f (SF_rev ptd')).
   have H : SF_size ptd = SF_size ptd'.
     rewrite /SF_size /=.
     by rewrite size_map.
-  rewrite Rabs_minus_sym.
-  apply If.
+  apply: Heps.
   clear H ;
   revert ptd' Hstep ;
   apply SF_cons_dec with (s := ptd) => [ x0  s' Hs'| h0 s] ;
   rewrite /seq_step.
-  simpl ; by apply alp.
+  apply cond_pos.
   set s' := {| SF_h := - SF_h s; SF_t := [seq (- fst X, - snd X) | X <- SF_t s] |}.
   rewrite (SF_rev_cons (-fst h0,-snd h0) s').
   rewrite SF_lx_rcons.
@@ -3823,15 +3795,39 @@ Focus 2.
   rewrite unzip1_zip.
   by rewrite last_rcons.
   rewrite size_rcons size_behead ?size_rev SF_size_ly SF_size_lx //=.
+  revert ptd' ;
+  apply SF_cons_ind with (s := ptd) => /= [x0 | h ptd' IH].
+  easy.
+  rewrite Riemann_sum_cons.
+  rewrite (SF_rev_cons (-fst h, -snd h)
+    (mkSF_seq (- SF_h ptd') (seq.map (fun X : R * R => (- fst X, - snd X)) (SF_t ptd')))).
+  rewrite -IH => {IH}.
+  set s := {|
+        SF_h := - SF_h ptd';
+        SF_t := seq.map (fun X : R * R => (- fst X, - snd X)) (SF_t ptd') |}.
+  rewrite Riemann_sum_rcons.
+  rewrite SF_lx_rev.
+  have H : (forall s x0, last x0 (rev s) = head x0 s).
+    move => T s0 x0.
+    case: s0 => [ | x1 s0] //=.
+    rewrite rev_cons.
+    by rewrite last_rcons.
+  rewrite H /=.
+  rewrite plus_comm.
+  apply (f_equal (fun x => plus (scal x _) _)).
+  ring.
 Qed.
-Lemma ex_RInt_comp_opp (f : R -> R) (a b : R) :
-  ex_RInt f (-a) (-b)
-    -> ex_RInt (fun y => - f (- y)) a b.
+
+Lemma ex_RInt_comp_opp :
+  forall {V} {MV : MetricVectorSpace V R} (f : R -> V) (a b : R),
+  ex_RInt f (-a) (-b) ->
+  ex_RInt (fun y => opp (f (- y))) a b.
 Proof.
-  case => l Hf.
+  intros V MV f a b [l If].
   exists l.
   by apply is_RInt_comp_opp.
 Qed.
+
 Lemma RInt_comp_opp (f : R -> R) (a b : R) :
   RInt (fun y => - f (- y)) a b = RInt f (-a) (-b).
 Proof.
@@ -3905,7 +3901,7 @@ Proof.
     move => x _ ; ring_simplify.
     apply f_equal.
     apply f_equal ; ring.
-    apply (is_RInt_comp_opp (fun y => (- u * f (- u * y + v)))).
+    apply (is_RInt_comp_opp (MV := R_metric_vector) (fun y => - u * f (- u * y + v))).
     apply Hw.
     by apply Ropp_gt_lt_0_contravar.
     by apply Ropp_neq_0_compat, Rlt_not_eq.
