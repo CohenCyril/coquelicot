@@ -735,6 +735,27 @@ Proof.
   try apply Rbar_not_le_lt in H.
 Qed.
 
+Lemma Rbar_min_comm (x y : Rbar) : Rbar_min x y = Rbar_min y x.
+Proof.
+  rewrite /Rbar_min ; repeat case: Rbar_le_dec ; move => //= H H0.
+  by apply Rbar_le_antisym.
+  contradict H0.
+  by apply Rbar_lt_le, Rbar_not_le_lt.
+Qed.
+
+Lemma Rbar_min_r (x y : Rbar) : Rbar_le (Rbar_min x y) y.
+Proof.
+  rewrite /Rbar_min ; case: Rbar_le_dec => H.
+  by [].
+  by right.
+Qed.
+
+Lemma Rbar_min_l (x y : Rbar) : Rbar_le (Rbar_min x y) x.
+Proof.
+  rewrite Rbar_min_comm.
+  by apply Rbar_min_r.
+Qed.
+
 (** * Rbar_abs *)
 
 Definition Rbar_abs (x : Rbar) :=

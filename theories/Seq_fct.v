@@ -943,3 +943,265 @@ Proof.
   apply ex_series_Rabs.
   by apply H3.
 Qed.
+
+(** * Swich limits *)
+
+Require Import Lub Hierarchy.
+
+Lemma is_Lub_Rbar_ne_unique (E : R -> Prop) (pr : exists x : R, E x) (l : Rbar) :
+  is_lub_Rbar E l -> Lub_Rbar_ne E pr = l.
+Admitted.
+
+Global Instance NormedAbelianGroup_MetricSpace {G : Type} :
+  NormedAbelianGroup G -> MetricSpace G.
+Proof.
+  case ; intros.
+  exists (fun x y => norm (plus x (opp y))).
+  - move => a.
+    by rewrite plus_opp_r norm_zero.
+  - move => a b.
+    by rewrite -norm_opp opp_plus opp_opp plus_comm.
+  - move => a b c.
+    apply Rle_trans with (2 := norm_triangle _ _).
+    apply Req_le.
+    by rewrite plus_assoc -(plus_assoc a) plus_opp_l plus_zero_r.
+Defined.
+
+Axiom ext_fct_ax : forall T U (f g : T -> U), (forall (x : T), f x = g x) -> f = g.
+
+Global Instance AbelianGroup_Fct {T G} :
+  AbelianGroup G -> AbelianGroup (T -> G).
+Proof.
+  case ; intros.
+Check Build_AbelianGroup.
+  apply (Build_AbelianGroup _ (fun f g => (fun x => plus (f x) (g x)))
+         (fun f => (fun x => opp (f x)))
+         (fun _ => zero)).
+  - move => f g.
+    apply ext_fct_ax => x.
+    by apply plus_comm.
+  - move => f g h.
+    apply ext_fct_ax => x.
+    by apply plus_assoc.
+  - move => f.
+    apply ext_fct_ax => x.
+    by apply plus_zero_r.
+  - move => f.
+    apply ext_fct_ax => x.
+    by apply plus_opp_r.
+Defined.
+
+Lemma UnifFct_norm_ne {T} {G} {TT : TopologicalSpace T} {NAG : NormedAbelianGroup G}
+  (f : T -> G) : exists s : R, s = 0 \/ exists x : T, s = norm (f x).
+Proof.
+  exists 0 ; by left.
+Qed.
+
+Definition UnifFct_norm {T} {G} {TT : TopologicalSpace T} {NAG : NormedAbelianGroup G}
+  (f : T -> G) : R :=
+    Rbar_min 1 (Lub_Rbar_ne _ (UnifFct_norm_ne f)).
+
+Lemma UnifFct_0_le_lub  {T} {G} {TT : TopologicalSpace T} {NAG : NormedAbelianGroup G}
+  (f : T -> G) : Rbar_le 0 (Lub_Rbar_ne _ (UnifFct_norm_ne f)).
+Proof.
+  rewrite /Lub_Rbar_ne ; case ex_lub_Rbar_ne ; case => [l | | ] //= [ub lub].
+  apply ub ; by left.
+  by left.
+  apply ub ; by left.
+Qed.
+
+Lemma UnifFct_norm_le_lub  {T} {G} {TT : TopologicalSpace T} {NAG : NormedAbelianGroup G}
+  (f : T -> G) : Rbar_le (UnifFct_norm f) (Lub_Rbar_ne _ (UnifFct_norm_ne f)).
+Proof.
+  rewrite /UnifFct_norm /Rbar_min ; case: Rbar_le_dec => //=.
+  move/Rbar_not_le_lt.
+  rewrite /Lub_Rbar_ne ; case ex_lub_Rbar_ne ; case => [l | | ] //= [ub lub] H.
+  by right.
+  apply ub ; by left.
+Qed.
+
+Lemma UnifFct_norm_zero {T} {G} {TT : TopologicalSpace T} {NAG : NormedAbelianGroup G} :
+  UnifFct_norm zero = 0.
+Proof.
+  replace 0 with (real (Finite 0)) by auto.
+  apply (f_equal real).
+  replace (Lub_Rbar_ne _ _) with (Finite 0).
+  rewrite /Rbar_min ; case: Rbar_le_dec => //= H.
+  contradict H ; apply Rbar_lt_not_le.
+  by apply Rlt_0_1.
+  apply sym_eq, is_Lub_Rbar_ne_unique ; split.
+  - move => s /= Hs.
+    case: Hs => Hs.
+    rewrite -Hs ; by right.
+    case: Hs => x -> {s}.
+    replace ((@zero (T -> G) (AbelianGroup_Fct nagroup_abelian)) x) with (@zero G nagroup_abelian).
+    rewrite norm_zero ; by right.
+    by case: (@nagroup_abelian G NAG) => /=.
+  - move => b Hb.
+    apply Hb.
+    by left.
+Qed.
+
+Lemma UnifFct_norm_opp  {T} {G} {TT : TopologicalSpace T} {NAG : NormedAbelianGroup G}
+  (f : T -> G) :
+    UnifFct_norm (opp f) = UnifFct_norm f.
+Proof.
+  apply (f_equal (fun x => real (Rbar_min 1 x))).
+  apply Lub_Rbar_ne_eqset => s ; split ; case => Hs ; try by left.
+  case: Hs => x -> {s} ; right ; exists x.
+  replace ((@opp (T -> G) (AbelianGroup_Fct nagroup_abelian)) f x) with (@opp G nagroup_abelian (f x)).
+  by apply norm_opp.
+  by case: (@nagroup_abelian G NAG) => /=.
+  case: Hs => x -> {s} ; right ; exists x ;
+  replace ((@opp (T -> G) (AbelianGroup_Fct nagroup_abelian)) f x) with (@opp G nagroup_abelian (f x)).
+  by apply sym_equal, norm_opp.
+  by case: (@nagroup_abelian G NAG) => /=.
+Qed.
+
+Lemma UnifFct_norm_triangle  {T} {G} {TT : TopologicalSpace T} {MM : NormedAbelianGroup G} :
+  forall f g : T -> G,
+  UnifFct_norm (plus f g) <= UnifFct_norm f + UnifFct_norm g.
+Proof.
+  move => f g.
+  - rewrite {2}/UnifFct_norm /Rbar_min ; case: Rbar_le_dec ;
+    rewrite /Lub_Rbar_ne ; case: ex_lub_Rbar_ne => /= lf Hf Hlf.
+    apply Rle_trans with 1.
+    rewrite /UnifFct_norm /Rbar_min ; case: Rbar_le_dec => H.
+    by apply Rle_refl.
+    apply Rbar_not_le_lt in H.
+    apply Rlt_le.
+    move: H ; case: (Lub_Rbar_ne _ _) => //= _.
+    by apply Rlt_0_1.
+    apply Rminus_le_0 ; ring_simplify.
+    rewrite /UnifFct_norm /Rbar_min ; case: Rbar_le_dec => H.
+    by apply Rle_0_1.
+    rewrite /Lub_Rbar_ne ; case: ex_lub_Rbar_ne ; case => [lg | | ] //= Hlg.
+    apply Rbar_finite_le, Hlg.
+    by left.
+    by apply Rle_refl.
+    by apply Rle_refl.
+    apply Rbar_not_le_lt in Hlf.
+    have Hlf0 : Rbar_le 0 lf.
+      apply Hf ; by left.
+    have : is_finite lf.
+      case: (lf) Hlf Hlf0 => [r | | ] //= H H0.
+      by case: H0.
+    case: lf Hf Hlf Hlf0 => [lf | | ] //= Hf Hlf Hlf0 _.
+    apply Rbar_finite_le in Hlf0.
+  - rewrite {2}/UnifFct_norm /Rbar_min ; case: Rbar_le_dec ;
+    rewrite /Lub_Rbar_ne ; case: ex_lub_Rbar_ne => /= lg Hg Hlg.
+    apply Rle_trans with 1.
+    rewrite /UnifFct_norm /Rbar_min ; case: Rbar_le_dec => H.
+    by apply Rle_refl.
+    apply Rbar_not_le_lt in H.
+    apply Rlt_le.
+    move: H ; case: (Lub_Rbar_ne _ _) => //= _.
+    by apply Rlt_0_1.
+    apply Rminus_le_0 ; ring_simplify.
+    by [].
+    apply Rbar_not_le_lt in Hlg.
+    have Hlg0 : Rbar_le 0 lg.
+      apply Hg ; by left.
+    have : is_finite lg.
+      case: (lg) Hlg Hlg0 => [r | | ] //= H H0.
+      by case: H0.
+    case: lg Hg Hlg Hlg0 => [lg | | ] //= Hg Hlg Hlg0 _.
+    apply Rbar_finite_le in Hlg0.
+  - rewrite /UnifFct_norm.
+    + have Hlub : Rbar_le (Lub_Rbar_ne
+      (fun s : R => s = 0 \/ (exists x : T, s = norm (plus f g x)))
+      (@UnifFct_norm_ne T G TT MM (@plus (T -> G) (@AbelianGroup_Fct T G (@nagroup_abelian G MM)) f g))) (lf + lg).
+      rewrite /Lub_Rbar_ne ; case: ex_lub_Rbar_ne ; case => [l | | ] //= H.
+      apply H => s ; case => [-> | [x -> ]] {s}.
+      by apply Rbar_finite_le, Rplus_le_le_0_compat.
+      replace (norm (plus f g x)) with (norm (plus (f x) (g x))).
+      apply Rbar_finite_le, Rle_trans with (1 := norm_triangle _ _).
+      apply Rplus_le_compat ; apply Rbar_finite_le.
+      apply Hf ; right ; by exists x.
+      apply Hg ; right ; by exists x.
+      by case: nagroup_abelian.
+      apply H => s ; case => [-> | [x -> ]] {s}.
+      by apply Rbar_finite_le, Rplus_le_le_0_compat.
+      replace (norm (plus f g x)) with (norm (plus (f x) (g x))).
+            apply Rbar_finite_le, Rle_trans with (1 := norm_triangle _ _).
+      apply Rplus_le_compat ; apply Rbar_finite_le.
+      apply Hf ; right ; by exists x.
+      apply Hg ; right ; by exists x.
+      by case: nagroup_abelian.
+      by left.
+    + have Hlub' : (Lub_Rbar_ne
+      (fun s : R => s = 0 \/ (exists x : T, s = @norm G MM ((plus f g) x)))
+      (@UnifFct_norm_ne T G TT MM (@plus (T -> G) (@AbelianGroup_Fct T G (@nagroup_abelian G MM)) f g))) <= (lf + lg).
+      move: Hlub ; case: (Lub_Rbar_ne _ _) => [x | | ] //= H.
+      by apply Rbar_finite_le.
+      by apply Rplus_le_le_0_compat.
+      by apply Rplus_le_le_0_compat.
+
+    apply Rle_trans with (2 := Hlub').
+    rewrite /Rbar_min ; case: Rbar_le_dec.
+    move: Hlub Hlub' ;
+    rewrite /Lub_Rbar_ne ; case: ex_lub_Rbar_ne ; case => [l | | ] //= H H0 Hl.
+    by apply Rbar_finite_le.
+    by case: H0.
+    move => H1 ; contradict H1.
+    by apply Rbar_lt_not_le.
+    move => _ ; by right.
+Qed.
+
+Global Instance NAG_UnifFct {T} {G} {TT : TopologicalSpace T} :
+  NormedAbelianGroup G -> NormedAbelianGroup (T -> G).
+Proof.
+  move => NAG.
+  exists (@AbelianGroup_Fct T G (@nagroup_abelian G NAG)) UnifFct_norm.
+  - by apply UnifFct_norm_zero.
+  - move => f.
+    by apply UnifFct_norm_opp.
+  - move => f g.
+    by apply UnifFct_norm_triangle.
+Defined.
+
+Lemma filterlim_swich_1 {T1 T2 G} {TT1 : TopologicalSpace T1} {TT2 : TopologicalSpace T2} {NAG : NormedAbelianGroup G}
+  (f : T1 -> T2 -> G) F1 F2 (FF1 : Filter F1) (FF2 : Filter F2) g h (l : G) :
+  (filterlim f F1 (locally g))
+  -> (forall x, filterlim (f x) F2 (locally (h x)))
+  -> filterlim h F1 (locally l) -> filterlim g F2 (locally l).
+Proof.
+intros Hfg Hfh Hhl P.
+apply filterlim_locally.
+move => eps.
+wlog: eps / (eps < 1) => [Hw | Heps].
+case: (Rlt_le_dec eps 1) => Heps.
+by apply Hw.
+suff : F2 (fun x : T2 => @distance G (@NormedAbelianGroup_MetricSpace G NAG) l (g x) < 1/2).
+  apply filter_imp => x Hx.
+  apply Rlt_trans with (1 := Hx).
+  apply Rlt_le_trans with (2 := Heps).
+  apply Rminus_lt_0 ; field_simplify ; rewrite {1}/Rdiv (Rmult_0_l (/1)).
+  by apply (is_pos_div_2 (mkposreal _ Rlt_0_1)).
+  apply (Hw (pos_div_2 (mkposreal _ Rlt_0_1))).
+  simpl ; apply Rminus_lt_0 ; field_simplify ; rewrite {1}/Rdiv (Rmult_0_l (/1)).
+  by apply (is_pos_div_2 (mkposreal _ Rlt_0_1)).
+
+move: (proj1 (@filterlim_locally _ _ _ F1 FF1 h l) Hhl (pos_div_2 eps)) => {Hhl} /= Hhl.
+move: (proj1 (@filterlim_locally _ _ _ F1 FF1 f g) Hfg (pos_div_2 (pos_div_2 eps))) => {Hfg} /= Hfg.
+move: (fun x => proj1 (@filterlim_locally _ _ _ F2 FF2 (f x) (h x)) (Hfh x) (pos_div_2 (pos_div_2 eps))) => {Hfh} /= Hfh.
+have : F1 (fun x => forall y, @distance G (@NormedAbelianGroup_MetricSpace G NAG) (g y) (f x y) < eps / 2 / 2).
+  move: Hfg.
+  apply filter_imp => x Hx y.
+Admitted.
+
+(* Lemma filterlim_swich {T1 T2} {TT1 : TopologicalSpace T1} {TT2 : TopologicalSpace T2}
+  (f : T1 -> T2 -> R) F1 F2 F23 g h :
+  (filterlim f F1 F23) -> (@filter_cv _ topo_UnifFct F23 g)
+  -> (forall x, filterlim (f x) F2 (locally (h x)))
+  -> exists l, filterlim h F1 (locally l) /\ filterlim g F2 (locally l) .
+Proof.
+  intros.
+  
+Admitted. *)
+
+
+
+
+
+
