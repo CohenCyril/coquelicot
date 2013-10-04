@@ -365,11 +365,9 @@ Proof.
   split => Hcv.
   by apply cv_cauchy_1, ex_series_equiv_0.
   apply ex_series_equiv_1.
-Admitted.
-(* ?? used to work before my last update... *)
-(*  apply R_complete.
+  apply cv_cauchy_2.
   by apply Hcv.
-Qed.*)
+Qed.
 
 Lemma ex_series_lim_0 (a : nat -> R) :
   ex_series a -> is_lim_seq a 0.

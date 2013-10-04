@@ -857,9 +857,8 @@ Lemma CVN_CVU_r (fn : nat -> R -> R) (r : posreal) :
     CVU (fun n => SP fn n) (fun x => Series (fun n => fn n x)) x e.
 Proof.
   case => An [l [H H0]] x Hx.
-  have H1 : ex_series An.
-    admit.
-  (*  intros; apply (ex_series_equiv_1 An).
+  have H1 : @ex_series R Hierarchy.R_metric_vector An.
+    apply ex_series_equiv_1.
     exists l => e He.
     case: (H e He) => {H} N H.
     exists N => n Hn.
@@ -874,7 +873,7 @@ Proof.
     by [].
     apply Rle_trans with (Rabs (fn (S n) 0)).
     by apply Rabs_pos.
-    apply H0 ; rewrite /Boule Rminus_0_r Rabs_R0 ; by apply r.*)
+    apply H0 ; rewrite /Boule Rminus_0_r Rabs_R0 ; by apply r.
 
   have H2 : is_lim_seq (fun n => Series (fun k => An (n + k)%nat)) 0.
     apply is_lim_seq_incr_1.
@@ -895,12 +894,12 @@ Proof.
     elim => /= [ | n IH].
     by [].
     by rewrite IH.
-    admit.
-   (* apply Lim_seq_correct', H1.*)
+    apply is_lim_seq_ext with (sum_n An).
+    move => n ; by rewrite sum_n_sum_f_R0.
+    apply Lim_seq_correct', H1.
     easy.
 
-  admit.
-(*  have H3 : forall y, Boule 0 r y -> ex_series (fun n => Rabs (fn n y)).
+  have H3 : forall y, Boule 0 r y -> @ex_series R Hierarchy.R_metric_vector (fun n => Rabs (fn n y)).
   move => y Hy.
   move: H1 ; apply Comp_ex_series.
   move => n ; split.
@@ -944,7 +943,7 @@ Proof.
   by apply ex_series_decal_n.
   by apply lt_O_Sn.
   apply ex_series_Rabs.
-  by apply H3.*)
+  by apply H3.
 Qed.
 
 (** * Swich limits *)

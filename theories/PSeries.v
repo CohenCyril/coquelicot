@@ -35,21 +35,19 @@ Definition PSeries (a : nat -> R) (x : R) : R :=
 Lemma ex_pseries_dec (a : nat -> R) (x : R) :
   {ex_pseries a x} + {~ ex_pseries a x}.
 Proof.
-admit.
-(* should be deduced from ??
-  case: (ex_lim_seq_dec (sum_f_R0 (fun k => a k * x ^ k))) => H.
+  case: (ex_lim_seq_dec (sum_n (fun k => a k * x ^ k))) => H.
   apply Lim_seq_correct in H.
-  case: (Lim_seq (sum_f_R0 (fun k : nat => a k * x ^ k))) H => [l | | ] H.
+  case: (Lim_seq (sum_n (fun k : nat => a k * x ^ k))) H => [l | | ] H.
   left ; by exists l.
   right ; case => l Hl.
-  move: (is_lim_seq_unique _ _ Hl).
+  move: (is_lim_seq_unique (sum_n (fun k => a k * x ^ k)) l Hl).
   by rewrite (is_lim_seq_unique _ _ H).
   right ; case => l Hl.
-  move: (is_lim_seq_unique _ _ Hl).
+  move: (is_lim_seq_unique (sum_n (fun k => a k * x ^ k)) l Hl).
   by rewrite (is_lim_seq_unique _ _ H).
   right ; contradict H.
   case: H => l H.
-  by exists l.*)
+  by exists l.
 Qed.
 
 Lemma is_pseries_unique (a : nat -> R) (x l : R) :
@@ -119,12 +117,11 @@ Qed.
 Lemma is_pseries_0 (a : nat -> R) :
   is_pseries a 0 (a O).
 Proof.
-admit.
-(*  apply is_lim_seq_ext with (fun _ => a O).
+  apply (is_lim_seq_ext (fun _ => a O) (sum_n (fun k : nat => a k * 0 ^ k)) (a O)).
   elim => [ | n IH] /=.
   ring.
   rewrite -IH ; ring.
-  by apply is_lim_seq_const.*)
+  by apply is_lim_seq_const.
 Qed.
 Lemma ex_pseries_0 (a : nat -> R) :
   ex_pseries a 0.
@@ -165,12 +162,11 @@ Lemma CV_disk_0 (a : nat -> R) :
   CV_disk a 0.
 Proof.
   exists (Rabs (a O)).
-  admit.
-(*  apply is_lim_seq_ext with (fun _ => Rabs (a O)).
+  apply (is_lim_seq_ext (fun _ => Rabs (a O)) _ (Rabs (a O))).
   elim => /= [ | n IH].
   by rewrite Rmult_1_r.
   by rewrite Rmult_0_l Rmult_0_r Rabs_R0 Rplus_0_r.
-  by apply is_lim_seq_const.*)
+  by apply is_lim_seq_const.
 Qed.
 
 Definition CV_radius (a : nat -> R) : Rbar :=
@@ -197,8 +193,11 @@ Admitted.
   have : forall y, Rabs y < Rabs r -> (CV_disk a) y.
     move => y Hy ; rewrite /CV_disk /=.
   set l := (Rabs (y / r)).
-  have : ex_series (fun n => M * l ^ n).
-  apply ex_series_scal_l.
+  have : @ex_series _ Hierarchy.R_metric_vector (fun n => M * l ^ n).
+  apply ex_series_ext with (fun n : nat => @Hierarchy.scal R R Hierarchy.R_field
+       (@Hierarchy.mvspace_vector R R Hierarchy.R_field _) M (l ^ n)).
+    by elim.
+  apply (ex_series_scal_l M (pow l)).
   apply ex_series_geom.
   rewrite /l Rabs_Rabsolu Rabs_div.
   apply Rlt_div_l.
@@ -312,9 +311,8 @@ Lemma CV_disk_inside (a : nat -> R) (x : R) :
   Rbar_lt (Finite (Rabs x)) (CV_radius a)
     -> ex_series (fun n => Rabs (a n * x ^ n)).
 Proof.
-Admitted.
-(*  move => Ha.
-  have H : ~ ~ ex_series (fun n => Rabs (a n * x ^ n)).
+  move => Ha.
+  have H : ~ ~ @ex_series R Hierarchy.R_metric_vector (fun n => Rabs (a n * x ^ n)).
     contradict Ha.
     apply Rbar_le_not_lt.
     rewrite /CV_radius /Lub_Rbar_ne ;
@@ -326,7 +324,7 @@ Admitted.
     apply CV_disk_le.
     by apply Rlt_le, Rlt_le_trans with (2 := Rle_abs _).
   by case: (ex_series_dec (fun n => Rabs (a n * x ^ n))).
-Qed.*)
+Qed.
 Lemma CV_radius_inside (a : nat -> R) (x : R) :
   Rbar_lt (Finite (Rabs x)) (CV_radius a)
     -> ex_pseries a x.
@@ -435,7 +433,7 @@ Admitted.
   case: (Req_dec x 0) => Hx.
   rewrite Hx.
   exists (Rabs (a O)).
-  apply is_lim_seq_ext with (fun _ => Rabs (a O)).
+  apply (is_lim_seq_ext (fun _ => Rabs (a O)) _ (Rabs (a 0%nat))).
   elim => /= [ | n IH].
   by rewrite Rmult_1_r.
   by rewrite Rmult_0_l Rmult_0_r Rabs_R0 Rplus_0_r.
@@ -520,7 +518,7 @@ Admitted.
   apply Rlt_le, Rle_lt_trans with (2 := proj1 H0).
   apply Rbar_finite_le, ub.
   exists (Rabs (a O)).
-  apply is_lim_seq_ext with (fun _ => Rabs (a O)).
+  apply (is_lim_seq_ext (fun _ => Rabs (a O)) _ (Rabs (a 0%nat))).
     elim => [ | n IH] /=.
     by rewrite Rmult_1_r.
     by rewrite Rmult_0_l Rmult_0_r Rabs_R0 Rplus_0_r.
@@ -532,7 +530,7 @@ Admitted.
   split ; apply Rmult_lt_compat_r ; by intuition.
   case: (ub 0) => //.
   exists (Rabs (a O)).
-  apply is_lim_seq_ext with (fun _ => Rabs (a O)).
+  apply (is_lim_seq_ext (fun _ => Rabs (a O)) _ (Rabs (a 0%nat))).
     elim => [ | n IH] /=.
     by rewrite Rmult_1_r.
     by rewrite Rmult_0_l Rmult_0_r Rabs_R0 Rplus_0_r.
@@ -556,7 +554,7 @@ Admitted.
       apply Rplus_le_compat_r.
       apply Rbar_finite_le, ub.
       exists (Rabs (a O)).
-      apply is_lim_seq_ext with (fun _ => Rabs (a O)).
+      apply (is_lim_seq_ext (fun _ => Rabs (a O)) _ (Rabs (a 0%nat))).
       elim => [ | k IH] /=.
       by rewrite Rmult_1_r.
       by rewrite Rmult_0_l Rmult_0_r Rabs_R0 Rplus_0_r.
@@ -576,7 +574,7 @@ Admitted.
   by apply Rbar_lt_not_le, Rlt_n_Sn.
   case: (ub 0) => //.
   exists (Rabs (a O)).
-  apply is_lim_seq_ext with (fun _ => Rabs (a O)).
+  apply (is_lim_seq_ext (fun _ => Rabs (a O)) _ (Rabs (a 0%nat))).
   elim => [ | k IH] /=.
   by rewrite Rmult_1_r.
   by rewrite Rmult_0_l Rmult_0_r Rabs_R0 Rplus_0_r.
@@ -715,16 +713,16 @@ Lemma is_pseries_plus (a b : nat -> R) (x la lb : R) :
   is_pseries a x la -> is_pseries b x lb
     -> is_pseries (PS_plus a b) x (la + lb).
 Proof.
-Admitted.
-(*  move => Ha Hb.
-  apply is_lim_seq_ext
-    with (fun n => (sum_f_R0 (fun k => a k * x ^ k) n) + (sum_f_R0 (fun k => b k * x ^ k) n)).
+  move => Ha Hb.
+  apply (is_lim_seq_ext
+    (fun n => (sum_n (fun k => a k * x ^ k) n) + (sum_n (fun k => b k * x ^ k) n))
+    _ (la + lb)).
   elim => [ | n IH].
   simpl ; rewrite /PS_plus ; ring.
   simpl ; rewrite -IH /PS_plus ; ring.
   replace (Finite (la + lb)) with (Rbar_plus la lb) by auto.
   by apply is_lim_seq_plus.
-Qed.*)
+Qed.
 Lemma ex_pseries_plus (a b : nat -> R) (x : R) :
   ex_pseries a x -> ex_pseries b x
     -> ex_pseries (PS_plus a b) x.
@@ -847,17 +845,23 @@ Definition PS_scal_l (c : R) (a : nat -> R) (n : nat) : R :=
 Lemma is_pseries_scal_l (c : R) (a : nat -> R) (x l : R) :
   is_pseries a x l -> is_pseries (PS_scal_l c a) x (c * l).
 Proof.
-Admitted.
-(*  move => Ha.
-  apply is_lim_seq_ext with (fun n => c * (sum_f_R0 (fun k => a k * x ^ k) n)).
+  move => Ha.
+  apply (is_lim_seq_ext (fun n => c * (sum_n (fun k => a k * x ^ k) n)) _ (c * l)).
   elim => [ | n IH].
   simpl ; rewrite /PS_scal_l; ring.
   simpl ; rewrite -IH /PS_scal_l ; ring.
   evar (l0 : Rbar) ; replace (Finite (c * l)) with l0.
   apply is_lim_seq_scal_l.
+  unfold is_pseries, is_series in Ha.
+  have Ha' : filterlim (@sum_n R
+          (@Hierarchy.vspace_group R R Hierarchy.R_field
+             (@Hierarchy.mvspace_vector R R Hierarchy.R_field
+                Hierarchy.R_metric_vector))
+                (fun k : nat => a k * x ^ k)) eventually (Rbar_locally l).
   by apply Ha.
+  by apply Ha'.
   by simpl.
-Qed.*)
+Qed.
 Lemma ex_pseries_scal_l (c : R) (a : nat -> R) (x : R) :
   ex_pseries a x -> ex_pseries (PS_scal_l c a) x.
 Proof.
