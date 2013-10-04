@@ -365,9 +365,11 @@ Proof.
   split => Hcv.
   by apply cv_cauchy_1, ex_series_equiv_0.
   apply ex_series_equiv_1.
-  apply R_complete.
+Admitted.
+(* ?? used to work before my last update... *)
+(*  apply R_complete.
   by apply Hcv.
-Qed.
+Qed.*)
 
 Lemma ex_series_lim_0 (a : nat -> R) :
   ex_series a -> is_lim_seq a 0.
@@ -399,18 +401,19 @@ Lemma Series_Rabs (a : nat -> R) :
   ex_series (fun n => Rabs (a n)) ->
     Rabs (Series a) <= Series (fun n => Rabs (a n)).
 Proof.
-Admitted.
-(*  move => Hra.
+  move => Hra.
   have Ha := (ex_series_Rabs a Hra).
   case: Hra => lra Hra.
   case: Ha => la Ha.
   rewrite /is_series in Hra Ha.
   rewrite /Series /=.
-  replace (Lim_seq (sum_f_R0 (fun k : nat => a k))) with (Finite la).
-  replace (Lim_seq (sum_f_R0 (fun k : nat => Rabs (a k)))) with (Finite lra).
+  replace (Lim_seq (sum_n a)) with (Finite la).
+  replace (Lim_seq (sum_n (fun k : nat => Rabs (a k)))) with (Finite lra).
   simpl.
   apply (is_lim_seq_abs _ la) in Ha.
-  apply Rbar_finite_le, (fun H => is_lim_seq_le _ _ _ _ H Ha Hra).
+  apply Rbar_finite_le.
+  eapply is_lim_seq_le with (2:=Ha).
+  2: apply Hra.
   elim => [ | n IH] /=.
   by apply Rle_refl.
   apply Rle_trans with (1 := Rabs_triang _ _).
@@ -418,7 +421,7 @@ Admitted.
   by apply IH.
   by apply sym_eq, is_lim_seq_unique.
   by apply sym_eq, is_lim_seq_unique.
-Qed.*)
+Qed.
 
 (** Comparison *)
 
@@ -484,22 +487,33 @@ Qed.
 
 (** Additive operators *)
 
+Lemma filterlim_opp_2 {V} {VV : MetricVectorSpace V R}: forall (x:V), 
+   filterlim opp (locally x) (locally (opp x)).
+Proof.
+intros x.
+unfold locally, filterlim, filtermap, filter_le, locally_dist.
+intros P (d, Hd).
+exists d.
+intros y Hy; apply Hd.
+SearchAbout distance.
+Admitted.
+(* Note to myself: truth ??, generalization ???? *)
+
+
 Lemma is_series_opp  {V} {VV : MetricVectorSpace V R} (a : nat -> V) (la : V) :
   is_series a la
     -> is_series (fun n => opp (a n)) (opp la).
 Proof.
-Admitted.
-(*  move => Ha.
-  apply is_lim_seq_ext
-    with (fun n => - (sum_f_R0 (fun k => a k) n)).
+  move => Ha.
+   apply filterlim_ext with (fun n => opp (sum_n a n)).
   elim => [ | n IH].
-  simpl ; ring.
-  simpl ; rewrite -IH ; ring.
-  search_lim_seq.
-  apply -> is_lim_seq_opp.
-  by apply Ha.
-  by simpl.
-Qed.*)
+  simpl ; easy.
+  simpl ; rewrite -IH.
+  apply opp_plus.
+  apply filterlim_compose with (1:=Ha).
+  apply (filterlim_opp_2 la).
+Qed.
+
 Lemma ex_series_opp  {V} {VV : MetricVectorSpace V R} (a : nat -> V) :
   ex_series a
     -> ex_series (fun n => opp (a n)).
