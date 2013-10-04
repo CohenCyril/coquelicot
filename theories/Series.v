@@ -21,23 +21,64 @@ COPYING file for more details.
 
 Require Import Reals ssreflect.
 Require Import Rcomplements.
-Require Import Limit Rbar.
+Require Import Limit Rbar Hierarchy Locally.
+
+(** Sum *)
+
+Fixpoint sum_n {G} {GG: AbelianGroup G} (a:nat -> G) (N : nat) {struct N} : G :=
+  match N with
+   | 0%nat => a 0%nat
+   | S i => plus (sum_n a i)  (a (S i))
+  end.
+
+
+Lemma sum_n_ext: forall {G} {GG: AbelianGroup G} (a b:nat-> G) N, 
+   (forall n, a n = b n) -> sum_n a N = sum_n b N.
+Proof.
+  intros G GG a b N H; induction N; simpl.
+  apply H.
+  now rewrite IHN; rewrite H.
+Qed.
+
+
+Lemma sum_n_sum_f_R0: forall a N, sum_n a N = sum_f_R0 a N.
+Proof.
+  intros a; induction N; simpl.
+  easy.
+  now rewrite IHN.
+Qed.
+
+Lemma decomp_sum_n: forall {G} {GG: AbelianGroup G} (a:nat-> G) N, 
+  (0 < N)%nat ->
+   sum_n a N = plus (a 0%nat) (sum_n (fun i : nat => a (S i)) (pred N)).
+Proof.
+  intros G GG a N HN; destruct N; simpl.
+  exfalso; omega.
+  clear HN; induction N; simpl.
+  easy.
+  rewrite IHN.
+  apply sym_eq, plus_assoc.
+Qed.  
+
+
 
 (** * Definitions *)
 
-Definition is_series (a : nat -> R) (l : R) :=
-  is_lim_seq (sum_f_R0 (fun k => a k)) l.
-Definition ex_series (a : nat -> R) :=
-  ex_finite_lim_seq (sum_f_R0 (fun k => a k)).
+Definition is_series {V} {VV : MetricVectorSpace V R} (a : nat -> V) (l : V) :=
+   filterlim (sum_n a) (eventually) (locally l).
+
+Definition ex_series {V} {VV : MetricVectorSpace V R} (a : nat -> V) :=
+   exists l : V, is_series a l.
+
 Definition Series (a : nat -> R) : R :=
-  real (Lim_seq (sum_f_R0 (fun k => a k))).
+   real (Lim_seq (sum_n a)).
 
 Lemma ex_series_dec (a : nat -> R) :
   {ex_series a} + {~ex_series a}.
 Proof.
-  case: (ex_lim_seq_dec (sum_f_R0 (fun k => a k))) => H.
+  case: (ex_lim_seq_dec (sum_n a)) => H.
   apply Lim_seq_correct in H.
-  case: (Lim_seq (sum_f_R0 (fun k : nat => a k))) H => [l | | ] H.
+  case: (Lim_seq (sum_n a)) H => [l | | ] H.
   left ; by exists l.
   right ; case => l H0.
   absurd (p_infty = Finite l) => //.
@@ -78,21 +119,20 @@ Lemma is_series_equiv (a : nat -> R) (l : R) :
   is_series a l <-> infinite_sum a l.
 Proof.
   split => H.
-  apply is_lim_seq_spec in H.
+  apply (is_lim_seq_spec _ l) in H.
   move => e He ; set eps := mkposreal e He.
   case: (H eps) => /= {H} N H.
   exists N => n Hn.
-  replace (sum_f_R0 a n) with (sum_f_R0 (fun k : nat => a k) n)
-    by (elim: (n) => //= k -> //).
+  rewrite <- sum_n_sum_f_R0.
   by apply (H n Hn).
-  apply is_lim_seq_spec.
+  apply (is_lim_seq_spec _ l).
   move => eps.
   case: (H eps (cond_pos eps)) => {H} N H.
   exists N => n Hn.
-  replace (sum_f_R0 (fun k : nat => a k) n) with (sum_f_R0 a n)
-    by (elim: (n) => //= k -> //).
+  rewrite sum_n_sum_f_R0.
   by apply (H n Hn).
 Qed.
+
 Lemma ex_series_equiv_0 (a : nat -> R) :
   ex_series a -> { l:R | Un_cv (fun N:nat => sum_f_R0 a N) l }.
 Proof.
@@ -100,11 +140,10 @@ Proof.
   exists (Series a) ; case: H => l H.
   replace (Series a) with l.
   move => e He ; set eps := mkposreal e He.
-  apply is_lim_seq_spec in H.
+  apply (is_lim_seq_spec _ l) in H.
   case: (H eps) => /= {H} N H.
   exists N => n Hn.
-  replace (sum_f_R0 a n) with (sum_f_R0 (fun k : nat => a k) n)
-    by (elim: (n) => //= k -> //).
+  rewrite <- sum_n_sum_f_R0.
   by apply (H n Hn).
   apply sym_eq.
   rewrite /Series.
@@ -112,33 +151,31 @@ Proof.
   apply f_equal.
   by apply is_lim_seq_unique.
 Qed.
+
 Lemma ex_series_equiv_1 (a : nat -> R) :
   { l:R | Un_cv (fun N:nat => sum_f_R0 a N) l } -> ex_series a.
 Proof.
   case => l H.
   exists l.
-  apply is_lim_seq_spec.
+  apply (is_lim_seq_spec _ l).
   move => eps.
   case: (H eps (cond_pos eps)) => {H} N H.
   exists N => n Hn.
-  replace (sum_f_R0 (fun k : nat => a k) n) with (sum_f_R0 a n)
-    by (elim: (n) => //= k -> //).
+  rewrite sum_n_sum_f_R0.
   by apply (H n Hn).
 Qed.
 
 (** Extensionality *)
 
-Lemma is_series_ext (a b : nat -> R) (l : R) :
+Lemma is_series_ext {V} {VV : MetricVectorSpace V R} (a b : nat -> V) (l : V) :
   (forall n, a n = b n) -> (is_series a l)
     -> is_series b l.
 Proof.
   move => Heq.
-  apply is_lim_seq_ext.
-  elim => /= [ | n IH] .
-  by rewrite Heq.
-  by rewrite IH Heq.
+  apply filterlim_ext.
+  intros x; now apply sum_n_ext.
 Qed.
-Lemma ex_series_ext (a b : nat -> R) :
+Lemma ex_series_ext {V} {VV : MetricVectorSpace V R} (a b : nat -> V) :
   (forall n, a n = b n) -> ex_series a
     -> ex_series b.
 Proof.
@@ -151,32 +188,38 @@ Proof.
   move => Heq.
   apply (f_equal real).
   apply Lim_seq_ext.
-  elim => /= [ | n IH] .
-  by rewrite Heq.
-  by rewrite IH Heq.
+  intros n; now apply sum_n_ext.
 Qed.
 
 (** Index offset *)
 
-Lemma is_series_incr_1 (a : nat -> R) (l : R) :
-  is_series a (l + a O)
+Lemma is_series_incr_1 {V} {VV : MetricVectorSpace V R} (a : nat -> V) (l : V) :
+  is_series a (plus l  (a O))
     -> is_series (fun k => a (S k)%nat) l.
 Proof.
-  move /is_lim_seq_spec => Ha.
-  apply is_lim_seq_spec.
-  intros eps.
-  case: (Ha eps) => {Ha} N Ha.
-  exists N => n Hn.
-  replace (sum_f_R0 (fun k : nat => a (S k)) n - l)
-    with (a O + sum_f_R0 (fun k : nat => a (S k)) (pred (S n)) - (l + a O))
-    by (simpl ; ring).
-  rewrite -(decomp_sum (fun k => a k)).
-  apply (Ha (S n)).
-  by intuition.
-  by apply lt_O_Sn.
+  intros H.
+  apply filterlim_ext with (fun k => plus (sum_n a (S k)) (opp (a 0%nat))).
+  induction x; simpl.
+  rewrite (plus_comm _ (a 1%nat)); rewrite <- plus_assoc.
+  now rewrite plus_opp_r plus_zero_r.
+  rewrite <- IHx; simpl.
+  rewrite <- plus_assoc, <- (plus_assoc _ _ (a (S (S x)))).
+  apply f_equal; apply plus_comm.
+  apply filterlim_compose with (G:=(locally (plus l (a 0%nat)))) (g:=fun x => plus x (opp (a 0%nat))).
+  (* . *)
+  apply filterlim_compose with (f:= fun x => S x) (2:=H).
+  apply eventually_subseq; intros n; omega.
+  (* . *)
+  pattern l at 2; replace l with (plus (plus l (a 0%nat)) (opp (a 0%nat))).
+  apply filterlim_compose_2 with (3:=mvspace_plus _ _).
+  apply filterlim_id.
+  apply filterlim_const.
+  rewrite <- plus_assoc, plus_opp_r.
+  apply plus_zero_r.
 Qed.
-Lemma is_series_incr_n (a : nat -> R) (n : nat) (l : R) :
-  (0 < n)%nat -> is_series a (l + sum_f_R0 a (pred n))
+
+Lemma is_series_incr_n {V} {VV : MetricVectorSpace V R} (a : nat -> V) (n : nat) (l : V) :
+  (0 < n)%nat -> is_series a (plus l (sum_n a (pred n)))
     -> is_series (fun k => a (n + k)%nat) l.
 Proof.
   case: n => /= [ | n] Hn Ha.
@@ -185,31 +228,39 @@ Proof.
   elim: n l Ha => [ | n IH] l Ha.
   by apply is_series_incr_1.
   apply is_series_ext with (fun k : nat => a (S (n + S k))).
-    move => k ; apply f_equal ; ring.
-  apply is_series_incr_1 with (a := fun k : nat => a (S (n + k))).
+  move => k ; apply f_equal ; ring.
+  apply (is_series_incr_1 (fun k : nat => a (S (n + k))) l).
   rewrite plus_0_r.
   apply IH.
-  by rewrite Rplus_assoc (Rplus_comm (a (S n))).
+  replace (plus (plus l (a (S n))) (sum_n a n)) with (plus l (sum_n a (S n))).
+  assumption.
+  rewrite <- plus_assoc; apply f_equal; simpl; apply plus_comm.
 Qed.
 
-Lemma is_series_decr_1 (a : nat -> R) (l : R) :
-  is_series (fun k => a (S k)%nat) (l - a O) -> is_series a l.
+Lemma is_series_decr_1 {V} {VV : MetricVectorSpace V R} (a : nat -> V) (l : V) :
+  is_series (fun k => a (S k)%nat) (plus l (opp (a O))) -> is_series a l.
 Proof.
-  move /is_lim_seq_spec => Ha.
-  apply is_lim_seq_spec.
-  intros eps.
-  case: (Ha eps) => {Ha} N Ha.
-  exists (S N) ; elim => [ | n IH] Hn.
-  by apply le_Sn_0 in Hn.
-  apply le_S_n in Hn.
-  rewrite decomp_sum /=.
-  replace (a 0%nat + sum_f_R0 (fun i : nat => a (S i)) n - l)
-    with(sum_f_R0 (fun k : nat => a (S k)) n - (l - a 0%nat)) by ring.
-  by apply Ha.
-  by apply lt_0_Sn.
+  intros H.
+  apply filterlim_ext_loc with (fun v => plus (a 0%nat) (sum_n (fun k : nat => a (S k)) (pred v))).
+  exists 1%nat.
+  intros n Hn; apply sym_eq.
+  apply decomp_sum_n; omega.
+  replace l with (plus (a 0%nat) (plus l (opp (a 0%nat)))).
+  apply filterlim_compose_2 with (3:=mvspace_plus _ _).
+  apply filterlim_id.
+  apply filterlim_const.
+  apply filterlim_compose with (f:= fun x => pred x) (2:=H).
+  intros P (N1,HN1).
+  exists (S N1).
+  intros n Hn; apply HN1; omega.
+  rewrite plus_comm; rewrite <- plus_assoc. 
+  rewrite (plus_comm _ (a 0%nat)); rewrite plus_opp_r.
+  apply plus_zero_r.
 Qed.
-Lemma is_series_decr_n (a : nat -> R) (n : nat) (l : R) :
-  (0 < n)%nat -> is_series (fun k => a (n + k)%nat) (l - sum_f_R0 a (pred n))
+
+
+Lemma is_series_decr_n {V} {VV : MetricVectorSpace V R} (a : nat -> V) (n : nat) (l : V) :
+  (0 < n)%nat -> is_series (fun k => a (n + k)%nat) (plus l (opp (sum_n a (pred n))))
     -> is_series a l.
 Proof.
   case: n => /= [ | n] Hn Ha.
@@ -219,24 +270,26 @@ Proof.
   by apply is_series_decr_1.
   apply is_series_decr_1.
   apply IH.
-  replace (l - a 0%nat - sum_f_R0 (fun k : nat => a (S k)) n)
-    with (l - sum_f_R0 a (S n)).
+  replace (plus (plus l (opp (a 0%nat))) (opp (sum_n (fun k : nat => a (S k)) n)))
+    with (plus l (opp (sum_n a (S n)))).
   by apply Ha.
-  rewrite decomp_sum /=.
-  ring.
+  rewrite decomp_sum_n /=.
+  rewrite <- plus_assoc.
+  apply f_equal.
+  now rewrite opp_plus.
   by apply lt_O_Sn.
 Qed.
 
-Lemma ex_series_decal_1 (a : nat -> R) :
+Lemma ex_series_decal_1 {V} {VV : MetricVectorSpace V R} (a : nat -> V) :
   ex_series a <-> ex_series (fun k => a (S k)%nat).
 Proof.
   split ; move => [la Ha].
-  exists (la - a O).
+  exists (plus la  (opp (a O))).
   apply is_series_incr_1.
-  by ring_simplify (la - a 0%nat + a 0%nat).
-  exists (la + a O).
+  now rewrite <- plus_assoc, plus_opp_l, plus_zero_r.
+  exists (plus la (a O)).
   apply is_series_decr_1.
-  by ring_simplify (la + a 0%nat - a 0%nat).
+  now rewrite <- plus_assoc, plus_opp_r, plus_zero_r.
 Qed.
 Lemma ex_series_decal_n (a : nat -> R) (n : nat) :
   ex_series a <-> ex_series (fun k => a (n + k)%nat).
@@ -244,14 +297,14 @@ Proof.
   case: n => [ | n].
   split ; apply ex_series_ext ; by intuition.
   split ; move => [la Ha].
-  exists (la - sum_f_R0 a (pred (S n))).
+  exists (plus la (opp (sum_n a (pred (S n))))).
   apply is_series_incr_n.
   by apply lt_O_Sn.
-  by ring_simplify (la - sum_f_R0 a (pred (S n)) + sum_f_R0 a (pred (S n))).
-  exists (la + sum_f_R0 a (pred (S n))).
+  now rewrite <- plus_assoc, plus_opp_l, plus_zero_r.
+  exists (plus la (sum_n a (pred (S n)))).
   apply is_series_decr_n with (S n).
   by apply lt_O_Sn.
-  by ring_simplify (la + sum_f_R0 a (pred (S n)) - sum_f_R0 a (pred (S n))).
+  now rewrite <- plus_assoc, plus_opp_r, plus_zero_r.
 Qed.
 
 Lemma Series_decal_1 (a : nat -> R) :
@@ -260,8 +313,8 @@ Proof.
   move => Ha.
   apply is_series_unique.
   rewrite Rplus_comm.
-  apply is_series_decr_1 ;
-  ring_simplify (Series (fun k : nat => a (S k)) + a 0%nat - a 0%nat).
+  apply is_series_decr_1.
+  unfold plus; simpl; ring_simplify (Series (fun k : nat => a (S k)) + a 0%nat +- a 0%nat).
   by apply Series_correct, (ex_series_decal_1 a).
 Qed.
 Lemma Series_decal_n (a : nat -> R) (n : nat) :
@@ -273,7 +326,8 @@ Proof.
   rewrite Rplus_comm.
   apply is_series_decr_n with n.
   by [].
-  ring_simplify (Series (fun k : nat => a (n+ k)%nat) + sum_f_R0 a (pred n) -
+  unfold plus; simpl; rewrite sum_n_sum_f_R0.
+  ring_simplify (Series (fun k : nat => a (n+ k)%nat) + sum_f_R0 a (pred n) +-
    sum_f_R0 a (pred n)).
   by apply Series_correct, (ex_series_decal_n a).
 Qed.
@@ -285,7 +339,7 @@ Proof.
   rewrite /Series.
   rewrite -Lim_seq_incr_1.
   apply f_equal, Lim_seq_ext => n.
-  rewrite decomp_sum /=.
+  rewrite decomp_sum_n /=.
   rewrite Ha ; by apply Rplus_0_l.
   by apply lt_O_Sn.
 Qed.
@@ -345,7 +399,8 @@ Lemma Series_Rabs (a : nat -> R) :
   ex_series (fun n => Rabs (a n)) ->
     Rabs (Series a) <= Series (fun n => Rabs (a n)).
 Proof.
-  move => Hra.
+Admitted.
+(*  move => Hra.
   have Ha := (ex_series_Rabs a Hra).
   case: Hra => lra Hra.
   case: Ha => la Ha.
@@ -354,7 +409,7 @@ Proof.
   replace (Lim_seq (sum_f_R0 (fun k : nat => a k))) with (Finite la).
   replace (Lim_seq (sum_f_R0 (fun k : nat => Rabs (a k)))) with (Finite lra).
   simpl.
-  apply is_lim_seq_abs in Ha.
+  apply (is_lim_seq_abs _ la) in Ha.
   apply Rbar_finite_le, (fun H => is_lim_seq_le _ _ _ _ H Ha Hra).
   elim => [ | n IH] /=.
   by apply Rle_refl.
@@ -363,7 +418,7 @@ Proof.
   by apply IH.
   by apply sym_eq, is_lim_seq_unique.
   by apply sym_eq, is_lim_seq_unique.
-Qed.
+Qed.*)
 
 (** Comparison *)
 
@@ -429,11 +484,12 @@ Qed.
 
 (** Additive operators *)
 
-Lemma is_series_opp (a : nat -> R) (la : R) :
+Lemma is_series_opp  {V} {VV : MetricVectorSpace V R} (a : nat -> V) (la : V) :
   is_series a la
-    -> is_series (fun n => - a n) (- la).
+    -> is_series (fun n => opp (a n)) (opp la).
 Proof.
-  move => Ha.
+Admitted.
+(*  move => Ha.
   apply is_lim_seq_ext
     with (fun n => - (sum_f_R0 (fun k => a k) n)).
   elim => [ | n IH].
@@ -443,20 +499,20 @@ Proof.
   apply -> is_lim_seq_opp.
   by apply Ha.
   by simpl.
-Qed.
-Lemma ex_series_opp (a : nat -> R) :
+Qed.*)
+Lemma ex_series_opp  {V} {VV : MetricVectorSpace V R} (a : nat -> V) :
   ex_series a
-    -> ex_series (fun n => - a n).
+    -> ex_series (fun n => opp (a n)).
 Proof.
   move => [la Ha].
-  exists (-la).
+  exists (opp la).
   by apply is_series_opp.
 Qed.
 Lemma Series_opp (a : nat -> R) :
   Series (fun n => - a n) = - Series a.
 Proof.
   rewrite /Series
-    (Lim_seq_ext (sum_f_R0 (fun k : nat => - a k)) (fun n => - (sum_f_R0 (fun k => a k) n))).
+    (Lim_seq_ext (sum_n (fun k : nat => - a k)) (fun n => - (sum_n (fun k => a k) n))).
   rewrite Lim_seq_opp.
   by rewrite Rbar_opp_real.
   elim => [ | n IH].
@@ -464,24 +520,25 @@ Proof.
   simpl ; rewrite IH ; ring.
 Qed.
 
-Lemma is_series_plus (a b : nat -> R) (la lb : R) :
+Lemma is_series_plus  {V} {VV : MetricVectorSpace V R} (a b : nat -> V) (la lb : V) :
   is_series a la -> is_series b lb
-    -> is_series (fun n => a n + b n) (la + lb).
+    -> is_series (fun n => plus (a n)  (b n)) (plus la  lb).
 Proof.
-  move => Ha Hb.
+Admitted.
+(*  move => Ha Hb.
   apply is_lim_seq_ext
     with (fun n => (sum_f_R0 (fun k => a k) n) + (sum_f_R0 (fun k => b k) n)).
   elim => [ | n IH].
   simpl ; ring.
   simpl ; rewrite -IH ; ring.
   by apply (is_lim_seq_plus _ _ la lb).
-Qed.
-Lemma ex_series_plus (a b : nat -> R) :
+Qed.*)
+Lemma ex_series_plus  {V} {VV : MetricVectorSpace V R} (a b : nat -> V) :
   ex_series a -> ex_series b
-    -> ex_series (fun n => a n + b n).
+    -> ex_series (fun n => plus (a n) (b n)).
 Proof.
   move => [la Ha] [lb Hb].
-  exists (la + lb).
+  exists (plus la lb).
   by apply is_series_plus.
 Qed.
 Lemma Series_plus (a b : nat -> R) :
@@ -494,17 +551,17 @@ Proof.
   by apply Series_correct.
 Qed.
 
-Lemma is_series_minus (a b : nat -> R) (la lb : R) :
+Lemma is_series_minus {V} {VV : MetricVectorSpace V R} (a b : nat -> V) (la lb : V) :
   is_series a la -> is_series b lb
-    -> is_series (fun n => a n - b n) (la - lb).
+    -> is_series (fun n => plus (a n) (opp (b n))) (plus la (opp lb)).
 Proof.
   move => Ha Hb.
   apply is_series_plus => //.
   apply is_series_opp => //.
 Qed.
-Lemma ex_series_minus (a b : nat -> R) :
+Lemma ex_series_minus  {V} {VV : MetricVectorSpace V R} (a b : nat -> V) :
   ex_series a -> ex_series b
-    -> ex_series (fun n => a n - b n).
+    -> ex_series (fun n => plus (a n) (opp (b n))).
 Proof.
   move => Ha Hb.
   apply ex_series_plus => //.
@@ -517,27 +574,32 @@ Proof.
   intros Ha Hb.
   rewrite Series_plus => //.
   rewrite Series_opp => //.
-  by apply ex_series_opp.
+  apply ex_series_opp in Hb.
+  now simpl in *.
 Qed.
 
 (** Multiplication by a scalar *)
 
-Lemma is_series_scal_l (c : R) (a : nat -> R) (l : R) :
-  is_series a l -> is_series (fun n => c * a n) (c * l).
+(* QUESTION: scal_l -> scal as scal_r does not have sense ?? *)
+
+
+Lemma is_series_scal_l  {V} {VV : MetricVectorSpace V R} (c : R) (a : nat -> V) (l : V) :
+  is_series a l -> is_series (fun n => scal c  (a n)) (scal c l).
 Proof.
-  move => Ha.
-  apply is_lim_seq_ext with (fun n => c * (sum_f_R0 (fun k => a k) n)).
+Admitted.
+(*  move => Ha.
+  apply is_lim_seq_ext with (fun n => scal c (sum_n (fun k => a k) n)).
   elim => [ | n IH].
   simpl ; ring.
   simpl ; rewrite -IH ; ring.
   apply (is_lim_seq_scal_l _ c l).
   by apply Ha.
-Qed.
-Lemma ex_series_scal_l (c : R) (a : nat -> R) :
-  ex_series a -> ex_series (fun n => c * a n).
+Qed.*)
+Lemma ex_series_scal_l  {V} {VV : MetricVectorSpace V R} (c : R) (a : nat -> V) :
+  ex_series a -> ex_series (fun n => scal c (a n)).
 Proof.
   move => [l Ha].
-  exists (c * l).
+  exists (scal c l).
   by apply is_series_scal_l.
 Qed.
 Lemma Series_scal_l (c : R) (a : nat -> R) :
@@ -556,7 +618,6 @@ Proof.
   case: Rle_lt_or_eq_dec => //=.
   case: Rle_dec => //= H0.
   case: Rle_lt_or_eq_dec => //=.
-
   rewrite H0 -(Lim_seq_scal_l _ c).
   apply f_equal, Lim_seq_ext.
   elim => [ | n IH].
@@ -564,8 +625,9 @@ Proof.
   simpl ; rewrite IH ; ring.
 Qed.
 
-Lemma is_series_scal_r (c : R) (a : nat -> R) (l : R) :
-  is_series a l -> is_series (fun n => a n * c) (l * c).
+(*
+Lemma is_series_scal_r  {V} {VV : MetricVectorSpace V R} (c : R) (a : nat -> V) (l : V) :
+  is_series a l -> is_series (fun n => scal (a n) c) (scal l c).
 Proof.
   move => Ha.
   rewrite Rmult_comm.
@@ -579,7 +641,8 @@ Proof.
   move => [l Ha].
   exists (l * c).
   by apply is_series_scal_r.
-Qed.
+Qed.*)
+
 Lemma Series_scal_r (c : R) (a : nat -> R) :
   Series (fun n => a n * c) = Series a * c.
 Proof.
@@ -593,7 +656,8 @@ Lemma is_series_mult_pos (a b : nat -> R) (la lb : R) :
   (forall n, 0 <= a n) -> (forall n, 0 <= b n)
   -> is_series (fun n => sum_f_R0 (fun k => a k * b (n - k)%nat) n) (la * lb).
 Proof.
-  move => Hla Hlb Ha Hb.
+Admitted.
+(*  move => Hla Hlb Ha Hb.
 
   have H0 : forall n,
     sum_f_R0 (fun k : nat => sum_f_R0 (fun p : nat => a p * b (k - p)%nat) k) n
@@ -737,14 +801,15 @@ Proof.
     by apply Hla.
     by apply Hlb.
     by [].
-Qed.
+Qed.*)
 
 Lemma is_series_mult (a b : nat -> R) (la lb : R) :
   is_series a la -> is_series b lb
   -> ex_series (fun n => Rabs (a n)) -> ex_series (fun n => Rabs (b n))
   -> is_series (fun n => sum_f_R0 (fun k => a k * b (n - k)%nat) n) (la * lb).
 Proof.
-  move => Hla Hlb Ha Hb.
+Admitted.
+(*  move => Hla Hlb Ha Hb.
 
   set ap := fun n => (a n + Rabs (a n)) / 2.
   set am := fun n => - (a n - Rabs (a n)) / 2.
@@ -816,7 +881,7 @@ Proof.
   rewrite /ap /am /bp /bm ; field.
   rewrite -Series_minus // -(is_series_unique _ _ Hla) ; apply Series_ext => n.
   rewrite /ap /am /bp /bm ; field.
-Qed.
+Qed.*)
 
 (** * D'Alembert criterion *)
 
@@ -825,7 +890,8 @@ Lemma ex_series_DAlembert (a : nat -> R) (k : R) :
     -> is_lim_seq (fun n => Rabs (a (S n) / a n)) k
       -> ex_series (fun n => Rabs (a n)).
 Proof.
-  move => Hk Ha H.
+Admitted.
+(*  move => Hk Ha H.
   have : exists N, forall n, (N <= n)%nat -> Rabs (a (S n) / a n) <= (k+1)/2.
     apply is_lim_seq_spec in H.
     case: (fun He => H (mkposreal ((1-k)/2) He)).
@@ -878,7 +944,7 @@ Proof.
   apply Rmult_lt_compat_r ; by intuition.
   apply Rle_trans with (2 := H N (le_refl _)) ; by apply Rabs_pos.
   easy.
-Qed.
+Qed.*)
 
 Lemma not_ex_series_DAlembert (a : nat -> R) (l : R) :
   l > 1 -> (forall n, a n <> 0)
@@ -945,7 +1011,8 @@ Qed.
 Lemma is_series_geom (q : R) :
   Rabs q < 1 -> is_series (fun n => q ^ n) (/ (1-q)).
 Proof.
-  move => Hq.
+Admitted.
+(*  move => Hq.
   apply is_lim_seq_ext with (fun n => (1-q^(S n)) / (1-q)).
   move => n.
   rewrite tech3.
@@ -964,7 +1031,7 @@ Proof.
   by simpl.
   apply Rbar_finite_eq.
   ring.
-Qed.
+Qed.*)
 Lemma ex_series_geom (q : R) :
   Rabs q < 1 -> ex_series (fun n => q ^ n).
 Proof.
