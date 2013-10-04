@@ -722,6 +722,101 @@ apply (Build_MetricSpace R distR).
 - exact distR_triangle.
 Defined.
 
+Lemma R_complete :
+  forall F : (R -> Prop) -> Prop,
+  ProperFilter F ->
+  (forall eps : posreal, exists x : R, F (ball x eps)) ->
+  exists x : R, is_filter_lim F x.
+Proof.
+intros F FF HF.
+set (E := fun x : R => F (ball x (mkposreal _ Rlt_0_1))).
+destruct (completeness E) as [x [Hx1 Hx2]].
+  destruct (HF (mkposreal _ Rlt_0_1)) as [y Fy].
+  exists (y + 2).
+  intros x Fx.
+  apply filter_const.
+  generalize (filter_and _ _ Fy Fx).
+  apply filter_imp.
+  intros z [Hz1 Hz2].
+  apply Rplus_le_reg_r with (-y).
+  replace (y + 2 + -y) with 2 by ring.
+  apply Rabs_le_between.
+  change (Rabs (x + - y)) with (distance y x).
+  apply Rle_trans with (1 := distance_triangle y z x).
+  apply Rlt_le.
+  apply Rplus_lt_compat with (1 := Hz1).
+  now rewrite distance_comm.
+  destruct (HF (mkposreal _ Rlt_0_1)) as [y Fy].
+  now exists y.
+exists (x - 1).
+intros P [y [eps BP]] Px.
+assert (H : 0 < Rmin ((y + eps) - (x - 1)) ((x - 1) - (y - eps))).
+  apply Rmin_case.
+  apply Rplus_lt_reg_r with (x - 1 - y).
+  rewrite Rplus_0_l.
+  ring_simplify (y + eps - (x - 1) + (x - 1 - y)).
+  apply Rabs_lt_between.
+  now apply BP.
+  apply Rplus_lt_reg_r with (-eps).
+  rewrite Rplus_0_l.
+  replace (x - 1 - (y - eps) + - eps) with (x - 1 - y) by ring.
+  apply (Rabs_lt_between (x - 1 - y)).
+  now apply BP.
+set (eps' := pos_div_2 (mkposreal _ (Rmin_case _ _ _ Rlt_R0_R2 H))).
+set (eps'' := (Rmin 2 (Rmin (y + eps - (x - 1)) (x - 1 - (y - eps))))).
+fold eps'' in eps'.
+destruct (HF eps') as [z Hz].
+assert (H1 : z - eps'' / 2 + 1 <= x).
+  apply Hx1.
+  revert Hz.
+  unfold E.
+  apply filter_imp.
+  intros u Bu.
+  apply (Rabs_lt_between' u z) in Bu.
+  apply Rabs_lt_between'.
+  simpl in Bu |- *.
+  clear -Bu.
+  destruct Bu as [Bu1 Bu2].
+  assert (H := Rmin_l 2 (Rmin (y + eps - (x - 1)) (x - 1 - (y - eps)))).
+  fold eps'' in H.
+  split ; Fourier.fourier.
+assert (H2 : x <= z + eps'' / 2 + 1).
+  apply Hx2.
+  intros v Hv.
+  apply filter_const.
+  generalize (filter_and _ _ Hz Hv).
+  apply filter_imp.
+  intros w [Hw1 Hw2].
+  apply (Rabs_lt_between' w z) in Hw1.
+  destruct Hw1 as [_ Hw1].
+  apply (Rabs_lt_between' w v) in Hw2.
+  destruct Hw2 as [Hw2 _].
+  clear -Hw1 Hw2.
+  simpl in Hw1, Hw2.
+  Fourier.fourier.
+revert Hz.
+apply filter_imp.
+intros u Hu.
+apply BP.
+apply (Rabs_lt_between' u z) in Hu.
+apply Rabs_lt_between'.
+assert (eps'' <= y + eps - (x - 1)).
+  apply Rle_trans with (1 := Rmin_r _ _).
+  apply Rmin_l.
+assert (eps'' <= x - 1 - (y - eps)).
+  apply Rle_trans with (1 := Rmin_r _ _).
+  apply Rmin_r.
+simpl in H2, Hu.
+clear -H2 Hu H0 H1 H3.
+destruct Hu.
+split ; Fourier.fourier.
+Qed.
+
+Global Instance R_complete_metric : CompleteMetricSpace R.
+Proof.
+apply (Build_CompleteMetricSpace R _ R_complete).
+Defined.
+
 Notation at_left x := (within (fun u : R => Rlt u x) (locally (x)%R)).
 Notation at_right x := (within (fun u : R => Rlt x u) (locally (x)%R)).
 
