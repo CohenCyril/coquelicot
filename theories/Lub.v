@@ -552,6 +552,34 @@ Qed.
 Definition Lub_Rbar_ne (E : R -> Prop) (Hex : exists x, E x) := projT1 (ex_lub_Rbar_ne E Hex).
 Definition Glb_Rbar_ne (E : R -> Prop) (Hex : exists x, E x) := projT1 (ex_glb_Rbar_ne E Hex).
 
+Lemma is_lub_Rbar_ne_unique (E : R -> Prop) (pr : exists x : R, E x) (l : Rbar) :
+  is_lub_Rbar E l -> Lub_Rbar_ne E pr = l.
+Proof.
+  move => Hl ; rewrite /Lub_Rbar_ne ; case: ex_lub_Rbar_ne => l' /= Hl'.
+  apply Rbar_le_antisym.
+  by apply Hl', Hl.
+  by apply Hl, Hl'.
+Qed.
+Lemma is_glb_Rbar_ne_unique (E : R -> Prop) (pr : exists x : R, E x) (l : Rbar) :
+  is_glb_Rbar E l -> Glb_Rbar_ne E pr = l.
+Proof.
+  move => Hl ; rewrite /Glb_Rbar_ne ; case: ex_glb_Rbar_ne => l' /= Hl'.
+  apply Rbar_le_antisym.
+  by apply Hl, Hl'.
+  by apply Hl', Hl.
+Qed.
+
+Lemma Lub_Rbar_ne_correct (E : R -> Prop) (pr : exists x : R, E x) :
+  is_lub_Rbar E (Lub_Rbar_ne E pr).
+Proof.
+  rewrite /Lub_Rbar_ne ; by case: ex_lub_Rbar_ne => l /= Hl.
+Qed.
+Lemma Glb_Rbar_ne_correct (E : R -> Prop) (pr : exists x : R, E x) :
+  is_glb_Rbar E (Glb_Rbar_ne E pr).
+Proof.
+  rewrite /Glb_Rbar_ne ; by case: ex_glb_Rbar_ne => l /= Hl.
+Qed.
+
 (** Order *)
 
 Lemma is_lub_Rbar_subset (E1 E2 : R -> Prop) (l1 l2 : Rbar) :
@@ -587,22 +615,18 @@ Qed.
 Lemma Lub_Rbar_ne_eqset (E1 E2 : R -> Prop) pr1 pr2 :
   (forall x, E1 x <-> E2 x) -> Lub_Rbar_ne E1 pr1 = Lub_Rbar_ne E2 pr2.
 Proof.
-  move => H ; rewrite /Lub_Rbar_ne ;
-  case: (ex_lub_Rbar_ne E1 pr1) => {pr1} l1 H1 ;
-  case: (ex_lub_Rbar_ne E2 pr2) => {pr2} l2 H2 /=.
-  apply Rbar_le_antisym ;
-  [ apply (is_lub_Rbar_subset E2 E1)
-  | apply (is_lub_Rbar_subset E1 E2)] => //= x ; by apply H.
+  move => H ; rewrite {2}/Lub_Rbar_ne ;
+  case: ex_lub_Rbar_ne => {pr2} l /= Hl.
+  apply is_lub_Rbar_ne_unique.
+  move: Hl ; by apply is_lub_Rbar_eqset.
 Qed.
 Lemma Glb_Rbar_ne_eqset (E1 E2 : R -> Prop) pr1 pr2 :
   (forall x, E1 x <-> E2 x) -> Glb_Rbar_ne E1 pr1 = Glb_Rbar_ne E2 pr2.
 Proof.
-  move => H ; rewrite /Glb_Rbar_ne ;
-  case: (ex_glb_Rbar_ne E1 pr1) => {pr1} l1 H1 ;
+  move => H ; rewrite {2}/Glb_Rbar_ne ;
   case: (ex_glb_Rbar_ne E2 pr2) => {pr2} l2 H2 /=.
-  apply Rbar_le_antisym ;
-  [ apply (is_glb_Rbar_subset E1 E2)
-  | apply (is_glb_Rbar_subset E2 E1)] => //= x ; by apply H.
+  apply is_glb_Rbar_ne_unique.
+  move: H2 ; by apply is_glb_Rbar_eqset.
 Qed.
 
 (** * Emptiness is decidable *)
