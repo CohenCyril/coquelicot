@@ -857,7 +857,7 @@ Lemma CVN_CVU_r (fn : nat -> R -> R) (r : posreal) :
     CVU (fun n => SP fn n) (fun x => Series (fun n => fn n x)) x e.
 Proof.
   case => An [l [H H0]] x Hx.
-  have H1 : @ex_series R Hierarchy.R_metric_vector An.
+  assert (H1 : ex_series An).
     apply ex_series_equiv_1.
     exists l => e He.
     case: (H e He) => {H} N H.
@@ -899,7 +899,7 @@ Proof.
     apply Lim_seq_correct', H1.
     easy.
 
-  have H3 : forall y, Boule 0 r y -> @ex_series R Hierarchy.R_metric_vector (fun n => Rabs (fn n y)).
+  assert (H3 : forall y, Boule 0 r y -> ex_series (fun n => Rabs (fn n y))).
   move => y Hy.
   move: H1 ; apply Comp_ex_series.
   move => n ; split.

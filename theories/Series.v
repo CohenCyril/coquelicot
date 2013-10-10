@@ -64,10 +64,10 @@ Qed.
 
 (** * Definitions *)
 
-Definition is_series {V} {VV : MetricVectorSpace V R} (a : nat -> V) (l : V) :=
+Definition is_series {K} {V} {FK : Field K} {VV : MetricVectorSpace V K} (a : nat -> V) (l : V) :=
    filterlim (sum_n a) (eventually) (locally l).
 
-Definition ex_series {V} {VV : MetricVectorSpace V R} (a : nat -> V) :=
+Definition ex_series {K} {V} {FK : Field K} {VV : MetricVectorSpace V K} (a : nat -> V) :=
    exists l : V, is_series a l.
 
 Definition Series (a : nat -> R) : R :=
@@ -167,7 +167,7 @@ Qed.
 
 (** Extensionality *)
 
-Lemma is_series_ext {V} {VV : MetricVectorSpace V R} (a b : nat -> V) (l : V) :
+Lemma is_series_ext  {K} {V} {FK : Field K} {VV : MetricVectorSpace V K} (a b : nat -> V) (l : V) :
   (forall n, a n = b n) -> (is_series a l)
     -> is_series b l.
 Proof.
@@ -175,7 +175,7 @@ Proof.
   apply filterlim_ext.
   intros x; now apply sum_n_ext.
 Qed.
-Lemma ex_series_ext {V} {VV : MetricVectorSpace V R} (a b : nat -> V) :
+Lemma ex_series_ext  {K} {V} {FK : Field K} {VV : MetricVectorSpace V K} (a b : nat -> V) :
   (forall n, a n = b n) -> ex_series a
     -> ex_series b.
 Proof.
@@ -193,7 +193,7 @@ Qed.
 
 (** Index offset *)
 
-Lemma is_series_incr_1 {V} {VV : MetricVectorSpace V R} (a : nat -> V) (l : V) :
+Lemma is_series_incr_1  {K} {V} {FK : Field K} {VV : MetricVectorSpace V K} (a : nat -> V) (l : V) :
   is_series a (plus l  (a O))
     -> is_series (fun k => a (S k)%nat) l.
 Proof.
@@ -218,7 +218,7 @@ Proof.
   apply plus_zero_r.
 Qed.
 
-Lemma is_series_incr_n {V} {VV : MetricVectorSpace V R} (a : nat -> V) (n : nat) (l : V) :
+Lemma is_series_incr_n  {K} {V} {FK : Field K} {VV : MetricVectorSpace V K} (a : nat -> V) (n : nat) (l : V) :
   (0 < n)%nat -> is_series a (plus l (sum_n a (pred n)))
     -> is_series (fun k => a (n + k)%nat) l.
 Proof.
@@ -237,7 +237,7 @@ Proof.
   rewrite <- plus_assoc; apply f_equal; simpl; apply plus_comm.
 Qed.
 
-Lemma is_series_decr_1 {V} {VV : MetricVectorSpace V R} (a : nat -> V) (l : V) :
+Lemma is_series_decr_1  {K} {V} {FK : Field K} {VV : MetricVectorSpace V K} (a : nat -> V) (l : V) :
   is_series (fun k => a (S k)%nat) (plus l (opp (a O))) -> is_series a l.
 Proof.
   intros H.
@@ -259,7 +259,7 @@ Proof.
 Qed.
 
 
-Lemma is_series_decr_n {V} {VV : MetricVectorSpace V R} (a : nat -> V) (n : nat) (l : V) :
+Lemma is_series_decr_n  {K} {V} {FK : Field K} {VV : MetricVectorSpace V K} (a : nat -> V) (n : nat) (l : V) :
   (0 < n)%nat -> is_series (fun k => a (n + k)%nat) (plus l (opp (sum_n a (pred n))))
     -> is_series a l.
 Proof.
@@ -280,7 +280,7 @@ Proof.
   by apply lt_O_Sn.
 Qed.
 
-Lemma ex_series_decal_1 {V} {VV : MetricVectorSpace V R} (a : nat -> V) :
+Lemma ex_series_decal_1  {K} {V} {FK : Field K} {VV : MetricVectorSpace V K} (a : nat -> V) :
   ex_series a <-> ex_series (fun k => a (S k)%nat).
 Proof.
   split ; move => [la Ha].
@@ -485,7 +485,7 @@ Qed.
 
 (** Additive operators *)
 
-Lemma filterlim_opp_2 {V} {VV : MetricVectorSpace V R}: forall (x:V), 
+Lemma filterlim_opp_2 {K} {V} {FK : Field K} {VV : MetricVectorSpace V K}: forall (x:V), 
    filterlim opp (locally x) (locally (opp x)).
 Proof.
 intros x.
@@ -495,7 +495,7 @@ intros; apply scal_opp_one.
 Qed.
 
 
-Lemma is_series_opp {V} {VV : MetricVectorSpace V R} (a : nat -> V) (la : V) :
+Lemma is_series_opp {K} {V} {FK : Field K} {VV : MetricVectorSpace V K} (a : nat -> V) (la : V) :
   is_series a la
     -> is_series (fun n => opp (a n)) (opp la).
 Proof.
@@ -509,7 +509,7 @@ Proof.
   apply (filterlim_opp_2 la).
 Qed.
 
-Lemma ex_series_opp  {V} {VV : MetricVectorSpace V R} (a : nat -> V) :
+Lemma ex_series_opp {K} {V} {FK : Field K} {VV : MetricVectorSpace V K} (a : nat -> V) :
   ex_series a
     -> ex_series (fun n => opp (a n)).
 Proof.
@@ -529,7 +529,7 @@ Proof.
   simpl ; rewrite IH ; ring.
 Qed.
 
-Lemma is_series_plus {V} {VV : MetricVectorSpace V R} (a b : nat -> V) (la lb : V) :
+Lemma is_series_plus  {K} {V} {FK : Field K} {VV : MetricVectorSpace V K} (a b : nat -> V) (la lb : V) :
   is_series a la -> is_series b lb
     -> is_series (fun n => plus (a n)  (b n)) (plus la  lb).
 Proof.
@@ -542,7 +542,7 @@ Proof.
   apply plus_comm.
   now apply filterlim_compose_2 with (3:=mvspace_plus _ _).
 Qed.
-Lemma ex_series_plus  {V} {VV : MetricVectorSpace V R} (a b : nat -> V) :
+Lemma ex_series_plus  {K} {V} {FK : Field K} {VV : MetricVectorSpace V K} (a b : nat -> V) :
   ex_series a -> ex_series b
     -> ex_series (fun n => plus (a n) (b n)).
 Proof.
@@ -560,7 +560,7 @@ Proof.
   by apply Series_correct.
 Qed.
 
-Lemma is_series_minus {V} {VV : MetricVectorSpace V R} (a b : nat -> V) (la lb : V) :
+Lemma is_series_minus  {K} {V} {FK : Field K} {VV : MetricVectorSpace V K} (a b : nat -> V) (la lb : V) :
   is_series a la -> is_series b lb
     -> is_series (fun n => plus (a n) (opp (b n))) (plus la (opp lb)).
 Proof.
@@ -568,7 +568,7 @@ Proof.
   apply is_series_plus => //.
   apply is_series_opp => //.
 Qed.
-Lemma ex_series_minus  {V} {VV : MetricVectorSpace V R} (a b : nat -> V) :
+Lemma ex_series_minus  {K} {V} {FK : Field K} {VV : MetricVectorSpace V K} (a b : nat -> V) :
   ex_series a -> ex_series b
     -> ex_series (fun n => plus (a n) (opp (b n))).
 Proof.
@@ -589,7 +589,7 @@ Qed.
 
 (** Multiplication by a scalar *)
 
-Lemma is_series_scal  {V} {VV : MetricVectorSpace V R} (c : R) (a : nat -> V) (l : V) :
+Lemma is_series_scal {K} {V} {FK : Field K} {VV : MetricVectorSpace V K} (c : K) (a : nat -> V) (l : V) :
   is_series a l -> is_series (fun n => scal c  (a n)) (scal c l).
 Proof.
   move => Ha.
@@ -600,12 +600,12 @@ Proof.
   apply scal_distr_l.
   now apply filterlim_compose with (2:=mvspace_scal _ _).
 Qed.
-Lemma is_series_scal_l  {V} {VV : MetricVectorSpace V R}: forall (c : R) (a : nat -> V) (l : V),
+Lemma is_series_scal_l {K} {V} {FK : Field K} {VV : MetricVectorSpace V K}: forall (c : K) (a : nat -> V) (l : V),
   is_series a l -> is_series (fun n => scal c  (a n)) (scal c l).
 exact is_series_scal.
 Qed.
 
-Lemma ex_series_scal  {V} {VV : MetricVectorSpace V R} (c : R) (a : nat -> V) :
+Lemma ex_series_scal {K} {V} {FK : Field K} {VV : MetricVectorSpace V K} (c : K) (a : nat -> V) :
   ex_series a -> ex_series (fun n => scal c (a n)).
 Proof.
   move => [l Ha].
@@ -613,7 +613,7 @@ Proof.
   by apply: is_series_scal_l.
 Qed.
 
-Lemma ex_series_scal_l  {V} {VV : MetricVectorSpace V R}: forall (c : R) (a : nat -> V),
+Lemma ex_series_scal_l {K} {V} {FK : Field K} {VV : MetricVectorSpace V K}: forall (c : K) (a : nat -> V),
   ex_series a -> ex_series (fun n => scal c  (a n)).
 exact ex_series_scal.
 Qed.

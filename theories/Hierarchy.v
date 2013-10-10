@@ -137,6 +137,25 @@ rewrite mult_distr_r.
 apply f_equal2 ; apply mult_comm.
 Qed.
 
+Lemma mult_zero_r :
+  forall K (FK : Field K) (x : K),
+  mult x zero = zero.
+Proof.
+intros K FK x.
+apply plus_reg_r with (GG := field_group) (z := mult x zero).
+rewrite <- mult_distr_l.
+rewrite plus_zero_r.
+now rewrite plus_zero_l.
+Qed.
+
+Lemma mult_zero_l :
+  forall K (FK : Field K) (x : K),
+  mult zero x = zero.
+Proof.
+intros K FK x.
+rewrite mult_comm; apply mult_zero_r.
+Qed.
+
 Global Instance R_abelian_group : AbelianGroup R.
 Proof.
 apply (@Build_AbelianGroup R Rplus Ropp R0).
