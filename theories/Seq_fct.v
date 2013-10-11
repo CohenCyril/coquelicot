@@ -1050,6 +1050,19 @@ Proof.
   by case: H.
 Qed.
 
+Lemma UnifFct_norm_bw_0_1 {T M} {MNAG : NormedAbelianGroup M} (f : T -> M) :
+  0 <= UnifFct_norm f <= 1.
+Proof.
+  rewrite /UnifFct_norm /Rbar_min ; case: Rbar_le_dec => H.
+  split ; [by apply Rle_0_1 | by right].
+  apply Rbar_not_le_lt in H.
+  move: H ; rewrite /Lub_Rbar_ne ;
+  case: ex_lub_Rbar_ne ; case => [l | | ] //= Hlub H.
+  split.
+  apply Rbar_finite_le, Hlub ; by left.
+  by apply Rlt_le.
+  split ; [ by right | by apply Rle_0_1 ].
+Qed.
 
 Lemma UnifFct_norm_zero {T G} {NAG : NormedAbelianGroup G} :
   @UnifFct_norm T G NAG zero = 0.
@@ -1421,11 +1434,231 @@ Proof.
   + by apply UnifFct_dist_triangle.
 Defined.
 
-Lemma R_CMS_UnifFct {T} : CompleteMetricSpace (T -> R).
+Lemma ball_center {T} {TMS : MetricSpace T} :
+  forall (x : T) (eps : posreal), ball x eps x.
+Proof.
+  move => x eps.
+  rewrite /ball distance_refl.
+  by apply eps.
+Qed.
+
+Global Instance R_SeparatedSpace : SeparatedSpace R.
+Proof.
+  apply (Build_SeparatedSpace R _).
+  move => x y Hxy.
+  apply sym_not_eq, Rminus_eq_contra in Hxy.
+  apply Rabs_pos_lt in Hxy.
+  exists (ball x (pos_div_2 (mkposreal _ Hxy))) (ball y (pos_div_2 (mkposreal _ Hxy))).
+  + exists x ; by exists (pos_div_2 (mkposreal _ Hxy)).
+  + exists y ; by exists (pos_div_2 (mkposreal _ Hxy)).
+  + by apply ball_center.
+  + by apply ball_center.
+  + unfold ball ; move => /= z Hxz Hyz.
+    apply (Rlt_irrefl (distR x y)).
+    apply Rle_lt_trans with (1 := distR_triangle x z y).
+    rewrite (double_var (distR x y)).
+    apply Rplus_lt_compat.
+    by apply Hxz.
+    rewrite distR_comm ; by apply Hyz.
+Defined.
+
+Lemma uniqueness_dec P : (exists ! x : R, P x) -> {x : R | P x}.
+Proof.
+  move => H.
+  have H' : exists x, P x.
+    case: H => x Hx.
+    exists x ; by apply Hx.
+  exists (Lub_Rbar_ne _ H').
+  case: H => x Hx.
+  replace (real (Lub_Rbar_ne P H')) with (real (Finite x)).
+  by apply Hx.
+  apply f_equal, sym_eq, is_lub_Rbar_ne_unique.
+  split.
+  move => y Hy.
+  right ; by apply f_equal, sym_eq, Hx.
+  move => b Hb.
+  by apply Hb, Hx.
+Qed.
+
+Lemma is_filter_lim_filterlim {T} {MT : MetricSpace T}
+  (F : (T -> Prop) -> Prop) {FF : Filter F} (x : T) :
+  is_filter_lim F x <-> filterlim (fun t => t) F (locally x).
+Proof.
+  split.
+  + move => Hfx P [d Hp].
+    rewrite /filtermap.
+    apply filter_imp with (1 := Hp).
+    apply Hfx.
+    by exists x, d.
+    rewrite distance_refl ; by apply d.
+  + move/filterlim_locally => HF P [y [d HP]] Hpx.
+    apply HP, Rminus_lt_0 in Hpx.
+    move: (HF FF (mkposreal _ Hpx)).
+    apply filter_imp => /= z Hz.
+    apply HP.
+    apply Rle_lt_trans with (1 := distance_triangle y x z).
+    rewrite Rplus_comm ; by apply Rlt_minus_r.
+Qed.
+
+Lemma distance_continue {T} {TT : MetricSpace T} (x y : T) :
+  filterlim (fun u => distance (fst u) (snd u))
+    (filter_prod (locally x) (locally y)) (locally (distance x y)).
+Proof.
+  apply filterlim_locally => eps /=.
+  apply Filter_prod with
+    (fun x' => distance x x' < eps / 2) (fun y' => distance y y' < eps / 2) => /=.
+  rewrite /locally /locally_dist ; by exists (pos_div_2 eps).
+  rewrite /locally /locally_dist ; by exists (pos_div_2 eps).
+  move => x' y' Hx Hy.
+  apply Rabs_lt_between ; split.
+  rewrite distance_comm in Hy.
+  rewrite -Ropp_minus_distr ; apply Ropp_lt_contravar.
+  apply Rlt_minus_l.
+  apply Rle_lt_trans with (1 := distance_triangle _ x' _).
+  apply Rlt_trans with (1 := Rplus_lt_compat_r _ _ _ Hx).
+  rewrite Rplus_comm ; apply Rlt_minus_r.
+  apply Rle_lt_trans with (1 := distance_triangle _ y' _).
+  apply Rlt_le_trans with (1 := Rplus_lt_compat_l _ _ _ Hy).
+  right ; field.
+  rewrite distance_comm in Hx.
+  apply Rlt_minus_l.
+  apply Rle_lt_trans with (1 := distance_triangle _ x _).
+  apply Rlt_trans with (1 := Rplus_lt_compat_r _ _ _ Hx).
+  rewrite Rplus_comm ; apply Rlt_minus_r.
+  apply Rle_lt_trans with (1 := distance_triangle _ y _).
+  apply Rlt_le_trans with (1 := Rplus_lt_compat_l _ _ _ Hy).
+  right ; field.
+Qed.
+
+Global Instance R_CMS_UnifFct {T} : CompleteMetricSpace (T -> R).
 Proof.
   intros.
-  apply Build_CompleteMetricSpace with (MS_UnifFct R_metric).
-  admit.
+  apply: Build_CompleteMetricSpace.
+  move => F FF HFc.
+  
+  cut (exists f, forall eps : posreal, F (fun g => distance f g < eps)).
+    case => f Hf.
+    exists f.
+    apply is_filter_lim_filterlim.
+    by apply FF.
+    by apply filterlim_locally.
+
+  set Fr := fun (t : T) (P : R -> Prop) => F (fun g => P (g t)).
+  have FFr : forall t, ProperFilter (Fr t).
+    case: FF => HF FF t.
+    split.
+    - move => P Hp.
+      case: (HF _ Hp) => f Hf.
+      by exists (f t).
+    - split.
+      + by apply FF.
+      + move => P P' Hp Hp'.
+      by apply FF.
+      + move => P P' Hpp'.
+      apply FF.
+      move => f ; by apply Hpp'.
+  assert (HFrc : forall t, forall eps : posreal, exists x : R, Fr t (ball x eps)).
+    move => t eps.
+    wlog: eps / (eps < 1) => [Hw | Heps].
+      case: (Rlt_le_dec eps 1) => Heps.
+      by apply Hw.
+      case: (Hw (pos_div_2 (mkposreal _ Rlt_0_1))).
+      apply Rlt_div_l.
+      by apply Rlt_0_2.
+      apply Rminus_lt_0 ; simpl ; ring_simplify ; by apply Rlt_0_1.
+      move => x Hx ; exists x ; move: Hx.
+      apply FFr => y.
+      rewrite /ball /= => H.
+      apply Rlt_trans with (1 := H).
+      apply Rlt_div_l.
+      by apply Rlt_0_2.
+      apply Rle_lt_trans with (1 := Heps).
+      apply Rminus_lt_0 ; simpl ; ring_simplify ; by apply eps.
+    case: (HFc eps) => f Hf.
+    exists (f t).
+    move: Hf ; apply FF => g.
+    rewrite /ball /= => H.
+    apply UnifFct_norm_lub_lt_1 in H.
+    apply (Rbar_le_lt_trans (distR (f t) (g t)) (Lub_Rbar_ne _ (UnifFct_norm_ne (fun x : T => g x + - f x))) eps).
+      rewrite /Lub_Rbar_ne ; case: ex_lub_Rbar_ne => l /= Hl.
+      apply Hl.
+      right ; by exists t.
+      by apply H.
+      by apply Rlt_le.
+  assert (Hex : forall t, exists x, is_filter_lim (Fr t) x).
+    move => t.
+    apply: complete_cauchy. apply: (HFrc t).
+  assert (forall t, exists! x, is_filter_lim (Fr t) x).
+    move => t.
+    case: (Hex t) => x Hx.
+    exists x.
+    split.
+    by apply Hx.
+    move => x' Hx'.
+    suff : ~ x <> x'.
+      case: (Req_dec x x') => //=.
+    move: Hx Hx'.
+    apply: is_filter_lim_unique.
+    move: H => {Hex} Hex.
+  move: (fun t => uniqueness_dec _ (Hex t)) => Hf.
+  set f := fun t => projT1 (Hf t) ; exists f.
+
+  move => eps.
+  case: (Rlt_le_dec 1 eps) => Heps.
+  apply filter_imp with (fun _ => True).
+  move => x _.
+  apply Rle_lt_trans with (2 := Heps).
+  rewrite /distance /=.
+  by apply UnifFct_norm_bw_0_1.
+  by apply filter_true.
+
+  apply filter_imp with (fun g => forall t, distance (f t) (g t) < pos_div_2 eps).
+  move => g Hg.
+  rewrite UnifFct_norm_lub_lt_1.
+  apply Rbar_le_lt_trans with (pos_div_2 eps).
+  apply Lub_Rbar_ne_correct => s Hs.
+  case: Hs => [-> | [t ->]].
+  apply Rbar_lt_le, is_pos_div_2.
+  apply Rbar_finite_le, Rlt_le, (Hg t).
+  apply Rminus_lt_0 ; simpl ; field_simplify ;
+  rewrite Rdiv_1 ; by apply is_pos_div_2.
+  by [].
+  
+  have : (pos_div_2 eps <= 1).
+    apply Rle_trans with (2 := Heps).
+    simpl ; apply Rminus_le_0 ; field_simplify ; rewrite Rdiv_1.
+    apply Rlt_le, is_pos_div_2.
+  
+  move: (pos_div_2 eps) => {eps Heps} eps Heps.
+  assert (forall t (eps : posreal), (Fr t) (fun x => distance (f t) x < eps)).
+    move =>  t.
+    apply filterlim_locally.
+    apply is_filter_lim_filterlim.
+    by apply FFr.
+    apply (projT2 (Hf t)).
+
+  generalize (proj1 cauchy_distance HFc) => {HFc} HFc.
+
+  case: (HFc (pos_div_2 eps)) => {HFc} P /= [HP H0].
+  apply filter_imp with (2 := HP).
+  move => g Hg t.
+  move: (fun h => H0 g h Hg) => {H0} H0.
+  move: (H t (pos_div_2 eps)) => {H} /= H.
+  unfold Fr in H ; generalize (filter_and _ _ H HP) => {H} H.
+  apply filter_ex in H ; case: H => h H.
+  apply Rle_lt_trans with (1 := distR_triangle (f t) (h t) (g t)).
+  rewrite (double_var eps).
+  apply Rplus_lt_compat.
+  by apply H.
+  move: (H0 _ (proj2 H)) => {H0} H0.
+  apply Rle_lt_trans with (2 := H0).
+  replace (distR (h t) (g t)) with (norm (h t + - g t)).
+  apply (UnifFct_norm_ge_fct (fun x : T => h x + - g x) t).
+  apply Rlt_le_trans with (1 := H0).
+  apply Rle_div_l.
+  by apply Rlt_0_2.
+  apply Rle_trans with (1 := Heps), Rminus_le_0 ; ring_simplify ; by apply Rle_0_1.
+  by rewrite /norm distR_comm /distR /=.
 Defined.
 
 Lemma filterlim_swich_2 {T1 T2} 
@@ -1454,27 +1687,20 @@ Proof.
     apply Rminus_lt_0 ; field_simplify ; rewrite Rdiv_1.
     apply Rdiv_lt_0_compat ; by intuition.
     by [].
-
-  move : (proj2 (@filterlim_locally_cauchy T1 (T2 -> R) R_CMS_UnifFct F1 FF1 f)) => Hf.
-  have : (exists y : T2 -> R, @filterlim T1 (T2 -> R) f F1
-    (@locally (T2 -> R) (@complete_metric (T2 -> R) R_CMS_UnifFct) y)).
+  generalize (proj2 (filterlim_locally_cauchy f)) => Hf.
+  assert (exists y : T2 -> R,
+        @filterlim T1 (T2 -> R) f F1
+          (@locally (T2 -> R)
+             (@complete_metric (T2 -> R) (@R_CMS_UnifFct T2)) y)).
     exists g => P Hp.
     apply Hfg.
-    move: Hp ; rewrite /locally /distance /locally_dist /=.
-    case => d Hd.
+    case: Hp => d Hp.
     exists d => y Hy.
-    apply Hd.
-    replace (UnifFct_dist g y) with (UnifFct_norm (fun x : T2 => y x + - g x)).
-    by [].
-    rewrite /UnifFct_norm /UnifFct_dist.
-    apply f_equal, f_equal.
-    apply Lub_Rbar_ne_eqset => s.
-    split ; case => [-> | [x ->]] {s}.
-    by left.
-    right ; exists x ; by rewrite -dist_norm /distance /= /distR.
-    by left.
-    right ; exists x ; by rewrite -dist_norm /distance /= /distR.
-  move => {Hfg} Hfg.
+    apply: Hp.
+    move: Hy.
+    by rewrite /distance /=.
+    
+  move: H => {Hfg} Hfg.
   move: (Hf Hfg (pos_div_2 eps)) => {Hf Hfg} /= Hf.
   have : exists P : T1 -> Prop, F1 P /\
     (forall (u v : T1) (y : T2), P u -> P v -> @distance _ R_metric (f u y) (f v y) < eps / 2).
@@ -1483,20 +1709,18 @@ Proof.
     by [].
     move => u v y Hu Hv.
     move: (Hp' u v Hu Hv) => {Hp'} Hp'.
-    apply UnifFct_dist_lub_lt_1 in Hp'.
-    apply (Rbar_le_lt_trans (distance _ _) (Lub_Rbar_ne _ (UnifFct_dist_ne (f u) (f v))) (eps / 2)).
-    rewrite /Lub_Rbar_ne ; case: ex_lub_Rbar_ne => l /= H.
-    apply H ; right ; by exists y.
-    by [].
-    apply Rle_div_l.
-    by apply Rlt_0_2.
-    apply Rlt_le, Rlt_le_trans with 1.
-    by [].
-    apply Rminus_le_0 ; ring_simplify ; by apply Rle_0_1.
+    apply Rle_lt_trans with (2 := Hp').
+    apply Rle_trans with (norm ((fun x : T2 => f v x + - f u x) y)).
+    by right.
+    apply (UnifFct_norm_ge_fct (fun x : T2 => f v x + - f u x)).
+    apply Rlt_trans with (2 := Heps).
+    apply Rlt_trans with (1 := Hp').
+    apply Rminus_lt_0 ; field_simplify ; rewrite Rdiv_1 ; by apply is_pos_div_2.
+    
     move => {Hf} Hf.
 
   case: FF2 => HF2 FF2.
-  move: (fun x => proj1 (@filterlim_locally T2 R _ F2 FF2 (f x) (h x)) (Hfh x) (pos_div_2 (pos_div_2 eps)))
+  generalize (fun x => proj1 (filterlim_locally (f x) (h x)) (Hfh x) (pos_div_2 (pos_div_2 eps)))
     => {Hfh} Hfh.
 
   case: Hf => P [Hp Hf].

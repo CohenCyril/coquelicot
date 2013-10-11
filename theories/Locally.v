@@ -182,7 +182,6 @@ Qed.
 Definition filtermap {T U : Type} (f : T -> U) (F : (T -> Prop) -> Prop) :=
   fun P => F (fun x => P (f x)).
 
-(*
 Global Instance filtermap_filter :
   forall T U (f : T -> U) (F : (T -> Prop) -> Prop),
   Filter F -> Filter (filtermap f F).
@@ -200,7 +199,20 @@ constructor.
   now apply H.
   exact HP.
 Qed.
-*)
+
+Global Instance filtermap_proper_filter :
+  forall T U (f : T -> U) (F : (T -> Prop) -> Prop),
+  ProperFilter F -> ProperFilter (filtermap f F).
+Proof.
+intros T U f F FF.
+unfold filtermap.
+split.
+- intros P FP.
+  destruct (filter_ex _ FP) as [x Hx].
+  now exists (f x).
+- apply filtermap_filter.
+  apply filter_filter.
+Qed.
 
 Definition is_filter_lim {T} {TT : TopologicalSpace T} (F : (T -> Prop) -> Prop) (x : T) :=
   forall P, basis P -> P x -> F P.
@@ -629,6 +641,36 @@ Class CompleteMetricSpace T := {
   complete_cauchy : forall F, ProperFilter F -> cauchy F -> exists x, is_filter_lim F x
 }.
 
+
+Lemma cauchy_distance :
+  forall {T} {MT : MetricSpace T} {F} {FF : ProperFilter F},
+  (forall eps, exists x, F (ball x eps)) <->
+  (forall eps : posreal, exists P, F P /\ forall u v : T, P u -> P v -> distance u v < eps).
+Proof.
+  intros T MT F FF.
+  split.
+
+  intros H eps.
+  case: (H (pos_div_2 eps)) => {H} x Hx.
+  exists (ball x (pos_div_2 eps)).
+  split.
+  by [].
+  move => u v Hu Hv.
+  apply Rle_lt_trans with (1 := distance_triangle _ x _).
+  rewrite (double_var eps).
+  apply Rplus_lt_compat.
+  rewrite distance_comm ; by apply Hu.
+  by apply Hv.
+
+  intros H eps.
+  case: (H eps) => {H} P [HP H].
+  destruct (filter_ex P HP) as [x Hx].
+  exists x.
+  move: (fun v => H x v Hx) => {H} H.
+  apply filter_imp with (1 := H).
+  by [].
+Qed.
+
 Lemma filterlim_locally_cauchy :
   forall {T U} {CU : CompleteMetricSpace U} {F} {FF : ProperFilter F} (f : T -> U),
   (forall eps : posreal, exists P, F P /\ forall u v : T, P u -> P v -> distance (f u) (f v) < eps) <->
@@ -638,19 +680,7 @@ intros T U CU F FF f.
 split.
 - intros H.
   destruct (complete_cauchy (filtermap f F)) as [y Hy].
-  + unfold filtermap.
-    split.
-    intros P FP.
-    destruct (filter_ex _ FP) as [x Hx].
-    now exists (f x).
-    split.
-    apply filter_true.
-    intros P Q.
-    apply filter_and.
-    intros P Q K.
-    apply filter_imp.
-    intros x.
-    apply K.
+  + now apply filtermap_proper_filter.
   + intros eps.
     destruct (H eps) as [P [FP H']].
     destruct (filter_ex _ FP) as [x Hx].
