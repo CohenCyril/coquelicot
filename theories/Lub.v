@@ -785,3 +785,21 @@ Proof.
   [ apply (is_glb_Rbar_subset E1 E2)
   | apply (is_glb_Rbar_subset E2 E1)] => //= x ; by apply H.
 Qed.
+
+Lemma uniqueness_dec P : (exists ! x : R, P x) -> {x : R | P x}.
+Proof.
+  move => H.
+  have H' : exists x, P x.
+    case: H => x Hx.
+    exists x ; by apply Hx.
+  exists (Lub_Rbar_ne _ H').
+  case: H => x Hx.
+  replace (real (Lub_Rbar_ne P H')) with (real (Finite x)).
+  by apply Hx.
+  apply f_equal, sym_eq, is_lub_Rbar_ne_unique.
+  split.
+  move => y Hy.
+  right ; by apply f_equal, sym_eq, Hx.
+  move => b Hb.
+  by apply Hb, Hx.
+Qed.

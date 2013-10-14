@@ -75,8 +75,7 @@ Qed.
 Lemma ex_Bessel1 (n : nat) (x : R) :
   ex_pseries (Bessel1_seq n) x.
 Proof.
-  apply ex_series_Rabs.
-  apply CV_disk_inside.
+  apply CV_radius_inside.
   by rewrite CV_Bessel1.
 Qed.
 

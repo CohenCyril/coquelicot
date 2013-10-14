@@ -473,6 +473,14 @@ Qed.
 
 Definition ball {T} {MT : MetricSpace T} x (eps : posreal) y := distance x y < eps.
 
+Lemma ball_center {T} {TMS : MetricSpace T} :
+  forall (x : T) (eps : posreal), ball x eps x.
+Proof.
+  move => x eps.
+  rewrite /ball distance_refl.
+  by apply eps.
+Qed.
+
 Lemma metric_topological_and :
   forall {T} {MT : MetricSpace T} P Q,
   (exists x eps, forall y : T, ball x eps y <-> P y) ->
@@ -750,6 +758,26 @@ apply (Build_MetricSpace R distR).
 - exact distR_refl.
 - exact distR_comm.
 - exact distR_triangle.
+Defined.
+
+Global Instance R_SeparatedSpace : SeparatedSpace R.
+Proof.
+  apply (Build_SeparatedSpace R _).
+  move => x y Hxy.
+  apply sym_not_eq, Rminus_eq_contra in Hxy.
+  apply Rabs_pos_lt in Hxy.
+  exists (ball x (pos_div_2 (mkposreal _ Hxy))) (ball y (pos_div_2 (mkposreal _ Hxy))).
+  + exists x ; by exists (pos_div_2 (mkposreal _ Hxy)).
+  + exists y ; by exists (pos_div_2 (mkposreal _ Hxy)).
+  + by apply ball_center.
+  + by apply ball_center.
+  + unfold ball ; move => /= z Hxz Hyz.
+    apply (Rlt_irrefl (distR x y)).
+    apply Rle_lt_trans with (1 := distR_triangle x z y).
+    rewrite (double_var (distR x y)).
+    apply Rplus_lt_compat.
+    by apply Hxz.
+    rewrite distR_comm ; by apply Hyz.
 Defined.
 
 Lemma R_complete :
@@ -1355,6 +1383,56 @@ rewrite (double_var (distance l l')).
 apply Rplus_lt_compat.
 assumption.
 now rewrite distance_comm.
+Qed.
+
+Lemma is_filter_lim_filterlim {T} {MT : MetricSpace T}
+  (F : (T -> Prop) -> Prop) {FF : Filter F} (x : T) :
+  is_filter_lim F x <-> filterlim (fun t => t) F (locally x).
+Proof.
+  split.
+  + move => Hfx P [d Hp].
+    rewrite /filtermap.
+    apply filter_imp with (1 := Hp).
+    apply Hfx.
+    by exists x, d.
+    rewrite distance_refl ; by apply d.
+  + move/filterlim_locally => HF P [y [d HP]] Hpx.
+    apply HP, Rminus_lt_0 in Hpx.
+    move: (HF FF (mkposreal _ Hpx)).
+    apply filter_imp => /= z Hz.
+    apply HP.
+    apply Rle_lt_trans with (1 := distance_triangle y x z).
+    rewrite Rplus_comm ; by apply Rlt_minus_r.
+Qed.
+
+Lemma distance_continue {T} {TT : MetricSpace T} (x y : T) :
+  filterlim (fun u => distance (fst u) (snd u))
+    (filter_prod (locally x) (locally y)) (locally (distance x y)).
+Proof.
+  apply filterlim_locally => eps /=.
+  apply Filter_prod with
+    (fun x' => distance x x' < eps / 2) (fun y' => distance y y' < eps / 2) => /=.
+  rewrite /locally /locally_dist ; by exists (pos_div_2 eps).
+  rewrite /locally /locally_dist ; by exists (pos_div_2 eps).
+  move => x' y' Hx Hy.
+  apply Rabs_lt_between ; split.
+  rewrite distance_comm in Hy.
+  rewrite -Ropp_minus_distr ; apply Ropp_lt_contravar.
+  apply Rlt_minus_l.
+  apply Rle_lt_trans with (1 := distance_triangle _ x' _).
+  apply Rlt_trans with (1 := Rplus_lt_compat_r _ _ _ Hx).
+  rewrite Rplus_comm ; apply Rlt_minus_r.
+  apply Rle_lt_trans with (1 := distance_triangle _ y' _).
+  apply Rlt_le_trans with (1 := Rplus_lt_compat_l _ _ _ Hy).
+  right ; field.
+  rewrite distance_comm in Hx.
+  apply Rlt_minus_l.
+  apply Rle_lt_trans with (1 := distance_triangle _ x _).
+  apply Rlt_trans with (1 := Rplus_lt_compat_r _ _ _ Hx).
+  rewrite Rplus_comm ; apply Rlt_minus_r.
+  apply Rle_lt_trans with (1 := distance_triangle _ y _).
+  apply Rlt_le_trans with (1 := Rplus_lt_compat_l _ _ _ Hy).
+  right ; field.
 Qed.
 
 (** ** Intervals *)
