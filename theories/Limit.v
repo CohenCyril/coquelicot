@@ -1528,6 +1528,42 @@ apply lt_le_S.
 now apply le_lt_trans with (1 := IH).
 Qed.
 
+Lemma eventually_subseq' :
+  forall phi,
+  eventually (fun n => (phi n < phi (S n))%nat) ->
+  filterlim phi eventually eventually.
+Proof.
+intros phi [M Hphi] P [N HP].
+exists (N+M)%nat.
+intros n Hn.
+apply HP.
+apply plus_le_reg_l with M.
+rewrite plus_comm; apply le_trans with (1:=Hn).
+apply le_trans with (1:=le_plus_r (phi M) _).
+assert (H:(forall x, M+phi M + x <= M+phi (x+M))%nat).
+induction x as [|x IH].
+rewrite plus_0_l plus_0_r.
+apply le_refl.
+rewrite <- plus_n_Sm.
+apply lt_le_S.
+apply le_lt_trans with (1:=IH).
+apply plus_lt_compat_l.
+apply Hphi.
+apply le_plus_r.
+assert (M <= n)%nat.
+apply le_trans with (2:=Hn); apply le_plus_r.
+specialize (H (n-M)%nat).
+replace (n-M+M)%nat with n in H.
+apply le_trans with (2:=H).
+rewrite (plus_comm _ (phi M)) -plus_assoc.
+apply plus_le_compat_l.
+rewrite le_plus_minus_r.
+apply le_refl.
+exact H0.
+rewrite plus_comm.
+now apply sym_eq, le_plus_minus_r.
+Qed.
+
 Lemma is_lim_seq_subseq (u : nat -> R) (l : Rbar) (phi : nat -> nat) :
   filterlim phi eventually eventually ->
   is_lim_seq u l ->

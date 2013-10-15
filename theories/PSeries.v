@@ -973,9 +973,14 @@ Proof.
  rewrite -IHn; simpl.
  rewrite scal_distr_l; apply f_equal.
  now rewrite scal_assoc.
- (*apply filterlim_compose with (f:= fun n => pred n) (G:=eventually).
- now apply filterlim_compose with (2:=mvspace_scal _ _).*)
-admit.
+ apply filterlim_compose with (f:= fun n => pred n) (G:=eventually)
+  (g:=fun n => scal x (sum_n (fun k : nat => scal (pow_n x k) (a k)) n)). 
+ apply eventually_subseq'.
+ exists 1%nat.
+ intros n Hn.
+ rewrite -pred_Sn.
+ now apply lt_pred_n_n.
+ now apply filterlim_compose with (2:=mvspace_scal _ _).
 Qed.
 Lemma ex_pseries_incr_1 {K} {V} {FK : Field K} {VV : MetricVectorSpace V K} (a : nat -> V) (x : K) :
   ex_pseries a x -> ex_pseries (PS_incr_1 a) x.
@@ -985,18 +990,16 @@ Qed.
 Lemma PSeries_incr_1 a x :
   PSeries (PS_incr_1 a) x = x * PSeries a x.
 Proof.
-Admitted.
-(*  rewrite -Series_scal_l.
+  rewrite -Series_scal_l.
   unfold PSeries, Series.
-  rewrite -(Lim_seq_incr_1 (sum_f_R0 (fun k : nat => PS_incr_1 a k * x ^ k))) /=.
+  rewrite -(Lim_seq_incr_1 (sum_n (fun k : nat => PS_incr_1 a k * x ^ k))) /=.
   apply f_equal, Lim_seq_ext.
   case.
-  simpl ; ring.
+  simpl; ring.
   elim => /= [ | n IH].
   ring.
   rewrite IH ; ring.
-Qed.*)
-
+Qed.
 
 Fixpoint PS_incr_n {K} {V} {FK : Field K} {VV : MetricVectorSpace V K} (a : nat -> V) (n k : nat) : V :=
   match n with
@@ -1030,13 +1033,12 @@ Qed.
 Lemma is_pseries_incr_n {K} {V} {FK : Field K} {VV : MetricVectorSpace V K}  (a : nat -> V) (n : nat) (x:K) (l : V) :
   is_pseries a x l -> is_pseries (PS_incr_n a n) x (scal (pow_n x n) l).
 Proof.
-Admitted.
-(*  move => Ha.
+  move => Ha.
   elim: n => /= [ | n IH].
-  by rewrite Rmult_1_l.
-  rewrite Rmult_assoc.
+  by rewrite scal_one.
+  rewrite -scal_assoc.
   by apply is_pseries_incr_1.
-Qed.*)
+Qed.
 Lemma ex_pseries_incr_n {K} {V} {FK : Field K} {VV : MetricVectorSpace V K} (a : nat -> V) (n : nat) (x : K) :
   ex_pseries a x -> ex_pseries (PS_incr_n a n) x.
 Proof.
@@ -1058,57 +1060,56 @@ Lemma is_pseries_decr_1 {K} {V} {FK : Field K} {VV : MetricVectorSpace V K} (a :
   x <> zero -> is_pseries a x l
     -> is_pseries (PS_decr_1 a) x (scal (inv x) (plus l (opp (a O)))).
 Proof.
-Admitted.
-(*  move => Hx Ha.
-  apply is_lim_seq_spec.
-  intros eps.
-  have He : 0 < eps * Rabs x.
-    apply Rmult_lt_0_compat.
-    by apply eps.
-    by apply Rabs_pos_lt.
-  apply is_lim_seq_spec in Ha.
-  case: (Ha (mkposreal _ He)) => /= {Ha} N Ha.
-  exists N => n Hn.
-  rewrite /PS_decr_1.
-  replace (sum_f_R0 (fun k : nat => a (S k) * x ^ k) n - (l - a 0%nat) / x)
-    with ((sum_f_R0 (fun k : nat => a k * x ^ k) (S n) - l)/x).
-  Focus 2.
-    elim: n {Hn} => /= [ | n IH].
-    by field.
-    rewrite /Rminus (Rplus_assoc (sum_f_R0 (fun k : nat => a (S k) * x ^ k) n)).
-    rewrite (Rplus_comm (a (S (S n)) * (x * x ^ n))).
-    rewrite -(Rplus_assoc (sum_f_R0 (fun k : nat => a (S k) * x ^ k) n)).
-    rewrite /Rminus in IH ; rewrite -IH.
-    by field.
-  rewrite Rabs_div.
-  apply Rlt_div_l.
-  by apply Rabs_pos_lt.
-  apply Ha ; by intuition.
-  by [].
-Qed.*)
+  move => Hx Ha.
+  apply filterlim_ext with  (fun n : nat => scal (inv x) 
+    (sum_n (fun k => scal (pow_n x (S k)) (a (S k))) n)).
+  intros n; induction n; unfold PS_decr_1; simpl.
+  rewrite mult_one_r scal_one scal_assoc.
+  rewrite mult_comm mult_inv_r; try assumption.
+  apply scal_one.
+  rewrite -IHn.
+  rewrite scal_distr_l; apply f_equal.
+  rewrite scal_assoc mult_assoc.
+  rewrite (mult_comm (inv x) _) mult_inv_r.
+  now rewrite mult_one_l.
+  assumption.
+  apply filterlim_compose with (2:=mvspace_scal _ _).
+  apply filterlim_ext with  (fun n : nat => plus 
+    (sum_n (fun k => scal (pow_n x k) (a k)) (S n)) (opp (a 0%nat))).
+  intros n; induction n; simpl.
+  rewrite mult_one_r scal_one.
+  rewrite plus_comm plus_assoc.
+  now rewrite plus_opp_l plus_zero_l.
+  rewrite -IHn.
+  apply sym_eq; rewrite plus_comm plus_assoc.
+  apply f_equal2;[idtac|reflexivity].
+  now rewrite plus_comm.
+  apply filterlim_compose_2 with (3:=mvspace_plus _ _).
+  apply filterlim_compose with (f:= fun x => S x) (2:=Ha).
+  apply eventually_subseq; intros n; omega.
+  apply filterlim_const.
+Qed.
 Lemma ex_pseries_decr_1  {K} {V} {FK : Field K} {VV : MetricVectorSpace V K} (a : nat -> V) (x : K) :
-  ex_pseries a x -> ex_pseries (PS_decr_1 a) x.
+ (x=zero \/ x <> zero) -> 
+ ex_pseries a x -> ex_pseries (PS_decr_1 a) x.
 Proof.
-Admitted.
-(*  move => [l Ha].
-  case: (Req_dec x 0) => Hx.
-  rewrite Hx ; by apply ex_pseries_0.
-  exists ((l-a O)/x) ; by apply is_pseries_decr_1.
-Qed.*)
+ intros H [l Ha]; destruct H.
+ rewrite H ; by apply ex_pseries_0.
+ exists (scal (inv x) (plus l (opp (a 0%nat)))).
+ now apply is_pseries_decr_1.
+Qed.
 Lemma PSeries_decr_1 (a : nat -> R) (x : R) :
   ex_pseries a x
     -> PSeries a x = a O + x * PSeries (PS_decr_1 a) x.
 Proof.
-Admitted.
-(*  move => Ha.
+  move => Ha.
   case: (Req_dec x 0) => Hx.
   rewrite Hx PSeries_0 ; ring.
-  move: (is_pseries_decr_1 a x (PSeries a x) Hx (Series_correct _ Ha)) => Hb.
-  rewrite /is_pseries in Hb.
-  rewrite {2}/PSeries /Series (is_lim_seq_unique _ _ Hb).
-  simpl.
-  by field.
-Qed.*)
+  move: (is_pseries_decr_1 a x (PSeries a x) Hx 
+    (PSeries_correct _ _ Ha)) => Hb.
+  rewrite (is_pseries_unique _ _ _ Hb).
+  simpl; now field.
+Qed.
 Lemma PSeries_decr_1_aux (a : nat -> R) (x : R) :
   a O = 0 -> (PSeries a x) = x * PSeries (PS_decr_1 a) x.
 Proof.
@@ -1124,25 +1125,50 @@ Qed.
 Definition PS_decr_n  {K} {V} {FK : Field K} {VV : MetricVectorSpace V K} (a : nat -> V) (n k : nat) : V :=
   a (n + k)%nat.
 Lemma is_pseries_decr_n  {K} {V} {FK : Field K} {VV : MetricVectorSpace V K} (a : nat -> V) (n : nat) (x:K) (l : V) :
-  x <> zero -> (0 < n)%nat -> is_pseries a x l
+  pow_n x n <> zero -> (0 < n)%nat -> is_pseries a x l
     -> is_pseries (PS_decr_n a n) x (scal (inv (pow_n x n)) (plus l (opp (sum_n (fun k => scal (pow_n x k) (a k)) (n-1)%nat)))).
 Proof.
-Admitted. True ??
   move => Hx Hn Ha.
-  case: n Hn => [ | n] Hn.
+  case: n Hn Hx => [ | n] Hn Hx.
   by apply lt_irrefl in Hn.
   clear Hn ; simpl ; rewrite -minus_n_O /PS_decr_n /=.
-  elim: n => /= [ | n IH].
-  rewrite ?Rmult_1_r.
+  elim: n Hx => /= [ | n IH] Hx.
+  rewrite scal_one mult_one_r.
+  rewrite mult_one_r in Hx.
   by apply is_pseries_decr_1.
-  set ln := ((l - sum_f_R0 (fun k : nat => a k * x ^ k) n) / (x * x ^ n)) ;
-  rewrite -/ln in IH.
-  replace ((l - (sum_f_R0 (fun k : nat => a k * x ^ k) n + a (S n) * (x * x ^ n))) /
-    (x * (x * x ^ n))) with ((ln - a (S (n + 0)))/x).
-  move: (is_pseries_decr_1 (fun k : nat => a (S (n + k))) x ln Hx IH).
+  assert (Hx': x <> zero).
+  intros L; apply Hx.
+  now rewrite L mult_zero_l.
+  set ln := (scal (inv (mult x (pow_n x n)))
+    (plus l (opp (sum_n (fun k : nat => scal (pow_n x k) (a k)) n)))) in IH.
+  replace (scal (inv (mult x (mult x (pow_n x n))))
+     (plus l (opp (plus (sum_n (fun k : nat => scal (pow_n x k) (a k)) n)
+              (scal (mult x (pow_n x n)) (a (S n))))))) 
+  with (scal (inv x) (plus ln (opp (a (S (n + 0)))))).
+  assert (Y:is_pseries (fun k : nat => a (S (n + k))) x ln).
+  apply IH.
+  intros L; apply Hx.
+  now rewrite L mult_zero_r.
+  move: (is_pseries_decr_1 (fun k : nat => a (S (n + k))) x ln Hx' Y).
   rewrite /PS_decr_1 /=.
   apply is_pseries_ext => k.
   apply f_equal ; ring.
+  rewrite inv_mult; try assumption.
+  rewrite -scal_assoc.
+  apply f_equal; unfold ln.
+  repeat rewrite (scal_distr_l _ l).
+  rewrite -plus_assoc.
+  apply f_equal.
+  rewrite scal_distr_r.
+
+reflexivity.
+ 
+SearchAbout inv.
+rewrite inv_mult.
+
+TOTO.
+
+
   rewrite /ln plus_0_r ; field ; split.
   by apply pow_nonzero.
   by [].
@@ -1162,7 +1188,7 @@ Lemma PSeries_decr_n (a : nat -> R) (n : nat) (x : R) :
   ex_pseries a x
     -> PSeries a x = sum_f_R0 (fun k => a k * x^k) n + x^(S n) * PSeries (PS_decr_n a (S n)) x.
 Proof.
-Admitted.
+Aditted.
 (*  move => Ha.
   case: (Req_dec x 0) => Hx.
   rewrite Hx PSeries_0 ; simpl ; ring_simplify.
@@ -1196,7 +1222,7 @@ Qed.
 
 Lemma CV_radius_incr_1 (a : nat -> R) : CV_radius (PS_incr_1 a) = CV_radius a.
 Proof.
-Admitted.
+Aditted.
 (*  rewrite /CV_radius /CV_disk.
 
   apply Lub_Rbar_ne_eqset => x ; split => Hx ;

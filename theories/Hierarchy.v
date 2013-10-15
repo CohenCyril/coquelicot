@@ -157,6 +157,47 @@ intros K FK x.
 rewrite mult_comm; apply mult_zero_r.
 Qed.
 
+Lemma mult_eq_compat_l: forall K (FK : Field K) 
+  (r x y: K), r <> zero -> mult r x = mult r y -> x = y.
+Proof.
+intros K FK r x y Hr H.
+rewrite <- (mult_one_l _ _ x).
+rewrite <- (mult_inv_r r); try assumption.
+rewrite mult_comm, mult_assoc, (mult_comm x _).
+rewrite H.
+rewrite mult_comm, mult_assoc, (mult_comm _ r).
+rewrite mult_inv_r; try assumption.
+apply mult_one_l.
+Qed.
+
+
+Lemma inv_eq: forall K (FK : Field K) 
+  (x y : K), x <> zero -> mult x y = one -> y = inv x.
+Proof.
+intros K FK x y Hx H.
+apply mult_eq_compat_l with (FK:=FK) (r:=x).
+assumption.
+now rewrite H, mult_inv_r.
+Qed.
+
+Lemma inv_mult :
+  forall K (FK : Field K) (x y : K), mult x y <> zero ->
+  inv (mult x y) = mult (inv x) (inv y).
+Proof.
+intros K FK x y Hxy.
+apply sym_eq, inv_eq; try assumption.
+rewrite (mult_comm x), mult_assoc.
+rewrite <- (mult_assoc _ _ (inv x)).
+rewrite mult_inv_r.
+rewrite mult_one_r.
+rewrite mult_inv_r.
+reflexivity.
+intros L; apply Hxy.
+rewrite L; apply mult_zero_r.
+intros L; apply Hxy.
+rewrite L; apply mult_zero_l.
+Qed.
+
 Global Instance R_abelian_group : AbelianGroup R.
 Proof.
 apply (@Build_AbelianGroup R Rplus Ropp R0).
