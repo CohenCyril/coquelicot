@@ -681,7 +681,7 @@ Qed.
 (** ** Generalized intermediate value theorem *)
 
 Lemma IVT_gen (f : R -> R) (a b y : R) :
-  continuity f
+  Ranalysis1.continuity f
   -> Rmin (f a) (f b) <= y <= Rmax (f a) (f b)
   -> { x : R | Rmin a b <= x <= Rmax a b /\ f x = y }.
 Proof.

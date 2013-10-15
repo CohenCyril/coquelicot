@@ -36,8 +36,8 @@ Class TopologicalSpace T := {
   open := fun (D : T -> Prop) =>
     forall x, D x -> open_spec basis D x ;
   basis_and : forall P Q, basis P -> basis Q ->
-    forall x, P x -> Q x -> open_spec basis (fun y => P y /\ Q y) x (*;
-  basis_true : forall x, exists P, basis P /\ P x*)
+    forall x, P x -> Q x -> open_spec basis (fun y => P y /\ Q y) x ;
+  basis_true : forall x, exists P, basis P /\ P x
 }.
 
 Lemma open_basis :
@@ -114,6 +114,9 @@ Lemma open_false :
 Proof.
 intros T TT x [].
 Qed.
+
+Definition continuity {U V} {TU : TopologicalSpace U} {TV : TopologicalSpace V} (f : U -> V) (x : U) :=
+  forall P, basis P -> P (f x) -> open_spec basis (fun x => P (f x)) x.
 
 Inductive disjoint_spec {T} {TT : TopologicalSpace T} (x y : T) :=
   Disjoint_spec P Q : basis P -> basis Q -> P x -> Q y ->
@@ -270,6 +273,60 @@ Proof.
 intros T U F G FF f g Efg.
 apply filterlim_ext_loc.
 now apply filter_forall.
+Qed.
+
+Definition neighborhoods {T} {TT : TopologicalSpace T} (x : T) (D : T -> Prop) :=
+  open_spec basis D x.
+
+Global Instance neighborhoods_filter :
+  forall T (TT : TopologicalSpace T) (x : T),
+  Filter (neighborhoods x).
+Proof.
+intros T TT x.
+split.
+- destruct (basis_true x) as [P [BP Px]].
+  now apply Open_spec with (1 := BP).
+- intros P Q [P' BP' Px HP] [Q' BQ' Qx HQ].
+  destruct (basis_and P' Q' BP' BQ' x Px Qx) as [R BR Rx HR].
+  apply Open_spec with (1 := BR).
+  exact Rx.
+  intros y Ry.
+  destruct (HR y Ry) as [Py Qy].
+  split.
+  now apply HP.
+  now apply HQ.
+- intros P Q H [P' BP' Px HP].
+  apply Open_spec with (1 := BP').
+  exact Px.
+  intros y Py.
+  apply H.
+  now apply HP.
+Qed.
+
+Lemma is_filter_lim_neighborhoods :
+  forall {T} {TT : TopologicalSpace T} (x : T),
+  is_filter_lim (neighborhoods x) x.
+Proof.
+intros T TT x P BP Px.
+now apply Open_spec with (1 := BP).
+Qed.
+
+Lemma is_filter_lim_continuity :
+  forall {T U} {TT : TopologicalSpace T} {TU : TopologicalSpace U} (f : T -> U) (x : T),
+  (forall F, Filter F -> is_filter_lim F x -> is_filter_lim (filtermap f F) (f x)) <->
+  continuity f x.
+Proof.
+intros T U TT TU f x.
+split.
+- intros Cf Q BQ Qfx.
+  apply Cf ; try easy.
+  apply neighborhoods_filter.
+  apply is_filter_lim_neighborhoods.
+- intros Cf F FF Fx P BP Pfx.
+  destruct (Cf P BP Pfx) as [Q BQ Qx HQ].
+  unfold filtermap.
+  apply filter_imp with (1 := HQ).
+  now apply Fx.
 Qed.
 
 (** ** Filters for pairs *)
@@ -517,6 +574,17 @@ apply Rlt_le_trans with (1 := Hy).
 apply Rmin_r.
 Qed.
 
+Lemma metric_topological_true :
+  forall {T} {MT : MetricSpace T} (x : T),
+  exists P, (exists x eps, forall y, ball x eps y <-> P y) /\ P x.
+Proof.
+intros T MT x.
+exists (ball x (mkposreal 1 Rlt_0_1)).
+split.
+now exists x, (mkposreal 1 Rlt_0_1).
+apply ball_center.
+Qed.
+
 Global Instance metric_topological :
   forall T, MetricSpace T -> TopologicalSpace T.
 Proof.
@@ -524,6 +592,7 @@ intros T MT.
 apply (Build_TopologicalSpace _
   (fun D => exists x, exists eps, forall y, ball x eps y <-> D y)).
 apply metric_topological_and.
+apply metric_topological_true.
 Defined.
 
 (** ** Filters for open balls *)
