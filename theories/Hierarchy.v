@@ -198,6 +198,38 @@ intros L; apply Hxy.
 rewrite L; apply mult_zero_l.
 Qed.
 
+
+Lemma plus_eq_compat_l: forall K (FK : Field K)
+  (r x y: K), plus r x = plus r y -> x = y.
+Proof.
+intros K FK r x y H.
+rewrite <- (plus_zero_l _ _ x).
+rewrite <- (plus_opp_l _ _ r).
+rewrite <- plus_assoc.
+rewrite H.
+now rewrite plus_assoc, plus_opp_l, plus_zero_l.
+Qed.
+
+
+Lemma opp_mult_r: forall K (FK : Field K) (x y: K),
+  opp (mult x y) = mult x (opp y).
+Proof.
+intros K FK x y.
+apply plus_eq_compat_l with (FK:=FK) (r:=(mult x y)).
+rewrite plus_opp_r.
+rewrite <- mult_distr_l.
+now rewrite plus_opp_r, mult_zero_r.
+Qed.
+
+
+Lemma opp_mult_l: forall K (FK : Field K) (x y: K),
+  opp (mult x y) = mult (opp x) y.
+Proof.
+intros K FK x y.
+now rewrite mult_comm, opp_mult_r, mult_comm.
+Qed.
+
+
 Global Instance R_abelian_group : AbelianGroup R.
 Proof.
 apply (@Build_AbelianGroup R Rplus Ropp R0).
