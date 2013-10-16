@@ -19,465 +19,889 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 COPYING file for more details.
 *)
 
-Require Import Reals Locally Limit Rbar.
-Require Import Rcomplements.
+Require Import Reals Rbar ssreflect.
+Require Import Rcomplements List Lub.
+Require Import FunctionalExtensionality.
+Open Scope R_scope.
 
-(** * Vector space *)
+(** * Filters *)
+(** ** Definitions *) 
 
-Class AbelianGroup G := {
-  plus : G -> G -> G ;
-  opp : G -> G ;
-  minus x y := plus x (opp y) ;
-  zero : G ;
-  plus_comm : forall x y, plus x y = plus y x ;
-  plus_assoc : forall x y z, plus x (plus y z) = plus (plus x y) z ;
-  plus_zero_r : forall x, plus x zero = x ;
-  plus_opp_r : forall x, plus x (opp x) = zero
+Class Filter {T : Type} (F : (T -> Prop) -> Prop) := {
+  filter_true : F (fun _ => True) ;
+  filter_and : forall P Q : T -> Prop, F P -> F Q -> F (fun x => P x /\ Q x) ;
+  filter_imp : forall P Q : T -> Prop, (forall x, P x -> Q x) -> F P -> F Q
 }.
 
-Lemma plus_zero_l :
-  forall G (GG : AbelianGroup G) (x : G),
-  plus zero x = x.
-Proof.
-intros G GG x.
-now rewrite plus_comm, plus_zero_r.
-Qed.
-
-Lemma plus_opp_l :
-  forall G (GG : AbelianGroup G) (x : G),
-  plus (opp x) x = zero.
-Proof.
-intros G GG x.
-rewrite plus_comm.
-apply plus_opp_r.
-Qed.
-
-Lemma opp_zero :
-  forall G (GG : AbelianGroup G),
-  opp zero = zero.
-Proof.
-intros G GG.
-rewrite <- (plus_zero_r (opp zero)).
-apply plus_opp_l.
-Qed.
-
-Lemma minus_zero_r :
-  forall G (GG : AbelianGroup G) (x : G),
-  minus x zero = x.
-Proof.
-intros G GG x.
-unfold minus.
-rewrite opp_zero.
-apply plus_zero_r.
-Qed.
-
-Lemma plus_reg_r :
-  forall G (GG : AbelianGroup G) (x y z : G),
-  plus x z = plus y z -> x = y.
-Proof.
-intros G GG x y z H.
-rewrite <- (plus_zero_r x), <- (plus_zero_r y).
-rewrite <- (plus_opp_r z).
-rewrite 2!plus_assoc.
-now rewrite H.
-Qed.
-
-Lemma opp_plus :
-  forall G (GG : AbelianGroup G) (x y : G),
-  opp (plus x y) = plus (opp x) (opp y).
-Proof.
-intros G GG x y.
-apply plus_reg_r with (GG := GG) (z := plus x y).
-rewrite plus_opp_l.
-rewrite plus_assoc.
-rewrite (plus_comm (opp x)).
-rewrite <- (plus_assoc (opp y)).
-rewrite plus_opp_l.
-rewrite plus_zero_r.
-apply sym_eq, plus_opp_l.
-Qed.
-
-Lemma opp_opp :
-  forall {G} {GG : AbelianGroup G} (x : G),
-  opp (opp x) = x.
-Proof.
-intros G GG x.
-apply plus_reg_r with (GG := GG) (z := opp x).
-rewrite plus_opp_r.
-apply plus_opp_l.
-Qed.
-
-Class Field K := {
-  field_group :> AbelianGroup K ;
-  mult : K -> K -> K ;
-  inv : K -> K ;
-  one : K ;
-  mult_comm : forall x y, mult x y = mult y x ;
-  mult_assoc : forall x y z, mult x (mult y z) = mult (mult x y) z ;
-  mult_one_r : forall x, mult x one = x ;
-  mult_inv_r : forall x, x <> zero -> mult x (inv x) = one ;
-  mult_distr_r : forall x y z, mult (plus x y) z = plus (mult x z) (mult y z)
+Class ProperFilter {T : Type} (F : (T -> Prop) -> Prop) := {
+  filter_ex : forall P, F P -> exists x, P x ;
+  filter_filter :> Filter F
 }.
 
-Lemma mult_one_l :
-  forall K (FK : Field K) (x : K),
-  mult one x = x.
+Lemma filter_forall :
+  forall {T : Type} {F} {FF: @Filter T F} (P : T -> Prop),
+  (forall x, P x) -> F P.
 Proof.
-intros K FK x.
-rewrite mult_comm.
-apply mult_one_r.
+intros T F FF P H.
+apply filter_imp with (fun _ => True).
+easy.
+apply filter_true.
 Qed.
 
-Lemma mult_distr_l :
-  forall K (FK : Field K) (x y z : K),
-  mult x (plus y z) = plus (mult x y) (mult x z).
+Lemma filter_const :
+  forall {T : Type} {F} {FF: @ProperFilter T F} (P : Prop),
+  F (fun _ => P) -> P.
 Proof.
-intros K FK x y z.
-rewrite mult_comm.
-rewrite mult_distr_r.
-apply f_equal2 ; apply mult_comm.
+intros T F FF P H.
+destruct (filter_ex (fun _ => P) H) as [_ H'].
+exact H'.
 Qed.
 
-Lemma mult_zero_r :
-  forall K (FK : Field K) (x : K),
-  mult x zero = zero.
+(** ** Limits expressed with filters *)
+
+Definition filter_le {T : Type} (F G : (T -> Prop) -> Prop) :=
+  forall P, G P -> F P.
+
+Lemma filter_le_refl :
+  forall T F, @filter_le T F F.
 Proof.
-intros K FK x.
-apply plus_reg_r with (GG := field_group) (z := mult x zero).
-rewrite <- mult_distr_l.
-rewrite plus_zero_r.
-now rewrite plus_zero_l.
+now intros T F P.
 Qed.
 
-Lemma mult_zero_l :
-  forall K (FK : Field K) (x : K),
-  mult zero x = zero.
+Lemma filter_le_trans :
+  forall T F G H, @filter_le T F G -> filter_le G H -> filter_le F H.
 Proof.
-intros K FK x.
-rewrite mult_comm; apply mult_zero_r.
+intros T F G H FG GH P K.
+now apply FG, GH.
 Qed.
 
-Lemma mult_eq_compat_l: forall K (FK : Field K) 
-  (r x y: K), r <> zero -> mult r x = mult r y -> x = y.
+Definition filtermap {T U : Type} (f : T -> U) (F : (T -> Prop) -> Prop) :=
+  fun P => F (fun x => P (f x)).
+
+Global Instance filtermap_filter :
+  forall T U (f : T -> U) (F : (T -> Prop) -> Prop),
+  Filter F -> Filter (filtermap f F).
 Proof.
-intros K FK r x y Hr H.
-rewrite <- (mult_one_l _ _ x).
-rewrite <- (mult_inv_r r); try assumption.
-rewrite mult_comm, mult_assoc, (mult_comm x _).
-rewrite H.
-rewrite mult_comm, mult_assoc, (mult_comm _ r).
-rewrite mult_inv_r; try assumption.
-apply mult_one_l.
+intros T U f F FF.
+unfold filtermap.
+constructor.
+- apply filter_true.
+- intros P Q HP HQ.
+  now apply filter_and.
+- intros P Q H HP.
+  unfold filtermap.
+  apply (filter_imp (fun x => P (f x))).
+  intros x Hx.
+  now apply H.
+  exact HP.
+Qed.
+
+Global Instance filtermap_proper_filter :
+  forall T U (f : T -> U) (F : (T -> Prop) -> Prop),
+  ProperFilter F -> ProperFilter (filtermap f F).
+Proof.
+intros T U f F FF.
+unfold filtermap.
+split.
+- intros P FP.
+  destruct (filter_ex _ FP) as [x Hx].
+  now exists (f x).
+- apply filtermap_filter.
+  apply filter_filter.
+Qed.
+
+Definition filterlim {T U : Type} (f : T -> U) F G :=
+  filter_le (filtermap f F) G.
+
+Lemma filterlim_id :
+  forall T (F : (T -> Prop) -> Prop), filterlim (fun x => x) F F.
+Proof.
+now intros T F P HP.
+Qed.
+
+Lemma filterlim_compose :
+  forall T U V (f : T -> U) (g : U -> V) F G H,
+  filterlim f F G -> filterlim g G H ->
+  filterlim (fun x => g (f x)) F H.
+Proof.
+intros T U V f g F G H FG GH P HP.
+apply (FG (fun x => P (g x))).
+now apply GH.
+Qed.
+
+Lemma filterlim_ext_loc :
+  forall {T U F G} {FF : Filter F} (f g : T -> U),
+  F (fun x => f x = g x) ->
+  filterlim f F G ->
+  filterlim g F G.
+Proof.
+intros T U F G FF f g Efg Lf P GP.
+specialize (Lf P GP).
+generalize (filter_and _ _ Efg Lf).
+unfold filtermap.
+apply filter_imp.
+now intros x [-> H].
+Qed.
+
+Lemma filterlim_ext :
+  forall {T U F G} {FF : Filter F} (f g : T -> U),
+  (forall x, f x = g x) ->
+  filterlim f F G ->
+  filterlim g F G.
+Proof.
+intros T U F G FF f g Efg.
+apply filterlim_ext_loc.
+now apply filter_forall.
+Qed.
+
+(** ** Specific filters *)
+
+(** Filters for pairs *)
+
+Inductive filter_prod {T U : Type} (F G : _ -> Prop) (P : T * U -> Prop) : Prop :=
+  Filter_prod (Q : T -> Prop) (R : U -> Prop) :
+    F Q -> G R -> (forall x y, Q x -> R y -> P (x, y)) -> filter_prod F G P.
+
+Global Instance filter_prod_filter :
+  forall T U (F : (T -> Prop) -> Prop) (G : (U -> Prop) -> Prop),
+  Filter F -> Filter G -> Filter (filter_prod F G).
+Proof.
+intros T U F G FF FG.
+constructor.
+- exists (fun _ => True) (fun _ => True).
+  apply filter_true.
+  apply filter_true.
+  easy.
+- intros P Q [AP BP P1 P2 P3] [AQ BQ Q1 Q2 Q3].
+  exists (fun x => AP x /\ AQ x) (fun x => BP x /\ BQ x).
+  now apply filter_and.
+  now apply filter_and.
+  intros x y [Px Qx] [Py Qy].
+  split.
+  now apply P3.
+  now apply Q3.
+- intros P Q HI [AP BP P1 P2 P3].
+  exists AP BP ; try easy.
+  intros x y Hx Hy.
+  apply HI.
+  now apply P3.
+Qed.
+
+Lemma filterlim_fst :
+  forall {T U F G} {FG : Filter G},
+  filterlim (@fst T U) (filter_prod F G) F.
+Proof.
+intros T U F G FG P HP.
+exists P (fun _ => True) ; try easy.
+apply filter_true.
+Qed.
+
+Lemma filterlim_snd :
+  forall {T U F G} {FF : Filter F},
+  filterlim (@snd T U) (filter_prod F G) G.
+Proof.
+intros T U F G FF P HP.
+exists (fun _ => True) P ; try easy.
+apply filter_true.
+Qed.
+
+Lemma filterlim_pair :
+  forall {T U V F G H} {FF : Filter F},
+  forall (f : T -> U) (g : T -> V),
+  filterlim f F G ->
+  filterlim g F H ->
+  filterlim (fun x => (f x, g x)) F (filter_prod G H).
+Proof.
+intros T U V F G H FF f g Cf Cg P [A B GA HB HP].
+unfold filtermap.
+apply (filter_imp (fun x => A (f x) /\ B (g x))).
+intros x [Af Bg].
+now apply HP.
+apply filter_and.
+now apply Cf.
+now apply Cg.
+Qed.
+
+Lemma filterlim_compose_2 :
+  forall {T U V W F G H I} {FF : Filter F},
+  forall (f : T -> U) (g : T -> V) (h : U -> V -> W),
+  filterlim f F G ->
+  filterlim g F H ->
+  filterlim (fun x => h (fst x) (snd x)) (filter_prod G H) I ->
+  filterlim (fun x => h (f x) (g x)) F I.
+Proof.
+intros T U V W F G H I FF f g h Cf Cg Ch.
+change (fun x => h (f x) (g x)) with (fun x => h (fst (f x, g x)) (snd (f x, g x))).
+apply: filterlim_compose Ch.
+now apply filterlim_pair.
+Qed.
+
+(** Restriction of a filter to a domain *)
+
+Definition within {T : Type} D (F : (T -> Prop) -> Prop) (P : T -> Prop) :=
+  F (fun x => D x -> P x).
+
+Global Instance within_filter :
+  forall T D F, Filter F -> Filter (@within T D F).
+Proof.
+intros T D F FF.
+unfold within.
+constructor.
+- now apply filter_forall.
+- intros P Q WP WQ.
+  apply filter_imp with (fun x => (D x -> P x) /\ (D x -> Q x)).
+  intros x [HP HQ] HD.
+  split.
+  now apply HP.
+  now apply HQ.
+  now apply filter_and.
+- intros P Q H FP.
+  apply filter_imp with (fun x => (D x -> P x) /\ (P x -> Q x)).
+  intros x [H1 H2] HD.
+  apply H2, H1, HD.
+  apply filter_and.
+  exact FP.
+  now apply filter_forall.
+Qed.
+
+Lemma filterlim_within_ext :
+  forall {T U F G} {FF : Filter F} D (f g : T -> U),
+  (forall x, D x -> f x = g x) ->
+  filterlim f (within D F) G ->
+  filterlim g (within D F) G.
+Proof.
+intros T U F G FF D f g Efg.
+apply filterlim_ext_loc.
+unfold within.
+now apply filter_forall.
+Qed.
+
+(** * Topological spaces *)
+
+(* TODO : fusionner open_spec et neiborhood *)
+
+Inductive neighborhoods {T} (basis : (T -> Prop) -> Prop) (x : T) (D : T -> Prop) : Prop :=
+  Is_neighborhoods (P : T -> Prop) : basis P -> P x -> (forall y, P y -> D y)
+    -> neighborhoods basis x D.
+
+Class TopologicalSpace T := {
+  basis : (T -> Prop) -> Prop ;
+  open := fun (D : T -> Prop) =>
+    forall x, D x -> neighborhoods basis x D ;
+  basis_and : forall P Q, basis P -> basis Q ->
+    forall x, P x -> Q x -> neighborhoods basis x (fun y => P y /\ Q y) ;
+  basis_true : forall x, exists P, basis P /\ P x
+}.
+
+Lemma open_basis :
+  forall {T} {TT : TopologicalSpace T} P,
+  basis P -> open P.
+Proof.
+intros T TT P BP x Px.
+now apply (Is_neighborhoods _ _ _ P).
+Qed.
+
+Lemma open_ext :
+  forall {T} {TT : TopologicalSpace T} P Q,
+  (forall x, P x <-> Q x) ->
+  open P -> open Q.
+Proof.
+intros T TT P Q H OP x Qx.
+destruct (OP x) as [R BR Rx HR].
+now apply H.
+apply (Is_neighborhoods _ _ _ R BR Rx).
+intros y Ry.
+apply H.
+now apply HR.
+Qed.
+
+Lemma open_and :
+  forall {T} {TT : TopologicalSpace T} D E,
+  open D -> open E -> open (fun x => D x /\ E x).
+Proof.
+intros T TT D E OD OE x [Dx Ex].
+destruct (OD x Dx) as [P BP Px HP].
+destruct (OE x Ex) as [Q BQ Qx HQ].
+destruct (basis_and P Q BP BQ x Px Qx) as [R BR Rx HR].
+apply (Is_neighborhoods _ _ _ R BR Rx).
+intros y Ry.
+destruct (HR y Ry) as [Py Qy].
+split.
+now apply HP.
+now apply HQ.
+Qed.
+
+Lemma open_ex :
+  forall {T} {TT : TopologicalSpace T} {A} (D : A -> (T -> Prop)),
+  (forall a, open (D a)) ->
+  open (fun x => exists a, D a x).
+Proof.
+intros T TT A D OD x [a Dx].
+destruct (OD a x Dx) as [P BP Px HP].
+apply (Is_neighborhoods _ _ _ P BP Px).
+intros y Py.
+exists a.
+now apply HP.
+Qed.
+
+Lemma open_or :
+  forall {T} {TT : TopologicalSpace T} D E,
+  open D -> open E -> open (fun x => D x \/ E x).
+Proof.
+intros T TT D E OD OE x [Dx|Ex].
+destruct (OD x Dx) as [P BP Px HP].
+apply (Is_neighborhoods _ _ _ P BP Px).
+intros y Py.
+left.
+now apply HP.
+destruct (OE x Ex) as [P BP Px HP].
+apply (Is_neighborhoods _ _ _ P BP Px).
+intros y Py.
+right.
+now apply HP.
+Qed.
+
+Lemma open_false :
+  forall {T} {TT : TopologicalSpace T},
+  open (fun _ => False).
+Proof.
+intros T TT x [].
+Qed.
+
+Global Instance neighborhoods_filter T :
+  forall (TT : TopologicalSpace T) (x : T), Filter (neighborhoods basis x).
+Proof.
+intros TT x.
+split.
+- destruct (basis_true x) as [P [BP Px]].
+  by exists P.
+- intros P Q [P' BP' Px HP] [Q' BQ' Qx HQ].
+  destruct (basis_and P' Q' BP' BQ' x Px Qx) as [R BR Rx HR].
+  apply Is_neighborhoods with (1 := BR).
+  exact Rx.
+  intros y Ry.
+  destruct (HR y Ry) as [Py Qy].
+  split.
+  now apply HP.
+  now apply HQ.
+- intros P Q H [P' BP' Px HP].
+  apply Is_neighborhoods with (1 := BP').
+  exact Px.
+  intros y Py.
+  apply H.
+  now apply HP.
+Qed.
+
+Inductive disjoint_spec {T} {TT : TopologicalSpace T} (x y : T) :=
+  Disjoint_spec P Q : basis P -> basis Q -> P x -> Q y ->
+    (forall z, P z -> Q z -> False) -> disjoint_spec x y.
+
+Class SeparatedSpace T := {
+  seperated_topological :> TopologicalSpace T ;
+  separated_disjoint : forall x y : T, x <> y -> disjoint_spec x y
+}.
+
+Class PerfectSpace T := {
+  perfect_topological :> TopologicalSpace T ;
+  perfect_open : forall x : T, exists O, open O /\ O x
+}.
+
+Definition is_filter_lim {T} {TT : TopologicalSpace T} (F : (T -> Prop) -> Prop) (x : T) :=
+  forall P, basis P -> P x -> F P.
+
+Lemma is_filter_lim_unique :
+  forall {T} {ST : SeparatedSpace T} {F} {FF : ProperFilter F} (x y : T),
+  is_filter_lim F x ->
+  is_filter_lim F y ->
+  not (x <> y).
+Proof.
+intros T ST F FF x y Fx Fy H.
+destruct (separated_disjoint x y H) as [P Q BP BQ Px Qy H'].
+apply filter_const.
+generalize (filter_and _ _ (Fx P BP Px) (Fy Q BQ Qy)).
+apply filter_imp.
+intros z [Pz Qz].
+now apply (H' z).
+Qed.
+
+Class FilterCompatibility {T} {TT : TopologicalSpace T} (F : T -> (T -> Prop) -> Prop) := {
+  filter_compat1 : forall P x, basis P -> P x -> F x P ;
+  filter_compat2 : forall P x, F x P -> exists Q, basis Q /\ Q x /\ forall y, Q y -> P y
+}.
+
+Lemma filter_open :
+  forall {T} {TT : TopologicalSpace T},
+  forall {F} {FF : forall x, Filter (F x)} {FC : FilterCompatibility F},
+  forall D, open D <-> forall x, D x -> F x D.
+Proof.
+intros T TT F FF FC D.
+split.
+- intros OD x Dx.
+  destruct (OD x Dx) as [P BP Px PD].
+  apply filter_imp with (1 := PD).
+  now apply filter_compat1.
+- intros H x Dx.
+  destruct (filter_compat2 D x (H x Dx)) as [Q [BQ [Qx HQP]]].
+  now exists Q.
+Qed.
+
+(** Continuity using TopologicalSpaces *)
+
+Definition continuity {U V} {TU : TopologicalSpace U} {TV : TopologicalSpace V} (f : U -> V) (x : U) :=
+  forall P, basis P -> P (f x) -> neighborhoods basis x (fun x => P (f x)).
+
+Lemma is_filter_lim_neighborhoods :
+  forall {T} {TT : TopologicalSpace T} (x : T),
+  is_filter_lim (neighborhoods basis x) x.
+Proof.
+intros T TT x P BP Px.
+now apply Is_neighborhoods with (1 := BP).
+Qed.
+
+Lemma is_filter_lim_continuity :
+  forall {T U} {TT : TopologicalSpace T} {TU : TopologicalSpace U} (f : T -> U) (x : T),
+  (forall F, Filter F -> is_filter_lim F x -> is_filter_lim (filtermap f F) (f x)) <->
+  continuity f x.
+Proof.
+intros T U TT TU f x.
+split.
+- intros Cf Q BQ Qfx.
+  apply Cf ; try easy.
+  apply neighborhoods_filter.
+  apply is_filter_lim_neighborhoods.
+- intros Cf F FF Fx P BP Pfx.
+  destruct (Cf P BP Pfx) as [Q BQ Qx HQ].
+  unfold filtermap.
+  apply filter_imp with (1 := HQ).
+  now apply Fx.
+Qed.
+
+Lemma continuity_comp {T U V} {TT : TopologicalSpace T} {TU : TopologicalSpace U} {TV : TopologicalSpace V} :
+  forall (f : T -> U) (g : U -> V) (x : T),
+  continuity f x -> continuity g (f x) -> continuity (fun y => g (f y)) x.
+Proof.
+  move => f g x Cf Cg.
+  rewrite -is_filter_lim_continuity => F FF Fx.
+  move: (proj2 (is_filter_lim_continuity _ _) Cf F FF Fx).
+  apply (proj2 (is_filter_lim_continuity _ (f x)) Cg (filtermap f F)).
+  by apply filtermap_filter.
+Qed.
+
+(** * Metric Spaces *)
+
+Class MetricSpace T := {
+  distance : T -> T -> R ;
+  distance_refl : forall a, distance a a = 0 ;
+  distance_comm : forall a b, distance a b = distance b a ;
+  distance_triangle : forall a b c, distance a c <= distance a b + distance b c
+}.
+
+Lemma distance_ge_0 :
+  forall {T} {MT : MetricSpace T} (a b : T),
+  0 <= distance a b.
+Proof.
+intros T MT a b.
+apply Rmult_le_reg_l with 2.
+apply Rlt_0_2.
+rewrite Rmult_0_r.
+rewrite -(distance_refl a).
+rewrite Rmult_plus_distr_r Rmult_1_l.
+rewrite -> (distance_comm a b) at 2.
+apply distance_triangle.
+Qed.
+
+(** A metric space is a topological space *)
+
+Definition ball {T} {MT : MetricSpace T} x (eps : posreal) y := distance x y < eps.
+
+Lemma ball_center {T} {TMS : MetricSpace T} :
+  forall (x : T) (eps : posreal), ball x eps x.
+Proof.
+  move => x eps.
+  rewrite /ball distance_refl.
+  by apply eps.
+Qed.
+
+Lemma metric_topological_and :
+  forall {T} {MT : MetricSpace T} P Q,
+  (exists x eps, forall y : T, ball x eps y <-> P y) ->
+  (exists x eps, forall y : T, ball x eps y <-> Q y) ->
+  forall x, P x -> Q x ->
+  neighborhoods (fun D => exists x eps, forall y, ball x eps y <-> D y) x (fun y => P y /\ Q y).
+Proof.
+intros T MT P Q [xP [epsP HP]] [xQ [epsQ HQ]] x Px Qx.
+assert (H : 0 < Rmin (epsP - distance xP x) (epsQ - distance xQ x)).
+apply Rmin_case.
+apply Rlt_Rminus.
+now apply HP.
+apply Rlt_Rminus.
+now apply HQ.
+apply (Is_neighborhoods _ _ _ (ball x (mkposreal _ H))).
+exists x.
+now eexists.
+unfold ball.
+rewrite distance_refl.
+apply cond_pos.
+intros y Hy.
+split.
+apply HP.
+apply Rle_lt_trans with (1 := distance_triangle xP x y).
+apply Rplus_lt_reg_r with (- distance xP x).
+ring_simplify (distance xP x + distance x y + - distance xP x).
+apply Rlt_le_trans with (1 := Hy).
+apply Rmin_l.
+apply HQ.
+apply Rle_lt_trans with (1 := distance_triangle xQ x y).
+apply Rplus_lt_reg_r with (- distance xQ x).
+ring_simplify (distance xQ x + distance x y + - distance xQ x).
+apply Rlt_le_trans with (1 := Hy).
+apply Rmin_r.
+Qed.
+
+Lemma metric_topological_true :
+  forall {T} {MT : MetricSpace T} (x : T),
+  exists P, (exists x eps, forall y, ball x eps y <-> P y) /\ P x.
+Proof.
+intros T MT x.
+exists (ball x (mkposreal 1 Rlt_0_1)).
+split.
+now exists x, (mkposreal 1 Rlt_0_1).
+apply ball_center.
+Qed.
+
+Global Instance metric_topological :
+  forall T, MetricSpace T -> TopologicalSpace T.
+Proof.
+intros T MT.
+apply (Build_TopologicalSpace _
+  (fun D => exists x, exists eps, forall y, ball x eps y <-> D y)).
+apply metric_topological_and.
+apply metric_topological_true.
+Defined.
+
+(* TODO : heritage from neigborhood ? *)
+
+Definition locally_dist {T : Type} (d : T -> R) (P : T -> Prop) :=
+  exists delta : posreal, forall y, d y < delta -> P y.
+Definition locally {T} {MT : MetricSpace T} (x : T) :=
+  locally_dist (distance x).
+Definition locally' {T} {MT : MetricSpace T} (x : T) (P : T -> Prop) :=
+  locally_dist (distance x) (fun y => y <> x -> P y).
+
+Global Instance locally_dist_filter :
+  forall T (d : T -> R), Filter (locally_dist d).
+Proof.
+intros T d.
+constructor.
+- now exists (mkposreal _ Rlt_0_1).
+- intros P Q [dP HP] [dQ HQ].
+  exists (mkposreal _ (Rmin_stable_in_posreal dP dQ)).
+  simpl.
+  intros y Hy.
+  split.
+  apply HP.
+  apply Rlt_le_trans with (1 := Hy).
+  apply Rmin_l.
+  apply HQ.
+  apply Rlt_le_trans with (1 := Hy).
+  apply Rmin_r.
+- intros P Q H [dP HP].
+  exists dP.
+  intros y Hy.
+  apply H.
+  now apply HP.
+Qed.
+
+Global Instance locally_filter :
+  forall T (MT : MetricSpace T) (x : T), ProperFilter (locally x).
+Proof.
+intros T MT x.
+constructor.
+  intros P [eps H].
+  exists x.
+  apply H.
+  rewrite distance_refl.
+  apply cond_pos.
+apply locally_dist_filter.
+Qed.
+
+Global Instance locally_compat :
+  forall T (MT : MetricSpace T), FilterCompatibility locally.
+Proof.
+intros T MT.
+split.
+- intros P x [c [eps B]] Px.
+  assert (H := proj2 (B x) Px).
+  exists (mkposreal _ (Rlt_Rminus _ _ H)).
+  simpl.
+  intros z Hz.
+  apply B.
+  apply Rle_lt_trans with (1 := distance_triangle c x z).
+  replace (pos eps) with (distance c x + (eps - distance c x)) by ring.
+  now apply Rplus_lt_compat_l.
+- intros P x [e He].
+  exists (ball x e).
+  repeat split.
+  exists x.
+  now exists e.
+  unfold ball.
+  rewrite distance_refl.
+  apply cond_pos.
+  intros y Hy.
+  now apply He.
+Qed.
+
+Lemma filterlim_locally :
+  forall {T U} {MU : MetricSpace U} {F} {FF : Filter F} (f : T -> U) y,
+  filterlim f F (locally y) <->
+  forall eps : posreal, F (fun x => distance y (f x) < eps).
+Proof.
+intros T U MU F FF f y.
+split.
+- intros Cf eps.
+  apply (Cf (fun x => distance y x < eps)).
+  now exists eps.
+- intros Cf P [eps He].
+  apply: filter_imp (Cf eps).
+  intros t.
+  apply He.
 Qed.
 
 
-Lemma inv_eq: forall K (FK : Field K) 
-  (x y : K), x <> zero -> mult x y = one -> y = inv x.
+Lemma locally_open :
+  forall {T} {MT : MetricSpace T} x (P : T -> Prop),
+  locally x P -> locally x (fun y => locally y P).
 Proof.
-intros K FK x y Hx H.
-apply mult_eq_compat_l with (FK:=FK) (r:=x).
+intros T MT x P [dp Hp].
+exists dp.
+intros y Hy.
+exists (mkposreal _ (Rlt_Rminus _ _ Hy)) => /= z Hz.
+apply Hp.
+apply Rle_lt_trans with (1 := distance_triangle x y z).
+replace (pos dp) with (distance x y + (dp - distance x y)) by ring.
+now apply Rplus_lt_compat_l.
+Qed.
+
+Lemma locally_singleton :
+  forall {T} {MT : MetricSpace T} x (P : T -> Prop),
+  locally x P -> P x.
+Proof.
+intros T MT P x [dp H].
+apply H.
+rewrite distance_refl.
+apply cond_pos.
+Qed.
+
+Lemma is_filter_lim_locally :
+  forall {T} {MT : MetricSpace T} (x : T),
+  is_filter_lim (locally x) x.
+Proof.
+intros T MT x P [y [eps H]] Px.
+assert (Dx: 0 < eps - distance y x).
+  apply Rplus_lt_reg_r with (distance y x).
+  ring_simplify.
+  now apply H.
+exists (mkposreal _ Dx).
+intros z Dz.
+apply H.
+apply Rle_lt_trans with (1 := distance_triangle _ x _).
+replace (pos eps) with (distance y x + (eps - distance y x)) by ring.
+apply Rplus_lt_compat_l with (1 := Dz).
+Qed.
+
+Global Instance locally'_filter :
+  forall T (MT : MetricSpace T) (x : T), Filter (locally' x).
+Proof.
+intros T MT x.
+constructor.
+- now exists (mkposreal _ Rlt_0_1).
+- intros P Q [dP HP] [dQ HQ].
+  exists (mkposreal _ (Rmin_stable_in_posreal dP dQ)).
+  simpl.
+  intros y Hy Hy'.
+  split.
+  apply HP with (2 := Hy').
+  apply Rlt_le_trans with (1 := Hy).
+  apply Rmin_l.
+  apply HQ with (2 := Hy').
+  apply Rlt_le_trans with (1 := Hy).
+  apply Rmin_r.
+- intros P Q H [dP HP].
+  exists dP.
+  intros y Hy Hy'.
+  apply H.
+  now apply HP.
+Qed.
+
+Lemma filterlim_locally_unique: forall {T U} {MU : MetricSpace U} {F} {FF: ProperFilter F}
+  (f:T -> U) l l', filterlim f F (locally l) ->  filterlim f F (locally l') -> distance l l' = 0.
+Proof.
+intros T U MU F FF f l l' Hl Hl'.
+destruct (Rle_lt_or_eq_dec 0 (distance l l')); try easy.
+apply distance_ge_0.
+exfalso.
+assert (M:0 < distance l l' / 2).
+apply Rdiv_lt_0_compat.
 assumption.
-now rewrite H, mult_inv_r.
+apply Rlt_R0_R2.
+assert (H:locally l (fun x => distance l x < distance l l' / 2)).
+now exists (mkposreal _ M).
+assert (locally l' (fun x => distance l' x < distance l l' / 2)).
+now exists (mkposreal _ M).
+specialize (Hl _ H).
+specialize (Hl' _ H0).
+unfold filtermap in Hl, Hl'.
+apply filter_const.
+generalize (filter_and _ _ Hl Hl').
+apply filter_imp.
+intros x (H1,H2).
+apply (Rlt_irrefl (distance l l')).
+apply Rle_lt_trans with (1:=distance_triangle _ (f x) _).
+rewrite (double_var (distance l l')).
+apply Rplus_lt_compat.
+assumption.
+now rewrite distance_comm.
 Qed.
 
-Lemma inv_mult :
-  forall K (FK : Field K) (x y : K), mult x y <> zero ->
-  inv (mult x y) = mult (inv x) (inv y).
+Lemma is_filter_lim_filterlim {T} {MT : MetricSpace T}
+  (F : (T -> Prop) -> Prop) {FF : Filter F} (x : T) :
+  is_filter_lim F x <-> filterlim (fun t => t) F (locally x).
 Proof.
-intros K FK x y Hxy.
-apply sym_eq, inv_eq; try assumption.
-rewrite (mult_comm x), mult_assoc.
-rewrite <- (mult_assoc _ _ (inv x)).
-rewrite mult_inv_r.
-rewrite mult_one_r.
-rewrite mult_inv_r.
+  split.
+  + move => Hfx P [d Hp].
+    rewrite /filtermap.
+    apply filter_imp with (1 := Hp).
+    apply Hfx.
+    by exists x, d.
+    rewrite distance_refl ; by apply d.
+  + move/filterlim_locally => HF P [y [d HP]] Hpx.
+    apply HP, Rminus_lt_0 in Hpx.
+    move: (HF FF (mkposreal _ Hpx)).
+    apply filter_imp => /= z Hz.
+    apply HP.
+    apply Rle_lt_trans with (1 := distance_triangle y x z).
+    rewrite Rplus_comm ; by apply Rlt_minus_r.
+Qed.
+
+(** ** Products of metric spaces *)
+
+Fixpoint Tn (n : nat) (T : Type) : Type :=
+  match n with
+  | O => unit
+  | S n => prod T (Tn n T)
+  end.
+
+Fixpoint Fn (n : nat) (T U : Type) : Type :=
+  match n with
+  | O => U
+  | S n => T -> Fn n T U
+  end.
+
+Definition dist_prod {T U : Type} (dT : T -> T -> R) (dU : U -> U -> R) (x y : T * U) :=
+  Rmax (dT (fst x) (fst y)) (dU (snd x) (snd y)).
+
+Lemma dist_prod_refl :
+  forall {T U} {MT : MetricSpace T} {MU : MetricSpace U} (x : T * U),
+  dist_prod distance distance x x = 0.
+Proof.
+intros T U MT MU [xt xu].
+unfold dist_prod.
+apply Rmax_case ; apply distance_refl.
+Qed.
+
+Lemma dist_prod_comm :
+  forall {T U} {MT : MetricSpace T} {MU : MetricSpace U} (x y : T * U),
+  dist_prod distance distance x y = dist_prod distance distance y x.
+Proof.
+intros T U MT MU [xt xu] [yt yu].
+unfold dist_prod.
+rewrite distance_comm.
+apply f_equal.
+apply distance_comm.
+Qed.
+
+Lemma dist_prod_triangle :
+  forall {T U} {MT : MetricSpace T} {MU : MetricSpace U} (x y z : T * U),
+  dist_prod distance distance x z <= dist_prod distance distance x y + dist_prod distance distance y z.
+Proof.
+intros T U MT MU [xt xu] [yt yu] [zt zu].
+unfold dist_prod.
+apply Rmax_case.
+apply Rle_trans with (distance xt yt + distance yt zt).
+apply distance_triangle.
+apply Rplus_le_compat ; apply Rmax_l.
+apply Rle_trans with (distance xu yu + distance yu zu).
+apply distance_triangle.
+apply Rplus_le_compat ; apply Rmax_r.
+Qed.
+
+Global Instance prod_metric : forall T U, MetricSpace T -> MetricSpace U -> MetricSpace (T * U).
+Proof.
+intros T U MT MU.
+apply (Build_MetricSpace _ (dist_prod distance distance)).
+- exact dist_prod_refl.
+- exact dist_prod_comm.
+- exact dist_prod_triangle.
+Defined.
+
+Fixpoint dist_pow (n : nat) (T : Type) (d : T -> T -> R) : Tn n T -> Tn n T -> R :=
+  match n with
+  | O => fun _ _ => 0
+  | S n => fun x y =>
+    Rmax (d (fst x) (fst y)) (dist_pow n T d (snd x) (snd y))
+  end.
+
+Lemma dist_pow_refl :
+  forall {T} {MT : MetricSpace T} n x,
+  dist_pow n T distance x x = 0.
+Proof.
+induction n.
 reflexivity.
-intros L; apply Hxy.
-rewrite L; apply mult_zero_r.
-intros L; apply Hxy.
-rewrite L; apply mult_zero_l.
-Qed.
-
-
-Lemma plus_eq_compat_l: forall K (FK : Field K)
-  (r x y: K), plus r x = plus r y -> x = y.
-Proof.
-intros K FK r x y H.
-rewrite <- (plus_zero_l _ _ x).
-rewrite <- (plus_opp_l _ _ r).
-rewrite <- plus_assoc.
-rewrite H.
-now rewrite plus_assoc, plus_opp_l, plus_zero_l.
-Qed.
-
-
-Lemma opp_mult_r: forall K (FK : Field K) (x y: K),
-  opp (mult x y) = mult x (opp y).
-Proof.
-intros K FK x y.
-apply plus_eq_compat_l with (FK:=FK) (r:=(mult x y)).
-rewrite plus_opp_r.
-rewrite <- mult_distr_l.
-now rewrite plus_opp_r, mult_zero_r.
-Qed.
-
-
-Lemma opp_mult_l: forall K (FK : Field K) (x y: K),
-  opp (mult x y) = mult (opp x) y.
-Proof.
-intros K FK x y.
-now rewrite mult_comm, opp_mult_r, mult_comm.
-Qed.
-
-
-Global Instance R_abelian_group : AbelianGroup R.
-Proof.
-apply (@Build_AbelianGroup R Rplus Ropp R0).
-apply Rplus_comm.
-intros x y z.
-apply sym_eq, Rplus_assoc.
-apply Rplus_0_r.
-apply Rplus_opp_r.
-Defined.
-
-Global Instance R_field : Field R.
-Proof.
-apply (@Build_Field R _ Rmult Rinv R1).
-apply Rmult_comm.
-intros x y z.
-apply sym_eq, Rmult_assoc.
-apply Rmult_1_r.
-apply Rinv_r.
-apply Rmult_plus_distr_r.
-Defined.
-
-Class VectorSpace V K {FK : Field K} := {
-  vspace_group :> AbelianGroup V ;
-  scal : K -> V -> V ;
-  scal_assoc : forall x y u, scal x (scal y u) = scal (mult x y) u ;
-  scal_one : forall u, scal one u = u ;
-  scal_distr_l : forall x u v, scal x (plus u v) = plus (scal x u) (scal x v) ;
-  scal_distr_r : forall x y u, scal (plus x y) u = plus (scal x u) (scal y u)
-}.
-
-Global Instance vspace_of_field :
-  forall K (FK : Field K), VectorSpace K K.
-Proof.
-intros K FK.
-apply (@Build_VectorSpace K K FK field_group mult).
-apply mult_assoc.
-apply mult_one_l.
-apply mult_distr_l.
-apply mult_distr_r.
-Defined.
-
-Lemma scal_zero_r :
-  forall V K (FK : Field K) (VV : VectorSpace V K) (x : K),
-  scal x zero = zero.
-Proof.
-intros V K FK VV x.
-apply plus_reg_r with (GG := vspace_group) (z := scal x zero).
-rewrite <- scal_distr_l.
-rewrite plus_zero_r.
-now rewrite plus_zero_l.
-Qed.
-
-Lemma scal_zero_l :
-  forall V K (FK : Field K) (VV : VectorSpace V K) (u : V),
-  scal zero u = zero.
-Proof.
-intros V K FK VV u.
-apply plus_reg_r with (GG := vspace_group) (z := scal zero u).
-rewrite plus_zero_l.
-rewrite <- scal_distr_r.
-now rewrite plus_zero_r.
-Qed.
-
-Lemma scal_opp_l :
-  forall V K (FK : Field K) (VV : VectorSpace V K) (x : K) (u : V),
-  scal (opp x) u = opp (scal x u).
-Proof.
-intros V K FK VV x u.
-apply plus_reg_r with (GG := vspace_group) (z := (scal x u)).
-rewrite plus_opp_l.
-rewrite <- scal_distr_r.
-rewrite plus_opp_l.
-apply scal_zero_l.
-Qed.
-
-Lemma scal_opp_r :
-  forall V K (FK : Field K) (VV : VectorSpace V K) (x : K) (u : V),
-  scal x (opp u) = opp (scal x u).
-Proof.
-intros V K FK VV x u.
-apply plus_reg_r with (GG := vspace_group) (z := (scal x u)).
-rewrite plus_opp_l.
-rewrite <- scal_distr_l.
-rewrite plus_opp_l.
-apply scal_zero_r.
-Qed.
-
-Lemma scal_opp_one :
-  forall V K (FK : Field K) (VV : VectorSpace V K) (u : V),
-  scal (opp one) u = opp u.
-Proof.
-intros V K FK VV u.
-rewrite scal_opp_l.
-now rewrite scal_one.
-Qed.
-
-(** Product of vector spaces *)
-
-Global Instance prod_abelian_group :
-  forall U V (GU : AbelianGroup U) (GV : AbelianGroup V),
-  AbelianGroup (U * V).
-Proof.
-intros U V GU GV.
-apply (@Build_AbelianGroup _
-  (fun x y : U * V => (plus (fst x) (fst y), plus (snd x) (snd y)))
-  (fun x : U * V => (opp (fst x), opp (snd x)))
-  (zero, zero)).
-intros x y.
-apply f_equal2 ; apply plus_comm.
-intros x y z.
-apply f_equal2 ; apply plus_assoc.
-intros (x1,x2).
-apply f_equal2 ; apply plus_zero_r.
-intros x.
-apply f_equal2 ; apply plus_opp_r.
-Defined.
-
-Global Instance prod_vector_space :
-  forall U V K (FK : Field K) (VU : VectorSpace U K) (VV : VectorSpace V K),
-  VectorSpace (U * V) K.
-Proof.
-intros U V K FK VU VV.
-apply (@Build_VectorSpace _ K FK (prod_abelian_group _ _ _ _)
-  (fun (x : K) (uv : U * V) => (scal x (fst uv), scal x (snd uv)))).
-intros x y u.
-apply f_equal2 ; apply scal_assoc.
-intros (u,v).
-apply f_equal2 ; apply scal_one.
-intros x u v.
+intros [x xn].
 simpl.
-apply f_equal2 ; apply scal_distr_l.
-intros x y u.
+rewrite distance_refl IHn.
+now apply Rmax_case.
+Qed.
+
+Lemma dist_pow_comm :
+  forall {T} {MT : MetricSpace T} n x y,
+  dist_pow n T distance x y = dist_pow n T distance y x.
+Proof.
+induction n.
+reflexivity.
+intros [x xn] [y yn].
 simpl.
-apply f_equal2 ; apply scal_distr_r.
-Defined.
-
-
-(** * Topological vector spaces *)
-
-Class MetricVectorSpace V K {FK : Field K} := {
-  mvspace_vector :> VectorSpace V K ;
-  mvspace_metric :> MetricSpace V ;
-  mvspace_plus : forall x y, filterlim (fun z : V * V => plus (fst z) (snd z)) (filter_prod (locally x) (locally y)) (locally (plus x y)) ;
-  mvspace_scal : forall x y, filterlim (fun z : V => scal x z) (locally y) (locally (scal x y))
-}.
-
-Global Instance R_metric_vector : MetricVectorSpace R R.
-Proof.
-econstructor.
-intros x y.
-now apply filterlim_plus with (x := Finite x) (y := Finite y).
-intros x y.
-apply filterlim_scal_l with (l := Finite y).
-Defined.
-
-(** * Normed spaces *)
-
-Class NormedAbelianGroup G := {
-  nagroup_abelian :> AbelianGroup G ;
-  norm : G -> R ;
-  norm_zero : norm zero = 0 ;
-  norm_opp : forall x, norm (opp x) = norm x ;
-  norm_triangle : forall x y, norm (plus x y) <= norm x + norm y
-}.
-
-Lemma NAG_dist_refl {G} {NAG : NormedAbelianGroup G} :
-  forall a : G, norm (minus a a) = 0.
-Proof.
-  move => a.
-  by rewrite /minus plus_opp_r norm_zero.
-Qed.
-Lemma NAG_dist_comm {G} {NAG : NormedAbelianGroup G} :
-  forall a b : G, norm (minus b a) = norm (minus a b).
-Proof.
-  move => a b.
-  by rewrite /minus -norm_opp opp_plus opp_opp plus_comm.
-Qed.
-Lemma NAG_dist_triangle {G} {NAG : NormedAbelianGroup G} :
-  forall a b c : G, norm (minus c a) <= norm (minus b a) + norm (minus c b).
-Proof.
-  move => a b c.
-  apply Rle_trans with (2 := norm_triangle _ _).
-  apply Req_le.
-  rewrite plus_comm.
-  unfold minus.
-  rewrite plus_assoc, <- (plus_assoc c), plus_opp_l, plus_zero_r.
-  reflexivity.
+now rewrite distance_comm IHn.
 Qed.
 
-Global Instance NormedAbelianGroup_MetricSpace {G : Type} :
-  NormedAbelianGroup G -> MetricSpace G.
+Lemma dist_pow_triangle :
+  forall {T} {MT : MetricSpace T} n x y z,
+  dist_pow n T distance x z <= dist_pow n T distance x y +  dist_pow n T distance y z.
 Proof.
-  intro NAG.
-  apply Build_MetricSpace with (fun x y => norm (minus y x)).
-  - by apply NAG_dist_refl.
-  - by apply NAG_dist_comm.
-  - by apply NAG_dist_triangle.
-Defined.
-
-Lemma norm_ge_0 :
-  forall {G} {NG : NormedAbelianGroup G} (x : G),
-  0 <= norm x.
-Proof.
-intros G NG x.
-apply Rmult_le_reg_r with (1 := Rlt_R0_R2).
-rewrite Rmult_0_l, <- norm_zero, <- (plus_opp_r x).
-apply Rle_trans with (1 := norm_triangle _ _).
-rewrite norm_opp.
-apply Req_le.
-ring.
+induction n.
+simpl.
+intros _ _ _.
+rewrite Rplus_0_r.
+apply Rle_refl.
+intros [x xn] [y yn] [z zn].
+simpl.
+apply Rmax_case.
+apply Rle_trans with (1 := distance_triangle x y z).
+apply Rplus_le_compat ; apply Rmax_l.
+apply Rle_trans with (1 := IHn xn yn zn).
+apply Rplus_le_compat ; apply Rmax_r.
 Qed.
 
-Global Instance R_NormedAbelianGroup : NormedAbelianGroup R.
+Global Instance pow_metric : forall T, MetricSpace T -> forall n, MetricSpace (Tn n T).
 Proof.
-  apply (Build_NormedAbelianGroup _ _ (fun x => Rabs x)).
-  by apply Rabs_R0.
-  move => x ; by apply Rabs_Ropp.
-  move => x y ; by apply Rabs_triang.
+intros T MT n.
+apply (Build_MetricSpace _ (dist_pow n T distance)).
+- exact (dist_pow_refl n).
+- exact (dist_pow_comm n).
+- exact (dist_pow_triangle n).
 Defined.
 
-(** * Functional Structures *)
-
-Require Import FunctionalExtensionality Lub.
-
-(** Abelian Group *)
-
-Global Instance AbelianGroup_Fct {T G} :
-  AbelianGroup G -> AbelianGroup (T -> G).
-Proof.
-  intro AG.
-  apply (Build_AbelianGroup _ (fun f g => (fun x => plus (f x) (g x)))
-         (fun f => (fun x => opp (f x)))
-         (fun _ => zero)).
-  - move => f g.
-    apply functional_extensionality => x.
-    by apply plus_comm.
-  - move => f g h.
-    apply functional_extensionality => x.
-    by apply plus_assoc.
-  - move => f.
-    apply functional_extensionality => x.
-    by apply plus_zero_r.
-  - move => f.
-    apply functional_extensionality => x.
-    by apply plus_opp_r.
-Defined.
-
-(** Metric Space *)
+(** ** Functional metric spaces *)
 
 Lemma UnifFct_dist_ne {T M} {MS : MetricSpace M}
   (f g : T -> M) : exists s : R, s = 0 \/ exists x : T, s = distance (f x) (g x).
@@ -627,7 +1051,575 @@ Proof.
   + by apply UnifFct_dist_triangle.
 Defined.
 
-(** Normed Abelian Group *)
+(** ** Complete metric spaces *)
+
+(* TODO : put complete_cauchy in Set *)
+
+Class CompleteMetricSpace T := {
+  complete_metric :> MetricSpace T ;
+  cauchy := fun (F : (T -> Prop) -> Prop) => forall eps, exists x, F (ball x eps) ;
+  complete_cauchy : forall F, ProperFilter F -> cauchy F -> exists x, is_filter_lim F x
+}.
+
+Lemma cauchy_distance :
+  forall {T} {MT : MetricSpace T} {F} {FF : ProperFilter F},
+  (forall eps, exists x, F (ball x eps)) <->
+  (forall eps : posreal, exists P, F P /\ forall u v : T, P u -> P v -> distance u v < eps).
+Proof.
+  intros T MT F FF.
+  split.
+
+  intros H eps.
+  case: (H (pos_div_2 eps)) => {H} x Hx.
+  exists (ball x (pos_div_2 eps)).
+  split.
+  by [].
+  move => u v Hu Hv.
+  apply Rle_lt_trans with (1 := distance_triangle _ x _).
+  rewrite (double_var eps).
+  apply Rplus_lt_compat.
+  rewrite distance_comm ; by apply Hu.
+  by apply Hv.
+
+  intros H eps.
+  case: (H eps) => {H} P [HP H].
+  destruct (filter_ex P HP) as [x Hx].
+  exists x.
+  move: (fun v => H x v Hx) => {H} H.
+  apply filter_imp with (1 := H).
+  by [].
+Qed.
+
+Lemma filterlim_locally_cauchy :
+  forall {T U} {CU : CompleteMetricSpace U} {F} {FF : ProperFilter F} (f : T -> U),
+  (forall eps : posreal, exists P, F P /\ forall u v : T, P u -> P v -> distance (f u) (f v) < eps) <->
+  exists y, filterlim f F (locally y).
+Proof.
+intros T U CU F FF f.
+split.
+- intros H.
+  destruct (complete_cauchy (filtermap f F)) as [y Hy].
+  + now apply filtermap_proper_filter.
+  + intros eps.
+    destruct (H eps) as [P [FP H']].
+    destruct (filter_ex _ FP) as [x Hx].
+    exists (f x).
+    unfold filtermap.
+    generalize FP.
+    apply filter_imp.
+    intros x' Hx'.
+    now apply H'.
+  + exists y.
+    intros P [eps HP].
+    refine (_ (Hy (ball y eps) _ _)).
+    unfold filtermap.
+    apply filter_imp.
+    intros x Hx.
+    now apply HP.
+    exists y.
+    now exists eps.
+    unfold ball.
+    rewrite distance_refl.
+    apply cond_pos.
+- intros [y Hy] eps.
+  exists (fun x => ball y (pos_div_2 eps) (f x)).
+  split.
+  apply Hy.
+  now exists (pos_div_2 eps).
+  intros u v Hu Hv.
+  apply Rle_lt_trans with (1 := distance_triangle (f u) y (f v)).
+  rewrite (double_var eps).
+  apply Rplus_lt_compat.
+  rewrite distance_comm.
+  exact Hu.
+  exact Hv.
+Qed.
+
+(** * Abelian Group *)
+
+Class AbelianGroup G := {
+  plus : G -> G -> G ;
+  opp : G -> G ;
+  minus x y := plus x (opp y) ;
+  zero : G ;
+  plus_comm : forall x y, plus x y = plus y x ;
+  plus_assoc : forall x y z, plus x (plus y z) = plus (plus x y) z ;
+  plus_zero_r : forall x, plus x zero = x ;
+  plus_opp_r : forall x, plus x (opp x) = zero
+}.
+
+Global Instance AbelianGroup_Fct {T G} :
+  AbelianGroup G -> AbelianGroup (T -> G).
+Proof.
+  intro AG.
+  apply (Build_AbelianGroup _ (fun f g => (fun x => plus (f x) (g x)))
+         (fun f => (fun x => opp (f x)))
+         (fun _ => zero)).
+  - move => f g.
+    apply functional_extensionality => x.
+    by apply plus_comm.
+  - move => f g h.
+    apply functional_extensionality => x.
+    by apply plus_assoc.
+  - move => f.
+    apply functional_extensionality => x.
+    by apply plus_zero_r.
+  - move => f.
+    apply functional_extensionality => x.
+    by apply plus_opp_r.
+Defined.
+
+Lemma plus_zero_l :
+  forall G (GG : AbelianGroup G) (x : G),
+  plus zero x = x.
+Proof.
+intros G GG x.
+now rewrite plus_comm plus_zero_r.
+Qed.
+
+Lemma plus_opp_l :
+  forall G (GG : AbelianGroup G) (x : G),
+  plus (opp x) x = zero.
+Proof.
+intros G GG x.
+rewrite plus_comm.
+apply plus_opp_r.
+Qed.
+
+Lemma opp_zero :
+  forall G (GG : AbelianGroup G),
+  opp zero = zero.
+Proof.
+intros G GG.
+rewrite <- (plus_zero_r (opp zero)).
+apply plus_opp_l.
+Qed.
+
+Lemma minus_zero_r :
+  forall G (GG : AbelianGroup G) (x : G),
+  minus x zero = x.
+Proof.
+intros G GG x.
+unfold minus.
+rewrite opp_zero.
+apply plus_zero_r.
+Qed.
+
+Lemma plus_reg_r :
+  forall G (GG : AbelianGroup G) (x y z : G),
+  plus x z = plus y z -> x = y.
+Proof.
+intros G GG x y z H.
+rewrite <- (plus_zero_r x), <- (plus_zero_r y).
+rewrite <- (plus_opp_r z).
+rewrite 2!plus_assoc.
+now rewrite H.
+Qed.
+
+Lemma opp_plus :
+  forall G (GG : AbelianGroup G) (x y : G),
+  opp (plus x y) = plus (opp x) (opp y).
+Proof.
+intros G GG x y.
+apply plus_reg_r with (GG := GG) (z := plus x y).
+rewrite plus_opp_l.
+rewrite plus_assoc.
+rewrite (plus_comm (opp x)).
+rewrite <- (plus_assoc (opp y)).
+rewrite plus_opp_l.
+rewrite plus_zero_r.
+apply sym_eq, plus_opp_l.
+Qed.
+
+Lemma opp_opp :
+  forall {G} {GG : AbelianGroup G} (x : G),
+  opp (opp x) = x.
+Proof.
+intros G GG x.
+apply plus_reg_r with (GG := GG) (z := opp x).
+rewrite plus_opp_r.
+apply plus_opp_l.
+Qed.
+
+Global Instance prod_abelian_group :
+  forall U V (GU : AbelianGroup U) (GV : AbelianGroup V),
+  AbelianGroup (U * V).
+Proof.
+intros U V GU GV.
+apply (@Build_AbelianGroup _
+  (fun x y : U * V => (plus (fst x) (fst y), plus (snd x) (snd y)))
+  (fun x : U * V => (opp (fst x), opp (snd x)))
+  (zero, zero)).
+intros x y.
+apply f_equal2 ; apply plus_comm.
+intros x y z.
+apply f_equal2 ; apply plus_assoc.
+intros (x1,x2).
+apply f_equal2 ; apply plus_zero_r.
+intros x.
+apply f_equal2 ; apply plus_opp_r.
+Defined.
+
+(** * Field *)
+
+Class Field K := {
+  field_group :> AbelianGroup K ;
+  mult : K -> K -> K ;
+  inv : K -> K ;
+  one : K ;
+  mult_comm : forall x y, mult x y = mult y x ;
+  mult_assoc : forall x y z, mult x (mult y z) = mult (mult x y) z ;
+  mult_one_r : forall x, mult x one = x ;
+  mult_inv_r : forall x, x <> zero -> mult x (inv x) = one ;
+  mult_distr_r : forall x y z, mult (plus x y) z = plus (mult x z) (mult y z)
+}.
+
+Lemma mult_one_l :
+  forall K (FK : Field K) (x : K),
+  mult one x = x.
+Proof.
+intros K FK x.
+rewrite mult_comm.
+apply mult_one_r.
+Qed.
+
+Lemma mult_distr_l :
+  forall K (FK : Field K) (x y z : K),
+  mult x (plus y z) = plus (mult x y) (mult x z).
+Proof.
+intros K FK x y z.
+rewrite mult_comm.
+rewrite mult_distr_r.
+apply f_equal2 ; apply mult_comm.
+Qed.
+
+Lemma mult_zero_r :
+  forall K (FK : Field K) (x : K),
+  mult x zero = zero.
+Proof.
+intros K FK x.
+apply plus_reg_r with (GG := field_group) (z := mult x zero).
+rewrite <- mult_distr_l.
+rewrite plus_zero_r.
+now rewrite plus_zero_l.
+Qed.
+
+Lemma mult_zero_l :
+  forall K (FK : Field K) (x : K),
+  mult zero x = zero.
+Proof.
+intros K FK x.
+rewrite mult_comm; apply mult_zero_r.
+Qed.
+
+Lemma mult_eq_compat_l: forall K (FK : Field K) 
+  (r x y: K), r <> zero -> mult r x = mult r y -> x = y.
+Proof.
+intros K FK r x y Hr H.
+rewrite <- (mult_one_l _ _ x).
+rewrite <- (mult_inv_r r); try assumption.
+rewrite mult_comm mult_assoc (mult_comm x _).
+rewrite H.
+rewrite mult_comm mult_assoc (mult_comm _ r).
+rewrite mult_inv_r; try assumption.
+apply mult_one_l.
+Qed.
+
+
+Lemma inv_eq: forall K (FK : Field K) 
+  (x y : K), x <> zero -> mult x y = one -> y = inv x.
+Proof.
+intros K FK x y Hx H.
+apply mult_eq_compat_l with (FK:=FK) (r:=x).
+assumption.
+now rewrite H mult_inv_r.
+Qed.
+
+Lemma inv_mult :
+  forall K (FK : Field K) (x y : K), mult x y <> zero ->
+  inv (mult x y) = mult (inv x) (inv y).
+Proof.
+intros K FK x y Hxy.
+apply sym_eq, inv_eq; try assumption.
+rewrite (mult_comm x) mult_assoc.
+rewrite <- (mult_assoc _ _ (inv x)).
+rewrite mult_inv_r.
+rewrite mult_one_r.
+rewrite mult_inv_r.
+reflexivity.
+intros L; apply Hxy.
+rewrite L; apply mult_zero_r.
+intros L; apply Hxy.
+rewrite L; apply mult_zero_l.
+Qed.
+
+Lemma plus_eq_compat_l: forall K (FK : Field K)
+  (r x y: K), plus r x = plus r y -> x = y.
+Proof.
+intros K FK r x y H.
+rewrite <- (plus_zero_l _ _ x).
+rewrite <- (plus_opp_l _ _ r).
+rewrite <- plus_assoc.
+rewrite H.
+now rewrite plus_assoc plus_opp_l plus_zero_l.
+Qed.
+
+
+Lemma opp_mult_r: forall K (FK : Field K) (x y: K),
+  opp (mult x y) = mult x (opp y).
+Proof.
+intros K FK x y.
+apply plus_eq_compat_l with (FK:=FK) (r:=(mult x y)).
+rewrite plus_opp_r.
+rewrite <- mult_distr_l.
+now rewrite plus_opp_r mult_zero_r.
+Qed.
+
+
+Lemma opp_mult_l: forall K (FK : Field K) (x y: K),
+  opp (mult x y) = mult (opp x) y.
+Proof.
+intros K FK x y.
+now rewrite mult_comm opp_mult_r mult_comm.
+Qed.
+
+(** * Vector Spaces *)
+
+Class VectorSpace V K {FK : Field K} := {
+  vspace_group :> AbelianGroup V ;
+  scal : K -> V -> V ;
+  scal_assoc : forall x y u, scal x (scal y u) = scal (mult x y) u ;
+  scal_one : forall u, scal one u = u ;
+  scal_distr_l : forall x u v, scal x (plus u v) = plus (scal x u) (scal x v) ;
+  scal_distr_r : forall x y u, scal (plus x y) u = plus (scal x u) (scal y u)
+}.
+
+Global Instance prod_vector_space :
+  forall U V K (FK : Field K) (VU : VectorSpace U K) (VV : VectorSpace V K),
+  VectorSpace (U * V) K.
+Proof.
+intros U V K FK VU VV.
+apply (@Build_VectorSpace _ K FK (prod_abelian_group _ _ _ _)
+  (fun (x : K) (uv : U * V) => (scal x (fst uv), scal x (snd uv)))).
+intros x y u.
+apply f_equal2 ; apply scal_assoc.
+intros (u,v).
+apply f_equal2 ; apply scal_one.
+intros x u v.
+simpl.
+apply f_equal2 ; apply scal_distr_l.
+intros x y u.
+simpl.
+apply f_equal2 ; apply scal_distr_r.
+Defined.
+
+(** ** Metric Vector Spaces *)
+
+Class MetricVectorSpace V K {FK : Field K} := {
+  mvspace_vector :> VectorSpace V K ;
+  mvspace_metric :> MetricSpace V ;
+  mvspace_plus : forall x y, filterlim (fun z : V * V => plus (fst z) (snd z)) (filter_prod (locally x) (locally y)) (locally (plus x y)) ;
+  mvspace_scal : forall x y, filterlim (fun z : V => scal x z) (locally y) (locally (scal x y))
+}.
+
+Global Instance vspace_of_field :
+  forall K (FK : Field K), VectorSpace K K.
+Proof.
+intros K FK.
+apply (@Build_VectorSpace K K FK field_group mult).
+apply mult_assoc.
+apply mult_one_l.
+apply mult_distr_l.
+apply mult_distr_r.
+Defined.
+
+Lemma scal_zero_r :
+  forall V K (FK : Field K) (VV : VectorSpace V K) (x : K),
+  scal x zero = zero.
+Proof.
+intros V K FK VV x.
+apply plus_reg_r with (GG := vspace_group) (z := scal x zero).
+rewrite <- scal_distr_l.
+rewrite plus_zero_r.
+now rewrite plus_zero_l.
+Qed.
+
+Lemma scal_zero_l :
+  forall V K (FK : Field K) (VV : VectorSpace V K) (u : V),
+  scal zero u = zero.
+Proof.
+intros V K FK VV u.
+apply plus_reg_r with (GG := vspace_group) (z := scal zero u).
+rewrite plus_zero_l.
+rewrite <- scal_distr_r.
+now rewrite plus_zero_r.
+Qed.
+
+Lemma scal_opp_l :
+  forall V K (FK : Field K) (VV : VectorSpace V K) (x : K) (u : V),
+  scal (opp x) u = opp (scal x u).
+Proof.
+intros V K FK VV x u.
+apply plus_reg_r with (GG := vspace_group) (z := (scal x u)).
+rewrite plus_opp_l.
+rewrite <- scal_distr_r.
+rewrite plus_opp_l.
+apply scal_zero_l.
+Qed.
+
+Lemma scal_opp_r :
+  forall V K (FK : Field K) (VV : VectorSpace V K) (x : K) (u : V),
+  scal x (opp u) = opp (scal x u).
+Proof.
+intros V K FK VV x u.
+apply plus_reg_r with (GG := vspace_group) (z := (scal x u)).
+rewrite plus_opp_l.
+rewrite <- scal_distr_l.
+rewrite plus_opp_l.
+apply scal_zero_r.
+Qed.
+
+Lemma scal_opp_one :
+  forall V K (FK : Field K) (VV : VectorSpace V K) (u : V),
+  scal (opp one) u = opp u.
+Proof.
+intros V K FK VV u.
+rewrite scal_opp_l.
+now rewrite scal_one.
+Qed.
+
+(** * Normed Abelian Space *)
+
+Class NormedAbelianGroup G := {
+  nagroup_abelian :> AbelianGroup G ;
+  norm : G -> R ;
+  norm_zero : norm zero = 0 ;
+  norm_opp : forall x, norm (opp x) = norm x ;
+  norm_triangle : forall x y, norm (plus x y) <= norm x + norm y
+}.
+
+Lemma norm_ge_0 :
+  forall {G} {NG : NormedAbelianGroup G} (x : G),
+  0 <= norm x.
+Proof.
+intros G NG x.
+apply Rmult_le_reg_r with (1 := Rlt_R0_R2).
+rewrite Rmult_0_l -norm_zero -(plus_opp_r x).
+apply Rle_trans with (1 := norm_triangle _ _).
+rewrite norm_opp.
+apply Req_le.
+ring.
+Qed.
+
+Lemma NAG_dist_refl {G} {NAG : NormedAbelianGroup G} :
+  forall a : G, norm (minus a a) = 0.
+Proof.
+  move => a.
+  by rewrite /minus plus_opp_r norm_zero.
+Qed.
+Lemma NAG_dist_comm {G} {NAG : NormedAbelianGroup G} :
+  forall a b : G, norm (minus b a) = norm (minus a b).
+Proof.
+  move => a b.
+  by rewrite /minus -norm_opp opp_plus opp_opp plus_comm.
+Qed.
+Lemma NAG_dist_triangle {G} {NAG : NormedAbelianGroup G} :
+  forall a b c : G, norm (minus c a) <= norm (minus b a) + norm (minus c b).
+Proof.
+  move => a b c.
+  apply Rle_trans with (2 := norm_triangle _ _).
+  apply Req_le.
+  rewrite plus_comm.
+  unfold minus.
+  rewrite plus_assoc -(plus_assoc c) plus_opp_l plus_zero_r.
+  reflexivity.
+Qed.
+
+Global Instance NormedAbelianGroup_MetricSpace {G : Type} :
+  NormedAbelianGroup G -> MetricSpace G.
+Proof.
+  intro NAG.
+  apply Build_MetricSpace with (fun x y => norm (minus y x)).
+  - by apply NAG_dist_refl.
+  - by apply NAG_dist_comm.
+  - by apply NAG_dist_triangle.
+Defined.
+
+(** ** Continuity in Normed Abelian Groups *)
+
+Lemma continuity_opp {T} {NAG : NormedAbelianGroup T} :
+  forall (x : T), continuity opp x.
+Proof.
+  move => x.
+  apply -> (is_filter_lim_continuity opp x).
+  move => F HF Hx P [y [d HP]] Pfx.
+  apply (Hx (fun x => P (opp x))).
+  exists (opp y), d => z ; split => H.
+  apply HP.
+  move: H ; unfold ball, distance ; simpl.
+  by rewrite /minus opp_opp -opp_plus norm_opp.
+  apply HP in H ; move: H.
+  unfold ball, distance ; simpl.
+  by rewrite /minus opp_opp -opp_plus norm_opp.
+  by [].
+Qed.
+
+Lemma continuity_plus {T} {NAG : NormedAbelianGroup T} :
+  forall (x : T * T), continuity (fun y => plus (fst y) (snd y)) x.
+Proof.
+  move => x.
+  apply -> (is_filter_lim_continuity (fun y : T * T => plus (fst y) (snd y)) x).
+  move => F HF Hx P [y [d HP]] Pfx.
+  apply HP in Pfx.
+  apply Rminus_lt_0 in Pfx.
+  assert (H : F (ball x (pos_div_2 (mkposreal _ Pfx)))).
+    apply Hx.
+    by exists x, (pos_div_2 (mkposreal _ Pfx)).
+    by apply ball_center.
+  move: H.
+  unfold filtermap ; apply filter_imp => z Hz.
+  apply HP.
+  apply Rle_lt_trans with (1 := distance_triangle _ (plus (fst x) (snd x)) _).
+  simpl.
+  rewrite Rplus_comm.
+  apply Rlt_minus_r.
+  rewrite /ball /= /dist_prod in Hz.
+  apply Rlt_div_r in Hz.
+  apply Rle_lt_trans with (2 := Hz).
+  rewrite Rmult_comm.
+  replace (minus (plus (fst z) (snd z)) (plus (fst x) (snd x)))
+    with (plus (minus (fst z) (fst x)) (minus (snd z) (snd x))).
+  apply Rle_trans with (1 := norm_triangle _ _).
+  by apply Rplus_le_Rmax.
+  case: (x) => /= xx xy ; case (z) => /= zx zy.
+  rewrite /minus opp_plus -?plus_assoc.
+  apply f_equal.
+  rewrite ?plus_assoc.
+  apply f_equal2.
+  apply plus_comm.
+  by [].
+  by apply Rlt_0_2.
+Qed.
+
+Lemma continuity_minus {T} {NAG : NormedAbelianGroup T} :
+  forall (x : T * T), continuity (fun y => minus (fst y) (snd y)) x.
+Proof.
+  move => x.
+  unfold minus.
+  apply (fun H => continuity_comp (fun x => (fst x, opp (snd x))) (fun x => plus (fst x) (snd x)) x H (continuity_plus _)).
+  apply -> (is_filter_lim_continuity (fun x0 : T * T => (fst x0, opp (snd x0))) x).
+  move => F FF Fx P [y [d BP]] Px.
+  unfold filtermap.
+  apply Fx.
+  exists (fst y, opp (snd y)), d.
+  move => z.
+  rewrite -BP.
+  rewrite /ball /= /dist_prod /=.
+  by rewrite /minus -opp_plus opp_opp norm_opp.
+  by [].
+Qed.
+
+(** ** Functional Normed Abelian Groups *)
 
 Lemma UnifFct_norm_ne {T G} {NAG : NormedAbelianGroup G} :
   forall (f : T -> G), exists s : R, s = 0 \/ exists x : T, s = norm (f x).
@@ -800,8 +1792,1316 @@ Proof.
     by apply UnifFct_norm_triangle.
 Defined.
 
+(** * The topology on natural numbers *)
+
+Definition eventually (P : nat -> Prop) :=
+  exists N : nat, forall n, (N <= n)%nat -> P n.
+
+Lemma nat_topology_and : forall P Q : nat -> Prop,
+  eventually P ->
+  eventually Q ->
+  forall x : nat,
+  P x -> Q x -> neighborhoods eventually x (fun y : nat => P y /\ Q y).
+Proof.
+  move => P Q [NP HP] [NQ HQ] x Px Qx.
+  apply Is_neighborhoods with (fun y : nat => P y /\ Q y).
+  exists (NP + NQ)%nat => n Hn.
+  split.
+  by apply HP, le_trans with (2 := Hn), le_plus_l.
+  by apply HQ, le_trans with (2 := Hn), le_plus_r.
+  by split.
+  by auto.
+Qed.
+Lemma nat_topology_true : forall n : nat,
+  exists P : nat -> Prop, eventually P /\ P n.
+Proof.
+  move => n.
+  exists (fun m => (n <= m)%nat) ; split.
+  by exists n.
+  by apply le_refl.
+Qed.
+Global Instance nat_TopologicalSpace :
+  TopologicalSpace nat.
+Proof.
+  apply Build_TopologicalSpace with eventually.
+  exact nat_topology_and.
+  exact nat_topology_true.
+Defined.
+
+Global Instance eventually_filter : ProperFilter eventually.
+Proof.
+constructor.
+  intros P [N H].
+  exists N.
+  apply H.
+  apply le_refl.
+constructor.
+- now exists 0%nat.
+- intros P Q [NP HP] [NQ HQ].
+  exists (max NP NQ).
+  intros n Hn.
+  split.
+  apply HP.
+  apply le_trans with (2 := Hn).
+  apply Max.le_max_l.
+  apply HQ.
+  apply le_trans with (2 := Hn).
+  apply Max.le_max_r.
+- intros P Q H [NP HP].
+  exists NP.
+  intros n Hn.
+  apply H.
+  now apply HP.
+Qed.
+
+(** * The topology on real numbers *)
+
+Global Instance R_abelian_group : AbelianGroup R.
+Proof.
+apply (@Build_AbelianGroup R Rplus Ropp R0).
+apply Rplus_comm.
+intros x y z.
+apply sym_eq, Rplus_assoc.
+apply Rplus_0_r.
+apply Rplus_opp_r.
+Defined.
+
+Global Instance R_field : Field R.
+Proof.
+apply (@Build_Field R _ Rmult Rinv R1).
+apply Rmult_comm.
+intros x y z.
+apply sym_eq, Rmult_assoc.
+apply Rmult_1_r.
+apply Rinv_r.
+apply Rmult_plus_distr_r.
+Defined.
+
+Global Instance R_NormedAbelianGroup : NormedAbelianGroup R.
+Proof.
+  apply (Build_NormedAbelianGroup _ _ (fun x => Rabs x)).
+  by apply Rabs_R0.
+  move => x ; by apply Rabs_Ropp.
+  move => x y ; by apply Rabs_triang.
+Defined.
+
+Global Instance R_SeparatedSpace : SeparatedSpace R.
+Proof.
+  apply (Build_SeparatedSpace R _).
+  move => x y Hxy.
+  apply sym_not_eq, Rminus_eq_contra in Hxy.
+  apply Rabs_pos_lt in Hxy.
+  exists (ball x (pos_div_2 (mkposreal _ Hxy))) (ball y (pos_div_2 (mkposreal _ Hxy))).
+  + exists x ; by exists (pos_div_2 (mkposreal _ Hxy)).
+  + exists y ; by exists (pos_div_2 (mkposreal _ Hxy)).
+  + by apply ball_center.
+  + by apply ball_center.
+  + unfold ball ; move => /= z Hxz Hyz.
+    apply (Rlt_irrefl (distance x y)).
+    apply Rle_lt_trans with (1 := distance_triangle x z y).
+    rewrite (double_var (distance x y)).
+    apply Rplus_lt_compat.
+    by apply Hxz.
+    rewrite distance_comm ; by apply Hyz.
+Defined.
+
+Lemma R_complete :
+  forall F : (R -> Prop) -> Prop,
+  ProperFilter F ->
+  (forall eps : posreal, exists x : R, F (ball x eps)) ->
+  exists x : R, is_filter_lim F x.
+Proof.
+intros F FF HF.
+set (E := fun x : R => F (ball x (mkposreal _ Rlt_0_1))).
+destruct (completeness E) as [x [Hx1 Hx2]].
+  destruct (HF (mkposreal _ Rlt_0_1)) as [y Fy].
+  exists (y + 2).
+  intros x Fx.
+  apply filter_const.
+  generalize (filter_and _ _ Fy Fx).
+  apply filter_imp.
+  intros z [Hz1 Hz2].
+  apply Rplus_le_reg_r with (-y).
+  replace (y + 2 + -y) with 2 by ring.
+  apply Rabs_le_between.
+  change (Rabs (x + - y)) with (distance y x).
+  apply Rle_trans with (1 := distance_triangle y z x).
+  apply Rlt_le.
+  apply Rplus_lt_compat with (1 := Hz1).
+  now rewrite distance_comm.
+  destruct (HF (mkposreal _ Rlt_0_1)) as [y Fy].
+  now exists y.
+exists (x - 1).
+intros P [y [eps BP]] Px.
+assert (H : 0 < Rmin ((y + eps) - (x - 1)) ((x - 1) - (y - eps))).
+  apply Rmin_case.
+  apply Rplus_lt_reg_r with (x - 1 - y).
+  rewrite Rplus_0_l.
+  ring_simplify (y + eps - (x - 1) + (x - 1 - y)).
+  apply Rabs_lt_between.
+  now apply BP.
+  apply Rplus_lt_reg_r with (-eps).
+  rewrite Rplus_0_l.
+  replace (x - 1 - (y - eps) + - eps) with (x - 1 - y) by ring.
+  apply (Rabs_lt_between (x - 1 - y)).
+  now apply BP.
+set (eps' := pos_div_2 (mkposreal _ (Rmin_case _ _ _ Rlt_R0_R2 H))).
+set (eps'' := (Rmin 2 (Rmin (y + eps - (x - 1)) (x - 1 - (y - eps))))).
+fold eps'' in eps'.
+destruct (HF eps') as [z Hz].
+assert (H1 : z - eps'' / 2 + 1 <= x).
+  apply Hx1.
+  revert Hz.
+  unfold E.
+  apply filter_imp.
+  intros u Bu.
+  apply (Rabs_lt_between' u z) in Bu.
+  apply Rabs_lt_between'.
+  simpl in Bu |- *.
+  clear -Bu.
+  destruct Bu as [Bu1 Bu2].
+  assert (H := Rmin_l 2 (Rmin (y + eps - (x - 1)) (x - 1 - (y - eps)))).
+  fold eps'' in H.
+  split ; Fourier.fourier.
+assert (H2 : x <= z + eps'' / 2 + 1).
+  apply Hx2.
+  intros v Hv.
+  apply filter_const.
+  generalize (filter_and _ _ Hz Hv).
+  apply filter_imp.
+  intros w [Hw1 Hw2].
+  apply (Rabs_lt_between' w z) in Hw1.
+  destruct Hw1 as [_ Hw1].
+  apply (Rabs_lt_between' w v) in Hw2.
+  destruct Hw2 as [Hw2 _].
+  clear -Hw1 Hw2.
+  simpl in Hw1, Hw2.
+  Fourier.fourier.
+revert Hz.
+apply filter_imp.
+intros u Hu.
+apply BP.
+apply (Rabs_lt_between' u z) in Hu.
+apply Rabs_lt_between'.
+assert (eps'' <= y + eps - (x - 1)).
+  apply Rle_trans with (1 := Rmin_r _ _).
+  apply Rmin_l.
+assert (eps'' <= x - 1 - (y - eps)).
+  apply Rle_trans with (1 := Rmin_r _ _).
+  apply Rmin_r.
+simpl in H2, Hu.
+clear -H2 Hu H0 H1 H3.
+destruct Hu.
+split ; Fourier.fourier.
+Qed.
+
+Global Instance R_complete_metric : CompleteMetricSpace R.
+Proof.
+apply (Build_CompleteMetricSpace R _ R_complete).
+Defined.
+
+Notation at_left x := (within (fun u : R => Rlt u x) (locally (x)%R)).
+Notation at_right x := (within (fun u : R => Rlt x u) (locally (x)%R)).
+
+Lemma open_lt :
+  forall (y : R), open (fun (u : R) => u < y).
+Proof.
+intros y x Hxy.
+apply Rminus_lt_0 in Hxy.
+apply (Is_neighborhoods _ _ _ (ball x (mkposreal _ Hxy))).
+- exists x.
+  now eexists.
+- unfold ball.
+  now rewrite distance_refl.
+- unfold ball.
+  simpl.
+  intros u Hu.
+  apply Rabs_lt_between in Hu.
+  apply Rplus_lt_reg_r with (1 := proj2 Hu).
+Qed.
+
+Lemma open_gt :
+  forall (y : R), open (fun (u : R) => y < u).
+Proof.
+intros y x Hxy.
+apply Rminus_lt_0 in Hxy.
+apply (Is_neighborhoods _ _ _ (ball x (mkposreal _ Hxy))).
+- exists x.
+  now eexists.
+- unfold ball.
+  now rewrite distance_refl.
+- unfold ball.
+  simpl.
+  intros u Hu.
+  apply Rabs_lt_between in Hu.
+  apply Rplus_lt_reg_r with (- x).
+  generalize (proj1 Hu).
+  now rewrite Ropp_minus_distr.
+Qed.
+
+Lemma open_neq :
+  forall (y : R), open (fun (u : R) => u <> y).
+Proof.
+intros y.
+apply (open_ext (fun u => u < y \/ y < u)).
+intros u.
+split.
+apply Rlt_dichotomy_converse.
+apply Rdichotomy.
+apply open_or.
+apply open_lt.
+apply open_gt.
+Qed.
+
+Lemma locally_interval (P : R -> Prop) (x : R) (a b : Rbar) :
+  Rbar_lt a x -> Rbar_lt x b ->
+  (forall (y : R), Rbar_lt a y -> Rbar_lt y b -> P y) ->
+  locally x P.
+Proof.
+  move => Hax Hxb Hp.
+  case: (Rbar_lt_locally _ _ _ Hax Hxb) => d Hd.
+  exists d => y Hy.
+  apply Hp ; by apply Hd.
+Qed.
+
+Lemma locally_ex_dec :
+  forall P (x : R),
+  (forall x, P x \/ ~P x) ->
+  locally x P ->
+  {d:posreal | forall y, Rabs (y-x) < d -> P y}.
+Proof.
+intros P x P_dec H.
+set (Q := fun z => forall y,  Rabs (y-x) < z -> P y).
+destruct (ex_lub_Rbar_ne Q) as ([d| |],(H1,H2)).
+destruct H as (d1,Hd1).
+now exists d1.
+(* *)
+assert (Zd: 0 < d).
+destruct H as (d1,Hd1).
+apply Rlt_le_trans with (1 := cond_pos d1).
+apply Rbar_finite_le.
+now apply H1.
+exists (mkposreal d Zd).
+simpl.
+intros y Hy.
+destruct (P_dec y) as [Py|Py].
+exact Py.
+elim (Rlt_not_le _ _ Hy).
+apply Rbar_finite_le.
+apply H2.
+intros u Hu.
+apply Rbar_finite_le.
+apply Rnot_lt_le.
+contradict Py.
+now apply Hu.
+(* *)
+exists (mkposreal 1 Rlt_0_1).
+simpl.
+intros y Hy.
+destruct (P_dec y) as [Py|Py].
+exact Py.
+elim (Rlt_not_le _ _ Hy).
+apply Rbar_finite_le.
+apply Rbar_le_trans with p_infty.
+now left.
+apply H2.
+intros u Hu.
+apply Rbar_finite_le.
+apply Rnot_lt_le.
+contradict Py.
+now apply Hu.
+(* *)
+elimtype False.
+destruct H as (d1,Hd1).
+now destruct (H1 d1).
+Qed.
+
+(** * on R^2 *)
+
+Definition locally_2d (P : R -> R -> Prop) x y :=
+  exists delta : posreal, forall u v, Rabs (u - x) < delta -> Rabs (v - y) < delta -> P u v.
+
+Lemma locally_2d_locally :
+  forall P x y,
+  locally_2d P x y <-> locally (x,y) (fun z => P (fst z) (snd z)).
+Proof.
+intros P x y.
+split ; intros [d H] ; exists d.
+- simpl.
+  intros [u v] H'.
+  apply H.
+  apply Rle_lt_trans with (2 := H').
+  apply Rmax_l.
+  apply Rle_lt_trans with (2 := H').
+  apply Rmax_r.
+- intros u v Hu Hv.
+  rewrite /= /dist_prod  in H.
+  apply (H (u,v)).
+  now apply Rmax_case.
+Qed.
+
+Lemma locally_2d_locally' :
+  forall P x y,
+  locally_2d P x y <-> locally ((x,(y,tt)) : Tn 2 R) (fun z : Tn 2 R => P (fst z) (fst (snd z))).
+Proof.
+intros P x y.
+split ; intros [d H] ; exists d.
+- simpl.
+  move => [u [v t]] /= {t} H'.
+  apply H.
+  apply Rle_lt_trans with (2 := H').
+  apply Rmax_l.
+  apply Rle_lt_trans with (2 := H').
+  rewrite (Rmax_left _ 0).
+  apply Rmax_r.
+  apply Rabs_pos.
+- intros u v Hu Hv.
+  simpl in H.
+  apply (H (u,(v,tt))).
+  apply Rmax_case.
+  exact Hu.
+  apply Rmax_case.
+  exact Hv.
+  apply cond_pos.
+Qed.
+
+Lemma locally_2d_impl_strong :
+  forall (P Q : R -> R -> Prop) x y, locally_2d (fun u v => locally_2d P u v -> Q u v) x y ->
+  locally_2d P x y -> locally_2d Q x y.
+Proof.
+intros P Q x y Li LP.
+apply locally_2d_locally in Li.
+apply locally_2d_locally in LP.
+apply locally_open in LP.
+apply locally_2d_locally.
+generalize (filter_and _ _ Li LP).
+apply: filter_imp.
+intros [u v] [H1 H2].
+apply H1.
+now apply locally_2d_locally.
+Qed.
+
+Lemma locally_2d_singleton :
+  forall (P : R -> R -> Prop) x y, locally_2d P x y -> P x y.
+Proof.
+intros P x y LP.
+apply locally_2d_locally in LP.
+apply: locally_singleton LP.
+Qed.
+
+Lemma locally_2d_impl :
+  forall (P Q : R -> R -> Prop) x y, locally_2d (fun u v => P u v -> Q u v) x y ->
+  locally_2d P x y -> locally_2d Q x y.
+Proof.
+intros P Q x y (d,H).
+apply locally_2d_impl_strong.
+exists d => u v Hu Hv Hp.
+apply H => //.
+now apply locally_2d_singleton.
+Qed.
+
+Lemma locally_2d_forall :
+  forall (P : R -> R -> Prop) x y, (forall u v, P u v) -> locally_2d P x y.
+Proof.
+intros P x y Hp.
+now exists (mkposreal _ Rlt_0_1) => u v _ _.
+Qed.
+
+Lemma locally_2d_and :
+  forall (P Q : R -> R -> Prop) x y, locally_2d P x y -> locally_2d Q x y ->
+  locally_2d (fun u v => P u v /\ Q u v) x y.
+Proof.
+intros P Q x y H.
+apply: locally_2d_impl.
+apply: locally_2d_impl H.
+apply locally_2d_forall.
+now split.
+Qed.
+
+Lemma locally_2d_align :
+  forall (P Q : R -> R -> Prop) x y,
+  ( forall eps : posreal, (forall u v, Rabs (u - x) < eps -> Rabs (v - y) < eps -> P u v) ->
+    forall u v, Rabs (u - x) < eps -> Rabs (v - y) < eps -> Q u v ) ->
+  locally_2d P x y -> locally_2d Q x y.
+Proof.
+intros P Q x y K (d,H).
+exists d => u v Hu Hv.
+now apply (K d).
+Qed.
+
+Lemma locally_2d_1d_const_x :
+  forall (P : R -> R -> Prop) x y,
+  locally_2d P x y ->
+  locally y (fun t => P x t).
+Proof.
+intros P x y (d,Hd).
+exists d; intros z Hz.
+apply Hd.
+rewrite Rminus_eq_0 Rabs_R0; apply cond_pos.
+exact Hz.
+Qed.
+
+Lemma locally_2d_1d_const_y :
+  forall (P : R -> R -> Prop) x y,
+  locally_2d P x y ->
+  locally x (fun t => P t y).
+Proof.
+intros P x y (d,Hd).
+exists d; intros z Hz.
+apply Hd.
+exact Hz.
+rewrite Rminus_eq_0 Rabs_R0; apply cond_pos.
+Qed.
+
+Lemma locally_2d_1d_strong :
+  forall (P : R -> R -> Prop) x y,
+  locally_2d P x y ->
+  locally_2d (fun u v => forall t, 0 <= t <= 1 ->
+    locally t (fun z => locally_2d P (x + z * (u - x)) (y + z * (v - y)))) x y.
+Proof.
+intros P x y.
+apply locally_2d_align => eps HP u v Hu Hv t Ht.
+assert (Zm: 0 <= Rmax (Rabs (u - x)) (Rabs (v - y))).
+apply Rmax_case ; apply Rabs_pos.
+destruct Zm as [Zm|Zm].
+(* *)
+assert (H1: Rmax (Rabs (u - x)) (Rabs (v - y)) < eps).
+now apply Rmax_case.
+set (d1 := mkposreal _ (Rlt_Rminus _ _ H1)).
+assert (H2: 0 < pos_div_2 d1 / Rmax (Rabs (u - x)) (Rabs (v - y))).
+apply Rmult_lt_0_compat.
+apply cond_pos.
+now apply Rinv_0_lt_compat.
+set (d2 := mkposreal _ H2).
+exists d2 => z Hz.
+exists (pos_div_2 d1) => p q Hp Hq.
+apply HP.
+(* . *)
+replace (p - x) with (p - (x + z * (u - x)) + (z - t + t) * (u - x)) by ring.
+apply Rle_lt_trans with (1 := Rabs_triang _ _).
+replace (pos eps) with (pos_div_2 d1 + (eps - pos_div_2 d1)) by ring.
+apply Rplus_lt_le_compat with (1 := Hp).
+rewrite Rabs_mult.
+apply Rle_trans with ((d2 + 1) * Rmax (Rabs (u - x)) (Rabs (v - y))).
+apply Rmult_le_compat.
+apply Rabs_pos.
+apply Rabs_pos.
+apply Rle_trans with (1 := Rabs_triang _ _).
+apply Rplus_le_compat.
+now apply Rlt_le.
+now rewrite Rabs_pos_eq.
+apply Rmax_l.
+rewrite /d2 /d1 /=.
+field_simplify.
+apply Rle_refl.
+now apply Rgt_not_eq.
+(* . *)
+replace (q - y) with (q - (y + z * (v - y)) + (z - t + t) * (v - y)) by ring.
+apply Rle_lt_trans with (1 := Rabs_triang _ _).
+replace (pos eps) with (pos_div_2 d1 + (eps - pos_div_2 d1)) by ring.
+apply Rplus_lt_le_compat with (1 := Hq).
+rewrite Rabs_mult.
+apply Rle_trans with ((d2 + 1) * Rmax (Rabs (u - x)) (Rabs (v - y))).
+apply Rmult_le_compat.
+apply Rabs_pos.
+apply Rabs_pos.
+apply Rle_trans with (1 := Rabs_triang _ _).
+apply Rplus_le_compat.
+now apply Rlt_le.
+now rewrite Rabs_pos_eq.
+apply Rmax_r.
+rewrite /d2 /d1 /=.
+field_simplify.
+apply Rle_refl.
+now apply Rgt_not_eq.
+(* *)
+apply: filter_forall => z.
+exists eps => p q.
+replace (u - x) with 0.
+replace (v - y) with 0.
+rewrite Rmult_0_r 2!Rplus_0_r.
+apply HP.
+apply sym_eq.
+apply Rabs_eq_0.
+apply Rle_antisym.
+rewrite Zm.
+apply Rmax_r.
+apply Rabs_pos.
+apply sym_eq.
+apply Rabs_eq_0.
+apply Rle_antisym.
+rewrite Zm.
+apply Rmax_l.
+apply Rabs_pos.
+Qed.
+
+Lemma locally_2d_1d :
+  forall (P : R -> R -> Prop) x y,
+  locally_2d P x y ->
+  locally_2d (fun u v => forall t, 0 <= t <= 1 -> locally_2d P (x + t * (u - x)) (y + t * (v - y))) x y.
+Proof.
+intros P x y H.
+apply locally_2d_1d_strong in H.
+apply: locally_2d_impl H.
+apply locally_2d_forall => u v H t Ht.
+specialize (H t Ht).
+apply: locally_singleton H.
+Qed.
+
+Lemma locally_2d_ex_dec: forall P x y, (forall x y, P x y \/ ~P x y) -> locally_2d P x y
+   -> {d:posreal| forall u v, Rabs (u-x) < d -> Rabs (v-y) < d -> P u v}.
+Proof.
+intros P x y P_dec H.
+set (Q := fun z => forall u v,   Rabs (u-x) < z -> Rabs (v-y) < z -> P u v).
+destruct (ex_lub_Rbar_ne Q) as ([d| |],(H1,H2)).
+destruct H as (d1,Hd1).
+now exists d1.
+(* *)
+assert (Zd: 0 < d).
+destruct H as (d1,Hd1).
+apply Rlt_le_trans with (1 := cond_pos d1).
+apply Rbar_finite_le.
+now apply H1.
+exists (mkposreal d Zd).
+simpl.
+intros u v Hu Hv.
+destruct (P_dec  u v) as [Puv|Puv].
+exact Puv.
+assert (Hi:(Rmax (Rabs (u - x)) (Rabs (v - y)) < d)).
+now apply Rmax_case.
+elim (Rlt_not_le _ _ Hi).
+apply Rbar_finite_le.
+apply H2.
+intros z Hz.
+apply Rbar_finite_le.
+apply Rnot_lt_le.
+contradict Puv.
+apply Hz.
+apply Rle_lt_trans with (2:=Puv).
+apply Rmax_l.
+apply Rle_lt_trans with (2:=Puv).
+apply Rmax_r.
+(* *)
+exists (mkposreal 1 Rlt_0_1).
+simpl.
+intros u v Hu Hv.
+destruct (P_dec u v) as [Puv|Puv].
+exact Puv.
+assert (Hi:(Rmax (Rabs (u - x)) (Rabs (v - y)) < 1)).
+now apply Rmax_case.
+elim (Rlt_not_le _ _ Hi).
+apply Rbar_finite_le.
+apply Rbar_le_trans with p_infty.
+now left.
+apply H2.
+intros z Hz.
+apply Rbar_finite_le.
+apply Rnot_lt_le.
+contradict Puv.
+apply Hz.
+apply Rle_lt_trans with (2:=Puv).
+apply Rmax_l.
+apply Rle_lt_trans with (2:=Puv).
+apply Rmax_r.
+(* *)
+elimtype False.
+destruct H as (d1,Hd1).
+now destruct (H1 d1).
+Qed.
+
+(** * Some Topology on extended real numbers *)
+
+Definition Rbar_locally' (a : Rbar) (P : R -> Prop) :=
+  match a with
+    | Finite a => locally' a P
+    | p_infty => exists M : R, forall x, M < x -> P x
+    | m_infty => exists M : R, forall x, x < M -> P x
+  end.
+Definition Rbar_locally (a : Rbar) (P : R -> Prop) :=
+  match a with
+    | Finite a => locally a P
+    | p_infty => exists M : R, forall x, M < x -> P x
+    | m_infty => exists M : R, forall x, x < M -> P x
+  end.
+
+Global Instance Rbar_locally'_filter :
+  forall x, ProperFilter (Rbar_locally' x).
+Proof.
+intros [x| |] ; (constructor ; [idtac | constructor]).
+- intros P [eps HP].
+  exists (x + eps / 2).
+  apply HP.
+  unfold distance ; simpl.
+  ring_simplify (x + eps / 2 + - x).
+  rewrite Rabs_pos_eq.
+  apply Rminus_lt_0.
+  replace (eps - eps / 2) with (eps / 2) by field.
+  apply is_pos_div_2.
+  apply Rlt_le, is_pos_div_2.
+  apply Rgt_not_eq, Rminus_lt_0 ; ring_simplify.
+  apply is_pos_div_2.
+- now exists (mkposreal _ Rlt_0_1).
+- intros P Q [dP HP] [dQ HQ].
+  exists (mkposreal _ (Rmin_stable_in_posreal dP dQ)).
+  simpl.
+  intros y Hy H.
+  split.
+  apply HP with (2 := H).
+  apply Rlt_le_trans with (1 := Hy).
+  apply Rmin_l.
+  apply HQ with (2 := H).
+  apply Rlt_le_trans with (1 := Hy).
+  apply Rmin_r.
+- intros P Q H [dP HP].
+  exists dP.
+  intros y Hy H'.
+  apply H.
+  now apply HP.
+- intros P [N HP].
+  exists (N + 1).
+  apply HP.
+  apply Rlt_plus_1.
+- now exists 0.
+- intros P Q [MP HP] [MQ HQ].
+  exists (Rmax MP MQ).
+  intros y Hy.
+  split.
+  apply HP.
+  apply Rle_lt_trans with (2 := Hy).
+  apply Rmax_l.
+  apply HQ.
+  apply Rle_lt_trans with (2 := Hy).
+  apply Rmax_r.
+- intros P Q H [dP HP].
+  exists dP.
+  intros y Hy.
+  apply H.
+  now apply HP.
+- intros P [N HP].
+  exists (N - 1).
+  apply HP.
+  apply Rlt_minus_l, Rlt_plus_1.
+- now exists 0.
+- intros P Q [MP HP] [MQ HQ].
+  exists (Rmin MP MQ).
+  intros y Hy.
+  split.
+  apply HP.
+  apply Rlt_le_trans with (1 := Hy).
+  apply Rmin_l.
+  apply HQ.
+  apply Rlt_le_trans with (1 := Hy).
+  apply Rmin_r.
+- intros P Q H [dP HP].
+  exists dP.
+  intros y Hy.
+  apply H.
+  now apply HP.
+Qed.
+
+Global Instance Rbar_locally_filter :
+  forall x, ProperFilter (Rbar_locally x).
+Proof.
+intros [x| |].
+- apply locally_filter.
+- exact (Rbar_locally'_filter p_infty).
+- exact (Rbar_locally'_filter m_infty).
+Qed.
+
+Lemma open_Rbar_lt :
+  forall y, open (fun u : R => Rbar_lt u y).
+Proof.
+intros [y| |].
+- apply open_lt.
+- intros x _.
+  exists (ball x (mkposreal _ Rlt_0_1)).
+  exists x.
+  now eexists.
+  unfold ball.
+  rewrite distance_refl.
+  apply cond_pos.
+  easy.
+- apply open_false.
+Qed.
+
+Lemma open_Rbar_gt :
+  forall y, open (fun u : R => Rbar_lt y u).
+Proof.
+intros [y| |].
+- apply open_gt.
+- apply open_false.
+- intros x _.
+  exists (ball x (mkposreal _ Rlt_0_1)).
+  exists x.
+  now eexists.
+  unfold ball.
+  rewrite distance_refl.
+  apply cond_pos.
+  easy.
+Qed.
+
+Lemma open_Rbar_lt' :
+  forall x y, Rbar_lt x y -> Rbar_locally x (fun u => Rbar_lt u y).
+Proof.
+intros [x| |] y Hxy.
+- change (locally x (fun u => Rbar_lt u y)).
+  apply filter_open with (2 := Hxy).
+  apply open_Rbar_lt.
+- easy.
+- destruct y as [y| |].
+  now exists y.
+  now apply filter_forall.
+  easy.
+Qed.
+
+Lemma open_Rbar_gt' :
+  forall x y, Rbar_lt y x -> Rbar_locally x (fun u => Rbar_lt y u).
+Proof.
+intros [x| |] y Hxy.
+- change (locally x (fun u => Rbar_lt y u)).
+  apply filter_open with (2 := Hxy).
+  apply open_Rbar_gt.
+- destruct y as [y| |].
+  now exists y.
+  easy.
+  now apply filter_forall.
+- now destruct y as [y| |].
+Qed.
+
+Lemma Rbar_locally'_le :
+  forall x, filter_le (Rbar_locally' x) (Rbar_locally x).
+Proof.
+intros [x| |] P [eps HP] ; exists eps ; intros ; now apply HP.
+Qed.
+
+Lemma Rbar_locally'_le_finite :
+  forall x : R, filter_le (Rbar_locally' x) (locally x).
+Proof.
+intros x P [eps HP] ; exists eps ; intros ; now apply HP.
+Qed.
+
+(** ** Some limits on real functions *)
+
+Definition Rbar_loc_seq (x : Rbar) (n : nat) := match x with
+    | Finite x => x + / (INR n + 1)
+    | p_infty => INR n
+    | m_infty => - INR n
+  end.
+
+Lemma filterlim_Rbar_loc_seq :
+  forall x, filterlim (Rbar_loc_seq x) eventually (Rbar_locally' x).
+Proof.
+  intros x P.
+  unfold Rbar_loc_seq.
+  case: x => /= [x | | ] [delta Hp].
+(* x \in R *)
+  case: (nfloor_ex (/delta)) => [ | N [_ HN]].
+  by apply Rlt_le, Rinv_0_lt_compat, delta.
+  exists N => n Hn.
+  apply Hp ; simpl.
+  ring_simplify (x + / (INR n + 1) + - x).
+  rewrite Rabs_pos_eq.
+  rewrite -(Rinv_involutive delta).
+  apply Rinv_lt_contravar.
+  apply Rmult_lt_0_compat.
+  apply Rinv_0_lt_compat.
+  by apply delta.
+  exact: INRp1_pos.
+  apply Rlt_le_trans with (1 := HN).
+  by apply Rplus_le_compat_r, le_INR.
+  by apply Rgt_not_eq, delta.
+  by apply Rlt_le, RinvN_pos.
+  apply Rgt_not_eq, Rminus_lt_0.
+  ring_simplify.
+  by apply RinvN_pos.
+(* x = p_infty *)
+  case: (nfloor_ex (Rmax 0 delta)) => [ | N [_ HN]].
+  by apply Rmax_l.
+  exists (S N) => n Hn.
+  apply Hp.
+  apply Rle_lt_trans with (1 := Rmax_r 0 _).
+  apply Rlt_le_trans with (1 := HN).
+  rewrite -S_INR ; by apply le_INR.
+(* x = m_infty *)
+  case: (nfloor_ex (Rmax 0 (-delta))) => [ | N [_ HN]].
+  by apply Rmax_l.
+  exists (S N) => n Hn.
+  apply Hp.
+  rewrite -(Ropp_involutive delta).
+  apply Ropp_lt_contravar.
+  apply Rle_lt_trans with (1 := Rmax_r 0 _).
+  apply Rlt_le_trans with (1 := HN).
+  rewrite -S_INR ; by apply le_INR.
+Qed.
+
+(* TODO : Bouger dans Limit ? *)
+
+Lemma filterlim_const :
+  forall {T U} {MU : MetricSpace U} {F : (T -> Prop) -> Prop} {FF : Filter F},
+  forall a : U, filterlim (fun _ => a) F (locally a).
+Proof.
+intros T U MU F FF a P [eps HP].
+unfold filtermap.
+apply filter_forall.
+intros _.
+apply HP.
+rewrite distance_refl.
+apply cond_pos.
+Qed.
+
+Lemma filterlim_opp :
+  forall x,
+  filterlim Ropp (Rbar_locally x) (Rbar_locally (Rbar_opp x)).
+Proof.
+intros [x| |] P [eps He].
+- exists eps.
+  intros y Hy.
+  apply He.
+  by rewrite /= /distance /Rminus Ropp_involutive Rplus_comm Rabs_minus_sym.
+- exists (-eps).
+  intros y Hy.
+  apply He.
+  apply Ropp_lt_cancel.
+  by rewrite Ropp_involutive.
+- exists (-eps).
+  intros y Hy.
+  apply He.
+  apply Ropp_lt_cancel.
+  by rewrite Ropp_involutive.
+Qed.
+
+Lemma filterlim_plus :
+  forall x y,
+  ex_Rbar_plus x y ->
+  filterlim (fun z => fst z + snd z) (filter_prod (Rbar_locally x) (Rbar_locally y)) (Rbar_locally (Rbar_plus x y)).
+Proof.
+  intros x y.
+  wlog: x y / (Rbar_le 0 (Rbar_plus x y)).
+    intros Hw.
+    case: (Rbar_le_lt_dec 0 (Rbar_plus x y)) => Hz Hp.
+    by apply Hw.
+    apply (filterlim_ext (fun z => - (- fst z + - snd z))).
+    intros z.
+    ring.
+    rewrite -(Rbar_opp_involutive (Rbar_plus x y)).
+    eapply filterlim_compose.
+    2: apply filterlim_opp.
+    assert (Hw' : filterlim (fun z => fst z + snd z) (filter_prod (Rbar_locally (Rbar_opp x)) (Rbar_locally (Rbar_opp y))) (Rbar_locally (Rbar_plus (Rbar_opp x) (Rbar_opp y)))).
+    apply Hw.
+    rewrite Rbar_plus_opp.
+    replace (Finite 0) with (Rbar_opp 0) by apply (f_equal Finite), Ropp_0.
+    apply Rbar_opp_le.
+    by left.
+    revert Hp.
+    clear.
+    now destruct x as [x| |] ; destruct y as [y| |].
+    clear Hw.
+    rewrite -Rbar_plus_opp.
+    intros P HP.
+    specialize (Hw' P HP).
+    destruct Hw' as [Q R H1 H2 H3].
+    exists (fun x => Q (- x)) (fun x => R (- x)).
+    now apply filterlim_opp.
+    now apply filterlim_opp.
+    intros u v HQ HR.
+    exact (H3 _ _ HQ HR).
+
+  unfold Rbar_plus, ex_Rbar_plus.
+  case Hlp: Rbar_plus' => [[z| |]|] Hz Hp ;
+  try by case: Hz.
+
+(* x + y \in R *)
+  case: x y Hlp Hz {Hp} => [x| |] ;
+  case => [y| |] //= ; case => <- Hlp.
+  intros P [eps He].
+  exists (fun u => Rabs (u - x) < pos_div_2 eps) (fun v => Rabs (v - y) < pos_div_2 eps).
+  now exists (pos_div_2 eps).
+  now exists (pos_div_2 eps).
+  intros u v Hu Hv.
+  apply He.
+  simpl.
+  replace (u + v + - (x + y)) with ((u - x) + (v - y)) by ring.
+  rewrite (double_var eps) ;
+  apply Rle_lt_trans with (1 := Rabs_triang _ _), Rplus_lt_compat.
+  now apply Hu.
+  now apply Hv.
+
+(* x + y = p_infty *)
+  wlog: x y Hlp {Hp Hz} / (is_finite x) => [Hw|Hx].
+    case: x y Hlp {Hp Hz} => [x| |] ;
+    case => [y| |] // _.
+    now apply (Hw x p_infty).
+    assert (Hw': filterlim (fun z => fst z + snd z) (filter_prod (Rbar_locally y) (Rbar_locally p_infty)) (Rbar_locally p_infty)).
+    exact: Hw.
+    intros P HP.
+    specialize (Hw' P HP).
+    destruct Hw' as [Q R H1 H2 H3].
+    exists R Q ; try assumption.
+    intros u v Hu Hv.
+    rewrite Rplus_comm.
+    now apply (H3 v u).
+    clear Hw.
+    intros P [N HN].
+    exists (fun x => N/2 < x) (fun x => N/2 < x).
+    now exists (N/2).
+    now exists (N/2).
+    intros x y Hx Hy.
+    simpl.
+    apply HN.
+    rewrite (double_var N).
+    now apply Rplus_lt_compat.
+  case: x y Hlp Hx => [x| |] ;
+  case => [y| | ] //= _ _.
+  intros P [N HN].
+  exists (fun u => Rabs (u - x) < 1) (fun v => N - x + 1 < v).
+  now exists (mkposreal _ Rlt_0_1).
+  now exists (N - x + 1).
+  intros u v Hu Hv.
+  simpl.
+  apply HN.
+  replace N with (x - 1 + (N - x + 1)) by ring.
+  apply Rplus_lt_compat.
+  now apply Rabs_lt_between'.
+  exact Hv.
+Qed.
+
+Lemma filterlim_mult :
+  forall x y,
+  ex_Rbar_mult x y ->
+  filterlim (fun z => fst z * snd z) (filter_prod (Rbar_locally x) (Rbar_locally y)) (Rbar_locally (Rbar_mult x y)).
+Proof.
+  intros x y.
+  wlog: x y / (Rbar_le 0 x).
+    intros Hw.
+    case: (Rbar_le_lt_dec 0 x) => Hx Hp.
+    by apply Hw.
+    apply (filterlim_ext (fun z => - (- fst z * snd z))).
+    intros z.
+    ring.
+    rewrite -(Rbar_opp_involutive (Rbar_mult x y)).
+    eapply filterlim_compose.
+    2: apply filterlim_opp.
+    assert (Hw' : filterlim (fun z => fst z * snd z) (filter_prod (Rbar_locally (Rbar_opp x)) (Rbar_locally y)) (Rbar_locally (Rbar_mult (Rbar_opp x) y))).
+    apply Hw.
+    replace (Finite 0) with (Rbar_opp 0) by apply (f_equal Finite), Ropp_0.
+    apply Rbar_opp_le.
+    by apply Rbar_lt_le.
+    rewrite /ex_Rbar_mult Rbar_mult'_comm Rbar_mult'_opp_r.
+    revert Hp.
+    rewrite /ex_Rbar_mult Rbar_mult'_comm.
+    now case Rbar_mult'.
+    clear Hw.
+    rewrite -Rbar_mult_opp_l.
+    intros P HP.
+    specialize (Hw' P HP).
+    destruct Hw' as [Q R H1 H2 H3].
+    exists (fun x => Q (- x)) R.
+    now apply filterlim_opp.
+    exact H2.
+    intros u v HQ HR.
+    exact (H3 _ _ HQ HR).
+  wlog: x y / (Rbar_le 0 y).
+    intros Hw.
+    case: (Rbar_le_lt_dec 0 y) => Hy Hx Hp.
+    by apply Hw.
+    apply (filterlim_ext (fun z => - (fst z * -snd z))).
+    intros z.
+    ring.
+    rewrite -(Rbar_opp_involutive (Rbar_mult x y)).
+    eapply filterlim_compose.
+    2: apply filterlim_opp.
+    assert (Hw' : filterlim (fun z => fst z * snd z) (filter_prod (Rbar_locally x) (Rbar_locally (Rbar_opp y))) (Rbar_locally (Rbar_mult x (Rbar_opp y)))).
+    apply Hw.
+    replace (Finite 0) with (Rbar_opp 0) by apply (f_equal Finite), Ropp_0.
+    apply Rbar_opp_le.
+    by apply Rbar_lt_le.
+    by [].
+    revert Hp.
+    rewrite /ex_Rbar_mult Rbar_mult'_opp_r.
+    now case Rbar_mult'.
+    clear Hw.
+    rewrite -Rbar_mult_opp_r.
+    intros P HP.
+    specialize (Hw' P HP).
+    destruct Hw' as [Q R H1 H2 H3].
+    exists Q (fun x => R (- x)).
+    exact H1.
+    now apply filterlim_opp.
+    intros u v HQ HR.
+    exact (H3 _ _ HQ HR).
+  wlog: x y / (Rbar_le x y).
+    intros Hw.
+    case: (Rbar_le_lt_dec x y) => Hl Hx Hy Hp.
+    by apply Hw.
+    assert (Hw' : filterlim (fun z => fst z * snd z) (filter_prod (Rbar_locally y) (Rbar_locally x)) (Rbar_locally (Rbar_mult y x))).
+    apply Hw ; try assumption.
+    by apply Rbar_lt_le.
+    by rewrite /ex_Rbar_mult Rbar_mult'_comm.
+    rewrite Rbar_mult_comm.
+    intros P HP.
+    specialize (Hw' P HP).
+    destruct Hw' as [Q R H1 H2 H3].
+    exists R Q ; try assumption.
+    intros u v HR HQ.
+    simpl.
+    rewrite Rmult_comm.
+    exact (H3 _ _ HQ HR).
+  case: x => [x| |] ; case: y => [y| |] /= Hl Hy Hx Hp ;
+  try (by case: Hl) || (by case: Hx) || (by case: Hy).
+(* x, y \in R *)
+  apply Rbar_finite_le in Hx.
+  apply Rbar_finite_le in Hy.
+  intros P [eps HP].
+  assert (He: 0 < eps / (x + y + 1)).
+  apply Rdiv_lt_0_compat.
+  apply cond_pos.
+  apply Rplus_le_lt_0_compat.
+  now apply Rplus_le_le_0_compat.
+  apply Rlt_0_1.
+  set (d := mkposreal _ (Rmin_stable_in_posreal (mkposreal _ Rlt_0_1) (mkposreal _ He))).
+  exists (fun u => Rabs (u - x) < d) (fun v => Rabs (v - y) < d).
+  now exists d.
+  now exists d.
+  simpl.
+  intros u v Hu Hv.
+  apply HP.
+  simpl.
+  replace (u * v + - (x * y)) with (x * (v - y) + y * (u - x) + (u - x) * (v - y)) by ring.
+  replace (pos eps) with (x * (eps / (x + y + 1)) + y * (eps / (x + y + 1)) + 1 * (eps / (x + y + 1))).
+  apply Rle_lt_trans with (1 := Rabs_triang _ _).
+  apply Rplus_le_lt_compat.
+  apply Rle_trans with (1 := Rabs_triang _ _).
+  apply Rplus_le_compat.
+  rewrite Rabs_mult Rabs_pos_eq //.
+  apply Rmult_le_compat_l with (1 := Hx).
+  apply Rlt_le.
+  apply Rlt_le_trans with (1 := Hv).
+  apply Rmin_r.
+  rewrite Rabs_mult Rabs_pos_eq //.
+  apply Rmult_le_compat_l with (1 := Hy).
+  apply Rlt_le.
+  apply Rlt_le_trans with (1 := Hu).
+  apply Rmin_r.
+  rewrite Rabs_mult.
+  apply Rmult_le_0_lt_compat ; try apply Rabs_pos.
+  apply Rlt_le_trans with (1 := Hu).
+  apply Rmin_l.
+  apply Rlt_le_trans with (1 := Hv).
+  apply Rmin_r.
+  field.
+  apply Rgt_not_eq.
+  apply Rplus_le_lt_0_compat.
+  now apply Rplus_le_le_0_compat.
+  apply Rlt_0_1.
+(* x \in R and y = p_infty *)
+  case: Rle_dec Hp => // Hx' Hp.
+  case: Rle_lt_or_eq_dec Hp => // {Hl Hx Hy Hx'} Hx _.
+  intros P [N HN].
+  exists (fun u => Rabs (u - x) < x / 2) (fun v => Rmax 0 (N / (x / 2)) < v).
+  now exists (pos_div_2 (mkposreal _ Hx)).
+  now exists (Rmax 0 (N / (x / 2))).
+  intros u v Hu Hv.
+  simpl.
+  apply HN.
+  apply Rle_lt_trans with ((x - x / 2) * Rmax 0 (N / (x / 2))).
+  apply Rmax_case_strong => H.
+  rewrite Rmult_0_r ; apply Rnot_lt_le ; contradict H ; apply Rlt_not_le.
+  repeat apply Rdiv_lt_0_compat => //.
+  by apply Rlt_R0_R2.
+  apply Req_le ; field.
+  by apply Rgt_not_eq.
+  apply Rmult_le_0_lt_compat.
+  field_simplify ; rewrite Rdiv_1 ; apply Rlt_le, Rdiv_lt_0_compat ; intuition.
+  apply Rmax_l.
+  now apply Rabs_lt_between'.
+  exact Hv.
+  by apply Rbar_finite_le in Hx.
+(* l1 = l2 = p_infty *)
+  clear.
+  intros P [N HN].
+  exists (fun u => 1 < u) (fun v => Rabs N < v).
+  now exists 1.
+  now exists (Rabs N).
+  intros u v Hu Hv.
+  simpl.
+  apply HN.
+  apply Rle_lt_trans with (1 := Rle_abs _).
+  rewrite -(Rmult_1_l (Rabs N)).
+  apply Rmult_le_0_lt_compat.
+  by apply Rle_0_1.
+  by apply Rabs_pos.
+  exact Hu.
+  exact Hv.
+Qed.
+
+Lemma filterlim_scal_l :
+  forall (a : R) (l : Rbar),
+  filterlim (Rmult a) (Rbar_locally l) (Rbar_locally (Rbar_mult a l)).
+Proof.
+  intros a l.
+  case: (Req_dec a 0) => [->|Ha].
+  apply (filterlim_ext (fun _ => 0)).
+  intros x.
+  apply sym_eq, Rmult_0_l.
+  replace (Rbar_mult 0 l) with (Finite 0).
+  apply filterlim_const.
+  case: l => [x| |] //=.
+  by rewrite Rmult_0_l.
+  case: Rle_dec (Rle_refl 0) => // H _.
+  case: Rle_lt_or_eq_dec (Rlt_irrefl 0) => // _ _.
+  case: Rle_dec (Rle_refl 0) => // H _.
+  case: Rle_lt_or_eq_dec (Rlt_irrefl 0) => // _ _.
+  eapply filterlim_compose_2.
+  apply filterlim_const.
+  apply filterlim_id.
+  apply filterlim_mult.
+  case: l => [x| |] //=.
+  case: Rle_dec => // H.
+  case: Rle_lt_or_eq_dec => //.
+  intros H'.
+  now elim Ha.
+  case: Rle_dec => // H.
+  case: Rle_lt_or_eq_dec => //.
+  intros H'.
+  now elim Ha.
+Qed.
+
+Lemma filterlim_scal_r :
+  forall (a : R) (l : Rbar),
+  filterlim (fun x => Rmult x a) (Rbar_locally l) (Rbar_locally (Rbar_mult l a)).
+Proof.
+intros a l.
+apply (filterlim_ext (fun x => a * x)).
+apply Rmult_comm.
+rewrite Rbar_mult_comm.
+apply filterlim_scal_l.
+Qed.
+
+Lemma continuity_pt_locally :
+  forall f x,
+  continuity_pt f x <->
+  forall eps : posreal, locally x (fun u => Rabs (f u - f x) < eps).
+Proof.
+intros f x.
+split.
+intros H eps.
+move: (H eps (cond_pos eps)) => {H} [d [H1 H2]].
+rewrite /= /R_dist /D_x /no_cond in H2.
+exists (mkposreal d H1) => y H.
+destruct (Req_dec x y) as [<-|Hxy].
+rewrite /Rminus Rplus_opp_r Rabs_R0.
+apply cond_pos.
+by apply H2.
+intros H eps He.
+move: (H (mkposreal _ He)) => {H} [d H].
+exists d.
+split.
+apply cond_pos.
+intros h [Zh Hh].
+exact: H.
+Qed.
+
+Lemma continuity_pt_locally' :
+  forall f x,
+  continuity_pt f x <->
+  forall eps : posreal, locally' x (fun u => Rabs (f u - f x) < eps).
+Proof.
+intros f x.
+split.
+intros H eps.
+move: (H eps (cond_pos eps)) => {H} [d [H1 H2]].
+rewrite /= /R_dist /D_x /no_cond in H2.
+exists (mkposreal d H1) => y H H'.
+destruct (Req_dec x y) as [<-|Hxy].
+rewrite /Rminus Rplus_opp_r Rabs_R0.
+apply cond_pos.
+by apply H2.
+intros H eps He.
+move: (H (mkposreal _ He)) => {H} [d H].
+exists d.
+split.
+apply cond_pos.
+intros h [Zh Hh].
+apply H.
+exact Hh.
+apply proj2 in Zh.
+now contradict Zh.
+Qed.
+
+Lemma continuity_pt_filterlim :
+  forall f x,
+  continuity_pt f x <->
+  filterlim f (locally x) (locally (f x)).
+Proof.
+intros f x.
+eapply iff_trans.
+apply continuity_pt_locally.
+apply iff_sym.
+apply: filterlim_locally.
+Qed.
+
+Lemma continuity_pt_filterlim' :
+  forall f x,
+  continuity_pt f x <->
+  filterlim f (locally' x) (locally (f x)).
+Proof.
+intros f x.
+eapply iff_trans.
+apply continuity_pt_locally'.
+apply iff_sym.
+apply: filterlim_locally.
+Qed.
+
+Lemma locally_comp (P : R -> Prop) (f : R -> R) (x : R) :
+  locally (f x) P -> continuity_pt f x ->
+  locally x (fun x => P (f x)).
+Proof.
+intros Lf Cf.
+apply continuity_pt_filterlim in Cf.
+now apply Cf.
+Qed.
+
+Lemma distance_continue {T} {TT : MetricSpace T} (x y : T) :
+  filterlim (fun u => distance (fst u) (snd u))
+    (filter_prod (locally x) (locally y)) (locally (distance x y)).
+Proof.
+  apply filterlim_locally => eps /=.
+  apply Filter_prod with
+    (fun x' => distance x x' < eps / 2) (fun y' => distance y y' < eps / 2) => /=.
+  rewrite /locally /locally_dist ; by exists (pos_div_2 eps).
+  rewrite /locally /locally_dist ; by exists (pos_div_2 eps).
+  move => x' y' Hx Hy.
+  apply Rabs_lt_between ; split.
+  rewrite distance_comm in Hy.
+  rewrite -/(Rminus _ _) -Ropp_minus_distr ; apply Ropp_lt_contravar.
+  apply Rlt_minus_l.
+  apply Rle_lt_trans with (1 := distance_triangle _ x' _).
+  apply Rlt_trans with (1 := Rplus_lt_compat_r _ _ _ Hx).
+  rewrite Rplus_comm ; apply Rlt_minus_r.
+  apply Rle_lt_trans with (1 := distance_triangle _ y' _).
+  apply Rlt_le_trans with (1 := Rplus_lt_compat_l _ _ _ Hy).
+  right ; field.
+  rewrite distance_comm in Hx.
+  apply Rlt_minus_l.
+  apply Rle_lt_trans with (1 := distance_triangle _ x _).
+  apply Rlt_trans with (1 := Rplus_lt_compat_r _ _ _ Hx).
+  rewrite Rplus_comm ; apply Rlt_minus_r.
+  apply Rle_lt_trans with (1 := distance_triangle _ y _).
+  apply Rlt_le_trans with (1 := Rplus_lt_compat_l _ _ _ Hy).
+  right ; field.
+Qed.
+
+Global Instance R_metric_vector : MetricVectorSpace R R.
+Proof.
+econstructor.
+intros x y.
+now apply filterlim_plus with (x := Finite x) (y := Finite y).
+intros x y.
+apply filterlim_scal_l with (l := Finite y).
+Defined.
+
 Lemma complete_cauchy_UnifFct {T} : 
-  let MS := MetricSpace_UnifFct R_metric in
+  let MS := MetricSpace_UnifFct _ in
   forall F : ((T -> R) -> Prop) -> Prop,
   ProperFilter F ->
     (forall eps : posreal, exists x : T -> R, F (ball x eps)) ->
@@ -852,7 +3152,7 @@ Proof.
     move: Hf ; apply FF => g.
     rewrite /ball ; simpl => H.
     apply UnifFct_dist_lub_lt_1 in H.
-    apply (Rbar_le_lt_trans (distR (f t) (g t)) (Lub_Rbar_ne _ (UnifFct_dist_ne f g)) eps).
+    apply (Rbar_le_lt_trans (Rabs (g t + - f t)) (Lub_Rbar_ne _ (UnifFct_dist_ne f g)) eps).
       rewrite /Lub_Rbar_ne ; case: ex_lub_Rbar_ne => l ; simpl => Hl.
       apply Hl.
       right ; by exists t.
@@ -920,24 +3220,25 @@ Proof.
   move: (H t (pos_div_2 eps)) ; simpl => {H} H.
   unfold Fr in H ; generalize (filter_and _ _ H HP) => {H} H.
   apply filter_ex in H ; case: H => h H.
-  apply Rle_lt_trans with (1 := distR_triangle (f t) (h t) (g t)).
+  replace (Rabs (g t + - f t)) with (distance (f t) (g t)).
+  apply Rle_lt_trans with (1 := distance_triangle (f t) (h t) (g t)).
   rewrite (double_var eps).
   apply Rplus_lt_compat.
   by apply H.
   move: (H0 _ (proj2 H)) => {H0} H0.
   apply Rle_lt_trans with (2 := H0).
-  rewrite distR_comm.
+  rewrite distance_comm.
   apply: (UnifFct_dist_ge_fct g h t).
   apply Rlt_le_trans with (1 := H0).
   apply Rle_div_l.
   by apply Rlt_0_2.
   apply Rle_trans with (1 := Heps), Rminus_le_0 ; ring_simplify ; by apply Rle_0_1.
+  by simpl.
 Qed.
 
 Lemma R_CMS_UnifFct {T} : CompleteMetricSpace (T -> R).
 Proof.
   intros.
-  apply Build_CompleteMetricSpace with (MetricSpace_UnifFct R_metric).
+  apply Build_CompleteMetricSpace with (MetricSpace_UnifFct _).
   by apply complete_cauchy_UnifFct.
 Defined.
-

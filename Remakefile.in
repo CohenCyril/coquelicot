@@ -9,7 +9,6 @@ FILES = \
 	ElemFct.v \
 	Hierarchy.v \
 	Limit.v \
-	Locally.v \
 	Lub.v \
 	Markov.v \
 	PSeries.v \

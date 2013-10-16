@@ -102,7 +102,7 @@ a more traditional epsilon-delta representation of limits.
 
 Require Export AutoDerive Compactness Continuity Derive.
 Require Export Derive_2d Equiv ElemFct Hierarchy Limit.
-Require Export Locally Lub Markov PSeries Rbar Rcomplements.
+Require Export Lub Markov PSeries Rbar Rcomplements.
 Require Export RInt Seq_fct Series SF_seq.
 
 (** #<img src="deps.png" usemap="##coquelicot_deps" /># *)

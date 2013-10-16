@@ -22,7 +22,7 @@ COPYING file for more details.
 Require Import Reals Div2 ConstructiveEpsilon.
 Require Import ssreflect ssrbool eqtype seq.
 Require Import Markov Rcomplements Rbar Lub Limit Derive SF_seq.
-Require Import Continuity Locally Derive_2d Hierarchy.
+Require Import Continuity Derive_2d Hierarchy.
 
 (** * Riemann sums *)
 
@@ -787,7 +787,7 @@ Proof.
     by apply Hw.
     apply filterlim_locally.
     exists (mkposreal 1 Rlt_0_1) => ptd H [_ [H0 H1]].
-    rewrite Rminus_eq_0 sign_0 scal_zero_l /= /distR.
+    rewrite Rminus_eq_0 sign_0 scal_zero_l /= -/(Rminus _ _).
     rewrite RiemannInt_P9 Rminus_0_r Rabs_R0 ; apply eps.
     move: (RiemannInt_P1 pr) => pr'.
     rewrite (RiemannInt_P8 pr pr').
@@ -814,7 +814,7 @@ Proof.
     Rabs (RiemannInt_SF phi - 1 * Riemann_sum phi ptd) <= eps).
 
   intros H.
-  rewrite /RiemannInt /= /distR => eps ; case: RiemannInt_exists => If HIf.
+  rewrite /RiemannInt /= -/(Rminus _ _) => eps ; case: RiemannInt_exists => If HIf.
   set eps2 := pos_div_2 eps.
   set eps4 := pos_div_2 eps2.
 (* RInt (f-phi) < eps/4 *)
@@ -3929,8 +3929,7 @@ Proof.
     by apply Rabs_pos_lt, Rgt_not_eq.
   exists (mkposreal _ Ha) => /= ptd Hstep [Hptd [Hfirst Hlast]].
   set ptd' := mkSF_seq (u * SF_h ptd + v) (map (fun X => (u * fst X + v,u * snd X + v)) (SF_t ptd)).
-  unfold distR.
-  rewrite Rabs_minus_sym.
+  rewrite -/(Rminus _ _) Rabs_minus_sym.
   replace (l - sign (b - a) * Riemann_sum (fun y : R => u * f (u * y + v)) ptd)
   with (l - sign (u * b + v - (u * a + v)) * Riemann_sum f ptd').
   rewrite Rabs_minus_sym.

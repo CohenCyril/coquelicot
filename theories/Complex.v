@@ -224,6 +224,8 @@ Definition C_lim (f : C -> C) (z : C) : C :=
 Lemma is_C_lim_unique (f : C -> C) (z l : C) :
   is_C_lim f z l -> C_lim f z = l.
 Proof.
+  case: l => lx ly H.
+  apply injective_projections ; simpl.
 Admitted.
 
 (** * Derivatives *)

@@ -20,7 +20,7 @@ COPYING file for more details.
 *)
 
 Require Import Reals ssreflect Rbar.
-Require Import Rcomplements Locally.
+Require Import Rcomplements.
 Require Import Limit Continuity Derive Series.
 Require Import Lub Hierarchy.
 
@@ -256,7 +256,7 @@ Proof.
     rewrite (double_var (eps/2)) ;
     apply Rle_lt_trans with (1 := Rabs_triang _ _), Rplus_lt_compat.
     rewrite Rabs_Ropp ; apply Hex_n.
-    rewrite /y ; ring_simplify ((x + Rmin (Rmin dn dm) d0 / 2) - x).
+    rewrite /y ; ring_simplify ((x + Rmin (Rmin dn dm) d0 / 2) + - x).
     rewrite (Rabs_pos_eq _ (Rlt_le _ _ Hd)).
     apply Rle_lt_trans with (Rmin dn dm / 2).
     apply Rmult_le_compat_r.
@@ -271,7 +271,7 @@ Proof.
     apply Rgt_not_eq, Rlt_gt, Rminus_lt_0.
     rewrite /y ; by ring_simplify ((x + Rmin (Rmin dn dm) d0 / 2) - x).
     apply Hex_m.
-    rewrite /y ; ring_simplify ((x + Rmin (Rmin dn dm) d0 / 2) - x).
+    rewrite /y ; ring_simplify ((x + Rmin (Rmin dn dm) d0 / 2) + - x).
     rewrite (Rabs_pos_eq _ (Rlt_le _ _ Hd)).
     apply Rle_lt_trans with (Rmin dn dm / 2).
     apply Rmult_le_compat_r.
@@ -373,14 +373,14 @@ Proof.
   by apply sym_not_eq, Hxy.
   exact: Hy.
 Qed.
-(*Lemma CVU_Nint (fn Fn : nat -> R -> R) (F : R -> R) (a b : R) (Hab : a < b) :
+
+(* Lemma CVU_NInt (fn Fn : nat -> R -> R) (F : R -> R) (a b : R) (Hab : a < b) :
   CVU_dom fn (fun x => a <= x <= b)
   -> (forall n, forall x, a <= x <= b -> continuity_pt (fn n) x)
   -> (forall n x, a <= x <= b -> is_derive (Fn n) x (fn n x)) -> (forall n, Fn n a = 0)
   -> (forall x, a <= x <= b -> is_derive F x (Lim_seq (fun n => fn n x))) -> (F a = 0)
   -> CVU_dom Fn (fun x => a <= x <= b)
     /\ (forall x, a <= x <= b -> Lim_seq (fun n => Fn n x) = F x).
-
 Lemma CVU_Rint (fn : nat -> R -> R) (a b : R) (Hab : a < b) :
   CVU_dom fn (fun x => a <= x <= b)
   -> (forall n, forall x, a <= x <= b -> continuity_pt (fn n) x)
@@ -411,7 +411,7 @@ Proof.
     intros h Hh.
     destruct (proj1 (filter_open D) Ho _ Hh) as [d Hd].
     exists d => /= y Hy.
-    apply Hd ; simpl ; unfold distR ; ring_simplify (x + y - (x + h)).
+    apply Hd ; simpl ; ring_simplify (x + y + - (x + h)).
     by apply Hy.
 
   have Crn : forall x, D x -> forall n h, D (x+h) -> is_lim (rn x n) h (rn x n h).
@@ -419,16 +419,16 @@ Proof.
     rewrite {2}/rn ; case: (Req_EM_T h 0) => [-> | Hh0].
     apply is_lim_spec.
     move => eps.
-    suff H : @locally _ R_metric 0 (fun y : R => y <> 0 ->
-      Rabs ((fn n (x + y) - fn n x) / y - Derive (fn n) x) < eps).
-    case: H => d H.
+    cut (locally 0 (fun y : R => y <> 0 ->
+      Rabs ((fn n (x + y) - fn n x) / y - Derive (fn n) x) < eps)).
+    case => d H.
     exists d => y Hy Hxy.
     rewrite /rn ; case: Req_EM_T => // _ ; by apply H.
     move: (Edn n x Hx) => {Edn} Edn.
     apply Derive_correct in Edn.
     case: (Edn eps (cond_pos eps)) => {Edn} delta Edn.
     exists delta => y Hy Hxy.
-    rewrite /= /distR Rminus_0_r in Hy.
+    rewrite /= -/(Rminus _ _) Rminus_0_r in Hy.
     by apply Edn.
 
     have H : continuity_pt (fun h => ((fn n (x + h) - fn n x) / h)) h.
@@ -454,7 +454,7 @@ Proof.
     exists (mkposreal _ Hd0) => /= y Hy Hhy.
     rewrite /rn ; case: Req_EM_T => /= Hy'.
     contradict Hy.
-    apply Rle_not_lt ; rewrite Hy' Rminus_0_l Rabs_Ropp ; by apply Rmin_r.
+    apply Rle_not_lt ; rewrite Hy' -/(Rminus _ _) Rminus_0_l Rabs_Ropp ; by apply Rmin_r.
     apply (H y) ; split.
     split.
     exact: I.
@@ -542,7 +542,7 @@ Proof.
   replace (Lim_seq (fun n : nat => / h * (fn n (x + h) - fn n x)))
     with (Lim_seq (fun n : nat => rn x n h)).
   apply H0.
-  rewrite Rminus_0_r ; apply Rlt_le_trans with (1 := Hh), Rmin_l.
+  rewrite -/(Rminus _ _) Rminus_0_r ; apply Rlt_le_trans with (1 := Hh), Rmin_l.
   exact: Hh0.
   apply Lim_seq_ext => n.
   rewrite /rn /Rdiv ; case: Req_EM_T => // _ ; exact: Rmult_comm.
@@ -560,8 +560,7 @@ Proof.
   exact: Hfn.
   apply Hd.
   simpl.
-  unfold distR.
-  ring_simplify (x + h - x) ; apply Rlt_le_trans with (1 := Hh), Rmin_r.
+  ring_simplify (x + h + - x) ; apply Rlt_le_trans with (1 := Hh), Rmin_r.
   apply ex_finite_lim_seq_correct, CVU_CVS_dom with D.
   exact: Hfn.
   apply Hd.
@@ -578,8 +577,7 @@ Proof.
   apply cond_pos.
   apply F.
   simpl.
-  unfold distR.
-  ring_simplify (x + h - x).
+  ring_simplify (x + h + - x).
   apply Rlt_le_trans with (1 := Hh), Rmin_r.
   apply (CVU_CVS_dom fn D) in Hfn ; rewrite /CVS_dom in Hfn.
   move: (fun H => Lim_seq_correct' _ (Hfn (x+h) (Hd _ H))) => F.
@@ -592,8 +590,7 @@ Proof.
   apply cond_pos.
   apply F.
   simpl.
-  unfold distR.
-  ring_simplify (x + h - x).
+  ring_simplify (x + h + - x).
   apply Rlt_le_trans with (1 := Hh), Rmin_r.
 
   rewrite /Derive.
@@ -639,8 +636,7 @@ Proof.
   exact: Hfn.
   apply Hd.
   simpl.
-  unfold distR.
-  ring_simplify (x + h - x) ; rewrite -(Rminus_0_r h) ;
+  ring_simplify (x + h + - x) ; rewrite -(Rminus_0_r h) ;
   apply Rlt_le_trans with (1 := Hh0), Rmin_r.
   apply ex_finite_lim_seq_correct, CVU_CVS_dom with D.
   exact: Hfn.
@@ -658,9 +654,8 @@ Proof.
   apply cond_pos.
   apply F.
   simpl.
-  unfold distR.
-  ring_simplify (x + h - x).
-  rewrite Rminus_0_r in Hh0.
+  ring_simplify (x + h + - x).
+  rewrite -/(Rminus _ _) Rminus_0_r in Hh0.
   apply Rlt_le_trans with (1 := Hh0), Rmin_r.
   apply (CVU_CVS_dom fn D) in Hfn ; rewrite /CVS_dom in Hfn.
   move: (fun H => Lim_seq_correct' _ (Hfn (x+h) (Hd _ H))) => F.
@@ -673,9 +668,8 @@ Proof.
   apply cond_pos.
   apply F.
   simpl.
-  unfold distR.
-  ring_simplify (x + h - x).
-  rewrite Rminus_0_r in Hh0.
+  ring_simplify (x + h + - x).
+  rewrite -/(Rminus _ _) Rminus_0_r in Hh0.
   apply Rlt_le_trans with (1 := Hh0), Rmin_r.
 
   apply Lim_seq_ext => n.
@@ -1080,8 +1074,8 @@ Proof.
     
   move: H => {Hfg} Hfg.
   move: (Hf Hfg (pos_div_2 eps)) => {Hf Hfg} /= Hf.
-  have : exists P : T1 -> Prop, F1 P /\
-    (forall (u v : T1) (y : T2), P u -> P v -> @distance _ R_metric (f u y) (f v y) < eps / 2).
+  assert (exists P : T1 -> Prop, F1 P /\
+    (forall (u v : T1) (y : T2), P u -> P v -> distance (f u y) (f v y) < eps / 2)).
     case: Hf => P [Hp Hp'].
     exists P ; split.
     by [].
@@ -1093,7 +1087,7 @@ Proof.
     apply Rlt_trans with (1 := Hp').
     apply Rminus_lt_0 ; field_simplify ; rewrite Rdiv_1 ; by apply is_pos_div_2.
     
-    move => {Hf} Hf.
+    move: H => {Hf} Hf.
 
   case: FF2 => HF2 FF2.
   generalize (fun x => proj1 (filterlim_locally (f x) (h x)) (Hfh x) (pos_div_2 (pos_div_2 eps)))
@@ -1108,10 +1102,11 @@ Proof.
   move: (@filter_and _ F2 FF2 _ _ Hu' Hv') => {Hu' Hv' Hfh} Hfh.
   case: (HF2 _ Hfh) => {Hfh} y Hy.
   replace (pos eps) with (eps / 2 / 2 + (eps / 2 + eps / 2 / 2)) by field.
-  apply Rle_lt_trans with (1 := @distance_triangle _ R_metric (h u) (f u y) (h v)).
+  replace (Rabs (h v + - h u)) with (distance (h u) (h v)) by (by simpl).
+  apply Rle_lt_trans with (1 := distance_triangle (h u) (f u y) (h v)).
   apply Rplus_lt_compat.
   by apply Hy.
-  apply Rle_lt_trans with (1 := @distance_triangle _ R_metric (f u y) (f v y) (h v)).
+  apply Rle_lt_trans with (1 := distance_triangle (f u y) (f v y) (h v)).
   apply Rplus_lt_compat.
   by apply Hf.
   rewrite distance_comm ; by apply Hy.

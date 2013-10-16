@@ -21,7 +21,7 @@ COPYING file for more details.
 
 Require Import Reals ssreflect.
 Require Import Rcomplements.
-Require Import Limit Rbar Hierarchy Locally.
+Require Import Limit Rbar Hierarchy.
 
 (** Sum *)
 

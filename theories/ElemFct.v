@@ -21,7 +21,7 @@ COPYING file for more details.
 
 Require Import Reals ssreflect.
 
-Require Import Rbar Rcomplements Continuity Derive Locally.
+Require Import Rbar Rcomplements Continuity Derive Hierarchy.
 
 (** * Absolute value *)
 
@@ -54,9 +54,8 @@ exists eps.
 intros x Hx Hx'.
 apply HP.
 simpl.
-unfold distR.
 revert Hx.
-rewrite 2!Rminus_0_r.
+rewrite /= -?/(Rminus _ _) 2!Rminus_0_r.
 now rewrite Rabs_Rabsolu.
 now apply Rabs_pos_lt.
 Qed.
@@ -79,7 +78,7 @@ Proof.
   apply Rinv_lt_contravar.
   apply Rdiv_lt_0_compat with (1 := Hx0).
   apply Rlt_le_trans with (2 := Rmax_l _ _), Rlt_0_1.
-  rewrite /distR Rminus_0_r Rabs_pos_eq // in Hx.
+  rewrite -/(Rminus _ _) Rminus_0_r Rabs_pos_eq // in Hx.
   exact: Rlt_le.
 Qed.
 
@@ -270,7 +269,7 @@ Proof.
   move => eps.
   case: (derivable_pt_lim_exp_0 eps (cond_pos eps)) => delta H.
   exists delta => y Hy Hy0.
-  rewrite Rminus_0_r in Hy.
+  rewrite /= -/(Rminus _ _) Rminus_0_r in Hy.
   move: (H y Hy0 Hy).
   by rewrite Rplus_0_l exp_0.
 Qed.
@@ -297,7 +296,7 @@ apply HM.
 rewrite <- (ln_exp M).
 apply ln_increasing.
 exact Hx0.
-rewrite /distR Rminus_0_r Rabs_pos_eq in Hx.
+rewrite -/(Rminus _ _) Rminus_0_r Rabs_pos_eq in Hx.
 exact Hx.
 now apply Rlt_le.
 Qed.
@@ -410,7 +409,7 @@ Proof.
   move => eps.
   case: (derivable_pt_lim_ln 1 (Rlt_0_1) eps (cond_pos eps)) => delta H.
   exists delta => y Hy Hy0.
-  rewrite Rminus_0_r in Hy.
+  rewrite /= -/(Rminus _ _) Rminus_0_r in Hy.
   move: (H y Hy0 Hy).
   by rewrite ln_1 Rinv_1 Rminus_0_r.
 Qed.
@@ -423,7 +422,7 @@ Proof.
   move => eps.
   case: (derivable_pt_lim_sin_0 eps (cond_pos eps)) => delta H.
   exists delta => y Hy Hy0.
-  rewrite Rminus_0_r in Hy.
+  rewrite /= -/(Rminus _ _) Rminus_0_r in Hy.
   move: (H y Hy0 Hy).
   by rewrite Rplus_0_l sin_0 Rminus_0_r.
 Qed.

@@ -21,7 +21,7 @@ COPYING file for more details.
 
 Require Import Reals.
 Require Import ssreflect.
-Require Import Rcomplements Rbar Locally.
+Require Import Rcomplements Rbar Hierarchy.
 Require Import Compactness Limit.
 
 (** * Limit of fonctions *)
@@ -704,7 +704,7 @@ Proof.
     by apply Hw.
     case: (Hw (fun y => - f y) (- y)).
     by apply Ropp_le_contravar, Rlt_le.
-    by apply continuity_opp.
+    by apply Ranalysis1.continuity_opp.
     rewrite Rmin_opp_Rmax Rmax_opp_Rmin ;
     split ; apply Ropp_le_contravar, Hy.
     move => x [Hx Hfx].
@@ -720,7 +720,7 @@ Proof.
     exists a ; intuition.
 
   case (IVT (fun x => f x - y) a b).
-  apply continuity_minus.
+  apply Ranalysis1.continuity_minus.
   exact Hf.
   apply continuity_const.
   intros _ _ ; reflexivity.
@@ -795,7 +795,8 @@ assert (Hex : exists x : R, Rbar_lt a x /\ Rbar_lt x b /\ f x <= y).
     exact Ha.
     assert (H : Rbar_lt (a + eps / 2) b /\ (f (a + eps / 2) < y)).
       apply He.
-      replace (a + eps / 2 - a) with (eps / 2) by ring.
+      simpl.
+      replace (a + eps / 2 + - a) with (eps / 2) by ring.
       rewrite Rabs_pos_eq.
       apply Rlt_eps2_eps.
       apply cond_pos.
@@ -854,8 +855,7 @@ destruct (total_order_T (f x) y) as [[H|H]|H].
   apply Hub.
   destruct (H' (x + eps / 2)) as [[H1 H2] H3].
   simpl.
-  unfold distR.
-  replace (x + eps / 2 - x) with (eps / 2) by ring.
+  replace (x + eps / 2 + - x) with (eps / 2) by ring.
   rewrite Rabs_pos_eq.
   apply Rlt_eps2_eps.
   apply cond_pos.
@@ -947,7 +947,7 @@ Qed.
 Lemma continuity_2d_pt_filterlim' :
   forall f x y,
   continuity_2d_pt f x y <->
-  filterlim (fun z : Locally.Tn 2 R => f (fst z) (fst (snd z))) (@locally (Locally.Tn 2 R) _ (x,(y,tt))) (locally (f x y)).
+  filterlim (fun z : Hierarchy.Tn 2 R => f (fst z) (fst (snd z))) (@locally (Hierarchy.Tn 2 R) _ (x,(y,tt))) (locally (f x y)).
 Proof.
 split.
 - intros Cf P [eps He].

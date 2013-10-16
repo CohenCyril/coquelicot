@@ -22,7 +22,7 @@ COPYING file for more details.
 Require Import Reals Rbar.
 Require Import ssreflect.
 Require Import Limit.
-Require Import Locally Continuity.
+Require Import Hierarchy Continuity.
 Require Import Rcomplements.
 Open Scope R_scope.
 
@@ -31,6 +31,31 @@ Open Scope R_scope.
 Notation is_derive f x l := (derivable_pt_lim f x l).
 Definition ex_derive f x := exists l, is_derive f x l.
 Definition Derive (f : R -> R) (x : R) := real (Lim (fun h => (f (x+h) - f x)/h) 0).
+
+Lemma derivable_pt_lim_locally :
+  forall f x l,
+  derivable_pt_lim f x l <->
+  forall eps : posreal, locally x (fun y => y <> x -> Rabs ((f y - f x) / (y - x) - l) < eps).
+Proof.
+intros f x l.
+split.
+intros H eps.
+move: (H eps (cond_pos eps)) => {H} [d H].
+exists d => y Hy Zy.
+specialize (H (y - x) (Rminus_eq_contra _ _ Zy) Hy).
+now ring_simplify (x + (y - x)) in H.
+intros H eps He.
+move: (H (mkposreal _ He)) => {H} /= [d H].
+exists d => h Zh Hh.
+simpl in H.
+specialize (H (x + h)).
+rewrite /(Rminus _ x) in H.
+ring_simplify (x + h + - x) in H.
+apply H => //.
+contradict Zh.
+apply Rplus_eq_reg_l with x.
+now rewrite Rplus_0_r.
+Qed.
 
 (** Derive is correct *)
 
@@ -44,7 +69,7 @@ Proof.
   intros eps.
   destruct (H eps (cond_pos _)) as [d Hd].
   exists d => h.
-  rewrite Rminus_0_r.
+  rewrite /= Ropp_0 Rplus_0_r.
   intros Hu Zu.
   now apply Hd.
 Qed.
@@ -128,8 +153,8 @@ by rewrite (locally_singleton _ _ Hfg).
 destruct Hfg as [eps He].
 exists eps => h H Hh.
 apply He.
-rewrite /= /distR.
-now replace (x + h - x) with (h - 0) by ring.
+simpl.
+now replace (x + h + - x) with (h - 0) by ring.
 Qed.
 
 Lemma is_derive_ext :
@@ -1188,24 +1213,24 @@ Proof.
     set (eps2 := mkposreal _ He).
   elim (Df eps2) ; clear Df ; intros delta Df.
   exists delta ; intros.
-  assert (x+h-x = h).
+  assert (x+h+ -x = h).
     ring.
   assert (((f (x + h) - f x) / h - l) = (f(x+h) - f x - l * ((x+h)-x))/((x+h)-x)).
     field.
-    rewrite H1 ;
+    rewrite /Rminus H1 ;
     apply H.
     rewrite H2 ; clear H2.
   apply (Rle_lt_trans _ eps2).
   rewrite Rabs_div.
   apply (Rle_div_l _ _ (Rabs (x + h - x))).
   apply Rabs_pos_lt.
-  rewrite H1 ;
+  rewrite /Rminus H1 ;
     apply H.
   apply (Df (x+h)).
   simpl.
-  rewrite /distR H1 ;
+  rewrite H1 ;
     apply H0.
-    rewrite H1 ; apply H.
+    rewrite /Rminus H1 ; apply H.
   rewrite (double_var eps).
   rewrite <- (Rplus_0_r eps2).
   unfold eps2 ; simpl.
@@ -1604,7 +1629,7 @@ Proof.
   rewrite (Derive_ext (Rmult a) (fun x => a * x)) => //.
   rewrite Derive_scal Derive_id ; ring.
   apply Hf with (k := S n).
-  rewrite /= /distR -Rmult_minus_distr_l Rabs_mult.
+  rewrite /= -/(Rminus _ _) -Rmult_minus_distr_l Rabs_mult.
   apply Rlt_le_trans with (Rabs a * r1).
   apply Rmult_lt_compat_l.
   by apply Rabs_pos_lt.

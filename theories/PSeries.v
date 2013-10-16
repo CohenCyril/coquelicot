@@ -21,7 +21,7 @@ COPYING file for more details.
 
 Require Import Reals Even Div2 ssreflect.
 Require Import Rcomplements Rbar Limit Lub.
-Require Import Continuity Derive Derive_2d RInt Locally Seq_fct Series Hierarchy.
+Require Import Continuity Derive Derive_2d RInt Seq_fct Series Hierarchy.
 
 (** pow *)
 
@@ -2059,7 +2059,7 @@ Proof.
   exists (mkposreal _ Hc) => /= x Hx.
   apply sym_eq ; apply Derive_PSeries.
   case: (CV_radius a) Hx Ha => /= [c | | ] Hx Ha.
-  by rewrite /distR Rminus_0_r in Hx.
+  by rewrite -/(Rminus _ _) Rminus_0_r in Hx.
   by [].
   by [].
   move: (Derive_n_comp (PSeries a) n 1%nat 0) => /= ->.
@@ -2083,7 +2083,7 @@ Proof.
   exists (mkposreal _ Hc) => /= x Hx.
   apply Hab.
   case: (CV_radius a) Hx Ha => /= [c | | ] Hx Ha.
-  by rewrite /distR Rminus_0_r in Hx.
+  by rewrite -/(Rminus _ _) Rminus_0_r in Hx.
   by [].
   by [].
   exact: Hb.
@@ -2140,7 +2140,7 @@ Proof.
    rewrite <- IHn; ring.
    rewrite Ropp_0 ;
     exists (mkposreal r (Rle_lt_trans _ _ _ (Rabs_pos _) Hx)) => /= y Hy k Hk.
-   rewrite /distR Rminus_0_r in Hy.
+   rewrite -/(Rminus _ _) Rminus_0_r in Hy.
    by apply (Hd k).
    move => {x Hx Hx'} n x Hx.
    rewrite Derive_n_comp_opp.

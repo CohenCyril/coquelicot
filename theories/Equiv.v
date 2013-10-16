@@ -20,7 +20,7 @@ COPYING file for more details.
 *)
 
 Require Import Reals ssreflect.
-Require Import Rbar Rcomplements Locally.
+Require Import Rbar Rcomplements Hierarchy.
 
 (** * Definitions of equivalent and dominant *)
 
@@ -494,8 +494,7 @@ intros T F FF f g [l| |] Hfg Hf P [eps HP] ;
   intros x [H1 [H2 H3]].
   apply HP.
   simpl.
-  unfold distR.
-  replace (g x - l) with ((f x - l) + -(f x - g x)) by ring.
+  replace (g x + - l) with ((f x - l) + -(f x - g x)) by ring.
   apply Rle_lt_trans with (1 := Rabs_triang _ _).
   replace (pos eps) with (eps / 2 + eps / 2 / (Rabs l + 1) * (Rabs l + 1)).
   apply Rplus_lt_le_compat with (1 := H2).
