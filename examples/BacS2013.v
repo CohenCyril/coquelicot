@@ -23,7 +23,7 @@ COPYING file for more details.
 (** https://www.lri.fr/~lelay/Bac2013/Bac_S_2013_Metropole.pdf *)
 
 Require Import Reals ssreflect.
-Require Import Rcomplements Rbar Locally.
+Require Import Rcomplements Rbar Hierarchy.
 Require Import Derive RInt Continuity Limit ElemFct.
 
 Ltac pos_rat :=
@@ -357,7 +357,7 @@ Proof.
   by apply Rlt_0_1.
   move => x Hx.
   apply continuity_pt_ext_loc with f.
-  apply Locally.locally_interval with 0 p_infty.
+  apply Hierarchy.locally_interval with 0 p_infty.
   apply Rlt_le_trans with (2 := proj1 Hx).
   apply Rmin_case.
   by apply Haux1.
