@@ -629,6 +629,22 @@ Proof.
   move: H2 ; by apply is_glb_Rbar_eqset.
 Qed.
 
+Lemma Lub_Rbar_ne_pr :
+  forall E (pr1 pr2 : exists x, E x),
+  Lub_Rbar_ne E pr1 = Lub_Rbar_ne E pr2.
+Proof.
+intros E pr1 pr2.
+by apply Lub_Rbar_ne_eqset.
+Qed.
+Lemma Glb_Rbar_ne_pr :
+  forall E (pr1 pr2 : exists x, E x),
+  Glb_Rbar_ne E pr1 = Glb_Rbar_ne E pr2.
+Proof.
+intros E pr1 pr2.
+by apply Glb_Rbar_ne_eqset.
+Qed.
+
+
 (** * Emptiness is decidable *)
 
 Lemma not_empty_0 (E : R -> Prop) :

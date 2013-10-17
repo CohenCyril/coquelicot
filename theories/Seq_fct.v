@@ -1110,47 +1110,28 @@ Proof.
   by exists l.
 Qed.
 
-Lemma filterlim_swich {T1 T2 U} {NAG : NormedAbelianGroup U} {CMS : CompleteMetricSpace U}
-  {HU : CompatMetric NAG (@complete_metric _ CMS)}
+Lemma filterlim_swich {T1 T2 U} {CNAG : CompleteNormedAbelianGroup U}
   (f : T1 -> T2 -> U) F1 F2 (FF1 : ProperFilter F1) (FF2 : ProperFilter F2) g h :
-  let CMS := CompleteMetricSpace_UnifFct _ in
+  let CMS := @CompleteNormedAbelianGroup_UnifFct T2 U CNAG in 
   (filterlim f F1 (locally g))
   -> (forall x, filterlim (f x) F2 (locally (h x)))
   -> (exists l : U, filterlim h F1 (locally l) /\ filterlim g F2 (locally l)).
 Proof.
   move => CMS' Hfg Hfh.
-  assert (Hfh' : forall x : T1,
-    @filterlim T2 U (f x) F2 (@locally U (@complete_metric U CMS) (h x))).
-    move => x ; apply filterlim_locally => eps.
-    move: (proj1 (@filterlim_locally T2 U (@NormedAbelianGroup_MetricSpace U NAG) F2
-     (@filter_filter T2 F2 FF2) (f x) (h x)) (Hfh x) eps).
-     apply filter_imp => y.
-     by rewrite compat_dist.
-  destruct (filterlim_swich_2 f F1 F2 FF1 FF2 g h Hfg Hfh') as [l Hhl].
+  destruct (filterlim_swich_2 f F1 F2 FF1 FF2 g h) as [l Hhl].
+    intros P [eps HP].
+    apply Hfg.
+    exists eps.
+    intros y Hy.
+    apply HP.
+    revert Hy.
+    destruct CNAG.
+    by rewrite /distance /= UnifFct_dist_norm.
+    destruct CNAG.
+    exact Hfh.
+  destruct CNAG.
   exists l ; split.
-  + apply filterlim_locally => eps.
-    case: FF1 => HF1 FF1.
-    move: (proj1 (@filterlim_locally T1 U (@complete_metric U CMS) F1 FF1 h l) Hhl eps).
-     apply filter_imp => y.
-     by rewrite compat_dist.
+  exact Hhl.
   case: FF2 => HF2 FF2.
-  apply: (filterlim_swich_1 f F1 F2 FF1 FF2 g h l).
-  apply filterlim_locally => eps.
-  case: FF1 => HF1 FF1.
-  move: (proj1 (@filterlim_locally T1 (T2 -> U) (@complete_metric (T2 -> U) CMS') F1 FF1
-    f g) Hfg eps).
-    apply filter_imp => x.
-    apply (@CompatMetric_UnifFct T2 U) in HU.
-    case: HU => HU.
-    by rewrite HU.
-  by apply Hfh.
-  apply filterlim_locally => eps.
-  case: FF1 => HF1 FF1.
-  move: (proj1 (@filterlim_locally T1 U (@complete_metric U CMS) F1 FF1 h l) Hhl eps).
-  apply filter_imp => y.
-  by rewrite compat_dist.
+  now apply (filterlim_swich_1 f F1 F2 FF1 FF2 g h l).
 Qed.
-
-
-
-

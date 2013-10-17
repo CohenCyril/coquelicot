@@ -1120,12 +1120,14 @@ Defined.
 
 (** ** Complete metric spaces *)
 
-(* TODO : put complete_cauchy in Set *)
+Class CompleteMetricSpace_mixin T (MT : MetricSpace T) := {
+  cauchy := fun (F : (T -> Prop) -> Prop) => forall eps, exists x, F (ball x eps) ;
+  complete_cauchy : forall F, ProperFilter F -> cauchy F -> {x : T | is_filter_lim F x}
+}.
 
 Class CompleteMetricSpace T := {
   complete_metric :> MetricSpace T ;
-  cauchy := fun (F : (T -> Prop) -> Prop) => forall eps, exists x, F (ball x eps) ;
-  complete_cauchy : forall F, ProperFilter F -> cauchy F -> {x : T | is_filter_lim F x}
+  complete_mixin :> CompleteMetricSpace_mixin T complete_metric
 }.
 
 Lemma cauchy_distance :
@@ -1329,6 +1331,7 @@ Lemma CompleteMetricSpace_UnifFct {T U} :
 Proof.
   intros.
   apply Build_CompleteMetricSpace with (MetricSpace_UnifFct _).
+  constructor.
   by apply complete_cauchy_UnifFct.
 Defined.
 
@@ -1687,12 +1690,16 @@ Qed.
 
 (** * Normed Abelian Space *)
 
-Class NormedAbelianGroup G := {
-  nagroup_abelian :> AbelianGroup G ;
+Class NormedAbelianGroup_mixin G (AG : AbelianGroup G) := {
   norm : G -> R ;
   norm_zero : norm zero = 0 ;
   norm_opp : forall x, norm (opp x) = norm x ;
   norm_triangle : forall x y, norm (plus x y) <= norm x + norm y
+}.
+
+Class NormedAbelianGroup G := {
+  nagroup_abelian :> AbelianGroup G ;
+  nagroup_mixin :> NormedAbelianGroup_mixin G nagroup_abelian
 }.
 
 Lemma norm_ge_0 :
@@ -1742,9 +1749,28 @@ Proof.
   - by apply NAG_dist_triangle.
 Defined.
 
-Class CompatMetric {G : Type} (NAG : NormedAbelianGroup G) (MS : MetricSpace G) := {
-  compat_dist : forall x y : G, @distance G MS x y = @distance G (NormedAbelianGroup_MetricSpace NAG) x y
-  }.
+Class CompleteNormedAbelianGroup T := {
+  cnagroup_abelian :> AbelianGroup T ;
+  cnagroup_normed :> NormedAbelianGroup_mixin T cnagroup_abelian ;
+  cnagroup_nag := Build_NormedAbelianGroup T cnagroup_abelian cnagroup_normed ;
+  cnagroup_complete :> CompleteMetricSpace_mixin T _
+}.
+
+Global Instance CompleteNormedAbelianGroup_NormedAbelianGroup {U} :
+  CompleteNormedAbelianGroup U -> NormedAbelianGroup U.
+Proof.
+  case ; intros.
+  econstructor.
+  exact cnagroup_normed0.
+Defined.
+
+Global Instance CompleteNormedAbelianGroup_CompleteMetricSpace {U} :
+  CompleteNormedAbelianGroup U -> CompleteMetricSpace U.
+Proof.
+  case ; intros.
+  econstructor.
+  exact cnagroup_complete0.
+Defined.
 
 (** ** Continuity in Normed Abelian Groups *)
 
@@ -1985,7 +2011,8 @@ Lemma NAG_UnifFct {T} {G} :
   NormedAbelianGroup G -> NormedAbelianGroup (T -> G).
 Proof.
   move => NAG.
-  exists (@AbelianGroup_Fct T G (@nagroup_abelian G NAG)) UnifFct_norm.
+  exists (@AbelianGroup_Fct T G (@nagroup_abelian G NAG)).
+  exists UnifFct_norm.
   - by apply UnifFct_norm_zero.
   - move => f.
     by apply UnifFct_norm_opp.
@@ -1993,21 +2020,32 @@ Proof.
     by apply UnifFct_norm_triangle.
 Defined.
 
-Global Instance CompatMetric_UnifFct {T G} (NAG : NormedAbelianGroup G) (MS : MetricSpace G) :
-  CompatMetric NAG MS ->
-  @CompatMetric (T -> G) (NAG_UnifFct NAG) (MetricSpace_UnifFct MS).
+Lemma CompleteNormedAbelianGroup_UnifFct {T U} :
+  CompleteNormedAbelianGroup U -> CompleteNormedAbelianGroup (T -> U).
 Proof.
-  move => CM.
-  apply Build_CompatMetric.
-  move => f g ; rewrite /distance /=.
-  apply (f_equal real), f_equal.
-  apply Lub_Rbar_ne_eqset.
-  move => s ; split ; case => [ -> | [t ->] ] {s}.
-  by left.
-  right ; exists t ; by rewrite compat_dist.
-  by left.
-  right ; exists t ; by rewrite compat_dist.
-Qed.
+  case ; intros.
+  set (nagf := @NAG_UnifFct T U cnagroup_nag0).
+  unfold NAG_UnifFct in nagf.
+  exists (AbelianGroup_Fct cnagroup_abelian0) (@nagroup_mixin _ nagf).
+  constructor.
+  intros F FF H'.
+  assert (H := @complete_cauchy_UnifFct T U (Build_CompleteMetricSpace U (@NormedAbelianGroup_MetricSpace U cnagroup_nag0) cnagroup_complete0) F FF).
+  destruct H as [f Ff].
+  intros eps.
+  destruct (H' eps) as [f Hf].
+  exists f.
+  apply: filter_imp Hf.
+  intros x.
+  by rewrite /ball /distance /= UnifFct_dist_norm.
+  exists f.
+  intros P [c [eps BP]] Pf.
+  apply Ff.
+  exists c, eps.
+  intros y.
+  rewrite -BP.
+  by rewrite /ball /distance /= UnifFct_dist_norm.
+  exact Pf.
+Defined.
 
 (** * The topology on natural numbers *)
 
@@ -2096,7 +2134,8 @@ Defined.
 
 Global Instance R_NormedAbelianGroup : NormedAbelianGroup R.
 Proof.
-  apply (Build_NormedAbelianGroup _ _ (fun x => Rabs x)).
+  apply (Build_NormedAbelianGroup _ _).
+  exists (fun x => Rabs x).
   by apply Rabs_R0.
   move => x ; by apply Rabs_Ropp.
   move => x y ; by apply Rabs_triang.
@@ -2214,7 +2253,9 @@ Qed.
 
 Global Instance R_complete_metric : CompleteMetricSpace R.
 Proof.
-apply (Build_CompleteMetricSpace R _ R_complete).
+apply (Build_CompleteMetricSpace R _).
+constructor.
+apply R_complete.
 Defined.
 
 Notation at_left x := (within (fun u : R => Rlt u x) (locally (x)%R)).
