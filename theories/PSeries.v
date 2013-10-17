@@ -67,6 +67,11 @@ Lemma is_pseries_R (a : nat -> R) (x l : R) :
 Proof.
  split; apply is_series_ext; intros n; rewrite pow_n_pow; simpl; ring.
 Qed.
+Lemma ex_pseries_R (a : nat -> R) (x : R) : 
+ ex_pseries a x <-> ex_series (fun n : nat => a n * x ^ n).
+Proof.
+ split; apply ex_series_ext; intros n; rewrite pow_n_pow; simpl; ring.
+Qed.
 
 Lemma PSeries_eq (a : nat -> R) (x : R) : 
   PSeries a x = Series (fun k => scal (pow_n x k) (a k)).
@@ -2185,9 +2190,8 @@ Proof.
     apply Rabs_lt_between.
     by split.
 
-admit.
-(*  apply is_lim_seq_spec.
-  move => eps.
+  (* ? *)
+  move => P [eps Heps].
   have : exists N, forall n, (N <= n)%nat -> r ^ (S n) * M / INR (fact (S n)) < eps.
     have H : is_lim_seq (fun n => r ^ n * M / INR (fact n)) 0.
     case: (Rlt_dec 0 M) => H.
@@ -2239,6 +2243,7 @@ admit.
 
   case => N HN.
   exists N => n Hn.
+  apply Heps; unfold distance; simpl. 
 
   case: (Taylor_Lagrange f n 0 x).
     by apply Hx'.
@@ -2250,10 +2255,10 @@ admit.
     by apply Rle_ge, Ht.
   move => y [Hy ->].
   rewrite Rminus_0_r.
-  replace (sum_f_R0 (fun k : nat => Derive_n f k 0 / INR (fact k) * x ^ k) n)
-    with (sum_f_R0 (fun m : nat => x ^ m / INR (fact m) * Derive_n f m 0) n).
-  ring_simplify (sum_f_R0 (fun m : nat => x ^ m / INR (fact m) * Derive_n f m 0) n -
-   (sum_f_R0 (fun m : nat => x ^ m / INR (fact m) * Derive_n f m 0) n +
+  rewrite (sum_n_ext _ (fun m : nat => x ^ m / INR (fact m) * Derive_n f m 0)).
+  rewrite sum_n_sum_f_R0.
+  ring_simplify (sum_f_R0 (fun m : nat => x ^ m / INR (fact m) * Derive_n f m 0) n +
+   - (sum_f_R0 (fun m : nat => x ^ m / INR (fact m) * Derive_n f m 0) n +
     x ^ S n / INR (fact (S n)) * Derive_n f (S n) y)).
   apply Rle_lt_trans with (2 := HN n Hn).
   replace (r ^ S n * M / INR (fact (S n)))
@@ -2284,8 +2289,8 @@ admit.
   by apply Hy.
   apply Rlt_le, Hx'.
   apply Rlt_le, Hy.
-  elim: (n) => /= [ | m ->] ; rewrite /Rdiv ; ring.
-*)
+  intros m; rewrite pow_n_pow.
+  unfold Rdiv; ring.
 Qed.
 
 (** ** Riemann integrability *)

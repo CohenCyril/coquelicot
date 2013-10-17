@@ -20,7 +20,7 @@ COPYING file for more details.
 *)
 
 Require Import Reals ssreflect.
-Require Import Rcomplements Rbar.
+Require Import Rcomplements Rbar Hierarchy.
 Require Import Derive Series PSeries Limit.
 Require Import AutoDerive.
 
@@ -64,7 +64,7 @@ Proof.
   by apply is_lim_seq_INR.
   apply is_lim_seq_ext with (fun k => INR (k + S n)).
   intros k.
-  by rewrite (plus_comm n k) plus_n_Sm.
+  by rewrite (Plus.plus_comm n k) plus_n_Sm.
   apply is_lim_seq_incr_n.
   by apply is_lim_seq_INR.
   by [].
@@ -153,17 +153,19 @@ Proof.
 
   apply Rmult_eq_0_compat_l.
 
-  rewrite -PSeries_incr_1 -PSeries_scal_l -?PSeries_plus.
+  rewrite -PSeries_incr_1 -PSeries_scal -?PSeries_plus.
 
-  unfold PS_derive, PS_incr_1, PS_scal_l, PS_plus.
-  rewrite -{2}(PSeries_const_0 (y^2)).
+  unfold PS_derive, PS_incr_1, PS_scal, PS_plus.
+  rewrite -(PSeries_const_0 (y^2)).
   apply PSeries_ext.
   case => [ | p] ; rewrite /Bessel1_seq ;
   rewrite -?plus_n_Sm ?plus_0_r /fact -/fact ?mult_INR ?S_INR ?plus_INR ; simpl INR ; simpl pow ;
-  rewrite ?Rplus_0_l ?Rmult_1_l ; field.
+  rewrite ?Rplus_0_l ?Rmult_1_l.
+  simpl; field.
   split ; rewrite -?S_INR ; apply Rgt_not_eq.
   by apply INR_fact_lt_0.
   by apply (lt_INR 0), lt_O_Sn.
+  simpl; field.
   repeat split ; rewrite -?plus_INR -?S_INR ; apply Rgt_not_eq.
   by apply INR_fact_lt_0.
   by apply (lt_INR 0), lt_O_Sn.
@@ -172,17 +174,17 @@ Proof.
   by apply (lt_INR 0), lt_O_Sn.
   by apply (lt_INR 0), lt_O_Sn.
 
-  apply ex_series_Rabs, CV_disk_inside.
+  apply ex_pseries_R, ex_series_Rabs, CV_disk_inside.
   apply Rbar_lt_le_trans with (2 := CV_radius_plus _ _).
   rewrite /Rbar_min ; case: Rbar_le_dec => _.
   by rewrite CV_radius_incr_1 ?CV_radius_derive CV_Bessel1.
-  apply Rbar_lt_le_trans with (2 := CV_radius_scal_l _ _).
+  apply Rbar_lt_le_trans with (2 := CV_radius_scal _ _).
   by rewrite CV_radius_derive CV_Bessel1.
   by apply ex_Bessel1.
-  apply ex_series_Rabs, CV_disk_inside.
+  apply ex_pseries_R, ex_series_Rabs, CV_disk_inside.
   by rewrite CV_radius_incr_1 ?CV_radius_derive CV_Bessel1.
-  apply ex_series_Rabs, CV_disk_inside.
-  apply Rbar_lt_le_trans with (2 := CV_radius_scal_l _ _).
+  apply ex_pseries_R, ex_series_Rabs, CV_disk_inside.
+  apply Rbar_lt_le_trans with (2 := CV_radius_scal _ _).
   by rewrite CV_radius_derive CV_Bessel1.
 Qed.
 
@@ -204,13 +206,17 @@ Proof.
     with (y * ((-1) * PSeries (PS_derive (Bessel1_seq 0)) (y ^ 2)))
     by (simpl ; unfold y ; field => //).
   apply f_equal.
-  rewrite -PSeries_scal_l.
+  rewrite -PSeries_scal.
   apply PSeries_ext => k.
-  rewrite /Bessel1_seq /PS_scal_l /PS_derive plus_0_l.
+  rewrite /Bessel1_seq /PS_scal /PS_derive plus_0_l.
   replace (1+k)%nat with (S k) by ring.
   rewrite /fact -/fact mult_INR /pow -/pow.
-  field ; split.
+  simpl; field ; split.
   exact: INR_fact_neq_0.
+  replace (match k with
+    | 0%nat => 1
+    | S _ => INR k + 1
+   end) with (INR (S k)) by reflexivity.
   by apply not_0_INR, not_eq_sym, O_S.
 (* * cas S n *)
   replace (S n + 1)%nat with (S(S n)) by ring.
@@ -218,11 +224,11 @@ Proof.
     with (y^2 * y^n * (((-1)* PSeries (PS_derive (Bessel1_seq (S n))) (y ^ 2))))
     by (unfold y ; field => //).
   apply f_equal.
-  rewrite -PSeries_scal_l.
+  rewrite -PSeries_scal.
   apply PSeries_ext => k.
-  rewrite /Bessel1_seq /PS_scal_l /PS_derive -?plus_n_Sm ?plus_Sn_m.
+  rewrite /Bessel1_seq /PS_scal /PS_derive -?plus_n_Sm ?plus_Sn_m.
   rewrite /pow -/pow /fact -/fact ?mult_INR ?S_INR plus_INR.
-  field.
+  simpl; field.
   rewrite -plus_INR -?S_INR.
   repeat split ;
   try by [exact: INR_fact_neq_0 | apply not_0_INR, not_eq_sym, O_S].
@@ -246,14 +252,14 @@ Proof.
     with ((x/2)^n * ((INR n + 1) * PSeries (Bessel1_seq (S n)) ((x / 2) ^ 2)))
     by (simpl ; field ; exact: Hx).
   apply f_equal.
-  rewrite -PSeries_incr_1 -PSeries_scal_l -PSeries_plus.
+  rewrite -PSeries_incr_1 -PSeries_scal -PSeries_plus.
 Focus 2. (* ex_pseries (PS_incr_1 (Bessel1_seq (S (S n))) (S (S n))) (x / 2) *)
   by apply ex_pseries_incr_1, ex_Bessel1.
 Focus 2. (* ex_pseries (PS_incr_n (Bessel1_seq n) n) (x / 2) *)
   by apply ex_Bessel1.
   apply PSeries_ext => k.
 (* egalité *)
-  rewrite /PS_plus /PS_scal_l /PS_incr_1 /Bessel1_seq ;
+  rewrite /PS_plus /PS_scal /PS_incr_1 /Bessel1_seq ;
   case: k => [ | k] ;
   rewrite ?plus_0_r -?plus_n_Sm ?plus_Sn_m
     /fact -/fact ?mult_INR ?S_INR ?plus_INR /=.
@@ -286,16 +292,16 @@ Proof.
     by (rewrite S_INR ; simpl ; field).
   set y := (x / 2).
   apply f_equal.
-  rewrite -?PSeries_incr_1 -?PSeries_scal_l -?PSeries_minus.
+  rewrite -?PSeries_incr_1 -?PSeries_scal -?PSeries_minus.
   apply PSeries_ext => k.
-  rewrite  /PS_minus /PS_incr_1 /PS_scal_l /PS_derive /Bessel1_seq.
+  rewrite  /PS_minus /PS_incr_1 /PS_scal /PS_derive /Bessel1_seq.
   case: k => [ | k] ; rewrite -?plus_n_Sm ?plus_Sn_m /fact -/fact ?mult_INR ?S_INR -?plus_n_O ?plus_INR /= ;
   field ; rewrite -?plus_INR -?S_INR.
   split ; (apply INR_fact_neq_0 || apply not_0_INR, sym_not_eq, O_S).
   repeat split ; (apply INR_fact_neq_0 || apply not_0_INR, sym_not_eq, O_S).
-  apply ex_pseries_scal_l, ex_pseries_incr_1, ex_pseries_derive.
+  apply ex_pseries_scal, ex_pseries_incr_1, ex_pseries_derive.
   by rewrite CV_Bessel1.
-  by apply ex_pseries_scal_l, ex_Bessel1.
+  by apply ex_pseries_scal, ex_Bessel1.
   by apply ex_pseries_incr_1, ex_Bessel1.
   by apply ex_Bessel1.
 Qed.
@@ -311,13 +317,14 @@ Lemma Bessel1_uniqueness (a : nat -> R) (n : nat) : Rbar_lt 0 (CV_radius a) ->
   (forall k, (INR (S (S k)) ^ 2 - INR n ^ 2) * a (S (S k)) + a k = 0).
 Proof.
   move => Ha H.
-  suff Haux : forall k, 
+  cut (forall k, 
     (PS_plus (PS_plus (PS_incr_n (PS_derive_n 2 a) 2)
-      (PS_incr_1 (PS_derive a))) (PS_plus (PS_incr_n a 2) (PS_scal_l (- INR n ^ 2) a))) k = 0.
+      (PS_incr_1 (PS_derive a))) (PS_plus (PS_incr_n a 2) (PS_scal (- INR n ^ 2) a))) k = 0).
+  intros Haux.
   split ; [move: (Haux 0%nat) | move: (fun k => Haux (S k))] => {Haux} Haux.
 (* n = 0 *)
-  rewrite /PS_plus /= /PS_incr_1 /PS_derive_n /PS_scal_l /PS_derive in Haux.
-  ring_simplify in Haux.
+  rewrite /PS_plus /= /PS_incr_1 /PS_derive_n /PS_scal /PS_derive in Haux.
+  simpl in Haux; ring_simplify in Haux.
   apply Rmult_integral in Haux ; case: Haux => Haux.
   right.
   suff : ~ n <> 0%nat.
@@ -329,7 +336,7 @@ Proof.
   by left.
   split ; [move: (Haux 0%nat) | move: (fun k => Haux (S k))] => {Haux} Haux.
 (* n = 1 *)
-  rewrite /PS_plus /= /PS_incr_1 /PS_derive_n /PS_scal_l /PS_derive /= in Haux.
+  rewrite /PS_plus /= /PS_incr_1 /PS_derive_n /PS_scal /PS_derive /= in Haux.
   ring_simplify in Haux.
   replace (- a 1%nat * INR n ^ 2 + a 1%nat) with ((1 - INR n ^ 2) * a 1%nat) in Haux.
   apply Rmult_integral in Haux ; case: Haux => Haux.
@@ -350,10 +357,10 @@ Proof.
 
   move => k ; rewrite ?S_INR /= ;
   move: (Haux k) ;
-  rewrite /PS_plus /= /PS_incr_1 /PS_derive_n /PS_scal_l /PS_derive -?S_INR.
+  rewrite /PS_plus /= /PS_incr_1 /PS_derive_n /PS_scal /PS_derive -?S_INR.
   replace (k + 2)%nat with (S (S k)) by ring.
   rewrite /fact -/fact ?mult_INR ?S_INR => {Haux} Haux.
-  field_simplify in Haux.
+  simpl in Haux; field_simplify in Haux.
   field_simplify.
   by rewrite (Rmult_comm (INR n ^ 2)).
   move: Haux.
@@ -372,11 +379,11 @@ Proof.
   apply Rbar_lt_le_trans with (2 := CV_radius_plus _ _).
   rewrite /Rbar_min ; case: Rbar_le_dec => _.
   by rewrite /PS_incr_n ?CV_radius_incr_1.
-  by apply Rbar_lt_le_trans with (2 := CV_radius_scal_l _ _).
+  by apply Rbar_lt_le_trans with (2 := CV_radius_scal _ _).
   by rewrite CV_radius_const_0.
   move => x Hx.
   rewrite PSeries_const_0 ?PSeries_plus.
-  rewrite ?PSeries_incr_n PSeries_incr_1 PSeries_scal_l -Derive_n_PSeries.
+  rewrite ?PSeries_incr_n PSeries_incr_1 PSeries_scal -Derive_n_PSeries.
   rewrite -Derive_PSeries.
   rewrite -Rmult_plus_distr_r.
   apply H.
