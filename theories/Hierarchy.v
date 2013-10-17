@@ -278,7 +278,7 @@ Qed.
 
 (** * Topological spaces *)
 
-(* TODO : fusionner open_spec et neiborhood *)
+(** ** Definitions *)
 
 Inductive neighborhoods {T} (basis : (T -> Prop) -> Prop) (x : T) (D : T -> Prop) : Prop :=
   Is_neighborhoods (P : T -> Prop) : basis P -> P x -> (forall y, P y -> D y)
@@ -292,6 +292,89 @@ Class TopologicalSpace T := {
     forall x, P x -> Q x -> neighborhoods basis x (fun y => P y /\ Q y) ;
   basis_true : forall x, exists P, basis P /\ P x
 }.
+
+Global Instance neighborhoods_filter T :
+  forall (TT : TopologicalSpace T) (x : T), Filter (neighborhoods basis x).
+Proof.
+intros TT x.
+split.
+- destruct (basis_true x) as [P [BP Px]].
+  by exists P.
+- intros P Q [P' BP' Px HP] [Q' BQ' Qx HQ].
+  destruct (basis_and P' Q' BP' BQ' x Px Qx) as [R BR Rx HR].
+  apply Is_neighborhoods with (1 := BR).
+  exact Rx.
+  intros y Ry.
+  destruct (HR y Ry) as [Py Qy].
+  split.
+  now apply HP.
+  now apply HQ.
+- intros P Q H [P' BP' Px HP].
+  apply Is_neighborhoods with (1 := BP').
+  exact Px.
+  intros y Py.
+  apply H.
+  now apply HP.
+Qed.
+
+Inductive disjoint_spec {T} {TT : TopologicalSpace T} (x y : T) :=
+  Disjoint_spec P Q : basis P -> basis Q -> P x -> Q y ->
+    (forall z, P z -> Q z -> False) -> disjoint_spec x y.
+
+Class SeparatedSpace T := {
+  seperated_topological :> TopologicalSpace T ;
+  separated_disjoint : forall x y : T, x <> y -> disjoint_spec x y
+}.
+
+Class PerfectSpace T := {
+  perfect_topological :> TopologicalSpace T ;
+  perfect_open : forall x : T, exists O, open O /\ O x
+}.
+
+Class FilterCompatibility {T} {TT : TopologicalSpace T} (F : T -> (T -> Prop) -> Prop) := {
+  filter_compat1 : forall P x, basis P -> P x -> F x P ;
+  filter_compat2 : forall P x, F x P -> exists Q, basis Q /\ Q x /\ forall y, Q y -> P y
+}.
+
+
+Global Instance topology_prod {T U} :
+  TopologicalSpace T -> TopologicalSpace U
+    -> TopologicalSpace (T * U).
+Proof.
+  move => TT TU.
+  exists (fun (P : _ -> Prop) => forall x, P x ->
+    exists Q R, basis Q /\ basis R /\
+      Q (fst x) /\ R (snd x) /\ (forall y z, Q y -> R z -> P (y,z))).
+  + move => P P' HP HP' x Px P'x.
+    case: (HP x Px) => {HP} Q [R [BQ [BR [Qx [Rx HP]]]]].
+    case: (HP' x P'x) => {HP'} Q' [R' [BQ' [BR' [Q'x [R'x HP']]]]].
+    case: (basis_and Q Q' BQ BQ' _ Qx Q'x) => Q0 BQ0 Q0x HQ0.
+    case: (basis_and R R' BR BR' _ Rx R'x) => R0 BR0 R0x HR0.
+    exists (fun z => Q0 (fst z) /\ R0 (snd z)).
+    move => y [Q0y R0y].
+    exists Q0, R0.
+    by repeat split.
+    by split.
+    case => y z [Q0y R0y].
+    split.
+    apply HP.
+    by apply HQ0, Q0y.
+    by apply HR0, R0y.
+    apply HP'.
+    by apply HQ0, Q0y.
+    by apply HR0, R0y.
+  + case => x y.
+    case: (basis_true x) => Q [BQ Qx].
+    case: (basis_true y) => R [BR Ry].
+    exists (fun z => Q (fst z) /\ R (snd z)).
+    split.
+    move => z [Qz Rz].
+    exists Q, R.
+    by repeat split.
+    by split.
+Defined.
+
+(** ** Open sets *)
 
 Lemma open_basis :
   forall {T} {TT : TopologicalSpace T} P,
@@ -368,43 +451,24 @@ Proof.
 intros T TT x [].
 Qed.
 
-Global Instance neighborhoods_filter T :
-  forall (TT : TopologicalSpace T) (x : T), Filter (neighborhoods basis x).
+Lemma filter_open :
+  forall {T} {TT : TopologicalSpace T},
+  forall {F} {FF : forall x, Filter (F x)} {FC : FilterCompatibility F},
+  forall D, open D <-> forall x, D x -> F x D.
 Proof.
-intros TT x.
+intros T TT F FF FC D.
 split.
-- destruct (basis_true x) as [P [BP Px]].
-  by exists P.
-- intros P Q [P' BP' Px HP] [Q' BQ' Qx HQ].
-  destruct (basis_and P' Q' BP' BQ' x Px Qx) as [R BR Rx HR].
-  apply Is_neighborhoods with (1 := BR).
-  exact Rx.
-  intros y Ry.
-  destruct (HR y Ry) as [Py Qy].
-  split.
-  now apply HP.
-  now apply HQ.
-- intros P Q H [P' BP' Px HP].
-  apply Is_neighborhoods with (1 := BP').
-  exact Px.
-  intros y Py.
-  apply H.
-  now apply HP.
+- intros OD x Dx.
+  destruct (OD x Dx) as [P BP Px PD].
+  apply filter_imp with (1 := PD).
+  now apply filter_compat1.
+- intros H x Dx.
+  destruct (filter_compat2 D x (H x Dx)) as [Q [BQ [Qx HQP]]].
+  now exists Q.
 Qed.
 
-Inductive disjoint_spec {T} {TT : TopologicalSpace T} (x y : T) :=
-  Disjoint_spec P Q : basis P -> basis Q -> P x -> Q y ->
-    (forall z, P z -> Q z -> False) -> disjoint_spec x y.
-
-Class SeparatedSpace T := {
-  seperated_topological :> TopologicalSpace T ;
-  separated_disjoint : forall x y : T, x <> y -> disjoint_spec x y
-}.
-
-Class PerfectSpace T := {
-  perfect_topological :> TopologicalSpace T ;
-  perfect_open : forall x : T, exists O, open O /\ O x
-}.
+(** ** Limits and continuity in topological spaces *)
+(** Limit of a filter *)
 
 Definition is_filter_lim {T} {TT : TopologicalSpace T} (F : (T -> Prop) -> Prop) (x : T) :=
   forall P, basis P -> P x -> F P.
@@ -424,32 +488,6 @@ intros z [Pz Qz].
 now apply (H' z).
 Qed.
 
-Class FilterCompatibility {T} {TT : TopologicalSpace T} (F : T -> (T -> Prop) -> Prop) := {
-  filter_compat1 : forall P x, basis P -> P x -> F x P ;
-  filter_compat2 : forall P x, F x P -> exists Q, basis Q /\ Q x /\ forall y, Q y -> P y
-}.
-
-Lemma filter_open :
-  forall {T} {TT : TopologicalSpace T},
-  forall {F} {FF : forall x, Filter (F x)} {FC : FilterCompatibility F},
-  forall D, open D <-> forall x, D x -> F x D.
-Proof.
-intros T TT F FF FC D.
-split.
-- intros OD x Dx.
-  destruct (OD x Dx) as [P BP Px PD].
-  apply filter_imp with (1 := PD).
-  now apply filter_compat1.
-- intros H x Dx.
-  destruct (filter_compat2 D x (H x Dx)) as [Q [BQ [Qx HQP]]].
-  now exists Q.
-Qed.
-
-(** Continuity using TopologicalSpaces *)
-
-Definition continuity {U V} {TU : TopologicalSpace U} {TV : TopologicalSpace V} (f : U -> V) (x : U) :=
-  forall P, basis P -> P (f x) -> neighborhoods basis x (fun x => P (f x)).
-
 Lemma is_filter_lim_neighborhoods :
   forall {T} {TT : TopologicalSpace T} (x : T),
   is_filter_lim (neighborhoods basis x) x.
@@ -457,6 +495,11 @@ Proof.
 intros T TT x P BP Px.
 now apply Is_neighborhoods with (1 := BP).
 Qed.
+
+(** Continuity *)
+
+Definition continuity {U V} {TU : TopologicalSpace U} {TV : TopologicalSpace V} (f : U -> V) (x : U) :=
+  forall P, basis P -> P (f x) -> neighborhoods basis x (fun x => P (f x)).
 
 Lemma is_filter_lim_continuity :
   forall {T U} {TT : TopologicalSpace T} {TU : TopologicalSpace U} (f : T -> U) (x : T),
@@ -480,11 +523,35 @@ Lemma continuity_comp {T U V} {TT : TopologicalSpace T} {TU : TopologicalSpace U
   forall (f : T -> U) (g : U -> V) (x : T),
   continuity f x -> continuity g (f x) -> continuity (fun y => g (f y)) x.
 Proof.
-  move => f g x Cf Cg.
-  rewrite -is_filter_lim_continuity => F FF Fx.
-  move: (proj2 (is_filter_lim_continuity _ _) Cf F FF Fx).
-  apply (proj2 (is_filter_lim_continuity _ (f x)) Cg (filtermap f F)).
-  by apply filtermap_filter.
+  move => f g x Cf Cg P BP /= Px.
+  case: (Cg P BP Px) => Q BQ Qx QP.
+  case: (Cf Q BQ Qx) => R BR Rx RQ.
+  exists R => //=.
+  move => y Ry.
+  by apply QP, RQ.
+Qed.
+
+Lemma continuity_comp2 {T U V W X} {TT : TopologicalSpace T} {TU : TopologicalSpace U}
+  {TV : TopologicalSpace V} {TW : TopologicalSpace W} {TX : TopologicalSpace X} :
+  forall (f : T -> V) (g : U -> W) (h : V -> W -> X) (x : T) (y : U), continuity f x -> continuity g y -> 
+    continuity (fun z => h (fst z) (snd z)) (f x, g y)
+    -> continuity (fun z => h (f (fst z)) (g (snd z))) (x,y).
+Proof.
+  move => f g h x y Cf Cg Ch P /= BP Pxy.
+  case: (Ch P BP Pxy) => /= {Ch} Q BQ Qxy QP.
+  case: (BQ _ Qxy) => {BQ} Qv [Qw [BQv [BQw [Qvx [Qwx HQ]]]]].
+  case: (Cf Qv BQv Qvx) => {Cf} R BR Rx HR.
+  case: (Cg Qw BQw Qwx) => {Cg} S BS Sx HS.
+  exists (fun z => R (fst z) /\ S (snd z)) => /=.
+  move => z [Rz Sz].
+  exists R, S.
+  by repeat split.
+  by split.
+  move => z [Rz Sz].
+  apply (QP (f (fst z),g (snd z))).
+  apply HQ.
+  by apply HR.
+  by apply HS.
 Qed.
 
 (** * Metric Spaces *)
@@ -1058,7 +1125,7 @@ Defined.
 Class CompleteMetricSpace T := {
   complete_metric :> MetricSpace T ;
   cauchy := fun (F : (T -> Prop) -> Prop) => forall eps, exists x, F (ball x eps) ;
-  complete_cauchy : forall F, ProperFilter F -> cauchy F -> exists x, is_filter_lim F x
+  complete_cauchy : forall F, ProperFilter F -> cauchy F -> {x : T | is_filter_lim F x}
 }.
 
 Lemma cauchy_distance :
@@ -1134,6 +1201,136 @@ split.
   exact Hu.
   exact Hv.
 Qed.
+
+Lemma complete_cauchy_UnifFct {T U} {CMS : CompleteMetricSpace U} : 
+  let MS := MetricSpace_UnifFct _ in
+  forall F : ((T -> U) -> Prop) -> Prop,
+  ProperFilter F ->
+    (forall eps : posreal, exists f : T -> U, F (ball f eps)) ->
+    {f : T -> U | is_filter_lim F f}.
+Proof.
+  move => MS F FF HFc.
+  
+  cut ({f | forall eps : posreal, F (fun g => distance f g < eps)}).
+    case => f Hf.
+    exists f.
+    apply is_filter_lim_filterlim.
+    by apply FF.
+    by apply filterlim_locally.
+
+  set Fr := fun (t : T) (P : U -> Prop) => F (fun g => P (g t)).
+  have FFr : forall t, ProperFilter (Fr t).
+    case: FF => HF FF t.
+    split.
+    - move => P Hp.
+      case: (HF _ Hp) => f Hf.
+      by exists (f t).
+    - split.
+      + by apply FF.
+      + move => P P' Hp Hp'.
+      by apply FF.
+      + move => P P' Hpp'.
+      apply FF.
+      move => f ; by apply Hpp'.
+  assert (HFrc : forall t, forall eps : posreal, exists x : U, Fr t (ball x eps)).
+    move => t eps.
+    wlog: eps / (eps < 1) => [Hw | Heps].
+      case: (Rlt_le_dec eps 1) => Heps.
+      by apply Hw.
+      case: (Hw (pos_div_2 (mkposreal _ Rlt_0_1))).
+      apply Rlt_div_l.
+      by apply Rlt_0_2.
+      apply Rminus_lt_0 ; simpl ; ring_simplify ; by apply Rlt_0_1.
+      move => x Hx ; exists x ; move: Hx.
+      apply FFr => y.
+      rewrite /ball ; simpl => H.
+      apply Rlt_trans with (1 := H).
+      apply Rlt_div_l.
+      by apply Rlt_0_2.
+      apply Rle_lt_trans with (1 := Heps).
+      apply Rminus_lt_0 ; simpl ; ring_simplify ; by apply eps.
+    case: (HFc eps) => f Hf.
+    exists (f t).
+    move: Hf ; apply FF => g.
+    rewrite /ball ; simpl => H.
+    apply UnifFct_dist_lub_lt_1 in H.
+    apply (Rbar_le_lt_trans (distance (f t) (g t)) (Lub_Rbar_ne _ (UnifFct_dist_ne f g)) eps).
+      rewrite /Lub_Rbar_ne ; case: ex_lub_Rbar_ne => l ; simpl => Hl.
+      apply Hl.
+      right ; by exists t.
+      by apply H.
+      by apply Rlt_le.
+  assert (Hex : forall t, {x | is_filter_lim (Fr t) x}).
+    move => t.
+    apply: complete_cauchy.
+    apply: (HFrc t).
+  set f := fun t => projT1 (Hex t) ; exists f.
+
+  move => eps.
+  case: (Rlt_le_dec 1 eps) => Heps.
+  apply filter_imp with (fun _ => True).
+  move => x _.
+  apply Rle_lt_trans with (2 := Heps).
+  rewrite /distance ; simpl.
+  by apply UnifFct_dist_bw_0_1.
+  by apply filter_true.
+
+  apply filter_imp with (fun g => forall t, distance (f t) (g t) < pos_div_2 eps).
+  move => g Hg.
+  unfold distance ; simpl.
+  rewrite UnifFct_dist_lub_lt_1.
+  apply Rbar_le_lt_trans with (pos_div_2 eps).
+  apply Lub_Rbar_ne_correct => s Hs.
+  case: Hs => [-> | [t ->]].
+  apply Rbar_lt_le, is_pos_div_2.
+  apply Rbar_finite_le, Rlt_le, (Hg t).
+  apply Rminus_lt_0 ; simpl ; field_simplify ;
+  rewrite Rdiv_1 ; by apply is_pos_div_2.
+  by [].
+  
+  have : (pos_div_2 eps <= 1).
+    apply Rle_trans with (2 := Heps).
+    simpl ; apply Rminus_le_0 ; field_simplify ; rewrite Rdiv_1.
+    apply Rlt_le, is_pos_div_2.
+  
+  move: (pos_div_2 eps) => {eps Heps} eps Heps.
+  assert (forall t (eps : posreal), (Fr t) (fun x => distance (f t) x < eps)).
+    move =>  t.
+    apply filterlim_locally.
+    apply is_filter_lim_filterlim.
+    by apply FFr.
+    apply (projT2 (Hex t)).
+
+  generalize (proj1 cauchy_distance HFc) => {HFc} HFc.
+
+  case: (HFc (pos_div_2 eps)) => {HFc} P ; simpl ; case => HP H0.
+  apply filter_imp with (2 := HP).
+  move => g Hg t.
+  move: (fun h => H0 g h Hg) => {H0} H0.
+  move: (H t (pos_div_2 eps)) ; simpl => {H} H.
+  unfold Fr in H ; generalize (filter_and _ _ H HP) => {H} H.
+  apply filter_ex in H ; case: H => h H.
+  apply Rle_lt_trans with (1 := distance_triangle (f t) (h t) (g t)).
+  rewrite (double_var eps).
+  apply Rplus_lt_compat.
+  by apply H.
+  move: (H0 _ (proj2 H)) => {H0} H0.
+  apply Rle_lt_trans with (2 := H0).
+  rewrite distance_comm.
+  apply: (UnifFct_dist_ge_fct g h t).
+  apply Rlt_le_trans with (1 := H0).
+  apply Rle_div_l.
+  by apply Rlt_0_2.
+  apply Rle_trans with (1 := Heps), Rminus_le_0 ; ring_simplify ; by apply Rle_0_1.
+Qed.
+
+Lemma CompleteMetricSpace_UnifFct {T U} : 
+  CompleteMetricSpace U -> CompleteMetricSpace (T -> U).
+Proof.
+  intros.
+  apply Build_CompleteMetricSpace with (MetricSpace_UnifFct _).
+  by apply complete_cauchy_UnifFct.
+Defined.
 
 (** * Abelian Group *)
 
@@ -1545,6 +1742,10 @@ Proof.
   - by apply NAG_dist_triangle.
 Defined.
 
+Class CompatMetric {G : Type} (NAG : NormedAbelianGroup G) (MS : MetricSpace G) := {
+  compat_dist : forall x y : G, @distance G MS x y = @distance G (NormedAbelianGroup_MetricSpace NAG) x y
+  }.
+
 (** ** Continuity in Normed Abelian Groups *)
 
 Lemma continuity_opp {T} {NAG : NormedAbelianGroup T} :
@@ -1792,6 +1993,22 @@ Proof.
     by apply UnifFct_norm_triangle.
 Defined.
 
+Global Instance CompatMetric_UnifFct {T G} (NAG : NormedAbelianGroup G) (MS : MetricSpace G) :
+  CompatMetric NAG MS ->
+  @CompatMetric (T -> G) (NAG_UnifFct NAG) (MetricSpace_UnifFct MS).
+Proof.
+  move => CM.
+  apply Build_CompatMetric.
+  move => f g ; rewrite /distance /=.
+  apply (f_equal real), f_equal.
+  apply Lub_Rbar_ne_eqset.
+  move => s ; split ; case => [ -> | [t ->] ] {s}.
+  by left.
+  right ; exists t ; by rewrite compat_dist.
+  by left.
+  right ; exists t ; by rewrite compat_dist.
+Qed.
+
 (** * The topology on natural numbers *)
 
 Definition eventually (P : nat -> Prop) :=
@@ -1909,7 +2126,7 @@ Lemma R_complete :
   forall F : (R -> Prop) -> Prop,
   ProperFilter F ->
   (forall eps : posreal, exists x : R, F (ball x eps)) ->
-  exists x : R, is_filter_lim F x.
+  {x : R | is_filter_lim F x}.
 Proof.
 intros F FF HF.
 set (E := fun x : R => F (ball x (mkposreal _ Rlt_0_1))).
@@ -3001,6 +3218,39 @@ intros h [Zh Hh].
 exact: H.
 Qed.
 
+Lemma continuity_Reals (f : R -> R) (x : R) :
+  continuity f x <-> continuity_pt f x.
+Proof.
+  rewrite continuity_pt_locally.
+  split => Cf.
+  - move => eps.
+    case: (Cf (ball (f x) eps)).
+    by exists (f x), eps.
+    by apply ball_center.
+    move => P [y [d BP]] Px HP.
+    apply BP in Px.
+    apply Rminus_lt_0 in Px.
+    exists (mkposreal _ Px) => z /= Hz.
+    apply HP, BP.
+    rewrite /ball /=.
+    generalize (distance_triangle y x z) => /= H.
+    apply Rle_lt_trans with (1 := H) => {H}.
+    rewrite Rplus_comm ; by apply Rlt_minus_r.
+  - move => P [y [eps BP]] Px.
+    apply BP in Px.
+    apply Rminus_lt_0 in Px.
+    case: (Cf (mkposreal _ Px)) => delta {Cf} Cf.
+    exists (ball x delta).
+    by exists x, delta.
+    by apply ball_center.
+    move => z Hz.
+    apply BP.
+    rewrite /ball.
+    apply Rle_lt_trans with (1 := distance_triangle _ (f x) _).
+    rewrite Rplus_comm ; apply Rlt_minus_r.
+    by apply Cf.
+Qed.
+
 Lemma continuity_pt_locally' :
   forall f x,
   continuity_pt f x <->
@@ -3029,7 +3279,7 @@ now contradict Zh.
 Qed.
 
 Lemma continuity_pt_filterlim :
-  forall f x,
+  forall (f : R -> R) (x : R),
   continuity_pt f x <->
   filterlim f (locally x) (locally (f x)).
 Proof.
@@ -3052,7 +3302,7 @@ apply iff_sym.
 apply: filterlim_locally.
 Qed.
 
-Lemma locally_comp (P : R -> Prop) (f : R -> R) (x : R) :
+Lemma locally_pt_comp (P : R -> Prop) (f : R -> R) (x : R) :
   locally (f x) P -> continuity_pt f x ->
   locally x (fun x => P (f x)).
 Proof.
@@ -3100,145 +3350,3 @@ intros x y.
 apply filterlim_scal_l with (l := Finite y).
 Defined.
 
-Lemma complete_cauchy_UnifFct {T} : 
-  let MS := MetricSpace_UnifFct _ in
-  forall F : ((T -> R) -> Prop) -> Prop,
-  ProperFilter F ->
-    (forall eps : posreal, exists x : T -> R, F (ball x eps)) ->
-    exists x : T -> R, is_filter_lim F x.
-Proof.
-  move => MS F FF HFc.
-  
-  cut (exists f, forall eps : posreal, F (fun g => distance f g < eps)).
-    case => f Hf.
-    exists f.
-    apply is_filter_lim_filterlim.
-    by apply FF.
-    by apply filterlim_locally.
-
-  set Fr := fun (t : T) (P : R -> Prop) => F (fun g => P (g t)).
-  have FFr : forall t, ProperFilter (Fr t).
-    case: FF => HF FF t.
-    split.
-    - move => P Hp.
-      case: (HF _ Hp) => f Hf.
-      by exists (f t).
-    - split.
-      + by apply FF.
-      + move => P P' Hp Hp'.
-      by apply FF.
-      + move => P P' Hpp'.
-      apply FF.
-      move => f ; by apply Hpp'.
-  assert (HFrc : forall t, forall eps : posreal, exists x : R, Fr t (ball x eps)).
-    move => t eps.
-    wlog: eps / (eps < 1) => [Hw | Heps].
-      case: (Rlt_le_dec eps 1) => Heps.
-      by apply Hw.
-      case: (Hw (pos_div_2 (mkposreal _ Rlt_0_1))).
-      apply Rlt_div_l.
-      by apply Rlt_0_2.
-      apply Rminus_lt_0 ; simpl ; ring_simplify ; by apply Rlt_0_1.
-      move => x Hx ; exists x ; move: Hx.
-      apply FFr => y.
-      rewrite /ball ; simpl => H.
-      apply Rlt_trans with (1 := H).
-      apply Rlt_div_l.
-      by apply Rlt_0_2.
-      apply Rle_lt_trans with (1 := Heps).
-      apply Rminus_lt_0 ; simpl ; ring_simplify ; by apply eps.
-    case: (HFc eps) => f Hf.
-    exists (f t).
-    move: Hf ; apply FF => g.
-    rewrite /ball ; simpl => H.
-    apply UnifFct_dist_lub_lt_1 in H.
-    apply (Rbar_le_lt_trans (Rabs (g t + - f t)) (Lub_Rbar_ne _ (UnifFct_dist_ne f g)) eps).
-      rewrite /Lub_Rbar_ne ; case: ex_lub_Rbar_ne => l ; simpl => Hl.
-      apply Hl.
-      right ; by exists t.
-      by apply H.
-      by apply Rlt_le.
-  assert (Hex : forall t, exists x, is_filter_lim (Fr t) x).
-    move => t.
-    apply: complete_cauchy. apply: (HFrc t).
-  assert (forall t, exists! x, is_filter_lim (Fr t) x).
-    move => t.
-    case: (Hex t) => x Hx.
-    exists x.
-    split.
-    by apply Hx.
-    move => x' Hx'.
-    suff : ~ x <> x'.
-      case: (Req_dec x x') ; by auto.
-    move: Hx Hx'.
-    apply: is_filter_lim_unique.
-    move: H => {Hex} Hex.
-  move: (fun t => uniqueness_dec _ (Hex t)) => Hf.
-  set f := fun t => projT1 (Hf t) ; exists f.
-
-  move => eps.
-  case: (Rlt_le_dec 1 eps) => Heps.
-  apply filter_imp with (fun _ => True).
-  move => x _.
-  apply Rle_lt_trans with (2 := Heps).
-  rewrite /distance ; simpl.
-  by apply UnifFct_dist_bw_0_1.
-  by apply filter_true.
-
-  apply filter_imp with (fun g => forall t, distance (f t) (g t) < pos_div_2 eps).
-  move => g Hg.
-  unfold distance ; simpl.
-  rewrite UnifFct_dist_lub_lt_1.
-  apply Rbar_le_lt_trans with (pos_div_2 eps).
-  apply Lub_Rbar_ne_correct => s Hs.
-  case: Hs => [-> | [t ->]].
-  apply Rbar_lt_le, is_pos_div_2.
-  apply Rbar_finite_le, Rlt_le, (Hg t).
-  apply Rminus_lt_0 ; simpl ; field_simplify ;
-  rewrite Rdiv_1 ; by apply is_pos_div_2.
-  by [].
-  
-  have : (pos_div_2 eps <= 1).
-    apply Rle_trans with (2 := Heps).
-    simpl ; apply Rminus_le_0 ; field_simplify ; rewrite Rdiv_1.
-    apply Rlt_le, is_pos_div_2.
-  
-  move: (pos_div_2 eps) => {eps Heps} eps Heps.
-  assert (forall t (eps : posreal), (Fr t) (fun x => distance (f t) x < eps)).
-    move =>  t.
-    apply filterlim_locally.
-    apply is_filter_lim_filterlim.
-    by apply FFr.
-    apply (projT2 (Hf t)).
-
-  generalize (proj1 cauchy_distance HFc) => {HFc} HFc.
-
-  case: (HFc (pos_div_2 eps)) => {HFc} P ; simpl ; case => HP H0.
-  apply filter_imp with (2 := HP).
-  move => g Hg t.
-  move: (fun h => H0 g h Hg) => {H0} H0.
-  move: (H t (pos_div_2 eps)) ; simpl => {H} H.
-  unfold Fr in H ; generalize (filter_and _ _ H HP) => {H} H.
-  apply filter_ex in H ; case: H => h H.
-  replace (Rabs (g t + - f t)) with (distance (f t) (g t)).
-  apply Rle_lt_trans with (1 := distance_triangle (f t) (h t) (g t)).
-  rewrite (double_var eps).
-  apply Rplus_lt_compat.
-  by apply H.
-  move: (H0 _ (proj2 H)) => {H0} H0.
-  apply Rle_lt_trans with (2 := H0).
-  rewrite distance_comm.
-  apply: (UnifFct_dist_ge_fct g h t).
-  apply Rlt_le_trans with (1 := H0).
-  apply Rle_div_l.
-  by apply Rlt_0_2.
-  apply Rle_trans with (1 := Heps), Rminus_le_0 ; ring_simplify ; by apply Rle_0_1.
-  by simpl.
-Qed.
-
-Lemma R_CMS_UnifFct {T} : CompleteMetricSpace (T -> R).
-Proof.
-  intros.
-  apply Build_CompleteMetricSpace with (MetricSpace_UnifFct _).
-  by apply complete_cauchy_UnifFct.
-Defined.

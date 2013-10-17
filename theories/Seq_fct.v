@@ -1032,14 +1032,14 @@ Proof.
   by apply Hy.
 Qed.
 
-Lemma filterlim_swich_2 {T1 T2} 
-  (f : T1 -> T2 -> R) F1 F2 (FF1 : ProperFilter F1) (FF2 : ProperFilter F2) g h :
-  let CMS := R_CMS_UnifFct in
+Lemma filterlim_swich_2 {T1 T2 U} {CMS : CompleteMetricSpace U}
+  (f : T1 -> T2 -> U) F1 F2 (FF1 : ProperFilter F1) (FF2 : ProperFilter F2) g h :
+  let CMS' := CompleteMetricSpace_UnifFct _ in
   (filterlim f F1 (locally g))
   -> (forall x, filterlim (f x) F2 (locally (h x)))
-  -> (exists l : R, filterlim h F1 (locally l)).
+  -> (exists l : U, filterlim h F1 (locally l)).
 Proof.
-  move => CMS Hfg Hfh.
+  move => CMS' Hfg Hfh.
   case : (proj1 (filterlim_locally_cauchy h)).
   move => eps.
 
@@ -1060,17 +1060,13 @@ Proof.
     apply Rdiv_lt_0_compat ; by intuition.
     by [].
   generalize (proj2 (filterlim_locally_cauchy f)) => Hf.
-  assert (exists y : T2 -> R,
-        @filterlim T1 (T2 -> R) f F1
-          (@locally (T2 -> R)
-             (@complete_metric (T2 -> R) (@R_CMS_UnifFct T2)) y)).
+  assert (exists y : T2 -> U, filterlim f F1 (locally y)).
     exists g => P Hp.
     apply Hfg.
     case: Hp => d Hp.
     exists d => y Hy.
     apply: Hp.
-    move: Hy.
-    by rewrite /distance /=.
+    by apply Hy.
     
   move: H => {Hfg} Hfg.
   move: (Hf Hfg (pos_div_2 eps)) => {Hf Hfg} /= Hf.
@@ -1102,7 +1098,6 @@ Proof.
   move: (@filter_and _ F2 FF2 _ _ Hu' Hv') => {Hu' Hv' Hfh} Hfh.
   case: (HF2 _ Hfh) => {Hfh} y Hy.
   replace (pos eps) with (eps / 2 / 2 + (eps / 2 + eps / 2 / 2)) by field.
-  replace (Rabs (h v + - h u)) with (distance (h u) (h v)) by (by simpl).
   apply Rle_lt_trans with (1 := distance_triangle (h u) (f u y) (h v)).
   apply Rplus_lt_compat.
   by apply Hy.
@@ -1115,31 +1110,45 @@ Proof.
   by exists l.
 Qed.
 
-Lemma filterlim_swich {T1 T2} 
-  (f : T1 -> T2 -> R) F1 F2 (FF1 : ProperFilter F1) (FF2 : ProperFilter F2) g h :
-  let CMS := R_CMS_UnifFct in
+Lemma filterlim_swich {T1 T2 U} {NAG : NormedAbelianGroup U} {CMS : CompleteMetricSpace U}
+  {HU : CompatMetric NAG (@complete_metric _ CMS)}
+  (f : T1 -> T2 -> U) F1 F2 (FF1 : ProperFilter F1) (FF2 : ProperFilter F2) g h :
+  let CMS := CompleteMetricSpace_UnifFct _ in
   (filterlim f F1 (locally g))
   -> (forall x, filterlim (f x) F2 (locally (h x)))
-  -> (exists l : R, filterlim h F1 (locally l) /\ filterlim g F2 (locally l)).
+  -> (exists l : U, filterlim h F1 (locally l) /\ filterlim g F2 (locally l)).
 Proof.
-  move => CMS Hfg Hfh.
-  case: (filterlim_swich_2 f F1 F2 FF1 FF2 g h Hfg Hfh) => l Hhl.
+  move => CMS' Hfg Hfh.
+  assert (Hfh' : forall x : T1,
+    @filterlim T2 U (f x) F2 (@locally U (@complete_metric U CMS) (h x))).
+    move => x ; apply filterlim_locally => eps.
+    move: (proj1 (@filterlim_locally T2 U (@NormedAbelianGroup_MetricSpace U NAG) F2
+     (@filter_filter T2 F2 FF2) (f x) (h x)) (Hfh x) eps).
+     apply filter_imp => y.
+     by rewrite compat_dist.
+  destruct (filterlim_swich_2 f F1 F2 FF1 FF2 g h Hfg Hfh') as [l Hhl].
   exists l ; split.
-  by [].
+  + apply filterlim_locally => eps.
+    case: FF1 => HF1 FF1.
+    move: (proj1 (@filterlim_locally T1 U (@complete_metric U CMS) F1 FF1 h l) Hhl eps).
+     apply filter_imp => y.
+     by rewrite compat_dist.
   case: FF2 => HF2 FF2.
   apply: (filterlim_swich_1 f F1 F2 FF1 FF2 g h l).
   apply filterlim_locally => eps.
-  generalize (proj1 (filterlim_locally _ _) Hfg) => {Hfg} Hfg.
-  move: (Hfg eps) ; apply filter_imp.
-  move => x.
-  rewrite /distance /=.
-  rewrite -(UnifFct_dist_norm g (f x)).
-  apply Rle_lt_trans, Req_le.
-  apply (f_equal real), f_equal.
-  apply Lub_Rbar_ne_eqset.
-  by rewrite /distance /=.
+  case: FF1 => HF1 FF1.
+  move: (proj1 (@filterlim_locally T1 (T2 -> U) (@complete_metric (T2 -> U) CMS') F1 FF1
+    f g) Hfg eps).
+    apply filter_imp => x.
+    apply (@CompatMetric_UnifFct T2 U) in HU.
+    case: HU => HU.
+    by rewrite HU.
   by apply Hfh.
-  by apply Hhl.
+  apply filterlim_locally => eps.
+  case: FF1 => HF1 FF1.
+  move: (proj1 (@filterlim_locally T1 U (@complete_metric U CMS) F1 FF1 h l) Hhl eps).
+  apply filter_imp => y.
+  by rewrite compat_dist.
 Qed.
 
 
