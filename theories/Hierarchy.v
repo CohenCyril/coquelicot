@@ -1462,8 +1462,7 @@ Defined.
 
 (** * Field *)
 
-Class Field K := {
-  field_group :> AbelianGroup K ;
+Class Field_mixin (K : Type) (KA : AbelianGroup K) := {
   mult : K -> K -> K ;
   inv : K -> K ;
   one : K ;
@@ -1473,6 +1472,25 @@ Class Field K := {
   mult_inv_r : forall x, x <> zero -> mult x (inv x) = one ;
   mult_distr_r : forall x y z, mult (plus x y) z = plus (mult x z) (mult y z)
 }.
+
+Class Field K := {
+  field_group :> AbelianGroup K ;
+  field_field :> Field_mixin K field_group
+}.
+
+Class MetricField K := {
+  mfield_group :> AbelianGroup K ;
+  mfield_field :> Field_mixin K mfield_group ;
+  mfield_metric :> MetricSpace K
+}.
+
+Global Instance MetricField_Field {K} :
+  MetricField K -> Field K.
+Proof.
+  intro MF.
+  apply Build_Field with mfield_group.
+  by apply MF.
+Defined.
 
 Lemma mult_one_l :
   forall K (FK : Field K) (x : K),
@@ -2121,24 +2139,36 @@ apply Rplus_0_r.
 apply Rplus_opp_r.
 Defined.
 
-Global Instance R_field : Field R.
+Lemma R_NormedAbelianGroup_mixin :
+  NormedAbelianGroup_mixin R R_abelian_group.
 Proof.
-apply (@Build_Field R _ Rmult Rinv R1).
-apply Rmult_comm.
-intros x y z.
-apply sym_eq, Rmult_assoc.
-apply Rmult_1_r.
-apply Rinv_r.
-apply Rmult_plus_distr_r.
+  exists (fun x => Rabs x).
+  by apply Rabs_R0.
+  move => x ; by apply Rabs_Ropp.
+  move => x y ; by apply Rabs_triang.
 Defined.
 
 Global Instance R_NormedAbelianGroup : NormedAbelianGroup R.
 Proof.
   apply (Build_NormedAbelianGroup _ _).
-  exists (fun x => Rabs x).
-  by apply Rabs_R0.
-  move => x ; by apply Rabs_Ropp.
-  move => x y ; by apply Rabs_triang.
+  exact: R_NormedAbelianGroup_mixin.
+Defined.
+
+Lemma R_field_mixin : Field_mixin R R_abelian_group.
+Proof.
+  econstructor => /=.
+  exact Rmult_comm.
+  move => x y z ; by rewrite Rmult_assoc.
+  exact Rmult_1_r.
+  exact Rinv_r.
+  apply Rmult_plus_distr_r.
+Defined.
+
+Global Instance R_metric_field : MetricField R.
+Proof.
+  econstructor.
+  + exact R_field_mixin.
+  + by apply NormedAbelianGroup_MetricSpace, R_NormedAbelianGroup.
 Defined.
 
 Global Instance R_SeparatedSpace : SeparatedSpace R.
@@ -2374,7 +2404,7 @@ destruct H as (d1,Hd1).
 now destruct (H1 d1).
 Qed.
 
-(** * on R^2 *)
+(** * Topology on [R]² *)
 
 Definition locally_2d (P : R -> R -> Prop) x y :=
   exists delta : posreal, forall u v, Rabs (u - x) < delta -> Rabs (v - y) < delta -> P u v.
@@ -2838,7 +2868,9 @@ Proof.
 intros x P [eps HP] ; exists eps ; intros ; now apply HP.
 Qed.
 
-(** ** Some limits on real functions *)
+
+
+(** * Some limits on real functions *)
 
 Definition Rbar_loc_seq (x : Rbar) (n : nat) := match x with
     | Finite x => x + / (INR n + 1)
@@ -3390,4 +3422,6 @@ now apply filterlim_plus with (x := Finite x) (y := Finite y).
 intros x y.
 apply filterlim_scal_l with (l := Finite y).
 Defined.
+
+
 
