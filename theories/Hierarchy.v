@@ -336,7 +336,6 @@ Class FilterCompatibility {T} {TT : TopologicalSpace T} (F : T -> (T -> Prop) ->
   filter_compat2 : forall P x, F x P -> exists Q, basis Q /\ Q x /\ forall y, Q y -> P y
 }.
 
-
 Global Instance topology_prod {T U} :
   TopologicalSpace T -> TopologicalSpace U
     -> TopologicalSpace (T * U).
@@ -533,8 +532,9 @@ Qed.
 
 Lemma continuity_comp2 {T U V W X} {TT : TopologicalSpace T} {TU : TopologicalSpace U}
   {TV : TopologicalSpace V} {TW : TopologicalSpace W} {TX : TopologicalSpace X} :
-  forall (f : T -> V) (g : U -> W) (h : V -> W -> X) (x : T) (y : U), continuity f x -> continuity g y -> 
-    continuity (fun z => h (fst z) (snd z)) (f x, g y)
+  forall (f : T -> V) (g : U -> W) (h : V -> W -> X) (x : T) (y : U),
+  continuity f x -> continuity g y -> 
+  continuity (fun z => h (fst z) (snd z)) (f x, g y)
     -> continuity (fun z => h (f (fst z)) (g (snd z))) (x,y).
 Proof.
   move => f g h x y Cf Cg Ch P /= BP Pxy.
