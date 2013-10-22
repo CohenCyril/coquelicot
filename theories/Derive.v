@@ -26,6 +26,40 @@ Require Import Hierarchy Continuity.
 Require Import Rcomplements.
 Open Scope R_scope.
 
+(** * One direction differentiability using filters *)
+
+Definition filterderive {U K} {FK : MetricField K} {VSU : MetricVectorSpace U K} 
+  (f : K -> U) (x : K) (l : U) :=
+  filterlim (fun y => scal (inv (minus y x)) (minus (f y) (f x)))
+    (locally' x) (locally l).
+
+Lemma filterderive_Reals (f : R -> R) (x l : R) :
+ (derivable_pt_lim f x l <-> filterderive f x l).
+Proof.
+  split => Hf.
+  + apply filterlim_locally ; simpl.
+    move => eps.
+    case: (Hf eps (cond_pos _)) => {Hf} d Hf.
+    exists d => y /= Hy Hxy.
+    replace (/ (y + - x) * (f y + - f x) + - l)
+      with (((f (x + (y-x)) - f x) / (y-x) - l))
+      by (ring_simplify (x + (y - x)) ; field ; by apply Rminus_eq_contra).
+    apply: Hf.
+    by apply Rminus_eq_contra.
+    exact Hy.
+  + move => e He.
+    apply filterlim_locally with (eps := mkposreal _ He) in Hf ; simpl in Hf.
+    case: Hf => d /= Hf.
+    exists d => h Hh0 Hh.
+    replace ((f (x + h) - f x) / h - l)
+      with (/ ((x+h) + - x) * (f (x + h) + - f x) + - l)
+      by (by field).
+    apply: Hf.
+    by ring_simplify (x + h + - x).
+    apply Rminus_not_eq.
+    by ring_simplify (x + h - x).
+Qed.
+
 (** * Definitions *)
 
 Notation is_derive f x l := (derivable_pt_lim f x l).
