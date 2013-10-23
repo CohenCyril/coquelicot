@@ -231,8 +231,8 @@ Proof.
     move => y Hy ; rewrite /CV_disk /=.
   set l := (Rabs (y / r)).
   assert (ex_series (fun n => M * l ^ n)).
-  apply ex_series_ext with (fun n : nat => @Hierarchy.scal R R Hierarchy.R_field
-       (@Hierarchy.mvspace_vector R R Hierarchy.R_field _) M (l ^ n)).
+  apply ex_series_ext with (fun n : nat => @Hierarchy.scal R R _
+       (@Hierarchy.mvspace_vector R R _ _) M (l ^ n)).
     by elim.
   apply (ex_series_scal_l M (pow l)).
   apply ex_series_geom.
