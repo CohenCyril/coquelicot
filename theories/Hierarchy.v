@@ -280,29 +280,34 @@ Qed.
 
 (** ** Definitions *)
 
-Inductive neighborhoods {T} (basis : (T -> Prop) -> Prop) (x : T) (D : T -> Prop) : Prop :=
-  Is_neighborhoods (P : T -> Prop) : basis P -> P x -> (forall y, P y -> D y)
-    -> neighborhoods basis x D.
+Inductive neighborhood_ {T} (basis : (T -> Prop) -> Prop) (x : T) (D : T -> Prop) : Prop :=
+  Neighborhood (P : T -> Prop) : basis P -> P x -> (forall y, P y -> D y) -> neighborhood_ basis x D.
 
 Class TopologicalSpace T := {
   basis : (T -> Prop) -> Prop ;
   open := fun (D : T -> Prop) =>
-    forall x, D x -> neighborhoods basis x D ;
+    forall x, D x -> neighborhood_ basis x D ;
   basis_and : forall P Q, basis P -> basis Q ->
-    forall x, P x -> Q x -> neighborhoods basis x (fun y => P y /\ Q y) ;
+    forall x, P x -> Q x -> neighborhood_ basis x (fun y => P y /\ Q y) ;
   basis_true : forall x, exists P, basis P /\ P x
 }.
 
-Global Instance neighborhoods_filter T :
-  forall (TT : TopologicalSpace T) (x : T), Filter (neighborhoods basis x).
+Definition neighborhood {T} {TT : TopologicalSpace T} : T -> (T -> Prop) -> Prop :=
+  neighborhood_ basis.
+
+Global Instance neighborhood_filter :
+  forall T (TT : TopologicalSpace T) (x : T), ProperFilter (neighborhood x).
 Proof.
-intros TT x.
-split.
+intros T TT x.
+split ; [idtac | split].
+- intros P [Q BQ Qx H].
+  exists x.
+  now apply H.
 - destruct (basis_true x) as [P [BP Px]].
   by exists P.
 - intros P Q [P' BP' Px HP] [Q' BQ' Qx HQ].
   destruct (basis_and P' Q' BP' BQ' x Px Qx) as [R BR Rx HR].
-  apply Is_neighborhoods with (1 := BR).
+  apply Neighborhood with (1 := BR).
   exact Rx.
   intros y Ry.
   destruct (HR y Ry) as [Py Qy].
@@ -310,11 +315,50 @@ split.
   now apply HP.
   now apply HQ.
 - intros P Q H [P' BP' Px HP].
-  apply Is_neighborhoods with (1 := BP').
+  apply Neighborhood with (1 := BP').
   exact Px.
   intros y Py.
   apply H.
   now apply HP.
+Qed.
+
+Lemma neighborhood_imp :
+  forall {T} {TT : TopologicalSpace T} x (P Q : T -> Prop),
+  (forall x, P x -> Q x) ->
+  neighborhood x P -> neighborhood x Q.
+Proof.
+intros T TT x P Q H [R BR Rx HR].
+exists R ; try easy.
+intros y Ry.
+apply H.
+now apply HR.
+Qed.
+
+Lemma neighborhood_basis :
+  forall {T} {TT : TopologicalSpace T} x P,
+  basis P -> P x -> neighborhood x P.
+Proof.
+intros T TT x P BP Px.
+now exists P.
+Qed.
+
+Class FinerTopology {T} (T1 T2 : TopologicalSpace T) :=
+  finer_topology : forall x P, @basis T T2 P -> P x -> @neighborhood T T1 x P.
+
+Lemma neighborhood_finer_topology :
+  forall {T} (T1 T2 : TopologicalSpace T) {FT : FinerTopology T2 T1},
+  forall x P, @neighborhood T T1 x P -> @neighborhood T T2 x P.
+Proof.
+intros T T1 T2 FT x P [Q BQ Qx HQ].
+apply neighborhood_imp with (1 := HQ).
+now apply finer_topology.
+Qed.
+
+Global Instance FinerTopology_refl :
+  forall T (TT : TopologicalSpace T), FinerTopology TT TT.
+Proof.
+intros T TT x P BP Px.
+now exists P.
 Qed.
 
 Inductive disjoint_spec {T} {TT : TopologicalSpace T} (x y : T) :=
@@ -326,16 +370,10 @@ Class SeparatedSpace T := {
   separated_disjoint : forall x y : T, x <> y -> disjoint_spec x y
 }.
 
-Class PerfectSpace T := {
-  perfect_topological :> TopologicalSpace T ;
-  perfect_open : forall x : T, exists O, open O /\ O x
-}.
-
 Class FilterCompatibility {T} {TT : TopologicalSpace T} (F : T -> (T -> Prop) -> Prop) := {
   filter_compat1 : forall P x, basis P -> P x -> F x P ;
   filter_compat2 : forall P x, F x P -> exists Q, basis Q /\ Q x /\ forall y, Q y -> P y
 }.
-
 
 Global Instance topology_prod {T U} :
   TopologicalSpace T -> TopologicalSpace U
@@ -381,7 +419,7 @@ Lemma open_basis :
   basis P -> open P.
 Proof.
 intros T TT P BP x Px.
-now apply (Is_neighborhoods _ _ _ P).
+now apply (Neighborhood _ _ _ P).
 Qed.
 
 Lemma open_ext :
@@ -392,7 +430,7 @@ Proof.
 intros T TT P Q H OP x Qx.
 destruct (OP x) as [R BR Rx HR].
 now apply H.
-apply (Is_neighborhoods _ _ _ R BR Rx).
+apply (Neighborhood _ _ _ R BR Rx).
 intros y Ry.
 apply H.
 now apply HR.
@@ -406,7 +444,7 @@ intros T TT D E OD OE x [Dx Ex].
 destruct (OD x Dx) as [P BP Px HP].
 destruct (OE x Ex) as [Q BQ Qx HQ].
 destruct (basis_and P Q BP BQ x Px Qx) as [R BR Rx HR].
-apply (Is_neighborhoods _ _ _ R BR Rx).
+apply (Neighborhood _ _ _ R BR Rx).
 intros y Ry.
 destruct (HR y Ry) as [Py Qy].
 split.
@@ -421,7 +459,7 @@ Lemma open_ex :
 Proof.
 intros T TT A D OD x [a Dx].
 destruct (OD a x Dx) as [P BP Px HP].
-apply (Is_neighborhoods _ _ _ P BP Px).
+apply (Neighborhood _ _ _ P BP Px).
 intros y Py.
 exists a.
 now apply HP.
@@ -433,12 +471,12 @@ Lemma open_or :
 Proof.
 intros T TT D E OD OE x [Dx|Ex].
 destruct (OD x Dx) as [P BP Px HP].
-apply (Is_neighborhoods _ _ _ P BP Px).
+apply (Neighborhood _ _ _ P BP Px).
 intros y Py.
 left.
 now apply HP.
 destruct (OE x Ex) as [P BP Px HP].
-apply (Is_neighborhoods _ _ _ P BP Px).
+apply (Neighborhood _ _ _ P BP Px).
 intros y Py.
 right.
 now apply HP.
@@ -468,6 +506,7 @@ split.
 Qed.
 
 (** ** Limits and continuity in topological spaces *)
+
 (** Limit of a filter *)
 
 Definition is_filter_lim {T} {TT : TopologicalSpace T} (F : (T -> Prop) -> Prop) (x : T) :=
@@ -488,18 +527,41 @@ intros z [Pz Qz].
 now apply (H' z).
 Qed.
 
-Lemma is_filter_lim_neighborhoods :
+Lemma is_filter_lim_neighborhood :
   forall {T} {TT : TopologicalSpace T} (x : T),
-  is_filter_lim (neighborhoods basis x) x.
+  is_filter_lim (neighborhood x) x.
 Proof.
 intros T TT x P BP Px.
-now apply Is_neighborhoods with (1 := BP).
+now apply Neighborhood with (1 := BP).
 Qed.
 
 (** Continuity *)
 
 Definition continuity {U V} {TU : TopologicalSpace U} {TV : TopologicalSpace V} (f : U -> V) (x : U) :=
-  forall P, basis P -> P (f x) -> neighborhoods basis x (fun x => P (f x)).
+  forall P, basis P -> P (f x) -> neighborhood x (fun x => P (f x)).
+
+Lemma continuity_finer_topology_l :
+  forall {U V} {TV : TopologicalSpace V} (TU1 TU2 : TopologicalSpace U)
+    {FT : FinerTopology TU2 TU1} (f : U -> V) x,
+  @continuity U V TU1 TV f x -> @continuity U V TU2 TV f x.
+Proof.
+intros U V TV TU1 TU2 FT f x Cf P BP Pfx.
+apply neighborhood_finer_topology with (1 := FT).
+now apply Cf.
+Qed.
+
+Lemma continuity_finer_topology_r :
+  forall {U V} {TU : TopologicalSpace U} (TV1 TV2 : TopologicalSpace V)
+    {FT : FinerTopology TV1 TV2} (f : U -> V) x,
+  @continuity U V TU TV1 f x -> @continuity U V TU TV2 f x.
+Proof.
+intros U V TU TV1 TV2 FT f x Cf P BP Pfx.
+destruct (FT (f x) P BP Pfx) as [Q BQ Qfx HQ].
+eapply neighborhood_imp.
+intros y.
+apply HQ.
+now apply Cf.
+Qed.
 
 Lemma is_filter_lim_continuity :
   forall {T U} {TT : TopologicalSpace T} {TU : TopologicalSpace U} (f : T -> U) (x : T),
@@ -510,13 +572,30 @@ intros T U TT TU f x.
 split.
 - intros Cf Q BQ Qfx.
   apply Cf ; try easy.
-  apply neighborhoods_filter.
-  apply is_filter_lim_neighborhoods.
+  apply neighborhood_filter.
+  apply is_filter_lim_neighborhood.
 - intros Cf F FF Fx P BP Pfx.
   destruct (Cf P BP Pfx) as [Q BQ Qx HQ].
   unfold filtermap.
   apply filter_imp with (1 := HQ).
   now apply Fx.
+Qed.
+
+Lemma filterlim_neighborhood_continuity :
+  forall {U V} {TU : TopologicalSpace U} {TV : TopologicalSpace V} (f : U -> V) (x : U),
+  filterlim f (neighborhood x) (neighborhood (f x)) <-> continuity f x.
+Proof.
+intros U V TU TV f x.
+split.
+- intros Cf P BP Pfx.
+  apply Cf.
+  now exists P.
+- intros Cf P [Q BQ Qfx HQP].
+  unfold filtermap.
+  generalize (Cf Q BQ Qfx).
+  apply filter_imp.
+  intros u.
+  apply HQP.
 Qed.
 
 Lemma continuity_comp {T U V} {TT : TopologicalSpace T} {TU : TopologicalSpace U} {TV : TopologicalSpace V} :
@@ -552,6 +631,58 @@ Proof.
   apply HQ.
   by apply HR.
   by apply HS.
+Qed.
+
+Lemma continuity_fst :
+  forall {T U} {TT : TopologicalSpace T} {TU : TopologicalSpace U} (z : T * U),
+  continuity (@fst T U) z.
+Proof.
+intros T U TT TU z P BP Pz.
+destruct (basis_true (snd z)) as [Q [BQ Qz]].
+exists (fun z => P (fst z) /\ Q (snd z)).
+intros x [Px Qx].
+exists P, Q.
+now repeat split.
+now split.
+now intros y [Py Qy].
+Qed.
+
+Lemma continuity_snd :
+  forall {T U} {TT : TopologicalSpace T} {TU : TopologicalSpace U} (z : T * U),
+  continuity (@snd T U) z.
+Proof.
+intros T U TT TU z Q BQ Qz.
+destruct (basis_true (fst z)) as [P [BP Pz]].
+exists (fun z => P (fst z) /\ Q (snd z)).
+intros x [Px Qx].
+exists P, Q.
+now repeat split.
+now split.
+now intros y [Py Qy].
+Qed.
+
+Lemma continuity_pair :
+  forall {T U V} {TT : TopologicalSpace T} {TU : TopologicalSpace U} {TV : TopologicalSpace V}
+    {TW : TopologicalSpace (U * V)} {FT : FinerTopology (topology_prod TU TV) TW}
+    (f : T -> U) (g : T -> V) (x : T),
+  continuity f x ->
+  continuity g x ->
+  @continuity _ _ _ TW (fun x => (f x, g x)) x.
+Proof.
+intros T U V TT TU TV TW FT f g x Cf Cg.
+apply continuity_finer_topology_r with (1 := FT).
+intros P BP Pfg.
+destruct (BP _ Pfg) as [Q [R [BQ [BR [Qf [Rg HP]]]]]].
+destruct (Cf Q BQ Qf) as [Q' BQ' Q'x Q'f].
+destruct (Cg R BR Rg) as [R' BR' R'x R'g].
+destruct (basis_and Q' R' BQ' BR' x Q'x R'x) as [P' BP' P'x H'].
+exists P' ; try easy.
+intros y P'y.
+apply HP.
+apply Q'f.
+now apply H'.
+apply R'g.
+now apply H'.
 Qed.
 
 (** * Metric Spaces *)
@@ -594,7 +725,7 @@ Lemma metric_topological_and :
   (exists x eps, forall y : T, ball x eps y <-> P y) ->
   (exists x eps, forall y : T, ball x eps y <-> Q y) ->
   forall x, P x -> Q x ->
-  neighborhoods (fun D => exists x eps, forall y, ball x eps y <-> D y) x (fun y => P y /\ Q y).
+  neighborhood_ (fun D => exists x eps, forall y, ball x eps y <-> D y) x (fun y => P y /\ Q y).
 Proof.
 intros T MT P Q [xP [epsP HP]] [xQ [epsQ HQ]] x Px Qx.
 assert (H : 0 < Rmin (epsP - distance xP x) (epsQ - distance xQ x)).
@@ -603,7 +734,7 @@ apply Rlt_Rminus.
 now apply HP.
 apply Rlt_Rminus.
 now apply HQ.
-apply (Is_neighborhoods _ _ _ (ball x (mkposreal _ H))).
+apply (Neighborhood _ _ _ (ball x (mkposreal _ H))).
 exists x.
 now eexists.
 unfold ball.
@@ -733,7 +864,6 @@ split.
   intros t.
   apply He.
 Qed.
-
 
 Lemma locally_open :
   forall {T} {MT : MetricSpace T} x (P : T -> Prop),
@@ -902,7 +1032,8 @@ apply distance_triangle.
 apply Rplus_le_compat ; apply Rmax_r.
 Qed.
 
-Global Instance prod_metric : forall T U, MetricSpace T -> MetricSpace U -> MetricSpace (T * U).
+Global Instance prod_metric :
+  forall T U, MetricSpace T -> MetricSpace U -> MetricSpace (T * U).
 Proof.
 intros T U MT MU.
 apply (Build_MetricSpace _ (dist_prod distance distance)).
@@ -910,6 +1041,60 @@ apply (Build_MetricSpace _ (dist_prod distance distance)).
 - exact dist_prod_comm.
 - exact dist_prod_triangle.
 Defined.
+
+Global Instance prod_metric_topology_1 :
+  forall T U (MT : MetricSpace T) (MU : MetricSpace U),
+  FinerTopology (topology_prod _ _) (metric_topological _ (prod_metric T U _ _)).
+Proof.
+intros T U MT MU z P [[u v] [eps H]] Pz.
+apply neighborhood_basis with (2 := Pz).
+intros [x y] Pxy.
+exists (ball u eps), (ball v eps).
+assert (K := proj2 (H _) Pxy).
+repeat split.
+now exists u, eps.
+now exists v, eps.
+apply Rle_lt_trans with (2 := K).
+apply Rmax_l.
+apply Rle_lt_trans with (2 := K).
+apply Rmax_r.
+intros p q Hp Hq.
+apply H.
+unfold ball.
+simpl.
+unfold dist_prod.
+now apply Rmax_case.
+Qed.
+
+Global Instance prod_metric_topology_2 :
+  forall T U (MT : MetricSpace T) (MU : MetricSpace U),
+  FinerTopology (metric_topological _ (prod_metric T U _ _)) (topology_prod _ _).
+Proof.
+intros T U MT MU z P BP Pz.
+destruct (BP _ Pz) as [Q [R [[cQ [eQ BQ]] [[cR [eR BR]] [Qz [Rz H]]]]]].
+assert (H': 0 < Rmin (eQ - distance cQ (fst z)) (eR - distance cR (snd z))).
+  admit.
+exists (ball z (mkposreal _ H')).
+eexists.
+now eexists.
+apply ball_center.
+intros [x y] B.
+apply H.
+apply BQ.
+apply Rle_lt_trans with (1 := distance_triangle cQ (fst z) x).
+apply Rplus_lt_reg_r with (- distance cQ (fst z)).
+rewrite Rplus_comm -Rplus_assoc Rplus_opp_l Rplus_0_l.
+apply Rlt_le_trans with (2 := Rmin_l _ (eR - distance cR (snd z))).
+apply Rle_lt_trans with (2 := B).
+apply Rmax_l.
+apply BR.
+apply Rle_lt_trans with (1 := distance_triangle cR (snd z) y).
+apply Rplus_lt_reg_r with (- distance cR (snd z)).
+rewrite Rplus_comm -Rplus_assoc Rplus_opp_l Rplus_0_l.
+apply Rlt_le_trans with (2 := Rmin_r (eQ - distance cQ (fst z)) _).
+apply Rle_lt_trans with (2 := B).
+apply Rmax_r.
+Qed.
 
 Fixpoint dist_pow (n : nat) (T : Type) (d : T -> T -> R) : Tn n T -> Tn n T -> R :=
   match n with
@@ -1460,6 +1645,44 @@ intros x.
 apply f_equal2 ; apply plus_opp_r.
 Defined.
 
+(** ** Topological Abelian Groups *)
+
+Class TopologicalAbelianGroup_mixin G (AG : AbelianGroup G) (TG : TopologicalSpace G) := {
+  continuity_plus' : forall z : G * G, continuity (fun z => plus (fst z) (snd z)) z ;
+  continuity_opp : forall x : G, continuity opp x
+}.
+
+Class TopologicalAbelianGroup G := {
+  tagroup_abelian :> AbelianGroup G ;
+  tagroup_topological :> TopologicalSpace G ;
+  tagroup_mixin :> TopologicalAbelianGroup_mixin G tagroup_abelian tagroup_topological
+}.
+
+Lemma continuity_plus :
+  forall {G} {TAG : TopologicalAbelianGroup G} {TG2 : TopologicalSpace (G * G)}
+    {FT : FinerTopology TG2 (topology_prod _ _)} (x : G * G),
+  @continuity _ _ TG2 _ (fun y => plus (fst y) (snd y)) x.
+Proof.
+intros G TAG TG2 FT x.
+apply (continuity_finer_topology_l _ _ (FT := FT)).
+apply continuity_plus'.
+Qed.
+
+Lemma continuity_minus :
+  forall {G} {TAG : TopologicalAbelianGroup G} {TG2 : TopologicalSpace (G * G)}
+    {FT : FinerTopology TG2 (topology_prod _ _)} (x : G * G),
+  @continuity _ _ TG2 _ (fun y => minus (fst y) (snd y)) x.
+Proof.
+intros G TAG TG2 FT x.
+apply (continuity_finer_topology_l _ _ (FT := FT)).
+apply (fun H => continuity_comp (fun x => (fst x, opp (snd x))) _ x H (continuity_plus' _)).
+apply continuity_pair.
+apply continuity_fst.
+apply continuity_comp.
+apply continuity_snd.
+apply continuity_opp.
+Qed.
+
 (** * Field *)
 
 Class Field K := {
@@ -1774,7 +1997,7 @@ Defined.
 
 (** ** Continuity in Normed Abelian Groups *)
 
-Lemma continuity_opp {T} {NAG : NormedAbelianGroup T} :
+Lemma NormedAbelianGroup_continuity_opp {T} {NAG : NormedAbelianGroup T} :
   forall (x : T), continuity opp x.
 Proof.
   move => x.
@@ -1791,10 +2014,12 @@ Proof.
   by [].
 Qed.
 
-Lemma continuity_plus {T} {NAG : NormedAbelianGroup T} :
-  forall (x : T * T), continuity (fun y => plus (fst y) (snd y)) x.
+Lemma NormedAbelianGroup_continuity_plus {T} {NAG : NormedAbelianGroup T} :
+  forall (x : T * T), continuity (TU := topology_prod _ _) (fun y => plus (fst y) (snd y)) x.
 Proof.
   move => x.
+  eapply continuity_finer_topology_l.
+  apply prod_metric_topology_1.
   apply -> (is_filter_lim_continuity (fun y : T * T => plus (fst y) (snd y)) x).
   move => F HF Hx P [y [d HP]] Pfx.
   apply HP in Pfx.
@@ -1828,23 +2053,15 @@ Proof.
   by apply Rlt_0_2.
 Qed.
 
-Lemma continuity_minus {T} {NAG : NormedAbelianGroup T} :
-  forall (x : T * T), continuity (fun y => minus (fst y) (snd y)) x.
+Global Instance NormedAbelianGroup_TopologicalAbelianGroup :
+  forall G, NormedAbelianGroup G -> TopologicalAbelianGroup G.
 Proof.
-  move => x.
-  unfold minus.
-  apply (fun H => continuity_comp (fun x => (fst x, opp (snd x))) (fun x => plus (fst x) (snd x)) x H (continuity_plus _)).
-  apply -> (is_filter_lim_continuity (fun x0 : T * T => (fst x0, opp (snd x0))) x).
-  move => F FF Fx P [y [d BP]] Px.
-  unfold filtermap.
-  apply Fx.
-  exists (fst y, opp (snd y)), d.
-  move => z.
-  rewrite -BP.
-  rewrite /ball /= /dist_prod /=.
-  by rewrite /minus -opp_plus opp_opp norm_opp.
-  by [].
-Qed.
+intros G NAG.
+econstructor.
+constructor.
+apply NormedAbelianGroup_continuity_plus.
+apply NormedAbelianGroup_continuity_opp.
+Defined.
 
 (** ** Functional Normed Abelian Groups *)
 
@@ -2056,10 +2273,10 @@ Lemma nat_topology_and : forall P Q : nat -> Prop,
   eventually P ->
   eventually Q ->
   forall x : nat,
-  P x -> Q x -> neighborhoods eventually x (fun y : nat => P y /\ Q y).
+  P x -> Q x -> neighborhood_ eventually x (fun y : nat => P y /\ Q y).
 Proof.
   move => P Q [NP HP] [NQ HQ] x Px Qx.
-  apply Is_neighborhoods with (fun y : nat => P y /\ Q y).
+  apply Neighborhood with (fun y : nat => P y /\ Q y).
   exists (NP + NQ)%nat => n Hn.
   split.
   by apply HP, le_trans with (2 := Hn), le_plus_l.
@@ -2266,7 +2483,7 @@ Lemma open_lt :
 Proof.
 intros y x Hxy.
 apply Rminus_lt_0 in Hxy.
-apply (Is_neighborhoods _ _ _ (ball x (mkposreal _ Hxy))).
+apply (Neighborhood _ _ _ (ball x (mkposreal _ Hxy))).
 - exists x.
   now eexists.
 - unfold ball.
@@ -2283,7 +2500,7 @@ Lemma open_gt :
 Proof.
 intros y x Hxy.
 apply Rminus_lt_0 in Hxy.
-apply (Is_neighborhoods _ _ _ (ball x (mkposreal _ Hxy))).
+apply (Neighborhood _ _ _ (ball x (mkposreal _ Hxy))).
 - exists x.
   now eexists.
 - unfold ball.
@@ -2373,6 +2590,65 @@ elimtype False.
 destruct H as (d1,Hd1).
 now destruct (H1 d1).
 Qed.
+
+(** Continuity of distance and norm *)
+
+Lemma continuity_distance :
+  forall {T} {MT : MetricSpace T} (z : T * T),
+  continuity (fun z => distance (fst z) (snd z)) z.
+Proof.
+intros T MT [x y] P [c [eps BP]] H.
+set (d := eps - Rabs (distance x y - c)).
+assert (Hd: 0 < d).
+  apply BP in H.
+  apply Rlt_Rminus.
+  apply H.
+exists (ball (x, y) (pos_div_2 (mkposreal _ Hd))).
+now eexists ; eexists.
+apply ball_center.
+intros [u v] Huv.
+apply BP.
+unfold ball.
+simpl.
+replace (distance u v + - c) with (distance u v - distance x y + (distance x y - c)) by ring.
+apply Rle_lt_trans with (1 := Rabs_triang _ _).
+apply Rplus_lt_reg_r with (- Rabs (distance x y - c)).
+rewrite Rplus_assoc Rplus_opp_r Rplus_0_r.
+apply Rle_lt_trans with (distance u x + distance v y).
+- apply Rabs_le_between'.
+  split.
+  + apply Rplus_le_reg_r with (distance u x + distance v y).
+    unfold Rminus.
+    rewrite Rplus_assoc Rplus_opp_l Rplus_0_r.
+    apply Rle_trans with (1 := distance_triangle x u y).
+    rewrite distance_comm.
+    apply Rplus_le_reg_l with (- distance u x).
+    ring_simplify.
+    apply distance_triangle.
+  + apply Rle_trans with (1 := distance_triangle u x v).
+    apply Rplus_le_reg_l with (- distance u x).
+    ring_simplify.
+    rewrite (distance_comm v).
+    apply distance_triangle.
+- apply Rle_lt_trans with (2 * Rmax (distance u x) (distance v y)).
+  + rewrite Rmult_plus_distr_r Rmult_1_l.
+    apply Rplus_le_compat.
+    apply Rmax_l.
+    apply Rmax_r.
+  + apply Rmult_lt_reg_r with (1 := pos_half_prf).
+    rewrite -> Rmult_comm, <- Rmult_assoc, Rinv_l, Rmult_1_l.
+    rewrite (distance_comm u x) (distance_comm v y).
+    exact Huv.
+    apply Rgt_not_eq, Rlt_0_2.
+Qed.
+
+Lemma continuity_norm :
+  forall {G} {NAG : NormedAbelianGroup G} (x : G),
+  continuity (fun z => norm z) x.
+Proof.
+intros G NAG x.
+unfold norm.
+Abort.
 
 (** * on R^2 *)
 
@@ -3352,36 +3628,6 @@ apply continuity_pt_filterlim in Cf.
 now apply Cf.
 Qed.
 
-Lemma distance_continue {T} {TT : MetricSpace T} (x y : T) :
-  filterlim (fun u => distance (fst u) (snd u))
-    (filter_prod (locally x) (locally y)) (locally (distance x y)).
-Proof.
-  apply filterlim_locally => eps /=.
-  apply Filter_prod with
-    (fun x' => distance x x' < eps / 2) (fun y' => distance y y' < eps / 2) => /=.
-  rewrite /locally /locally_dist ; by exists (pos_div_2 eps).
-  rewrite /locally /locally_dist ; by exists (pos_div_2 eps).
-  move => x' y' Hx Hy.
-  apply Rabs_lt_between ; split.
-  rewrite distance_comm in Hy.
-  rewrite -/(Rminus _ _) -Ropp_minus_distr ; apply Ropp_lt_contravar.
-  apply Rlt_minus_l.
-  apply Rle_lt_trans with (1 := distance_triangle _ x' _).
-  apply Rlt_trans with (1 := Rplus_lt_compat_r _ _ _ Hx).
-  rewrite Rplus_comm ; apply Rlt_minus_r.
-  apply Rle_lt_trans with (1 := distance_triangle _ y' _).
-  apply Rlt_le_trans with (1 := Rplus_lt_compat_l _ _ _ Hy).
-  right ; field.
-  rewrite distance_comm in Hx.
-  apply Rlt_minus_l.
-  apply Rle_lt_trans with (1 := distance_triangle _ x _).
-  apply Rlt_trans with (1 := Rplus_lt_compat_r _ _ _ Hx).
-  rewrite Rplus_comm ; apply Rlt_minus_r.
-  apply Rle_lt_trans with (1 := distance_triangle _ y _).
-  apply Rlt_le_trans with (1 := Rplus_lt_compat_l _ _ _ Hy).
-  right ; field.
-Qed.
-
 Global Instance R_metric_vector : MetricVectorSpace R R.
 Proof.
 econstructor.
@@ -3390,4 +3636,3 @@ now apply filterlim_plus with (x := Finite x) (y := Finite y).
 intros x y.
 apply filterlim_scal_l with (l := Finite y).
 Defined.
-
