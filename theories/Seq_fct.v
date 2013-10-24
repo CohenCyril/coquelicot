@@ -944,14 +944,13 @@ Qed.
 
 (** * Swich limits *)
 
-Lemma filterlim_swich_1 {T1 T2 G} {NAG : NormedAbelianGroup G}
+Lemma filterlim_switch_1 {T1 T2 G} {NAG : NormedAbelianGroup G}
   (f : T1 -> T2 -> G) F1 F2 (FF1 : ProperFilter F1) (FF2 : Filter F2) g h (l : G) :
-  let NAG' := NAG_UnifFct NAG in
   (filterlim f F1 (locally g))
   -> (forall x, filterlim (f x) F2 (locally (h x)))
   -> filterlim h F1 (locally l) -> filterlim g F2 (locally l).
 Proof.
-  intros NAG' Hfg Hfh Hhl P.
+  intros Hfg Hfh Hhl P.
   case: FF1 => HF1 FF1.
   apply filterlim_locally.
   move => eps.
@@ -971,34 +970,12 @@ Proof.
   have FF := (filter_prod_filter _ _ F1 F2 FF1 FF2).
 
   have : filter_prod F1 F2 (fun x => @distance G (@NormedAbelianGroup_MetricSpace G NAG) (g (snd x)) (f (fst x) (snd x)) < eps / 2 / 2).
-    apply Filter_prod with (fun x : T1 => UnifFct_pnorm (minus (f x) g) < eps / 2 / 2) (fun _ => True).
+    apply Filter_prod with (fun x : T1 => ball g (eps / 2 / 2) (f x)) (fun _ => True).
     move: (proj1 (@filterlim_locally _ _ _ F1 FF1 f g) Hfg (pos_div_2 (pos_div_2 eps))) => {Hfg} /= Hfg.
     by [].
     by apply FF2.
     simpl ; intros.
-    apply Rle_lt_trans with (2 := H).
-    rewrite /UnifFct_pnorm /Rbar_min ; case: Rbar_le_dec => H1.
-    contradict H1.
-    apply Rbar_lt_not_le.
-    apply Rbar_lt_trans with (eps / 2 / 2).
-    apply UnifFct_pnorm_lub_lt_1.
-    apply Rle_trans with (1 / 2 / 2).
-    apply Rlt_le ; repeat apply Rmult_lt_compat_r ; intuition.
-    apply Rminus_le_0 ; field_simplify ; rewrite Rdiv_1.
-    apply Rdiv_le_0_compat, Rmult_lt_0_compat ; intuition ;
-    repeat apply Rplus_le_le_0_compat ; apply Rle_0_1.
-    by [].
-    simpl ; apply Rlt_trans with (1 / 2 / 2).
-    repeat apply Rmult_lt_compat_r ; intuition.
-    apply Rminus_lt_0 ; field_simplify ; rewrite Rdiv_1.
-    apply Rdiv_lt_0_compat, Rmult_lt_0_compat ; intuition ;
-    repeat apply Rplus_lt_0_compat ; apply Rlt_0_1.
-    move: (Rbar_not_le_lt _ _ H1) ;
-    rewrite /Lub_Rbar_ne ; case: ex_lub_Rbar_ne ; case => [l0 | | ] //= [ub lub] _.
-    apply Rbar_finite_le, ub.
-    right ; exists y.
-    unfold pnorm, distance ; simpl ; case: (NAG) ; by case.
-    case: (ub 0) ; by auto.
+    apply H.
   move => {Hfg} Hfg.
 
   have: filter_prod F1 F2 (fun x : T1 * T2 => @distance _ (@NormedAbelianGroup_MetricSpace G NAG) l (h (fst x)) < eps / 2).
@@ -1031,33 +1008,15 @@ Proof.
   by apply Hy.
 Qed.
 
-Lemma filterlim_swich_2 {T1 T2 U} {CMS : CompleteMetricSpace U}
+Lemma filterlim_switch_2 {T1 T2 U} {CMS : CompleteSpace U}
   (f : T1 -> T2 -> U) F1 F2 (FF1 : ProperFilter F1) (FF2 : ProperFilter F2) g h :
-  let CMS' := CompleteMetricSpace_UnifFct _ in
   (filterlim f F1 (locally g))
   -> (forall x, filterlim (f x) F2 (locally (h x)))
   -> (exists l : U, filterlim h F1 (locally l)).
 Proof.
-  move => CMS' Hfg Hfh.
+  move => Hfg Hfh.
   case : (proj1 (filterlim_locally_cauchy h)).
   move => eps.
-
-  - wlog: eps / (eps < 1) => [Hw | Heps].
-    case: (Rlt_le_dec eps 1) => Heps.
-    by apply Hw.
-    case: (Hw (pos_div_2 (mkposreal _ Rlt_0_1))) => /=.
-    apply Rminus_lt_0 ; field_simplify ; rewrite Rdiv_1.
-    apply Rdiv_lt_0_compat ; by intuition.
-    move => P [Hp Hh].
-    exists P ; split.
-    by [].
-    move => u v Hu Hv.
-    apply Rlt_trans with (1/2).
-    by apply Hh.
-    apply Rlt_le_trans with 1.
-    apply Rminus_lt_0 ; field_simplify ; rewrite Rdiv_1.
-    apply Rdiv_lt_0_compat ; by intuition.
-    by [].
   generalize (proj2 (filterlim_locally_cauchy f)) => Hf.
   assert (exists y : T2 -> U, filterlim f F1 (locally y)).
     exists g => P Hp.
@@ -1069,20 +1028,6 @@ Proof.
     
   move: H => {Hfg} Hfg.
   move: (Hf Hfg (pos_div_2 eps)) => {Hf Hfg} /= Hf.
-  assert (exists P : T1 -> Prop, F1 P /\
-    (forall (u v : T1) (y : T2), P u -> P v -> distance (f u y) (f v y) < eps / 2)).
-    case: Hf => P [Hp Hp'].
-    exists P ; split.
-    by [].
-    move => u v y Hu Hv.
-    move: (Hp' u v Hu Hv) => {Hp'} Hp'.
-    apply Rle_lt_trans with (2 := Hp').
-    apply: UnifFct_dist_ge_fct.
-    apply Rlt_trans with (2 := Heps).
-    apply Rlt_trans with (1 := Hp').
-    apply Rminus_lt_0 ; field_simplify ; rewrite Rdiv_1 ; by apply is_pos_div_2.
-    
-    move: H => {Hf} Hf.
 
   case: FF2 => HF2 FF2.
   generalize (fun x => proj1 (filterlim_locally (f x) (h x)) (Hfh x) (pos_div_2 (pos_div_2 eps)))
@@ -1097,37 +1042,26 @@ Proof.
   move: (@filter_and _ F2 FF2 _ _ Hu' Hv') => {Hu' Hv' Hfh} Hfh.
   case: (HF2 _ Hfh) => {Hfh} y Hy.
   replace (pos eps) with (eps / 2 / 2 + (eps / 2 + eps / 2 / 2)) by field.
-  apply Rle_lt_trans with (1 := distance_triangle (h u) (f u y) (h v)).
-  apply Rplus_lt_compat.
+  apply ball_triangle with (f u y).
   by apply Hy.
-  apply Rle_lt_trans with (1 := distance_triangle (f u y) (f v y) (h v)).
-  apply Rplus_lt_compat.
+  apply ball_triangle with (f v y).
   by apply Hf.
-  rewrite distance_comm ; by apply Hy.
+  now apply ball_sym.
   
   move => l Hl.
   by exists l.
 Qed.
 
-Lemma filterlim_swich {T1 T2 U} {CNAG : CompleteNormedAbelianGroup U}
+Lemma filterlim_switch {T1 T2 U} {CNAG : CompleteNormedAbelianGroup U}
   (f : T1 -> T2 -> U) F1 F2 (FF1 : ProperFilter F1) (FF2 : ProperFilter F2) g h :
-  let CMS := @CompleteNormedAbelianGroup_UnifFct T2 U CNAG in 
   (filterlim f F1 (locally g))
   -> (forall x, filterlim (f x) F2 (locally (h x)))
   -> (exists l : U, filterlim h F1 (locally l) /\ filterlim g F2 (locally l)).
 Proof.
-  move => CMS' Hfg Hfh.
+  move => Hfg Hfh.
   destruct (filterlim_swich_2 f F1 F2 FF1 FF2 g h) as [l Hhl].
-    intros P [eps HP].
-    apply Hfg.
-    exists eps.
-    intros y Hy.
-    apply HP.
-    revert Hy.
-    destruct CNAG.
-    by rewrite /distance /= UnifFct_dist_pnorm.
-    destruct CNAG.
-    exact Hfh.
+    now destruct CNAG.
+    now destruct CNAG.
   destruct CNAG.
   exists l ; split.
   exact Hhl.
@@ -1137,6 +1071,7 @@ Qed.
 
 (** ** Exchange limit and integrals *)
 
+(*
 Require Import RInt.
 
 Lemma filterlim_RInt {U V} {VV : MetricVectorSpace V R} :
@@ -1149,6 +1084,6 @@ Proof.
 intros.
 (* case (filterlim_swich _ F (Riemann_fine a b) FF _ (fun ptd : SF_seq.SF_seq => scal (sign (b - a)) (Riemann_sum g ptd)) h). *)
 Admitted.
-
+*)
 
 

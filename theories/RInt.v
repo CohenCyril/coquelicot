@@ -362,8 +362,7 @@ intros V VV f a.
 apply filterlim_locally.
 move => eps ; exists (mkposreal _ Rlt_0_1) => ptd _ _.
 rewrite Rminus_eq_0 sign_0 scal_zero_l.
-rewrite distance_refl.
-apply eps.
+apply ball_center.
 Qed.
 
 Lemma ex_RInt_point :
@@ -4508,8 +4507,7 @@ apply Rlt_eps2_eps.
 apply cond_pos.
 assert (D2: ex_RInt (fun t => f x t) a b).
 apply DIf.
-rewrite distance_refl.
-apply cond_pos.
+apply ball_center.
 rewrite -RInt_minus //.
 rewrite Rmult_comm.
 rewrite -RInt_scal //.

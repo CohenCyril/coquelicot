@@ -1322,7 +1322,7 @@ intros f g n x Heq.
 pattern x ; apply locally_singleton.
 induction n.
 exact Heq.
-apply (locally_open _ _) in IHn.
+apply locally_locally in IHn.
 apply: filter_imp IHn.
 intros t H.
 now apply Derive_ext_loc.
@@ -1336,7 +1336,7 @@ intros f g n x Heq.
 case: n => /= [ | n].
 by [].
 apply ex_derive_ext_loc.
-apply (locally_open _ _) in Heq.
+apply locally_locally in Heq.
 apply: filter_imp Heq.
 by apply Derive_n_ext_loc.
 Qed.
@@ -1347,10 +1347,10 @@ Lemma is_derive_n_ext_loc :
 Proof.
   intros f g n x l Heq.
   case: n => /= [ | n].
-  move => <- ; apply sym_eq ;
-  pattern x ; exact: locally_singleton.
+  move => <- ; apply sym_eq.
+  pattern x ; now apply locally_singleton.
   apply is_derive_ext_loc.
-  apply (locally_open _ _) in Heq.
+  apply locally_locally in Heq.
   apply: filter_imp Heq.
   by apply Derive_n_ext_loc.
 Qed.
@@ -1403,7 +1403,7 @@ Proof.
   split => H.
   by apply is_derive_unique.
   rewrite -H ; apply Derive_correct.
-  exact: locally_singleton.
+  now apply locally_singleton.
   split ; apply is_derive_ext_loc ;
   apply: filter_imp Hf => y Hf ;
   rewrite (Derive_n_comp f n 1%nat y) -plus_n_Sm -plus_n_O => //.
@@ -1485,12 +1485,10 @@ Proof.
   apply Rlt_le_trans with (1 := Hz) => /= ; by apply Rmin_r.
   by apply le_trans with (1 := Hk), le_n_Sn.
   apply Hf with (k := (S n)).
-  rewrite distance_refl.
-  apply cond_pos.
+  by apply ball_center. 
   by apply le_refl.
   apply Hg with (k := S n).
-  rewrite distance_refl.
-  apply cond_pos.
+  by apply ball_center.
   by apply le_refl.
 Qed.
 Lemma ex_derive_n_plus (f g : R -> R) (n : nat) (x : R) :
@@ -1501,17 +1499,17 @@ Proof.
   case: n x => /= [ | n] x Hf Hg.
   by [].
   apply ex_derive_ext_loc with (fun y => Derive_n f n y + Derive_n g n y).
-  apply (locally_open _ _) in Hf.
-  apply (locally_open _ _) in Hg.
+  apply locally_locally in Hf.
+  apply locally_locally in Hg.
   generalize (filter_and _ _ Hf Hg).
   apply: filter_imp => {Hf Hg} y [Hf Hg].
   apply sym_eq, Derive_n_plus.
   apply: filter_imp Hf ; by intuition.
   apply: filter_imp Hg ; by intuition.
   apply ex_derive_plus.
-  apply: locally_singleton ; apply: filter_imp Hf => y Hy.
+  apply locally_singleton ; apply: filter_imp Hf => y Hy.
   by apply (Hy (S n)).
-  apply: locally_singleton ; apply: filter_imp Hg => y Hy.
+  apply locally_singleton ; apply: filter_imp Hg => y Hy.
   by apply (Hy (S n)).
 Qed.
 Lemma is_derive_n_plus (f g : R -> R) (n : nat) (x lf lg : R) :
@@ -1523,8 +1521,8 @@ Proof.
   case: n x lf lg => /= [ | n] x lf lg Hfn Hgn Hf Hg.
   by rewrite Hf Hg.
   apply is_derive_ext_loc with (fun y => Derive_n f n y + Derive_n g n y).
-  apply (locally_open _ _) in Hfn.
-  apply (locally_open _ _) in Hgn.
+  apply locally_locally in Hfn.
+  apply locally_locally in Hgn.
   generalize (filter_and _ _ Hfn Hgn).
   apply: filter_imp => {Hfn Hgn} y [Hfn Hgn].
   apply sym_eq, Derive_n_plus.
