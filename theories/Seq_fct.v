@@ -1059,14 +1059,14 @@ Lemma filterlim_switch {T1 T2 U} {CNAG : CompleteNormedAbelianGroup U}
   -> (exists l : U, filterlim h F1 (locally l) /\ filterlim g F2 (locally l)).
 Proof.
   move => Hfg Hfh.
-  destruct (filterlim_swich_2 f F1 F2 FF1 FF2 g h) as [l Hhl].
+  destruct (filterlim_switch_2 f F1 F2 FF1 FF2 g h) as [l Hhl].
     now destruct CNAG.
     now destruct CNAG.
   destruct CNAG.
   exists l ; split.
   exact Hhl.
   case: FF2 => HF2 FF2.
-  now apply (filterlim_swich_1 f F1 F2 FF1 FF2 g h l).
+  now apply (filterlim_switch_1 f F1 F2 FF1 FF2 g h l).
 Qed.
 
 (** ** Exchange limit and integrals *)

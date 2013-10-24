@@ -1726,8 +1726,10 @@ Proof.
     exact: ball_center.
   + intros x y e H t.
     by apply ball_sym.
-  admit.
-  admit.
+  + intros x y z e1 e2 H1 H2 t.
+    now apply ball_triangle with (y t).
+  + intros x e1 e2 He y H t.
+    now apply ball_le with e1.
 Defined.
 
 Lemma cauchy_distance :
@@ -2582,26 +2584,11 @@ destruct (completeness E) as [x [Hx1 Hx2]].
   now rewrite distance_comm.
   destruct (HF (mkposreal _ Rlt_0_1)) as [y Fy].
   now exists y.
-(*
 exists (x - 1).
-intros P [y [eps BP]] Px.
-assert (H : 0 < Rmin ((y + eps) - (x - 1)) ((x - 1) - (y - eps))).
-  apply Rmin_case.
-  apply Rplus_lt_reg_r with (x - 1 - y).
-  rewrite Rplus_0_l.
-  ring_simplify (y + eps - (x - 1) + (x - 1 - y)).
-  apply Rabs_lt_between.
-  now apply BP.
-  apply Rplus_lt_reg_r with (-eps).
-  rewrite Rplus_0_l.
-  replace (x - 1 - (y - eps) + - eps) with (x - 1 - y) by ring.
-  apply (Rabs_lt_between (x - 1 - y)).
-  now apply BP.
-set (eps' := pos_div_2 (mkposreal _ (Rmin_case _ _ _ Rlt_R0_R2 H))).
-set (eps'' := (Rmin 2 (Rmin (y + eps - (x - 1)) (x - 1 - (y - eps))))).
-fold eps'' in eps'.
+intros eps.
+set (eps' := pos_div_2 (mkposreal _ (Rmin_case _ _ _ Rlt_R0_R2 (cond_pos eps)))).
 destruct (HF eps') as [z Hz].
-assert (H1 : z - eps'' / 2 + 1 <= x).
+assert (H1 : z - Rmin 2 eps / 2 + 1 <= x).
   apply Hx1.
   revert Hz.
   unfold E.
@@ -2612,10 +2599,9 @@ assert (H1 : z - eps'' / 2 + 1 <= x).
   simpl in Bu |- *.
   clear -Bu.
   destruct Bu as [Bu1 Bu2].
-  assert (H := Rmin_l 2 (Rmin (y + eps - (x - 1)) (x - 1 - (y - eps)))).
-  fold eps'' in H.
+  assert (H := Rmin_l 2 eps).
   split ; Fourier.fourier.
-assert (H2 : x <= z + eps'' / 2 + 1).
+assert (H2 : x <= z + Rmin 2 eps / 2 + 1).
   apply Hx2.
   intros v Hv.
   apply filter_const.
@@ -2632,22 +2618,14 @@ assert (H2 : x <= z + eps'' / 2 + 1).
 revert Hz.
 apply filter_imp.
 simpl ; intros u Hu.
-apply BP.
 apply (Rabs_lt_between' u z) in Hu.
 apply Rabs_lt_between'.
-assert (eps'' <= y + eps - (x - 1)).
-  apply Rle_trans with (1 := Rmin_r _ _).
-  apply Rmin_l.
-assert (eps'' <= x - 1 - (y - eps)).
-  apply Rle_trans with (1 := Rmin_r _ _).
-  apply Rmin_r.
-simpl in H2, Hu.
-clear -H2 Hu H0 H1 H3.
+assert (H3 := Rmin_l 2 eps).
+assert (H4 := Rmin_r 2 eps).
+clear -H1 H2 Hu H3 H4.
 destruct Hu.
 split ; Fourier.fourier.
 Qed.
-*)
-Admitted.
 
 Global Instance R_complete_metric : CompleteSpace R.
 Proof.
