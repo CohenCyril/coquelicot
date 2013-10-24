@@ -707,42 +707,6 @@ apply H.
 now apply HR.
 Qed.
 
-Lemma neighborhood_basis :
-  forall {T} {TT : TopologicalSpace T} x P,
-  basis P -> P x -> neighborhood x P.
-Proof.
-intros T TT x P BP Px.
-now exists P.
-Qed.
-
-Class FinerTopology {T} (T1 T2 : TopologicalSpace T) :=
-  finer_topology : forall x P, @basis T T2 P -> P x -> @neighborhood T T1 x P.
-
-Lemma neighborhood_finer_topology :
-  forall {T} (T1 T2 : TopologicalSpace T) {FT : FinerTopology T2 T1},
-  forall x P, @neighborhood T T1 x P -> @neighborhood T T2 x P.
-Proof.
-intros T T1 T2 FT x P [Q BQ Qx HQ].
-apply neighborhood_imp with (1 := HQ).
-now apply finer_topology.
-Qed.
-
-Global Instance FinerTopology_refl :
-  forall T (TT : TopologicalSpace T), FinerTopology TT TT.
-Proof.
-intros T TT x P BP Px.
-now exists P.
-Qed.
-
-Inductive disjoint_spec {T} {TT : TopologicalSpace T} (x y : T) :=
-  Disjoint_spec P Q : basis P -> basis Q -> P x -> Q y ->
-    (forall z, P z -> Q z -> False) -> disjoint_spec x y.
-
-Class SeparatedSpace T := {
-  seperated_topological :> TopologicalSpace T ;
-  separated_disjoint : forall x y : T, x <> y -> disjoint_spec x y
-}.
-
 Class FilterCompatibility {T} {TT : TopologicalSpace T} (F : T -> (T -> Prop) -> Prop) := {
   filter_compat1 : forall P x, basis P -> P x -> F x P ;
   filter_compat2 : forall P x, F x P -> exists Q, basis Q /\ Q x /\ forall y, Q y -> P y
@@ -884,21 +848,6 @@ Qed.
 
 Definition is_filter_lim {T} {TT : TopologicalSpace T} (F : (T -> Prop) -> Prop) (x : T) :=
   forall P, basis P -> P x -> F P.
-
-Lemma is_filter_lim_unique :
-  forall {T} {ST : SeparatedSpace T} {F} {FF : ProperFilter F} (x y : T),
-  is_filter_lim F x ->
-  is_filter_lim F y ->
-  not (x <> y).
-Proof.
-intros T ST F FF x y Fx Fy H.
-destruct (separated_disjoint x y H) as [P Q BP BQ Px Qy H'].
-apply filter_const.
-generalize (filter_and _ _ (Fx P BP Px) (Fy Q BQ Qy)).
-apply filter_imp.
-intros z [Pz Qz].
-now apply (H' z).
-Qed.
 
 Lemma is_filter_lim_neighborhood :
   forall {T} {TT : TopologicalSpace T} (x : T),
@@ -1289,62 +1238,6 @@ apply (Build_MetricSpace _ (dist_prod distance distance)).
 - exact dist_prod_comm.
 - exact dist_prod_triangle.
 Defined.
-
-Global Instance prod_metric_topology_1 :
-  forall T U (MT : MetricSpace T) (MU : MetricSpace U),
-  FinerTopology (topology_prod _ _) (metric_topological _ (prod_metric T U _ _)).
-Proof.
-intros T U MT MU z P [[u v] [eps H]] Pz.
-apply neighborhood_basis with (2 := Pz).
-intros [x y] Pxy.
-exists (ball u eps), (ball v eps).
-assert (K := proj2 (H _) Pxy).
-repeat split.
-now exists u, eps.
-now exists v, eps.
-apply Rle_lt_trans with (2 := K).
-apply Rmax_l.
-apply Rle_lt_trans with (2 := K).
-apply Rmax_r.
-intros p q Hp Hq.
-apply H.
-unfold ball.
-simpl.
-unfold dist_prod.
-now apply Rmax_case.
-Qed.
-
-Global Instance prod_metric_topology_2 :
-  forall T U (MT : MetricSpace T) (MU : MetricSpace U),
-  FinerTopology (metric_topological _ (prod_metric T U _ _)) (topology_prod _ _).
-Proof.
-intros T U MT MU z P BP Pz.
-destruct (BP _ Pz) as [Q [R [[cQ [eQ BQ]] [[cR [eR BR]] [Qz [Rz H]]]]]].
-assert (H': 0 < Rmin (eQ - distance cQ (fst z)) (eR - distance cR (snd z))).
-  apply Rmin_case ; apply -> Rminus_lt_0.
-  by apply BQ.
-  by apply BR.
-exists (ball z (mkposreal _ H')).
-eexists.
-now eexists.
-apply ball_center.
-intros [x y] B.
-apply H.
-apply BQ.
-apply Rle_lt_trans with (1 := distance_triangle cQ (fst z) x).
-apply Rplus_lt_reg_r with (- distance cQ (fst z)).
-rewrite Rplus_comm -Rplus_assoc Rplus_opp_l Rplus_0_l.
-apply Rlt_le_trans with (2 := Rmin_l _ (eR - distance cR (snd z))).
-apply Rle_lt_trans with (2 := B).
-apply Rmax_l.
-apply BR.
-apply Rle_lt_trans with (1 := distance_triangle cR (snd z) y).
-apply Rplus_lt_reg_r with (- distance cR (snd z)).
-rewrite Rplus_comm -Rplus_assoc Rplus_opp_l Rplus_0_l.
-apply Rlt_le_trans with (2 := Rmin_r (eQ - distance cQ (fst z)) _).
-apply Rle_lt_trans with (2 := B).
-apply Rmax_r.
-Qed.
 
 Fixpoint dist_pow (n : nat) (T : Type) (d : T -> T -> R) : Tn n T -> Tn n T -> R :=
   match n with
@@ -2276,26 +2169,6 @@ Global Instance R_metric_field : AbsField R.
 Proof.
   apply Build_AbsField with R_abelian_group R_field_mixin.
   by apply R_absfield_mixin.
-Defined.
-
-Global Instance R_SeparatedSpace : SeparatedSpace R.
-Proof.
-  apply (Build_SeparatedSpace R _).
-  move => x y Hxy.
-  apply sym_not_eq, Rminus_eq_contra in Hxy.
-  apply Rabs_pos_lt in Hxy.
-  exists (ball x (pos_div_2 (mkposreal _ Hxy))) (ball y (pos_div_2 (mkposreal _ Hxy))).
-  + exists x ; by exists (pos_div_2 (mkposreal _ Hxy)).
-  + exists y ; by exists (pos_div_2 (mkposreal _ Hxy)).
-  + by apply ball_center.
-  + by apply ball_center.
-  + unfold ball ; move => /= z Hxz Hyz.
-    apply (Rlt_irrefl (distance x y)).
-    apply Rle_lt_trans with (1 := distance_triangle x z y).
-    rewrite (double_var (distance x y)).
-    apply Rplus_lt_compat.
-    by apply Hxz.
-    rewrite distance_comm ; by apply Hyz.
 Defined.
 
 Lemma R_complete :
