@@ -57,7 +57,14 @@ Definition PSeries (a : nat -> R) (x : R) : R :=
 Lemma ex_pseries_dec {V} {VV : MetricVectorSpace V R} (a : nat -> R) (x : R) :
   {ex_pseries a x} + {~ ex_pseries a x}.
 Proof.
-  case: (ex_series_dec (fun k => scal (pow_n x k) (a k))).
+  case: (ex_series_dec
+  (fun k : nat =>
+   @scal R R (@AbsField_Field R R_metric_field)
+     (@vspace_group R R (@AbsField_Field R R_metric_field)
+        (Field_VectorSpace R (@AbsField_Field R R_metric_field)))
+     (@vspace_mixin R R (@AbsField_Field R R_metric_field)
+        (Field_VectorSpace R (@AbsField_Field R R_metric_field)))
+     (@pow_n R (@AbsField_Field R R_metric_field) x k) (a k))).
   now left.
   now right.
 Qed.
@@ -231,10 +238,9 @@ Proof.
     move => y Hy ; rewrite /CV_disk /=.
   set l := (Rabs (y / r)).
   assert (ex_series (fun n => M * l ^ n)).
-  apply ex_series_ext with (fun n : nat => @Hierarchy.scal R R _
-       (@Hierarchy.mvspace_vector R R _ _) M (l ^ n)).
+  apply ex_series_ext with (fun n : nat => scal M (l ^ n)).
     by elim.
-  apply (ex_series_scal_l M (pow l)).
+  apply (@ex_series_scal_l R R (@AbsField_Field R R_metric_field) R_metric_vector M (pow l)).
   apply ex_series_geom.
   rewrite /l Rabs_Rabsolu Rabs_div.
   apply Rlt_div_l.

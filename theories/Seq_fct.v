@@ -944,7 +944,6 @@ Qed.
 
 (** * Swich limits *)
 
-
 Lemma filterlim_swich_1 {T1 T2 G} {NAG : NormedAbelianGroup G}
   (f : T1 -> T2 -> G) F1 F2 (FF1 : ProperFilter F1) (FF2 : Filter F2) g h (l : G) :
   let NAG' := NAG_UnifFct NAG in
@@ -972,17 +971,17 @@ Proof.
   have FF := (filter_prod_filter _ _ F1 F2 FF1 FF2).
 
   have : filter_prod F1 F2 (fun x => @distance G (@NormedAbelianGroup_MetricSpace G NAG) (g (snd x)) (f (fst x) (snd x)) < eps / 2 / 2).
-    apply Filter_prod with (fun x : T1 => UnifFct_norm (minus (f x) g) < eps / 2 / 2) (fun _ => True).
+    apply Filter_prod with (fun x : T1 => UnifFct_pnorm (minus (f x) g) < eps / 2 / 2) (fun _ => True).
     move: (proj1 (@filterlim_locally _ _ _ F1 FF1 f g) Hfg (pos_div_2 (pos_div_2 eps))) => {Hfg} /= Hfg.
     by [].
     by apply FF2.
     simpl ; intros.
     apply Rle_lt_trans with (2 := H).
-    rewrite /UnifFct_norm /Rbar_min ; case: Rbar_le_dec => H1.
+    rewrite /UnifFct_pnorm /Rbar_min ; case: Rbar_le_dec => H1.
     contradict H1.
     apply Rbar_lt_not_le.
     apply Rbar_lt_trans with (eps / 2 / 2).
-    apply UnifFct_norm_lub_lt_1.
+    apply UnifFct_pnorm_lub_lt_1.
     apply Rle_trans with (1 / 2 / 2).
     apply Rlt_le ; repeat apply Rmult_lt_compat_r ; intuition.
     apply Rminus_le_0 ; field_simplify ; rewrite Rdiv_1.
@@ -998,7 +997,7 @@ Proof.
     rewrite /Lub_Rbar_ne ; case: ex_lub_Rbar_ne ; case => [l0 | | ] //= [ub lub] _.
     apply Rbar_finite_le, ub.
     right ; exists y.
-    unfold norm, distance ; simpl ; case: (NAG) ; by case.
+    unfold pnorm, distance ; simpl ; case: (NAG) ; by case.
     case: (ub 0) ; by auto.
   move => {Hfg} Hfg.
 
@@ -1126,7 +1125,7 @@ Proof.
     apply HP.
     revert Hy.
     destruct CNAG.
-    by rewrite /distance /= UnifFct_dist_norm.
+    by rewrite /distance /= UnifFct_dist_pnorm.
     destruct CNAG.
     exact Hfh.
   destruct CNAG.
@@ -1135,3 +1134,21 @@ Proof.
   case: FF2 => HF2 FF2.
   now apply (filterlim_swich_1 f F1 F2 FF1 FF2 g h l).
 Qed.
+
+(** ** Exchange limit and integrals *)
+
+Require Import RInt.
+
+Lemma filterlim_RInt {U V} {VV : MetricVectorSpace V R} :
+  forall (f : U -> R -> V) (a b : R) F (FF : ProperFilter F) 
+    g h (H : MetricSpace (R -> V)),
+  (forall x, is_RInt (f x) a b (h x))
+  -> (filterlim f F (locally g))
+  -> exists If, filterlim h F (locally If) /\ is_RInt g a b If.
+Proof.
+intros.
+(* case (filterlim_swich _ F (Riemann_fine a b) FF _ (fun ptd : SF_seq.SF_seq => scal (sign (b - a)) (Riemann_sum g ptd)) h). *)
+Admitted.
+
+
+
