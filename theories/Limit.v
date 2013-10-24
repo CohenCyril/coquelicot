@@ -1777,13 +1777,11 @@ destruct lf as [lf| |] ; destruct lg as [lg| |] ; try easy.
     now apply -> Rminus_lt_0.
     apply Rlt_R0_R2.
   assert (Hlf : locally lf (fun y => (lf + lg) / 2 < y)).
-    apply (filter_open (fun y : R => (lf + lg) / 2 < y)).
     apply open_gt.
     replace ((lf + lg) / 2) with (lf - (lf - lg) / 2) by field.
     apply Rabs_lt_between'.
     by rewrite /Rminus Rplus_opp_r Rabs_R0.
   assert (Hlg : locally lg (fun y => y < (lf + lg) / 2)).
-    apply filter_open.
     apply open_lt.
     replace ((lf + lg) / 2) with (lg + (lf - lg) / 2) by field.
     apply Rabs_lt_between'.
@@ -1797,7 +1795,6 @@ destruct lf as [lf| |] ; destruct lg as [lg| |] ; try easy.
   apply Rle_not_lt with (1 := H3).
   now apply Rlt_trans with ((lf + lg) / 2).
 - assert (Hlf : locally lf (fun y => lf - 1 < y)).
-    apply filter_open.
     apply open_gt.
     apply Rabs_lt_between'.
     rewrite /Rminus Rplus_opp_r Rabs_R0.
@@ -1815,7 +1812,6 @@ destruct lf as [lf| |] ; destruct lg as [lg| |] ; try easy.
 - assert (Hlf : Rbar_locally p_infty (fun y => Rbar_lt (lg + 1) y)).
     now apply open_Rbar_gt'.
   assert (Hlg : locally lg (fun y => y < lg + 1)).
-    apply filter_open.
     apply open_lt.
     apply Rabs_lt_between'.
     rewrite /Rminus Rplus_opp_r Rabs_R0.

@@ -214,10 +214,7 @@ Lemma CVU_limits_open (fn : nat -> R -> R) (D : R -> Prop) :
     /\ real (Lim_seq (fun n => real (Lim (fn n) x)))
       = real (Lim (fun y => real (Lim_seq (fun n => fn n y))) x).
 Proof.
-  move => Ho' Hfn Hex x Hx.
-  assert (Ho : forall x, D x -> locally x D).
-    now apply filter_open.
-  clear Ho'.
+  move => Ho Hfn Hex x Hx.
   have H : ex_finite_lim_seq (fun n : nat => real (Lim (fn n) x)).
     apply CVU_dom_cauchy in Hfn.
     apply ex_lim_seq_cauchy_corr => eps.
@@ -406,10 +403,8 @@ Proof.
   end.
 
   assert (Ho' : forall x : R, D x -> open (fun h : R => D (x + h))).
-    intros x Dx.
-    apply filter_open.
-    intros h Hh.
-    destruct (proj1 (filter_open D) Ho _ Hh) as [d Hd].
+    intros x Dx h Hh.
+    destruct (Ho _ Hh) as [d Hd].
     exists d => /= y Hy.
     apply Hd ; simpl ; ring_simplify (x + y + - (x + h)).
     by apply Hy.
@@ -528,7 +523,7 @@ Proof.
   exists df => e He.
   apply is_lim_spec in H0.
   case: (H0 (mkposreal e He)) => {H0} /= delta H0.
-  destruct (proj1 (filter_open D) Ho x Hx) as [dx Hd].
+  destruct (Ho x Hx) as [dx Hd].
   have H2 : 0 < Rmin delta dx.
     apply Rmin_case ; [by apply delta | by apply dx].
   exists (mkposreal _ H2) => /= h Hh0 Hh.
@@ -564,8 +559,7 @@ Proof.
   apply ex_finite_lim_seq_correct, CVU_CVS_dom with D.
   exact: Hfn.
   apply Hd.
-  rewrite distance_refl.
-  apply cond_pos.
+  apply ball_center.
   apply (CVU_CVS_dom fn D) in Hfn ; rewrite /CVS_dom in Hfn.
   move: (fun H => Lim_seq_correct' _ (Hfn (x+h) (Hd _ H))) => F.
   move: (fun H => Lim_seq_correct' _ (Hfn (x) (Hd _ H))) => F0.
@@ -573,8 +567,7 @@ Proof.
   rewrite (is_lim_seq_unique  (fun n : nat => fn n (x)) (real (Lim_seq (fun n : nat => fn n (x))))).
   easy.
   apply F0.
-  rewrite distance_refl.
-  apply cond_pos.
+  apply ball_center.
   apply F.
   simpl.
   ring_simplify (x + h + - x).
@@ -586,8 +579,7 @@ Proof.
   rewrite (is_lim_seq_unique  (fun n : nat => fn n (x)) (real (Lim_seq (fun n : nat => fn n (x))))).
   by [].
   apply F0.
-  rewrite distance_refl.
-  apply cond_pos.
+  apply ball_center.
   apply F.
   simpl.
   ring_simplify (x + h + - x).
@@ -604,7 +596,7 @@ Proof.
   intros eps.
   apply is_lim_spec in H0.
   case: (H0 eps) => {H0} delta H0.
-  destruct (proj1 (filter_open D) Ho x Hx) as [dx Hd].
+  destruct (Ho x Hx) as [dx Hd].
   have H2 : 0 < Rmin delta dx.
     apply Rmin_case ; [by apply delta | by apply dx].
   exists (mkposreal _ H2) => /= h Hh0 Hh.
@@ -641,8 +633,7 @@ Proof.
   apply ex_finite_lim_seq_correct, CVU_CVS_dom with D.
   exact: Hfn.
   apply Hd.
-  rewrite distance_refl.
-  apply cond_pos.
+  apply ball_center.
   apply (CVU_CVS_dom fn D) in Hfn ; rewrite /CVS_dom in Hfn.
   move: (fun H => Lim_seq_correct' _ (Hfn (x+h) (Hd _ H))) => F.
   move: (fun H => Lim_seq_correct' _ (Hfn (x) (Hd _ H))) => F0.
@@ -650,8 +641,7 @@ Proof.
   rewrite (is_lim_seq_unique  (fun n : nat => fn n (x)) (real (Lim_seq (fun n : nat => fn n (x))))).
   easy.
   apply F0.
-  rewrite distance_refl.
-  apply cond_pos.
+  apply ball_center.
   apply F.
   simpl.
   ring_simplify (x + h + - x).
@@ -664,8 +654,7 @@ Proof.
   rewrite (is_lim_seq_unique  (fun n : nat => fn n (x)) (real (Lim_seq (fun n : nat => fn n (x))))).
   by [].
   apply F0.
-  rewrite distance_refl.
-  apply cond_pos.
+  apply ball_center.
   apply F.
   simpl.
   ring_simplify (x + h + - x).

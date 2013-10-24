@@ -842,14 +842,11 @@ apply continuity_pt_filterlim in Cf.
 destruct (total_order_T (f x) y) as [[H|H]|H].
 - assert (H': locally x (fun u => (Rbar_lt a u /\ Rbar_lt u b) /\ f u < y)).
     apply filter_and.
-    apply filter_open.
-    apply open_and.
-    apply open_Rbar_gt.
-    apply open_Rbar_lt.
-    now split.
+    apply filter_and.
+    now apply open_Rbar_gt.
+    now apply open_Rbar_lt.
     apply (Cf (fun u => u < y)).
-    apply filter_open with (2 := H).
-    apply open_lt.
+    now apply open_lt.
   destruct H' as [eps H'].
   elim Rle_not_lt with x (x + eps / 2).
   apply Hub.
@@ -872,8 +869,7 @@ destruct (total_order_T (f x) y) as [[H|H]|H].
 - exact H.
 - assert (H': locally x (fun u => y < f u)).
     apply (Cf (fun u => y < u)).
-    apply filter_open with (2 := H).
-    apply open_gt.
+    now apply open_gt.
   destruct H' as [eps H'].
   elim Rle_not_lt with (x - eps) x.
   apply Hlub.
@@ -1129,8 +1125,7 @@ intros f x y Cf H.
 apply continuity_2d_pt_filterlim in Cf.
 apply locally_2d_locally.
 apply (Cf (fun y => y <> 0)).
-apply filter_open with (2 := H).
-apply open_neq.
+now apply open_neq.
 Qed.
 
 (** ** Operations *)

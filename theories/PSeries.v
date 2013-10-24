@@ -1750,7 +1750,6 @@ Proof.
   set D := (Boule x (mkposreal _ Hr)).
 
   assert (Ho : open D).
-    apply filter_open.
     move => y Hy.
     apply Rabs_lt_between' in Hy ; simpl in Hy.
     have H : 0 < Rmin ((x+Rmin r0 r1)-y) (y-(x-Rmin r0 r1)).
@@ -1840,7 +1839,7 @@ Proof.
     case => [ | n] y Hy.
     simpl ; by apply continuity_pt_const => z.
     move => e He ; case: (Cdn n y Hy e He) => {Cdn} d [Hd Cdn].
-    destruct (proj1 (filter_open D) Ho y Hy) as [d0 Hd0].
+    destruct (Ho y Hy) as [d0 Hd0].
     have Hd1 : 0 < Rmin d d0.
       apply Rmin_case ; [exact: Hd | by apply d0].
     exists (mkposreal _ Hd1) ; split.

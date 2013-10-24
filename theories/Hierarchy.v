@@ -19,8 +19,8 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 COPYING file for more details.
 *)
 
-Require Import Reals Rbar ssreflect.
-Require Import Rcomplements List Lub.
+Require Import Reals List Morphisms ssreflect.
+Require Import Rcomplements Rbar Lub.
 Require Import FunctionalExtensionality.
 Open Scope R_scope.
 
@@ -649,120 +649,6 @@ unfold within.
 now apply filter_forall.
 Qed.
 
-(** * Topological spaces *)
-
-(** ** Definitions *)
-
-Inductive neighborhood_ {T} (basis : (T -> Prop) -> Prop) (x : T) (D : T -> Prop) : Prop :=
-  Neighborhood (P : T -> Prop) : basis P -> P x -> (forall y, P y -> D y) -> neighborhood_ basis x D.
-
-Class TopologicalSpace T := {
-  basis : (T -> Prop) -> Prop ;
-  open := fun (D : T -> Prop) =>
-    forall x, D x -> neighborhood_ basis x D ;
-  basis_and : forall P Q, basis P -> basis Q ->
-    forall x, P x -> Q x -> neighborhood_ basis x (fun y => P y /\ Q y) ;
-  basis_true : forall x, exists P, basis P /\ P x
-}.
-
-Class FilterCompatibility {T} {TT : TopologicalSpace T} (F : T -> (T -> Prop) -> Prop) := {
-  filter_compat1 : forall P x, basis P -> P x -> F x P ;
-  filter_compat2 : forall P x, F x P -> exists Q, basis Q /\ Q x /\ forall y, Q y -> P y
-}.
-
-(** ** Open sets *)
-
-Lemma open_basis :
-  forall {T} {TT : TopologicalSpace T} P,
-  basis P -> open P.
-Proof.
-intros T TT P BP x Px.
-now apply (Neighborhood _ _ _ P).
-Qed.
-
-Lemma open_ext :
-  forall {T} {TT : TopologicalSpace T} P Q,
-  (forall x, P x <-> Q x) ->
-  open P -> open Q.
-Proof.
-intros T TT P Q H OP x Qx.
-destruct (OP x) as [R BR Rx HR].
-now apply H.
-apply (Neighborhood _ _ _ R BR Rx).
-intros y Ry.
-apply H.
-now apply HR.
-Qed.
-
-Lemma open_and :
-  forall {T} {TT : TopologicalSpace T} D E,
-  open D -> open E -> open (fun x => D x /\ E x).
-Proof.
-intros T TT D E OD OE x [Dx Ex].
-destruct (OD x Dx) as [P BP Px HP].
-destruct (OE x Ex) as [Q BQ Qx HQ].
-destruct (basis_and P Q BP BQ x Px Qx) as [R BR Rx HR].
-apply (Neighborhood _ _ _ R BR Rx).
-intros y Ry.
-destruct (HR y Ry) as [Py Qy].
-split.
-now apply HP.
-now apply HQ.
-Qed.
-
-Lemma open_ex :
-  forall {T} {TT : TopologicalSpace T} {A} (D : A -> (T -> Prop)),
-  (forall a, open (D a)) ->
-  open (fun x => exists a, D a x).
-Proof.
-intros T TT A D OD x [a Dx].
-destruct (OD a x Dx) as [P BP Px HP].
-apply (Neighborhood _ _ _ P BP Px).
-intros y Py.
-exists a.
-now apply HP.
-Qed.
-
-Lemma open_or :
-  forall {T} {TT : TopologicalSpace T} D E,
-  open D -> open E -> open (fun x => D x \/ E x).
-Proof.
-intros T TT D E OD OE x [Dx|Ex].
-destruct (OD x Dx) as [P BP Px HP].
-apply (Neighborhood _ _ _ P BP Px).
-intros y Py.
-left.
-now apply HP.
-destruct (OE x Ex) as [P BP Px HP].
-apply (Neighborhood _ _ _ P BP Px).
-intros y Py.
-right.
-now apply HP.
-Qed.
-
-Lemma open_false :
-  forall {T} {TT : TopologicalSpace T},
-  open (fun _ => False).
-Proof.
-intros T TT x [].
-Qed.
-
-Lemma filter_open :
-  forall {T} {TT : TopologicalSpace T},
-  forall {F} {FF : forall x, Filter (F x)} {FC : FilterCompatibility F},
-  forall D, open D <-> forall x, D x -> F x D.
-Proof.
-intros T TT F FF FC D.
-split.
-- intros OD x Dx.
-  destruct (OD x Dx) as [P BP Px PD].
-  apply filter_imp with (1 := PD).
-  now apply filter_compat1.
-- intros H x Dx.
-  destruct (filter_compat2 D x (H x Dx)) as [Q [BQ [Qx HQP]]].
-  now exists Q.
-Qed.
-
 (** * Metric Spaces *)
 
 Class MetricSpace T := {
@@ -811,61 +697,6 @@ Proof.
   + move => x e1 e2 He y H.
     apply Rlt_le_trans with (2 := He).
     by apply H.
-Defined.
-
-Lemma metric_topological_and :
-  forall {T} {MT : MetricSpace T} P Q,
-  (exists x eps, forall y : T, ball x eps y <-> P y) ->
-  (exists x eps, forall y : T, ball x eps y <-> Q y) ->
-  forall x, P x -> Q x ->
-  neighborhood_ (fun D => exists x eps, forall y, ball x eps y <-> D y) x (fun y => P y /\ Q y).
-Proof.
-intros T MT P Q [xP [epsP HP]] [xQ [epsQ HQ]] x Px Qx.
-assert (H : 0 < Rmin (epsP - distance xP x) (epsQ - distance xQ x)).
-apply Rmin_case.
-apply Rlt_Rminus.
-now apply HP.
-apply Rlt_Rminus.
-now apply HQ.
-apply (Neighborhood _ _ _ (ball x (mkposreal _ H))).
-exists x.
-now eexists.
-apply ball_center.
-intros y Hy.
-split.
-apply HP.
-apply Rle_lt_trans with (1 := distance_triangle xP x y).
-apply Rplus_lt_reg_r with (- distance xP x).
-ring_simplify (distance xP x + distance x y + - distance xP x).
-apply Rlt_le_trans with (1 := Hy).
-apply Rmin_l.
-apply HQ.
-apply Rle_lt_trans with (1 := distance_triangle xQ x y).
-apply Rplus_lt_reg_r with (- distance xQ x).
-ring_simplify (distance xQ x + distance x y + - distance xQ x).
-apply Rlt_le_trans with (1 := Hy).
-apply Rmin_r.
-Qed.
-
-Lemma metric_topological_true :
-  forall {T} {MT : MetricSpace T} (x : T),
-  exists P, (exists x eps, forall y, ball x eps y <-> P y) /\ P x.
-Proof.
-intros T MT x.
-exists (ball x (mkposreal 1 Rlt_0_1)).
-split.
-now exists x, (mkposreal 1 Rlt_0_1).
-apply ball_center.
-Qed.
-
-Global Instance metric_topological :
-  forall T, MetricSpace T -> TopologicalSpace T.
-Proof.
-intros T MT.
-apply (Build_TopologicalSpace _
-  (fun D => exists x, exists eps, forall y, ball x eps y <-> D y)).
-apply metric_topological_and.
-apply metric_topological_true.
 Defined.
 
 Definition locally_dist {T : Type} (d : T -> R) (P : T -> Prop) :=
@@ -926,30 +757,6 @@ constructor ; [idtac|constructor].
   intros y Hy.
   apply H.
   now apply HP.
-Qed.
-
-Global Instance locally_compat :
-  forall T (MT : MetricSpace T), FilterCompatibility locally.
-Proof.
-intros T MT.
-split.
-- intros P x [c [eps B]] Px.
-  assert (H := proj2 (B x) Px).
-  exists (mkposreal _ (Rlt_Rminus _ _ H)).
-  simpl.
-  intros z Hz.
-  apply B.
-  apply Rle_lt_trans with (1 := distance_triangle c x z).
-  replace eps with (distance c x + (eps - distance c x)) by ring.
-  now apply Rplus_lt_compat_l.
-- intros P x [e He].
-  exists (ball x e).
-  repeat split.
-  exists x.
-  now exists e.
-  apply ball_center.
-  intros y Hy.
-  now apply He.
 Qed.
 
 Lemma filterlim_locally :
@@ -1042,6 +849,65 @@ rewrite (double_var (distance l l')).
 apply Rplus_lt_compat.
 assumption.
 now rewrite distance_comm.
+Qed.
+
+(** ** Open sets in metric spaces *)
+
+Definition open {T} {MT : MetricBall T} (D : T -> Prop) :=
+  forall x, D x -> locally x D.
+
+Lemma open_ext :
+  forall {T} {MT : MetricBall T} (D E : T -> Prop),
+  (forall x, D x <-> E x) ->
+  open D -> open E.
+Proof.
+intros T MT D E H OD x Ex.
+generalize (OD x (proj2 (H x) Ex)).
+apply filter_imp.
+intros y.
+apply H.
+Qed.
+
+Lemma open_and :
+  forall {T} {MT : MetricBall T} (D E : T -> Prop),
+  open D -> open E ->
+  open (fun x => D x /\ E x).
+Proof.
+intros T MT D E OD OE x [Dx Ex].
+apply filter_and.
+now apply OD.
+now apply OE.
+Qed.
+
+Lemma open_or :
+  forall {T} {MT : MetricBall T} (D E : T -> Prop),
+  open D -> open E ->
+  open (fun x => D x \/ E x).
+Proof.
+intros T MT D E OD OE x [Dx|Ex].
+generalize (OD x Dx).
+apply filter_imp.
+intros y Dy.
+now left.
+generalize (OE x Ex).
+apply filter_imp.
+intros y Ey.
+now right.
+Qed.
+
+Lemma open_true :
+  forall {T} {MT : MetricBall T},
+  open (fun x : T => True).
+Proof.
+intros T MT x _.
+apply filter_true.
+Qed.
+
+Lemma open_false :
+  forall {T} {MT : MetricBall T},
+  open (fun x : T => False).
+Proof.
+now intros T MT x Hx.
 Qed.
 
 (** ** Products of metric spaces *)
@@ -1324,7 +1190,6 @@ Class CompleteSpace T := {
   complete_metric :> MetricBall T ;
   complete_mixin :> CompleteSpace_mixin T complete_metric
 }.
-
 
 Global Instance MetricBall_fct {T M} :
   MetricBall M -> MetricBall (T -> M).
@@ -2086,42 +1951,34 @@ Defined.
 Notation at_left x := (within (fun u : R => Rlt u x) (locally (x)%R)).
 Notation at_right x := (within (fun u : R => Rlt x u) (locally (x)%R)).
 
+(** Some open sets of [R] *)
+
 Lemma open_lt :
-  forall (y : R), open (fun (u : R) => u < y).
+  forall y : R, open (fun u : R => u < y).
 Proof.
 intros y x Hxy.
 apply Rminus_lt_0 in Hxy.
-apply (Neighborhood _ _ _ (ball x (mkposreal _ Hxy))).
-- exists x.
-  now eexists.
-- apply ball_center.
-- unfold ball.
-  simpl.
-  intros u Hu.
-  apply Rabs_lt_between in Hu.
-  apply Rplus_lt_reg_r with (1 := proj2 Hu).
+exists (mkposreal _ Hxy).
+intros z Bz.
+replace y with (x + (y - x)) by ring.
+apply Rabs_lt_between'.
+apply Bz.
 Qed.
 
 Lemma open_gt :
-  forall (y : R), open (fun (u : R) => y < u).
+  forall y : R, open (fun u : R => y < u).
 Proof.
 intros y x Hxy.
 apply Rminus_lt_0 in Hxy.
-apply (Neighborhood _ _ _ (ball x (mkposreal _ Hxy))).
-- exists x.
-  now eexists.
-- apply ball_center.
-- unfold ball.
-  simpl.
-  intros u Hu.
-  apply Rabs_lt_between in Hu.
-  apply Rplus_lt_reg_r with (- x).
-  generalize (proj1 Hu).
-  now rewrite Ropp_minus_distr.
+exists (mkposreal _ Hxy).
+intros z Bz.
+replace y with (x - (x - y)) by ring.
+apply Rabs_lt_between'.
+apply Bz.
 Qed.
 
 Lemma open_neq :
-  forall (y : R), open (fun (u : R) => u <> y).
+  forall y : R, open (fun u : R => u <> y).
 Proof.
 intros y.
 apply (open_ext (fun u => u < y \/ y < u)).
@@ -2594,12 +2451,7 @@ Lemma open_Rbar_lt :
 Proof.
 intros [y| |].
 - apply open_lt.
-- intros x _.
-  exists (ball x (mkposreal _ Rlt_0_1)).
-  exists x.
-  now eexists.
-  apply ball_center.
-  easy.
+- apply open_true.
 - apply open_false.
 Qed.
 
@@ -2609,21 +2461,14 @@ Proof.
 intros [y| |].
 - apply open_gt.
 - apply open_false.
-- intros x _.
-  exists (ball x (mkposreal _ Rlt_0_1)).
-  exists x.
-  now eexists.
-  apply ball_center.
-  easy.
+- apply open_true.
 Qed.
 
 Lemma open_Rbar_lt' :
   forall x y, Rbar_lt x y -> Rbar_locally x (fun u => Rbar_lt u y).
 Proof.
 intros [x| |] y Hxy.
-- change (locally x (fun u => Rbar_lt u y)).
-  apply filter_open with (2 := Hxy).
-  apply open_Rbar_lt.
+- now apply open_Rbar_lt.
 - easy.
 - destruct y as [y| |].
   now exists y.
@@ -2635,9 +2480,7 @@ Lemma open_Rbar_gt' :
   forall x y, Rbar_lt y x -> Rbar_locally x (fun u => Rbar_lt y u).
 Proof.
 intros [x| |] y Hxy.
-- change (locally x (fun u => Rbar_lt y u)).
-  apply filter_open with (2 := Hxy).
-  apply open_Rbar_gt.
+- now apply open_Rbar_gt.
 - destruct y as [y| |].
   now exists y.
   easy.
