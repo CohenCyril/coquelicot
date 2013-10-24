@@ -670,43 +670,6 @@ Class FilterCompatibility {T} {TT : TopologicalSpace T} (F : T -> (T -> Prop) ->
   filter_compat2 : forall P x, F x P -> exists Q, basis Q /\ Q x /\ forall y, Q y -> P y
 }.
 
-Global Instance topology_prod {T U} :
-  TopologicalSpace T -> TopologicalSpace U
-    -> TopologicalSpace (T * U).
-Proof.
-  move => TT TU.
-  exists (fun (P : _ -> Prop) => forall x, P x ->
-    exists Q R, basis Q /\ basis R /\
-      Q (fst x) /\ R (snd x) /\ (forall y z, Q y -> R z -> P (y,z))).
-  + move => P P' HP HP' x Px P'x.
-    case: (HP x Px) => {HP} Q [R [BQ [BR [Qx [Rx HP]]]]].
-    case: (HP' x P'x) => {HP'} Q' [R' [BQ' [BR' [Q'x [R'x HP']]]]].
-    case: (basis_and Q Q' BQ BQ' _ Qx Q'x) => Q0 BQ0 Q0x HQ0.
-    case: (basis_and R R' BR BR' _ Rx R'x) => R0 BR0 R0x HR0.
-    exists (fun z => Q0 (fst z) /\ R0 (snd z)).
-    move => y [Q0y R0y].
-    exists Q0, R0.
-    by repeat split.
-    by split.
-    case => y z [Q0y R0y].
-    split.
-    apply HP.
-    by apply HQ0, Q0y.
-    by apply HR0, R0y.
-    apply HP'.
-    by apply HQ0, Q0y.
-    by apply HR0, R0y.
-  + case => x y.
-    case: (basis_true x) => Q [BQ Qx].
-    case: (basis_true y) => R [BR Ry].
-    exists (fun z => Q (fst z) /\ R (snd z)).
-    split.
-    move => z [Qz Rz].
-    exists Q, R.
-    by repeat split.
-    by split.
-Defined.
-
 (** ** Open sets *)
 
 Lemma open_basis :
@@ -799,8 +762,6 @@ split.
   destruct (filter_compat2 D x (H x Dx)) as [Q [BQ [Qx HQP]]].
   now exists Q.
 Qed.
-
-(** ** Limits and continuity in topological spaces *)
 
 (** * Metric Spaces *)
 
