@@ -665,48 +665,6 @@ Class TopologicalSpace T := {
   basis_true : forall x, exists P, basis P /\ P x
 }.
 
-Definition neighborhood {T} {TT : TopologicalSpace T} : T -> (T -> Prop) -> Prop :=
-  neighborhood_ basis.
-
-Global Instance neighborhood_filter :
-  forall T (TT : TopologicalSpace T) (x : T), ProperFilter (neighborhood x).
-Proof.
-intros T TT x.
-split ; [idtac | split].
-- intros P [Q BQ Qx H].
-  exists x.
-  now apply H.
-- destruct (basis_true x) as [P [BP Px]].
-  by exists P.
-- intros P Q [P' BP' Px HP] [Q' BQ' Qx HQ].
-  destruct (basis_and P' Q' BP' BQ' x Px Qx) as [R BR Rx HR].
-  apply Neighborhood with (1 := BR).
-  exact Rx.
-  intros y Ry.
-  destruct (HR y Ry) as [Py Qy].
-  split.
-  now apply HP.
-  now apply HQ.
-- intros P Q H [P' BP' Px HP].
-  apply Neighborhood with (1 := BP').
-  exact Px.
-  intros y Py.
-  apply H.
-  now apply HP.
-Qed.
-
-Lemma neighborhood_imp :
-  forall {T} {TT : TopologicalSpace T} x (P Q : T -> Prop),
-  (forall x, P x -> Q x) ->
-  neighborhood x P -> neighborhood x Q.
-Proof.
-intros T TT x P Q H [R BR Rx HR].
-exists R ; try easy.
-intros y Ry.
-apply H.
-now apply HR.
-Qed.
-
 Class FilterCompatibility {T} {TT : TopologicalSpace T} (F : T -> (T -> Prop) -> Prop) := {
   filter_compat1 : forall P x, basis P -> P x -> F x P ;
   filter_compat2 : forall P x, F x P -> exists Q, basis Q /\ Q x /\ forall y, Q y -> P y
@@ -843,19 +801,6 @@ split.
 Qed.
 
 (** ** Limits and continuity in topological spaces *)
-
-(** Limit of a filter *)
-
-Definition is_filter_lim {T} {TT : TopologicalSpace T} (F : (T -> Prop) -> Prop) (x : T) :=
-  forall P, basis P -> P x -> F P.
-
-Lemma is_filter_lim_neighborhood :
-  forall {T} {TT : TopologicalSpace T} (x : T),
-  is_filter_lim (neighborhood x) x.
-Proof.
-intros T TT x P BP Px.
-now apply Neighborhood with (1 := BP).
-Qed.
 
 (** * Metric Spaces *)
 
@@ -1084,23 +1029,6 @@ apply H.
 by apply ball_center.
 Qed.
 
-Lemma is_filter_lim_locally :
-  forall {T} {MT : MetricSpace T} (x : T),
-  is_filter_lim (locally x) x.
-Proof.
-intros T MT x P [y [eps H]] Px.
-assert (Dx: 0 < eps - distance y x).
-  apply Rplus_lt_reg_r with (distance y x).
-  ring_simplify.
-  now apply H.
-exists (mkposreal _ Dx).
-intros z Dz.
-apply H.
-apply Rle_lt_trans with (1 := distance_triangle _ x _).
-replace eps with (distance y x + (eps - distance y x)) by ring.
-apply Rplus_lt_compat_l with (1 := Dz).
-Qed.
-
 Global Instance locally'_filter :
   forall T (MT : MetricSpace T) (x : T), Filter (locally' x).
 Proof.
@@ -1153,28 +1081,6 @@ rewrite (double_var (distance l l')).
 apply Rplus_lt_compat.
 assumption.
 now rewrite distance_comm.
-Qed.
-
-Lemma is_filter_lim_filterlim {T} {MT : MetricSpace T}
-  (F : (T -> Prop) -> Prop) {FF : Filter F} (x : T) :
-  is_filter_lim F x <-> filterlim (fun t => t) F (locally x).
-Proof.
-  split.
-  + move => Hfx P [d Hp].
-    rewrite /filtermap.
-    apply filter_imp with (1 := Hp).
-    apply Hfx.
-    by exists x, d.
-    by apply ball_center.
-  + move/filterlim_locally => HF P [y [d HP]] Hpx.
-    apply HP in Hpx.
-    simpl in Hpx.
-    apply Rminus_lt_0 in Hpx.
-    move: (HF FF (mkposreal _ Hpx)).
-    apply filter_imp => /= z Hz.
-    apply HP.
-    apply Rle_lt_trans with (1 := distance_triangle y x z).
-    rewrite Rplus_comm ; by apply Rlt_minus_r.
 Qed.
 
 (** ** Products of metric spaces *)
@@ -2060,37 +1966,6 @@ Defined.
 
 Definition eventually (P : nat -> Prop) :=
   exists N : nat, forall n, (N <= n)%nat -> P n.
-
-Lemma nat_topology_and : forall P Q : nat -> Prop,
-  eventually P ->
-  eventually Q ->
-  forall x : nat,
-  P x -> Q x -> neighborhood_ eventually x (fun y : nat => P y /\ Q y).
-Proof.
-  move => P Q [NP HP] [NQ HQ] x Px Qx.
-  apply Neighborhood with (fun y : nat => P y /\ Q y).
-  exists (NP + NQ)%nat => n Hn.
-  split.
-  by apply HP, le_trans with (2 := Hn), le_plus_l.
-  by apply HQ, le_trans with (2 := Hn), le_plus_r.
-  by split.
-  by auto.
-Qed.
-Lemma nat_topology_true : forall n : nat,
-  exists P : nat -> Prop, eventually P /\ P n.
-Proof.
-  move => n.
-  exists (fun m => (n <= m)%nat) ; split.
-  by exists n.
-  by apply le_refl.
-Qed.
-Global Instance nat_TopologicalSpace :
-  TopologicalSpace nat.
-Proof.
-  apply Build_TopologicalSpace with eventually.
-  exact nat_topology_and.
-  exact nat_topology_true.
-Defined.
 
 Global Instance eventually_filter : ProperFilter eventually.
 Proof.
