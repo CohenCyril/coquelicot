@@ -21,7 +21,6 @@ COPYING file for more details.
 
 Require Import Reals List Morphisms ssreflect.
 Require Import Rcomplements Rbar Lub.
-Require Import FunctionalExtensionality.
 Open Scope R_scope.
 
 (** * Algebraic spaces *)
@@ -56,28 +55,6 @@ intros (x1,x2).
 apply f_equal2 ; apply plus_zero_r.
 intros x.
 apply f_equal2 ; apply plus_opp_r.
-Defined.
-
-Global Instance AbelianGroup_fct :
-  forall T G,
-    AbelianGroup G -> AbelianGroup (T -> G).
-Proof.
-  intros T G AG.
-  apply (Build_AbelianGroup _ (fun f g => (fun x => plus (f x) (g x)))
-         (fun f => (fun x => opp (f x)))
-         (fun _ => zero)).
-  - move => f g.
-    apply functional_extensionality => x.
-    by apply plus_comm.
-  - move => f g h.
-    apply functional_extensionality => x.
-    by apply plus_assoc.
-  - move => f.
-    apply functional_extensionality => x.
-    by apply plus_zero_r.
-  - move => f.
-    apply functional_extensionality => x.
-    by apply plus_opp_r.
 Defined.
 
 (** Arithmetic operations *)
@@ -373,27 +350,6 @@ apply f_equal2 ; apply scal_distr_l.
 intros x y u.
 simpl.
 apply f_equal2 ; apply scal_distr_r.
-Defined.
-
-Global Instance VectorSpace_fct :
-  forall U V K (FK : Field K) (VV : VectorSpace V K),
-  VectorSpace (U -> V) K.
-Proof.
-intros U V K FK VV.
-econstructor.
-apply (@Build_VectorSpace_mixin _ K FK (AbelianGroup_fct _ _ _)
-  (fun (x : K) (f : U -> V) t => scal x (f t))).
-intros x y u.
-apply functional_extensionality => t.
-apply scal_assoc.
-intros u.
-apply functional_extensionality => t ; apply scal_one.
-intros x u v.
-simpl.
-apply functional_extensionality => t ; apply scal_distr_l.
-intros x y u.
-simpl.
-apply functional_extensionality => t ; apply scal_distr_r.
 Defined.
 
 (** * Filters *)
@@ -1511,209 +1467,6 @@ Proof.
   exact cnagroup_complete0.
 Defined.
 
-(** ** Functional Normed Abelian Groups *)
-
-Lemma UnifFct_pnorm_ne {T G} {NAG : NormedAbelianGroup G} :
-  forall (f : T -> G), exists s : R, s = 0 \/ exists x : T, s = pnorm (f x).
-Proof.
-  intro f.
-  exists 0.
-  by left.
-Qed.
-Definition UnifFct_pnorm {T G} {NAG : NormedAbelianGroup G} (f : T -> G) : R :=
-    Rbar_min 1 (Lub_Rbar_ne _ (UnifFct_pnorm_ne f)).
-
-Lemma UnifFct_pnorm_le_lub  {T G} {NAG : NormedAbelianGroup G} :
-  forall (f : T -> G), Rbar_le (UnifFct_pnorm f) (Lub_Rbar_ne _ (UnifFct_pnorm_ne f)).
-Proof.
-  intro f.
-  unfold UnifFct_pnorm, Rbar_min ;
-  case: Rbar_le_dec => H.
-  exact H.
-  apply Rbar_not_le_lt in H ; revert H.
-  unfold Lub_Rbar_ne ; case ex_lub_Rbar_ne ; case => [l | | ] ;
-  simpl ; intros [ub lub] H.
-  by right.
-  apply ub ; by left.
-  apply ub ; by left.
-Qed.
-
-Lemma UnifFct_dist_pnorm {T G} {NAG : NormedAbelianGroup G} (f g : T -> G) :
-  UnifFct_dist f g = UnifFct_pnorm (minus g f).
-Proof.
-  apply (f_equal real), f_equal.
-  apply Lub_Rbar_ne_eqset.
-  by unfold distance.
-Qed.
-
-Lemma UnifFct_pnorm_lub_lt_1  {T G} {NAG : NormedAbelianGroup G} :
-  forall (f : T -> G) (x : R), x <= 1
-    -> ((UnifFct_pnorm f) < x <-> Rbar_lt (Lub_Rbar_ne _ (UnifFct_pnorm_ne f)) x).
-Proof.
-  intros f x.
-  unfold UnifFct_pnorm, Rbar_min ; case Rbar_le_dec ; simpl ; try by auto.
-  intros H Hx ; split ; intro H0.
-  by apply Rlt_not_le in H0.
-  contradict H.
-  apply Rbar_lt_not_le, Rbar_lt_le_trans with x.
-  by [].
-  by apply Rbar_finite_le.
-
-  move/Rbar_not_le_lt.
-  rewrite /Lub_Rbar_ne ; case ex_lub_Rbar_ne ; case => [l | | ] ;
-  simpl ; intros [ub lub] H.
-  by split.
-  by auto.
-  case: (ub 0) ; by auto.
-Qed.
-
-Lemma UnifFct_pnorm_ge_fct  {T G} {NAG : NormedAbelianGroup G} :
-  forall (f : T -> G) (x : T), (UnifFct_pnorm f) < 1 -> pnorm (f x) <= UnifFct_pnorm f.
-Proof.
-  intros f x.
-  rewrite /UnifFct_pnorm /Rbar_min ; case: Rbar_le_dec ; simpl ; try by auto.
-  move => H H0.
-  by apply Rlt_irrefl in H0.
-
-  move/Rbar_not_le_lt.
-  rewrite /Lub_Rbar_ne ; case ex_lub_Rbar_ne ; case => [l | | ] ; simpl ; intros [ub lub] H H0.
-  apply Rbar_finite_le, ub.
-  right ; by exists x.
-  by auto.
-  case: (ub 0) ; by auto.
-Qed.
-
-Lemma UnifFct_pnorm_maj  {T G} {NAG : NormedAbelianGroup G} :
-  forall (f : T -> G) (M : R), 0 <= M ->
-    (forall x, pnorm (f x) <= M) -> UnifFct_pnorm f <= M.
-Proof.
-  intros f M Hm Hf.
-  apply Rbar_finite_le.
-  apply Rbar_le_trans with (1 := UnifFct_pnorm_le_lub f).
-  apply Lub_Rbar_ne_correct.
-  move => s ; case => [-> | [x ->]] {s}.
-  by apply Rbar_finite_le.
-  by apply Rbar_finite_le.
-Qed.
-
-Lemma UnifFct_pnorm_bw_0_1 {T M} {MNAG : NormedAbelianGroup M} : 
-  forall (f : T -> M), 0 <= UnifFct_pnorm f <= 1.
-Proof.
-  intro f.
-  rewrite /UnifFct_pnorm /Rbar_min ; case: Rbar_le_dec => H.
-  split ; [by apply Rle_0_1 | by right].
-  apply Rbar_not_le_lt in H.
-  move: H ; rewrite /Lub_Rbar_ne ;
-  case: ex_lub_Rbar_ne ; case => [l | | ] ; simpl ; intros Hlub H.
-  split.
-  apply Rbar_finite_le, Hlub ; by left.
-  by apply Rlt_le.
-  by auto.
-  split ; [ by right | by apply Rle_0_1 ].
-Qed.
-
-Lemma UnifFct_pnorm_zero {T G} {NAG : NormedAbelianGroup G} :
-  @UnifFct_pnorm T G NAG zero = 0.
-Proof.
-  replace 0 with (real (Finite 0)) by auto.
-  apply (f_equal real).
-  replace (Lub_Rbar_ne _ _) with (Finite 0).
-  rewrite /Rbar_min ; case: Rbar_le_dec ; simpl ; intros H.
-  contradict H ; apply Rbar_lt_not_le.
-  by apply Rlt_0_1.
-  auto.
-  apply sym_eq, is_lub_Rbar_ne_unique ; split.
-  - move => s ; simpl => Hs.
-    case: Hs => Hs.
-    rewrite <- Hs ; by right.
-    case: Hs => x -> {s}.
-    rewrite pnorm_zero ; by right.
-  - move => b Hb.
-    apply Hb.
-    by left.
-Qed.
-
-Lemma UnifFct_pnorm_opp  {T G} {NAG : NormedAbelianGroup G} :
-  forall (f : T -> G), UnifFct_pnorm (opp f) = UnifFct_pnorm f.
-Proof.
-  intro f.
-  apply (f_equal (fun x => real (Rbar_min 1 x))).
-  apply Lub_Rbar_ne_eqset => s ; split ; simpl ; case => Hs ; try by left.
-  case: Hs => x -> {s} ; right ; exists x.
-  by apply pnorm_opp.
-  case: Hs => x -> {s} ; right ; exists x.
-  by apply sym_equal, pnorm_opp.
-Qed.
-
-Lemma UnifFct_pnorm_triangle  {T G} {NAG : NormedAbelianGroup G} :
-  forall f g : T -> G,
-  UnifFct_pnorm (plus f g) <= UnifFct_pnorm f + UnifFct_pnorm g.
-Proof.
-  move => f g ; simpl.
-  - case: (Rle_lt_dec 1 (UnifFct_pnorm f)) => Hf.
-    apply Rle_trans with (2 := Rplus_le_compat_r _ _ _ Hf).
-    apply Rle_trans with 1.
-    by apply UnifFct_pnorm_bw_0_1.
-    apply Rminus_le_0 ; ring_simplify.
-    by apply UnifFct_pnorm_bw_0_1.
-    move: (fun x => UnifFct_pnorm_ge_fct f x Hf) => {Hf} Hf.
-  - case: (Rle_lt_dec 1 (UnifFct_pnorm g)) => Hg.
-    apply Rle_trans with (2 := Rplus_le_compat_l _ _ _ Hg).
-    apply Rle_trans with 1.
-    by apply UnifFct_pnorm_bw_0_1.
-    apply Rminus_le_0 ; ring_simplify.
-    by apply UnifFct_pnorm_bw_0_1.
-    move: (fun x => UnifFct_pnorm_ge_fct g x Hg) => {Hg} Hg.
-    apply UnifFct_pnorm_maj.
-    apply Rplus_le_le_0_compat ;
-    by apply UnifFct_pnorm_bw_0_1.
-    move => x.
-    apply Rle_trans with (1 := pnorm_triangle _ _).
-    by apply Rplus_le_compat.
-Qed.
-
-Lemma NAG_UnifFct {T} {G} :
-  NormedAbelianGroup G -> NormedAbelianGroup (T -> G).
-Proof.
-  move => NAG.
-  exists (@AbelianGroup_fct T G (@nagroup_abelian G NAG)).
-  exists UnifFct_pnorm.
-  - by apply UnifFct_pnorm_zero.
-  - move => f.
-    by apply UnifFct_pnorm_opp.
-  - move => f g.
-    by apply UnifFct_pnorm_triangle.
-Defined.
-
-(*
-Lemma CompleteNormedAbelianGroup_UnifFct {T U} :
-  CompleteNormedAbelianGroup U -> CompleteNormedAbelianGroup (T -> U).
-Proof.
-  case ; intros.
-  set (nagf := @NAG_UnifFct T U cnagroup_nag0).
-  unfold NAG_UnifFct in nagf.
-  exists (AbelianGroup_fct _ _ cnagroup_abelian0) (@nagroup_mixin _ nagf).
-  constructor.
-  intros F FF H'.
-  assert (H := @complete_cauchy_UnifFct T U (Build_CompleteSpace U (@NormedAbelianGroup_MetricSpace U cnagroup_nag0) cnagroup_complete0) F FF).
-  destruct H as [f Ff].
-  intros eps.
-  destruct (H' eps) as [f Hf].
-  exists f.
-  apply: filter_imp Hf.
-  intros x.
-  by rewrite /ball /distance /= UnifFct_dist_pnorm.
-  exists f.
-  intros P [c [eps BP]] Pf.
-  apply Ff.
-  exists c, eps.
-  intros y.
-  rewrite -BP.
-  by rewrite /ball /distance /= UnifFct_dist_pnorm.
-  exact Pf.
-Defined.
-*)
-
 (** * Normed Vector Space *)
 
 Class NormedVectorSpace_mixin V K {FK : AbsField K} (VS : VectorSpace V K) := {
@@ -2555,8 +2308,6 @@ Proof.
   apply Rlt_le_trans with (1 := HN).
   rewrite -S_INR ; by apply le_INR.
 Qed.
-
-(* TODO : Bouger dans Limit ? *)
 
 Lemma filterlim_const :
   forall {T U} {MU : MetricSpace U} {F : (T -> Prop) -> Prop} {FF : Filter F},
