@@ -1,6 +1,7 @@
 FILES = \
 	AutoDerive.v \
 	Compactness.v \
+	Complex.v \
 	Continuity.v \
 	Coquelicot.v \
 	Derive.v \

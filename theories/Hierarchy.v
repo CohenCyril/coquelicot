@@ -483,6 +483,28 @@ apply filterlim_ext_loc.
 now apply filter_forall.
 Qed.
 
+Lemma filterlim_filter_le_1 :
+  forall {T U F G H} (f : T -> U),
+  filter_le G F ->
+  filterlim f F H ->
+  filterlim f G H.
+Proof.
+intros T U F G H f K Hf P HP.
+apply K.
+now apply Hf.
+Qed.
+
+Lemma filterlim_filter_le_2 :
+  forall {T U F G H} (f : T -> U),
+  filter_le G H ->
+  filterlim f F G ->
+  filterlim f F H.
+Proof.
+intros T U F G H f K Hf P HP.
+apply Hf.
+now apply K.
+Qed.
+
 (** ** Specific filters *)
 
 (** Filters for pairs *)
@@ -751,6 +773,13 @@ Proof.
 intros T MT x P [dp H].
 apply H.
 by apply ball_center.
+Qed.
+
+Lemma locally_ball {T} {MT : MetricBall T} :
+  forall x (eps : posreal), locally x (ball x eps).
+Proof.
+  intros x eps.
+  now exists eps.
 Qed.
 
 Global Instance locally'_filter :

@@ -100,7 +100,7 @@ a more traditional epsilon-delta representation of limits.
   if they are at infinite points.
 *)
 
-Require Export AutoDerive Compactness Continuity Derive.
+Require Export AutoDerive Compactness Complex Continuity Derive.
 Require Export Derive_2d Equiv ElemFct Hierarchy Limit.
 Require Export Lub Markov PSeries Rbar Rcomplements.
 Require Export RInt Seq_fct Series SF_seq.
