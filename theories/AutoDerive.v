@@ -467,7 +467,7 @@ easy.
 apply Hl.
 (* *)
 rewrite Hl.
-apply: filter_imp => y.
+apply filter_imp => y.
 rewrite 2!(interp_ext _ _ _ Hl).
 apply ex_RInt_ext.
 intros x _.
@@ -479,7 +479,7 @@ now rewrite /= 2!nth_set_nth /= Hl.
 intros (d,H).
 exists d.
 rewrite -Hl.
-apply: filter_imp H => y.
+move: H ; apply filter_imp => y.
 rewrite (interp_ext _ _ _ Hl).
 apply ex_RInt_ext.
 intros x _.
@@ -510,7 +510,7 @@ now apply interp_ext.
 apply Hl.
 (* *)
 rewrite Hl.
-apply: filter_imp => y.
+apply filter_imp => y.
 apply IHb => k.
 now rewrite 2!nth_set_nth /= Hl.
 (* *)
@@ -1095,7 +1095,7 @@ apply cond_pos.
 exact Hy.
 rewrite (RInt_ext (fun x => interp (x :: l) a1) (fun x => Derive (fun t => interp (set_nth 0 (x :: l) (S n) t) e1) (nth 0 (x :: l) (S n)))).
 apply derivable_pt_lim_param.
-apply: filter_imp H3' => y H3' t Ht.
+move: H3' ; apply filter_imp => y H3' t Ht.
 specialize (IHe1 _ (H3' t Ht)).
 rewrite nth_set_nth /= eqtype.eq_refl in IHe1.
 exists (interp (set_nth 0 (t :: l) (S n) y) a1).
@@ -1122,7 +1122,7 @@ now apply Rplus_le_compat_r.
 exact Hu.
 now rewrite nth_set_nth /= eqtype.eq_refl.
 now apply H4.
-apply: filter_imp H2 => y.
+move: H2 ; apply filter_imp => y.
 rewrite (is_const_correct e2 n C2 l y (nth 0 l n)).
 rewrite (is_const_correct e3 n C3 l y (nth 0 l n)).
 now rewrite 2!interp_set_nth.

@@ -155,7 +155,7 @@ Proof.
   replace p_infty with (Rbar_opp m_infty) by auto.
   apply is_lim_opp.
   apply is_lim_id.
-  exact: filter_forall.
+  by apply filter_forall.
   by [].
   by [].
 Qed.
@@ -258,7 +258,7 @@ Proof.
   apply is_lim_opp.
   apply is_lim_id.
   by [].
-  exact: filter_forall.
+  by apply filter_forall.
   by [].
   simpl ; by rewrite Ropp_0.
 Qed.

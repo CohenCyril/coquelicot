@@ -271,14 +271,17 @@ Proof.
   exists eps.
   intros y H'.
   apply Hp.
-  apply Rle_lt_trans with (2 := H').
-  apply Rmax_l.
+  apply Rle_lt_trans with (2 := H') ; simpl.
+  rewrite -sqrt_Rsqr_abs /Cmod /Rsqr /=.
+  move: (snd y + - ly)%R => t.
+  apply sqrt_le_1_alt, Rminus_le_0 ; ring_simplify.
+  by apply pow2_ge_0.
   exists delta.
   intros y By Hy.
   apply Hd.
-  unfold ball ; simpl ; unfold dist_prod ; apply Rmax_case ; simpl.
-  apply By.
-  exact (ball_center (snd z) delta).
+  apply Rle_lt_trans with (2 := By) ; simpl.
+  rewrite -sqrt_Rsqr_abs /Cmod /Rsqr /=.
+  apply Req_le, f_equal ; ring.
   contradict Hy.
   clear -Hy.
   destruct z as [z1 z2].
@@ -290,14 +293,17 @@ Proof.
   exists eps.
   intros y H'.
   apply Hp.
-  apply Rle_lt_trans with (2 := H').
-  apply Rmax_r.
+  apply Rle_lt_trans with (2 := H') ; simpl.
+  rewrite -sqrt_Rsqr_abs /Cmod /Rsqr /=.
+  move: (fst y + - lx)%R => t.
+  apply sqrt_le_1_alt, Rminus_le_0 ; ring_simplify.
+  by apply pow2_ge_0.
   exists delta.
   intros y By Hy.
   apply Hd.
-  unfold ball ; simpl ; unfold dist_prod ; apply Rmax_case ; simpl.
-  apply By.
-  exact (ball_center (snd z) delta).
+  apply Rle_lt_trans with (2 := By) ; simpl.
+  rewrite -sqrt_Rsqr_abs /Cmod /Rsqr /=.
+  apply Req_le, f_equal ; ring.
   contradict Hy.
   clear -Hy.
   destruct z as [z1 z2].
@@ -311,14 +317,30 @@ Lemma filter_le_prod_locally :
   filter_le (filter_prod (locally x) (locally y)) (locally ((x, y) : C)).
 Proof.
 intros x y P [eps HP].
-exists (ball x eps) (ball y eps).
+exists (ball x (pos_div_2 eps)) (ball y (pos_div_2 eps)).
 apply locally_ball.
 apply locally_ball.
 intros u v Bu Bv.
-apply HP.
-unfold ball ; simpl.
-unfold dist_prod.
-now apply Rmax_case.
+apply HP ; simpl.
+unfold Cmod ; simpl.
+rewrite -?/(Rminus _ _).
+apply Rle_lt_trans with (Rabs (u - x) + Rabs (v - y))%R.
+move: (u - x)%R (v - y)%R => l m.
+apply Rsqr_incr_0_var.
+rewrite -2!sqrt_Rsqr_abs /Rsqr Rminus_le_0 ; ring_simplify.
+rewrite /pow ?Rmult_1_r ?sqrt_sqrt ; ring_simplify.
+repeat apply Rmult_le_pos.
+by apply Rlt_le, Rlt_0_2.
+by apply sqrt_pos.
+by apply sqrt_pos.
+now apply Rplus_le_le_0_compat ; apply pow2_ge_0.
+by apply pow2_ge_0.
+by apply pow2_ge_0.
+now apply Rplus_le_le_0_compat ; apply Rabs_pos.
+rewrite (double_var eps).
+apply Rplus_lt_compat.
+by apply Bu.
+by apply Bv.
 Qed.
 
 Lemma filter_le_locally_prod :
@@ -331,12 +353,18 @@ intros [u v] B.
 apply HP.
 apply B1.
 apply Rlt_le_trans with (2 := Rmin_l e1 e2).
-apply Rle_lt_trans with (2 := B).
-apply Rmax_l.
+apply Rle_lt_trans with (2 := B) ; simpl.
+rewrite -sqrt_Rsqr_abs /Cmod /Rsqr /=.
+move: (v + - y)%R => t.
+apply sqrt_le_1_alt, Rminus_le_0 ; ring_simplify.
+by apply pow2_ge_0.
 apply B2.
 apply Rlt_le_trans with (2 := Rmin_r e1 e2).
-apply Rle_lt_trans with (2 := B).
-apply Rmax_r.
+apply Rle_lt_trans with (2 := B) ; simpl.
+rewrite -sqrt_Rsqr_abs /Cmod /Rsqr /=.
+move: (u + - x)%R => t.
+apply sqrt_le_1_alt, Rminus_le_0 ; ring_simplify.
+by apply pow2_ge_0.
 Qed.
 
 Lemma filterlim_Cplus :

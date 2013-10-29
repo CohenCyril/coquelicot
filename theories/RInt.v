@@ -4471,7 +4471,7 @@ apply H.
 exact Hab.
 now rewrite Rmin_comm Rmax_comm.
 now rewrite Rmin_comm Rmax_comm.
-apply: filter_imp H3 => y H3.
+move: H3 ; apply filter_imp => y H3.
 now apply ex_RInt_swap.
 now apply ex_RInt_swap.
 (* *)
@@ -4658,7 +4658,7 @@ Proof.
 intros f a b x Hab (eps,Hae) Ca.
 move /continuity_pt_locally: Ca => Ca.
 generalize (filter_and _ _ (Ca eps) (filter_and _ _ Hab Hae)).
-apply: filter_imp => {Ca Hae Hab} y [Hy [Hab Hae]].
+apply filter_imp => {Ca Hae Hab} y [Hy [Hab Hae]].
 apply RInt_Chasles with (2 := Hab).
 apply ex_RInt_inside with (1 := Hae).
 now apply Rlt_le.
@@ -4682,7 +4682,7 @@ move /continuity_pt_locally: Cb => Cb.
 set (e := mkposreal _ (Rmin_stable_in_posreal ea eb)).
 generalize (filter_and _ _ (filter_and _ _ (Ca e) (Cb e))
   (filter_and _ _ Hab (filter_and _ _ Hae Hbe))).
-apply: filter_imp => {Ca Cb Hab Hae Hbe} y [[Hay Hby] [Hab [Hae Hbe]]].
+apply filter_imp => {Ca Cb Hab Hae Hbe} y [[Hay Hby] [Hab [Hae Hbe]]].
 apply RInt_Chasles.
 apply ex_RInt_inside with (1 := Hae).
 apply Rlt_le.
@@ -4716,13 +4716,13 @@ apply is_derive_ext_loc with (fun x0 => comp (fun y => RInt f y (a x)) a x0
 (* *)
 unfold comp.
 apply RInt_Chasles_bound_comp_loc.
-exact: filter_forall.
+by apply filter_forall.
 destruct Ia as (d1,H1).
 exists d1.
-exact: filter_forall.
+by apply filter_forall.
 destruct Ib as (d2,H2).
 exists d2.
-exact: filter_forall.
+by apply filter_forall.
 apply derivable_continuous_pt.
 eexists ; eassumption.
 apply derivable_continuous_pt.
@@ -5010,7 +5010,7 @@ apply derivable_pt_lim_RInt_param_bound_comp_aux1; try easy.
 exists d0; exact Ia.
 destruct Df as (d,Hd).
 exists d.
-apply: filter_imp Hd.
+move: Hd ; apply filter_imp.
 intros y H t Ht.
 apply H.
 split.
@@ -5029,7 +5029,7 @@ exact Da.
 (* *)
 apply derivable_pt_lim_param.
 destruct Df as (d,Df).
-apply: filter_imp Df.
+move: Df ; apply filter_imp.
 intros y Hy t Ht; apply Hy.
 split.
 apply Rle_trans with (2:=proj1 Ht).
@@ -5073,12 +5073,12 @@ replace (RInt (fun t : R => Derive (fun u => f u t) x) a (b x) +f x (b x)*db) wi
       (- ((RInt (fun t : R => Derive (fun u : R => f u t) x) (b x) a) + - f x (b x)*db)).
 apply derivable_pt_lim_opp.
 apply derivable_pt_lim_RInt_param_bound_comp_aux2; try easy.
-apply: filter_imp If.
+move: If ; apply filter_imp.
 intros y H.
 now apply ex_RInt_swap.
 destruct Df as (e,H).
 exists e.
-apply: filter_imp H.
+move: H ; apply filter_imp.
 intros y H' t Ht.
 apply H'.
 now rewrite Rmin_comm Rmax_comm.
@@ -5136,7 +5136,7 @@ intros y Hy.
 apply ex_RInt_point.
 destruct Df as (e,H).
 exists e.
-apply: filter_imp H.
+move: H ; apply filter_imp.
 intros y H' t Ht.
 apply H'.
 split.
@@ -5165,7 +5165,7 @@ now right.
 apply derivable_pt_lim_RInt_param_bound_comp_aux3; try easy.
 destruct Df as (e,H).
 exists e.
-apply: filter_imp H.
+move: H ; apply filter_imp.
 intros y H' t Ht.
 apply H'.
 split.

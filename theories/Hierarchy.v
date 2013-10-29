@@ -305,7 +305,7 @@ Proof.
   by rewrite Rmult_1_l.
 Qed.
 
-Lemma Kabs_pos :
+Lemma Kabs_ge_0 :
   forall K (AF : AbsField K) x, 0 <= Kabs x.
 Proof.
   intros K AF x.
@@ -783,7 +783,7 @@ Proof.
 Qed.
 
 Global Instance locally'_filter :
-  forall T (MT : MetricSpace T) (x : T), Filter (locally' x).
+  forall T (MT : MetricBall T) (x : T), Filter (locally' x).
 Proof.
 intros T MT x.
 constructor.
@@ -794,10 +794,10 @@ constructor.
   intros y Hy Hy'.
   split.
   apply HP with (2 := Hy').
-  apply Rlt_le_trans with (1 := Hy).
+  apply ball_le with (2 := Hy).
   apply Rmin_l.
   apply HQ with (2 := Hy').
-  apply Rlt_le_trans with (1 := Hy).
+  apply ball_le with (2 := Hy).
   apply Rmin_r.
 - intros P Q H [dP HP].
   exists dP.
@@ -806,34 +806,25 @@ constructor.
   now apply HP.
 Qed.
 
-Lemma filterlim_locally_unique: forall {T U} {MU : MetricSpace U} {F} {FF: ProperFilter F}
-  (f:T -> U) l l', filterlim f F (locally l) ->  filterlim f F (locally l') -> distance l l' = 0.
+Lemma filterlim_locally_unique: forall {T U} {MU : MetricBall U} {F} {FF: ProperFilter F}
+  (f:T -> U) l l', filterlim f F (locally l) ->  filterlim f F (locally l') ->
+    (forall eps : posreal, ball l eps l').
 Proof.
-intros T U MU F FF f l l' Hl Hl'.
-destruct (Rle_lt_or_eq_dec 0 (distance l l')); try easy.
-apply distance_ge_0.
-exfalso.
-assert (M:0 < distance l l' / 2).
-apply Rdiv_lt_0_compat.
-assumption.
-apply Rlt_R0_R2.
-assert (H:locally l (fun x => distance l x < distance l l' / 2)).
-now exists (mkposreal _ M).
-assert (locally l' (fun x => distance l' x < distance l l' / 2)).
-now exists (mkposreal _ M).
-specialize (Hl _ H).
-specialize (Hl' _ H0).
+intros T U MU F FF f l l' Hl Hl' eps.
+assert (locally l (ball l (pos_div_2 eps))).
+  by apply locally_ball.
+specialize (Hl (ball l (pos_div_2 eps)) H).
+assert (locally l' (ball l' (pos_div_2 eps))).
+  by apply locally_ball.
+specialize (Hl' (ball l' (pos_div_2 eps)) H0).
 unfold filtermap in Hl, Hl'.
-apply filter_const.
-generalize (filter_and _ _ Hl Hl').
-apply filter_imp.
-intros x (H1,H2).
-apply (Rlt_irrefl (distance l l')).
-apply Rle_lt_trans with (1:=distance_triangle _ (f x) _).
-rewrite (double_var (distance l l')).
-apply Rplus_lt_compat.
-assumption.
-now rewrite distance_comm.
+generalize (filter_and _ _ Hl Hl') => {H H0} H.
+apply filter_ex in H.
+case: H => x H.
+rewrite (double_var eps).
+apply ball_triangle with (f x).
+by apply H.
+by apply ball_sym, H.
 Qed.
 
 (** ** Open sets in metric spaces *)
@@ -909,109 +900,27 @@ Fixpoint Fn (n : nat) (T U : Type) : Type :=
   | S n => T -> Fn n T U
   end.
 
-Definition dist_prod {T U : Type} (dT : T -> T -> R) (dU : U -> U -> R) (x y : T * U) :=
-  Rmax (dT (fst x) (fst y)) (dU (snd x) (snd y)).
-
-Lemma dist_prod_refl :
-  forall {T U} {MT : MetricSpace T} {MU : MetricSpace U} (x : T * U),
-  dist_prod distance distance x x = 0.
-Proof.
-intros T U MT MU [xt xu].
-unfold dist_prod.
-apply Rmax_case ; apply distance_refl.
-Qed.
-
-Lemma dist_prod_comm :
-  forall {T U} {MT : MetricSpace T} {MU : MetricSpace U} (x y : T * U),
-  dist_prod distance distance x y = dist_prod distance distance y x.
-Proof.
-intros T U MT MU [xt xu] [yt yu].
-unfold dist_prod.
-rewrite distance_comm.
-apply f_equal.
-apply distance_comm.
-Qed.
-
-Lemma dist_prod_triangle :
-  forall {T U} {MT : MetricSpace T} {MU : MetricSpace U} (x y z : T * U),
-  dist_prod distance distance x z <= dist_prod distance distance x y + dist_prod distance distance y z.
-Proof.
-intros T U MT MU [xt xu] [yt yu] [zt zu].
-unfold dist_prod.
-apply Rmax_case.
-apply Rle_trans with (distance xt yt + distance yt zt).
-apply distance_triangle.
-apply Rplus_le_compat ; apply Rmax_l.
-apply Rle_trans with (distance xu yu + distance yu zu).
-apply distance_triangle.
-apply Rplus_le_compat ; apply Rmax_r.
-Qed.
-
-Global Instance prod_metric :
-  forall T U, MetricSpace T -> MetricSpace U -> MetricSpace (T * U).
+Global Instance prod_metricball :
+  forall T U, MetricBall T -> MetricBall U -> MetricBall (T * U).
 Proof.
 intros T U MT MU.
-apply (Build_MetricSpace _ (dist_prod distance distance)).
-- exact dist_prod_refl.
-- exact dist_prod_comm.
-- exact dist_prod_triangle.
+apply (Build_MetricBall _ (fun x eps y => ball (fst x) eps (fst y) /\ ball (snd x) eps (snd y))).
+- intros x eps ; split ; by apply ball_center.
+- intros x y eps [H0 H1] ; split ; by apply ball_sym.
+- intros x y z e1 e2 [H0 H1] [H2 H3] ; split ; eapply ball_triangle.
+  by apply H0.
+  by apply H2.
+  by apply H1.
+  by apply H3.
+- intros x e1 e2 He y [H0 H1] ; split ; by apply ball_le with e1.
 Defined.
 
-Fixpoint dist_pow (n : nat) (T : Type) (d : T -> T -> R) : Tn n T -> Tn n T -> R :=
-  match n with
-  | O => fun _ _ => 0
-  | S n => fun x y =>
-    Rmax (d (fst x) (fst y)) (dist_pow n T d (snd x) (snd y))
-  end.
-
-Lemma dist_pow_refl :
-  forall {T} {MT : MetricSpace T} n x,
-  dist_pow n T distance x x = 0.
-Proof.
-induction n.
-reflexivity.
-intros [x xn].
-simpl.
-rewrite distance_refl IHn.
-now apply Rmax_case.
-Qed.
-
-Lemma dist_pow_comm :
-  forall {T} {MT : MetricSpace T} n x y,
-  dist_pow n T distance x y = dist_pow n T distance y x.
-Proof.
-induction n.
-reflexivity.
-intros [x xn] [y yn].
-simpl.
-now rewrite distance_comm IHn.
-Qed.
-
-Lemma dist_pow_triangle :
-  forall {T} {MT : MetricSpace T} n x y z,
-  dist_pow n T distance x z <= dist_pow n T distance x y +  dist_pow n T distance y z.
-Proof.
-induction n.
-simpl.
-intros _ _ _.
-rewrite Rplus_0_r.
-apply Rle_refl.
-intros [x xn] [y yn] [z zn].
-simpl.
-apply Rmax_case.
-apply Rle_trans with (1 := distance_triangle x y z).
-apply Rplus_le_compat ; apply Rmax_l.
-apply Rle_trans with (1 := IHn xn yn zn).
-apply Rplus_le_compat ; apply Rmax_r.
-Qed.
-
-Global Instance pow_metric : forall T, MetricSpace T -> forall n, MetricSpace (Tn n T).
+Global Instance pow_metricball : forall T, MetricBall T -> forall n, MetricBall (Tn n T).
 Proof.
 intros T MT n.
-apply (Build_MetricSpace _ (dist_pow n T distance)).
-- exact (dist_pow_refl n).
-- exact (dist_pow_comm n).
-- exact (dist_pow_triangle n).
+elim: n => [ | n MTn].
+by apply Build_MetricBall with (fun _ _ _ => True).
+by apply prod_metricball.
 Defined.
 
 (** ** Complete metric spaces *)
@@ -1172,27 +1081,20 @@ Proof.
   apply complete_cauchy_fct.
 Defined.
 
-Class MetricField K := {
-  mfield_group :> AbelianGroup K ;
-  mfield_field :> Field_mixin K mfield_group ;
-  mfield_metric :> MetricSpace K
-}.
-
-Global Instance MetricField_Field {K} :
-  MetricField K -> Field K.
-Proof.
-  intro MF.
-  apply Build_Field with mfield_group.
-  by apply MF.
-Defined.
-
 (** ** Metric Vector Spaces *)
 
 Class MetricVectorSpace V K {FK : Field K} := {
   mvspace_vector :> VectorSpace V K ;
-  mvspace_metric :> MetricSpace V ;
+  mvspace_metric :> MetricBall V ;
   mvspace_plus : forall x y, filterlim (fun z : V * V => plus (fst z) (snd z)) (filter_prod (locally x) (locally y)) (locally (plus x y)) ;
   mvspace_scal : forall x y, filterlim (fun z : V => scal x z) (locally y) (locally (scal x y))
+}.
+
+Class CompleteMetricVectorSpace V K {FK : Field K} := {
+  cmvspace_vector :> VectorSpace V K ;
+  cmvspace_metric :> CompleteSpace V ;
+  cmvspace_plus : forall x y, filterlim (fun z : V * V => plus (fst z) (snd z)) (filter_prod (locally x) (locally y)) (locally (plus x y)) ;
+  cmvspace_scal : forall x y, filterlim (fun z : V => scal x z) (locally y) (locally (scal x y))
 }.
 
 Global Instance vspace_of_field :
@@ -1205,6 +1107,15 @@ apply mult_assoc.
 apply mult_one_l.
 apply mult_distr_l.
 apply mult_distr_r.
+Defined.
+
+Global Instance Complete_MetricVectorSpace {V K} {FK : Field K} :
+  CompleteMetricVectorSpace V K -> MetricVectorSpace V K.
+Proof.
+  intros CMVS.
+  econstructor.
+  exact cmvspace_plus.
+  exact cmvspace_scal.
 Defined.
 
 Lemma scal_zero_r :
@@ -1262,90 +1173,6 @@ rewrite scal_opp_l.
 now rewrite scal_one.
 Qed.
 
-(** * Normed Abelian Space *)
-
-Class NormedAbelianGroup_mixin G (AG : AbelianGroup G) := {
-  pnorm : G -> R ;
-  pnorm_zero : pnorm zero = 0 ;
-  pnorm_opp : forall x, pnorm (opp x) = pnorm x ;
-  pnorm_triangle : forall x y, pnorm (plus x y) <= pnorm x + pnorm y
-}.
-
-Class NormedAbelianGroup G := {
-  nagroup_abelian :> AbelianGroup G ;
-  nagroup_mixin :> NormedAbelianGroup_mixin G nagroup_abelian
-}.
-
-Lemma pnorm_ge_0 :
-  forall {G} {NG : NormedAbelianGroup G} (x : G),
-  0 <= pnorm x.
-Proof.
-intros G NG x.
-apply Rmult_le_reg_r with (1 := Rlt_R0_R2).
-rewrite Rmult_0_l -pnorm_zero -(plus_opp_r x).
-apply Rle_trans with (1 := pnorm_triangle _ _).
-rewrite pnorm_opp.
-apply Req_le.
-ring.
-Qed.
-
-Lemma NAG_dist_refl {G} {NAG : NormedAbelianGroup G} :
-  forall a : G, pnorm (minus a a) = 0.
-Proof.
-  move => a.
-  by rewrite /minus plus_opp_r pnorm_zero.
-Qed.
-Lemma NAG_dist_comm {G} {NAG : NormedAbelianGroup G} :
-  forall a b : G, pnorm (minus b a) = pnorm (minus a b).
-Proof.
-  move => a b.
-  by rewrite /minus -pnorm_opp opp_plus opp_opp plus_comm.
-Qed.
-Lemma NAG_dist_triangle {G} {NAG : NormedAbelianGroup G} :
-  forall a b c : G, pnorm (minus c a) <= pnorm (minus b a) + pnorm (minus c b).
-Proof.
-  move => a b c.
-  apply Rle_trans with (2 := pnorm_triangle _ _).
-  apply Req_le.
-  rewrite plus_comm.
-  unfold minus.
-  rewrite plus_assoc -(plus_assoc c) plus_opp_l plus_zero_r.
-  reflexivity.
-Qed.
-
-Global Instance NormedAbelianGroup_MetricSpace {G : Type} :
-  NormedAbelianGroup G -> MetricSpace G.
-Proof.
-  intro NAG.
-  apply Build_MetricSpace with (fun x y => pnorm (minus y x)).
-  - by apply NAG_dist_refl.
-  - by apply NAG_dist_comm.
-  - by apply NAG_dist_triangle.
-Defined.
-
-Class CompleteNormedAbelianGroup T := {
-  cnagroup_abelian :> AbelianGroup T ;
-  cnagroup_pnormed :> NormedAbelianGroup_mixin T cnagroup_abelian ;
-  cnagroup_nag := Build_NormedAbelianGroup T cnagroup_abelian cnagroup_pnormed ;
-  cnagroup_complete :> CompleteSpace_mixin T _
-}.
-
-Global Instance CompleteNormedAbelianGroup_NormedAbelianGroup {U} :
-  CompleteNormedAbelianGroup U -> NormedAbelianGroup U.
-Proof.
-  case ; intros.
-  econstructor.
-  exact cnagroup_pnormed0.
-Defined.
-
-Global Instance CompleteNormedAbelianGroup_CompleteSpace {U} :
-  CompleteNormedAbelianGroup U -> CompleteSpace U.
-Proof.
-  case ; intros.
-  econstructor.
-  exact cnagroup_complete0.
-Defined.
-
 (** * Normed Vector Space *)
 
 Class NormedVectorSpace_mixin V K {FK : AbsField K} (VS : VectorSpace V K) := {
@@ -1355,8 +1182,8 @@ Class NormedVectorSpace_mixin V K {FK : AbsField K} (VS : VectorSpace V K) := {
 }.
 
 Class NormedVectorSpace V K {FK : AbsField K} := {
-  cmvspace_vector :> VectorSpace V K ;
-  cmvspace_norm :> NormedVectorSpace_mixin V K cmvspace_vector
+  nvspace_vector :> VectorSpace V K ;
+  nvspace_norm :> NormedVectorSpace_mixin V K nvspace_vector
 }.
 
 Lemma norm_zero :
@@ -1463,7 +1290,7 @@ apply Rplus_0_r.
 apply Rplus_opp_r.
 Defined.
 
-Lemma R_NormedAbelianGroup_mixin :
+(* Lemma R_NormedAbelianGroup_mixin :
   NormedAbelianGroup_mixin R R_abelian_group.
 Proof.
   exists (fun x => Rabs x).
@@ -1476,7 +1303,7 @@ Global Instance R_NormedAbelianGroup : NormedAbelianGroup R.
 Proof.
   apply (Build_NormedAbelianGroup _ _).
   exact: R_NormedAbelianGroup_mixin.
-Defined.
+Defined. *)
 
 Lemma R_field_mixin : Field_mixin R R_abelian_group.
 Proof.
@@ -1523,11 +1350,12 @@ destruct (completeness E) as [x [Hx1 Hx2]].
   apply Rplus_le_reg_r with (-y).
   replace (y + 2 + -y) with 2 by ring.
   apply Rabs_le_between.
-  change (Rabs (x + - y)) with (distance y x).
-  apply Rle_trans with (1 := distance_triangle y z x).
   apply Rlt_le.
-  apply Rplus_lt_compat with (1 := Hz1).
-  now rewrite distance_comm.
+  generalize (ball_triangle y z x 1 1) => /= H.
+  apply H.
+  apply Hz1.
+  apply ball_sym in Hz2.
+  apply Hz2.
   destruct (HF (mkposreal _ Rlt_0_1)) as [y Fy].
   now exists y.
 exists (x - 1).
@@ -1542,7 +1370,6 @@ assert (H1 : z - Rmin 2 eps / 2 + 1 <= x).
   simpl ; intros u Bu.
   apply (Rabs_lt_between' u z) in Bu.
   apply Rabs_lt_between'.
-  simpl in Bu |- *.
   clear -Bu.
   destruct Bu as [Bu1 Bu2].
   assert (H := Rmin_l 2 eps).
@@ -1631,7 +1458,7 @@ Proof.
   move => Hax Hxb Hp.
   case: (Rbar_lt_locally _ _ _ Hax Hxb) => d Hd.
   exists d => y Hy.
-  apply Hp ; by apply Hd.
+  now apply Hp ; apply Hd.
 Qed.
 
 Lemma locally_ex_dec :
@@ -1644,13 +1471,15 @@ intros P x P_dec H.
 set (Q := fun z => forall y,  Rabs (y-x) < z -> P y).
 destruct (ex_lub_Rbar_ne Q) as ([d| |],(H1,H2)).
 destruct H as (d1,Hd1).
-now exists d1.
+exists d1 => y Hy.
+now apply Hd1.
 (* *)
 assert (Zd: 0 < d).
 destruct H as (d1,Hd1).
 apply Rlt_le_trans with (1 := cond_pos d1).
 apply Rbar_finite_le.
-now apply H1.
+apply H1 => y Hy.
+by apply Hd1.
 exists (mkposreal d Zd).
 simpl.
 intros y Hy.
@@ -1699,15 +1528,10 @@ intros P x y.
 split ; intros [d H] ; exists d.
 - simpl.
   intros [u v] H'.
-  apply H.
-  apply Rle_lt_trans with (2 := H').
-  apply Rmax_l.
-  apply Rle_lt_trans with (2 := H').
-  apply Rmax_r.
+  now apply H ; apply H'.
 - intros u v Hu Hv.
-  rewrite /= /dist_prod  in H.
   apply (H (u,v)).
-  now apply Rmax_case.
+  by split.
 Qed.
 
 Lemma locally_2d_locally' :
@@ -1718,21 +1542,12 @@ intros P x y.
 split ; intros [d H] ; exists d.
 - simpl.
   move => [u [v t]] /= {t} H'.
-  apply H.
-  apply Rle_lt_trans with (2 := H').
-  apply Rmax_l.
-  apply Rle_lt_trans with (2 := H').
-  rewrite (Rmax_left _ 0).
-  apply Rmax_r.
-  apply Rabs_pos.
+  now apply H.
 - intros u v Hu Hv.
   simpl in H.
-  apply (H (u,(v,tt))).
-  apply Rmax_case.
+  apply (H (u,(v,tt))) ; repeat split.
   exact Hu.
-  apply Rmax_case.
   exact Hv.
-  apply cond_pos.
 Qed.
 
 Lemma locally_2d_impl_strong :
@@ -1745,7 +1560,7 @@ apply locally_2d_locally in LP.
 apply locally_locally in LP.
 apply locally_2d_locally.
 generalize (filter_and _ _ Li LP).
-apply: filter_imp.
+apply filter_imp.
 intros [u v] [H1 H2].
 apply H1.
 now apply locally_2d_locally.
@@ -1885,7 +1700,7 @@ field_simplify.
 apply Rle_refl.
 now apply Rgt_not_eq.
 (* *)
-apply: filter_forall => z.
+apply filter_forall => z.
 exists eps => p q.
 replace (u - x) with 0.
 replace (v - y) with 0.
@@ -2189,7 +2004,7 @@ Proof.
 Qed.
 
 Lemma filterlim_const :
-  forall {T U} {MU : MetricSpace U} {F : (T -> Prop) -> Prop} {FF : Filter F},
+  forall {T U} {MU : MetricBall U} {F : (T -> Prop) -> Prop} {FF : Filter F},
   forall a : U, filterlim (fun _ => a) F (locally a).
 Proof.
 intros T U MU F FF a P [eps HP].

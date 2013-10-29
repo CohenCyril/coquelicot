@@ -136,7 +136,7 @@ Lemma is_lim_comp_seq (f : R -> R) (u : nat -> R) (x l : Rbar) :
   is_lim_seq u x -> is_lim_seq (fun n => f (u n)) l.
 Proof.
 intros Lf Hu Lu.
-exact: is_lim_comp' Hu.
+exact (is_lim_comp' u f x l Lu Lf Hu).
 Qed.
 
 (** Uniqueness *)
@@ -229,7 +229,7 @@ Lemma is_lim_ext (f g : R -> R) (x l : Rbar) :
 Proof.
   move => H.
   apply is_lim_ext_loc.
-  exact: filter_forall.
+  by apply filter_forall.
 Qed.
 Lemma ex_lim_ext (f g : R -> R) (x : Rbar) :
   (forall y, f y = g y)
@@ -245,7 +245,7 @@ Lemma Lim_ext (f g : R -> R) (x : Rbar) :
 Proof.
   move => H.
   apply Lim_ext_loc.
-  exact: filter_forall.
+  by apply filter_forall.
 Qed.
 
 (** Composition *)
@@ -255,7 +255,7 @@ Lemma is_lim_comp (f g : R -> R) (x k l : Rbar) :
     -> is_lim (fun x => f (g x)) x k.
 Proof.
 intros Lf Lg Hg.
-exact: is_lim_comp' Lf Hg.
+by apply (is_lim_comp' g f l k Lg Lf Hg).
 Qed.
 Lemma ex_lim_comp (f g : R -> R) (x : Rbar) :
   ex_lim f (Lim g x) -> ex_lim g x -> Rbar_locally' x (fun y => Finite (g y) <> Lim g x)
@@ -927,16 +927,14 @@ split.
 - intros Cf P [eps He].
   specialize (Cf eps).
   apply locally_2d_locally in Cf.
-  apply: filter_imp Cf.
-  simpl.
+  apply filter_imp with (2 := Cf).
   intros [u v].
   apply He.
 - intros Cf eps.
   apply locally_2d_locally.
   specialize (Cf (fun z => Rabs (z - f x y) < eps)).
   unfold filtermap in Cf.
-  apply: filter_imp (Cf _).
-  now intros [u v].
+  apply Cf.
   now exists eps.
 Qed.
 
@@ -949,7 +947,7 @@ split.
 - intros Cf P [eps He].
   specialize (Cf eps).
   apply locally_2d_locally' in Cf.
-  apply: filter_imp Cf.
+  apply filter_imp with (2 := Cf).
   simpl.
   intros [u [v t]].
   apply He.
@@ -957,8 +955,7 @@ split.
   apply locally_2d_locally'.
   specialize (Cf (fun z => Rabs (z - f x y) < eps)).
   unfold filtermap in Cf.
-  apply: filter_imp (Cf _).
-  now intros [u [v t]].
+  apply Cf.
   now exists eps.
 Qed.
 
@@ -1172,7 +1169,7 @@ intros f g x Heq Cf.
 apply continuity_pt_filterlim in Cf.
 apply continuity_pt_filterlim.
 rewrite -(locally_singleton _ _ Heq).
-apply: filterlim_ext_loc Heq Cf.
+by apply filterlim_ext_loc with f.
 Qed.
 
 Lemma continuity_pt_ext :
@@ -1182,7 +1179,7 @@ Lemma continuity_pt_ext :
 Proof.
 intros f g x Heq.
 apply continuity_pt_ext_loc.
-exact: filter_forall.
+by apply filter_forall.
 Qed.
 
 Lemma continuity_2d_pt_ext_loc :
@@ -1195,9 +1192,8 @@ apply locally_2d_locally in Heq.
 apply continuity_2d_pt_filterlim in Cf.
 apply continuity_2d_pt_filterlim.
 rewrite -(locally_singleton _ _ Heq).
-apply: filterlim_ext_loc Cf.
-apply: filter_imp Heq.
-now intros [u v].
+apply filterlim_ext_loc with (2 := Cf).
+by apply Heq.
 Qed.
 
 Lemma continuity_2d_pt_ext :
@@ -1208,7 +1204,7 @@ Proof.
 intros f g x y Heq.
 apply continuity_2d_pt_ext_loc.
 apply locally_2d_locally.
-apply: filter_forall.
+apply filter_forall.
 now intros [u v].
 Qed.
 

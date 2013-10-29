@@ -1284,17 +1284,17 @@ revert HH.
 pattern t ; apply locally_singleton.
 induction k.
 rewrite /C /partial_derive /g /=.
-apply: filter_forall.
+apply filter_forall.
 intros ; field.
 specialize (IHk (le_S _ _ (le_S_n _ _ Hk))).
 rewrite /is_derive_n.
 apply locally_locally in IHk.
-apply: filter_imp IHk => {t Ht} z IHk HH.
+move: IHk ; apply filter_imp => {t Ht} z IHk HH.
 apply is_derive_ext_loc with (fun t => sum_f_R0 (fun m => C k m *
   partial_derive m (k - m) f (x + t * (u - x)) (y + t * (v - y)) * (u - x) ^ m * (v - y) ^ (k - m)) k).
 apply locally_locally in HH.
 generalize (filter_and _ _ HH IHk).
-apply: filter_imp => {z HH IHk} z [Hz HH].
+apply filter_imp => {z HH IHk} z [Hz HH].
 specialize (HH Hz).
 apply sym_eq.
 now apply is_derive_n_unique.

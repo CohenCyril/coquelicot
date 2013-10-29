@@ -199,7 +199,7 @@ Lemma is_derive_ext :
 Proof.
 intros f g x l Heq.
 apply is_derive_ext_loc.
-exact: filter_forall.
+by apply filter_forall.
 Qed.
 Lemma ex_derive_ext :
   forall f g x,
@@ -208,7 +208,7 @@ Lemma ex_derive_ext :
 Proof.
 intros f g x Heq.
 apply ex_derive_ext_loc.
-exact: filter_forall.
+by apply filter_forall.
 Qed.
 Lemma Derive_ext :
   forall f g x,
@@ -217,7 +217,7 @@ Lemma Derive_ext :
 Proof.
 intros f g x Hfg.
 apply Derive_ext_loc.
-exact: filter_forall.
+by apply filter_forall.
 Qed.
 
 (** * Operations *)
@@ -1219,7 +1219,7 @@ Proof.
   intros f x l.
   move /derivable_pt_lim_locally => H eps.
   specialize (H eps).
-  apply: filter_imp H => y H.
+  apply filter_imp with (2 := H) => {H} y H.
   destruct (Req_dec y x) as [H'|H'].
   rewrite H'.
   ring_simplify (f x - f x - l * (x - x)).
@@ -1323,7 +1323,7 @@ pattern x ; apply locally_singleton.
 induction n.
 exact Heq.
 apply locally_locally in IHn.
-apply: filter_imp IHn.
+apply filter_imp with (2 := IHn) => {IHn}.
 intros t H.
 now apply Derive_ext_loc.
 Qed.
@@ -1337,7 +1337,7 @@ case: n => /= [ | n].
 by [].
 apply ex_derive_ext_loc.
 apply locally_locally in Heq.
-apply: filter_imp Heq.
+apply filter_imp with (2 := Heq) => {Heq}.
 by apply Derive_n_ext_loc.
 Qed.
 Lemma is_derive_n_ext_loc :
@@ -1351,7 +1351,7 @@ Proof.
   pattern x ; now apply locally_singleton.
   apply is_derive_ext_loc.
   apply locally_locally in Heq.
-  apply: filter_imp Heq.
+  apply filter_imp with (2 := Heq) => {Heq}.
   by apply Derive_n_ext_loc.
 Qed.
 
@@ -1362,7 +1362,7 @@ Lemma Derive_n_ext :
 Proof.
 intros f g n x Heq.
 apply Derive_n_ext_loc.
-exact: filter_forall.
+by apply filter_forall.
 Qed.
 Lemma ex_derive_n_ext :
   forall f g n x,
@@ -1371,7 +1371,7 @@ Lemma ex_derive_n_ext :
 Proof.
 intros f g n x Heq.
 apply ex_derive_n_ext_loc.
-exact: filter_forall.
+by apply filter_forall.
 Qed.
 Lemma is_derive_n_ext :
   forall f g n x l,
@@ -1380,7 +1380,7 @@ Lemma is_derive_n_ext :
 Proof.
 intros f g n x l Heq.
 apply is_derive_n_ext_loc.
-exact: filter_forall.
+by apply filter_forall.
 Qed.
 
 Lemma Derive_n_comp: forall f n m x,
@@ -1405,7 +1405,7 @@ Proof.
   rewrite -H ; apply Derive_correct.
   now apply locally_singleton.
   split ; apply is_derive_ext_loc ;
-  apply: filter_imp Hf => y Hf ;
+  apply filter_imp with (2 := Hf) => {Hf} y Hf ;
   rewrite (Derive_n_comp f n 1%nat y) -plus_n_Sm -plus_n_O => //.
 Qed.
 
@@ -1502,14 +1502,14 @@ Proof.
   apply locally_locally in Hf.
   apply locally_locally in Hg.
   generalize (filter_and _ _ Hf Hg).
-  apply: filter_imp => {Hf Hg} y [Hf Hg].
+  apply filter_imp => {Hf Hg} y [Hf Hg].
   apply sym_eq, Derive_n_plus.
-  apply: filter_imp Hf ; by intuition.
-  apply: filter_imp Hg ; by intuition.
+  apply filter_imp with (2 := Hf) ; by intuition.
+  apply filter_imp with (2 := Hg) ; by intuition.
   apply ex_derive_plus.
-  apply locally_singleton ; apply: filter_imp Hf => y Hy.
+  apply locally_singleton ; apply filter_imp with (2 := Hf) => {Hf} y Hy.
   by apply (Hy (S n)).
-  apply locally_singleton ; apply: filter_imp Hg => y Hy.
+  apply locally_singleton ; apply filter_imp with (2 := Hg) => {Hg} y Hy.
   by apply (Hy (S n)).
 Qed.
 Lemma is_derive_n_plus (f g : R -> R) (n : nat) (x lf lg : R) :
@@ -1524,10 +1524,10 @@ Proof.
   apply locally_locally in Hfn.
   apply locally_locally in Hgn.
   generalize (filter_and _ _ Hfn Hgn).
-  apply: filter_imp => {Hfn Hgn} y [Hfn Hgn].
+  apply filter_imp => {Hfn Hgn} y [Hfn Hgn].
   apply sym_eq, Derive_n_plus.
-  apply: filter_imp Hfn ; by intuition.
-  apply: filter_imp Hgn ; by intuition.
+  apply filter_imp with (2 := Hfn) ; by intuition.
+  apply filter_imp with (2 := Hgn) ; by intuition.
   by apply derivable_pt_lim_plus.
 Qed.
 
@@ -1640,7 +1640,7 @@ Proof.
   move => Hf.
   apply (locally_singleton _ (fun x => Derive_n (fun y : R => f (a * y)) n x = a ^ n * Derive_n f n (a * x))).
   elim: n Hf => [ | n IH] Hf.
-  apply: filter_forall => /= y ; ring.
+  apply filter_forall => /= y ; ring.
 
   case: IH => [ | r IH].
   case: Hf => r0 Hf.
