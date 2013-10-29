@@ -2239,7 +2239,7 @@ Proof.
 
   case => N HN.
   exists N => n Hn.
-  apply Heps; unfold distance; simpl. 
+  apply Heps.
 
   case: (Taylor_Lagrange f n 0 x).
     by apply Hx'.
@@ -2250,16 +2250,17 @@ Proof.
     by apply Rle_lt_trans with (1 := Rle_abs _), Hx.
     by apply Rle_ge, Ht.
   move => y [Hy ->].
+  simpl ball.
   rewrite Rminus_0_r.
   rewrite (sum_n_ext _ (fun m : nat => x ^ m / INR (fact m) * Derive_n f m 0)).
   rewrite sum_n_sum_f_R0.
-  ring_simplify (sum_f_R0 (fun m : nat => x ^ m / INR (fact m) * Derive_n f m 0) n +
-   - (sum_f_R0 (fun m : nat => x ^ m / INR (fact m) * Derive_n f m 0) n +
-    x ^ S n / INR (fact (S n)) * Derive_n f (S n) y)).
   apply Rle_lt_trans with (2 := HN n Hn).
   replace (r ^ S n * M / INR (fact (S n)))
     with ((r^S n / INR (fact (S n))) * M)
     by (rewrite /Rdiv ; ring).
+  ring_simplify (sum_f_R0 (fun m : nat => x ^ m / INR (fact m) * Derive_n f m 0) n +
+   - (sum_f_R0 (fun m : nat => x ^ m / INR (fact m) * Derive_n f m 0) n +
+    x ^ S n / INR (fact (S n)) * Derive_n f (S n) y)).
   rewrite Rabs_mult Rabs_Ropp.
   apply Rmult_le_compat.
   by apply Rabs_pos.
@@ -2286,7 +2287,7 @@ Proof.
   apply Rlt_le, Hx'.
   apply Rlt_le, Hy.
   intros m; rewrite pow_n_pow.
-  unfold Rdiv; ring.
+  unfold Rdiv, scal ; simpl ; ring.
 Qed.
 
 (** ** Riemann integrability *)

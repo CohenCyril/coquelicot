@@ -73,7 +73,7 @@ Proof.
   replace x0 with (SF_h ptd).
   rewrite Rminus_eq_0.
   rewrite plus_zero_r.
-  apply scal_zero_l.
+  by apply (@scal_zero_l V R).
   apply Rle_antisym.
   rewrite Hhl => {Hhl} /=.
   apply (sorted_last (SF_h ptd :: @map (R*R) R (@fst R R) (SF_t ptd)) O) with (x0 := 0).
@@ -384,7 +384,7 @@ apply f_equal, Lim_seq_ext.
 intros n.
 unfold RInt_val.
 rewrite Rminus_eq_0 /Rdiv Rmult_0_l.
-apply scal_zero_l.
+by apply (@scal_zero_l R R).
 Qed.
 
 (** Swapping bounds *)
@@ -1903,7 +1903,7 @@ Proof.
 
     assert (forall n, RInt_val f a a n = 0).
       move => n ; rewrite /RInt_val Rminus_eq_0 /Rdiv Rmult_0_l.
-      apply scal_zero_l.
+      by apply @scal_zero_l.
     rewrite -Hab in Hex |- * => {Hab b}.
     replace If with 0.
     apply is_lim_seq_spec.
@@ -3546,7 +3546,7 @@ apply filterlim_ext with (fun ptd => (scal (opp one) (scal (sign (b - a)) (Riema
 intros ptd.
 rewrite Riemann_sum_opp.
 rewrite scal_opp_one.
-apply sym_eq, scal_opp_r.
+apply sym_eq, @scal_opp_r.
 apply filterlim_compose with (1 := Hf).
 rewrite -scal_opp_one.
 apply mvspace_scal.
@@ -4842,13 +4842,13 @@ apply derivable_pt_lim_param.
 exists (pos_div_2 d4).
 intros y Hy t Ht.
 apply Df.
-apply Rle_lt_trans with (1 := distance_triangle x u y).
 rewrite (double_var d4).
-apply Rplus_lt_compat with (2 := Hy).
+apply ball_triangle with u.
 apply Rlt_le_trans with (1:=Hu).
 apply Rle_trans with (1:=Rmin_r _ _).
 apply Rle_trans with (1:=Rmin_l _ _).
 apply Rmin_l.
+by apply Hy.
 apply (proj1 (Rabs_le_between' t (a x) d3)).
 apply Rle_trans with (Rabs (v - a x)).
 now apply Rabs_le_between_min_max.
@@ -4872,13 +4872,13 @@ exists (pos_div_2 d2).
 intros y Hy.
 apply ex_RInt_inside with (a x) d1.
 apply Ia.
-apply Rle_lt_trans with (1 := distance_triangle x u y).
 rewrite (double_var d2).
-apply Rplus_lt_compat with (2 := Hy).
+apply ball_triangle with u.
 apply Rlt_le_trans with (1:=Hu).
 apply Rle_trans with (1:=Rmin_l _ _).
 apply Rle_trans with (1:=Rmin_r _ _).
 apply Rmin_l.
+apply Hy.
 left; apply Rlt_le_trans with (1:=Hv).
 apply Rle_trans with (1:=Rmin_l _ _).
 apply Rmin_l.
@@ -4941,12 +4941,12 @@ eexists; eapply derivable_pt_lim_param.
 exists (pos_div_2 d2).
 intros y Hy t Ht.
 apply Df.
-apply Rle_lt_trans with (1 := distance_triangle x u y).
 rewrite (double_var d2).
-apply Rplus_lt_compat with (2 := Hy).
+apply ball_triangle with u.
 apply Rlt_le_trans with (1:=Hu).
 apply Rle_trans with (1:=Rmin_l _ _).
 apply Rmin_r.
+by apply Hy.
 split.
 apply Rle_trans with (2:=proj1 Ht).
 apply Rle_trans with (a x - d1).
@@ -4986,13 +4986,13 @@ exists (pos_div_2 d4).
 intros y Hy.
 apply ex_RInt_inside with (a x) d0.
 apply Ia.
-apply Rle_lt_trans with (1 := distance_triangle x u y).
 rewrite (double_var d4).
-apply Rplus_lt_compat with (2 := Hy).
+apply ball_triangle with u.
 apply Rlt_le_trans with (1:=Hu).
 apply Rle_trans with (1:=Rmin_r _ _).
 apply Rle_trans with (1:=Rmin_r _ _).
 apply Rmin_r.
+by apply Hy.
 left; apply Rlt_le_trans with (1:=Hv).
 apply Rle_trans with (1:=Rmin_r _ _).
 apply Rle_trans with (1:=Rmin_r _ _).

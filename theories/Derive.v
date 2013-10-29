@@ -46,7 +46,6 @@ Proof.
       by (ring_simplify (x + (y - x)) ; field ; by apply Rminus_eq_contra).
     apply: Hf.
     by apply Rminus_eq_contra.
-    rewrite /distance /= in Hy.
     exact Hy.
   + move => e He.
     apply filterlim_locally with (eps := mkposreal _ He) in Hf ; simpl in Hf.

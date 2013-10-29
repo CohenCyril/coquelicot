@@ -982,66 +982,6 @@ Proof.
   by apply Hy.
 Qed.
 
-Lemma filterlim_switch_dom_1 {T1 T2 G} {MG : MetricBall G} 
-  (f : T1 -> T2 -> G) F1 F2 (dom : T2 -> Prop) (FF1 : ProperFilter F1) (FF2 : Filter F2) (g : T2 -> G) h (l : G) :
-  (filterlim (fun x (y : {z : T2 | dom z}) => f x (projT1 y)) F1 (locally (fun y => g (projT1 y))))
-  -> (forall x, filterlim (f x) (within dom F2) (locally (h x)))
-  -> filterlim h F1 (locally l) -> filterlim g (within dom F2) (locally l).
-Proof.
-  intros Hfg Hfh Hhl P.
-  case: FF1 => HF1 FF1.
-  apply filterlim_locally.
-  move => eps.
-
-  have FF := (filter_prod_filter _ _ F1 (within dom F2) FF1 (within_filter _ dom F2 FF2)).
-
-  assert (filter_prod F1 (within dom F2) (fun x => ball (g (snd x)) (eps / 2 / 2) (f (fst x) (snd x)))).
-    apply Filter_prod with (fun x : T1 => @ball ({z : T2 | dom z} -> G) _ (fun y => g (projT1 y)) (eps / 2 / 2) (fun y => f x (projT1 y))) (dom).
-    generalize (proj1 (filterlim_locally (fun (x : T1) (y : {z : T2 | dom z}) => f x (projT1 y)) (fun y : {z : T2 | dom z} => g (projT1 y)))) => H.
-    assert (filterlim (fun (x : T1) (y : {z : T2 | dom z}) => f x (projT1 y)) F1
-      (locally (fun y : {z : T2 | dom z} => g (projT1 y)))).
-      move => Q [eQ HQ].
-      apply Hfg.
-      exists eQ => /= y Hy.
-      apply HQ.
-      case => t Ht.
-      by apply Hy.
-    move: H0 => {Hfg} Hfg.
-    move: (H Hfg (pos_div_2 (pos_div_2 eps))) => {H Hfg} /= Hfg.
-    by [].
-    unfold within ; apply filter_imp with (2 := filter_true).
-    by [].
-    simpl ; intros.
-    apply (H (existT _ y H0)).
-  move: H => {Hfg} Hfg.
-
-  assert (filter_prod F1 (within dom F2) (fun x : T1 * T2 => ball l (eps / 2) (h (fst x)))).
-    apply Filter_prod with (fun x : T1 => ball l (eps / 2) (h x)) (fun _ => True).
-    move: (proj1 (@filterlim_locally _ _ _ F1 FF1 h l) Hhl (pos_div_2 eps)) => {Hhl} /= Hhl.
-    by [].
-    by apply (within_filter _ dom F2 FF2).
-    by [].
-  move: H => {Hhl} Hhl.
-
-  case: (@filter_and _ _ FF _ _ Hhl Hfg) => {Hhl Hfg} /= ; intros.
-  
-  move: (fun x => proj1 (@filterlim_locally _ _ _ (within dom F2) (within_filter _ dom F2 FF2) (f x) (h x)) (Hfh x) (pos_div_2 (pos_div_2 eps))) => {Hfh} /= Hfh.
-  case: (HF1 Q f0) => x Hx.
-  move: (@filter_and _ _ (within_filter _ dom F2 FF2) _ _ (Hfh x) g0) => {Hfh}.
-  unfold within ; apply filter_imp => y Hy Hy'.
-  rewrite (double_var eps).
-  apply ball_triangle with (h x).
-  apply (p x y).
-  by [].
-  by apply Hy.
-  rewrite (double_var (eps / 2)).
-  apply ball_triangle with (f x y).
-  by apply Hy.
-  apply ball_sym, p.
-  by [].
-  by apply Hy.
-Qed.
-
 Lemma filterlim_switch_2 {T1 T2 U} {CMS : CompleteSpace U}
   (f : T1 -> T2 -> U) F1 F2 (FF1 : ProperFilter F1) (FF2 : ProperFilter F2) g h :
   (filterlim f F1 (locally g))
@@ -1086,56 +1026,6 @@ Proof.
   by exists l.
 Qed.
 
-Lemma filterlim_switch_dom_2 {T1 T2 U} {CMS : CompleteSpace U}
-  (f : T1 -> T2 -> U) F1 F2 (dom : T2 -> Prop) (FF1 : ProperFilter F1) (FF2 : Filter F2) (HF2 : forall P, (within dom F2) P -> exists x, dom x /\ P x) g h :
-  (filterlim (fun x (y : {z : T2 | dom z}) => f x (projT1 y)) F1 (locally (fun y => g (projT1 y))))
-  -> (forall x, filterlim (f x) (within dom F2) (locally (h x)))
-  -> (exists l : U, filterlim h F1 (locally l)).
-Proof.
-  move => Hfg Hfh.
-  case : (proj1 (filterlim_locally_cauchy h)).
-  move => eps.
-  generalize (proj2 (filterlim_locally_cauchy (fun (x : T1) (y : {z : T2 | dom z}) => f x (projT1 y)))) => Hf.
-  assert (exists y : {z : T2 | dom z} -> U,
-        filterlim (fun (x : T1) (y0 : {z : T2 | dom z}) => f x (projT1 y0))
-          F1
-          (fun P : ({z : T2 | dom z} -> U) -> Prop =>
-           exists eps : posreal,
-             forall x : {z : T2 | dom z} -> U, ball y eps x -> P x)).
-    exists (fun y => g (projT1 y)) => P Hp.
-    apply Hfg.
-    case: Hp => d Hp.
-    exists d => y Hy.
-    apply: Hp.
-    case => t Ht.
-    by apply Hy.
-    
-  move: H => {Hfg} Hfg.
-  move: (Hf Hfg (pos_div_2 eps)) => {Hf Hfg} /= Hf.
-
-  generalize (fun x => proj1 (filterlim_locally (f x) (h x)) (Hfh x) (pos_div_2 (pos_div_2 eps)))
-    => {Hfh} Hfh.
-
-  case: Hf => P [Hp Hf].
-  exists P ; split.
-  by [].
-  move => u v Hu Hv.
-  move: (Hfh u) => /= Hu'.
-  move: (Hfh v) => /= Hv'.
-  generalize (@filter_and _ (within dom F2) _ _ _ Hu' Hv') => {Hu' Hv' Hfh} Hfh.
-  
-  case: (HF2 _ Hfh) => {Hfh} y Hy.
-  replace (pos eps) with (eps / 2 / 2 + (eps / 2 + eps / 2 / 2)) by field.
-  apply ball_triangle with (f u y).
-  by apply Hy.
-  apply ball_triangle with (f v y).
-  apply (Hf u v Hu Hv (existT _ y (proj1 Hy))).
-  now apply ball_sym, Hy.
-  
-  move => l Hl.
-  by exists l.
-Qed.
-
 Lemma filterlim_switch {T1 T2 U} {MU : CompleteSpace U} 
   (f : T1 -> T2 -> U) F1 F2 (FF1 : ProperFilter F1) (FF2 : ProperFilter F2) g h :
   (filterlim f F1 (locally g))
@@ -1151,16 +1041,22 @@ Proof.
 Qed.
 
 Lemma filterlim_switch_dom {T1 T2 U} {MU : CompleteSpace U} 
-  (f : T1 -> T2 -> U) F1 F2 (dom : T2 -> Prop) (FF1 : ProperFilter F1) (FF2 : Filter F2) (HF2 : forall P, (within dom F2) P -> exists x, dom x /\ P x) g h :
-  (filterlim (fun x (y : {z : T2 | dom z}) => f x (projT1 y)) F1 (locally (fun y => g (projT1 y))))
+  (f : T1 -> T2 -> U) F1 F2 (dom : T2 -> Prop) (FF1 : ProperFilter F1) (FF2 : Filter F2) (HF2 : forall P, F2 P -> exists x, dom x /\ P x) g h :
+  (filterlim (fun x (y : {z : T2 | dom z}) => f x (projT1 y)) F1 (locally (fun y : {z : T2 | dom z} => g (projT1 y))))
   -> (forall x, filterlim (f x) (within dom F2) (locally (h x)))
   -> (exists l : U, filterlim h F1 (locally l) /\ filterlim g (within dom F2) (locally l)).
 Proof.
-  move => Hfg Hfh.
-  destruct (filterlim_switch_dom_2 f F1 F2 dom FF1 FF2 HF2 g h Hfg Hfh) as [l Hhl].
-  exists l ; split.
-  exact Hhl.
-  now apply (filterlim_switch_dom_1 f F1 F2 dom FF1 FF2 g h l).
+set (T2' := { y : T2 | dom y }).
+set (f' := fun x (y : T2') => f x (projT1 y)).
+set (F2' := fun P : T2' -> Prop => F2 (fun x => forall (H:dom x), P (existT _ x H))).
+set (g' := fun y : T2' => g (projT1 y)).
+intros Hfg Hfh.
+refine (filterlim_switch f' F1 F2' FF1 _ g' h _ _).
+now apply subset_filter_proper.
+intros H P.
+now apply Hfg.
+intros x P HP.
+now apply Hfh.
 Qed.
 
 (** ** Exchange limit and integrals *)
@@ -1240,21 +1136,15 @@ have He : 0 < eps / (b - a).
 move: (Hfg _ (locally_ball g (mkposreal _ He))) => {Hfg Hfh}.
 unfold filtermap ;
 apply filter_imp => x Hx.
-apply (HP (fun
-     y : {z : SF_seq.SF_seq &
-         SF_seq.pointed_subdiv z /\
-         SF_seq.SF_h z = Rmin a b /\
-         seq.last (SF_seq.SF_h z) (SF_seq.SF_lx z) = Rmax a b} =>
-   scal (sign (b - a)) (Riemann_sum (f x) (projT1 y)))).
-rewrite /Rmin /Rmax ; case: Rle_dec (Rlt_le _ _ Hab) => // _ _.
+apply HP.
 case => t [Ht [Ha Hb]] /=.
 rewrite (proj1 (sign_0_lt _)).
 rewrite 2!scal_one.
 2: by rewrite -Rminus_lt_0.
 rewrite -Ha in He Hx Hab => {a Ha P HP}.
-rewrite -Hb in He Hx Hab => {b Hb Hab}.
-move: Ht He Hx ;
-apply SF_seq.SF_cons_ind with (s := t) => {t} /= [x0 | h0 t IH] Ht He Hx.
+rewrite -Hb in He Hx Hab => {b Hb}.
+move: Ht He Hx Hab ;
+apply SF_seq.SF_cons_ind with (s := t) => {t} /= [x0 | h0 t IH] Ht He Hx Hab.
 apply ball_center.
 rewrite 2!Riemann_sum_cons /=.
 

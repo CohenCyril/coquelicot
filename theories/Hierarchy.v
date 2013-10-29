@@ -627,27 +627,41 @@ unfold within.
 now apply filter_forall.
 Qed.
 
-(** * Metric Spaces *)
+Definition subset_filter {T} (F : (T -> Prop) -> Prop) (dom : T -> Prop) (P : {x|dom x} -> Prop) : Prop :=
+  F (fun x => forall H : dom x, P (existT _ x H)).
 
-Class MetricSpace T := {
-  distance : T -> T -> R ;
-  distance_refl : forall a, distance a a = 0 ;
-  distance_comm : forall a b, distance a b = distance b a ;
-  distance_triangle : forall a b c, distance a c <= distance a b + distance b c
-}.
-
-Lemma distance_ge_0 :
-  forall {T} {MT : MetricSpace T} (a b : T),
-  0 <= distance a b.
+Global Instance subset_filter_filter :
+  forall T F (dom : T -> Prop),
+  Filter F ->
+  Filter (subset_filter F dom).
 Proof.
-intros T MT a b.
-apply Rmult_le_reg_l with 2.
-apply Rlt_0_2.
-rewrite Rmult_0_r.
-rewrite -(distance_refl a).
-rewrite Rmult_plus_distr_r Rmult_1_l.
-rewrite -> (distance_comm a b) at 2.
-apply distance_triangle.
+intros T F dom FF.
+constructor ; unfold subset_filter.
+- now apply filter_imp with (2 := filter_true).
+- intros P Q HP HQ.
+  generalize (filter_and _ _ HP HQ).
+  apply filter_imp.
+  intros x [H1 H2] H.
+  now split.
+- intros P Q H.
+  apply filter_imp.
+  intros x H' H0.
+  now apply H.
+Qed.
+
+Lemma subset_filter_proper :
+  forall {T F} {FF : Filter F} (dom : T -> Prop),
+  (forall P, F P -> exists x, dom x /\ P x) ->
+  ProperFilter (subset_filter F dom).
+Proof.
+intros T F dom FF H.
+constructor.
+- unfold subset_filter.
+  intros P HP.
+  destruct (H _ HP) as [x [H1 H2]].
+  exists (existT _ x H1).
+  now apply H2.
+- now apply subset_filter_filter.
 Qed.
 
 (** A metric space is a topological space *)
@@ -659,23 +673,6 @@ Class MetricBall M := {
   ball_triangle : forall x y z e1 e2, ball x e1 y -> ball y e2 z -> ball x (e1 + e2) z ;
   ball_le : forall x e1 e2, e1 <= e2 -> forall y, ball x e1 y -> ball x e2 y
 }.
-
-Global Instance metric_ball {T} {MT : MetricSpace T} :
-  MetricBall T.
-Proof.
-  exists (fun x eps y => distance x y < eps).
-  + move => x eps.
-    rewrite distance_refl.
-    by apply eps.
-  + move => x y e H.
-    by rewrite distance_comm.
-  + move => x y z e1 e2 Hxy Hyz.
-    apply Rle_lt_trans with (1 := distance_triangle _ y _).
-    by apply Rplus_lt_compat.
-  + move => x e1 e2 He y H.
-    apply Rlt_le_trans with (2 := He).
-    by apply H.
-Defined.
 
 Definition locally_dist {T : Type} (d : T -> R) (P : T -> Prop) :=
   exists delta : posreal, forall y, d y < delta -> P y.
@@ -1119,8 +1116,8 @@ Proof.
 Defined.
 
 Lemma scal_zero_r :
-  forall V K (FK : Field K) (VV : VectorSpace V K) (x : K),
-  (@scal V K FK _ _) x zero = zero.
+  forall {V K} {FK : Field K} {VV : VectorSpace V K} (x : K),
+  scal (V := V) x zero = zero.
 Proof.
 intros V K FK VV x.
 apply plus_reg_r with (GG := vspace_group) (z := scal x zero).
@@ -1130,7 +1127,7 @@ now rewrite plus_zero_l.
 Qed.
 
 Lemma scal_zero_l :
-  forall V K (FK : Field K) (VV : VectorSpace V K) (u : V),
+  forall {V K} {FK : Field K} {VV : VectorSpace V K} (u : V),
   scal zero u = zero.
 Proof.
 intros V K FK VV u.
@@ -1141,7 +1138,7 @@ now rewrite plus_zero_r.
 Qed.
 
 Lemma scal_opp_l :
-  forall V K (FK : Field K) (VV : VectorSpace V K) (x : K) (u : V),
+  forall {V K} {FK : Field K} {VV : VectorSpace V K} (x : K) (u : V),
   scal (opp x) u = opp (scal x u).
 Proof.
 intros V K FK VV x u.
@@ -1153,7 +1150,7 @@ apply scal_zero_l.
 Qed.
 
 Lemma scal_opp_r :
-  forall V K (FK : Field K) (VV : VectorSpace V K) (x : K) (u : V),
+  forall {V K} {FK : Field K} {VV : VectorSpace V K} (x : K) (u : V),
   scal x (opp u) = opp (scal x u).
 Proof.
 intros V K FK VV x u.
@@ -1165,7 +1162,7 @@ apply scal_zero_r.
 Qed.
 
 Lemma scal_opp_one :
-  forall V K (FK : Field K) (VV : VectorSpace V K) (u : V),
+  forall {V K} {FK : Field K} {VV : VectorSpace V K} (u : V),
   scal (opp one) u = opp u.
 Proof.
 intros V K FK VV u.
@@ -1182,18 +1179,114 @@ Class NormedVectorSpace_mixin V K {FK : AbsField K} (VS : VectorSpace V K) := {
 }.
 
 Class NormedVectorSpace V K {FK : AbsField K} := {
-  nvspace_vector :> VectorSpace V K ;
-  nvspace_norm :> NormedVectorSpace_mixin V K nvspace_vector
+  nvspace_group :> AbelianGroup V ;
+  nvspace_vector :> VectorSpace_mixin V K nvspace_group ;
+  nvspace_norm :> NormedVectorSpace_mixin V K (Build_VectorSpace V K _ nvspace_group nvspace_vector)
 }.
 
+Global Instance Normed_VectorSpace {V K : Type} {FK : AbsField K} :
+  NormedVectorSpace V K -> VectorSpace V K.
+Proof.
+  intro NVS.
+  econstructor.
+  by apply NVS.
+Defined.
+
 Lemma norm_zero :
-  forall V K (FK : AbsField K) (NVS : NormedVectorSpace V K),
+  forall {V K} {FK : AbsField K} {NVS : NormedVectorSpace V K},
   norm zero = 0.
 Proof.
   intros V K FK NVS.
-  rewrite -(scal_zero_r V K _ _ zero) norm_scal Kabs_zero.
+  rewrite -(scal_zero_r (VV := Normed_VectorSpace NVS) zero) norm_scal Kabs_zero.
   exact: Rmult_0_l.
 Qed.
+Lemma norm_opp :
+  forall {V K} {FK : AbsField K} {NVS : NormedVectorSpace V K} (x : V),
+  norm (opp x) = norm x.
+Proof.
+  intros V K FK NVS x.
+  rewrite -(scal_opp_one (VV := Normed_VectorSpace NVS)) norm_scal Kabs_opp_one.
+  exact: Rmult_1_l.
+Qed.
+Lemma norm_ge_0 :
+  forall {V K} {FK : AbsField K} {NVS : NormedVectorSpace V K} (x : V),
+  0 <= norm x.
+Proof.
+  intros V K FK NVS x.
+  apply Rmult_le_reg_l with 2.
+  by apply Rlt_0_2.
+  rewrite Rmult_0_r -norm_zero -(plus_opp_r x).
+  apply Rle_trans with (norm x + norm (opp x)).
+  by apply (@norm_triangle V K).
+  apply Req_le ; rewrite norm_opp.
+  ring.
+Qed.
+
+Global Instance Normed_MetricBall {V K : Type} {FK : AbsField K} :
+  NormedVectorSpace V K -> MetricBall V.
+Proof.
+  intro NVS.
+  apply Build_MetricBall with (fun x e y => norm (minus y x) < e).
+  - intros x e.
+    rewrite /minus plus_opp_r norm_zero.
+    by apply e.
+  - intros x y e H.
+    by rewrite -norm_opp /minus opp_plus opp_opp plus_comm.
+  - intros x y z e1 e2 H1 H2.
+    apply Rle_lt_trans with (2 := Rplus_lt_compat _ _ _ _ H1 H2).
+    apply Rle_trans with (2 := norm_triangle _ _).
+    apply Req_le, f_equal.
+    rewrite plus_comm /minus -plus_assoc.
+    apply f_equal.
+    by rewrite plus_assoc plus_opp_l plus_zero_l.
+  - intros x e1 e2 He y Hy.
+    now apply Rlt_le_trans with (1 := Hy).
+Defined.
+
+Global Instance Normed_MetricVectorSpace {V K : Type} {FK : AbsField K} :
+  NormedVectorSpace V K -> MetricVectorSpace V K.
+Proof.
+  intro NVS.
+  eapply Build_MetricVectorSpace.
+  - intros x y P [eps HP].
+    unfold filtermap.
+    exists (ball x (pos_div_2 eps)) (ball y (pos_div_2 eps)).
+    by apply locally_ball.
+    by apply locally_ball.
+    intros u v Hu Hv.
+    apply HP.
+    rewrite (double_var eps).
+    apply Rle_lt_trans with (2 := Rplus_lt_compat _ _ _ _ Hu Hv).
+    apply Rle_trans with (2 := norm_triangle _ _).
+    apply Req_le, f_equal.
+    rewrite /minus /= opp_plus -2!plus_assoc.
+    apply f_equal.
+    rewrite 2!plus_assoc.
+    apply f_equal2.
+    by apply plus_comm.
+    by [].
+  - intros k x P [eps HP].
+    assert (He : 0 < eps / (Rmax 1 (Kabs k))).
+      apply Rdiv_lt_0_compat.
+      by apply eps.
+      apply Rlt_le_trans with (2 := Rmax_l _ _).
+      by apply Rlt_0_1.
+    exists (mkposreal _ He) => /= y Hy.
+    apply HP ; simpl.
+    replace (minus (scal k y) (scal k x)) with (scal k (minus y x)).
+    rewrite norm_scal.
+    apply Rle_lt_trans with (Rmax 1 (Kabs k) * norm (minus y x)).
+    apply Rmult_le_compat_r.
+    by apply norm_ge_0.
+    by apply Rmax_r.
+    rewrite Rmult_comm.
+    apply Rlt_div_r.
+    apply Rlt_le_trans with (2 := Rmax_l _ _).
+    by apply Rlt_0_1.
+    by [].
+    rewrite /minus scal_distr_l ;
+    by generalize (scal_opp_r k x) => <-.
+Defined.
 
 Global Instance Field_VectorSpace :
   forall K (F : Field K), VectorSpace K K.
@@ -1220,31 +1313,8 @@ Global Instance AbsField_NormedVectorSpace :
   forall K (AF : AbsField K), NormedVectorSpace K K.
 Proof.
   move => K AF.
-  apply Build_NormedVectorSpace with (Field_VectorSpace _ _).
+  econstructor.
   exact: AbsField_NormedVectorSpace_mixin.
-Defined.
-
-Global Instance Normed_Metric_VectorSpace :
-  forall V K (FK : AbsField K),
-  NormedVectorSpace V K -> MetricSpace V.
-Proof.
-  intros V K FK NVS.
-  apply Build_MetricSpace with (fun x y => norm (minus y x)).
-  + move => a.
-    by rewrite /minus plus_opp_r norm_zero.
-  + move => a b.
-    rewrite /minus.
-    rewrite -{1}(opp_opp b) -opp_plus -scal_opp_one.
-    rewrite norm_scal.
-    rewrite Kabs_opp_one Rmult_1_l.
-    by rewrite plus_comm.
-  + move => a b c.
-    replace (minus c a) with (plus (minus b a) (minus c b)).
-    by apply norm_triangle.
-    rewrite plus_comm /minus.
-    rewrite -?plus_assoc.
-    apply f_equal.
-    by rewrite plus_assoc plus_opp_l plus_zero_l.
 Defined.
 
 (** * The topology on natural numbers *)
@@ -1289,21 +1359,6 @@ apply sym_eq, Rplus_assoc.
 apply Rplus_0_r.
 apply Rplus_opp_r.
 Defined.
-
-(* Lemma R_NormedAbelianGroup_mixin :
-  NormedAbelianGroup_mixin R R_abelian_group.
-Proof.
-  exists (fun x => Rabs x).
-  by apply Rabs_R0.
-  move => x ; by apply Rabs_Ropp.
-  move => x y ; by apply Rabs_triang.
-Defined.
-
-Global Instance R_NormedAbelianGroup : NormedAbelianGroup R.
-Proof.
-  apply (Build_NormedAbelianGroup _ _).
-  exact: R_NormedAbelianGroup_mixin.
-Defined. *)
 
 Lemma R_field_mixin : Field_mixin R R_abelian_group.
 Proof.
@@ -1816,7 +1871,7 @@ intros [x| |] ; (constructor ; [idtac | constructor]).
 - intros P [eps HP].
   exists (x + eps / 2).
   apply HP.
-  unfold distance ; simpl.
+  unfold ball ; simpl.
   ring_simplify (x + eps / 2 + - x).
   rewrite Rabs_pos_eq.
   apply Rminus_lt_0.
@@ -2023,7 +2078,7 @@ intros [x| |] P [eps He].
 - exists eps.
   intros y Hy.
   apply He.
-  by rewrite /= /distance /Rminus Ropp_involutive Rplus_comm Rabs_minus_sym.
+  by rewrite /ball /= /Rminus Ropp_involutive Rplus_comm Rabs_minus_sym.
 - exists (-eps).
   intros y Hy.
   apply He.
