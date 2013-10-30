@@ -489,9 +489,9 @@ Lemma filterlim_opp_2 {K} {V} {FK : Field K} {VV : MetricVectorSpace V K}: foral
    filterlim opp (locally x) (locally (opp x)).
 Proof.
 intros x.
-rewrite <- scal_opp_one.
+rewrite <- (scal_opp_one (VV := Metric_VectorSpace VV)).
 apply filterlim_ext with (2:=mvspace_scal _ _).
-intros; apply scal_opp_one.
+intros; apply (scal_opp_one (VV := Metric_VectorSpace VV)).
 Qed.
 
 

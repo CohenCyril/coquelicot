@@ -149,16 +149,16 @@ Class Field K := {
 }.
 
 Class AbsField_mixin K (KF : Field K) := {
-  Kabs : K -> R ;
-  Kabs_zero : Kabs zero = 0 ;
-  Kabs_opp_one : Kabs (opp one) = 1 ;
-  Kabs_triangle : forall x y, Kabs (plus x y) <= Kabs x + Kabs y ;
-  Kabs_mult : forall x y, Kabs (mult x y) = Kabs x * Kabs y
+  abs : K -> R ;
+  abs_zero : abs zero = 0 ;
+  abs_opp_one : abs (opp one) = 1 ;
+  abs_triangle : forall x y, abs (plus x y) <= abs x + abs y ;
+  abs_mult : forall x y, abs (mult x y) = abs x * abs y
 }.
 Class AbsField K := {
   absfield_group :> AbelianGroup K ;
   absfield_field :> Field_mixin K absfield_group ;
-  absfield_abs :> AbsField_mixin K (Build_Field _ absfield_group absfield_field)
+  absfield_abs :> AbsField_mixin K (Build_Field _ _ absfield_field)
 }.
 
 Global Instance AbsField_Field {K} :
@@ -287,33 +287,33 @@ Proof.
   by rewrite mult_one_l.
 Qed.
 
-Lemma Kabs_one :
-  forall K (AF : AbsField K), Kabs one = 1.
+Lemma abs_one :
+  forall K (AF : AbsField K), abs one = 1.
 Proof.
   intros K AF.
   rewrite -(Rmult_1_l 1).
-  rewrite -Kabs_opp_one -Kabs_mult.
+  rewrite -abs_opp_one -abs_mult.
   by rewrite -opp_mult_l opp_mult_r opp_opp mult_one_l.
 Qed.
 
-Lemma Kabs_opp :
-  forall K (AF : AbsField K) x, Kabs (opp x) = Kabs x.
+Lemma abs_opp :
+  forall K (AF : AbsField K) x, abs (opp x) = abs x.
 Proof.
   intros K AF x.
   rewrite opp_mult_m1.
-  rewrite Kabs_mult Kabs_opp_one.
+  rewrite abs_mult abs_opp_one.
   by rewrite Rmult_1_l.
 Qed.
 
-Lemma Kabs_ge_0 :
-  forall K (AF : AbsField K) x, 0 <= Kabs x.
+Lemma abs_ge_0 :
+  forall K (AF : AbsField K) x, 0 <= abs x.
 Proof.
   intros K AF x.
   apply Rmult_le_reg_l with 2.
   by apply Rlt_0_2.
-  rewrite Rmult_0_r -Kabs_zero -(plus_opp_l _ _ x).
-  apply Rle_trans with (1 := Kabs_triangle _ _).
-  rewrite Kabs_opp.
+  rewrite Rmult_0_r -abs_zero -(plus_opp_l _ _ x).
+  apply Rle_trans with (1 := abs_triangle _ _).
+  rewrite abs_opp.
   apply Req_le ; ring.
 Qed.
 
@@ -1081,15 +1081,26 @@ Defined.
 (** ** Metric Vector Spaces *)
 
 Class MetricVectorSpace V K {FK : Field K} := {
-  mvspace_vector :> VectorSpace V K ;
+  mvspace_group :> AbelianGroup V ;
+  mvspace_vector :> VectorSpace_mixin V K mvspace_group ;
   mvspace_metric :> MetricBall V ;
   mvspace_plus : forall x y, filterlim (fun z : V * V => plus (fst z) (snd z)) (filter_prod (locally x) (locally y)) (locally (plus x y)) ;
   mvspace_scal : forall x y, filterlim (fun z : V => scal x z) (locally y) (locally (scal x y))
 }.
 
+Global Instance Metric_VectorSpace {V K} {FK : Field K} :
+  MetricVectorSpace V K -> VectorSpace V K.
+Proof.
+  intro MVS.
+  econstructor.
+  by apply MVS.
+Defined.
+
 Class CompleteMetricVectorSpace V K {FK : Field K} := {
-  cmvspace_vector :> VectorSpace V K ;
-  cmvspace_metric :> CompleteSpace V ;
+  cmvspace_group :> AbelianGroup V ;
+  cmvspace_vector :> VectorSpace_mixin V K cmvspace_group ;
+  cmvspace_metric :> MetricBall V ;
+  cmvspace_complete :> CompleteSpace_mixin V cmvspace_metric ;
   cmvspace_plus : forall x y, filterlim (fun z : V * V => plus (fst z) (snd z)) (filter_prod (locally x) (locally y)) (locally (plus x y)) ;
   cmvspace_scal : forall x y, filterlim (fun z : V => scal x z) (locally y) (locally (scal x y))
 }.
@@ -1175,21 +1186,21 @@ Qed.
 Class NormedVectorSpace_mixin V K {FK : AbsField K} (VS : VectorSpace V K) := {
   norm : V -> R ;
   norm_triangle : forall (x y : V), norm (plus x y) <= norm x + norm y ;
-  norm_scal : forall (l : K) (x : V), norm (scal l x) = Kabs l * norm x
+  norm_scal : forall (l : K) (x : V), norm (scal l x) = abs l * norm x
 }.
 
 Class NormedVectorSpace V K {FK : AbsField K} := {
   nvspace_group :> AbelianGroup V ;
   nvspace_vector :> VectorSpace_mixin V K nvspace_group ;
-  nvspace_norm :> NormedVectorSpace_mixin V K (Build_VectorSpace V K _ nvspace_group nvspace_vector)
+  nvspace_norm :> NormedVectorSpace_mixin V K (Build_VectorSpace V K _ _ nvspace_vector)
 }.
 
 Global Instance Normed_VectorSpace {V K : Type} {FK : AbsField K} :
   NormedVectorSpace V K -> VectorSpace V K.
 Proof.
   intro NVS.
-  econstructor.
-  by apply NVS.
+  apply Build_VectorSpace with nvspace_group.
+  by apply nvspace_vector.
 Defined.
 
 Lemma norm_zero :
@@ -1197,7 +1208,7 @@ Lemma norm_zero :
   norm zero = 0.
 Proof.
   intros V K FK NVS.
-  rewrite -(scal_zero_r (VV := Normed_VectorSpace NVS) zero) norm_scal Kabs_zero.
+  rewrite -(scal_zero_l (VV := Normed_VectorSpace NVS) zero) norm_scal abs_zero.
   exact: Rmult_0_l.
 Qed.
 Lemma norm_opp :
@@ -1205,7 +1216,7 @@ Lemma norm_opp :
   norm (opp x) = norm x.
 Proof.
   intros V K FK NVS x.
-  rewrite -(scal_opp_one (VV := Normed_VectorSpace NVS)) norm_scal Kabs_opp_one.
+  rewrite -(scal_opp_one (VV := Normed_VectorSpace NVS)) norm_scal abs_opp_one.
   exact: Rmult_1_l.
 Qed.
 Lemma norm_ge_0 :
@@ -1266,7 +1277,7 @@ Proof.
     by apply plus_comm.
     by [].
   - intros k x P [eps HP].
-    assert (He : 0 < eps / (Rmax 1 (Kabs k))).
+    assert (He : 0 < eps / (Rmax 1 (abs k))).
       apply Rdiv_lt_0_compat.
       by apply eps.
       apply Rlt_le_trans with (2 := Rmax_l _ _).
@@ -1275,7 +1286,7 @@ Proof.
     apply HP ; simpl.
     replace (minus (scal k y) (scal k x)) with (scal k (minus y x)).
     rewrite norm_scal.
-    apply Rle_lt_trans with (Rmax 1 (Kabs k) * norm (minus y x)).
+    apply Rle_lt_trans with (Rmax 1 (abs k) * norm (minus y x)).
     apply Rmult_le_compat_r.
     by apply norm_ge_0.
     by apply Rmax_r.
@@ -1305,9 +1316,9 @@ Lemma AbsField_NormedVectorSpace_mixin :
   NormedVectorSpace_mixin K K (Field_VectorSpace K (AbsField_Field AF)).
 Proof.
   intros K AF.
-  apply Build_NormedVectorSpace_mixin with Kabs.
-  exact Kabs_triangle.
-  exact Kabs_mult.
+  apply Build_NormedVectorSpace_mixin with abs.
+  exact abs_triangle.
+  exact abs_mult.
 Defined.
 Global Instance AbsField_NormedVectorSpace :
   forall K (AF : AbsField K), NormedVectorSpace K K.
@@ -1316,6 +1327,31 @@ Proof.
   econstructor.
   exact: AbsField_NormedVectorSpace_mixin.
 Defined.
+
+Class CompleteNormedVectorSpace V K {FK : AbsField K} := {
+  cnvspace_group :> AbelianGroup V ;
+  cnvspace_vector :> VectorSpace_mixin V K cnvspace_group ;
+  cnvspace_normed :> NormedVectorSpace_mixin V K (Build_VectorSpace _ _ _ _ cnvspace_vector) ;
+  cnvspace_complete :> CompleteSpace_mixin V (Normed_MetricBall (Build_NormedVectorSpace _ _ _ _ _ cnvspace_normed))
+}.
+
+Global Instance Complete_NormedVectorSpace {V K} {FK : AbsField K} :
+  CompleteNormedVectorSpace V K -> NormedVectorSpace V K.
+Proof.
+  intro CNVS.
+  apply Build_NormedVectorSpace with cnvspace_group cnvspace_vector.
+  by apply cnvspace_normed.
+Defined.
+
+Global Instance CompleteNormed_MetricVectorSpace {V K} {FK : AbsField K} :
+  CompleteNormedVectorSpace V K -> CompleteMetricVectorSpace V K.
+Proof.
+  intro CNVS.
+  eapply (Build_CompleteMetricVectorSpace _ _ _ cnvspace_group cnvspace_vector).
+  by apply CNVS.
+  by apply (Normed_MetricVectorSpace (Complete_NormedVectorSpace CNVS)).
+  by apply (Normed_MetricVectorSpace (Complete_NormedVectorSpace CNVS)).
+Qed.
 
 (** * The topology on natural numbers *)
 
@@ -2490,3 +2526,4 @@ now apply filterlim_plus with (x := Finite x) (y := Finite y).
 intros x y.
 apply filterlim_scal_l with (l := Finite y).
 Defined.
+

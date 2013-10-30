@@ -1063,7 +1063,7 @@ Qed.
 
 Require Import RInt.
 
-Lemma filterlim_RInt {U V} {VV : CompleteMetricVectorSpace V R} :
+Lemma filterlim_RInt {U V} {VV : CompleteNormedVectorSpace V R} :
   forall (f : U -> R -> V) (a b : R) F (FF : ProperFilter F) 
     g h,
   (forall x, is_RInt (f x) a b (h x))
@@ -1084,10 +1084,12 @@ wlog: a b h Hfh / (a <= b) => [Hw | Hab].
   by apply opp_opp.
   eapply (filterlim_compose _ _ _ (fun x => opp (h x)) opp).
   by apply Hfh'.
-  apply (@filterlim_opp_2 R V (AbsField_Field R_metric_field) (Complete_MetricVectorSpace VV)).
+  by generalize (filterlim_opp_2 If).
   by apply is_RInt_swap.
 
 case: Hab => Hab.
+
+pose CS := Build_CompleteSpace V _ cnvspace_complete.
 
 destruct (fun FF2 HF2 => filterlim_switch_dom
   (fun (x : U) ptd => scal (sign (b - a)) (Riemann_sum (f x) ptd))
@@ -1095,7 +1097,7 @@ destruct (fun FF2 HF2 => filterlim_switch_dom
   (fun ptd : SF_seq.SF_seq => SF_seq.pointed_subdiv ptd /\
     SF_seq.SF_h ptd = Rmin a b /\
     seq.last (SF_seq.SF_h ptd) (SF_seq.SF_lx ptd) = Rmax a b) FF FF2 HF2
-  (fun ptd => scal (sign (b - a)) (Riemann_sum g ptd)) h).
+  (fun ptd => scal (sign (b - a)) (Riemann_sum g ptd)) h) as [If [Hh Hg]].
 by apply locally_dist_filter.
 intros P [eP HP].
 assert (Hn : 0 <= ((b - a) / eP)).
@@ -1129,10 +1131,12 @@ assert (Hn : 0 <= ((b - a) / eP)).
 2: by apply Hfh.
 
 intros P [eps HP].
-have He : 0 < eps / (b - a).
+have He : 0 < (eps / (b - a)) / 2.
+  apply Rdiv_lt_0_compat.
   apply Rdiv_lt_0_compat.
   by apply eps.
   by rewrite -Rminus_lt_0.
+  by apply Rlt_0_2.
 move: (Hfg _ (locally_ball g (mkposreal _ He))) => {Hfg Hfh}.
 unfold filtermap ;
 apply filter_imp => x Hx.
@@ -1140,13 +1144,39 @@ apply HP.
 case => t [Ht [Ha Hb]] /=.
 rewrite (proj1 (sign_0_lt _)).
 rewrite 2!scal_one.
-2: by rewrite -Rminus_lt_0.
-rewrite -Ha in He Hx Hab => {a Ha P HP}.
-rewrite -Hb in He Hx Hab => {b Hb}.
-move: Ht He Hx Hab ;
-apply SF_seq.SF_cons_ind with (s := t) => {t} /= [x0 | h0 t IH] Ht He Hx Hab.
-apply ball_center.
-rewrite 2!Riemann_sum_cons /=.
+generalize (Riemann_sum_minus _ _ (f x) g t) => <-.
+refine (_ (Riemann_sum_norm (fun x0 : R => minus (f x x0) (g x0)) (fun _ => (eps / (b - a)) / 2) t Ht _)).
+move => H ; apply Rle_lt_trans with (1 := H).
+rewrite Riemann_sum_const.
+rewrite Hb Ha ; simpl.
+rewrite Rmult_comm Rlt_div_r.
+rewrite Rlt_div_l.
+apply Rminus_lt_0 ; ring_simplify.
+apply Rdiv_lt_0_compat.
+by apply eps.
+by rewrite -Rminus_lt_0.
+by apply Rlt_0_2.
+apply Rlt_gt ; by rewrite -Rminus_lt_0.
+intros t0 Ht0.
+now apply Rlt_le, Hx.
+by rewrite -Rminus_lt_0.
+exists If ; split.
+by apply Hh.
+by apply Hg.
 
-Admitted.
+exists zero.
+rewrite -Hab in Hfh |- * => {b Hab}.
+split.
+assert (forall (eps : posreal) t, ball zero eps (h t)).
+  intros eps t.
+  specialize (Hfh t).
+  apply filterlim_locally_unique with (2 := Hfh).
+  apply is_RInt_point.
+intros P [eP HP].
+unfold filtermap.
+move: (fun x : U => HP (h x)) => {HP} HP.
+apply filter_imp with (1 := HP).
+now apply filter_imp with (2 := filter_true).
+now apply is_RInt_point.
+Qed.
 

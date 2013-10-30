@@ -153,7 +153,7 @@ Proof.
   elim => [ | n IH] /=.
   now rewrite scal_one.
   rewrite -IH.
-  now rewrite mult_zero_l scal_zero_l plus_zero_r.  
+  now rewrite mult_zero_l (scal_zero_l (VV := Metric_VectorSpace VV)) plus_zero_r.  
   apply filterlim_const.
 Qed.
 Lemma ex_pseries_0 {K} {V} {FK : Field K} {VV : MetricVectorSpace V K} (a : nat -> V) :
@@ -1167,9 +1167,9 @@ Proof.
   repeat rewrite (scal_distr_l _ l).
   rewrite -plus_assoc; apply f_equal.
   rewrite opp_plus scal_distr_l; apply f_equal.
-  rewrite plus_0_r -scal_opp_l scal_assoc.
+  rewrite plus_0_r -(scal_opp_l (VV := Metric_VectorSpace VV)) scal_assoc.
   apply trans_eq with (scal (opp one) (a (S n))).
-  now rewrite scal_opp_l scal_one.
+  now rewrite (scal_opp_l (VV := Metric_VectorSpace VV)) scal_one.
   apply f_equal2; try reflexivity.
   rewrite <- opp_mult_r; apply f_equal.
   rewrite mult_comm mult_inv_r.
@@ -1479,10 +1479,10 @@ Lemma is_pseries_opp {K} {V} {FK : Field K} {VV : MetricVectorSpace V K} (a : na
 Proof.
   intros H.
   replace (opp l) with (scal (opp one) l).
-  2: now rewrite scal_opp_l scal_one.
+  2: now rewrite (scal_opp_l (VV := Metric_VectorSpace VV)) scal_one.
   apply is_pseries_ext with (PS_scal (opp one) a).
   intros n; unfold PS_scal, PS_opp.
-  now rewrite scal_opp_l scal_one.
+  now rewrite (scal_opp_l (VV := Metric_VectorSpace VV)) scal_one.
   now apply is_pseries_scal.
 Qed.
 Lemma ex_pseries_opp {K} {V} {FK : Field K} {VV : MetricVectorSpace V K} (a : nat -> V) (x : K) :

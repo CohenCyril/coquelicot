@@ -163,16 +163,18 @@ rewrite -Riemann_sum_opp.
 apply Riemann_sum_plus.
 Qed.
 
-Lemma Riemann_sum_abs (f g : R -> R) ptd : pointed_subdiv ptd ->
-  (forall t, SF_h ptd <= t <= last (SF_h ptd) (SF_lx ptd) -> Rabs (f t) <= g t)
-  -> Rabs (Riemann_sum f ptd) <= Riemann_sum g ptd.
+Lemma Riemann_sum_norm {V : Type} {VV : NormedVectorSpace V R} (f : R -> V) (g : R -> R) ptd : 
+  pointed_subdiv ptd ->
+  (forall t, SF_h ptd <= t <= last (SF_h ptd) (SF_lx ptd) -> norm (f t) <= g t)
+  -> norm (Riemann_sum f ptd) <= Riemann_sum g ptd.
 Proof.
   apply SF_cons_ind with (s := ptd) => {ptd} /= [x0 | [x0 y0] s IH] /= Hs H.
-  rewrite Rabs_R0 ; exact: Rle_refl.
+  rewrite norm_zero ; exact: Rle_refl.
   rewrite !Riemann_sum_cons /=.
-  apply Rle_trans with (1 := Rabs_triang _ _).
+  eapply Rle_trans.
+  by apply @norm_triangle.
   apply Rplus_le_compat.
-  rewrite Rabs_mult (Rabs_right (_-_)).
+  rewrite norm_scal /= (Rabs_right (_-_)).
   apply Rmult_le_compat_l.
   apply -> Rminus_le_0 ; apply Rle_trans with y0 ;
   apply (Hs O) ; rewrite SF_size_cons ; exact: lt_O_Sn.
@@ -361,7 +363,7 @@ Proof.
 intros V VV f a.
 apply filterlim_locally.
 move => eps ; exists (mkposreal _ Rlt_0_1) => ptd _ _.
-rewrite Rminus_eq_0 sign_0 scal_zero_l.
+rewrite Rminus_eq_0 sign_0 (scal_zero_l (VV := Metric_VectorSpace VV)).
 apply ball_center.
 Qed.
 
@@ -395,7 +397,7 @@ Lemma is_RInt_swap :
 Proof.
   unfold is_RInt.
   intros V VV f a b If HIf.
-  rewrite -scal_opp_one.
+  rewrite -(scal_opp_one (VV := Metric_VectorSpace VV)).
   apply filterlim_ext with (fun ptd => scal (opp one) (scal (sign (a - b)) (Riemann_sum f ptd))).
   intros x.
   rewrite scal_assoc.
@@ -861,7 +863,7 @@ Proof.
     move => t Ht.
     apply pr ; move: (Rlt_le _ _ Hab) ; rewrite /Rmin /Rmax ;
     case: Rle_dec => // _ _ ; rewrite -Ha -Hb //.
-  apply Rle_trans with (1 := Riemann_sum_abs _ _ _ Hsort H1).
+  apply Rle_trans with (1 := Riemann_sum_norm _ _ _ Hsort H1).
   apply Rle_trans with (1 := Rle_abs _).
   replace (Riemann_sum psi ptd) with
     (-(RiemannInt_SF psi - 1* Riemann_sum psi ptd)
@@ -3545,10 +3547,10 @@ intros V MV f a b If Hf.
 apply filterlim_ext with (fun ptd => (scal (opp one) (scal (sign (b - a)) (Riemann_sum f ptd)))).
 intros ptd.
 rewrite Riemann_sum_opp.
-rewrite scal_opp_one.
-apply sym_eq, @scal_opp_r.
+rewrite (scal_opp_one (VV := Metric_VectorSpace MV)).
+apply sym_eq, (scal_opp_r (VV := Metric_VectorSpace MV)).
 apply filterlim_compose with (1 := Hf).
-rewrite -scal_opp_one.
+rewrite -(scal_opp_one (VV := Metric_VectorSpace MV)).
 apply mvspace_scal.
 Qed.
 
@@ -3621,13 +3623,13 @@ apply filterlim_ext with (fun ptd => (plus (scal (sign (b - a)) (Riemann_sum f p
 intros ptd.
 rewrite Riemann_sum_minus.
 unfold minus.
-rewrite scal_opp_one.
+rewrite (scal_opp_one (VV := Metric_VectorSpace MV)).
 rewrite -scal_opp_r.
 apply sym_eq, @scal_distr_l.
 eapply filterlim_compose_2 with (1 := Hf).
 apply filterlim_compose with (1 := Hg).
 apply mvspace_scal.
-rewrite scal_opp_one.
+rewrite (scal_opp_one (VV := Metric_VectorSpace MV)).
 apply mvspace_plus.
 Qed.
 
@@ -3667,7 +3669,7 @@ clear -Heps.
 exists eps.
 intros ptd Hstep [Hptd [Hh Hl]].
 rewrite Riemann_sum_opp.
-rewrite scal_opp_r -scal_opp_l /= -sign_opp.
+rewrite (scal_opp_r (VV := Metric_VectorSpace MV)) -scal_opp_l /= -sign_opp.
 rewrite Ropp_plus_distr.
   set ptd' := (mkSF_seq (-SF_h ptd)
     (seq.map (fun X => (- fst X,- snd X)) (SF_t ptd))).
@@ -4104,10 +4106,10 @@ by exists Ig.
 Qed.
 
 (** ** Absolute value *)
-
-Lemma ex_RInt_abs :
+(* TODO : Transformer en norme *)
+Lemma ex_RInt_norm :
   forall f a b, ex_RInt f a b ->
-  ex_RInt (fun x => Rabs (f x)) a b.
+  ex_RInt (fun x => norm (f x)) a b.
 Proof.
 intros f a b If.
 apply ex_RInt_Reals_1.
@@ -4117,22 +4119,23 @@ Qed.
 
 Lemma RInt_abs: forall f a b,
    a <= b -> ex_RInt f a b ->
-   Rabs (RInt f a b) <= RInt (fun t => Rabs (f t)) a b.
+   Rabs (RInt f a b) <= RInt (fun t => norm (f t)) a b.
 intros f a b H1 If.
+simpl.
 unfold Rabs at 1.
 case (Rcase_abs (RInt f a b)); intros Y.
 rewrite <- RInt_opp.
 apply RInt_le.
 exact H1.
 now apply ex_RInt_opp.
-now apply ex_RInt_abs.
+now apply ex_RInt_norm.
 intros.
 rewrite <- Rabs_Ropp.
 apply RRle_abs.
 apply RInt_le.
 exact H1.
 exact If.
-now apply ex_RInt_abs.
+now apply ex_RInt_norm.
 intros.
 apply RRle_abs.
 Qed.
@@ -4162,7 +4165,7 @@ rewrite <- RInt_const.
 apply Rle_trans with (1:=RInt_abs _ _ _ Hab If).
 apply RInt_le.
 exact Hab.
-now apply ex_RInt_abs.
+now apply ex_RInt_norm.
 apply ex_RInt_Reals_1.
 apply continuity_implies_RiemannInt.
 exact Hab.
@@ -4516,7 +4519,7 @@ assert (D4: ex_RInt (fun t => (y - x) * Derive (fun u => f u t) x) a b) by now a
 rewrite -RInt_minus //.
 assert (D5: ex_RInt (fun t => f y t - f x t - (y - x) * Derive (fun u => f u t) x) a b) by now apply ex_RInt_minus.
 rewrite (RInt_Reals _ _ _ (ex_RInt_Reals_2 _ _ _ D5)).
-assert (D6: ex_RInt (fun t => Rabs (f y t - f x t - (y - x) * Derive (fun u => f u t) x)) a b) by now apply ex_RInt_abs.
+assert (D6: ex_RInt (fun t => Rabs (f y t - f x t - (y - x) * Derive (fun u => f u t) x)) a b) by now apply ex_RInt_norm.
 apply Rle_trans with (1 := RiemannInt_P17 _ (ex_RInt_Reals_2 _ _ _ D6) (Rlt_le _ _ H)).
 refine (Rle_trans _ _ _ (RiemannInt_P19 _ (RiemannInt_P14 a b (eps / Rabs (b - a) * Rabs (y - x))) (Rlt_le _ _ H) _) _).
 intros u Hu.
