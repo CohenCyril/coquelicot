@@ -225,23 +225,10 @@ Goal forall x y z : C, x * z + y * z = (x + y) * z.
 intros.
 field. *)
 
-(** ** C is a metric space *)
-
-Definition distC x y := Cmod (y - x).
-
-Lemma distC_refl :
-  forall x, distC x x = 0.
-Proof.
-  case => x y /=.
-  rewrite /distC /Cmod /=.
-  rewrite -sqrt_0.
-  apply f_equal.
-  ring.
-Qed.
-
 (** * Limits *)
 
 Definition is_C_lim (f : C -> C) (z l : C) :=
+  let MS := Normed_MetricBall (AbsField_NormedVectorSpace C C_AbsField) in
   filterlim f (locally' z) (locally l).
 Definition ex_C_lim (f : C -> C) (z : C) :=
   exists (l : C), is_C_lim f z l.
@@ -258,19 +245,23 @@ Proof.
   apply (f_equal real (y := Finite lx)).
   apply is_lim_unique => /= P [eps Hp].
   destruct (H (fun z => P (fst z))) as [delta Hd].
-  exists eps.
-  intros y H'.
+  exists eps => y Hy.
   apply Hp.
-  simpl in H' |- *.
-  by apply H'.
+  apply Rle_lt_trans with (2 := Hy).
+  rewrite /= /Cmod.
+  rewrite -sqrt_Rsqr_abs.
+  apply sqrt_le_1_alt.
+  move: (snd (y + - (lx, ly))) => t.
+  rewrite /Rsqr Rminus_le_0 /= ; ring_simplify.
+  by apply pow2_ge_0.
   exists delta.
   intros y By Hy.
   apply Hd.
-  simpl in By |- *.
-  split.
-  by apply By.
-  rewrite -/(Rminus _ _) Rminus_eq_0 Rabs_R0.
-  by apply delta.
+  apply Rle_lt_trans with (2 := By).
+  rewrite /= /Cmod.
+  rewrite -sqrt_Rsqr_abs /Rsqr /=.
+  apply Req_le, f_equal.
+  ring.
   contradict Hy.
   clear -Hy.
   destruct z as [z1 z2].
@@ -279,17 +270,23 @@ Proof.
   apply (f_equal real (y := Finite ly)).
   apply is_lim_unique => /= P [eps Hp].
   destruct (H (fun z => P (snd z))) as [delta Hd].
-  exists eps.
-  intros y H'.
+  exists eps => y Hy.
   apply Hp.
-  by apply H'.
+  apply Rle_lt_trans with (2 := Hy).
+  rewrite /= /Cmod.
+  rewrite -sqrt_Rsqr_abs.
+  apply sqrt_le_1_alt.
+  move: (fst (y + - (lx, ly))) => t.
+  rewrite /Rsqr Rminus_le_0 /= ; ring_simplify.
+  by apply pow2_ge_0.
   exists delta.
   intros y By Hy.
   apply Hd.
-  split ; simpl.
-  by apply By.
-  rewrite -/(Rminus _ _) Rminus_eq_0 Rabs_R0.
-  by apply delta.
+  apply Rle_lt_trans with (2 := By).
+  rewrite /= /Cmod.
+  rewrite -sqrt_Rsqr_abs /Rsqr /=.
+  apply Req_le, f_equal.
+  ring.
   contradict Hy.
   clear -Hy.
   destruct z as [z1 z2].
@@ -298,114 +295,22 @@ Qed.
 
 (** * Derivatives *)
 
-Lemma filter_le_prod_locally :
-  forall (x y : R),
-  filter_le (filter_prod (locally x) (locally y)) (locally ((x, y) : C)).
-Proof.
-intros x y P [eps HP].
-exists (ball x eps) (ball y eps).
-apply locally_ball.
-apply locally_ball.
-intros u v Bu Bv.
-apply HP ; simpl.
-split.
-by apply Bu.
-by apply Bv.
-Qed.
-
-Lemma filter_le_locally_prod :
-  forall (x y : R),
-  filter_le (locally ((x, y) : C)) (filter_prod (locally x) (locally y)).
-Proof.
-intros x y P [Q1 Q2 [e1 B1] [e2 B2] HP].
-exists (mkposreal _ (Rmin_stable_in_posreal e1 e2)).
-intros [u v] B.
-apply HP.
-apply B1.
-apply Rlt_le_trans with (2 := Rmin_l e1 e2).
-apply B.
-apply B2.
-apply Rlt_le_trans with (2 := Rmin_r e1 e2).
-apply B. 
-Qed.
-
-Lemma filterlim_Cplus :
-  forall x y : C,
-  filterlim (fun z : C * C => Cplus (fst z) (snd z))
-    (filter_prod (locally x) (locally y))
-    (locally (Cplus x y)).
-Proof.
-  intros x y.
-  apply filterlim_filter_le_2 with (1 := filter_le_prod_locally _ _).
-  apply filterlim_pair.
-  eapply filterlim_compose_2.
-  eapply filterlim_compose.
-  apply filterlim_fst.
-  eapply filterlim_filter_le_1 with (1 := filter_le_locally_prod _ _).
-  apply filterlim_fst.
-  eapply filterlim_compose.
-  apply filterlim_snd.
-  eapply filterlim_filter_le_1 with (1 := filter_le_locally_prod _ _).
-  apply filterlim_fst.
-  now apply (filterlim_plus (fst x) (fst y)).
-  eapply filterlim_compose_2.
-  eapply filterlim_compose.
-  apply filterlim_fst.
-  eapply filterlim_filter_le_1 with (1 := filter_le_locally_prod _ _).
-  apply filterlim_snd.
-  eapply filterlim_compose.
-  apply filterlim_snd.
-  eapply filterlim_filter_le_1 with (1 := filter_le_locally_prod _ _).
-  apply filterlim_snd.
-  now apply (filterlim_plus (snd x) (snd y)).
-Qed.
-
-Lemma filterlim_Cscal :
-  forall x y : C,
-  filterlim (Cmult x) (locally y) (locally (Cmult x y)).
-Proof.
-  intros x y.
-  unfold Cmult.
-  apply filterlim_filter_le_2 with (1 := filter_le_prod_locally _ _).
-  apply filterlim_pair.
-  eapply filterlim_compose_2.
-  eapply filterlim_compose.
-  eapply filterlim_filter_le_1 with (1 := filter_le_locally_prod _ _).
-  apply filterlim_fst.
-  apply (filterlim_scal_l (fst x) (fst y)).
-  eapply filterlim_compose.
-  eapply filterlim_filter_le_1 with (1 := filter_le_locally_prod _ _).
-  apply filterlim_snd.
-  apply (filterlim_scal_l (snd x) (snd y)).
-  unfold Rminus.
-  eapply filterlim_compose_2.
-  apply filterlim_fst.
-  eapply filterlim_compose.
-  apply filterlim_snd.
-  apply filterlim_opp.
-  now apply filterlim_plus.
-  eapply filterlim_compose_2.
-  eapply filterlim_compose.
-  eapply filterlim_filter_le_1 with (1 := filter_le_locally_prod _ _).
-  apply filterlim_snd.
-  apply (filterlim_scal_l (fst x) (snd y)).
-  eapply filterlim_compose.
-  eapply filterlim_filter_le_1 with (1 := filter_le_locally_prod _ _).
-  apply filterlim_fst.
-  apply (filterlim_scal_l (snd x) (fst y)).
-  now apply filterlim_plus.
-Qed.
-
-Global Instance C_metric_vector : MetricVectorSpace C C.
-Proof.
-econstructor.
-apply filterlim_Cplus.
-apply filterlim_Cscal.
-Defined.
-
 Definition is_C_derive (f : C -> C) (z l : C) :=
   filterderive f z l.
-Definition C_derive (f : C -> C) (z : C) := C_lim (fun h => (f (z + h) - f z) / h) 0.
+Definition ex_C_derive (f : C -> C) (z : C) :=
+  exists l : C, is_C_derive f z l.
+Definition C_derive (f : C -> C) (z : C) := C_lim (fun x => (f x - f z) / (x - z)) z.
+
+Lemma C_derive_unique (f : C -> C) (z l : C) :
+  is_C_derive f z l -> C_derive f z = l.
+Proof.
+  intros Df.
+  apply is_C_lim_unique.
+  apply filterlim_ext with (fun y : C => / (y + - z) * (f y + - f z)).
+  intro x.
+  apply Cmult_comm.
+  by apply Df.
+Qed.
 
 (** * Integrals *)
 

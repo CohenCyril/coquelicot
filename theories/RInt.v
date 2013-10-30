@@ -127,7 +127,7 @@ Proof.
 intros V VV f ptd.
 apply SF_cons_ind with (s := ptd) => {ptd} /= [x0 | [x0 y0] s IH].
 rewrite /Riemann_sum /RInt_seq /=.
-apply sym_eq, opp_zero.
+apply sym_eq, @opp_zero.
 rewrite !Riemann_sum_cons /= IH.
 rewrite opp_plus.
 apply f_equal with (f := fun v => plus v (opp (Riemann_sum f s))).
@@ -142,7 +142,7 @@ Proof.
   intros V VV f g ptd.
   apply SF_cons_ind with (s := ptd) => {ptd} /= [x0 | [x0 y0] s IH].
   rewrite /Riemann_sum /RInt_seq /=.
-  apply sym_eq, plus_zero_l.
+  apply sym_eq, @plus_zero_l.
   rewrite !Riemann_sum_cons /= ; rewrite IH.
   rewrite scal_distr_l.
   rewrite -!plus_assoc.
@@ -209,7 +209,7 @@ Proof.
   unfold Rdiv.
   ring.
   rewrite (SF_val_ly_bound _ b a).
-  rewrite -(plus_zero_l _ _ (foldr plus zero (SF_val_ly f a b n))).
+  rewrite -(plus_zero_l (foldr plus zero (SF_val_ly f a b n))).
   elim: (SF_val_ly f a b n) {1 3}(zero) => /= [ | x1 s IH] x0.
   apply plus_zero_r.
   rewrite rev_cons foldr_rcons plus_assoc (plus_comm x0 x1).
@@ -3902,7 +3902,8 @@ Proof.
     move => x _ ; ring_simplify.
     apply f_equal.
     apply f_equal ; ring.
-    apply (is_RInt_comp_opp (MV := R_metric_vector) (fun y => - u * f (- u * y + v))).
+    apply (is_RInt_comp_opp (MV := (Normed_MetricVectorSpace (AbsField_NormedVectorSpace R R_metric_field)))
+      (fun y => - u * f (- u * y + v))).
     apply Hw.
     by apply Ropp_gt_lt_0_contravar.
     by apply Ropp_neq_0_compat, Rlt_not_eq.

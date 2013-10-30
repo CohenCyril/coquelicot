@@ -23,334 +23,16 @@ Require Import Reals List Morphisms ssreflect.
 Require Import Rcomplements Rbar Lub.
 Open Scope R_scope.
 
-(** * Algebraic spaces *)
-(** ** Abelian Groups *)
-
-Class AbelianGroup G := {
-  plus : G -> G -> G ;
-  opp : G -> G ;
-  minus x y := plus x (opp y) ;
-  zero : G ;
-  plus_comm : forall x y, plus x y = plus y x ;
-  plus_assoc : forall x y z, plus x (plus y z) = plus (plus x y) z ;
-  plus_zero_r : forall x, plus x zero = x ;
-  plus_opp_r : forall x, plus x (opp x) = zero
-}.
-
-Global Instance AbelianGroup_prod :
-  forall U V,
-  AbelianGroup U -> AbelianGroup V
-    -> AbelianGroup (U * V).
-Proof.
-intros U V GU GV.
-apply (@Build_AbelianGroup _
-  (fun x y : U * V => (plus (fst x) (fst y), plus (snd x) (snd y)))
-  (fun x : U * V => (opp (fst x), opp (snd x)))
-  (zero, zero)).
-intros x y.
-apply f_equal2 ; apply plus_comm.
-intros x y z.
-apply f_equal2 ; apply plus_assoc.
-intros (x1,x2).
-apply f_equal2 ; apply plus_zero_r.
-intros x.
-apply f_equal2 ; apply plus_opp_r.
-Defined.
-
-(** Arithmetic operations *)
-
-Lemma plus_zero_l :
-  forall G (GG : AbelianGroup G) (x : G),
-  plus zero x = x.
-Proof.
-intros G GG x.
-now rewrite plus_comm plus_zero_r.
-Qed.
-
-Lemma plus_opp_l :
-  forall G (GG : AbelianGroup G) (x : G),
-  plus (opp x) x = zero.
-Proof.
-intros G GG x.
-rewrite plus_comm.
-apply plus_opp_r.
-Qed.
-
-Lemma opp_zero :
-  forall G (GG : AbelianGroup G),
-  opp zero = zero.
-Proof.
-intros G GG.
-rewrite <- (plus_zero_r (opp zero)).
-apply plus_opp_l.
-Qed.
-
-Lemma minus_zero_r :
-  forall G (GG : AbelianGroup G) (x : G),
-  minus x zero = x.
-Proof.
-intros G GG x.
-unfold minus.
-rewrite opp_zero.
-apply plus_zero_r.
-Qed.
-
-Lemma plus_reg_r :
-  forall G (GG : AbelianGroup G) (x y z : G),
-  plus x z = plus y z -> x = y.
-Proof.
-intros G GG x y z H.
-rewrite <- (plus_zero_r x), <- (plus_zero_r y).
-rewrite <- (plus_opp_r z).
-rewrite 2!plus_assoc.
-now rewrite H.
-Qed.
-
-Lemma opp_plus :
-  forall G (GG : AbelianGroup G) (x y : G),
-  opp (plus x y) = plus (opp x) (opp y).
-Proof.
-intros G GG x y.
-apply plus_reg_r with (GG := GG) (z := plus x y).
-rewrite plus_opp_l.
-rewrite plus_assoc.
-rewrite (plus_comm (opp x)).
-rewrite <- (plus_assoc (opp y)).
-rewrite plus_opp_l.
-rewrite plus_zero_r.
-apply sym_eq, plus_opp_l.
-Qed.
-
-Lemma opp_opp :
-  forall {G} {GG : AbelianGroup G} (x : G),
-  opp (opp x) = x.
-Proof.
-intros G GG x.
-apply plus_reg_r with (GG := GG) (z := opp x).
-rewrite plus_opp_r.
-apply plus_opp_l.
-Qed.
-
-(** ** Fields *)
-
-Class Field_mixin (K : Type) (KA : AbelianGroup K) := {
-  mult : K -> K -> K ;
-  inv : K -> K ;
-  one : K ;
-  mult_comm : forall x y, mult x y = mult y x ;
-  mult_assoc : forall x y z, mult x (mult y z) = mult (mult x y) z ;
-  mult_one_r : forall x, mult x one = x ;
-  mult_inv_r : forall x, x <> zero -> mult x (inv x) = one ;
-  mult_distr_r : forall x y z, mult (plus x y) z = plus (mult x z) (mult y z)
-}.
-Class Field K := {
-  field_group :> AbelianGroup K ;
-  field_field :> Field_mixin K field_group
-}.
-
-Class AbsField_mixin K (KF : Field K) := {
-  abs : K -> R ;
-  abs_zero : abs zero = 0 ;
-  abs_opp_one : abs (opp one) = 1 ;
-  abs_triangle : forall x y, abs (plus x y) <= abs x + abs y ;
-  abs_mult : forall x y, abs (mult x y) = abs x * abs y
-}.
-Class AbsField K := {
-  absfield_group :> AbelianGroup K ;
-  absfield_field :> Field_mixin K absfield_group ;
-  absfield_abs :> AbsField_mixin K (Build_Field _ _ absfield_field)
-}.
-
-Global Instance AbsField_Field {K} :
-  AbsField K -> Field K.
-Proof.
-  intro MF.
-  apply Build_Field with absfield_group.
-  by apply MF.
-Defined.
-
-(** Arithmetic operations in fields *)
-
-Lemma mult_one_l :
-  forall K (FK : Field K) (x : K),
-  mult one x = x.
-Proof.
-intros K FK x.
-rewrite mult_comm.
-apply mult_one_r.
-Qed.
-
-Lemma mult_distr_l :
-  forall K (FK : Field K) (x y z : K),
-  mult x (plus y z) = plus (mult x y) (mult x z).
-Proof.
-intros K FK x y z.
-rewrite mult_comm.
-rewrite mult_distr_r.
-apply f_equal2 ; apply mult_comm.
-Qed.
-
-Lemma mult_zero_r :
-  forall K (FK : Field K) (x : K),
-  mult x zero = zero.
-Proof.
-intros K FK x.
-apply plus_reg_r with (GG := field_group) (z := mult x zero).
-rewrite <- mult_distr_l.
-rewrite plus_zero_r.
-now rewrite plus_zero_l.
-Qed.
-
-Lemma mult_zero_l :
-  forall K (FK : Field K) (x : K),
-  mult zero x = zero.
-Proof.
-intros K FK x.
-rewrite mult_comm; apply mult_zero_r.
-Qed.
-
-Lemma mult_eq_compat_l: forall K (FK : Field K) 
-  (r x y: K), r <> zero -> mult r x = mult r y -> x = y.
-Proof.
-intros K FK r x y Hr H.
-rewrite <- (mult_one_l _ _ x).
-rewrite <- (mult_inv_r r); try assumption.
-rewrite mult_comm mult_assoc (mult_comm x _).
-rewrite H.
-rewrite mult_comm mult_assoc (mult_comm _ r).
-rewrite mult_inv_r; try assumption.
-apply mult_one_l.
-Qed.
-
-Lemma inv_eq: forall K (FK : Field K) 
-  (x y : K), x <> zero -> mult x y = one -> y = inv x.
-Proof.
-intros K FK x y Hx H.
-apply mult_eq_compat_l with (FK:=FK) (r:=x).
-assumption.
-now rewrite H mult_inv_r.
-Qed.
-
-Lemma inv_mult :
-  forall K (FK : Field K) (x y : K), mult x y <> zero ->
-  inv (mult x y) = mult (inv x) (inv y).
-Proof.
-intros K FK x y Hxy.
-apply sym_eq, inv_eq; try assumption.
-rewrite (mult_comm x) mult_assoc.
-rewrite <- (mult_assoc _ _ (inv x)).
-rewrite mult_inv_r.
-rewrite mult_one_r.
-rewrite mult_inv_r.
-reflexivity.
-intros L; apply Hxy.
-rewrite L; apply mult_zero_r.
-intros L; apply Hxy.
-rewrite L; apply mult_zero_l.
-Qed.
-
-Lemma plus_eq_compat_l: forall K (FK : Field K)
-  (r x y: K), plus r x = plus r y -> x = y.
-Proof.
-intros K FK r x y H.
-rewrite <- (plus_zero_l _ _ x).
-rewrite <- (plus_opp_l _ _ r).
-rewrite <- plus_assoc.
-rewrite H.
-now rewrite plus_assoc plus_opp_l plus_zero_l.
-Qed.
-
-
-Lemma opp_mult_r: forall K (FK : Field K) (x y: K),
-  opp (mult x y) = mult x (opp y).
-Proof.
-intros K FK x y.
-apply plus_eq_compat_l with (FK:=FK) (r:=(mult x y)).
-rewrite plus_opp_r.
-rewrite <- mult_distr_l.
-now rewrite plus_opp_r mult_zero_r.
-Qed.
-
-
-Lemma opp_mult_l: forall K (FK : Field K) (x y: K),
-  opp (mult x y) = mult (opp x) y.
-Proof.
-intros K FK x y.
-now rewrite mult_comm opp_mult_r mult_comm.
-Qed.
-
-Lemma opp_mult_m1 : forall K (AF : AbsField K) x,
-  opp x = mult (opp one) x.
-Proof.
-  intros K AF x.
-  rewrite -(opp_mult_l K (AbsField_Field AF)) opp_mult_r.
-  by rewrite mult_one_l.
-Qed.
-
-Lemma abs_one :
-  forall K (AF : AbsField K), abs one = 1.
-Proof.
-  intros K AF.
-  rewrite -(Rmult_1_l 1).
-  rewrite -abs_opp_one -abs_mult.
-  by rewrite -opp_mult_l opp_mult_r opp_opp mult_one_l.
-Qed.
-
-Lemma abs_opp :
-  forall K (AF : AbsField K) x, abs (opp x) = abs x.
-Proof.
-  intros K AF x.
-  rewrite opp_mult_m1.
-  rewrite abs_mult abs_opp_one.
-  by rewrite Rmult_1_l.
-Qed.
-
-Lemma abs_ge_0 :
-  forall K (AF : AbsField K) x, 0 <= abs x.
-Proof.
-  intros K AF x.
-  apply Rmult_le_reg_l with 2.
-  by apply Rlt_0_2.
-  rewrite Rmult_0_r -abs_zero -(plus_opp_l _ _ x).
-  apply Rle_trans with (1 := abs_triangle _ _).
-  rewrite abs_opp.
-  apply Req_le ; ring.
-Qed.
-
-(** ** Vector Spaces *)
-
-Class VectorSpace_mixin V K {FK : Field K} (AG : AbelianGroup V) := {
-  scal : K -> V -> V ;
-  scal_assoc : forall x y u, scal x (scal y u) = scal (mult x y) u ;
-  scal_one : forall u, scal one u = u ;
-  scal_distr_l : forall x u v, scal x (plus u v) = plus (scal x u) (scal x v) ;
-  scal_distr_r : forall x y u, scal (plus x y) u = plus (scal x u) (scal y u)
-}.
-
-Class VectorSpace V K {FK : Field K} := {
-  vspace_group :> AbelianGroup V ;
-  vspace_mixin :> VectorSpace_mixin V K vspace_group
-}.
-
-Global Instance VectorSpace_prod :
-  forall U V K (FK : Field K) (VU : VectorSpace U K) (VV : VectorSpace V K),
-  VectorSpace (U * V) K.
-Proof.
-intros U V K FK VU VV.
-econstructor.
-apply (@Build_VectorSpace_mixin _ K FK (AbelianGroup_prod _ _ _ _)
-  (fun (x : K) (uv : U * V) => (scal x (fst uv), scal x (snd uv)))).
-intros x y u.
-apply f_equal2 ; apply scal_assoc.
-intros (u,v).
-apply f_equal2 ; apply scal_one.
-intros x u v.
-simpl.
-apply f_equal2 ; apply scal_distr_l.
-intros x y u.
-simpl.
-apply f_equal2 ; apply scal_distr_r.
-Defined.
+Fixpoint Tn (n : nat) (T : Type) : Type :=
+  match n with
+  | O => unit
+  | S n => prod T (Tn n T)
+  end.
+Fixpoint Fn (n : nat) (T U : Type) : Type :=
+  match n with
+  | O => U
+  | S n => T -> Fn n T U
+  end.
 
 (** * Filters *)
 
@@ -664,7 +346,300 @@ constructor.
 - now apply subset_filter_filter.
 Qed.
 
-(** A metric space is a topological space *)
+(** * Algebraic spaces *)
+(** ** Abelian Groups *)
+
+Class AbelianGroup G := {
+  plus : G -> G -> G ;
+  opp : G -> G ;
+  minus x y := plus x (opp y) ;
+  zero : G ;
+  plus_comm : forall x y, plus x y = plus y x ;
+  plus_assoc : forall x y z, plus x (plus y z) = plus (plus x y) z ;
+  plus_zero_r : forall x, plus x zero = x ;
+  plus_opp_r : forall x, plus x (opp x) = zero
+}.
+
+Global Instance AbelianGroup_prod :
+  forall U V,
+  AbelianGroup U -> AbelianGroup V
+    -> AbelianGroup (U * V).
+Proof.
+intros U V GU GV.
+apply (@Build_AbelianGroup _
+  (fun x y : U * V => (plus (fst x) (fst y), plus (snd x) (snd y)))
+  (fun x : U * V => (opp (fst x), opp (snd x)))
+  (zero, zero)).
+intros x y.
+apply f_equal2 ; apply plus_comm.
+intros x y z.
+apply f_equal2 ; apply plus_assoc.
+intros (x1,x2).
+apply f_equal2 ; apply plus_zero_r.
+intros x.
+apply f_equal2 ; apply plus_opp_r.
+Defined.
+
+(** Arithmetic operations *)
+
+Lemma plus_zero_l :
+  forall {G} {GG : AbelianGroup G} (x : G),
+  plus zero x = x.
+Proof.
+intros G GG x.
+now rewrite plus_comm plus_zero_r.
+Qed.
+
+Lemma plus_opp_l :
+  forall {G} {GG : AbelianGroup G} (x : G),
+  plus (opp x) x = zero.
+Proof.
+intros G GG x.
+rewrite plus_comm.
+apply plus_opp_r.
+Qed.
+
+Lemma opp_zero :
+  forall {G} {GG : AbelianGroup G},
+  opp zero = zero.
+Proof.
+intros G GG.
+rewrite <- (plus_zero_r (opp zero)).
+apply plus_opp_l.
+Qed.
+
+Lemma minus_zero_r :
+  forall {G} {GG : AbelianGroup G} (x : G),
+  minus x zero = x.
+Proof.
+intros G GG x.
+unfold minus.
+rewrite opp_zero.
+apply plus_zero_r.
+Qed.
+
+Lemma plus_reg_r :
+  forall {G} {GG : AbelianGroup G} (x y z : G),
+  plus x z = plus y z -> x = y.
+Proof.
+intros G GG x y z H.
+rewrite <- (plus_zero_r x), <- (plus_zero_r y).
+rewrite <- (plus_opp_r z).
+rewrite 2!plus_assoc.
+now rewrite H.
+Qed.
+
+Lemma opp_plus :
+  forall {G} {GG : AbelianGroup G} (x y : G),
+  opp (plus x y) = plus (opp x) (opp y).
+Proof.
+intros G GG x y.
+apply plus_reg_r with (plus x y).
+rewrite plus_opp_l.
+rewrite plus_assoc.
+rewrite (plus_comm (opp x)).
+rewrite <- (plus_assoc (opp y)).
+rewrite plus_opp_l.
+rewrite plus_zero_r.
+apply sym_eq, plus_opp_l.
+Qed.
+
+Lemma opp_opp :
+  forall {G} {GG : AbelianGroup G} (x : G),
+  opp (opp x) = x.
+Proof.
+intros G GG x.
+apply plus_reg_r with (opp x).
+rewrite plus_opp_r.
+apply plus_opp_l.
+Qed.
+
+(** ** Fields *)
+
+Class Field_mixin (K : Type) (KA : AbelianGroup K) := {
+  mult : K -> K -> K ;
+  inv : K -> K ;
+  one : K ;
+  mult_comm : forall x y, mult x y = mult y x ;
+  mult_assoc : forall x y z, mult x (mult y z) = mult (mult x y) z ;
+  mult_one_r : forall x, mult x one = x ;
+  mult_inv_r : forall x, x <> zero -> mult x (inv x) = one ;
+  mult_distr_r : forall x y z, mult (plus x y) z = plus (mult x z) (mult y z)
+}.
+Class Field K := {
+  field_group :> AbelianGroup K ;
+  field_field :> Field_mixin K field_group
+}.
+
+(** Arithmetic operations *)
+
+Lemma mult_one_l :
+  forall {K} {FK : Field K} (x : K),
+  mult one x = x.
+Proof.
+intros K FK x.
+rewrite mult_comm.
+apply mult_one_r.
+Qed.
+
+Lemma mult_distr_l :
+  forall {K} {FK : Field K} (x y z : K),
+  mult x (plus y z) = plus (mult x y) (mult x z).
+Proof.
+intros K FK x y z.
+rewrite mult_comm.
+rewrite mult_distr_r.
+apply f_equal2 ; apply mult_comm.
+Qed.
+
+Lemma mult_zero_r :
+  forall {K} {FK : Field K} (x : K),
+  mult x zero = zero.
+Proof.
+intros K FK x.
+apply plus_reg_r with (mult x zero).
+rewrite <- mult_distr_l.
+rewrite plus_zero_r.
+now rewrite plus_zero_l.
+Qed.
+
+Lemma mult_zero_l :
+  forall {K} {FK : Field K} (x : K),
+  mult zero x = zero.
+Proof.
+intros K FK x.
+rewrite mult_comm; apply mult_zero_r.
+Qed.
+
+Lemma mult_eq_compat_l: forall {K} {FK : Field K} 
+  (r x y: K), r <> zero -> mult r x = mult r y -> x = y.
+Proof.
+intros K FK r x y Hr H.
+rewrite <- (mult_one_l x).
+rewrite <- (mult_inv_r r); try assumption.
+rewrite mult_comm mult_assoc (mult_comm x _).
+rewrite H.
+rewrite mult_comm mult_assoc (mult_comm _ r).
+rewrite mult_inv_r; try assumption.
+apply mult_one_l.
+Qed.
+
+Lemma inv_eq: forall {K} {FK : Field K} 
+  (x y : K), x <> zero -> mult x y = one -> y = inv x.
+Proof.
+intros K FK x y Hx H.
+apply mult_eq_compat_l with (x).
+assumption.
+now rewrite H mult_inv_r.
+Qed.
+
+Lemma inv_mult :
+  forall {K} {FK : Field K} (x y : K), mult x y <> zero ->
+  inv (mult x y) = mult (inv x) (inv y).
+Proof.
+intros K FK x y Hxy.
+apply sym_eq, inv_eq; try assumption.
+rewrite (mult_comm x) mult_assoc.
+rewrite <- (mult_assoc _ _ (inv x)).
+rewrite mult_inv_r.
+rewrite mult_one_r.
+rewrite mult_inv_r.
+reflexivity.
+intros L; apply Hxy.
+rewrite L; apply mult_zero_r.
+intros L; apply Hxy.
+rewrite L; apply mult_zero_l.
+Qed.
+
+Lemma plus_eq_compat_l: forall {K} {FK : Field K}
+  (r x y: K), plus r x = plus r y -> x = y.
+Proof.
+intros K FK r x y H.
+rewrite -(plus_zero_l x) -(plus_opp_l r) -plus_assoc.
+rewrite H.
+now rewrite plus_assoc plus_opp_l plus_zero_l.
+Qed.
+
+Lemma opp_mult_r: forall {K} {FK : Field K} (x y: K),
+  opp (mult x y) = mult x (opp y).
+Proof.
+intros K FK x y.
+apply plus_eq_compat_l with (mult x y).
+rewrite plus_opp_r -mult_distr_l.
+now rewrite plus_opp_r mult_zero_r.
+Qed.
+
+Lemma opp_mult_l: forall {K} {FK : Field K} (x y: K),
+  opp (mult x y) = mult (opp x) y.
+Proof.
+intros K FK x y.
+now rewrite mult_comm opp_mult_r mult_comm.
+Qed.
+
+Lemma opp_mult_m1 : forall {K} {KF : Field K} x,
+  opp x = mult (opp one) x.
+Proof.
+  intros K KF x.
+  rewrite -opp_mult_l opp_mult_r.
+  by rewrite mult_one_l.
+Qed.
+
+(** ** Fields with absolute value *)
+
+Class AbsField_mixin K (KF : Field K) := {
+  abs : K -> R ;
+  abs_zero : abs zero = 0 ;
+  abs_opp_one : abs (opp one) = 1 ;
+  abs_triangle : forall x y, abs (plus x y) <= abs x + abs y ;
+  abs_mult : forall x y, abs (mult x y) = abs x * abs y
+}.
+Class AbsField K := {
+  absfield_group :> AbelianGroup K ;
+  absfield_field :> Field_mixin K absfield_group ;
+  absfield_abs :> AbsField_mixin K (Build_Field _ _ absfield_field)
+}.
+
+Global Instance AbsField_Field {K} :
+  AbsField K -> Field K.
+Proof.
+  intro MF.
+  apply Build_Field with absfield_group.
+  by apply MF.
+Defined.
+
+(** Usual properties *)
+
+Lemma abs_one :
+  forall {K} {AF : AbsField K}, abs one = 1.
+Proof.
+  intros K AF.
+  rewrite -(Rmult_1_l 1).
+  rewrite -abs_opp_one -abs_mult.
+  by rewrite -opp_mult_l opp_mult_r opp_opp mult_one_l.
+Qed.
+
+Lemma abs_opp :
+  forall {K} {AF : AbsField K} x, abs (opp x) = abs x.
+Proof.
+  intros K AF x.
+  rewrite (opp_mult_m1 (KF := AbsField_Field AF)).
+  rewrite abs_mult abs_opp_one.
+  by rewrite Rmult_1_l.
+Qed.
+
+Lemma abs_ge_0 :
+  forall {K} {AF : AbsField K} x, 0 <= abs x.
+Proof.
+  intros K AF x.
+  apply Rmult_le_reg_l with 2.
+  by apply Rlt_0_2.
+  rewrite Rmult_0_r -abs_zero -(plus_opp_l x).
+  apply Rle_trans with (1 := abs_triangle _ _).
+  rewrite abs_opp.
+  apply Req_le ; ring.
+Qed.
+
+(** * Metric Spaces difined using balls *)
 
 Class MetricBall M := {
   ball : M -> R -> M -> Prop ;
@@ -673,6 +648,61 @@ Class MetricBall M := {
   ball_triangle : forall x y z e1 e2, ball x e1 y -> ball y e2 z -> ball x (e1 + e2) z ;
   ball_le : forall x e1 e2, e1 <= e2 -> forall y, ball x e1 y -> ball x e2 y
 }.
+
+(** ** Particular metric spaces *)
+(** Product of metric spaces *)
+
+Global Instance prod_metricball :
+  forall T U, MetricBall T -> MetricBall U -> MetricBall (T * U).
+Proof.
+intros T U MT MU.
+apply (Build_MetricBall _ (fun x eps y => ball (fst x) eps (fst y) /\ ball (snd x) eps (snd y))).
+- intros x eps ; split ; by apply ball_center.
+- intros x y eps [H0 H1] ; split ; by apply ball_sym.
+- intros x y z e1 e2 [H0 H1] [H2 H3] ; split ; eapply ball_triangle.
+  by apply H0.
+  by apply H2.
+  by apply H1.
+  by apply H3.
+- intros x e1 e2 He y [H0 H1] ; split ; by apply ball_le with e1.
+Defined.
+
+Global Instance pow_metricball : forall T, MetricBall T -> forall n, MetricBall (Tn n T).
+Proof.
+intros T MT n.
+elim: n => [ | n MTn].
+by apply Build_MetricBall with (fun _ _ _ => True).
+by apply prod_metricball.
+Defined.
+
+(** Functionnal metric spaces *)
+
+Global Instance MetricBall_fct {T M} :
+  MetricBall M -> MetricBall (T -> M).
+Proof.
+  intros MM.
+  exists (fun f eps g => forall t, ball (f t) eps (g t)).
+  + intros x e t.
+    exact: ball_center.
+  + intros x y e H t.
+    by apply ball_sym.
+  + intros x y z e1 e2 H1 H2 t.
+    now apply ball_triangle with (y t).
+  + intros x e1 e2 He y H t.
+    now apply ball_le with e1.
+Defined.
+
+Global Instance MetricBall_Fn {T M} (n : nat) :
+  MetricBall M -> MetricBall (Fn n T M).
+Proof.
+  intros MM.
+  elim: n => /= [ | n IHn].
+  exact MM.
+  exact (MetricBall_fct IHn).
+Defined.
+
+(** ** Local predicates *)
+(** locally_dist *)
 
 Definition locally_dist {T : Type} (d : T -> R) (P : T -> Prop) :=
   exists delta : posreal, forall y, d y < delta -> P y.
@@ -701,10 +731,11 @@ constructor.
   now apply HP.
 Qed.
 
+(** locally *)
+
 Definition locally {T} {MT : MetricBall T} (x : T) (P : T -> Prop) :=
   exists eps : posreal, forall y, ball x eps y -> P y.
-Definition locally' {T} {MT : MetricBall T} (x : T) (P : T -> Prop) :=
-  exists eps : posreal, forall y, ball x eps y -> y <> x -> P y.
+
 
 Global Instance locally_filter :
   forall {T} {MT : MetricBall T} (x : T), ProperFilter (locally x).
@@ -779,6 +810,32 @@ Proof.
   now exists eps.
 Qed.
 
+Lemma filterlim_locally_unique: forall {T U} {MU : MetricBall U} {F} {FF: ProperFilter F}
+  (f:T -> U) l l', filterlim f F (locally l) ->  filterlim f F (locally l') ->
+    (forall eps : posreal, ball l eps l').
+Proof.
+intros T U MU F FF f l l' Hl Hl' eps.
+assert (locally l (ball l (pos_div_2 eps))).
+  by apply locally_ball.
+specialize (Hl (ball l (pos_div_2 eps)) H).
+assert (locally l' (ball l' (pos_div_2 eps))).
+  by apply locally_ball.
+specialize (Hl' (ball l' (pos_div_2 eps)) H0).
+unfold filtermap in Hl, Hl'.
+generalize (filter_and _ _ Hl Hl') => {H H0} H.
+apply filter_ex in H.
+case: H => x H.
+rewrite (double_var eps).
+apply ball_triangle with (f x).
+by apply H.
+by apply ball_sym, H.
+Qed.
+
+(** locally' *)
+
+Definition locally' {T} {MT : MetricBall T} (x : T) (P : T -> Prop) :=
+  exists eps : posreal, forall y, ball x eps y -> y <> x -> P y.
+
 Global Instance locally'_filter :
   forall T (MT : MetricBall T) (x : T), Filter (locally' x).
 Proof.
@@ -801,27 +858,6 @@ constructor.
   intros y Hy Hy'.
   apply H.
   now apply HP.
-Qed.
-
-Lemma filterlim_locally_unique: forall {T U} {MU : MetricBall U} {F} {FF: ProperFilter F}
-  (f:T -> U) l l', filterlim f F (locally l) ->  filterlim f F (locally l') ->
-    (forall eps : posreal, ball l eps l').
-Proof.
-intros T U MU F FF f l l' Hl Hl' eps.
-assert (locally l (ball l (pos_div_2 eps))).
-  by apply locally_ball.
-specialize (Hl (ball l (pos_div_2 eps)) H).
-assert (locally l' (ball l' (pos_div_2 eps))).
-  by apply locally_ball.
-specialize (Hl' (ball l' (pos_div_2 eps)) H0).
-unfold filtermap in Hl, Hl'.
-generalize (filter_and _ _ Hl Hl') => {H H0} H.
-apply filter_ex in H.
-case: H => x H.
-rewrite (double_var eps).
-apply ball_triangle with (f x).
-by apply H.
-by apply ball_sym, H.
 Qed.
 
 (** ** Open sets in metric spaces *)
@@ -883,43 +919,6 @@ Proof.
 now intros T MT x Hx.
 Qed.
 
-(** ** Products of metric spaces *)
-
-Fixpoint Tn (n : nat) (T : Type) : Type :=
-  match n with
-  | O => unit
-  | S n => prod T (Tn n T)
-  end.
-
-Fixpoint Fn (n : nat) (T U : Type) : Type :=
-  match n with
-  | O => U
-  | S n => T -> Fn n T U
-  end.
-
-Global Instance prod_metricball :
-  forall T U, MetricBall T -> MetricBall U -> MetricBall (T * U).
-Proof.
-intros T U MT MU.
-apply (Build_MetricBall _ (fun x eps y => ball (fst x) eps (fst y) /\ ball (snd x) eps (snd y))).
-- intros x eps ; split ; by apply ball_center.
-- intros x y eps [H0 H1] ; split ; by apply ball_sym.
-- intros x y z e1 e2 [H0 H1] [H2 H3] ; split ; eapply ball_triangle.
-  by apply H0.
-  by apply H2.
-  by apply H1.
-  by apply H3.
-- intros x e1 e2 He y [H0 H1] ; split ; by apply ball_le with e1.
-Defined.
-
-Global Instance pow_metricball : forall T, MetricBall T -> forall n, MetricBall (Tn n T).
-Proof.
-intros T MT n.
-elim: n => [ | n MTn].
-by apply Build_MetricBall with (fun _ _ _ => True).
-by apply prod_metricball.
-Defined.
-
 (** ** Complete metric spaces *)
 
 Class CompleteSpace_mixin T (MT : MetricBall T) := {
@@ -931,21 +930,6 @@ Class CompleteSpace T := {
   complete_metric :> MetricBall T ;
   complete_mixin :> CompleteSpace_mixin T complete_metric
 }.
-
-Global Instance MetricBall_fct {T M} :
-  MetricBall M -> MetricBall (T -> M).
-Proof.
-  intros MM.
-  exists (fun f eps g => forall t, ball (f t) eps (g t)).
-  + intros x e t.
-    exact: ball_center.
-  + intros x y e H t.
-    by apply ball_sym.
-  + intros x y z e1 e2 H1 H2 t.
-    now apply ball_triangle with (y t).
-  + intros x e1 e2 He y H t.
-    now apply ball_le with e1.
-Defined.
 
 Lemma cauchy_distance :
   forall {T} {MT : MetricBall T} {F} {FF : ProperFilter F},
@@ -1078,6 +1062,53 @@ Proof.
   apply complete_cauchy_fct.
 Defined.
 
+(** * Vector Spaces *)
+
+Class VectorSpace_mixin V K {FK : Field K} (AG : AbelianGroup V) := {
+  scal : K -> V -> V ;
+  scal_assoc : forall x y u, scal x (scal y u) = scal (mult x y) u ;
+  scal_one : forall u, scal one u = u ;
+  scal_distr_l : forall x u v, scal x (plus u v) = plus (scal x u) (scal x v) ;
+  scal_distr_r : forall x y u, scal (plus x y) u = plus (scal x u) (scal y u)
+}.
+
+Class VectorSpace V K {FK : Field K} := {
+  vspace_group :> AbelianGroup V ;
+  vspace_mixin :> VectorSpace_mixin V K vspace_group
+}.
+
+Global Instance VectorSpace_prod :
+  forall U V K (FK : Field K) (VU : VectorSpace U K) (VV : VectorSpace V K),
+  VectorSpace (U * V) K.
+Proof.
+intros U V K FK VU VV.
+econstructor.
+apply (@Build_VectorSpace_mixin _ K FK (AbelianGroup_prod _ _ _ _)
+  (fun (x : K) (uv : U * V) => (scal x (fst uv), scal x (snd uv)))).
+intros x y u.
+apply f_equal2 ; apply scal_assoc.
+intros (u,v).
+apply f_equal2 ; apply scal_one.
+intros x u v.
+simpl.
+apply f_equal2 ; apply scal_distr_l.
+intros x y u.
+simpl.
+apply f_equal2 ; apply scal_distr_r.
+Defined.
+
+Global Instance Field_VectorSpace :
+  forall K (F : Field K), VectorSpace K K.
+Proof.
+  move => K F.
+  econstructor.
+  apply Build_VectorSpace_mixin with mult.
+  exact mult_assoc.
+  exact: mult_one_l.
+  exact: mult_distr_l.
+  exact: mult_distr_r.
+Defined.
+
 (** ** Metric Vector Spaces *)
 
 Class MetricVectorSpace V K {FK : Field K} := {
@@ -1096,42 +1127,14 @@ Proof.
   by apply MVS.
 Defined.
 
-Class CompleteMetricVectorSpace V K {FK : Field K} := {
-  cmvspace_group :> AbelianGroup V ;
-  cmvspace_vector :> VectorSpace_mixin V K cmvspace_group ;
-  cmvspace_metric :> MetricBall V ;
-  cmvspace_complete :> CompleteSpace_mixin V cmvspace_metric ;
-  cmvspace_plus : forall x y, filterlim (fun z : V * V => plus (fst z) (snd z)) (filter_prod (locally x) (locally y)) (locally (plus x y)) ;
-  cmvspace_scal : forall x y, filterlim (fun z : V => scal x z) (locally y) (locally (scal x y))
-}.
-
-Global Instance vspace_of_field :
-  forall K (FK : Field K), VectorSpace K K.
-Proof.
-intros K FK.
-econstructor.
-apply (@Build_VectorSpace_mixin K K FK field_group mult).
-apply mult_assoc.
-apply mult_one_l.
-apply mult_distr_l.
-apply mult_distr_r.
-Defined.
-
-Global Instance Complete_MetricVectorSpace {V K} {FK : Field K} :
-  CompleteMetricVectorSpace V K -> MetricVectorSpace V K.
-Proof.
-  intros CMVS.
-  econstructor.
-  exact cmvspace_plus.
-  exact cmvspace_scal.
-Defined.
+(** Operations *)
 
 Lemma scal_zero_r :
   forall {V K} {FK : Field K} {VV : VectorSpace V K} (x : K),
   scal (V := V) x zero = zero.
 Proof.
 intros V K FK VV x.
-apply plus_reg_r with (GG := vspace_group) (z := scal x zero).
+apply plus_reg_r with (scal x zero).
 rewrite <- scal_distr_l.
 rewrite plus_zero_r.
 now rewrite plus_zero_l.
@@ -1142,7 +1145,7 @@ Lemma scal_zero_l :
   scal zero u = zero.
 Proof.
 intros V K FK VV u.
-apply plus_reg_r with (GG := vspace_group) (z := scal zero u).
+apply plus_reg_r with (z := scal zero u).
 rewrite plus_zero_l.
 rewrite <- scal_distr_r.
 now rewrite plus_zero_r.
@@ -1153,7 +1156,7 @@ Lemma scal_opp_l :
   scal (opp x) u = opp (scal x u).
 Proof.
 intros V K FK VV x u.
-apply plus_reg_r with (GG := vspace_group) (z := (scal x u)).
+apply plus_reg_r with (z := (scal x u)).
 rewrite plus_opp_l.
 rewrite <- scal_distr_r.
 rewrite plus_opp_l.
@@ -1165,7 +1168,7 @@ Lemma scal_opp_r :
   scal x (opp u) = opp (scal x u).
 Proof.
 intros V K FK VV x u.
-apply plus_reg_r with (GG := vspace_group) (z := (scal x u)).
+apply plus_reg_r with (z := (scal x u)).
 rewrite plus_opp_l.
 rewrite <- scal_distr_l.
 rewrite plus_opp_l.
@@ -1181,14 +1184,41 @@ rewrite scal_opp_l.
 now rewrite scal_one.
 Qed.
 
-(** * Normed Vector Space *)
+(** ** Complete Metric Vector Space *)
+
+Class CompleteMetricVectorSpace V K {FK : Field K} := {
+  cmvspace_group :> AbelianGroup V ;
+  cmvspace_vector :> VectorSpace_mixin V K cmvspace_group ;
+  cmvspace_metric :> MetricBall V ;
+  cmvspace_complete :> CompleteSpace_mixin V cmvspace_metric ;
+  cmvspace_plus : forall x y, filterlim (fun z : V * V => plus (fst z) (snd z)) (filter_prod (locally x) (locally y)) (locally (plus x y)) ;
+  cmvspace_scal : forall x y, filterlim (fun z : V => scal x z) (locally y) (locally (scal x y))
+}.
+
+Global Instance Complete_MetricVectorSpace {V K} {FK : Field K} :
+  CompleteMetricVectorSpace V K -> MetricVectorSpace V K.
+Proof.
+  intros CMVS.
+  econstructor.
+  exact cmvspace_plus.
+  exact cmvspace_scal.
+Defined.
+
+Global Instance CompleteMetricVectorSpace_CompleteSpace {V K} {FK : Field K} :
+  CompleteMetricVectorSpace V K -> CompleteSpace V.
+Proof.
+  intros CMVS.
+  econstructor.
+  exact cmvspace_complete.
+Defined.
+
+(** ** Normed Vector Space *)
 
 Class NormedVectorSpace_mixin V K {FK : AbsField K} (VS : VectorSpace V K) := {
   norm : V -> R ;
   norm_triangle : forall (x y : V), norm (plus x y) <= norm x + norm y ;
   norm_scal : forall (l : K) (x : V), norm (scal l x) = abs l * norm x
 }.
-
 Class NormedVectorSpace V K {FK : AbsField K} := {
   nvspace_group :> AbelianGroup V ;
   nvspace_vector :> VectorSpace_mixin V K nvspace_group ;
@@ -1202,6 +1232,18 @@ Proof.
   apply Build_VectorSpace with nvspace_group.
   by apply nvspace_vector.
 Defined.
+
+Global Instance AbsField_NormedVectorSpace :
+  forall K (AF : AbsField K), NormedVectorSpace K K.
+Proof.
+  move => K AF.
+  econstructor.
+  econstructor.
+  exact abs_triangle.
+  exact abs_mult.
+Defined.
+
+(** Operations *)
 
 Lemma norm_zero :
   forall {V K} {FK : AbsField K} {NVS : NormedVectorSpace V K},
@@ -1232,6 +1274,8 @@ Proof.
   apply Req_le ; rewrite norm_opp.
   ring.
 Qed.
+
+(** Paricular normed vector spaces *)
 
 Global Instance Normed_MetricBall {V K : Type} {FK : AbsField K} :
   NormedVectorSpace V K -> MetricBall V.
@@ -1299,34 +1343,7 @@ Proof.
     by generalize (scal_opp_r k x) => <-.
 Defined.
 
-Global Instance Field_VectorSpace :
-  forall K (F : Field K), VectorSpace K K.
-Proof.
-  move => K F.
-  econstructor.
-  apply Build_VectorSpace_mixin with mult.
-  exact mult_assoc.
-  exact: mult_one_l.
-  exact: mult_distr_l.
-  exact: mult_distr_r.
-Defined.
-
-Lemma AbsField_NormedVectorSpace_mixin :
-  forall (K : Type) (AF : AbsField K),
-  NormedVectorSpace_mixin K K (Field_VectorSpace K (AbsField_Field AF)).
-Proof.
-  intros K AF.
-  apply Build_NormedVectorSpace_mixin with abs.
-  exact abs_triangle.
-  exact abs_mult.
-Defined.
-Global Instance AbsField_NormedVectorSpace :
-  forall K (AF : AbsField K), NormedVectorSpace K K.
-Proof.
-  move => K AF.
-  econstructor.
-  exact: AbsField_NormedVectorSpace_mixin.
-Defined.
+(** ** Complete Normed Vector Space *)
 
 Class CompleteNormedVectorSpace V K {FK : AbsField K} := {
   cnvspace_group :> AbelianGroup V ;
@@ -1342,6 +1359,16 @@ Proof.
   apply Build_NormedVectorSpace with cnvspace_group cnvspace_vector.
   by apply cnvspace_normed.
 Defined.
+
+Global Instance Complete_NormedVectorSpace_CompleteSpace {V K} {FK : AbsField K} :
+  CompleteNormedVectorSpace V K -> CompleteSpace V.
+Proof.
+  intro CNVS.
+  econstructor.
+  by apply cnvspace_complete.
+Defined.
+
+(** Particular complete normed vector space *)
 
 Global Instance CompleteNormed_MetricVectorSpace {V K} {FK : AbsField K} :
   CompleteNormedVectorSpace V K -> CompleteMetricVectorSpace V K.
@@ -1540,6 +1567,8 @@ apply open_or.
 apply open_lt.
 apply open_gt.
 Qed.
+
+(** Local properties in [R] *)
 
 Lemma locally_interval (P : R -> Prop) (x : R) (a b : Rbar) :
   Rbar_lt a x -> Rbar_lt x b ->
@@ -1885,7 +1914,7 @@ destruct H as (d1,Hd1).
 now destruct (H1 d1).
 Qed.
 
-(** * Some Topology on extended real numbers *)
+(** * Some Topology on [Rbar] *)
 
 Definition Rbar_locally' (a : Rbar) (P : R -> Prop) :=
   match a with
@@ -1984,6 +2013,8 @@ intros [x| |].
 - exact (Rbar_locally'_filter m_infty).
 Qed.
 
+(** Open sets in [Rbar] *)
+
 Lemma open_Rbar_lt :
   forall y, open (fun u : R => Rbar_lt u y).
 Proof.
@@ -2037,8 +2068,6 @@ Lemma Rbar_locally'_le_finite :
 Proof.
 intros x P [eps HP] ; exists eps ; intros ; now apply HP.
 Qed.
-
-
 
 (** * Some limits on real functions *)
 
@@ -2517,13 +2546,3 @@ intros Lf Cf.
 apply continuity_pt_filterlim in Cf.
 now apply Cf.
 Qed.
-
-Global Instance R_metric_vector : MetricVectorSpace R R.
-Proof.
-econstructor.
-intros x y.
-now apply filterlim_plus with (x := Finite x) (y := Finite y).
-intros x y.
-apply filterlim_scal_l with (l := Finite y).
-Defined.
-
