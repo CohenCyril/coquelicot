@@ -31,7 +31,17 @@ Fixpoint sum_n {G} {GG: AbelianGroup G} (a:nat -> G) (N : nat) {struct N} : G :=
    | S i => plus (sum_n a i)  (a (S i))
   end.
 
-
+Lemma sum_n_ext_aux: forall {G} {GG: AbelianGroup G} (a b:nat-> G) N, 
+   (forall n, (n < S N)%nat -> a n = b n) -> sum_n a N = sum_n b N.
+Proof.
+  intros G GG a b N H; induction N; simpl.
+  apply H.
+  by apply le_refl.
+  rewrite IHN.
+  by rewrite H.
+  move => n Hn.
+  now apply H, le_trans with (1 := Hn), le_n_Sn.
+Qed.
 Lemma sum_n_ext: forall {G} {GG: AbelianGroup G} (a b:nat-> G) N, 
    (forall n, a n = b n) -> sum_n a N = sum_n b N.
 Proof.
@@ -60,7 +70,30 @@ Proof.
   apply sym_eq, plus_assoc.
 Qed.  
 
+Lemma sum_n_plus {G} {GG : AbelianGroup G} : forall (u v : nat -> G) (n : nat),
+  sum_n (fun k => plus (u k) (v k)) n = plus (sum_n u n) (sum_n v n).
+Proof.
+  intros u v.
+  induction n ; simpl.
+  by [].
+  rewrite IHn ; clear IHn.
+  rewrite -?plus_assoc.
+  apply f_equal.
+  rewrite ?plus_assoc.
+  apply f_equal2.
+  by apply plus_comm.
+  by [].
+Qed.
 
+Lemma sum_n_switch {G} {GG : AbelianGroup G} : forall (u : nat -> nat -> G) (m n : nat),
+  sum_n (fun i => sum_n (u i) n) m = sum_n (fun j => sum_n (fun i => u i j) m) n.
+Proof.
+  intros u.
+  induction m ; simpl ; intros n.
+  by [].
+  rewrite IHm ; clear IHm.
+  by rewrite -sum_n_plus.
+Qed.
 
 (** * Definitions *)
 

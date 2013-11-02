@@ -380,6 +380,21 @@ intros x.
 apply f_equal2 ; apply plus_opp_r.
 Defined.
 
+Global Instance AbelianGroup_Tn {T} :
+  AbelianGroup T -> forall n, AbelianGroup (Tn n T).
+Proof.
+  intro GT.
+  elim => /= [ | n IH].
+  - apply Build_AbelianGroup with (fun _ _ => tt) (fun _ => tt) tt ; auto.
+    by apply unit_ind.
+  - by apply AbelianGroup_prod.
+Defined.
+Fixpoint mk_Tn {T} (n : nat) (u : nat -> T) : Tn n T :=
+  match n with
+    | O => (tt : Tn O T)
+    | S n => (u O, mk_Tn n (fun n => u (S n)))
+  end.
+
 (** Arithmetic operations *)
 
 Lemma plus_zero_l :
