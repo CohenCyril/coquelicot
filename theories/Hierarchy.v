@@ -23,6 +23,8 @@ Require Import Reals List Morphisms ssreflect.
 Require Import Rcomplements Rbar Lub.
 Open Scope R_scope.
 
+(** * Iterated products *)
+
 Fixpoint Tn (n : nat) (T : Type) : Type :=
   match n with
   | O => unit
@@ -33,6 +35,70 @@ Fixpoint Fn (n : nat) (T U : Type) : Type :=
   | O => U
   | S n => T -> Fn n T U
   end.
+
+Fixpoint mk_Tn {T} (n : nat) (u : nat -> T) : Tn n T :=
+  match n with
+    | O => (tt : Tn O T)
+    | S n => (u O, mk_Tn n (fun n => u (S n)))
+  end.
+Definition coeff_Tn {T} {n : nat} (x0 : T) (v : Tn n T) : nat -> T.
+Proof.
+  induction n ; simpl in v => i.
+  apply x0.
+  destruct i.
+  apply (fst v).
+  apply (IHn (snd v) i).
+Defined.
+Lemma mk_Tn_bij {T} {n : nat} (x0 : T) (v : Tn n T) :
+  mk_Tn n (coeff_Tn x0 v) = v.
+Proof.
+  induction n ; simpl.
+  now apply unit_ind.
+  rewrite IHn ; by destruct v.
+Qed.
+Lemma coeff_Tn_bij {T} {n : nat} (x0 : T) (u : nat -> T) :
+  forall i, (i < n)%nat -> coeff_Tn x0 (mk_Tn n u) i = u i.
+Proof.
+  revert u ; induction n => /= u i Hi.
+  by apply lt_n_O in Hi.
+  destruct i.
+  by [].
+  now apply (IHn (fun n => u (S n))), lt_S_n.
+Qed.
+Lemma coeff_Tn_ext {T} {n : nat} (x1 x2 : T) (v1 v2 : Tn n T) :
+  v1 = v2 <-> forall i, (i < n)%nat -> coeff_Tn x1 v1 i = coeff_Tn x2 v2 i.
+Proof.
+  split.
+  + move => -> {v1}.
+    induction n => i Hi.
+    by apply lt_n_O in Hi.
+    destruct i ; simpl.
+    by [].
+    by apply IHn, lt_S_n.
+  + induction n => H.
+    apply unit_ind ; move: (v1) ; now apply unit_ind.
+    apply injective_projections.
+    by apply (H O), lt_O_Sn.
+    apply IHn => i Hi.
+    by apply (H (S i)), lt_n_S.
+Qed.
+Lemma mk_Tn_ext {T} (n : nat) (u1 u2 : nat -> T) :
+  (forall i, (i < n)%nat -> (u1 i) = (u2 i))
+    <-> (mk_Tn n u1) = (mk_Tn n u2).
+Proof.
+  move: u1 u2 ; induction n ; simpl ; split ; intros.
+  by [].
+  by apply lt_n_O in H0.
+  apply f_equal2.
+  by apply H, lt_O_Sn.
+  apply IHn => i Hi.
+  by apply H, lt_n_S.
+  destruct i.
+  by apply (f_equal (@fst _ _)) in H.
+  move: i {H0} (lt_S_n _ _ H0).
+  apply IHn.
+  by apply (f_equal (@snd _ _)) in H.
+Qed.
 
 (** * Filters *)
 
@@ -389,11 +455,6 @@ Proof.
     by apply unit_ind.
   - by apply AbelianGroup_prod.
 Defined.
-Fixpoint mk_Tn {T} (n : nat) (u : nat -> T) : Tn n T :=
-  match n with
-    | O => (tt : Tn O T)
-    | S n => (u O, mk_Tn n (fun n => u (S n)))
-  end.
 
 (** Arithmetic operations *)
 
@@ -469,6 +530,81 @@ rewrite plus_opp_r.
 apply plus_opp_l.
 Qed.
 
+Lemma plus_eq_compat_l: forall {G} {GG : AbelianGroup G}
+  (r x y: G), plus r x = plus r y -> x = y.
+Proof.
+intros K FK r x y H.
+rewrite -(plus_zero_l x) -(plus_opp_l r) -plus_assoc.
+rewrite H.
+now rewrite plus_assoc plus_opp_l plus_zero_l.
+Qed.
+
+(** ** Non commutative ring *)
+
+Class ncRing_mixin (K : Type) (KA : AbelianGroup K) := {
+  nc_mult : K -> K -> K ;
+  nc_one : K ;
+  nc_mult_assoc : forall x y z, nc_mult x (nc_mult y z) = nc_mult (nc_mult x y) z ;
+  nc_mult_one_r : forall x, nc_mult x nc_one = x ;
+  nc_mult_one_l : forall x, nc_mult nc_one x = x ;
+  nc_mult_distr_r : forall x y z, nc_mult (plus x y) z = plus (nc_mult x z) (nc_mult y z) ;
+  nc_mult_distr_l : forall x y z, nc_mult x (plus y z) = plus (nc_mult x y) (nc_mult x z)
+}.
+Class ncRing K := {
+  ncring_group :> AbelianGroup K ;
+  ncring_mixin :> ncRing_mixin K ncring_group
+}.
+
+(** Arithmetic operations *)
+
+Lemma nc_mult_zero_r {K} {RK : ncRing K} :
+  forall (x : K),
+  nc_mult x zero = zero.
+Proof.
+intros x.
+apply plus_reg_r with (nc_mult x zero).
+rewrite <- nc_mult_distr_l.
+rewrite plus_zero_r.
+now rewrite plus_zero_l.
+Qed.
+
+Lemma nc_mult_zero_l {K} {RK : ncRing K} :
+  forall (x : K),
+  nc_mult zero x = zero.
+Proof.
+intros x.
+apply plus_reg_r with (nc_mult zero x).
+rewrite <- nc_mult_distr_r.
+rewrite plus_zero_r.
+now rewrite plus_zero_l.
+Qed.
+
+Lemma opp_nc_mult_r: forall {K} {RK : ncRing K} (x y: K),
+  opp (nc_mult x y) = nc_mult x (opp y).
+Proof.
+intros K RK x y.
+apply plus_eq_compat_l with (nc_mult x y).
+rewrite plus_opp_r -nc_mult_distr_l.
+now rewrite plus_opp_r nc_mult_zero_r.
+Qed.
+
+Lemma opp_nc_mult_l: forall {K} {RK : ncRing K} (x y: K),
+  opp (nc_mult x y) = nc_mult (opp x) y.
+Proof.
+intros K RK x y.
+apply plus_eq_compat_l with (nc_mult x y).
+rewrite plus_opp_r -nc_mult_distr_r.
+now rewrite plus_opp_r nc_mult_zero_l.
+Qed.
+
+Lemma opp_nc_mult_m1 : forall {K} {KF : ncRing K} x,
+  opp x = nc_mult (opp nc_one) x.
+Proof.
+  intros K KF x.
+  rewrite -opp_nc_mult_l opp_nc_mult_r.
+  by rewrite nc_mult_one_l.
+Qed.
+
 (** ** Fields *)
 
 Class Field_mixin (K : Type) (KA : AbelianGroup K) := {
@@ -486,44 +622,51 @@ Class Field K := {
   field_field :> Field_mixin K field_group
 }.
 
+Global Instance Field_ncRing {K} :
+  Field K -> ncRing K.
+Proof.
+  intro FK.
+  apply Build_ncRing with field_group.
+  apply Build_ncRing_mixin with mult one.
+  exact mult_assoc.
+  exact mult_one_r.
+  now intro x ; rewrite mult_comm ; apply mult_one_r.
+  exact mult_distr_r.
+  now intros x y z ; rewrite 3!(mult_comm x) ; apply mult_distr_r.
+Defined.
+
 (** Arithmetic operations *)
 
 Lemma mult_one_l :
   forall {K} {FK : Field K} (x : K),
   mult one x = x.
 Proof.
-intros K FK x.
-rewrite mult_comm.
-apply mult_one_r.
+intros K FK.
+exact (@nc_mult_one_l K _ (@ncring_mixin K (Field_ncRing FK))).
 Qed.
 
 Lemma mult_distr_l :
   forall {K} {FK : Field K} (x y z : K),
   mult x (plus y z) = plus (mult x y) (mult x z).
 Proof.
-intros K FK x y z.
-rewrite mult_comm.
-rewrite mult_distr_r.
-apply f_equal2 ; apply mult_comm.
+intros K FK.
+exact (@nc_mult_distr_l K _ (@ncring_mixin K (Field_ncRing FK))) .
 Qed.
 
 Lemma mult_zero_r :
   forall {K} {FK : Field K} (x : K),
   mult x zero = zero.
 Proof.
-intros K FK x.
-apply plus_reg_r with (mult x zero).
-rewrite <- mult_distr_l.
-rewrite plus_zero_r.
-now rewrite plus_zero_l.
+intros K FK.
+exact nc_mult_zero_r.
 Qed.
 
 Lemma mult_zero_l :
   forall {K} {FK : Field K} (x : K),
   mult zero x = zero.
 Proof.
-intros K FK x.
-rewrite mult_comm; apply mult_zero_r.
+intros K FK.
+exact nc_mult_zero_l.
 Qed.
 
 Lemma mult_eq_compat_l: forall {K} {FK : Field K} 
@@ -566,37 +709,25 @@ intros L; apply Hxy.
 rewrite L; apply mult_zero_l.
 Qed.
 
-Lemma plus_eq_compat_l: forall {K} {FK : Field K}
-  (r x y: K), plus r x = plus r y -> x = y.
-Proof.
-intros K FK r x y H.
-rewrite -(plus_zero_l x) -(plus_opp_l r) -plus_assoc.
-rewrite H.
-now rewrite plus_assoc plus_opp_l plus_zero_l.
-Qed.
-
 Lemma opp_mult_r: forall {K} {FK : Field K} (x y: K),
   opp (mult x y) = mult x (opp y).
 Proof.
-intros K FK x y.
-apply plus_eq_compat_l with (mult x y).
-rewrite plus_opp_r -mult_distr_l.
-now rewrite plus_opp_r mult_zero_r.
+intros K FK.
+exact opp_nc_mult_r.
 Qed.
 
 Lemma opp_mult_l: forall {K} {FK : Field K} (x y: K),
   opp (mult x y) = mult (opp x) y.
 Proof.
-intros K FK x y.
-now rewrite mult_comm opp_mult_r mult_comm.
+intros K FK.
+exact opp_nc_mult_l.
 Qed.
 
 Lemma opp_mult_m1 : forall {K} {KF : Field K} x,
   opp x = mult (opp one) x.
 Proof.
-  intros K KF x.
-  rewrite -opp_mult_l opp_mult_r.
-  by rewrite mult_one_l.
+  intros K KF.
+  exact opp_nc_mult_m1.
 Qed.
 
 (** ** Fields with absolute value *)

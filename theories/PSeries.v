@@ -25,10 +25,10 @@ Require Import Continuity Derive Derive_2d RInt Seq_fct Series Hierarchy.
 
 (** pow *)
 
-Fixpoint pow_n {K} {FK: Field K} (x:K) (N : nat) {struct N} : K :=
+Fixpoint pow_n {K} {FK: ncRing K} (x:K) (N : nat) {struct N} : K :=
   match N with
-   | 0%nat => one
-   | S i => mult x (pow_n x i)
+   | 0%nat => nc_one
+   | S i => nc_mult x (pow_n x i)
   end.
 
 

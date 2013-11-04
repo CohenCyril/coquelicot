@@ -50,7 +50,6 @@ Proof.
   now rewrite IHN; rewrite H.
 Qed.
 
-
 Lemma sum_n_sum_f_R0: forall a N, sum_n a N = sum_f_R0 a N.
 Proof.
   intros a; induction N; simpl.
@@ -93,6 +92,18 @@ Proof.
   by [].
   rewrite IHm ; clear IHm.
   by rewrite -sum_n_plus.
+Qed.
+
+Lemma sum_n_nc_mult_r {K} {RK : ncRing K} :
+ forall (a : K) (u : nat -> K) (n : nat),
+  sum_n (fun k => nc_mult (u k) a) n = nc_mult (sum_n u n) a.
+Proof.
+  intros a u n.
+  induction n ; simpl.
+  by [].
+  rewrite IHn.
+  apply eq_sym.
+  by apply nc_mult_distr_r.
 Qed.
 
 (** * Definitions *)
