@@ -645,6 +645,13 @@ intros K FK.
 exact (@nc_mult_one_l K _ (@ncring_mixin K (Field_ncRing FK))).
 Qed.
 
+Lemma mult_inv_l {K} {FK : Field K} :
+  forall x, x <> zero -> mult (inv x) x = one.
+Proof.
+  intros x Hx.
+  now rewrite mult_comm ; apply mult_inv_r.
+Qed.
+
 Lemma mult_distr_l :
   forall {K} {FK : Field K} (x y z : K),
   mult x (plus y z) = plus (mult x y) (mult x z).
@@ -1210,21 +1217,21 @@ Defined.
 
 (** * Vector Spaces *)
 
-Class VectorSpace_mixin V K {FK : Field K} (AG : AbelianGroup V) := {
+Class VectorSpace_mixin V K {FK : ncRing K} (AG : AbelianGroup V) := {
   scal : K -> V -> V ;
-  scal_assoc : forall x y u, scal x (scal y u) = scal (mult x y) u ;
-  scal_one : forall u, scal one u = u ;
+  scal_assoc : forall x y u, scal x (scal y u) = scal (nc_mult x y) u ;
+  scal_one : forall u, scal nc_one u = u ;
   scal_distr_l : forall x u v, scal x (plus u v) = plus (scal x u) (scal x v) ;
   scal_distr_r : forall x y u, scal (plus x y) u = plus (scal x u) (scal y u)
 }.
 
-Class VectorSpace V K {FK : Field K} := {
+Class VectorSpace V K {FK : ncRing K} := {
   vspace_group :> AbelianGroup V ;
   vspace_mixin :> VectorSpace_mixin V K vspace_group
 }.
 
 Global Instance VectorSpace_prod :
-  forall U V K (FK : Field K) (VU : VectorSpace U K) (VV : VectorSpace V K),
+  forall U V K (FK : ncRing K) (VU : VectorSpace U K) (VV : VectorSpace V K),
   VectorSpace (U * V) K.
 Proof.
 intros U V K FK VU VV.
@@ -1243,21 +1250,21 @@ simpl.
 apply f_equal2 ; apply scal_distr_r.
 Defined.
 
-Global Instance Field_VectorSpace :
-  forall K (F : Field K), VectorSpace K K.
+Global Instance ncRing_VectorSpace :
+  forall K (F : ncRing K), VectorSpace K K.
 Proof.
   move => K F.
   econstructor.
-  apply Build_VectorSpace_mixin with mult.
-  exact mult_assoc.
-  exact: mult_one_l.
-  exact: mult_distr_l.
-  exact: mult_distr_r.
+  apply Build_VectorSpace_mixin with nc_mult.
+  exact nc_mult_assoc.
+  exact nc_mult_one_l.
+  exact nc_mult_distr_l.
+  exact nc_mult_distr_r.
 Defined.
 
 (** ** Metric Vector Spaces *)
 
-Class MetricVectorSpace V K {FK : Field K} := {
+Class MetricVectorSpace V K {FK : ncRing K} := {
   mvspace_group :> AbelianGroup V ;
   mvspace_vector :> VectorSpace_mixin V K mvspace_group ;
   mvspace_metric :> MetricBall V ;
@@ -1265,7 +1272,7 @@ Class MetricVectorSpace V K {FK : Field K} := {
   mvspace_scal : forall x y, filterlim (fun z : V => scal x z) (locally y) (locally (scal x y))
 }.
 
-Global Instance Metric_VectorSpace {V K} {FK : Field K} :
+Global Instance Metric_VectorSpace {V K} {FK : ncRing K} :
   MetricVectorSpace V K -> VectorSpace V K.
 Proof.
   intro MVS.
@@ -1276,7 +1283,7 @@ Defined.
 (** Operations *)
 
 Lemma scal_zero_r :
-  forall {V K} {FK : Field K} {VV : VectorSpace V K} (x : K),
+  forall {V K} {FK : ncRing K} {VV : VectorSpace V K} (x : K),
   scal (V := V) x zero = zero.
 Proof.
 intros V K FK VV x.
@@ -1287,7 +1294,7 @@ now rewrite plus_zero_l.
 Qed.
 
 Lemma scal_zero_l :
-  forall {V K} {FK : Field K} {VV : VectorSpace V K} (u : V),
+  forall {V K} {FK : ncRing K} {VV : VectorSpace V K} (u : V),
   scal zero u = zero.
 Proof.
 intros V K FK VV u.
@@ -1298,7 +1305,7 @@ now rewrite plus_zero_r.
 Qed.
 
 Lemma scal_opp_l :
-  forall {V K} {FK : Field K} {VV : VectorSpace V K} (x : K) (u : V),
+  forall {V K} {FK : ncRing K} {VV : VectorSpace V K} (x : K) (u : V),
   scal (opp x) u = opp (scal x u).
 Proof.
 intros V K FK VV x u.
@@ -1310,7 +1317,7 @@ apply scal_zero_l.
 Qed.
 
 Lemma scal_opp_r :
-  forall {V K} {FK : Field K} {VV : VectorSpace V K} (x : K) (u : V),
+  forall {V K} {FK : ncRing K} {VV : VectorSpace V K} (x : K) (u : V),
   scal x (opp u) = opp (scal x u).
 Proof.
 intros V K FK VV x u.
@@ -1322,17 +1329,26 @@ apply scal_zero_r.
 Qed.
 
 Lemma scal_opp_one :
-  forall {V K} {FK : Field K} {VV : VectorSpace V K} (u : V),
-  scal (opp one) u = opp u.
+  forall {V K} {FK : ncRing K} {VV : VectorSpace V K} (u : V),
+  scal (opp nc_one) u = opp u.
 Proof.
 intros V K FK VV u.
 rewrite scal_opp_l.
 now rewrite scal_one.
 Qed.
 
+Lemma filterlim_opp_2 {K} {V} {FK : ncRing K} {VV : MetricVectorSpace V K}: forall (x:V), 
+   filterlim opp (locally x) (locally (opp x)).
+Proof.
+intros x.
+rewrite <- (scal_opp_one (VV := Metric_VectorSpace VV)).
+apply filterlim_ext with (2:=mvspace_scal _ _).
+intros; apply (scal_opp_one (VV := Metric_VectorSpace VV)).
+Qed.
+
 (** ** Complete Metric Vector Space *)
 
-Class CompleteMetricVectorSpace V K {FK : Field K} := {
+Class CompleteMetricVectorSpace V K {FK : ncRing K} := {
   cmvspace_group :> AbelianGroup V ;
   cmvspace_vector :> VectorSpace_mixin V K cmvspace_group ;
   cmvspace_metric :> MetricBall V ;
@@ -1341,7 +1357,7 @@ Class CompleteMetricVectorSpace V K {FK : Field K} := {
   cmvspace_scal : forall x y, filterlim (fun z : V => scal x z) (locally y) (locally (scal x y))
 }.
 
-Global Instance Complete_MetricVectorSpace {V K} {FK : Field K} :
+Global Instance Complete_MetricVectorSpace {V K} {FK : ncRing K} :
   CompleteMetricVectorSpace V K -> MetricVectorSpace V K.
 Proof.
   intros CMVS.
@@ -1350,7 +1366,7 @@ Proof.
   exact cmvspace_scal.
 Defined.
 
-Global Instance CompleteMetricVectorSpace_CompleteSpace {V K} {FK : Field K} :
+Global Instance CompleteMetricVectorSpace_CompleteSpace {V K} {FK : ncRing K} :
   CompleteMetricVectorSpace V K -> CompleteSpace V.
 Proof.
   intros CMVS.

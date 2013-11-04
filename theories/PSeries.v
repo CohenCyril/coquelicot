@@ -38,14 +38,39 @@ easy.
 now rewrite IHk.
 Qed.
 
+Lemma pow_n_plus {K} {FK: ncRing K} :
+  forall x n m, pow_n x (n+m) %nat= nc_mult (pow_n x n) (pow_n x m).
+Proof.
+  intros x.
+  elim => /= [ | n IH] m.
+  by rewrite nc_mult_one_l.
+  by rewrite IH nc_mult_assoc.
+Qed.
+
+Lemma pow_n_comm_1 {K} {FK: ncRing K} :
+  forall x n, nc_mult (pow_n x n) x = nc_mult x (pow_n x n).
+Proof.
+  intros x n.
+  elim: n => /= [ | n IH].
+  by rewrite nc_mult_one_l nc_mult_one_r.
+  by rewrite -(nc_mult_assoc _ (pow_n x n)) IH.
+Qed.
+
+Lemma pow_n_comm {K} {FK: ncRing K} :
+  forall x n m, nc_mult (pow_n x n) (pow_n x m) = nc_mult (pow_n x m) (pow_n x n).
+Proof.
+  intros x n m.
+  rewrite -2!pow_n_plus.
+  by apply f_equal, Plus.plus_comm.
+Qed. 
 
 (** * Definition *)
 
-Definition is_pseries {K} {V} {FK : Field K} {VV : MetricVectorSpace V K}
+Definition is_pseries {K} {V} {FK : ncRing K} {VV : MetricVectorSpace V K}
   (a : nat -> V) (x:K) (l : V) :=
     is_series (fun k => scal (pow_n x k) (a k)) l.
 
-Definition ex_pseries {K} {V} {FK : Field K} {VV : MetricVectorSpace V K} 
+Definition ex_pseries {K} {V} {FK : ncRing K} {VV : MetricVectorSpace V K} 
   (a : nat -> V) (x : K) :=
     ex_series (fun k => scal (pow_n x k) (a k)).
 
@@ -119,7 +144,7 @@ Qed.
 
 (** Extensionality *)
 
-Lemma is_pseries_ext {K} {V} {FK : Field K} {VV : MetricVectorSpace V K} (a b : nat -> V) (x : K) (l:V) :
+Lemma is_pseries_ext {K} {V} {FK : ncRing K} {VV : MetricVectorSpace V K} (a b : nat -> V) (x : K) (l:V) :
   (forall n, a n = b n) -> (is_pseries a x l)
     -> is_pseries b x l.
 Proof.
@@ -128,7 +153,7 @@ Proof.
   move => n.
   by rewrite Heq.
 Qed.
-Lemma ex_pseries_ext {K} {V} {FK : Field K} {VV : MetricVectorSpace V K} (a b : nat -> V) (x : K) :
+Lemma ex_pseries_ext {K} {V} {FK : ncRing K} {VV : MetricVectorSpace V K} (a b : nat -> V) (x : K) :
   (forall n, a n = b n) -> ex_pseries a x
     -> ex_pseries b x.
 Proof.
@@ -146,17 +171,17 @@ Qed.
 
 (** * Convergence circle *)
 (** A power series is always defined at 0 *)
-Lemma is_pseries_0 {K} {V} {FK : Field K} {VV : MetricVectorSpace V K} (a : nat -> V) :
+Lemma is_pseries_0 {K} {V} {FK : ncRing K} {VV : MetricVectorSpace V K} (a : nat -> V) :
   is_pseries a zero (a O).
 Proof.
   apply filterlim_ext with (fun _ => a O).
   elim => [ | n IH] /=.
   now rewrite scal_one.
   rewrite -IH.
-  now rewrite mult_zero_l (scal_zero_l (VV := Metric_VectorSpace VV)) plus_zero_r.  
+  now rewrite nc_mult_zero_l (scal_zero_l (VV := Metric_VectorSpace VV)) plus_zero_r.  
   apply filterlim_const.
 Qed.
-Lemma ex_pseries_0 {K} {V} {FK : Field K} {VV : MetricVectorSpace V K} (a : nat -> V) :
+Lemma ex_pseries_0 {K} {V} {FK : ncRing K} {VV : MetricVectorSpace V K} (a : nat -> V) :
   ex_pseries a zero.
 Proof.
   exists (a O) ; by apply is_pseries_0.
@@ -737,10 +762,10 @@ Qed.
 (** * Operations *)
 
 (** Addition of two power series *)
-Definition PS_plus {K} {V} {FK : Field K} {VV : MetricVectorSpace V K}
+Definition PS_plus {K} {V} {FK : ncRing K} {VV : MetricVectorSpace V K}
   (a b : nat -> V) (n : nat) : V :=
   plus (a n)  (b n).
-Lemma is_pseries_plus {K} {V} {FK : Field K} {VV : MetricVectorSpace V K} (a b : nat -> V) 
+Lemma is_pseries_plus {K} {V} {FK : ncRing K} {VV : MetricVectorSpace V K} (a b : nat -> V) 
   (x :K) (la lb : V) : is_pseries a x la -> is_pseries b x lb
     -> is_pseries (PS_plus a b) x (plus la lb).
 Proof.
@@ -756,7 +781,7 @@ Proof.
   rewrite scal_distr_l; apply plus_comm.
   now apply filterlim_compose_2 with (3:=mvspace_plus _ _).
 Qed.
-Lemma ex_pseries_plus {K} {V} {FK : Field K} {VV : MetricVectorSpace V K} (a b : nat -> V) (x : K) :
+Lemma ex_pseries_plus {K} {V} {FK : ncRing K} {VV : MetricVectorSpace V K} (a b : nat -> V) (x : K) :
   ex_pseries a x -> ex_pseries b x
     -> ex_pseries (PS_plus a b) x.
 Proof.
@@ -873,25 +898,32 @@ Qed.
 
 (** Scalar multiplication *)
 
-Definition PS_scal {K} {V} {FK : Field K} {VV : MetricVectorSpace V K} (c : K) (a : nat -> V) (n : nat) : V :=
+Definition PS_scal {K} {V} {FK : ncRing K} {VV : MetricVectorSpace V K} (c : K) (a : nat -> V) (n : nat) : V :=
   scal c (a n).
-Lemma is_pseries_scal {K} {V} {FK : Field K} {VV : MetricVectorSpace V K} (c : K) (a : nat -> V) (x: K) (l:V):
-  is_pseries a x l -> is_pseries (PS_scal c a) x (scal c l).
+Lemma is_pseries_scal {K} {V} {FK : ncRing K} {VV : MetricVectorSpace V K} (c : K) (a : nat -> V) (x: K) (l:V):
+  nc_mult x c = nc_mult c x -> is_pseries a x l -> is_pseries (PS_scal c a) x (scal c l).
 Proof.
-  move => Ha.
+  move => Hx Ha.
   apply (filterlim_ext (fun n => scal c (sum_n (fun k => scal (pow_n x k) (a k)) n))).
   elim => [ | n IH].
   simpl ; rewrite /PS_scal.
   now repeat rewrite scal_one.
   simpl ; rewrite -IH /PS_scal.
   rewrite scal_distr_l; apply f_equal.
-  now rewrite 2! scal_assoc mult_comm.
+  rewrite 2! scal_assoc.
+  apply f_equal2.
+  rewrite -/(pow_n _ (S _)).
+  clear -Hx.
+  elim: (S n) => {n} /= [ | n IH].
+  by rewrite nc_mult_one_l nc_mult_one_r.
+  by rewrite -nc_mult_assoc -IH 2!nc_mult_assoc Hx.
+  by [].
   now apply filterlim_compose with (2:=mvspace_scal _ _).
 Qed.
-Lemma ex_pseries_scal {K} {V} {FK : Field K} {VV : MetricVectorSpace V K} (c : K) (a : nat -> V) (x : K) :
-  ex_pseries a x -> ex_pseries (PS_scal c a) x.
+Lemma ex_pseries_scal {K} {V} {FK : ncRing K} {VV : MetricVectorSpace V K} (c : K) (a : nat -> V) (x : K) :
+  nc_mult x c = nc_mult c x -> ex_pseries a x -> ex_pseries (PS_scal c a) x.
 Proof.
-  move => [l Ha].
+  move => Hx [l Ha].
   exists (scal c l).
   by apply is_pseries_scal.
 Qed.
@@ -960,12 +992,12 @@ Qed.
 
 (** Multiplication and division by a variable *)
 
-Definition PS_incr_1 {K} {V} {FK : Field K} {VV : MetricVectorSpace V K} (a : nat -> V) (n : nat) : V :=
+Definition PS_incr_1 {K} {V} {FK : ncRing K} {VV : MetricVectorSpace V K} (a : nat -> V) (n : nat) : V :=
   match n with
     | 0 => zero
     | S n => a n
   end.
-Lemma is_pseries_incr_1 {K} {V} {FK : Field K} {VV : MetricVectorSpace V K} (a : nat -> V) (x:K) (l : V) :
+Lemma is_pseries_incr_1 {K} {V} {FK : ncRing K} {VV : MetricVectorSpace V K} (a : nat -> V) (x:K) (l : V) :
   is_pseries a x l -> is_pseries (PS_incr_1 a) x (scal x l).
 Proof.
   move => Ha.
@@ -973,7 +1005,7 @@ Proof.
   exists 1%nat; intros n; case n.
   intros Hn; contradict Hn ; apply lt_n_O.
   clear n; intros n _ ;induction n.
-  simpl; now rewrite mult_one_r 2!scal_one plus_zero_l.
+  simpl; now rewrite nc_mult_one_r 2!scal_one plus_zero_l.
   apply trans_eq with (plus
    (sum_n (fun k : nat => scal (pow_n x k) (PS_incr_1 a k)) (S n))
       (scal (pow_n x (S (S n))) (PS_incr_1 a (S (S n))))).
@@ -990,7 +1022,7 @@ Proof.
  now apply lt_pred_n_n.
  now apply filterlim_compose with (2:=mvspace_scal _ _).
 Qed.
-Lemma ex_pseries_incr_1 {K} {V} {FK : Field K} {VV : MetricVectorSpace V K} (a : nat -> V) (x : K) :
+Lemma ex_pseries_incr_1 {K} {V} {FK : ncRing K} {VV : MetricVectorSpace V K} (a : nat -> V) (x : K) :
   ex_pseries a x -> ex_pseries (PS_incr_1 a) x.
 Proof.
   move => [l Ha] ; exists (scal x l) ; by apply is_pseries_incr_1.
@@ -1009,12 +1041,12 @@ Proof.
   rewrite IH ; ring.
 Qed.
 
-Fixpoint PS_incr_n {K} {V} {FK : Field K} {VV : MetricVectorSpace V K} (a : nat -> V) (n k : nat) : V :=
+Fixpoint PS_incr_n {K} {V} {FK : ncRing K} {VV : MetricVectorSpace V K} (a : nat -> V) (n k : nat) : V :=
   match n with
     | O => a k
     | S n => PS_incr_1 (PS_incr_n a n) k
   end.
-Lemma PS_incr_n_simplify {K} {V} {FK : Field K} {VV : MetricVectorSpace V K} (a : nat -> V) (n k : nat) :
+Lemma PS_incr_n_simplify {K} {V} {FK : ncRing K} {VV : MetricVectorSpace V K} (a : nat -> V) (n k : nat) :
   PS_incr_n a n k =
   match (le_lt_dec n k) with
     | left _ => a (k-n)%nat
@@ -1038,7 +1070,7 @@ Proof.
   by [].
   by apply IH, lt_S_n.
 Qed.
-Lemma is_pseries_incr_n {K} {V} {FK : Field K} {VV : MetricVectorSpace V K}  (a : nat -> V) (n : nat) (x:K) (l : V) :
+Lemma is_pseries_incr_n {K} {V} {FK : ncRing K} {VV : MetricVectorSpace V K}  (a : nat -> V) (n : nat) (x:K) (l : V) :
   is_pseries a x l -> is_pseries (PS_incr_n a n) x (scal (pow_n x n) l).
 Proof.
   move => Ha.
@@ -1047,7 +1079,7 @@ Proof.
   rewrite -scal_assoc.
   by apply is_pseries_incr_1.
 Qed.
-Lemma ex_pseries_incr_n {K} {V} {FK : Field K} {VV : MetricVectorSpace V K} (a : nat -> V) (n : nat) (x : K) :
+Lemma ex_pseries_incr_n {K} {V} {FK : ncRing K} {VV : MetricVectorSpace V K} (a : nat -> V) (n : nat) (x : K) :
   ex_pseries a x -> ex_pseries (PS_incr_n a n) x.
 Proof.
   move => [l Ha].
@@ -1062,30 +1094,29 @@ Proof.
   by rewrite PSeries_incr_1 IH.
 Qed.
 
-Definition PS_decr_1 {K} {V} {FK : Field K} {VV : MetricVectorSpace V K} (a : nat -> V) (n : nat) : V :=
+Definition PS_decr_1 {K} {V} {FK : ncRing K} {VV : MetricVectorSpace V K} (a : nat -> V) (n : nat) : V :=
   a (S n).
-Lemma is_pseries_decr_1 {K} {V} {FK : Field K} {VV : MetricVectorSpace V K} (a : nat -> V) (x:K) (l : V) :
-  x <> zero -> is_pseries a x l
-    -> is_pseries (PS_decr_1 a) x (scal (inv x) (plus l (opp (a O)))).
+Lemma is_pseries_decr_1 {K} {V} {FK : ncRing K} {VV : MetricVectorSpace V K} (a : nat -> V) (x y : K) (l : V) :
+  nc_mult y x = nc_one -> is_pseries a x l
+    -> is_pseries (PS_decr_1 a) x (scal y (plus l (opp (a O)))).
 Proof.
   move => Hx Ha.
-  apply filterlim_ext with  (fun n : nat => scal (inv x) 
+  apply filterlim_ext with  (fun n : nat => scal y 
     (sum_n (fun k => scal (pow_n x (S k)) (a (S k))) n)).
   intros n; induction n; unfold PS_decr_1; simpl.
-  rewrite mult_one_r scal_one scal_assoc.
-  rewrite mult_comm mult_inv_r; try assumption.
+  rewrite nc_mult_one_r scal_one scal_assoc.
+  rewrite Hx; try assumption.
   apply scal_one.
   rewrite -IHn.
   rewrite scal_distr_l; apply f_equal.
-  rewrite scal_assoc mult_assoc.
-  rewrite (mult_comm (inv x) _) mult_inv_r.
-  now rewrite mult_one_l.
-  assumption.
+  rewrite scal_assoc nc_mult_assoc.
+  rewrite Hx.
+  now rewrite nc_mult_one_l.
   apply filterlim_compose with (2:=mvspace_scal _ _).
   apply filterlim_ext with  (fun n : nat => plus 
     (sum_n (fun k => scal (pow_n x k) (a k)) (S n)) (opp (a 0%nat))).
   intros n; induction n; simpl.
-  rewrite mult_one_r scal_one.
+  rewrite nc_mult_one_r scal_one.
   rewrite plus_comm plus_assoc.
   now rewrite plus_opp_l plus_zero_l.
   rewrite -IHn.
@@ -1097,13 +1128,13 @@ Proof.
   apply eventually_subseq; intros n; omega.
   apply filterlim_const.
 Qed.
-Lemma ex_pseries_decr_1  {K} {V} {FK : Field K} {VV : MetricVectorSpace V K} (a : nat -> V) (x : K) :
- (x=zero \/ x <> zero) -> 
+Lemma ex_pseries_decr_1  {K} {V} {FK : ncRing K} {VV : MetricVectorSpace V K} (a : nat -> V) (x : K) :
+ (x = zero \/ exists y, nc_mult y x = nc_one) -> 
  ex_pseries a x -> ex_pseries (PS_decr_1 a) x.
 Proof.
- intros H [l Ha]; destruct H.
+ case => [H | [y Hx]] [l Ha].
  rewrite H ; by apply ex_pseries_0.
- exists (scal (inv x) (plus l (opp (a 0%nat)))).
+ exists (scal y (plus l (opp (a 0%nat)))).
  now apply is_pseries_decr_1.
 Qed.
 Lemma PSeries_decr_1 (a : nat -> R) (x : R) :
@@ -1113,7 +1144,7 @@ Proof.
   move => Ha.
   case: (Req_dec x 0) => Hx.
   rewrite Hx PSeries_0 ; ring.
-  move: (is_pseries_decr_1 a x (PSeries a x) Hx 
+  move: (is_pseries_decr_1 a x (/x) (PSeries a x) (mult_inv_l _ Hx)
     (PSeries_correct _ _ Ha)) => Hb.
   rewrite (is_pseries_unique _ _ _ Hb).
   simpl; now field.
@@ -1130,64 +1161,62 @@ Proof.
 Qed.
 
 
-Definition PS_decr_n  {K} {V} {FK : Field K} {VV : MetricVectorSpace V K} (a : nat -> V) (n k : nat) : V :=
+Definition PS_decr_n  {K} {V} {FK : ncRing K} {VV : MetricVectorSpace V K} (a : nat -> V) (n k : nat) : V :=
   a (n + k)%nat.
-Lemma is_pseries_decr_n  {K} {V} {FK : Field K} {VV : MetricVectorSpace V K} (a : nat -> V) (n : nat) (x:K) (l : V) :
-  pow_n x n <> zero -> (0 < n)%nat -> is_pseries a x l
-    -> is_pseries (PS_decr_n a n) x (scal (inv (pow_n x n)) (plus l (opp (sum_n (fun k => scal (pow_n x k) (a k)) (n-1)%nat)))).
+Lemma is_pseries_decr_n  {K} {V} {FK : ncRing K} {VV : MetricVectorSpace V K} (a : nat -> V) (n : nat) (x y:K) (l : V) :
+  nc_mult y x = nc_one -> (0 < n)%nat -> is_pseries a x l
+    -> is_pseries (PS_decr_n a n) x (scal (pow_n y n) (plus l (opp (sum_n (fun k => scal (pow_n x k) (a k)) (n-1)%nat)))).
 Proof.
   move => Hx Hn Ha.
-  case: n Hn Hx => [ | n] Hn Hx.
+  case: n Hn => [ | n] Hn.
   by apply lt_irrefl in Hn.
   clear Hn ; simpl ; rewrite -minus_n_O /PS_decr_n /=.
-  elim: n Hx => /= [ | n IH] Hx.
-  rewrite scal_one mult_one_r.
-  rewrite mult_one_r in Hx.
-  by apply is_pseries_decr_1.
-  assert (Hx': x <> zero).
-  intros L; apply Hx.
-  now rewrite L mult_zero_l.
-  set ln := (scal (inv (mult x (pow_n x n)))
-    (plus l (opp (sum_n (fun k : nat => scal (pow_n x k) (a k)) n)))) in IH.
-  replace (scal (inv (mult x (mult x (pow_n x n))))
-     (plus l (opp (plus (sum_n (fun k : nat => scal (pow_n x k) (a k)) n)
-              (scal (mult x (pow_n x n)) (a (S n))))))) 
-  with (scal (inv x) (plus ln (opp (a (S (n + 0)))))).
+  elim: n => /= [ | n IH].
+  rewrite scal_one nc_mult_one_r.
+  now apply is_pseries_decr_1.
+  set (ln := (scal (nc_mult y (pow_n y n))
+          (plus l (opp (sum_n (fun k : nat => scal (pow_n x k) (a k)) n))))) in IH.
+  replace (scal (nc_mult y (nc_mult y (pow_n y n)))
+     (plus l
+        (opp
+           (plus (sum_n (fun k : nat => scal (pow_n x k) (a k)) n)
+              (scal (nc_mult x (pow_n x n)) (a (S n)))))))
+  with (scal y (plus ln (opp (a (S (n + 0)))))).
   assert (Y:is_pseries (fun k : nat => a (S (n + k))) x ln).
   apply IH.
-  intros L; apply Hx.
-  now rewrite L mult_zero_r.
-  move: (is_pseries_decr_1 (fun k : nat => a (S (n + k))) x ln Hx' Y).
+  move: (is_pseries_decr_1 (fun k : nat => a (S (n + k))) x y ln Hx Y).
   rewrite /PS_decr_1 /=.
   apply is_pseries_ext => k.
   apply f_equal ; ring.
-  rewrite inv_mult; try assumption.
   rewrite -scal_assoc.
   apply f_equal; unfold ln.
   repeat rewrite (scal_distr_l _ l).
   rewrite -plus_assoc; apply f_equal.
   rewrite opp_plus scal_distr_l; apply f_equal.
   rewrite plus_0_r -(scal_opp_l (VV := Metric_VectorSpace VV)) scal_assoc.
-  apply trans_eq with (scal (opp one) (a (S n))).
+  apply trans_eq with (scal (opp nc_one) (a (S n))).
   now rewrite (scal_opp_l (VV := Metric_VectorSpace VV)) scal_one.
   apply f_equal2; try reflexivity.
-  rewrite <- opp_mult_r; apply f_equal.
-  rewrite mult_comm mult_inv_r.
-  easy.
-  intros L; apply Hx; rewrite L.
-  now rewrite mult_zero_r.
+  rewrite <- opp_nc_mult_r; apply f_equal.
+  clear -Hx.
+  rewrite -?/(pow_n _ (S _)).
+  elim: (S n) => {n} /= [ | n IH].
+  by rewrite nc_mult_one_l.
+  rewrite -(pow_n_comm_1 x) nc_mult_assoc.
+  rewrite -(nc_mult_assoc y (pow_n y n) (pow_n x n)).
+  by rewrite -IH nc_mult_one_r.
 Qed.
-Lemma ex_pseries_decr_n  {K} {V} {FK : Field K} {VV : MetricVectorSpace V K} (a : nat -> V) (n : nat) (x : K) :
-  (forall y:K, y=zero \/ y<> zero) -> ex_pseries a x -> ex_pseries (PS_decr_n a n) x.
+Lemma ex_pseries_decr_n  {K} {V} {FK : ncRing K} {VV : MetricVectorSpace V K} (a : nat -> V) (n : nat) (x : K) :
+  (x = zero \/ exists y, nc_mult y x = nc_one) -> ex_pseries a x -> ex_pseries (PS_decr_n a n) x.
 Proof.
-  intros H; induction n.
+  intros Hx H.
+  induction n.
   unfold PS_decr_n; now simpl.
-  intros H1.
   apply ex_pseries_ext with ((PS_decr_1 (PS_decr_n a n))).
   intros m; unfold PS_decr_1, PS_decr_n.
   apply f_equal; ring.
   apply ex_pseries_decr_1.
-  apply H.
+  apply Hx.
   now apply IHn.
 Qed.
 Lemma PSeries_decr_n (a : nat -> R) (n : nat) (x : R) :
@@ -1202,13 +1231,13 @@ Proof.
   rewrite -IH ; ring.
   assert (V:(pow_n x (S n) <> 0)).
   rewrite pow_n_pow; now apply pow_nonzero.
-  move: (is_pseries_decr_n a (S n) x (PSeries a x) V (lt_0_Sn _) (PSeries_correct _ _ Ha)) => Hb.
+  move: (is_pseries_decr_n a (S n) x (/x) (PSeries a x) (mult_inv_l x Hx) (lt_0_Sn _) (PSeries_correct _ _ Ha)) => Hb.
   rewrite (is_pseries_unique _ _ _ Hb).
   rewrite (sum_n_ext _ (fun k : nat => a k * x ^ k)).
   rewrite sum_n_sum_f_R0.
   replace (S n -1)%nat with n.
   unfold scal, inv, plus, opp; simpl.
-  rewrite pow_n_pow.
+  rewrite pow_n_pow -Rinv_pow ; try assumption.
   field.
   split; try assumption.
   now apply pow_nonzero.
@@ -1473,19 +1502,22 @@ Proof.
   by apply is_lim_seq_const.
 Qed.
 
-Definition PS_opp  {K} {V} {FK : Field K} {VV : MetricVectorSpace V K} (a : nat -> V) (n : nat) : V := opp (a n).
-Lemma is_pseries_opp {K} {V} {FK : Field K} {VV : MetricVectorSpace V K} (a : nat -> V) (x :K) (l : V) :
+Definition PS_opp  {K} {V} {FK : ncRing K} {VV : MetricVectorSpace V K} (a : nat -> V) (n : nat) : V := opp (a n).
+Lemma is_pseries_opp {K} {V} {FK : ncRing K} {VV : MetricVectorSpace V K} (a : nat -> V) (x :K) (l : V) :
   is_pseries a x l -> is_pseries (PS_opp a) x (opp l).
 Proof.
   intros H.
-  replace (opp l) with (scal (opp one) l).
+  replace (opp l) with (scal (opp nc_one) l).
   2: now rewrite (scal_opp_l (VV := Metric_VectorSpace VV)) scal_one.
-  apply is_pseries_ext with (PS_scal (opp one) a).
+  apply is_pseries_ext with (PS_scal (opp nc_one) a).
   intros n; unfold PS_scal, PS_opp.
   now rewrite (scal_opp_l (VV := Metric_VectorSpace VV)) scal_one.
-  now apply is_pseries_scal.
+  apply is_pseries_scal.
+  rewrite -opp_nc_mult_l -opp_nc_mult_r.
+  by rewrite nc_mult_one_l nc_mult_one_r.
+  by apply H.
 Qed.
-Lemma ex_pseries_opp {K} {V} {FK : Field K} {VV : MetricVectorSpace V K} (a : nat -> V) (x : K) :
+Lemma ex_pseries_opp {K} {V} {FK : ncRing K} {VV : MetricVectorSpace V K} (a : nat -> V) (x : K) :
   ex_pseries a x -> ex_pseries (PS_opp a) x.
 Proof.
   intros [l Hl].
@@ -1513,8 +1545,8 @@ Proof.
   move => n ; rewrite /PS_scal /PS_opp ; simpl; ring.
 Qed.
 
-Definition PS_minus {K} {V} {FK : Field K} {VV : MetricVectorSpace V K} (a b : nat -> V) (n : nat) : V := plus (a n) (opp (b n)).
-Lemma is_pseries_minus {K} {V} {FK : Field K} {VV : MetricVectorSpace V K} (a b : nat -> V) (x:K) (la lb : V) :
+Definition PS_minus {K} {V} {FK : ncRing K} {VV : MetricVectorSpace V K} (a b : nat -> V) (n : nat) : V := plus (a n) (opp (b n)).
+Lemma is_pseries_minus {K} {V} {FK : ncRing K} {VV : MetricVectorSpace V K} (a b : nat -> V) (x:K) (la lb : V) :
   is_pseries a x la -> is_pseries b x lb
   -> is_pseries (PS_minus a b) x (plus la (opp lb)).
 Proof.
@@ -1523,7 +1555,7 @@ Proof.
   exact: Ha.
   by apply is_pseries_opp.
 Qed.
-Lemma ex_pseries_minus {K} {V} {FK : Field K} {VV : MetricVectorSpace V K} (a b : nat -> V) (x : K) :
+Lemma ex_pseries_minus {K} {V} {FK : ncRing K} {VV : MetricVectorSpace V K} (a b : nat -> V) (x : K) :
   ex_pseries a x -> ex_pseries b x
   -> ex_pseries (PS_minus a b) x.
 Proof.
