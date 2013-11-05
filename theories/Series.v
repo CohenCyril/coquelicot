@@ -23,87 +23,12 @@ Require Import Reals ssreflect.
 Require Import Rcomplements.
 Require Import Limit Rbar Hierarchy.
 
-(** Sum *)
-
-Fixpoint sum_n {G} {GG: AbelianGroup G} (a:nat -> G) (N : nat) {struct N} : G :=
-  match N with
-   | 0%nat => a 0%nat
-   | S i => plus (sum_n a i)  (a (S i))
-  end.
-
-Lemma sum_n_ext_aux: forall {G} {GG: AbelianGroup G} (a b:nat-> G) N, 
-   (forall n, (n < S N)%nat -> a n = b n) -> sum_n a N = sum_n b N.
-Proof.
-  intros G GG a b N H; induction N; simpl.
-  apply H.
-  by apply le_refl.
-  rewrite IHN.
-  by rewrite H.
-  move => n Hn.
-  now apply H, le_trans with (1 := Hn), le_n_Sn.
-Qed.
-Lemma sum_n_ext: forall {G} {GG: AbelianGroup G} (a b:nat-> G) N, 
-   (forall n, a n = b n) -> sum_n a N = sum_n b N.
-Proof.
-  intros G GG a b N H; induction N; simpl.
-  apply H.
-  now rewrite IHN; rewrite H.
-Qed.
 
 Lemma sum_n_sum_f_R0: forall a N, sum_n a N = sum_f_R0 a N.
 Proof.
   intros a; induction N; simpl.
   easy.
   now rewrite IHN.
-Qed.
-
-Lemma decomp_sum_n: forall {G} {GG: AbelianGroup G} (a:nat-> G) N, 
-  (0 < N)%nat ->
-   sum_n a N = plus (a 0%nat) (sum_n (fun i : nat => a (S i)) (pred N)).
-Proof.
-  intros G GG a N HN; destruct N; simpl.
-  exfalso; omega.
-  clear HN; induction N; simpl.
-  easy.
-  rewrite IHN.
-  apply sym_eq, plus_assoc.
-Qed.  
-
-Lemma sum_n_plus {G} {GG : AbelianGroup G} : forall (u v : nat -> G) (n : nat),
-  sum_n (fun k => plus (u k) (v k)) n = plus (sum_n u n) (sum_n v n).
-Proof.
-  intros u v.
-  induction n ; simpl.
-  by [].
-  rewrite IHn ; clear IHn.
-  rewrite -?plus_assoc.
-  apply f_equal.
-  rewrite ?plus_assoc.
-  apply f_equal2.
-  by apply plus_comm.
-  by [].
-Qed.
-
-Lemma sum_n_switch {G} {GG : AbelianGroup G} : forall (u : nat -> nat -> G) (m n : nat),
-  sum_n (fun i => sum_n (u i) n) m = sum_n (fun j => sum_n (fun i => u i j) m) n.
-Proof.
-  intros u.
-  induction m ; simpl ; intros n.
-  by [].
-  rewrite IHm ; clear IHm.
-  by rewrite -sum_n_plus.
-Qed.
-
-Lemma sum_n_nc_mult_r {K} {RK : ncRing K} :
- forall (a : K) (u : nat -> K) (n : nat),
-  sum_n (fun k => nc_mult (u k) a) n = nc_mult (sum_n u n) a.
-Proof.
-  intros a u n.
-  induction n ; simpl.
-  by [].
-  rewrite IHn.
-  apply eq_sym.
-  by apply nc_mult_distr_r.
 Qed.
 
 (** * Definitions *)

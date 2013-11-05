@@ -100,6 +100,68 @@ Proof.
   by apply (f_equal (@snd _ _)) in H.
 Qed.
 
+(** ** Matrix *)
+
+Definition matrix {T : Type} (m n : nat) := Tn m (Tn n T).
+Definition coeff_mat {T} {m n : nat} (x0 : T) (A : @matrix T m n) (i j : nat) :=
+  coeff_Tn x0 (coeff_Tn (mk_Tn _ (fun _ => x0)) A i) j.
+Definition mk_matrix {T} (m n : nat) (U : nat -> nat -> T) : @matrix T m n :=
+  mk_Tn m (fun i => (mk_Tn n (U i))).
+
+Lemma mk_matrix_bij {T} {m n : nat} (x0 : T) (A : @matrix T m n) :
+  mk_matrix m n (coeff_mat x0 A) = A.
+Proof.
+  unfold mk_matrix, coeff_mat.
+  unfold matrix in A.
+  rewrite -{2}(mk_Tn_bij (mk_Tn _ (fun _ => x0)) A).
+  apply mk_Tn_ext.
+  intros i Hi.
+  by rewrite mk_Tn_bij.
+Qed.
+Lemma coeff_mat_bij {T} {m n : nat} (x0 : T) (u : nat -> nat -> T) :
+  forall i j, (i < m)%nat -> (j < n)%nat -> coeff_mat x0 (mk_matrix m n u) i j = u i j.
+Proof.
+  intros i j Hi Hj.
+  unfold mk_matrix, coeff_mat.
+  by rewrite 2?coeff_Tn_bij .
+Qed.
+Lemma coeff_mat_ext_aux {T} {m n : nat} (x1 x2 : T) (v1 v2 : @matrix T m n) :
+  v1 = v2 <-> forall i j, (i < m)%nat -> (j < n)%nat -> (coeff_mat x1 v1 i j) = (coeff_mat x2 v2 i j).
+Proof.
+  split => Hv.
+  + move => i j Hi Hj.
+    by repeat apply coeff_Tn_ext.
+  + unfold matrix in v1, v2.
+    rewrite -(mk_matrix_bij x1 v1) -(mk_matrix_bij x2 v2).
+    unfold mk_matrix.
+    apply mk_Tn_ext => i Hi.
+    apply mk_Tn_ext => j Hj.
+    by apply Hv.
+Qed.
+Lemma coeff_mat_ext {T} {m n : nat} (x0 : T) (v1 v2 : @matrix T m n) :
+  v1 = v2 <-> forall i j, (coeff_mat x0 v1 i j) = (coeff_mat x0 v2 i j).
+Proof.
+  split.
+  by move => ->.
+  intro H.
+  now apply (coeff_mat_ext_aux x0 x0 v1 v2).
+Qed.
+Lemma mk_matrix_ext {T} (m n : nat) (u1 u2 : nat -> nat -> T) :
+  (forall i j, (i < m)%nat -> (j < n)%nat -> (u1 i j) = (u2 i j))
+    <-> (mk_matrix m n u1) = (mk_matrix m n u2).
+Proof.
+  split => H.
+  + apply (mk_Tn_ext m) => i Hi.
+    apply (mk_Tn_ext n) => j Hj.
+    by apply H.
+  + intros i j Hi Hj.
+    apply (mk_Tn_ext n).
+    apply (mk_Tn_ext m (fun i => mk_Tn n (u1 i)) (fun i => mk_Tn n (u2 i))).
+    apply H.
+    by [].
+    by [].
+Qed.
+
 (** * Filters *)
 
 (** ** Definitions *) 
@@ -456,6 +518,34 @@ Proof.
   - by apply AbelianGroup_prod.
 Defined.
 
+Definition Mplus {T m n} {GT : AbelianGroup T} (A B : @matrix T m n) :=
+  mk_matrix m n (fun i j => (@plus T GT) (coeff_mat zero A i j) (coeff_mat zero B i j)).
+Definition Mopp {T m n} {GT : AbelianGroup T} (A : @matrix T m n) :=
+  mk_matrix m n (fun i j => (@opp T GT) (coeff_mat zero A i j)).
+Definition Mzero {T m n} {GT : AbelianGroup T} := mk_matrix m n (fun i j => @zero T GT).
+
+Global Instance AbelianGroup_matrix {T} :
+  AbelianGroup T -> forall m n, AbelianGroup (@matrix T m n).
+Proof.
+  intros GT m n.
+  apply Build_AbelianGroup with Mplus Mopp Mzero.
+  + move => A B.
+    apply mk_matrix_ext => i j Hi Hj.
+    by apply plus_comm.
+  + move => A B C.
+    apply mk_matrix_ext => /= i j Hi Hj.
+    rewrite ?coeff_mat_bij => //.
+    by apply plus_assoc.
+  + move => A.
+    apply (coeff_mat_ext_aux zero zero) => i j Hi Hj.
+    rewrite ?coeff_mat_bij => //=.
+    by apply plus_zero_r.
+  + move => A.
+    apply (coeff_mat_ext_aux zero zero) => i j Hi Hj.
+    rewrite ?coeff_mat_bij => //=.
+    by apply plus_opp_r.
+Defined.
+
 (** Arithmetic operations *)
 
 Lemma plus_zero_l :
@@ -539,6 +629,71 @@ rewrite H.
 now rewrite plus_assoc plus_opp_l plus_zero_l.
 Qed.
 
+(** Sum *)
+
+Fixpoint sum_n {G} {GG: AbelianGroup G} (a:nat -> G) (N : nat) {struct N} : G :=
+  match N with
+   | 0%nat => a 0%nat
+   | S i => plus (sum_n a i)  (a (S i))
+  end.
+
+Lemma sum_n_ext_aux: forall {G} {GG: AbelianGroup G} (a b:nat-> G) N, 
+   (forall n, (n < S N)%nat -> a n = b n) -> sum_n a N = sum_n b N.
+Proof.
+  intros G GG a b N H; induction N; simpl.
+  apply H.
+  by apply le_refl.
+  rewrite IHN.
+  by rewrite H.
+  move => n Hn.
+  now apply H, le_trans with (1 := Hn), le_n_Sn.
+Qed.
+Lemma sum_n_ext: forall {G} {GG: AbelianGroup G} (a b:nat-> G) N, 
+   (forall n, a n = b n) -> sum_n a N = sum_n b N.
+Proof.
+  intros G GG a b N H; induction N; simpl.
+  apply H.
+  now rewrite IHN; rewrite H.
+Qed.
+
+Lemma decomp_sum_n: forall {G} {GG: AbelianGroup G} (a:nat-> G) N, 
+  (0 < N)%nat ->
+   sum_n a N = plus (a 0%nat) (sum_n (fun i : nat => a (S i)) (pred N)).
+Proof.
+  intros G GG a N HN; destruct N; simpl.
+  exfalso; omega.
+  clear HN; induction N; simpl.
+  easy.
+  rewrite IHN.
+  apply sym_eq, plus_assoc.
+Qed.  
+
+Lemma sum_n_plus {G} {GG : AbelianGroup G} : forall (u v : nat -> G) (n : nat),
+  sum_n (fun k => plus (u k) (v k)) n = plus (sum_n u n) (sum_n v n).
+Proof.
+  intros u v.
+  induction n ; simpl.
+  by [].
+  rewrite IHn ; clear IHn.
+  rewrite -?plus_assoc.
+  apply f_equal.
+  rewrite ?plus_assoc.
+  apply f_equal2.
+  by apply plus_comm.
+  by [].
+Qed.
+
+Lemma sum_n_switch {G} {GG : AbelianGroup G} : forall (u : nat -> nat -> G) (m n : nat),
+  sum_n (fun i => sum_n (u i) n) m = sum_n (fun j => sum_n (fun i => u i j) m) n.
+Proof.
+  intros u.
+  induction m ; simpl ; intros n.
+  by [].
+  rewrite IHm ; clear IHm.
+  by rewrite -sum_n_plus.
+Qed.
+
+
 (** ** Non commutative ring *)
 
 Class ncRing_mixin (K : Type) (KA : AbelianGroup K) := {
@@ -604,6 +759,237 @@ Proof.
   rewrite -opp_nc_mult_l opp_nc_mult_r.
   by rewrite nc_mult_one_l.
 Qed.
+
+Lemma sum_n_mult_r {K} {RK : ncRing K} :
+ forall (a : K) (u : nat -> K) (n : nat),
+  sum_n (fun k => nc_mult (u k) a) n = nc_mult (sum_n u n) a.
+Proof.
+  intros a u n.
+  induction n ; simpl.
+  by [].
+  rewrite IHn.
+  apply eq_sym.
+  by apply nc_mult_distr_r.
+Qed.
+
+Lemma sum_n_mult_l {K} {RK : ncRing K} :
+ forall (a : K) (u : nat -> K) (n : nat),
+  sum_n (fun k => nc_mult a (u k)) n = nc_mult a (sum_n u n).
+Proof.
+  intros a u n.
+  induction n ; simpl.
+  by [].
+  rewrite IHn.
+  apply eq_sym.
+  by apply nc_mult_distr_l.
+Qed.
+
+(** Matrices *)
+
+Definition Mmult {T n m k} {RT : ncRing T} (A : @matrix T n m) (B : @matrix T m k) :=
+  mk_matrix n k (fun i j => @sum_n T (@ncring_group T RT) (fun l => (@nc_mult T (@ncring_group T RT) (@ncring_mixin T RT)) (coeff_mat zero A i l) (coeff_mat zero B l j)) (pred m)).
+Fixpoint Mone_seq {T} {RT : ncRing T} i j : T :=
+  match i,j with
+    | O, O => nc_one
+    | O, S _ | S _, O => zero
+    | S i, S j => Mone_seq i j end.
+Definition Mone {T n} {RT : ncRing T} : @matrix T n n :=
+  mk_matrix n n Mone_seq.
+
+Lemma Mmult_assoc {T n m k l} {RT : ncRing T} :
+  forall (A : @matrix T n m) (B : @matrix T m k) (C : @matrix T k l),
+    Mmult A (Mmult B C) = Mmult (Mmult A B) C.
+Proof.
+  intros A B C.
+  apply mk_matrix_ext => n' l' Hn' Hl'.
+  unfold Mmult at 1.
+  - transitivity (sum_n (fun l0 : nat => nc_mult (coeff_mat zero A n' l0)
+      (sum_n (fun l1 : nat => nc_mult (coeff_mat zero B l0 l1) (coeff_mat zero C l1 l')) (pred k))) (pred m)).
+    destruct m ; simpl.
+    unfold coeff_mat ; simpl.
+    by rewrite 2!nc_mult_zero_l.
+    apply sum_n_ext_aux ; simpl => m' Hm'.
+    apply f_equal.
+    by rewrite coeff_mat_bij.
+  - transitivity (sum_n (fun l0 : nat => sum_n
+      (fun l1 : nat => nc_mult (coeff_mat zero A n' l0) (nc_mult (coeff_mat zero B l0 l1) (coeff_mat zero C l1 l'))) (pred k)) (pred m)).
+    destruct m ; simpl.
+    unfold coeff_mat ; simpl.
+    rewrite nc_mult_zero_l.
+    rewrite sum_n_mult_l.
+    by rewrite nc_mult_zero_l.
+    apply sum_n_ext_aux ; simpl => m' Hm'.
+    apply sym_eq, sum_n_mult_l.
+  rewrite sum_n_switch.
+  destruct k ; simpl.
+  unfold coeff_mat ; simpl.
+  rewrite nc_mult_zero_l.
+  rewrite sum_n_mult_r.
+  by rewrite nc_mult_zero_r.
+  apply sum_n_ext_aux => k' Hk'.
+  transitivity (nc_mult (sum_n (fun l1 : nat => nc_mult (coeff_mat zero A n' l1) (coeff_mat zero B l1 k')) (pred m))
+    (coeff_mat zero C k' l')).
+  rewrite -sum_n_mult_r.
+  apply sum_n_ext_aux => m' Hm'.
+  apply nc_mult_assoc.
+  apply f_equal2.
+  now unfold Mmult ; rewrite coeff_mat_bij.
+  by [].
+Qed.
+Lemma Mmult_one_r {T m n} {RT : ncRing T} :
+  forall x : @matrix T m n, Mmult x Mone = x.
+Proof.
+  intros A.
+  rewrite -{2}(mk_matrix_bij zero A).
+  apply mk_matrix_ext => /= i j Hi Hj.
+  destruct n ; simpl.
+  by apply lt_n_O in Hj.
+  move: (coeff_mat zero A) => {A} A.
+  unfold Mone ; simpl.
+  transitivity (sum_n (fun k : nat => nc_mult (A i k)
+    (Mone_seq k j)) n).
+  apply sum_n_ext_aux => /= k Hk.
+  now rewrite coeff_mat_bij.
+  - elim: n Hj => [ | n IH] Hj ; rewrite /sum_n -/sum_n.
+    apply lt_n_Sm_le, le_n_0_eq in Hj.
+    rewrite -Hj => {j Hj} /=.
+    by apply nc_mult_one_r.
+  - apply le_lt_eq_dec in Hj ; case: Hj => Hj.
+    replace (Mone_seq (S n) j : T) with (zero : T).
+    rewrite nc_mult_zero_r plus_zero_r.
+    apply lt_n_Sm_le in Hj.
+    by apply IH.
+    apply lt_S_n in Hj.
+    clear -Hj ;
+    elim: n j Hj => [ | n IH] ;
+    case => [ | j] //= Hj.
+    by apply lt_S_n, lt_n_O in Hj.
+    by apply IH, lt_S_n.
+  - apply eq_add_S in Hj.
+    rewrite Hj => /= {j Hj IH}.
+    replace (Mone_seq n n : T) with (nc_one : T).
+    rewrite nc_mult_one_r.
+    apply plus_reg_r with (opp (A i (S n))).
+    rewrite -plus_assoc plus_opp_r plus_zero_r.
+  - elim: n (S n) (lt_n_Sn n) => {m Hi} [ | n IH] m Hm ;
+    rewrite /sum_n -/sum_n.
+    destruct m.
+    by apply lt_n_O in Hm.
+    by apply nc_mult_zero_r.
+    replace (Mone_seq (S n) m : T) with (zero : T).
+    rewrite nc_mult_zero_r plus_zero_r.
+    apply IH.
+    by apply lt_trans with (1 := lt_n_Sn _).
+    clear -Hm ; destruct m.
+    by [].
+    apply lt_S_n in Hm.
+    elim: n m Hm => [ | n IH] ;
+    case => [ | m] Hm //=.
+    by apply lt_n_O in Hm.
+    apply IH.
+    by apply lt_S_n.
+    by elim: n.
+Qed.
+Lemma Mmult_one_l {T m n} {RT : ncRing T} :
+  forall x : matrix m n, Mmult Mone x = x.
+Proof.
+  intros A.
+  rewrite -{2}(mk_matrix_bij zero A).
+  apply mk_matrix_ext => /= i j Hi Hj.
+  destruct m ; simpl.
+  by apply lt_n_O in Hi.
+  move: (coeff_mat zero A) => {A} A.
+  unfold Mone ; simpl.
+  transitivity (sum_n (fun k : nat => nc_mult
+    (Mone_seq i k) (A k j)) m).
+  apply sum_n_ext_aux => /= k Hk.
+  now rewrite coeff_mat_bij.
+  - elim: m Hi => [ | m IH] Hi ; rewrite /sum_n -/sum_n.
+    apply lt_n_Sm_le, le_n_0_eq in Hi.
+    rewrite -Hi => {i Hi} /=.
+    by apply nc_mult_one_l.
+  - apply le_lt_eq_dec in Hi ; case: Hi => Hi.
+    replace (Mone_seq i (S m) : T) with (zero : T).
+    rewrite nc_mult_zero_l plus_zero_r.
+    apply lt_n_Sm_le in Hi.
+    by apply IH.
+    apply lt_S_n in Hi.
+    clear -Hi ;
+    elim: (S m) i Hi => {m} [ | m IH] ;
+    case => [ | i] //= Hi.
+    by apply lt_n_O in Hi.
+    by apply IH, lt_S_n.
+  - apply eq_add_S in Hi.
+    rewrite Hi => /= {i Hi IH}.
+    replace (Mone_seq m m : T) with (nc_one : T).
+    rewrite nc_mult_one_l.
+    apply plus_reg_r with (opp (A (S m) j)).
+    rewrite -plus_assoc plus_opp_r plus_zero_r.
+  - elim: m {2 3}(m) (le_refl m) => {n Hj} [ | n IH] m Hm ;
+    rewrite /sum_n -/sum_n.
+    by apply nc_mult_zero_l.
+    replace (Mone_seq m n : T) with (zero : T).
+    rewrite nc_mult_zero_l plus_zero_r.
+    apply IH.
+    by apply le_trans with (1 := le_n_Sn _).
+    clear -Hm ; destruct m.
+    by apply le_Sn_O in Hm.
+    apply le_S_n in Hm.
+    elim: n m Hm => [ | n IH] ;
+    case => [ | m] Hm //=.
+    by apply le_Sn_O in Hm.
+    apply IH.
+    by apply le_S_n.
+    by elim: m.
+Qed.
+
+Lemma Mmult_distr_r {T m n k} {RT : ncRing T} :
+  forall (A B : @matrix T m n) (C : @matrix T n k),
+  Mmult (plus A B) C = plus (Mmult A C) (Mmult B C).
+Proof.
+  intros A B C.
+  unfold Mmult, plus ; simpl ; unfold Mplus.
+  apply mk_matrix_ext => i j Hi Hj.
+  rewrite ?coeff_mat_bij => //=.
+  rewrite -sum_n_plus.
+  destruct n ; simpl.
+  unfold coeff_mat ; simpl.
+  by rewrite ?nc_mult_zero_l plus_zero_l.
+  apply sum_n_ext_aux => l Hl.
+  rewrite ?coeff_mat_bij => //=.
+  by apply nc_mult_distr_r.
+Qed.
+
+Lemma Mmult_distr_l {T m n k} {RT : ncRing T} : 
+  forall (A : @matrix T m n) (B C : @matrix T n k),
+  Mmult A (plus B C) = plus (Mmult A B) (Mmult A C).
+Proof.
+  intros A B C.
+  unfold Mmult, plus ; simpl ; unfold Mplus.
+  apply mk_matrix_ext => i j Hi Hj.
+  rewrite ?coeff_mat_bij => //=.
+  rewrite -sum_n_plus.
+  destruct n ; simpl.
+  unfold coeff_mat ; simpl.
+  by rewrite ?nc_mult_zero_l plus_zero_l.
+  apply sum_n_ext_aux => l Hl.
+  rewrite ?coeff_mat_bij => //=.
+  by apply nc_mult_distr_l.
+Qed.
+
+Global Instance ncRing_matrix {T n} :
+  ncRing T -> ncRing (@matrix T n n).
+Proof.
+  intros RT.
+  apply Build_ncRing with (AbelianGroup_matrix _ _ _).
+  apply Build_ncRing_mixin with Mmult Mone.
+  + by apply Mmult_assoc.
+  + by apply Mmult_one_r.
+  + by apply Mmult_one_l.
+  + by apply Mmult_distr_r.
+  + by apply Mmult_distr_l.
+Defined.
+
 
 (** ** Fields *)
 
@@ -1335,6 +1721,18 @@ Proof.
 intros V K FK VV u.
 rewrite scal_opp_l.
 now rewrite scal_one.
+Qed.
+
+Lemma sum_n_scal_l {T K} {RK : ncRing K} {MT : VectorSpace T K} :
+ forall (a : K) (u : nat -> T) (n : nat),
+  sum_n (fun k => scal a (u k)) n = scal a (sum_n u n).
+Proof.
+  intros a u n.
+  induction n ; simpl.
+  by [].
+  rewrite IHn.
+  apply eq_sym.
+  by apply scal_distr_l.
 Qed.
 
 Lemma filterlim_opp_2 {K} {V} {FK : ncRing K} {VV : MetricVectorSpace V K}: forall (x:V), 
