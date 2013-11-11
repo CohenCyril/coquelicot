@@ -1609,6 +1609,28 @@ Proof.
     now move: Hyv ; apply ball_le, Rmin_r.
 Defined.
 
+Global Instance NormedVectorSpace_prod :
+  forall {U V K} {FK : AbsField K} (VU : NormedVectorSpace U K) (VV : NormedVectorSpace V K),
+  NormedVectorSpace (U * V) K.
+Proof.
+  intros U V K FK VU VV.
+  apply Build_NormedVectorSpace with (AbelianGroup_prod _ _) (VectorSpace_mixin_prod _ _).
+  apply Build_NormedVectorSpace_mixin with (fun x => Rmax (norm (fst x)) (norm (snd x))).
+  - intros x y ; simpl.
+    apply Rmax_case.
+    apply Rle_trans with (norm (fst x) + norm (fst y)).
+    by apply @norm_triangle.
+    apply Rplus_le_compat ; by apply Rmax_l.
+    apply Rle_trans with (norm (snd x) + norm (snd y)).
+    by apply @norm_triangle.
+    apply Rplus_le_compat ; by apply Rmax_r.
+  - intros l x ; simpl.
+    rewrite ?norm_scal.
+    rewrite Rmult_max_distr_l.
+    by [].
+    by apply abs_ge_0.
+Defined.
+
 (** ** Iterated Products *)
 
 Fixpoint Tn (n : nat) (T : Type) : Type :=
