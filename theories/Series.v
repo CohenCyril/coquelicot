@@ -33,6 +33,8 @@ Qed.
 
 (** * Definitions *)
 
+
+
 Definition is_series {K} {V} {FK : ncRing K} {VV : MetricVectorSpace V K} (a : nat -> V) (l : V) :=
    filterlim (sum_n a) (eventually) (locally l).
 
@@ -43,8 +45,10 @@ Definition Series (a : nat -> R) : R :=
    real (Lim_seq (sum_n a)).
 
 Lemma ex_series_dec (a : nat -> R) :
-  {ex_series a} + {~ex_series a}.
+  let VV := Normed_MetricVectorSpace (AbsField_NormedVectorSpace _ R_metric_field) in
+  {@ex_series _ _ _ VV a} + {~ @ex_series _ _ _ VV a}.
 Proof.
+  intro VV.
   case: (ex_lim_seq_dec (sum_n a)) => H.
   apply Lim_seq_correct in H.
   case: (Lim_seq (sum_n a)) H => [l | | ] H.
@@ -63,16 +67,19 @@ Proof.
 Qed.
 
 Lemma is_series_unique (a : nat -> R) (l : R) :
-  is_series a l -> Series a = l.
+  let VV := Normed_MetricVectorSpace (AbsField_NormedVectorSpace _ R_metric_field) in
+  @is_series _ _ _ VV a l -> Series a = l.
 Proof.
-  move => Ha.
+  move => VV Ha.
   replace l with (real (Finite l)) by auto.
   apply (f_equal real).
   by apply is_lim_seq_unique.
 Qed.
 Lemma Series_correct (a : nat -> R) :
-  ex_series a -> is_series a (Series a).
+  let VV := Normed_MetricVectorSpace (AbsField_NormedVectorSpace _ R_metric_field) in
+  @ex_series _ _ _ VV a -> @is_series _ _ _ VV a (Series a).
 Proof.
+  intro ;
   case => l Ha.
   by rewrite (is_series_unique a l).
 Qed.
@@ -85,7 +92,8 @@ match goal with
 end.
 
 Lemma is_series_equiv (a : nat -> R) (l : R) :
-  is_series a l <-> infinite_sum a l.
+  let VV := Normed_MetricVectorSpace (AbsField_NormedVectorSpace _ R_metric_field) in
+  @is_series _ _ _ VV a l <-> infinite_sum a l.
 Proof.
   split => H.
   apply (is_lim_seq_spec _ l) in H.
@@ -103,9 +111,10 @@ Proof.
 Qed.
 
 Lemma ex_series_equiv_0 (a : nat -> R) :
-  ex_series a -> { l:R | Un_cv (fun N:nat => sum_f_R0 a N) l }.
+  let VV := Normed_MetricVectorSpace (AbsField_NormedVectorSpace _ R_metric_field) in
+  @ex_series _ _ _ VV a -> { l:R | Un_cv (fun N:nat => sum_f_R0 a N) l }.
 Proof.
-  move => H ;
+  move => VV H ;
   exists (Series a) ; case: H => l H.
   replace (Series a) with l.
   move => e He ; set eps := mkposreal e He.
@@ -122,8 +131,10 @@ Proof.
 Qed.
 
 Lemma ex_series_equiv_1 (a : nat -> R) :
-  { l:R | Un_cv (fun N:nat => sum_f_R0 a N) l } -> ex_series a.
+  let VV := Normed_MetricVectorSpace (AbsField_NormedVectorSpace _ R_metric_field) in
+  { l:R | Un_cv (fun N:nat => sum_f_R0 a N) l } -> @ex_series _ _ _ VV a.
 Proof.
+  intro ;
   case => l H.
   exists l.
   apply (is_lim_seq_spec _ l).
@@ -260,7 +271,8 @@ Proof.
   apply is_series_decr_1.
   now rewrite <- plus_assoc, plus_opp_r, plus_zero_r.
 Qed.
-Lemma ex_series_decal_n (a : nat -> R) (n : nat) :
+Lemma ex_series_decal_n  {K} {V} {FK : ncRing K} {VV : MetricVectorSpace V K}
+  (a : nat -> V) (n : nat) :
   ex_series a <-> ex_series (fun k => a (n + k)%nat).
 Proof.
   case: n => [ | n].
@@ -277,19 +289,23 @@ Proof.
 Qed.
 
 Lemma Series_decal_1 (a : nat -> R) :
-  ex_series a -> Series a = a O + Series (fun k => a (S k)).
+  let VV := Normed_MetricVectorSpace (AbsField_NormedVectorSpace _ R_metric_field) in
+  @ex_series _ _ _ VV a -> Series a = a O + Series (fun k => a (S k)).
 Proof.
-  move => Ha.
+  move => VV Ha.
   apply is_series_unique.
   rewrite Rplus_comm.
   apply is_series_decr_1.
   unfold plus; simpl; ring_simplify (Series (fun k : nat => a (S k)) + a 0%nat +- a 0%nat).
-  by apply Series_correct, (ex_series_decal_1 a).
+  apply Series_correct.
+  by apply (@ex_series_decal_1 _ _ _ VV a).
 Qed.
 Lemma Series_decal_n (a : nat -> R) (n : nat) :
-  (0 < n)%nat -> ex_series a
+  let VV := Normed_MetricVectorSpace (AbsField_NormedVectorSpace _ R_metric_field) in
+  (0 < n)%nat -> @ex_series _ _ _ VV a
     -> Series a = sum_f_R0 a (pred n)  + Series (fun k => a (n + k)%nat).
 Proof.
+  intro ;
   move => Hn Ha.
   apply is_series_unique.
   rewrite Rplus_comm.
@@ -298,7 +314,8 @@ Proof.
   unfold plus; simpl; rewrite sum_n_sum_f_R0.
   ring_simplify (Series (fun k : nat => a (n+ k)%nat) + sum_f_R0 a (pred n) +-
    sum_f_R0 a (pred n)).
-  by apply Series_correct, (ex_series_decal_n a).
+  apply Series_correct.
+  by apply (@ex_series_decal_n _ _ _ VV a).
 Qed.
 
 Lemma Series_decal_1_aux (a : nat -> R) :
@@ -329,7 +346,8 @@ Qed.
 (** * Convergence theorems *)
 
 Lemma Cauchy_ex_series (a : nat -> R) :
-  ex_series a <-> (Cauchy_crit_series a).
+  let VV := Normed_MetricVectorSpace (AbsField_NormedVectorSpace _ R_metric_field) in
+  @ex_series _ _ _ VV a <-> (Cauchy_crit_series a).
 Proof.
   split => Hcv.
   by apply cv_cauchy_1, ex_series_equiv_0.
@@ -339,9 +357,10 @@ Proof.
 Qed.
 
 Lemma ex_series_lim_0 (a : nat -> R) :
-  ex_series a -> is_lim_seq a 0.
+  let VV := Normed_MetricVectorSpace (AbsField_NormedVectorSpace _ R_metric_field) in
+  @ex_series _ _ _ VV a -> is_lim_seq a 0.
 Proof.
-  intros Hs.
+  intros VV Hs.
   apply is_lim_seq_spec.
   intros eps.
   apply Cauchy_ex_series in Hs.
@@ -356,19 +375,21 @@ Proof.
 Qed.
 
 Lemma ex_series_Rabs (a : nat -> R) :
-  ex_series (fun n => Rabs (a n)) -> ex_series a.
+  let VV := Normed_MetricVectorSpace (AbsField_NormedVectorSpace _ R_metric_field) in
+  @ex_series _ _ _ VV (fun n => Rabs (a n)) -> @ex_series _ _ _ VV a.
 Proof.
-  move => H.
+  move => VV H.
   apply Cauchy_ex_series.
   apply cauchy_abs.
   by apply Cauchy_ex_series.
 Qed.
 
 Lemma Series_Rabs (a : nat -> R) :
-  ex_series (fun n => Rabs (a n)) ->
+  let VV := Normed_MetricVectorSpace (AbsField_NormedVectorSpace _ R_metric_field) in
+  @ex_series _ _ _ VV (fun n => Rabs (a n)) ->
     Rabs (Series a) <= Series (fun n => Rabs (a n)).
 Proof.
-  move => Hra.
+  move => VV Hra.
   have Ha := (ex_series_Rabs a Hra).
   case: Hra => lra Hra.
   case: Ha => la Ha.
@@ -393,10 +414,11 @@ Qed.
 (** Comparison *)
 
 Lemma Comp_ex_series (a b : nat -> R) :
+  let VV := Normed_MetricVectorSpace (AbsField_NormedVectorSpace _ R_metric_field) in
    (forall n : nat, 0 <= a n <= b n) ->
-   ex_series b -> ex_series a.
+   @ex_series _ _ _ VV b -> @ex_series _ _ _ VV a.
 Proof.
-  move => H Hb.
+  move => VV H Hb.
   apply Cauchy_ex_series.
   apply Cauchy_ex_series in Hb.
   move => e He.
@@ -432,10 +454,11 @@ Proof.
 Qed.
 
 Lemma Series_compar (a b : nat -> R) :
+  let VV := Normed_MetricVectorSpace (AbsField_NormedVectorSpace _ R_metric_field) in
   (forall n : nat, 0 <= a n <= b n) ->
-   ex_series b -> Series a <= Series b.
+   @ex_series _ _ _ VV b -> Series a <= Series b.
 Proof.
-  move => Hn Hb.
+  move => VV Hn Hb.
   have Ha := (Comp_ex_series _ _ Hn Hb).
   apply Lim_seq_correct' in Ha.
   apply Lim_seq_correct' in Hb.
@@ -510,12 +533,13 @@ Proof.
   by apply is_series_plus.
 Qed.
 Lemma Series_plus (a b : nat -> R) :
-  ex_series a -> ex_series b
+  let VV := Normed_MetricVectorSpace (AbsField_NormedVectorSpace _ R_metric_field) in
+  @ex_series _ _ _ VV a -> @ex_series _ _ _ VV b
     -> Series (fun n => a n + b n) = Series a + Series b.
 Proof.
-  intros Ha Hb.
+  intros VV Ha Hb.
   replace (Series a + Series b) with (real (Series a + Series b)) by auto.
-  apply (f_equal real), is_lim_seq_unique, is_series_plus ;
+  apply (f_equal real), is_lim_seq_unique, (@is_series_plus _ _ _ VV) ;
   by apply Series_correct.
 Qed.
 
@@ -536,14 +560,15 @@ Proof.
   apply ex_series_opp => //.
 Qed.
 Lemma Series_minus (a b : nat -> R) :
-  ex_series a -> ex_series b
+  let VV := Normed_MetricVectorSpace (AbsField_NormedVectorSpace _ R_metric_field) in
+  @ex_series _ _ _ VV a -> @ex_series _ _ _ VV b
     -> Series (fun n => a n - b n) = Series a - Series b.
 Proof.
-  intros Ha Hb.
+  intros VV Ha Hb.
   rewrite Series_plus => //.
   rewrite Series_opp => //.
   apply ex_series_opp in Hb.
-  now simpl in *.
+  now simpl in Hb.
 Qed.
 
 (** Multiplication by a scalar *)
@@ -602,18 +627,20 @@ Qed.
 
 
 Lemma is_series_scal_r (c : R) (a : nat -> R) (l : R) :
-  is_series a l -> is_series (fun n => (a n) * c) (l * c).
+  let VV := Normed_MetricVectorSpace (AbsField_NormedVectorSpace _ R_metric_field) in
+  @is_series _ _ _ VV a l -> @is_series _ _ _ VV (fun n => (a n) * c) (l * c).
 Proof.
-  move => Ha.
+  move => VV Ha.
   rewrite Rmult_comm.
   apply is_series_ext with (fun n : nat => c * a n).
   move => n ; apply Rmult_comm.
   apply (is_series_scal_l _ _ _ Ha).
 Qed.
 Lemma ex_series_scal_r (c : R) (a : nat -> R) :
-  ex_series a -> ex_series (fun n => a n * c).
+  let VV := Normed_MetricVectorSpace (AbsField_NormedVectorSpace _ R_metric_field) in
+  @ex_series _ _ _ VV a -> @ex_series _ _ _ VV (fun n => a n * c).
 Proof.
-  move => [l Ha].
+  move => VV [l Ha].
   exists (l * c).
   by apply is_series_scal_r.
 Qed.
@@ -627,11 +654,12 @@ Proof.
 Qed.
 
 Lemma is_series_mult_pos (a b : nat -> R) (la lb : R) :
-  is_series a la -> is_series b lb ->
+  let VV := Normed_MetricVectorSpace (AbsField_NormedVectorSpace _ R_metric_field) in
+  @is_series _ _ _ VV a la -> @is_series _ _ _ VV b lb ->
   (forall n, 0 <= a n) -> (forall n, 0 <= b n)
-  -> is_series (fun n => sum_f_R0 (fun k => a k * b (n - k)%nat) n) (la * lb).
+  -> @is_series _ _ _ VV (fun n => sum_f_R0 (fun k => a k * b (n - k)%nat) n) (la * lb).
 Proof.
-  move => Hla Hlb Ha Hb.
+  move => VV Hla Hlb Ha Hb.
 
   have H0 : forall n,
     sum_f_R0 (fun k : nat => sum_f_R0 (fun p : nat => a p * b (k - p)%nat) k) n
@@ -780,11 +808,12 @@ Proof.
 Qed.
 
 Lemma is_series_mult (a b : nat -> R) (la lb : R) :
-  is_series a la -> is_series b lb
-  -> ex_series (fun n => Rabs (a n)) -> ex_series (fun n => Rabs (b n))
-  -> is_series (fun n => sum_f_R0 (fun k => a k * b (n - k)%nat) n) (la * lb).
+  let VV := Normed_MetricVectorSpace (AbsField_NormedVectorSpace _ R_metric_field) in
+  @is_series _ _ _ VV a la -> @is_series _ _ _ VV b lb
+  -> @ex_series _ _ _ VV (fun n => Rabs (a n)) -> @ex_series _ _ _ VV (fun n => Rabs (b n))
+  -> @is_series _ _ _ VV (fun n => sum_f_R0 (fun k => a k * b (n - k)%nat) n) (la * lb).
 Proof.
-  move => Hla Hlb Ha Hb.
+  move => VV Hla Hlb Ha Hb.
 
   set ap := fun n => (a n + Rabs (a n)) / 2.
   set am := fun n => - (a n - Rabs (a n)) / 2.
@@ -796,9 +825,9 @@ Proof.
     rewrite Rplus_comm ; apply Rle_minus_l ; rewrite Rminus_0_l.
     apply Rabs_maj2.
     by apply Rlt_0_2.
-  assert (Sap : ex_series ap).
+  assert (Sap : @ex_series _ _ _ VV ap).
     apply ex_series_scal_r.
-    apply: ex_series_plus => //.
+    apply (@ex_series_plus _ _ _ VV) => //.
     by exists la.
   have Ham : forall n, 0 <= am n.
     move => n ; apply Rdiv_le_0_compat.
@@ -806,19 +835,19 @@ Proof.
     apply (Rminus_le_0 (a _)).
     by apply Rle_abs.
     by apply Rlt_0_2.
-  assert (Sam : ex_series am).
+  assert (Sam : @ex_series _ _ _ VV am).
     apply ex_series_scal_r.
-    apply: ex_series_opp.
-    apply: ex_series_minus => //.
+    apply @ex_series_opp.
+    apply @ex_series_minus => //.
     by exists la.
   have Hbp : forall n, 0 <= bp n.
     move => n ; apply Rdiv_le_0_compat.
     rewrite Rplus_comm ; apply Rle_minus_l ; rewrite Rminus_0_l.
     apply Rabs_maj2.
     by apply Rlt_0_2.
-  assert (Sbp : ex_series bp).
+  assert (Sbp : @ex_series _ _ _ VV bp).
     apply ex_series_scal_r.
-    apply: ex_series_plus => //.
+    apply @ex_series_plus => //.
     by exists lb.
   have Hbm : forall n, 0 <= bm n.
     move => n ; apply Rdiv_le_0_compat.
@@ -826,10 +855,10 @@ Proof.
     apply (Rminus_le_0 (b _)).
     by apply Rle_abs.
     by apply Rlt_0_2.
-  assert (Sbm : ex_series bm).
+  assert (Sbm : @ex_series _ _ _ VV bm).
     apply ex_series_scal_r.
-    apply: ex_series_opp.
-    apply: ex_series_minus => //.
+    apply @ex_series_opp.
+    apply @ex_series_minus => //.
     by exists lb.
 
   apply is_series_ext with (fun n => sum_f_R0 (fun k : nat => ap k * bp (n - k)%nat) n
@@ -841,9 +870,9 @@ Proof.
   apply sum_eq => k _.
   rewrite /ap /am /bp /bm ; field.
   replace (la*lb) with ((Series ap*Series bp-Series am*Series bp-Series ap*Series bm)+Series am*Series bm).
-  apply: is_series_plus.
-  apply: is_series_minus.
-  apply: is_series_minus.
+  apply @is_series_plus.
+  apply @is_series_minus.
+  apply @is_series_minus.
   apply is_series_mult_pos => // ; by apply Series_correct.
   apply is_series_mult_pos => // ; by apply Series_correct.
   apply is_series_mult_pos => // ; by apply Series_correct.
@@ -860,11 +889,12 @@ Qed.
 (** * D'Alembert criterion *)
 
 Lemma ex_series_DAlembert (a : nat -> R) (k : R) :
+  let VV := Normed_MetricVectorSpace (AbsField_NormedVectorSpace _ R_metric_field) in
   k < 1 -> (forall n, a n <> 0)
     -> is_lim_seq (fun n => Rabs (a (S n) / a n)) k
-      -> ex_series (fun n => Rabs (a n)).
+      -> @ex_series _ _ _ VV (fun n => Rabs (a n)).
 Proof.
-  move => Hk Ha H.
+  move => VV Hk Ha H.
   have : exists N, forall n, (N <= n)%nat -> Rabs (a (S n) / a n) <= (k+1)/2.
     apply is_lim_seq_spec in H.
     case: (fun He => H (mkposreal ((1-k)/2) He)).
@@ -898,7 +928,7 @@ Proof.
   rewrite -Rabs_mult ; apply f_equal.
   rewrite plus_n_Sm ; field ; split ; by apply Ha.
   by apply Ha.
-  apply: ex_series_scal_l.
+  apply @ex_series_scal_l.
   set k0 := ((k + 1) / 2).
   exists (/(1-k0) * (1-k0*0)).
   apply filterlim_ext with (fun N => / (1 - k0) * (1 - k0 ^ S N)). 
@@ -982,9 +1012,10 @@ Qed.
 (** * Geometric series *)
 
 Lemma is_series_geom (q : R) :
-  Rabs q < 1 -> is_series (fun n => q ^ n) (/ (1-q)).
+  let VV := Normed_MetricVectorSpace (AbsField_NormedVectorSpace _ R_metric_field) in
+  Rabs q < 1 -> @is_series _ _ _ VV (fun n => q ^ n) (/ (1-q)).
 Proof.
-  move => Hq.
+  move => VV Hq.
   apply filterlim_ext with (fun n => (1-q^(S n)) / (1-q)).
   move => n.
   rewrite sum_n_sum_f_R0; rewrite tech3.
@@ -1004,7 +1035,8 @@ Proof.
   simpl; ring.  
 Qed.
 Lemma ex_series_geom (q : R) :
-  Rabs q < 1 -> ex_series (fun n => q ^ n).
+  let VV := Normed_MetricVectorSpace (AbsField_NormedVectorSpace _ R_metric_field) in
+  Rabs q < 1 -> @ex_series _ _ _ VV (fun n => q ^ n).
 Proof.
   move => Hq.
   exists (/(1-q)).

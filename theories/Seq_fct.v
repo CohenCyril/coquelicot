@@ -842,7 +842,8 @@ Lemma CVN_CVU_r (fn : nat -> R -> R) (r : posreal) :
     CVU (fun n => SP fn n) (fun x => Series (fun n => fn n x)) x e.
 Proof.
   case => An [l [H H0]] x Hx.
-  assert (H1 : ex_series An).
+  set VV := Normed_MetricVectorSpace (AbsField_NormedVectorSpace _ R_metric_field).
+  assert (H1 : @ex_series _ _ _ VV An).
     apply ex_series_equiv_1.
     exists l => e He.
     case: (H e He) => {H} N H.
@@ -884,7 +885,7 @@ Proof.
     apply Lim_seq_correct', H1.
     easy.
 
-  assert (H3 : forall y, Boule 0 r y -> ex_series (fun n => Rabs (fn n y))).
+  assert (H3 : forall y, Boule 0 r y -> @ex_series _ _ _ VV (fun n => Rabs (fn n y))).
   move => y Hy.
   move: H1 ; apply Comp_ex_series.
   move => n ; split.
@@ -1084,7 +1085,7 @@ wlog: a b h Hfh / (a <= b) => [Hw | Hab].
   by apply opp_opp.
   eapply (filterlim_compose _ _ _ (fun x => opp (h x)) opp).
   by apply Hfh'.
-  by generalize (filterlim_opp_2 If).
+  now generalize (@filterlim_opp_2 _ _ _ (Normed_MetricVectorSpace _) If).
   by apply is_RInt_swap.
 
 case: Hab => Hab.

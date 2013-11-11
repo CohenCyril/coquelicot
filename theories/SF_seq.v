@@ -62,6 +62,9 @@ Proof.
   apply SSR_leq, le_S_n ; rewrite -Hs => //.
 Qed.
 
+Definition seq_step (s : seq R) :=
+  foldr Rmax 0 (pairmap (fun x y => Rabs (Rminus y x)) (head 0 s) (behead s)).
+
 (** ** Constructors *)
 
 Definition SF_nil {T : Type} (x0 : R) : @SF_seq T := mkSF_seq x0 [::].
@@ -691,6 +694,37 @@ Proof.
   intuition.
 Qed.
 
+(** * Pointed subdivision *)
+
+Definition pointed_subdiv (ptd : @SF_seq R) :=
+  forall i : nat, (i < SF_size ptd)%nat ->
+    nth 0 (SF_lx ptd) i <= nth 0 (SF_ly ptd) i <= nth 0 (SF_lx ptd) (S i).
+
+Lemma ptd_cons h s : pointed_subdiv (SF_cons h s) -> pointed_subdiv s.
+Proof.
+  move => H i Hi ; apply (H (S i)) ; rewrite SF_size_cons ; intuition.
+Qed.
+Lemma ptd_sort ptd :
+  pointed_subdiv ptd -> SF_sorted Rle ptd.
+Proof.
+  apply SF_cons_ind with (s := ptd) => {ptd} [x0 | [x0 y0] ptd] ;
+  [ | apply SF_cons_dec with (s := ptd) => {ptd} [ x1 | [x1 y1] ptd] IH] =>
+  Hptd ; try split => //=.
+  apply Rle_trans with y0 ; apply (Hptd O) ; rewrite SF_size_cons ; apply lt_O_Sn.
+  apply Rle_trans with y0 ; apply (Hptd O) ; rewrite SF_size_cons ; apply lt_O_Sn.
+  apply IH, (ptd_cons (x0,y0)) => //.
+Qed.
+Lemma ptd_sort' ptd :
+  pointed_subdiv ptd -> sorted Rle (SF_ly ptd).
+Proof.
+  apply SF_cons_ind with (s := ptd) => {ptd} [x0 | [x0 y0] ptd] ;
+  [ | apply SF_cons_dec with (s := ptd) => {ptd} [ x1 | [x1 y1] ptd] IH] =>
+  Hptd ; try split.
+  apply Rle_trans with x1 ; [apply (Hptd O) | apply (Hptd 1%nat)] ;
+  rewrite ?SF_size_cons ; repeat apply lt_n_S ; apply lt_O_Sn.
+  apply IH, (ptd_cons (x0,y0)) => //.
+Qed.
+
 (** ** From SF_seq to StepFun *)
 
 Lemma ad_SF_compat (s : SF_seq) (pr : SF_sorted Rle s) :
@@ -755,94 +789,318 @@ Qed.
 
 (** Chasles Theorem *)
 
-Fixpoint seq_cut_down {T : Type} (s : seq (R*T)) (x : R) (x0 : T) : seq (R*T) :=
+Fixpoint seq_cut_down (s : seq (R*R)) (x : R) : seq (R*R) :=
+  match s with
+    | [::] => [:: (x,x)]
+    | h :: t =>
+        match Rle_dec (fst h) x with
+          | right _ => [:: (x,Rmin (snd h) x)]
+          | left _ => h :: (seq_cut_down t x)
+        end
+  end.
+Fixpoint seq_cut_up (s : seq (R*R)) (x : R) : seq (R*R) :=
+  match s with
+    | [::] => [:: (x,x)]
+    | h :: t =>
+        match Rle_dec (fst h) x with
+          | right _ => (x,x)::(fst h,Rmax (snd h) x)::t
+          | left _ => seq_cut_up t x
+        end
+  end.
+
+(* Lemma seq_cut_correct (s : seq (R*R)) (x : R) :
+  Rcomplements.belast (seq_cut_down s x) ++ behead (seq_cut_up s x) = s.
+Proof.
+  case: s => [ | h0 s] //= ; case: Rle_dec => H0 //=.
+  elim: s h0 H0 => [ | h1 s IH] h0 H0 //= ; case: Rle_dec => H1 //=.
+  by rewrite (IH h1).
+Qed. *)
+
+Lemma seq_cut_up_head (s : seq (R*R)) x z :
+  fst (head z (seq_cut_up s x)) = x.
+Proof.
+    elim: s x ; simpl ; intuition ; simpl.
+    case: Rle_dec => //= H0.
+Qed.
+Lemma seq_cut_up_behead (s : seq (R*R)) x :
+  behead (seq_cut_up s x) = behead (seq_cut_up s x).
+Proof.
+  elim: s x ; simpl ; intuition.
+Qed.
+
+
+Definition SF_cut_down (sf : @SF_seq R) (x : R) :=
+  let s := seq_cut_down ((SF_h sf,SF_h sf) :: (SF_t sf)) x in
+  mkSF_seq (fst (head (SF_h sf,SF_h sf) s)) (behead s).
+Definition SF_cut_up (sf : @SF_seq R) (x : R) :=
+  let s := seq_cut_up ((SF_h sf,SF_h sf) :: (SF_t sf)) x in
+  mkSF_seq (fst (head (SF_h sf,SF_h sf) s)) (behead s).
+
+Lemma SF_cut_down_step s x eps :
+  SF_h s <= x <= last (SF_h s) (SF_lx s) ->
+  seq_step (SF_lx s) < eps
+    -> seq_step (SF_lx (SF_cut_down s x)) < eps.
+Proof.
+  unfold SF_cut_down, seq_step ; simpl.
+  case => Hh Hl.
+  case: Rle_dec => //= _.
+  move: Hh Hl ;
+  apply SF_cons_ind with (s := s) => {s} [ x1 | [x1 y0] s IH ] /= Hx Hh Hl.
+  rewrite (Rle_antisym _ _ Hx Hh) Rminus_eq_0 Rabs_R0.
+  rewrite /Rmax ; by case: Rle_dec.
+  case: Rle_dec => //= Hx'.
+  apply Rmax_case.
+  apply Rle_lt_trans with (2 := Hl) ; by apply Rmax_l.
+  apply IH ; try assumption.
+  apply Rle_lt_trans with (2 := Hl) ; by apply Rmax_r.
+  apply Rle_lt_trans with (2 := Hl).
+  apply Rmax_case ;
+  apply Rle_trans with (2 := Rmax_l _ _).
+  rewrite ?Rabs_pos_eq.
+  apply Rplus_le_compat_r.
+  by apply Rlt_le, Rnot_le_lt.
+  rewrite -Rminus_le_0.
+  apply Rle_trans with x.
+  by [].
+  by apply Rlt_le, Rnot_le_lt.
+  by rewrite -Rminus_le_0.
+  by apply Rabs_pos.
+Qed.
+Lemma SF_cut_up_step s x eps :
+  SF_h s <= x <= last (SF_h s) (SF_lx s) ->
+  seq_step (SF_lx s) < eps
+    -> seq_step (SF_lx (SF_cut_up s x)) < eps.
+Proof.
+  unfold SF_cut_down, seq_step ; simpl.
+  case => Hh Hl.
+  case: Rle_dec => //= _.
+  move: {4 5}(SF_h s) Hh Hl ;
+  apply SF_cons_ind with (s := s) => {s} [ x1 | [x1 y0] s IH ] /= x0 Hh Hl He.
+  by apply He.
+  case: Rle_dec => //= Hx.
+  apply (IH x0) => //=.
+  apply Rle_lt_trans with (2 := He).
+  by apply Rmax_r.
+  apply Rle_lt_trans with (2 := He).
+  apply Rnot_le_lt in Hx.
+  apply Rmax_case.
+  apply Rle_trans with (2 := Rmax_l _ _).
+  rewrite ?Rabs_pos_eq.
+  by apply Rplus_le_compat_l, Ropp_le_contravar.
+  rewrite -Rminus_le_0 ; by apply Rlt_le, Rle_lt_trans with x.
+  rewrite -Rminus_le_0 ; by apply Rlt_le.
+  by apply Rmax_r.
+Qed.
+Lemma SF_cut_down_pointed s x :
+  SF_h s <= x -> pointed_subdiv s
+  -> pointed_subdiv (SF_cut_down s x).
+Proof.
+  unfold SF_cut_down ; simpl.
+  case: Rle_dec => //= _.
+  apply SF_cons_ind with (s := s) => {s} [ x0 | [x1 y1] s IH] /= Hx0 H.
+  move => i /= Hi.
+  unfold SF_size in Hi ; simpl in Hi.
+  apply lt_n_Sm_le, le_n_O_eq in Hi.
+  rewrite -Hi ; simpl ; split.
+  by [].
+  by apply Rle_refl.
+  case: Rle_dec => //= Hx1.
+  move: (H O (lt_O_Sn _)) => /= H0.
+  apply ptd_cons in H.
+  move: (IH Hx1 H) => {IH} IH.
+  destruct i ; simpl => /= Hi.
+  by apply H0.
+  apply (IH i).
+  apply lt_S_n, Hi.
+  move => i /= Hi.
+  unfold SF_size in Hi ; simpl in Hi.
+  apply lt_n_Sm_le, le_n_O_eq in Hi.
+  rewrite -Hi ; simpl ; split.
+  apply Rmin_case.
+  apply (H O).
+  by apply lt_O_Sn.
+  by [].
+  by apply Rmin_r.
+Qed.
+Lemma SF_cut_up_pointed s x :
+  SF_h s <= x ->
+  pointed_subdiv s
+  -> pointed_subdiv (SF_cut_up s x).
+Proof.
+  unfold SF_cut_up ; simpl.
+  case: Rle_dec => //= _.
+  move: {2 3}(SF_h s) ;
+  apply SF_cons_ind with (s := s) => {s} [ x1 | [x1 y0] s IH] /= x0 Hx0 H i Hi.
+  by apply lt_n_O in Hi.
+  destruct (Rle_dec (SF_h s) x) as [Hx1|Hx1].
+  apply IH => //=.
+  move: H ; by apply ptd_cons.
+  destruct i ; simpl.
+  split.
+  by apply Rmax_r.
+  apply Rmax_case.
+  by apply (H O), lt_O_Sn.
+  by apply Rlt_le, Rnot_le_lt.
+  apply (H (S i)), Hi.
+Qed.
+Lemma SF_cut_down_h s x :
+  SF_h s <= x -> SF_h (SF_cut_down s x) = SF_h s.
+Proof.
+  unfold SF_cut_down ; simpl.
+  by case: Rle_dec.
+Qed.
+Lemma SF_cut_up_h s x :
+  SF_h (SF_cut_up s x) = x.
+Proof.
+  unfold SF_cut_up ; simpl.
+  case: Rle_dec => //= ; simpl.
+  move: {2 3}(SF_h s) ;
+  apply SF_cons_ind with (s := s) => {s} [x1 | [x1 y1] s IH ] /= x0 Hx.
+  by [].
+  case: Rle_dec => //= Hx'.
+  by apply IH.
+Qed.
+Lemma SF_cut_down_l s x :
+  last (SF_h (SF_cut_down s x)) (SF_lx (SF_cut_down s x)) = x.
+Proof.
+  unfold SF_cut_down ; simpl.
+  case: Rle_dec => //= ; simpl.
+  apply SF_cons_ind with (s := s) => {s} [x1 | [x1 y1] s IH ] /= Hx.
+  by [].
+  case: Rle_dec => //= Hx'.
+Qed.
+Lemma SF_cut_up_l s x :
+  x <= last (SF_h s) (SF_lx s) ->
+  last (SF_h (SF_cut_up s x)) (SF_lx (SF_cut_up s x)) = last (SF_h s) (SF_lx s).
+Proof.
+  unfold SF_cut_down ; simpl.
+  case: Rle_dec => //=.
+  move: {3 4}(SF_h s);
+  apply SF_cons_ind with (s := s) => {s} [x1 | [x1 y1] s IH ] /= x0 Hx Hx'.
+  by apply Rle_antisym.
+  case: Rle_dec => //= {Hx} Hx.
+  by apply IH.
+Qed.
+
+Lemma SF_cut_down_cons_0 h ptd x :
+  x < fst h -> SF_cut_down (SF_cons h ptd) x = SF_nil x.
+Proof.
+  intros H0.
+  apply Rlt_not_le in H0.
+  rewrite /SF_cut_down /=.
+  by case: Rle_dec.
+Qed.
+Lemma SF_cut_up_cons_0 h ptd x :
+  x < fst h -> SF_cut_up (SF_cons h ptd) x = SF_cons (x,Rmax (fst h) x) (SF_cons h ptd).
+Proof.
+  intros H0.
+  apply Rlt_not_le in H0.
+  rewrite /SF_cut_up /=.
+  by case: Rle_dec.
+Qed.
+Lemma SF_cut_down_cons_1 h ptd x :
+  fst h <= x < SF_h ptd -> SF_cut_down (SF_cons h ptd) x = SF_cons (fst h, Rmin (snd h) x) (SF_nil x).
+Proof.
+  intros [H0 Hx0].
+  apply Rlt_not_le in Hx0.
+  rewrite /SF_cut_down /=.
+  case: Rle_dec => //= _.
+  by case: Rle_dec.
+Qed.
+Lemma SF_cut_up_cons_1 h ptd x :
+  fst h <= x < SF_h ptd -> SF_cut_up (SF_cons h ptd) x = SF_cons (x,Rmax (snd h) x) ptd.
+Proof.
+  intros [H0 Hx0].
+  apply Rlt_not_le in Hx0.
+  rewrite /SF_cut_up /=.
+  case: Rle_dec => //= _.
+  by case: Rle_dec.
+Qed.
+Lemma SF_cut_down_cons_2 h ptd x :
+  fst h <= SF_h ptd <= x -> SF_cut_down (SF_cons h ptd) x = SF_cons h (SF_cut_down ptd x).
+Proof.
+  intros [H0 Hx0].
+  rewrite /SF_cut_down /=.
+  case: Rle_dec (Rle_trans _ _ _ H0 Hx0) => //= _ _.
+  by case: Rle_dec.
+Qed.
+Lemma SF_cut_up_cons_2 h ptd x :
+  fst h <= SF_h ptd <= x -> SF_cut_up (SF_cons h ptd) x = SF_cut_up ptd x.
+Proof.
+  intros [H0 Hx0].
+  rewrite /SF_cut_up /=.
+  case: Rle_dec (Rle_trans _ _ _ H0 Hx0) => //= _ _.
+  case: Rle_dec => //= _.
+  move: {2 3}(SF_h ptd) Hx0 ;
+  apply SF_cons_ind with (s := ptd) => {ptd H0} [ x0 | [x0 y0] ptd IH ] //= x0' Hx0.
+  case: Rle_dec => //= Hx1.
+  by apply IH.
+Qed.
+
+Fixpoint seq_cut_down' {T : Type} (s : seq (R*T)) (x : R) (x0 : T) : seq (R*T) :=
   match s with
     | [::] => [:: (x,x0)]
     | h :: t =>
         match Rle_dec (fst h) x with
           | right _ => [:: (x,snd h)]
-          | left _ => h :: (seq_cut_down t x (snd h))
+          | left _ => h :: (seq_cut_down' t x (snd h))
         end
   end.
-Fixpoint seq_cut_up {T : Type} (s : seq (R*T)) (x : R) (x0 : T) : seq (R*T) :=
+Fixpoint seq_cut_up' {T : Type} (s : seq (R*T)) (x : R) (x0 : T) : seq (R*T) :=
   match s with
     | [::] => [:: (x,x0)]
     | h :: t =>
         match Rle_dec (fst h) x with
           | right _ => (x,x0)::h::t
-          | left _ => seq_cut_up t x (snd h)
+          | left _ => seq_cut_up' t x (snd h)
         end
   end.
-
-Lemma seq_cut_correct {T : Type} (s : seq (R*T)) (x : R) (x0 : T) :
-  Rcomplements.belast (seq_cut_down s x x0) ++ behead (seq_cut_up s x x0) = s.
-Proof.
-  case: s => [ | h0 s] //= ; case: Rle_dec => H0 //=.
-  elim: s h0 H0 => [ | h1 s IH] h0 H0 //= ; case: Rle_dec => H1 //=.
-  by rewrite (IH h1).
-Qed.
-
-Lemma seq_cut_up_head {T : Type} (s : seq (R*T)) x x0 z :
-  fst (head z (seq_cut_up s x x0)) = x.
-Proof.
-    elim: s x x0 ; simpl ; intuition.
-    case: Rle_dec => //= H.
-Qed.
-Lemma seq_cut_up_behead {T : Type} (s : seq (R*T)) x x0 x1 :
-  behead (seq_cut_up s x x0) = behead (seq_cut_up s x x1).
-Proof.
-  elim: s x x0 x1 ; simpl ; intuition.
-  case: Rle_dec => //= H.
-Qed.
-
-
-Definition SF_cut_down {T : Type} (x0 : T) (sf : @SF_seq T) (x : R) :=
-  let s := seq_cut_down ((SF_h sf,x0) :: (SF_t sf)) x x0 in
+Definition SF_cut_down' {T} (sf : @SF_seq T) (x : R) x0 :=
+  let s := seq_cut_down' ((SF_h sf,x0) :: (SF_t sf)) x x0 in
   mkSF_seq (fst (head (SF_h sf,x0) s)) (behead s).
-Definition SF_cut_up {T : Type} (x0 : T) (sf : @SF_seq T) (x : R) :=
-  let s := seq_cut_up ((SF_h sf,x0) :: (SF_t sf)) x x0 in
+Definition SF_cut_up' {T} (sf : @SF_seq T) (x : R) x0 :=
+  let s := seq_cut_up' ((SF_h sf,x0) :: (SF_t sf)) x x0 in
   mkSF_seq (fst (head (SF_h sf,x0) s)) (behead s).
 
-Lemma SF_cut_up_head {T : Type} (x0 : T) (sf : @SF_seq T) (x : R) :
-  SF_h (SF_cut_up x0 sf x) = x.
-Proof.
-  rewrite /SF_cut_up ; case: sf => h0 sf /=.
-  case: Rle_dec => //=.
-  elim: sf h0 x0 (h0, x0) => [ | h1 sf IH] h0' h0 x0 H0 //=.
-  case: Rle_dec => //= H1 ;
-  by apply IH with (p := x0) (x0 := snd h1) (h0 := fst h1).
-Qed.
-
-Lemma SF_Chasles x0 (s : SF_seq) x :
-  (SF_h s <= x <= fst (last (SF_h s,x0) (SF_t s))) ->
+Lemma SF_Chasles (s : SF_seq) x x0 :
+  (SF_h s <= x <= fst (last (SF_h s,SF_h s) (SF_t s))) ->
   RInt_seq s Rplus Rmult 0 =
-  (RInt_seq (SF_cut_down x0 s x) Rplus Rmult 0)
-  + (RInt_seq (SF_cut_up x0 s x) Rplus Rmult 0).
+  (RInt_seq (SF_cut_down' s x x0) Rplus Rmult 0)
+  + (RInt_seq (SF_cut_up' s x x0) Rplus Rmult 0).
 Proof.
   rename x0 into z0.
   apply SF_cons_ind with (s := s) => {s} /= [ x0 | [x0 y0] s IH] /= Hx.
   rewrite (Rle_antisym _ _ (proj1 Hx) (proj2 Hx)).
   move: (Rle_refl x).
-  rewrite /SF_cut_down /SF_cut_up /= ; case: Rle_dec => //= _ _.
+  rewrite /SF_cut_down' /SF_cut_up' /= ; case: Rle_dec => //= _ _.
   rewrite /RInt_seq /= ; ring.
   rewrite -!(last_map (@fst R R)) /= -!unzip1_fst in IH, Hx.
   move: (fun Hx1 => IH (conj Hx1 (proj2 Hx))) => {IH}.
-  rewrite /SF_cut_down /SF_cut_up /= ;
+  rewrite /SF_cut_down' /SF_cut_up' /= ;
   case: (Rle_dec x0 _) (proj1 Hx) => //= Hx0 _.
   case: (Rle_dec (SF_h s) x) => //= Hx1 IH.
   move: (IH Hx1) => {IH} IH.
   rewrite (RInt_seq_cons (x0,y0))
-    (RInt_seq_cons (x0,y0) (mkSF_seq (SF_h s) (seq_cut_down (SF_t s) x y0)))
+    (RInt_seq_cons (x0,y0) (mkSF_seq (SF_h s) (seq_cut_down' (SF_t s) x y0)))
     IH /= => {IH}.
   rewrite Rplus_assoc ; apply f_equal.
-  rewrite ?seq_cut_up_head.
+  assert (forall x0 y0, fst (head (x0, z0) (seq_cut_up' (SF_t s) x y0)) = x).
+    elim: (SF_t s) => [ | x2 t IH] x1 y1 //=.
+    by case: Rle_dec.
+  rewrite ?H.
   move: (proj2 Hx) Hx1 => {Hx} ;
-  apply SF_cons_dec with (s := s) => {s} /= [x1 | [x1 y1] s] //= Hx Hx1.
+  apply SF_cons_dec with (s := s) => {s H} /= [x1 | [x1 y1] s] //= Hx Hx1.
   rewrite /RInt_seq /= ; rewrite (Rle_antisym _ _ Hx Hx1) ; ring.
   by case: Rle_dec.
   clear IH.
   rewrite RInt_seq_cons (RInt_seq_cons (x,y0) s) {2}/RInt_seq /=.
   ring.
+Qed.
+Lemma seq_cut_up_head' {T : Type} (s : seq (R*T)) x x0 z :
+  fst (head z (seq_cut_up' s x x0)) = x.
+Proof.
+  elim: s z x0 => [ | x1 s IH] //= z x0.
+  by case: Rle_dec.
 Qed.
 
 (** * SF_seq and StepFun *)
@@ -1136,40 +1394,6 @@ Proof.
   (sorted_head [:: h0, h1 & s] _ (proj2 Hs)) ; simpl; intuition.
   rewrite size_mkseq ; by apply lt_n_S, lt_O_Sn.
 Qed.
-
-(** * Pointed subdivision *)
-
-Definition pointed_subdiv (ptd : @SF_seq R) :=
-  forall i : nat, (i < SF_size ptd)%nat ->
-    nth 0 (SF_lx ptd) i <= nth 0 (SF_ly ptd) i <= nth 0 (SF_lx ptd) (S i).
-
-Lemma ptd_cons h s : pointed_subdiv (SF_cons h s) -> pointed_subdiv s.
-Proof.
-  move => H i Hi ; apply (H (S i)) ; rewrite SF_size_cons ; intuition.
-Qed.
-Lemma ptd_sort ptd :
-  pointed_subdiv ptd -> SF_sorted Rle ptd.
-Proof.
-  apply SF_cons_ind with (s := ptd) => {ptd} [x0 | [x0 y0] ptd] ;
-  [ | apply SF_cons_dec with (s := ptd) => {ptd} [ x1 | [x1 y1] ptd] IH] =>
-  Hptd ; try split => //=.
-  apply Rle_trans with y0 ; apply (Hptd O) ; rewrite SF_size_cons ; apply lt_O_Sn.
-  apply Rle_trans with y0 ; apply (Hptd O) ; rewrite SF_size_cons ; apply lt_O_Sn.
-  apply IH, (ptd_cons (x0,y0)) => //.
-Qed.
-Lemma ptd_sort' ptd :
-  pointed_subdiv ptd -> sorted Rle (SF_ly ptd).
-Proof.
-  apply SF_cons_ind with (s := ptd) => {ptd} [x0 | [x0 y0] ptd] ;
-  [ | apply SF_cons_dec with (s := ptd) => {ptd} [ x1 | [x1 y1] ptd] IH] =>
-  Hptd ; try split.
-  apply Rle_trans with x1 ; [apply (Hptd O) | apply (Hptd 1%nat)] ;
-  rewrite ?SF_size_cons ; repeat apply lt_n_S ; apply lt_O_Sn.
-  apply IH, (ptd_cons (x0,y0)) => //.
-Qed.
-
-Definition seq_step (s : seq R) :=
-  foldr Rmax 0 (pairmap (fun x y => Rabs (Rminus y x)) (head 0 s) (behead s)).
 
 (** * Upper and lower step functions *)
 

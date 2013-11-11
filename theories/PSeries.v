@@ -39,7 +39,7 @@ now rewrite IHk.
 Qed.
 
 Lemma pow_n_plus {K} {FK: ncRing K} :
-  forall x n m, pow_n x (n+m) %nat= nc_mult (pow_n x n) (pow_n x m).
+  forall (x : K) (n m : nat), pow_n x (n+m) %nat= nc_mult (pow_n x n) (pow_n x m).
 Proof.
   intros x.
   elim => /= [ | n IH] m.
@@ -48,7 +48,7 @@ Proof.
 Qed.
 
 Lemma pow_n_comm_1 {K} {FK: ncRing K} :
-  forall x n, nc_mult (pow_n x n) x = nc_mult x (pow_n x n).
+  forall (x : K) (n : nat), nc_mult (pow_n x n) x = nc_mult x (pow_n x n).
 Proof.
   intros x n.
   elim: n => /= [ | n IH].
@@ -57,7 +57,7 @@ Proof.
 Qed.
 
 Lemma pow_n_comm {K} {FK: ncRing K} :
-  forall x n m, nc_mult (pow_n x n) (pow_n x m) = nc_mult (pow_n x m) (pow_n x n).
+  forall (x : K) n m, nc_mult (pow_n x n) (pow_n x m) = nc_mult (pow_n x m) (pow_n x n).
 Proof.
   intros x n m.
   rewrite -2!pow_n_plus.
@@ -86,12 +86,14 @@ Proof.
 Qed.
 
 Lemma is_pseries_R (a : nat -> R) (x l : R) : 
- is_pseries a x l <-> is_series (fun n : nat => a n * x ^ n) l.
+  let VV := Normed_MetricVectorSpace _ in
+ @is_pseries _ _ _ VV a x l <-> @is_series _ _ _ VV (fun n : nat => a n * x ^ n) l.
 Proof.
  split; apply is_series_ext; intros n; rewrite pow_n_pow; simpl; ring.
 Qed.
 Lemma ex_pseries_R (a : nat -> R) (x : R) : 
- ex_pseries a x <-> ex_series (fun n : nat => a n * x ^ n).
+  let VV := Normed_MetricVectorSpace _ in
+ @ex_pseries _ _ _ VV a x <-> @ex_series _ _ _ VV (fun n : nat => a n * x ^ n).
 Proof.
  split; apply ex_series_ext; intros n; rewrite pow_n_pow; simpl; ring.
 Qed.
@@ -191,12 +193,13 @@ Lemma PSeries_0 (a : nat -> R) :
 Proof.
   rewrite PSeries_eq.
   apply is_series_unique.
-  apply: (is_pseries_0 a).
+  apply @is_pseries_0.
 Qed.
 
 (** Convergence disk *)
 Definition CV_disk (a : nat -> R) (r : R) :=
-  ex_series (fun n => Rabs (a n * r^n)).
+  let VV := Normed_MetricVectorSpace _ in
+  @ex_series _ _ _ VV (fun n => Rabs (a n * r^n)).
 
 Lemma CV_disk_le (a : nat -> R) (r1 r2 : R) :
   Rabs r1 <= Rabs r2 -> CV_disk a r2 -> CV_disk a r1.
@@ -253,7 +256,8 @@ Proof.
   have : forall y, Rabs y < Rabs r -> (CV_disk a) y.
     move => y Hy ; rewrite /CV_disk /=.
   set l := (Rabs (y / r)).
-  assert (ex_series (fun n => M * l ^ n)).
+  set VV := Normed_MetricVectorSpace _.
+  assert (@ex_series _ _ _ VV (fun n => M * l ^ n)).
   apply ex_series_ext with (fun n : nat => scal M (l ^ n)).
     by elim.
   apply (@ex_series_scal_l R).
@@ -367,11 +371,12 @@ Qed.
 (** Convergence theorems *)
 
 Lemma CV_disk_inside (a : nat -> R) (x : R) :
+  let VV := Normed_MetricVectorSpace _ in
   Rbar_lt (Finite (Rabs x)) (CV_radius a)
-    -> ex_series (fun n => Rabs (a n * x ^ n)).
+    -> @ex_series _ _ _ VV (fun n => Rabs (a n * x ^ n)).
 Proof.
-  move => Ha.
-  assert (H : ~ ~ ex_series (fun n => Rabs (a n * x ^ n))).
+  move => VV Ha.
+  assert (H : ~ ~ @ex_series _ _ _ VV (fun n => Rabs (a n * x ^ n))).
     contradict Ha.
     apply Rbar_le_not_lt.
     rewrite /CV_radius /Lub_Rbar_ne ;
@@ -559,7 +564,8 @@ Proof.
   case: ex_lub_Rbar_ne ;
   case => [cv | | ] /= [ub lub] Hnot_ex H ; try by auto.
   suff H0 : cv < ((cv+/l)/2) < /l.
-  absurd (ex_series (fun n => Rabs (a n * ((cv+/l)/2)^n))).
+  set VV := Normed_MetricVectorSpace (AbsField_NormedVectorSpace _ R_metric_field).
+  absurd (@ex_series _ _ _ VV (fun n => Rabs (a n * ((cv+/l)/2)^n))).
 
   suff H1 : cv < Rabs ((cv + / l) / 2).
   move: (Hnot_ex ((cv + / l) / 2) H1) => {Hnot_ex} Hnot_ex.
@@ -790,19 +796,23 @@ Proof.
   by apply is_pseries_plus.
 Qed.
 Lemma PSeries_plus (a b : nat -> R) (x : R) :
-  ex_pseries a x -> ex_pseries b x
-    -> PSeries (PS_plus a b) x = PSeries a x + PSeries b x.
+  let VV := Normed_MetricVectorSpace (AbsField_NormedVectorSpace _ R_metric_field) in
+  @ex_pseries _ _ _ VV a x -> @ex_pseries _ _ _ VV b x
+    -> PSeries (@PS_plus _ _ _ VV a b) x = PSeries a x + PSeries b x.
 Proof.
-  intros Ha Hb.
-  apply is_pseries_unique, is_pseries_plus; rewrite PSeries_eq;
-   by apply Series_correct.
+  intros VV Ha Hb.
+  apply @is_pseries_unique, @is_pseries_plus ; rewrite PSeries_eq ;
+  apply Series_correct.
+  by apply Ha.
+  by apply Hb.
 Qed.
 
 Lemma CV_disk_plus (a b : nat -> R) (x : R) :
+  let VV := Normed_MetricVectorSpace (AbsField_NormedVectorSpace _ R_metric_field) in
   (CV_disk a x) -> (CV_disk b x)
-  -> (CV_disk (PS_plus a b) x).
+  -> (CV_disk (@PS_plus _ _ _ VV a b) x).
 Proof.
-  move => Ha Hb.
+  move => VV Ha Hb.
   move: (ex_series_plus _ _ Ha Hb).
   apply Comp_ex_series => n ; split.
   by apply Rabs_pos.
@@ -810,15 +820,17 @@ Proof.
   by apply Rabs_triang.
 Qed.
 Lemma CV_radius_plus (a b : nat -> R) :
-  Rbar_le (Rbar_min (CV_radius a) (CV_radius b)) (CV_radius (PS_plus a b)).
+  let VV := Normed_MetricVectorSpace (AbsField_NormedVectorSpace _ R_metric_field) in
+  Rbar_le (Rbar_min (CV_radius a) (CV_radius b)) (CV_radius (@PS_plus _ _ _ VV a b)).
 Proof.
   have Ha0 := CV_radius_ge_0 a.
   have Hb0 := CV_radius_ge_0 b.
   have Hab0 := CV_radius_ge_0 (PS_plus a b).
   have Hmin_0 : Rbar_le (Finite 0) (Rbar_min (CV_radius a) (CV_radius b)).
     rewrite /Rbar_min ; by case: Rbar_le_dec => H.
+  intro.
   apply is_lub_Rbar_subset
-    with (CV_disk (PS_plus a b))
+    with (CV_disk (@PS_plus _ _ _ VV a b))
     (fun x => (CV_disk a x) /\ (CV_disk b x)).
   move => x [Ha Hb] ; by apply CV_disk_plus.
   rewrite /CV_radius /Lub_Rbar_ne ; by case: ex_lub_Rbar_ne.
@@ -944,7 +956,8 @@ Proof.
   apply ex_series_ext with (fun n => Rabs c * Rabs (a n * x ^ n)).
   move => n ; rewrite -Rabs_mult ; apply f_equal ;
   by rewrite /PS_scal /= Rmult_assoc.
-  apply: ex_series_scal Ha.
+  apply @ex_series_scal.
+  by apply Ha.
 Qed.
 
 Lemma CV_radius_scal (c : R) (a : nat -> R) :
@@ -978,7 +991,7 @@ Proof.
   apply ex_series_ext with (fun n => Rabs c * Rabs (a n * x ^ n)).
   move => n ; rewrite -Rabs_mult ; apply f_equal ;
   rewrite /PS_scal_r /= ; ring.
-  by apply: ex_series_scal Ha.
+  by apply @ex_series_scal ; apply Ha.
 Qed.
 Lemma CV_radius_scal_r (c : R) (a : nat -> R) :
   Rbar_le (CV_radius a) (CV_radius (PS_scal_r c a)).
@@ -1028,7 +1041,8 @@ Proof.
   move => [l Ha] ; exists (scal x l) ; by apply is_pseries_incr_1.
 Qed.
 Lemma PSeries_incr_1 a x :
-  PSeries (PS_incr_1 a) x = x * PSeries a x.
+  let VV := Normed_MetricVectorSpace (AbsField_NormedVectorSpace _ R_metric_field) in
+  PSeries (@PS_incr_1 _ _ _ VV a) x = x * PSeries a x.
 Proof.
   rewrite -Series_scal_l.
   unfold PSeries, Series.
@@ -1086,7 +1100,8 @@ Proof.
   exists (scal (pow_n x n) l) ; by apply is_pseries_incr_n.
 Qed.
 Lemma PSeries_incr_n (a : nat -> R) (n : nat) (x : R) :
-  PSeries (PS_incr_n a n) x = x^n * PSeries a x.
+  let VV := Normed_MetricVectorSpace (AbsField_NormedVectorSpace _ R_metric_field) in
+  PSeries (@PS_incr_n _ _ _ VV a n) x = x^n * PSeries a x.
 Proof.
   elim: n => /= [ | n IH].
   by rewrite Rmult_1_l.
@@ -1138,10 +1153,11 @@ Proof.
  now apply is_pseries_decr_1.
 Qed.
 Lemma PSeries_decr_1 (a : nat -> R) (x : R) :
-  ex_pseries a x
-    -> PSeries a x = a O + x * PSeries (PS_decr_1 a) x.
+  let VV := Normed_MetricVectorSpace (AbsField_NormedVectorSpace _ R_metric_field) in
+  @ex_pseries _ _ _ VV a x
+    -> PSeries a x = a O + x * PSeries (@PS_decr_1 _ _ _ VV a) x.
 Proof.
-  move => Ha.
+  move => VV Ha.
   case: (Req_dec x 0) => Hx.
   rewrite Hx PSeries_0 ; ring.
   move: (is_pseries_decr_1 a x (/x) (PSeries a x) (mult_inv_l _ Hx)
@@ -1150,9 +1166,10 @@ Proof.
   simpl; now field.
 Qed.
 Lemma PSeries_decr_1_aux (a : nat -> R) (x : R) :
-  a O = 0 -> (PSeries a x) = x * PSeries (PS_decr_1 a) x.
+  let VV := Normed_MetricVectorSpace (AbsField_NormedVectorSpace _ R_metric_field) in
+  a O = 0 -> (PSeries a x) = x * PSeries (@PS_decr_1 _ _ _ VV a) x.
 Proof.
-  intros Ha0.
+  intros VV Ha0.
   rewrite -PSeries_incr_1.
   rewrite /PS_incr_1 /PS_decr_1 /=.
   apply Series_ext.
@@ -1220,10 +1237,11 @@ Proof.
   now apply IHn.
 Qed.
 Lemma PSeries_decr_n (a : nat -> R) (n : nat) (x : R) :
+  let VV := Normed_MetricVectorSpace (AbsField_NormedVectorSpace _ R_metric_field) in
   ex_pseries a x
-    -> PSeries a x = sum_f_R0 (fun k => a k * x^k) n + x^(S n) * PSeries (PS_decr_n a (S n)) x.
+    -> PSeries a x = sum_f_R0 (fun k => a k * x^k) n + x^(S n) * PSeries (@PS_decr_n _ _ _ VV a (S n)) x.
 Proof.
-  move => Ha.
+  move => VV Ha.
   case: (Req_dec x 0) => Hx.
   rewrite Hx PSeries_0 ; simpl ; ring_simplify.
   elim: n => /= [ | n IH].
@@ -1246,9 +1264,11 @@ Proof.
   unfold scal; simpl; ring.
 Qed.
 Lemma PSeries_decr_n_aux (a : nat -> R) (n : nat) (x : R) :
+  let VV := Normed_MetricVectorSpace (AbsField_NormedVectorSpace _ R_metric_field) in
   (forall k : nat, (k < n)%nat -> a k = 0)
-    -> PSeries a x = x^n * PSeries (PS_decr_n a n) x.
+    -> PSeries a x = x^n * PSeries (@PS_decr_n _ _ _ VV a n) x.
 Proof.
+  intro.
   elim: n => /= [ | n IH] Ha.
   rewrite Rmult_1_l.
   apply PSeries_ext => n ; by intuition.
@@ -1262,8 +1282,11 @@ Proof.
   apply Ha ; by intuition.
 Qed.
 
-Lemma CV_radius_incr_1 (a : nat -> R) : CV_radius (PS_incr_1 a) = CV_radius a.
+Lemma CV_radius_incr_1 (a : nat -> R) :
+  let VV := Normed_MetricVectorSpace (AbsField_NormedVectorSpace _ R_metric_field) in
+  CV_radius (@PS_incr_1 _ _ _ VV a) = CV_radius a.
 Proof.
+  intro VV.
   rewrite /CV_radius /CV_disk.
 
   apply Lub_Rbar_ne_eqset => x ; split => Hx ;
@@ -1284,13 +1307,13 @@ Proof.
   rewrite -Lim_seq_incr_1 in Hl.
   split.
   apply ex_lim_seq_ext
-    with (fun n => sum_n (fun k : nat => Rabs (PS_incr_1 a k * x ^ k)) (S n) / Rabs x).
+    with (fun n => sum_n (fun k : nat => Rabs (PS_incr_1 (VV := VV) a k * x ^ k)) (S n) / Rabs x).
   elim => /= [ | n <-] ;
   rewrite ?Rmult_1_r ?Rmult_0_r ?Rabs_R0 ?Rplus_0_l ?Rabs_mult ; field ;
   by apply Rabs_no_R0.
   by apply ex_lim_seq_scal_r.
   rewrite -(Lim_seq_ext
-    (fun n => sum_n (fun k : nat => Rabs (PS_incr_1 a k * x ^ k)) (S n) / Rabs x)).
+    (fun n => sum_n (fun k : nat => Rabs (PS_incr_1 (VV := VV) a k * x ^ k)) (S n) / Rabs x)).
   rewrite Lim_seq_scal_r.
   case: (Lim_seq
           (fun n : nat =>
@@ -1525,7 +1548,8 @@ Proof.
   now apply is_pseries_opp.
 Qed.
 Lemma PSeries_opp (a : nat -> R) (x : R) :
-  PSeries (PS_opp a) x = - PSeries a x.
+  let VV := Normed_MetricVectorSpace (AbsField_NormedVectorSpace _ R_metric_field) in
+  PSeries (PS_opp (VV := VV) a) x = - PSeries a x.
 Proof.
   replace (- PSeries a x) with ((-1) * PSeries a x) by ring.
   rewrite -PSeries_scal.
@@ -1534,13 +1558,15 @@ Proof.
 Qed.
 
 Lemma CV_radius_opp (a : nat -> R) :
-  (CV_radius a) = (CV_radius (PS_opp a)).
+  let VV := Normed_MetricVectorSpace (AbsField_NormedVectorSpace _ R_metric_field) in
+  (CV_radius a) = (CV_radius (PS_opp (VV := VV) a)).
 Proof.
+  intro VV.
   apply Rbar_le_antisym.
   rewrite (CV_radius_ext (PS_opp a) (PS_scal (-1) a)).
   by apply CV_radius_scal.
   move => n ; rewrite /PS_scal /PS_opp ; simpl; ring.
-  rewrite (CV_radius_ext a (PS_scal (-1) (PS_opp a))).
+  rewrite (CV_radius_ext a (PS_scal (VV := VV) (-1) (PS_opp (VV := VV) a))).
   by apply CV_radius_scal.
   move => n ; rewrite /PS_scal /PS_opp ; simpl; ring.
 Qed.
@@ -1565,10 +1591,11 @@ Proof.
   by apply ex_pseries_opp.
 Qed.
 Lemma PSeries_minus (a b : nat -> R) (x : R) :
+  let VV := Normed_MetricVectorSpace (AbsField_NormedVectorSpace _ R_metric_field) in
   ex_pseries a x -> ex_pseries b x
-  -> PSeries (PS_minus a b) x = PSeries a x - PSeries b x.
+  -> PSeries (PS_minus (VV := VV) a b) x = PSeries a x - PSeries b x.
 Proof.
-  move => Ha Hb.
+  move => VV Ha Hb.
   rewrite PSeries_plus.
   by rewrite PSeries_opp.
   exact: Ha.
@@ -2152,7 +2179,7 @@ Proof.
     rewrite -Hx'.
     replace (f 0) with (Derive_n f O 0 / INR (fact O))
       by (simpl ; field).
-    apply: is_pseries_0.
+    apply @is_pseries_0.
     rewrite -Rabs_Ropp in Hx.
     suff Hf : (forall (n : nat) (x : R),
       ((Rabs x)) < r ->

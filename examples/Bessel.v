@@ -300,8 +300,10 @@ Proof.
   split ; (apply INR_fact_neq_0 || apply not_0_INR, sym_not_eq, O_S).
   repeat split ; (apply INR_fact_neq_0 || apply not_0_INR, sym_not_eq, O_S).
   apply ex_pseries_scal, ex_pseries_incr_1, ex_pseries_derive.
+  by apply Rmult_comm.
   by rewrite CV_Bessel1.
-  by apply ex_pseries_scal, ex_Bessel1.
+  apply ex_pseries_scal, ex_Bessel1.
+  by apply Rmult_comm.
   by apply ex_pseries_incr_1, ex_Bessel1.
   by apply ex_Bessel1.
 Qed.
