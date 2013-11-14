@@ -1072,24 +1072,6 @@ Proof.
   exact mult_distr_r.
 Defined.
 
-(** ** Metric Vector Spaces *)
-
-Class MetricVectorSpace V K {RK : Ring K} := {
-  mvspace_group :> AbelianGroup V ;
-  mvspace_vector :> VectorSpace_mixin V K mvspace_group ;
-  mvspace_metric :> MetricBall V ;
-  mvspace_plus : forall x y, filterlim (fun z : V * V => plus (fst z) (snd z)) (filter_prod (locally x) (locally y)) (locally (plus x y)) ;
-  mvspace_scal : forall x y, filterlim (fun z : V => scal x z) (locally y) (locally (scal x y))
-}.
-
-Global Instance Metric_VectorSpace {V K} {FK : Ring K} :
-  MetricVectorSpace V K -> VectorSpace V K.
-Proof.
-  intro MVS.
-  econstructor.
-  by apply MVS.
-Defined.
-
 (** Operations *)
 
 Lemma scal_zero_r :
@@ -1158,43 +1140,6 @@ Proof.
   apply eq_sym.
   by apply scal_distr_l.
 Qed.
-
-Lemma filterlim_opp_2 {K} {V} {FK : Ring K} {VV : MetricVectorSpace V K}: forall (x:V), 
-   filterlim opp (locally x) (locally (opp x)).
-Proof.
-intros x.
-rewrite <- (scal_opp_one (VV := Metric_VectorSpace VV)).
-apply filterlim_ext with (2:=mvspace_scal _ _).
-intros; apply (scal_opp_one (VV := Metric_VectorSpace VV)).
-Qed.
-
-(** ** Complete Metric Vector Space *)
-
-Class CompleteMetricVectorSpace V K {FK : Ring K} := {
-  cmvspace_group :> AbelianGroup V ;
-  cmvspace_vector :> VectorSpace_mixin V K cmvspace_group ;
-  cmvspace_metric :> MetricBall V ;
-  cmvspace_complete :> CompleteSpace_mixin V cmvspace_metric ;
-  cmvspace_plus : forall x y, filterlim (fun z : V * V => plus (fst z) (snd z)) (filter_prod (locally x) (locally y)) (locally (plus x y)) ;
-  cmvspace_scal : forall x y, filterlim (fun z : V => scal x z) (locally y) (locally (scal x y))
-}.
-
-Global Instance Complete_MetricVectorSpace {V K} {FK : Ring K} :
-  CompleteMetricVectorSpace V K -> MetricVectorSpace V K.
-Proof.
-  intros CMVS.
-  econstructor.
-  exact cmvspace_plus.
-  exact cmvspace_scal.
-Defined.
-
-Global Instance CompleteMetricVectorSpace_CompleteSpace {V K} {FK : Ring K} :
-  CompleteMetricVectorSpace V K -> CompleteSpace V.
-Proof.
-  intros CMVS.
-  econstructor.
-  exact cmvspace_complete.
-Defined.
 
 (** ** Normed Vector Space *)
 
@@ -1282,12 +1227,11 @@ Proof.
     now apply Rlt_le_trans with (1 := Hy).
 Defined.
 
-Global Instance Normed_MetricVectorSpace {V K : Type} {FK : AbsRing K} :
-  NormedVectorSpace V K -> MetricVectorSpace V K.
+Lemma mvspace_plus {V K} {FK : AbsRing K} {VV : NormedVectorSpace V K} : forall x y,
+   filterlim (fun z : V * V => plus (fst z) (snd z)) (filter_prod (locally x) (locally y))
+  (locally (plus x y)).
 Proof.
-  intro NVS.
-  eapply Build_MetricVectorSpace.
-  - intros x y P [eps HP].
+ intros x y P [eps HP].
     unfold filtermap.
     exists (ball x (pos_div_2 eps)) (ball y (pos_div_2 eps)).
     by apply locally_ball.
@@ -1304,7 +1248,11 @@ Proof.
     apply f_equal2.
     by apply plus_comm.
     by [].
-  - intros k x P [eps HP].
+Qed.
+Lemma mvspace_scal {V K} {FK : AbsRing K} {VV : NormedVectorSpace V K} : forall x y,
+ filterlim (fun z : V => scal x z) (locally y) (locally (scal x y)).
+Proof.
+   intros k x P [eps HP].
     assert (He : 0 < eps / (Rmax 1 (abs k))).
       apply Rdiv_lt_0_compat.
       by apply eps.
@@ -1325,7 +1273,17 @@ Proof.
     by [].
     rewrite /minus scal_distr_l ;
     by generalize (scal_opp_r k x) => <-.
-Defined.
+Qed.
+
+Lemma filterlim_opp_2 {K} {V} {FK : AbsRing K} {VV : NormedVectorSpace V K}: forall (x:V), 
+   filterlim opp (locally x) (locally (opp x)).
+Proof.
+intros x.
+rewrite <- (scal_opp_one (VV := Normed_VectorSpace VV)).
+apply filterlim_ext with (2:=mvspace_scal _ _).
+intros; apply (scal_opp_one (VV := Normed_VectorSpace VV)).
+Qed.
+
 
 (** ** Complete Normed Vector Space *)
 
@@ -1351,18 +1309,6 @@ Proof.
   econstructor.
   by apply cnvspace_complete.
 Defined.
-
-(** Particular complete normed vector space *)
-
-Global Instance CompleteNormed_MetricVectorSpace {V K} {FK : AbsRing K} :
-  CompleteNormedVectorSpace V K -> CompleteMetricVectorSpace V K.
-Proof.
-  intro CNVS.
-  eapply (Build_CompleteMetricVectorSpace _ _ _ cnvspace_group cnvspace_vector).
-  by apply CNVS.
-  by apply (Normed_MetricVectorSpace (Complete_NormedVectorSpace CNVS)).
-  by apply (Normed_MetricVectorSpace (Complete_NormedVectorSpace CNVS)).
-Qed.
 
 (** * Extended Typed *)
 
@@ -1432,61 +1378,6 @@ apply Build_VectorSpace with (AbelianGroup_prod _ _).
 apply VectorSpace_mixin_prod.
 by apply VU.
 by apply VV.
-Defined.
-
-Global Instance MetricVectorSpace_prod :
-  forall {U V K} {FK : Ring K} (VU : MetricVectorSpace U K) (VV : MetricVectorSpace V K),
-  MetricVectorSpace (U * V) K.
-Proof.
-  intros U V K FK VU VV.
-  apply Build_MetricVectorSpace
-  with (AbelianGroup_prod mvspace_group mvspace_group)
-    (VectorSpace_mixin_prod mvspace_vector mvspace_vector)
-    (MetricBall_prod mvspace_metric mvspace_metric).
-  + assert (HU := @mvspace_plus _ _ _ VU).
-    assert (HV := @mvspace_plus _ _ _ VV).
-    move => x y P [/= eP HP].
-    move: (fun u v Hu Hv => HP (u,v) (conj Hu Hv)) => /= {HP} HP.
-    assert (locally (plus (fst x) (fst y)) (fun u : U => ball (plus (fst x) (fst y)) eP u)).
-      apply locally_ball.
-    specialize (HU (fst x) (fst y) _ H) => {H}.
-    assert (locally (plus (snd x) (snd y)) (fun v : V => ball (plus (snd x) (snd y)) eP v)).
-      apply locally_ball.
-    specialize (HV (snd x) (snd y) _ H) => {H}.
-    case: HU => /= QU RU [eQu BQu] [eRu BRu] HU.
-    case: HV => /= QV RV [eQv BQv] [eRv BRv] HV.
-    move: (fun x y HUx HVx HUy HVy => HP _ _ (HU (fst x) (fst y) HUx HUy) (HV (snd x) (snd y) HVx HVy))
-      => {HP} /= HP.
-    
-    exists (fun x => QU (fst x) /\ QV (snd x))
-           (fun x => RU (fst x) /\ RV (snd x)).
-    exists (mkposreal _ (Rmin_stable_in_posreal eQu eQv)) => /= y' [Hyu Hyv] ; split.
-    apply BQu ; now move: Hyu ; apply ball_le, Rmin_l.
-    apply BQv ; now move: Hyv ; apply ball_le, Rmin_r.
-    exists (mkposreal _ (Rmin_stable_in_posreal eRu eRv)) => /= y' [Hyu Hyv] ; split.
-    apply BRu ; now move: Hyu ; apply ball_le, Rmin_l.
-    apply BRv ; now move: Hyv ; apply ball_le, Rmin_r.
-    move => x' y' /= [Qu Qv] [Ru Rv].
-    now apply HP.
-  + assert (HU := @mvspace_scal _ _ _ VU).
-    assert (HV := @mvspace_scal _ _ _ VV).
-    move => x y P [/= eP HP].
-    move: (fun u v Hu Hv => HP (u,v) (conj Hu Hv)) => /= {HP} HP.
-    assert (locally (scal x (fst y)) (fun u : U => ball (scal x (fst y)) eP u)).
-      apply locally_ball.
-    specialize (HU x (fst y) _ H) => {H}.
-    assert (locally (scal x (snd y)) (fun v : V => ball (scal x (snd y)) eP v)).
-      apply locally_ball.
-    specialize (HV x (snd y) _ H) => {H}.
-    case: HU => /= eU HU.
-    case: HV => /= eV HV.
-    move: (fun u v Bu Bv => HP _ _ (HU u Bu) (HV v Bv))
-      => {HP} /= HP.
-    
-    exists (mkposreal _ (Rmin_stable_in_posreal eU eV)) => /= y' [Hyu Hyv].
-    apply HP.
-    now move: Hyu ; apply ball_le, Rmin_l.
-    now move: Hyv ; apply ball_le, Rmin_r.
 Defined.
 
 Global Instance NormedVectorSpace_prod :

@@ -842,8 +842,7 @@ Lemma CVN_CVU_r (fn : nat -> R -> R) (r : posreal) :
     CVU (fun n => SP fn n) (fun x => Series (fun n => fn n x)) x e.
 Proof.
   case => An [l [H H0]] x Hx.
-  set (VV := Normed_MetricVectorSpace (AbsRing_NormedVectorSpace _ _)).
-  assert (H1 : @ex_series _ _ _ VV An).
+  assert (H1 : ex_series An).
     apply ex_series_equiv_1.
     exists l => e He.
     case: (H e He) => {H} N H.
@@ -885,7 +884,7 @@ Proof.
     apply Lim_seq_correct', H1.
     easy.
 
-  assert (H3 : forall y, Boule 0 r y -> @ex_series _ _ _ VV (fun n => Rabs (fn n y))).
+  assert (H3 : forall y, Boule 0 r y -> ex_series (fun n => Rabs (fn n y))).
   move => y Hy.
   move: H1 ; apply Comp_ex_series.
   move => n ; split.
@@ -1077,7 +1076,7 @@ wlog: a b h Hfh / (a <= b) => [Hw | Hab].
   by apply Hw.
   destruct (Hw b a (fun x => opp (h x))) as [If [Hfh' Hfg']].
   intro x.
-  by apply is_RInt_swap.
+  by apply @is_RInt_swap.
   by apply Rlt_le.
   exists (opp If) ; split.
   apply filterlim_ext with (fun x => opp (opp (h x))).
@@ -1085,8 +1084,8 @@ wlog: a b h Hfh / (a <= b) => [Hw | Hab].
   by apply opp_opp.
   eapply (filterlim_compose _ _ _ (fun x => opp (h x)) opp).
   by apply Hfh'.
-  now generalize (@filterlim_opp_2 _ _ _ (Normed_MetricVectorSpace _) If).
-  by apply is_RInt_swap.
+  now generalize (filterlim_opp_2 If).
+  by apply @is_RInt_swap.
 
 case: Hab => Hab.
 
@@ -1172,12 +1171,12 @@ assert (forall (eps : posreal) t, ball zero eps (h t)).
   intros eps t.
   specialize (Hfh t).
   apply filterlim_locally_unique with (2 := Hfh).
-  apply is_RInt_point.
+  apply @is_RInt_point.
 intros P [eP HP].
 unfold filtermap.
 move: (fun x : U => HP (h x)) => {HP} HP.
 apply filter_imp with (1 := HP).
 now apply filter_imp with (2 := filter_true).
-now apply is_RInt_point.
+now apply @is_RInt_point.
 Qed.
 

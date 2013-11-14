@@ -179,7 +179,7 @@ Proof.
     rewrite /Riemann_sum /RInt_seq /=.
     case: Rle_dec (Rle_refl x) => //= _ _.
     rewrite ?plus_zero_r Rminus_eq_0.
-    rewrite (scal_zero_l (VV := Metric_VectorSpace (Normed_MetricVectorSpace _))).
+    rewrite (scal_zero_l (VV := Normed_VectorSpace _)).
     rewrite /minus plus_zero_l norm_opp norm_zero.
     apply Rmult_lt_0_compat.
     apply Rmult_lt_0_compat.
@@ -488,9 +488,9 @@ constructor.
   apply locally_dist_filter.
 Qed.
 
-Definition is_RInt {V} {VV : MetricVectorSpace V R} (f : R -> V) (a b : R) (If : V) :=
+Definition is_RInt {V} {VV : NormedVectorSpace V R} (f : R -> V) (a b : R) (If : V) :=
   filterlim (fun ptd => scal (sign (b-a)) (Riemann_sum f ptd)) (Riemann_fine a b) (locally If).
-Definition ex_RInt {V} {VV : MetricVectorSpace V R} (f : R -> V) (a b : R) :=
+Definition ex_RInt {V} {VV : NormedVectorSpace V R} (f : R -> V) (a b : R) :=
   exists If : V, is_RInt f a b If.
 Definition RInt (f : R -> R) (a b : R) :=
   match Rle_dec a b with
@@ -500,22 +500,26 @@ Definition RInt (f : R -> R) (a b : R) :=
 
 (** The integral between a and a is null *)
 
+Section RInt_point.
+
+Context {V} {VV : NormedVectorSpace V R}.
+
 Lemma is_RInt_point :
-  forall V (VV : MetricVectorSpace V R) (f : R -> V) (a : R),
+  forall (f : R -> V) (a : R),
   is_RInt f a a zero.
 Proof.
-intros V VV f a.
+intros f a.
 apply filterlim_locally.
 move => eps ; exists (mkposreal _ Rlt_0_1) => ptd _ _.
-rewrite Rminus_eq_0 sign_0 (scal_zero_l (VV := Metric_VectorSpace VV)).
+rewrite Rminus_eq_0 sign_0 (scal_zero_l (VV := Normed_VectorSpace VV)).
 apply ball_center.
 Qed.
 
 Lemma ex_RInt_point :
-  forall V (VV : MetricVectorSpace V R) (f : R -> V) a,
+  forall (f : R -> V) a,
   ex_RInt f a a.
 Proof.
-intros V VV f a.
+intros f a.
 exists zero ; by apply is_RInt_point.
 Qed.
 
@@ -536,12 +540,12 @@ Qed.
 (** Swapping bounds *)
 
 Lemma is_RInt_swap :
-  forall V (VV : MetricVectorSpace V R) (f : R -> V) (a b : R) (If : V),
+  forall (f : R -> V) (a b : R) (If : V),
   is_RInt f b a If -> is_RInt f a b (opp If).
 Proof.
   unfold is_RInt.
-  intros V VV f a b If HIf.
-  rewrite -(scal_opp_one (VV := Metric_VectorSpace VV)) /=.
+  intros f a b If HIf.
+  rewrite -(scal_opp_one (VV := Normed_VectorSpace VV)) /=.
   apply filterlim_ext with 
     (fun ptd => scal (opp (one : R)) (scal (sign (a - b)) (Riemann_sum f ptd))).
   intros x.
@@ -555,10 +559,10 @@ Proof.
 Qed.
 
 Lemma ex_RInt_swap :
-  forall V (VV : MetricVectorSpace V R) (f : R -> V) (a b : R),
+  forall (f : R -> V) (a b : R),
   ex_RInt f a b -> ex_RInt f b a.
 Proof.
-  intros V VV f a b.
+  intros f a b.
   case => If HIf.
   exists (opp If).
   now apply is_RInt_swap.
@@ -588,8 +592,7 @@ Qed.
 
 (** Integrable implies bounded *)
 
-Lemma ex_RInt_ub {V} {VV : NormedVectorSpace V R}
-  (f : R -> V) (a b : R) :
+Lemma ex_RInt_ub (f : R -> V) (a b : R) :
   ex_RInt f a b -> exists M : R, forall t : R,
     Rmin a b <= t <= Rmax a b -> norm (f t) <= M.
 Proof.
@@ -894,6 +897,8 @@ Proof.
   by [].
 Qed.
 
+End RInt_point.
+
 (** * Equivalence with standard library *)
 
 Lemma RInt_val_Reals (f : R -> R) (a b : R) (n : nat) :
@@ -940,7 +945,7 @@ Proof.
     rewrite RiemannInt_P9 Rminus_0_r Rabs_R0 ; apply eps.
     move: (RiemannInt_P1 pr) => pr'.
     rewrite (RiemannInt_P8 pr pr').
-    apply is_RInt_swap.
+    apply @is_RInt_swap.
     apply Hw => //.
   rewrite /is_RInt.
   intros pr.
@@ -2052,7 +2057,7 @@ Proof.
     apply Hw.
     exact: Hab.
 
-    now apply is_RInt_swap.
+    now apply @is_RInt_swap.
 
     assert (forall n, RInt_val f a a n = 0).
       move => n ; rewrite /RInt_val Rminus_eq_0 /Rdiv Rmult_0_l.
@@ -3334,12 +3339,16 @@ Qed.
 
 (** ** Extensionality *)
 
+Section RInt_ext.
+
+Context {V} {MV : NormedVectorSpace V R}.
+
 Lemma is_RInt_ext :
-  forall V (MV : MetricVectorSpace V R) (f g : R -> V) (a b : R) (l : V),
+  forall (f g : R -> V) (a b : R) (l : V),
   (forall x, Rmin a b <= x <= Rmax a b -> f x = g x) ->
   is_RInt f a b l -> is_RInt g a b l.
 Proof.
-intros V MV f g a b l Heq.
+intros f g a b l Heq.
 apply filterlim_within_ext.
 intros ptd [Hptd [Hhead Hlast]].
 apply f_equal.
@@ -3370,11 +3379,11 @@ by apply ptd_cons with (1 := Hptd).
 Qed.
 
 Lemma ex_RInt_ext :
-  forall V (MV : MetricVectorSpace V R) (f g : R -> V) (a b : R),
+  forall (f g : R -> V) (a b : R),
   (forall x, Rmin a b <= x <= Rmax a b -> f x = g x) ->
   ex_RInt f a b -> ex_RInt g a b.
 Proof.
-intros V MV f g a b Heq [If Hex].
+intros f g a b Heq [If Hex].
 exists If.
 revert Hex.
 now apply is_RInt_ext.
@@ -3436,10 +3445,10 @@ Qed.
 (** ** Constant functions *)
 
 Lemma is_RInt_const :
-  forall V (MV : MetricVectorSpace V R) (a b : R) (v : V),
+  forall (a b : R) (v : V),
   is_RInt (fun _ => v) a b (scal (b - a) v).
 Proof.
-intros V MV a b v.
+intros a b v.
 apply filterlim_within_ext with (fun _ => scal (b - a) v).
 2: apply filterlim_const.
 intros ptd [_ [Hhead Hlast]].
@@ -3467,10 +3476,10 @@ ring.
 Qed.
 
 Lemma ex_RInt_const :
-  forall V (MV : MetricVectorSpace V R) (a b : R) (v : V),
+  forall (a b : R) (v : V),
   ex_RInt (fun _ => v) a b.
 Proof.
-intros V MV a b v.
+intros a b v.
 exists (scal (b - a) v).
 apply is_RInt_const.
 Qed.
@@ -3478,18 +3487,18 @@ Qed.
 (** ** Composition *)
 
 Lemma is_RInt_comp_opp :
-  forall {V} {MV : MetricVectorSpace V R} (f : R -> V) (a b : R) (l : V),
+  forall (f : R -> V) (a b : R) (l : V),
   is_RInt f (-a) (-b) l ->
   is_RInt (fun y => opp (f (- y))) a b l.
 Proof.
-intros V MV f a b l Hf.
+intros f a b l Hf.
 intros P HP.
 destruct (Hf P HP) as [eps Heps].
 clear -Heps.
 exists eps.
 intros ptd Hstep [Hptd [Hh Hl]].
 rewrite Riemann_sum_opp.
-rewrite (scal_opp_r (VV := Metric_VectorSpace MV)) -scal_opp_l /= -sign_opp.
+rewrite (scal_opp_r (VV := Normed_VectorSpace MV)) -scal_opp_l /= -sign_opp.
 rewrite Ropp_plus_distr.
   set ptd' := (mkSF_seq (-SF_h ptd)
     (seq.map (fun X => (- fst X,- snd X)) (SF_t ptd))).
@@ -3640,11 +3649,11 @@ replace (Riemann_sum (fun x => f (-x)) ptd) with (Riemann_sum f (SF_rev ptd')).
 Qed.
 
 Lemma ex_RInt_comp_opp :
-  forall {V} {MV : MetricVectorSpace V R} (f : R -> V) (a b : R),
+  forall (f : R -> V) (a b : R),
   ex_RInt f (-a) (-b) ->
   ex_RInt (fun y => opp (f (- y))) a b.
 Proof.
-  intros V MV f a b [l If].
+  intros f a b [l If].
   exists l.
   by apply is_RInt_comp_opp.
 Qed.
@@ -3699,22 +3708,22 @@ Proof.
   ring.
 Qed.
 
-Lemma is_RInt_comp_lin {U} {MU : MetricVectorSpace U R}
-  (f : R -> U) (u v a b : R) (l : U) :
+Lemma is_RInt_comp_lin 
+  (f : R -> V) (u v a b : R) (l : V) :
   is_RInt f (u * a + v) (u * b + v) l
     -> is_RInt (fun y => scal u (f (u * y + v))) a b l.
 Proof.
   case: (Req_dec u 0) => [-> {u} If | ].
-  assert (If' := is_RInt_point _ _ f v).
+  assert (If' := is_RInt_point f v).
   rewrite ?Rmult_0_l Rplus_0_l in If.
   assert (H := filterlim_locally_unique _ _ _ If If') => {If If'}.
   apply is_RInt_ext with (fun _ => zero).
   move => x _ ; apply sym_eq ;
-  by rewrite -(scal_zero_l (VV := Metric_VectorSpace _) (f (0 * x + v))) /=.
+  by rewrite -(scal_zero_l (VV := Normed_VectorSpace _) (f (0 * x + v))) /=.
   apply filterlim_locally ; simpl => eps.
   apply filter_imp with (2 := filter_true) => x Hx.
   rewrite Riemann_sum_const scal_assoc /=.
-  rewrite (@scal_zero_r U R _ (Metric_VectorSpace MU) (sign (b - a) * (last (SF_h x) (unzip1 (SF_t x)) - SF_h x))).
+  rewrite (@scal_zero_r V R _ (Normed_VectorSpace MV) (sign (b - a) * (last (SF_h x) (unzip1 (SF_t x)) - SF_h x))).
   by apply H.
   
   wlog: u a b / (u > 0) => [Hw | Hu _].
@@ -3723,7 +3732,7 @@ Proof.
     case: Hu => // Hu _ If.
     apply is_RInt_ext with (fun y => opp (scal (- u) (f ((- u) * (- y) + v)))).
     move => x _.
-    rewrite -(scal_opp_l (VV := Metric_VectorSpace MU) (- u) (f (- u * - x + v))) /=.
+    rewrite -(scal_opp_l (VV := Normed_VectorSpace MV) (- u) (f (- u * - x + v))) /=.
     rewrite Ropp_involutive.
     apply f_equal.
     apply f_equal ; ring.
@@ -3741,11 +3750,11 @@ Proof.
     apply Hw.
     by [].
     by apply is_RInt_swap.
-    assert (If' := is_RInt_point _ _ f (u * a + v)).
+    assert (If' := is_RInt_point f (u * a + v)).
     assert (H := filterlim_locally_unique _ _ _ If If') => {If If'}.
     apply filterlim_locally => eps.
     apply filter_imp with (2 := filter_true) => x _.
-    rewrite Rminus_eq_0 sign_0 (scal_zero_l (VV := Metric_VectorSpace MU)).
+    rewrite Rminus_eq_0 sign_0 (scal_zero_l (VV := Normed_VectorSpace MV)).
     by apply H.
   intros If.
   apply filterlim_locally.
@@ -3824,7 +3833,7 @@ Proof.
   rewrite scal_assoc /=.
   apply f_equal2 => //= ; ring.
 Qed.
-Lemma ex_RInt_comp_lin {U} {MU : MetricVectorSpace U R} (f : R -> U) (u v a b : R) :
+Lemma ex_RInt_comp_lin (f : R -> V) (u v a b : R) :
   ex_RInt f (u * a + v) (u * b + v)
     -> ex_RInt (fun y => scal u (f (u * y + v))) a b.
 Proof.
@@ -3835,8 +3844,7 @@ Qed.
 
 (** ** Chasles *)
 
-Lemma is_RInt_Chasles_0 {V} {VV : NormedVectorSpace V R}
-  (f : R -> V) (a b c : R) (l1 l2 : V) :
+Lemma is_RInt_Chasles_0 (f : R -> V) (a b c : R) (l1 l2 : V) :
   a < b < c -> is_RInt f a b l1 -> is_RInt f b c l2
   -> is_RInt f a c (plus l1 l2).
 Proof.
@@ -3898,7 +3906,7 @@ Proof.
   by rewrite plus_assoc plus_opp_l plus_zero_l.
   apply Rplus_lt_compat.
   apply Rlt_le_trans with (2 := Rmin_r _ _) in Hstep.
-  generalize (fun H H0 => Riemann_sum_Chasles_0 (VV := VV) f (M1 + 1 + (M2 + 1)) b ptd (mkposreal _ Hd3) H H0 Hptd Hstep).
+  generalize (fun H H0 => Riemann_sum_Chasles_0 (VV := MV) f (M1 + 1 + (M2 + 1)) b ptd (mkposreal _ Hd3) H H0 Hptd Hstep).
   rewrite /= Hl Hh => H.
   replace (eps / 2) with (2 * (mkposreal _ Hd3) * (M1 + 1 + (M2 + 1))).
   rewrite -norm_opp opp_plus opp_opp plus_comm.
@@ -3982,8 +3990,7 @@ Proof.
   rewrite Hl ; by apply Rlt_le.
   by apply sym_eq, sign_0_lt ; apply -> Rminus_lt_0 ; by apply Rlt_trans with b.
 Qed.
-Lemma ex_RInt_Chasles_0 {V} {VV : NormedVectorSpace V R}
-  (f : R -> V) (a b c : R) :
+Lemma ex_RInt_Chasles_0 (f : R -> V) (a b c : R) :
   a <= b <= c -> ex_RInt f a b -> ex_RInt f b c
   -> ex_RInt f a c.
 Proof.
@@ -3996,8 +4003,7 @@ Proof.
   by split.
 Qed.
 
-Lemma is_RInt_Chasles_1  {V} {VV : NormedVectorSpace V R}
-  (f : R -> V) (a b c : R) l1 l2 :
+Lemma is_RInt_Chasles_1 (f : R -> V) (a b c : R) l1 l2 :
   a < b < c -> is_RInt f a c l1 -> is_RInt f b c l2 -> is_RInt f a b (minus l1 l2).
 Proof.
 intros [Hab Hbc] H1 H2.
@@ -4086,8 +4092,7 @@ replace (minus (minus (Riemann_sum f y1) (Riemann_sum f y2)) (minus l1 l2))
   apply sym_eq, sign_0_lt ; apply -> Rminus_lt_0.
   by apply Rlt_trans with b.
 Qed.
-Lemma ex_RInt_Chasles_1  {V} {VV : NormedVectorSpace V R}
-  (f : R -> V) (a b c : R) :
+Lemma ex_RInt_Chasles_1 (f : R -> V) (a b c : R) :
   a <= b <= c -> ex_RInt f a c -> ex_RInt f b c -> ex_RInt f a b.
 Proof.
   intros [Hab Hbc].
@@ -4099,8 +4104,7 @@ Proof.
   intros ; by apply ex_RInt_point.
 Qed.
 
-Lemma is_RInt_Chasles_2  {V} {VV : NormedVectorSpace V R}
-  (f : R -> V) (a b c : R) l1 l2 :
+Lemma is_RInt_Chasles_2 (f : R -> V) (a b c : R) l1 l2 :
   a < b < c -> is_RInt f a c l1 -> is_RInt f a b l2 -> is_RInt f b c (minus l1 l2).
 Proof.
   intros [Hab Hbc] H1 H2.
@@ -4117,8 +4121,7 @@ Proof.
   now move => x _ ; rewrite opp_opp Ropp_involutive.
   by rewrite /minus opp_plus 2!opp_opp.
 Qed.
-Lemma ex_RInt_Chasles_2  {V} {VV : NormedVectorSpace V R}
-  (f : R -> V) (a b c : R) :
+Lemma ex_RInt_Chasles_2 (f : R -> V) (a b c : R) :
   a <= b <= c -> ex_RInt f a c -> ex_RInt f a b -> ex_RInt f b c.
 Proof.
   intros [Hab Hbc].
@@ -4130,9 +4133,7 @@ Proof.
   intros ; by apply ex_RInt_point.
 Qed.
 
-
-Lemma is_RInt_Chasles {V} {VV : NormedVectorSpace V R}
-  (f : R -> V) (a b c : R) (l1 l2 : V) :
+Lemma is_RInt_Chasles (f : R -> V) (a b c : R) (l1 l2 : V) :
   is_RInt f a b l1 -> is_RInt f b c l2
   -> is_RInt f a c (plus l1 l2).
 Proof.
@@ -4233,14 +4234,15 @@ Proof.
   by apply is_RInt_Chasles_2 with b.
   now contradict Hab ; apply Rle_not_lt, Rlt_le, Rlt_trans with c.
 Qed.
-Lemma ex_RInt_Chasles {V} {VV : NormedVectorSpace V R}
-  (f : R -> V) (a b c : R) :
+Lemma ex_RInt_Chasles (f : R -> V) (a b c : R) :
   ex_RInt f a b -> ex_RInt f b c -> ex_RInt f a c.
 Proof.
   intros [l1 H1] [l2 H2].
   exists (plus l1 l2).
   by apply is_RInt_Chasles with b.
 Qed.
+
+End RInt_ext.
 
 Lemma ex_RInt_included1: forall f a b c, ex_RInt f a b -> a <= c <= b -> ex_RInt f a c.
 Proof.
@@ -4269,7 +4271,7 @@ Proof.
     apply Ropp_eq_compat.
     apply Hw.
     by apply Hab.
-    now apply is_RInt_swap.
+    now apply @is_RInt_swap.
     rewrite RInt_point.
     generalize (proj1 (filterlim_locally _ l) Hf).
     clear Hf.
@@ -4350,12 +4352,16 @@ Qed.
 
 (** ** Scalar multiplication *)
 
+Section RInt_scal.
+
+Context {V} {MV : NormedVectorSpace V R}. 
+
 Lemma is_RInt_scal :
-  forall V (MV : MetricVectorSpace V R) (f : R -> V) (a b : R) (k : R) (If : V),
+  forall (f : R -> V) (a b : R) (k : R) (If : V),
   is_RInt f a b If ->
   is_RInt (fun y => scal k (f y)) a b (scal k If).
 Proof.
-intros V MV f a b k If Hf.
+intros f a b k If Hf.
 apply filterlim_ext with (fun ptd => scal k (scal (sign (b - a)) (Riemann_sum f ptd))).
 intros ptd.
 rewrite Riemann_sum_scal.
@@ -4367,11 +4373,11 @@ apply mvspace_scal.
 Qed.
 
 Lemma ex_RInt_scal :
-  forall V (VV : MetricVectorSpace V R) (f : R -> V) (a b : R) (k : R),
+  forall (f : R -> V) (a b : R) (k : R),
   ex_RInt f a b ->
   ex_RInt (fun y => scal k (f y)) a b.
 Proof.
-intros V VV f a b k [If Hf].
+intros f a b k [If Hf].
 exists (scal k If).
 now apply is_RInt_scal.
 Qed.
@@ -4434,27 +4440,27 @@ Qed.
 (** ** Additive operators *)
 
 Lemma is_RInt_opp :
-  forall V (MV : MetricVectorSpace V R) (f : R -> V) (a b : R) (If : V),
+  forall (f : R -> V) (a b : R) (If : V),
   is_RInt f a b If ->
   is_RInt (fun y => opp (f y)) a b (opp If).
 Proof.
-intros V MV f a b If Hf.
+intros f a b If Hf.
 apply filterlim_ext with (fun ptd => (scal (opp 1) (scal (sign (b - a)) (Riemann_sum f ptd)))).
 intros ptd.
 rewrite Riemann_sum_opp.
-rewrite (scal_opp_one (VV := Metric_VectorSpace MV)).
-apply sym_eq, (scal_opp_r (VV := Metric_VectorSpace MV)).
+rewrite (scal_opp_one (VV := Normed_VectorSpace MV)).
+apply sym_eq, (scal_opp_r (VV := Normed_VectorSpace MV)).
 apply filterlim_compose with (1 := Hf).
-rewrite -(scal_opp_one (VV := Metric_VectorSpace MV)).
+rewrite -(scal_opp_one (VV := Normed_VectorSpace MV)).
 apply mvspace_scal.
 Qed.
 
 Lemma ex_RInt_opp :
-  forall V (MV : MetricVectorSpace V R) (f : R -> V) (a b : R),
+  forall (f : R -> V) (a b : R),
   ex_RInt f a b ->
   ex_RInt (fun x => opp (f x)) a b.
 Proof.
-intros V MV f a b [If Hf].
+intros f a b [If Hf].
 exists (opp If).
 now apply is_RInt_opp.
 Qed.
@@ -4471,12 +4477,12 @@ ring.
 Qed.
 
 Lemma is_RInt_plus :
-  forall V (MV : MetricVectorSpace V R) (f g : R -> V) (a b : R) (If Ig : V),
+  forall (f g : R -> V) (a b : R) (If Ig : V),
   is_RInt f a b If ->
   is_RInt g a b Ig ->
   is_RInt (fun y => plus (f y) (g y)) a b (plus If Ig).
 Proof.
-intros V MV f g a b If Ig Hf Hg.
+intros f g a b If Ig Hf Hg.
 apply filterlim_ext with (fun ptd => (plus (scal (sign (b - a)) (Riemann_sum f ptd)) (scal (sign (b - a)) (Riemann_sum g ptd)))).
 intros ptd.
 rewrite Riemann_sum_plus.
@@ -4486,15 +4492,17 @@ apply mvspace_plus.
 Qed.
 
 Lemma ex_RInt_plus :
-  forall V (MV : MetricVectorSpace V R) (f g : R -> V) (a b : R),
+  forall (f g : R -> V) (a b : R),
   ex_RInt f a b ->
   ex_RInt g a b ->
   ex_RInt (fun y => plus (f y) (g y)) a b.
 Proof.
-intros V MV f g a b [If Hf] [Ig Hg].
+intros f g a b [If Hf] [Ig Hg].
 exists (plus If Ig).
 now apply is_RInt_plus.
 Qed.
+
+End RInt_scal.
 
 Lemma RInt_plus :
   forall f g a b, ex_RInt f a b -> ex_RInt g a b ->
@@ -4504,40 +4512,46 @@ intros f g a b [If Hf] [Ig Hg].
 apply is_RInt_unique.
 rewrite -> is_RInt_unique with (1 := Hf).
 rewrite -> is_RInt_unique with (1 := Hg).
-now apply is_RInt_plus.
+now apply @is_RInt_plus.
 Qed.
 
+Section RInt_minus.
+
+Context {V} {MV : NormedVectorSpace V R}.
+
 Lemma is_RInt_minus :
-  forall V (MV : MetricVectorSpace V R) (f g : R -> V) (a b : R) (If Ig : V),
+  forall (f g : R -> V) (a b : R) (If Ig : V),
   is_RInt f a b If ->
   is_RInt g a b Ig ->
   is_RInt (fun y => minus (f y) (g y)) a b (minus If Ig).
 Proof.
-intros V MV f g a b If Ig Hf Hg.
+intros f g a b If Ig Hf Hg.
 apply filterlim_ext with (fun ptd => (plus (scal (sign (b - a)) (Riemann_sum f ptd)) (scal (opp 1) (scal (sign (b - a)) (Riemann_sum g ptd))))).
 intros ptd.
 rewrite Riemann_sum_minus.
 unfold minus.
-rewrite (scal_opp_one (VV := Metric_VectorSpace MV)).
+rewrite (scal_opp_one (VV := Normed_VectorSpace MV)).
 rewrite -scal_opp_r.
 apply sym_eq, @scal_distr_l.
 eapply filterlim_compose_2 with (1 := Hf).
 apply filterlim_compose with (1 := Hg).
 apply mvspace_scal.
-rewrite (scal_opp_one (VV := Metric_VectorSpace MV)).
+rewrite (scal_opp_one (VV := Normed_VectorSpace MV)).
 apply mvspace_plus.
 Qed.
 
 Lemma ex_RInt_minus :
-  forall V (MV : MetricVectorSpace V R) (f g : R -> V) (a b : R),
+  forall (f g : R -> V) (a b : R),
   ex_RInt f a b ->
   ex_RInt g a b ->
   ex_RInt (fun y => minus (f y) (g y)) a b.
 Proof.
-intros V MV f g a b [If Hf] [Ig Hg].
+intros f g a b [If Hf] [Ig Hg].
 exists (minus If Ig).
 now apply is_RInt_minus.
 Qed.
+
+End RInt_minus.
 
 Lemma RInt_minus :
   forall f g a b, ex_RInt f a b -> ex_RInt g a b ->
@@ -4547,7 +4561,7 @@ intros f g a b [If Hf] [Ig Hg].
 apply is_RInt_unique.
 rewrite -> is_RInt_unique with (1 := Hf).
 rewrite -> is_RInt_unique with (1 := Hg).
-now apply is_RInt_minus.
+now apply @is_RInt_minus.
 Qed.
 
 
@@ -4607,7 +4621,7 @@ case (Rcase_abs (RInt f a b)); intros Y.
 rewrite <- RInt_opp.
 apply RInt_le.
 exact H1.
-now apply ex_RInt_opp.
+now apply @ex_RInt_opp.
 now apply ex_RInt_norm.
 intros.
 rewrite <- Rabs_Ropp.
@@ -4697,12 +4711,12 @@ rewrite -RInt_minus //.
 rewrite Rmult_comm.
 rewrite -RInt_scal //.
 assert (D3: ex_RInt (fun t => f y t - f x t) a b).
-  apply ex_RInt_minus.
+  apply @ex_RInt_minus.
   by apply D1.
   by apply D2.
-assert (D4: ex_RInt (fun t => (y - x) * Derive (fun u => f u t) x) a b) by now apply ex_RInt_scal.
+assert (D4: ex_RInt (fun t => (y - x) * Derive (fun u => f u t) x) a b) by now apply @ex_RInt_scal.
 rewrite -RInt_minus //.
-assert (D5: ex_RInt (fun t => f y t - f x t - (y - x) * Derive (fun u => f u t) x) a b) by now apply ex_RInt_minus.
+assert (D5: ex_RInt (fun t => f y t - f x t - (y - x) * Derive (fun u => f u t) x) a b) by now apply @ex_RInt_minus.
 rewrite (RInt_Reals _ _ _ (ex_RInt_Reals_2 _ _ _ D5)).
 assert (D6: ex_RInt (fun t => Rabs (f y t - f x t - (y - x) * Derive (fun u => f u t) x)) a b) by now apply ex_RInt_norm.
 apply Rle_trans with (1 := RiemannInt_P17 _ (ex_RInt_Reals_2 _ _ _ D6) (Rlt_le _ _ H)).
@@ -4822,48 +4836,46 @@ Qed.
 (** * Particular Vector Spaces *)
 (** Pairs *)
 
-Lemma is_RInt_fct_extend_fst {U V} {MU : MetricVectorSpace U R} {MV : MetricVectorSpace V R}
+Lemma is_RInt_fct_extend_fst {U V} {MU : NormedVectorSpace U R} {MV : NormedVectorSpace V R}
   (f : R -> U * V) (a b : R) (l : U * V) :
   is_RInt f a b l -> is_RInt (fun t => fst (f t)) a b (fst l).
 Proof.
   intros Hf P [eP HP].
-  assert (locally l (fun u : U * V => P (fst u))).
+  destruct (Hf (fun u : U * V => P (fst u))) as [ef Hf'].
     exists eP => y Hy.
     apply HP.
-    by apply Hy.
-  specialize (Hf _ H).
-  case: Hf => ef /= Hf.
+    apply Rle_lt_trans with (2 := Hy).
+    apply Rmax_l.
   exists ef => y H1 H2.
   replace (Riemann_sum (fun t : R => fst (f t)) y)
     with (fst (Riemann_sum f y)).
-  by apply Hf.
+  by apply Hf'.
   clear.
   apply SF_cons_ind with (s := y) => {y} [x0 | [x1 y0] y IH].
   by rewrite /Riemann_sum /RInt_seq /=.
   by rewrite ?Riemann_sum_cons /= IH.
 Qed.  
-Lemma is_RInt_fct_extend_snd {U V} {MU : MetricVectorSpace U R} {MV : MetricVectorSpace V R}
+Lemma is_RInt_fct_extend_snd {U V} {MU : NormedVectorSpace U R} {MV : NormedVectorSpace V R}
   (f : R -> U * V) (a b : R) (l : U * V) :
   is_RInt f a b l -> is_RInt (fun t => snd (f t)) a b (snd l).
 Proof.
   intros Hf P [eP HP].
-  assert (locally l (fun u : U * V => P (snd u))).
+  destruct (Hf (fun u : U * V => P (snd u))) as [ef Hf'].
     exists eP => y Hy.
     apply HP.
-    by apply Hy.
-  specialize (Hf _ H).
-  case: Hf => ef /= Hf.
+    apply Rle_lt_trans with (2 := Hy).
+    apply Rmax_r.
   exists ef => y H1 H2.
   replace (Riemann_sum (fun t : R => snd (f t)) y)
     with (snd (Riemann_sum f y)).
-  by apply Hf.
+  by apply Hf'.
   clear.
   apply SF_cons_ind with (s := y) => {y} [x0 | [x1 y0] y IH].
   by rewrite /Riemann_sum /RInt_seq /=.
   by rewrite ?Riemann_sum_cons /= IH.
 Qed.
 
-Lemma RInt_fct_extend_pair {U V} {MU : MetricVectorSpace U R} {MV : MetricVectorSpace V R}
+Lemma RInt_fct_extend_pair {U V} {MU : NormedVectorSpace U R} {MV : NormedVectorSpace V R}
    (U_RInt : (R -> U) -> R -> R -> U) (V_RInt : (R -> V) -> R -> R -> V) :
   (forall f a b l, is_RInt f a b l -> U_RInt f a b = l)
   -> (forall f a b l, is_RInt f a b l -> V_RInt f a b = l)
@@ -4882,7 +4894,7 @@ Lemma RInt_const (a b c : R) :
   RInt (fun _ => c) a b = (b - a) * c.
 Proof.
 apply is_RInt_unique.
-apply is_RInt_const.
+apply @is_RInt_const.
 Qed.
 
 Lemma RInt_comp_lin (f : R -> R) (u v a b : R) :
@@ -5132,7 +5144,7 @@ Proof.
     (RInt (fun z => f z - f x) x y).
   rewrite Rmult_comm.
   apply RInt_le_const.
-  apply ex_RInt_minus.
+  apply @ex_RInt_minus.
   exact H.
   apply ex_RInt_const.
   intros t Ht.
@@ -5827,13 +5839,13 @@ Lemma is_RInt_comp (f g : R -> R) (a b : R) :
 Proof.
   case: (Req_dec a b) => [<- {b} | Hab].
     move => Hf Hg.
-    rewrite RInt_point ; by apply is_RInt_point.
+    rewrite RInt_point ; by apply @is_RInt_point.
   wlog: a b Hab /(a < b) => [Hw | {Hab} Hab].
     case: (Rle_lt_dec a b) => Hab' Hf Hg.
     case: Hab' => // Hab'.
     by apply Hw.
     rewrite -RInt_swap.
-    apply is_RInt_swap.
+    apply @is_RInt_swap.
     apply Hw => //.
     by apply sym_not_eq.
     rewrite Rmin_comm Rmax_comm.
