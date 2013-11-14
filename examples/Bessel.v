@@ -319,7 +319,7 @@ Lemma Bessel1_uniqueness (a : nat -> R) (n : nat) : Rbar_lt 0 (CV_radius a) ->
   (forall k, (INR (S (S k)) ^ 2 - INR n ^ 2) * a (S (S k)) + a k = 0).
 Proof.
   move => Ha H.
-  set VV := Normed_MetricVectorSpace (AbsField_NormedVectorSpace _ R_metric_field).
+  set (VV := Normed_MetricVectorSpace _).
   cut (forall k, 
     (PS_plus (VV := VV) (PS_plus (VV := VV) (PS_incr_n (VV := VV) (PS_derive_n 2 a) 2)
       (PS_incr_1 (VV := VV) (PS_derive a))) (PS_plus (VV := VV) (PS_incr_n (VV := VV) a 2) (PS_scal (VV := VV) (- INR n ^ 2) a))) k = 0).

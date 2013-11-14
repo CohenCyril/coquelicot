@@ -167,6 +167,18 @@ Proof.
   apply injective_projections ; simpl ; by apply H.
 Qed.
 
+Lemma Cinv_l (r : C) : r <> 0 -> /r * r = 1.
+Proof.
+intros Zr.
+rewrite Cmult_comm.
+now apply Cinv_r.
+Qed.
+
+Lemma Cmult_plus_distr_l (x y z : C) : x * (y + z) = x * y + x * z.
+Proof.
+  apply injective_projections ; simpl ; ring.
+Qed.
+
 Lemma Cmult_plus_distr_r (x y z : C) : (x + y) * z = x * z + y * z.
 Proof.
   apply injective_projections ; simpl ; ring.
@@ -181,23 +193,28 @@ apply Cplus_0_r.
 apply Cplus_opp_r.
 Defined.
 
-Global Instance C_Field_mixin : Field_mixin C _.
+Lemma Copp_0 : Copp 0 = 0.
+Proof.
+  apply (@opp_zero C C_AbelianGroup).
+Qed.
+
+Global Instance Ring_mixin_C : Ring_mixin C _.
 Proof.
 econstructor.
-apply Cmult_comm.
 apply Cmult_assoc.
 apply Cmult_1_r.
-apply Cinv_r.
+apply Cmult_1_l.
 apply Cmult_plus_distr_r.
+apply Cmult_plus_distr_l.
 Defined.
 
-Global Instance C_Field : Field C.
+Global Instance Ring_C : Ring C.
 Proof.
 econstructor.
-apply C_Field_mixin.
+apply Ring_mixin_C.
 Defined.
 
-Global Instance C_AbsField_mixin : AbsField_mixin C _.
+Global Instance AbsRing_mixin_C : AbsRing_mixin C _.
 Proof.
 econstructor.
 apply Cmod_0.
@@ -207,28 +224,85 @@ apply Cmod_triangle.
 apply Cmod_mult.
 Defined.
 
-Global Instance C_AbsField : AbsField C.
+Global Instance AbsRing_C : AbsRing C.
 Proof.
   econstructor.
-  by apply C_AbsField_mixin.
+  by apply AbsRing_mixin_C.
 Defined.
 
-(* Require Export LegacyField.
-Import LegacyRing_theory.
-Lemma CLegacyTheory : Ring_Theory Cplus Cmult C1 C0 Copp (fun x y : C => false).
-  split ; intros ; apply injective_projections ; simpl ; try ring ; by simpl in H.
+Lemma Cmod_eq_0 :
+  forall x, Cmod x = 0 -> x = 0.
+Proof.
+intros x H.
+unfold Cmod, pow in H.
+rewrite 2!Rmult_1_r -sqrt_0 in H.
+apply sqrt_inj in H.
+apply Rplus_sqr_eq_0 in H.
+now apply injective_projections.
+apply Rplus_le_le_0_compat ; apply Rle_0_sqr.
+apply Rle_refl.
 Qed.
-Add Legacy Field C Cplus Cmult C1 C0 Copp (fun x y : C => false) Cinv CLegacyTheory Cinv_l
-  with minus := Cminus div := Cdiv.
 
-Goal forall x y z : C, x * z + y * z = (x + y) * z.
-intros.
-field. *)
+Lemma Cmod_ge_0 :
+  forall x, 0 <= Cmod x.
+Proof.
+intros x.
+apply sqrt_pos.
+Qed.
+
+Lemma Cmod_R :
+  forall x : R, Cmod x = Rabs x.
+Proof.
+intros x.
+unfold Cmod.
+simpl.
+rewrite Rmult_0_l Rplus_0_r Rmult_1_r.
+apply sqrt_Rsqr_abs.
+Qed.
+
+Lemma Cmod_inv :
+  forall x : C, x <> 0 -> Cmod (/ x) = Rinv (Cmod x).
+Proof.
+intros x Zx.
+apply Rmult_eq_reg_l with (Cmod x).
+rewrite -Cmod_mult.
+rewrite Rinv_r.
+rewrite Cinv_r.
+rewrite Cmod_R.
+apply Rabs_R1.
+exact Zx.
+contradict Zx.
+now apply Cmod_eq_0.
+contradict Zx.
+now apply Cmod_eq_0.
+Qed.
+
+Lemma C_field_theory : field_theory C0 C1 Cplus Cmult Cminus Copp Cdiv Cinv eq.
+Proof.
+constructor.
+constructor.
+exact Cplus_0_l.
+exact Cplus_comm.
+exact Cplus_assoc.
+exact Cmult_1_l.
+exact Cmult_comm.
+exact Cmult_assoc.
+exact Cmult_plus_distr_r.
+easy.
+exact Cplus_opp_r.
+intros H.
+injection H.
+exact R1_neq_R0.
+easy.
+apply Cinv_l.
+Qed.
+
+Add Field C_field_field : C_field_theory.
 
 (** * Limits *)
 
 Definition is_C_lim (f : C -> C) (z l : C) :=
-  let MS := Normed_MetricBall (AbsField_NormedVectorSpace C C_AbsField) in
+  let MS := Normed_MetricBall (AbsRing_NormedVectorSpace C _) in
   filterlim f (locally' z) (locally l).
 Definition ex_C_lim (f : C -> C) (z : C) :=
   exists (l : C), is_C_lim f z l.
@@ -306,10 +380,30 @@ Lemma C_derive_unique (f : C -> C) (z l : C) :
 Proof.
   intros Df.
   apply is_C_lim_unique.
-  apply filterlim_ext with (fun y : C => / (y + - z) * (f y + - f z)).
-  intro x.
-  apply Cmult_comm.
-  by apply Df.
+  intros P HP.
+  destruct HP as [eps HP].
+  destruct (Df (ball 0 eps)) as [eps' Df'].
+  apply locally_ball.
+  exists eps'.
+  intros y Hy Hyz.
+  apply HP.
+  assert (y - z <> 0).
+  contradict Hyz.
+  replace y with (y - z + z) by ring.
+  rewrite Hyz.
+  apply Cplus_0_l.
+  generalize (Df' y Hy Hyz).
+  congr (_ < eps).
+  simpl.
+  unfold Rdiv.
+  rewrite  Ropp_0 Rplus_0_r -Cmod_inv.
+  rewrite -Cmod_mult.
+  rewrite Rabs_right.
+  apply f_equal.
+  now field.
+  apply Rle_ge.
+  apply Cmod_ge_0.
+  exact H.
 Qed.
 
 (** * Integrals *)

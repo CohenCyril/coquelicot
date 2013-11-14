@@ -26,12 +26,12 @@ Require Import Hierarchy Continuity.
 Require Import Rcomplements.
 Open Scope R_scope.
 
-(** * One direction differentiability using filters *)
+(** * One-direction differentiability using filters *)
 
-Definition filterderive {U K} {FK : AbsField K} {VSU : MetricVectorSpace U K} 
+Definition filterderive {U K} {RK : AbsRing K} {VSU : NormedVectorSpace U K}
   (f : K -> U) (x : K) (l : U) :=
-  filterlim (fun y => scal (inv (minus y x)) (minus (f y) (f x)))
-    (locally' x) (locally l).
+  filterlim (fun y => norm (minus (minus (f y) (f x)) (scal (minus y x) l)) / abs (minus y x))
+    (locally' x) (locally R0).
 
 Lemma filterderive_Reals (f : R -> R) (x l : R) :
  (derivable_pt_lim f x l <-> filterderive f x l).
@@ -41,23 +41,29 @@ Proof.
     move => eps.
     case: (Hf eps (cond_pos _)) => {Hf} d Hf.
     exists d => y /= Hy Hxy.
-    replace (/ (y + - x) * (f y + - f x) + - l)
+    rewrite Ropp_0 Rplus_0_r -Rabs_div.
+    rewrite Rabs_Rabsolu.
+    replace ((f y + - f x + - ((y + - x) * l)) / (y + - x))
       with (((f (x + (y-x)) - f x) / (y-x) - l))
       by (ring_simplify (x + (y - x)) ; field ; by apply Rminus_eq_contra).
     apply: Hf.
     by apply Rminus_eq_contra.
     exact Hy.
+    by apply Rminus_eq_contra.
   + move => e He.
     apply filterlim_locally with (eps := mkposreal _ He) in Hf ; simpl in Hf.
     case: Hf => d /= Hf.
     exists d => h Hh0 Hh.
     replace ((f (x + h) - f x) / h - l)
-      with (/ ((x+h) + - x) * (f (x + h) + - f x) + - l)
+      with ((f (x + h) + - f x + - ((x + h + -x) * l)) / (x + h + -x))
       by (by field).
+    rewrite -Rabs_Rabsolu Rabs_div.
+    rewrite -[_ / _]Rplus_0_r -Ropp_0.
     apply: Hf.
     by ring_simplify (x + h + - x).
     apply Rminus_not_eq.
     by ring_simplify (x + h - x).
+    by ring_simplify (x + h + - x).
 Qed.
 
 (** * Definitions *)

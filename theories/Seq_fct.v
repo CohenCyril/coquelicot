@@ -842,7 +842,7 @@ Lemma CVN_CVU_r (fn : nat -> R -> R) (r : posreal) :
     CVU (fun n => SP fn n) (fun x => Series (fun n => fn n x)) x e.
 Proof.
   case => An [l [H H0]] x Hx.
-  set VV := Normed_MetricVectorSpace (AbsField_NormedVectorSpace _ R_metric_field).
+  set (VV := Normed_MetricVectorSpace (AbsRing_NormedVectorSpace _ _)).
   assert (H1 : @ex_series _ _ _ VV An).
     apply ex_series_equiv_1.
     exists l => e He.

@@ -336,7 +336,7 @@ constructor.
 Qed.
 
 (** * Algebraic spaces *)
-(** ** Abelian Groups *)
+(** ** Abelian groups *)
 
 Class AbelianGroup G := {
   plus : G -> G -> G ;
@@ -497,276 +497,155 @@ Proof.
 Qed.
 
 
-(** ** Non commutative ring *)
+(** ** Noncommutative rings *)
 
-Class ncRing_mixin (K : Type) (KA : AbelianGroup K) := {
-  nc_mult : K -> K -> K ;
-  nc_one : K ;
-  nc_mult_assoc : forall x y z, nc_mult x (nc_mult y z) = nc_mult (nc_mult x y) z ;
-  nc_mult_one_r : forall x, nc_mult x nc_one = x ;
-  nc_mult_one_l : forall x, nc_mult nc_one x = x ;
-  nc_mult_distr_r : forall x y z, nc_mult (plus x y) z = plus (nc_mult x z) (nc_mult y z) ;
-  nc_mult_distr_l : forall x y z, nc_mult x (plus y z) = plus (nc_mult x y) (nc_mult x z)
-}.
-Class ncRing K := {
-  ncring_group :> AbelianGroup K ;
-  ncring_mixin :> ncRing_mixin K ncring_group
-}.
-
-(** Arithmetic operations *)
-
-Lemma nc_mult_zero_r {K} {RK : ncRing K} :
-  forall (x : K),
-  nc_mult x zero = zero.
-Proof.
-intros x.
-apply plus_reg_r with (nc_mult x zero).
-rewrite <- nc_mult_distr_l.
-rewrite plus_zero_r.
-now rewrite plus_zero_l.
-Qed.
-
-Lemma nc_mult_zero_l {K} {RK : ncRing K} :
-  forall (x : K),
-  nc_mult zero x = zero.
-Proof.
-intros x.
-apply plus_reg_r with (nc_mult zero x).
-rewrite <- nc_mult_distr_r.
-rewrite plus_zero_r.
-now rewrite plus_zero_l.
-Qed.
-
-Lemma opp_nc_mult_r: forall {K} {RK : ncRing K} (x y: K),
-  opp (nc_mult x y) = nc_mult x (opp y).
-Proof.
-intros K RK x y.
-apply plus_eq_compat_l with (nc_mult x y).
-rewrite plus_opp_r -nc_mult_distr_l.
-now rewrite plus_opp_r nc_mult_zero_r.
-Qed.
-
-Lemma opp_nc_mult_l: forall {K} {RK : ncRing K} (x y: K),
-  opp (nc_mult x y) = nc_mult (opp x) y.
-Proof.
-intros K RK x y.
-apply plus_eq_compat_l with (nc_mult x y).
-rewrite plus_opp_r -nc_mult_distr_r.
-now rewrite plus_opp_r nc_mult_zero_l.
-Qed.
-
-Lemma opp_nc_mult_m1 : forall {K} {KF : ncRing K} x,
-  opp x = nc_mult (opp nc_one) x.
-Proof.
-  intros K KF x.
-  rewrite -opp_nc_mult_l opp_nc_mult_r.
-  by rewrite nc_mult_one_l.
-Qed.
-
-Lemma sum_n_mult_r {K} {RK : ncRing K} :
- forall (a : K) (u : nat -> K) (n : nat),
-  sum_n (fun k => nc_mult (u k) a) n = nc_mult (sum_n u n) a.
-Proof.
-  intros a u n.
-  induction n ; simpl.
-  by [].
-  rewrite IHn.
-  apply eq_sym.
-  by apply nc_mult_distr_r.
-Qed.
-
-Lemma sum_n_mult_l {K} {RK : ncRing K} :
- forall (a : K) (u : nat -> K) (n : nat),
-  sum_n (fun k => nc_mult a (u k)) n = nc_mult a (sum_n u n).
-Proof.
-  intros a u n.
-  induction n ; simpl.
-  by [].
-  rewrite IHn.
-  apply eq_sym.
-  by apply nc_mult_distr_l.
-Qed.
-
-
-(** ** Fields *)
-
-Class Field_mixin (K : Type) (KA : AbelianGroup K) := {
+Class Ring_mixin (K : Type) (KA : AbelianGroup K) := {
   mult : K -> K -> K ;
-  inv : K -> K ;
   one : K ;
-  mult_comm : forall x y, mult x y = mult y x ;
   mult_assoc : forall x y z, mult x (mult y z) = mult (mult x y) z ;
   mult_one_r : forall x, mult x one = x ;
-  mult_inv_r : forall x, x <> zero -> mult x (inv x) = one ;
-  mult_distr_r : forall x y z, mult (plus x y) z = plus (mult x z) (mult y z)
+  mult_one_l : forall x, mult one x = x ;
+  mult_distr_r : forall x y z, mult (plus x y) z = plus (mult x z) (mult y z) ;
+  mult_distr_l : forall x y z, mult x (plus y z) = plus (mult x y) (mult x z)
 }.
-Class Field K := {
-  field_group :> AbelianGroup K ;
-  field_field :> Field_mixin K field_group
+Class Ring K := {
+  ring_group :> AbelianGroup K ;
+  ring_mixin :> Ring_mixin K ring_group
 }.
-
-Global Instance Field_ncRing {K} :
-  Field K -> ncRing K.
-Proof.
-  intro FK.
-  apply Build_ncRing with field_group.
-  apply Build_ncRing_mixin with mult one.
-  exact mult_assoc.
-  exact mult_one_r.
-  now intro x ; rewrite mult_comm ; apply mult_one_r.
-  exact mult_distr_r.
-  now intros x y z ; rewrite 3!(mult_comm x) ; apply mult_distr_r.
-Defined.
 
 (** Arithmetic operations *)
 
-Lemma mult_one_l :
-  forall {K} {FK : Field K} (x : K),
-  mult one x = x.
-Proof.
-intros K FK.
-exact (@nc_mult_one_l K _ (@ncring_mixin K (Field_ncRing FK))).
-Qed.
+Section Ring.
 
-Lemma mult_inv_l {K} {FK : Field K} :
-  forall x, x <> zero -> mult (inv x) x = one.
-Proof.
-  intros x Hx.
-  now rewrite mult_comm ; apply mult_inv_r.
-Qed.
-
-Lemma mult_distr_l :
-  forall {K} {FK : Field K} (x y z : K),
-  mult x (plus y z) = plus (mult x y) (mult x z).
-Proof.
-intros K FK.
-exact (@nc_mult_distr_l K _ (@ncring_mixin K (Field_ncRing FK))) .
-Qed.
+Context {K} {RK : Ring K}.
 
 Lemma mult_zero_r :
-  forall {K} {FK : Field K} (x : K),
+  forall x : K,
   mult x zero = zero.
 Proof.
-intros K FK.
-exact nc_mult_zero_r.
+intros x.
+apply plus_reg_r with (mult x zero).
+rewrite <- mult_distr_l.
+rewrite plus_zero_r.
+now rewrite plus_zero_l.
 Qed.
 
 Lemma mult_zero_l :
-  forall {K} {FK : Field K} (x : K),
+  forall x : K,
   mult zero x = zero.
 Proof.
-intros K FK.
-exact nc_mult_zero_l.
+intros x.
+apply plus_reg_r with (mult zero x).
+rewrite <- mult_distr_r.
+rewrite plus_zero_r.
+now rewrite plus_zero_l.
 Qed.
 
-Lemma mult_eq_compat_l: forall {K} {FK : Field K} 
-  (r x y: K), r <> zero -> mult r x = mult r y -> x = y.
-Proof.
-intros K FK r x y Hr H.
-rewrite <- (mult_one_l x).
-rewrite <- (mult_inv_r r); try assumption.
-rewrite mult_comm mult_assoc (mult_comm x _).
-rewrite H.
-rewrite mult_comm mult_assoc (mult_comm _ r).
-rewrite mult_inv_r; try assumption.
-apply mult_one_l.
-Qed.
-
-Lemma inv_eq: forall {K} {FK : Field K} 
-  (x y : K), x <> zero -> mult x y = one -> y = inv x.
-Proof.
-intros K FK x y Hx H.
-apply mult_eq_compat_l with (x).
-assumption.
-now rewrite H mult_inv_r.
-Qed.
-
-Lemma inv_mult :
-  forall {K} {FK : Field K} (x y : K), mult x y <> zero ->
-  inv (mult x y) = mult (inv x) (inv y).
-Proof.
-intros K FK x y Hxy.
-apply sym_eq, inv_eq; try assumption.
-rewrite (mult_comm x) mult_assoc.
-rewrite <- (mult_assoc _ _ (inv x)).
-rewrite mult_inv_r.
-rewrite mult_one_r.
-rewrite mult_inv_r.
-reflexivity.
-intros L; apply Hxy.
-rewrite L; apply mult_zero_r.
-intros L; apply Hxy.
-rewrite L; apply mult_zero_l.
-Qed.
-
-Lemma opp_mult_r: forall {K} {FK : Field K} (x y: K),
+Lemma opp_mult_r :
+  forall x y : K,
   opp (mult x y) = mult x (opp y).
 Proof.
-intros K FK.
-exact opp_nc_mult_r.
+intros x y.
+apply plus_eq_compat_l with (mult x y).
+rewrite plus_opp_r -mult_distr_l.
+now rewrite plus_opp_r mult_zero_r.
 Qed.
 
-Lemma opp_mult_l: forall {K} {FK : Field K} (x y: K),
+Lemma opp_mult_l :
+  forall x y : K,
   opp (mult x y) = mult (opp x) y.
 Proof.
-intros K FK.
-exact opp_nc_mult_l.
+intros x y.
+apply plus_eq_compat_l with (mult x y).
+rewrite plus_opp_r -mult_distr_r.
+now rewrite plus_opp_r mult_zero_l.
 Qed.
 
-Lemma opp_mult_m1 : forall {K} {KF : Field K} x,
+Lemma opp_mult_m1 :
+  forall x : K,
   opp x = mult (opp one) x.
 Proof.
-  intros K KF.
-  exact opp_nc_mult_m1.
+  intros x.
+  rewrite -opp_mult_l opp_mult_r.
+  by rewrite mult_one_l.
 Qed.
 
-(** ** Fields with absolute value *)
+Lemma sum_n_mult_r :
+ forall (a : K) (u : nat -> K) (n : nat),
+  sum_n (fun k => mult (u k) a) n = mult (sum_n u n) a.
+Proof.
+  intros a u n.
+  induction n ; simpl.
+  by [].
+  rewrite IHn.
+  apply eq_sym.
+  by apply mult_distr_r.
+Qed.
 
-Class AbsField_mixin K (KF : Field K) := {
+Lemma sum_n_mult_l :
+ forall (a : K) (u : nat -> K) (n : nat),
+  sum_n (fun k => mult a (u k)) n = mult a (sum_n u n).
+Proof.
+  intros a u n.
+  induction n ; simpl.
+  by [].
+  rewrite IHn.
+  apply eq_sym.
+  by apply mult_distr_l.
+Qed.
+
+End Ring.
+
+(** ** Rings with absolute value *)
+
+Class AbsRing_mixin K (RK : Ring K) := {
   abs : K -> R ;
   abs_zero : abs zero = 0 ;
   abs_opp_one : abs (opp one) = 1 ;
   abs_triangle : forall x y, abs (plus x y) <= abs x + abs y ;
   abs_mult : forall x y, abs (mult x y) = abs x * abs y
 }.
-Class AbsField K := {
-  absfield_group :> AbelianGroup K ;
-  absfield_field :> Field_mixin K absfield_group ;
-  absfield_abs :> AbsField_mixin K (Build_Field _ _ absfield_field)
+Class AbsRing K := {
+  absring_group :> AbelianGroup K ;
+  absring_ring :> Ring_mixin K absring_group ;
+  absring_mixin :> AbsRing_mixin K (Build_Ring _ _ absring_ring)
 }.
 
-Global Instance AbsField_Field {K} :
-  AbsField K -> Field K.
+Global Instance AbsRing_Ring {K} :
+  AbsRing K -> Ring K.
 Proof.
   intro MF.
-  apply Build_Field with absfield_group.
+  apply Build_Ring with absring_group.
   by apply MF.
 Defined.
 
 (** Usual properties *)
 
+Section AbsRing.
+
+Context {K} {AK : AbsRing K}.
+
 Lemma abs_one :
-  forall {K} {AF : AbsField K}, abs one = 1.
+  abs one = 1.
 Proof.
-  intros K AF.
   rewrite -(Rmult_1_l 1).
   rewrite -abs_opp_one -abs_mult.
   by rewrite -opp_mult_l opp_mult_r opp_opp mult_one_l.
 Qed.
 
 Lemma abs_opp :
-  forall {K} {AF : AbsField K} x, abs (opp x) = abs x.
+  forall x, abs (opp x) = abs x.
 Proof.
-  intros K AF x.
-  rewrite (opp_mult_m1 (KF := AbsField_Field AF)).
+  intros x.
+  rewrite (opp_mult_m1 (RK := AbsRing_Ring AK)).
   rewrite abs_mult abs_opp_one.
   by rewrite Rmult_1_l.
 Qed.
 
 Lemma abs_ge_0 :
-  forall {K} {AF : AbsField K} x, 0 <= abs x.
+  forall x, 0 <= abs x.
 Proof.
-  intros K AF x.
+  intros x.
   apply Rmult_le_reg_l with 2.
   by apply Rlt_0_2.
   rewrite Rmult_0_r -abs_zero -(plus_opp_l x).
@@ -775,7 +654,9 @@ Proof.
   apply Req_le ; ring.
 Qed.
 
-(** * Metric Spaces difined using balls *)
+End AbsRing.
+
+(** * Metric spaces defined using balls *)
 
 Class MetricBall M := {
   ball : M -> R -> M -> Prop ;
@@ -785,9 +666,9 @@ Class MetricBall M := {
   ball_le : forall x e1 e2, e1 <= e2 -> forall y, ball x e1 y -> ball x e2 y
 }.
 
-(** ** Particular metric spaces *)
+(** ** Specific metric spaces *)
 
-(** Functionnal metric spaces *)
+(** Functional metric spaces *)
 
 Global Instance MetricBall_fct {T M} :
   MetricBall M -> MetricBall (T -> M).
@@ -838,7 +719,6 @@ Qed.
 
 Definition locally {T} {MT : MetricBall T} (x : T) (P : T -> Prop) :=
   exists eps : posreal, forall y, ball x eps y -> P y.
-
 
 Global Instance locally_filter :
   forall {T} {MT : MetricBall T} (x : T), ProperFilter (locally x).
@@ -1167,34 +1047,34 @@ Defined.
 
 (** * Vector Spaces *)
 
-Class VectorSpace_mixin V K {FK : ncRing K} (AG : AbelianGroup V) := {
+Class VectorSpace_mixin V K {RK : Ring K} (AV : AbelianGroup V) := {
   scal : K -> V -> V ;
-  scal_assoc : forall x y u, scal x (scal y u) = scal (nc_mult x y) u ;
-  scal_one : forall u, scal nc_one u = u ;
+  scal_assoc : forall x y u, scal x (scal y u) = scal (mult x y) u ;
+  scal_one : forall u, scal one u = u ;
   scal_distr_l : forall x u v, scal x (plus u v) = plus (scal x u) (scal x v) ;
   scal_distr_r : forall x y u, scal (plus x y) u = plus (scal x u) (scal y u)
 }.
 
-Class VectorSpace V K {FK : ncRing K} := {
+Class VectorSpace V K {RK : Ring K} := {
   vspace_group :> AbelianGroup V ;
   vspace_mixin :> VectorSpace_mixin V K vspace_group
 }.
 
-Global Instance ncRing_VectorSpace :
-  forall K (F : ncRing K), VectorSpace K K.
+Global Instance Ring_VectorSpace :
+  forall K (F : Ring K), VectorSpace K K.
 Proof.
   move => K F.
   econstructor.
-  apply Build_VectorSpace_mixin with nc_mult.
-  exact nc_mult_assoc.
-  exact nc_mult_one_l.
-  exact nc_mult_distr_l.
-  exact nc_mult_distr_r.
+  apply Build_VectorSpace_mixin with mult.
+  exact mult_assoc.
+  exact mult_one_l.
+  exact mult_distr_l.
+  exact mult_distr_r.
 Defined.
 
 (** ** Metric Vector Spaces *)
 
-Class MetricVectorSpace V K {FK : ncRing K} := {
+Class MetricVectorSpace V K {RK : Ring K} := {
   mvspace_group :> AbelianGroup V ;
   mvspace_vector :> VectorSpace_mixin V K mvspace_group ;
   mvspace_metric :> MetricBall V ;
@@ -1202,7 +1082,7 @@ Class MetricVectorSpace V K {FK : ncRing K} := {
   mvspace_scal : forall x y, filterlim (fun z : V => scal x z) (locally y) (locally (scal x y))
 }.
 
-Global Instance Metric_VectorSpace {V K} {FK : ncRing K} :
+Global Instance Metric_VectorSpace {V K} {FK : Ring K} :
   MetricVectorSpace V K -> VectorSpace V K.
 Proof.
   intro MVS.
@@ -1213,7 +1093,7 @@ Defined.
 (** Operations *)
 
 Lemma scal_zero_r :
-  forall {V K} {FK : ncRing K} {VV : VectorSpace V K} (x : K),
+  forall {V K} {FK : Ring K} {VV : VectorSpace V K} (x : K),
   scal (V := V) x zero = zero.
 Proof.
 intros V K FK VV x.
@@ -1224,7 +1104,7 @@ now rewrite plus_zero_l.
 Qed.
 
 Lemma scal_zero_l :
-  forall {V K} {FK : ncRing K} {VV : VectorSpace V K} (u : V),
+  forall {V K} {FK : Ring K} {VV : VectorSpace V K} (u : V),
   scal zero u = zero.
 Proof.
 intros V K FK VV u.
@@ -1235,7 +1115,7 @@ now rewrite plus_zero_r.
 Qed.
 
 Lemma scal_opp_l :
-  forall {V K} {FK : ncRing K} {VV : VectorSpace V K} (x : K) (u : V),
+  forall {V K} {FK : Ring K} {VV : VectorSpace V K} (x : K) (u : V),
   scal (opp x) u = opp (scal x u).
 Proof.
 intros V K FK VV x u.
@@ -1247,7 +1127,7 @@ apply scal_zero_l.
 Qed.
 
 Lemma scal_opp_r :
-  forall {V K} {FK : ncRing K} {VV : VectorSpace V K} (x : K) (u : V),
+  forall {V K} {FK : Ring K} {VV : VectorSpace V K} (x : K) (u : V),
   scal x (opp u) = opp (scal x u).
 Proof.
 intros V K FK VV x u.
@@ -1259,15 +1139,15 @@ apply scal_zero_r.
 Qed.
 
 Lemma scal_opp_one :
-  forall {V K} {FK : ncRing K} {VV : VectorSpace V K} (u : V),
-  scal (opp nc_one) u = opp u.
+  forall {V K} {FK : Ring K} {VV : VectorSpace V K} (u : V),
+  scal (opp one) u = opp u.
 Proof.
 intros V K FK VV u.
 rewrite scal_opp_l.
 now rewrite scal_one.
 Qed.
 
-Lemma sum_n_scal_l {T K} {RK : ncRing K} {MT : VectorSpace T K} :
+Lemma sum_n_scal_l {T K} {RK : Ring K} {MT : VectorSpace T K} :
  forall (a : K) (u : nat -> T) (n : nat),
   sum_n (fun k => scal a (u k)) n = scal a (sum_n u n).
 Proof.
@@ -1279,7 +1159,7 @@ Proof.
   by apply scal_distr_l.
 Qed.
 
-Lemma filterlim_opp_2 {K} {V} {FK : ncRing K} {VV : MetricVectorSpace V K}: forall (x:V), 
+Lemma filterlim_opp_2 {K} {V} {FK : Ring K} {VV : MetricVectorSpace V K}: forall (x:V), 
    filterlim opp (locally x) (locally (opp x)).
 Proof.
 intros x.
@@ -1290,7 +1170,7 @@ Qed.
 
 (** ** Complete Metric Vector Space *)
 
-Class CompleteMetricVectorSpace V K {FK : ncRing K} := {
+Class CompleteMetricVectorSpace V K {FK : Ring K} := {
   cmvspace_group :> AbelianGroup V ;
   cmvspace_vector :> VectorSpace_mixin V K cmvspace_group ;
   cmvspace_metric :> MetricBall V ;
@@ -1299,7 +1179,7 @@ Class CompleteMetricVectorSpace V K {FK : ncRing K} := {
   cmvspace_scal : forall x y, filterlim (fun z : V => scal x z) (locally y) (locally (scal x y))
 }.
 
-Global Instance Complete_MetricVectorSpace {V K} {FK : ncRing K} :
+Global Instance Complete_MetricVectorSpace {V K} {FK : Ring K} :
   CompleteMetricVectorSpace V K -> MetricVectorSpace V K.
 Proof.
   intros CMVS.
@@ -1308,7 +1188,7 @@ Proof.
   exact cmvspace_scal.
 Defined.
 
-Global Instance CompleteMetricVectorSpace_CompleteSpace {V K} {FK : ncRing K} :
+Global Instance CompleteMetricVectorSpace_CompleteSpace {V K} {FK : Ring K} :
   CompleteMetricVectorSpace V K -> CompleteSpace V.
 Proof.
   intros CMVS.
@@ -1318,18 +1198,18 @@ Defined.
 
 (** ** Normed Vector Space *)
 
-Class NormedVectorSpace_mixin V K {FK : AbsField K} (VS : VectorSpace V K) := {
+Class NormedVectorSpace_mixin V K {FK : AbsRing K} (VS : VectorSpace V K) := {
   norm : V -> R ;
   norm_triangle : forall (x y : V), norm (plus x y) <= norm x + norm y ;
   norm_scal : forall (l : K) (x : V), norm (scal l x) = abs l * norm x
 }.
-Class NormedVectorSpace V K {FK : AbsField K} := {
+Class NormedVectorSpace V K {FK : AbsRing K} := {
   nvspace_group :> AbelianGroup V ;
   nvspace_vector :> VectorSpace_mixin V K nvspace_group ;
   nvspace_norm :> NormedVectorSpace_mixin V K (Build_VectorSpace V K _ _ nvspace_vector)
 }.
 
-Global Instance Normed_VectorSpace {V K : Type} {FK : AbsField K} :
+Global Instance Normed_VectorSpace {V K : Type} {FK : AbsRing K} :
   NormedVectorSpace V K -> VectorSpace V K.
 Proof.
   intro NVS.
@@ -1337,8 +1217,8 @@ Proof.
   by apply nvspace_vector.
 Defined.
 
-Global Instance AbsField_NormedVectorSpace :
-  forall K (AF : AbsField K), NormedVectorSpace K K.
+Global Instance AbsRing_NormedVectorSpace :
+  forall K (AF : AbsRing K), NormedVectorSpace K K.
 Proof.
   move => K AF.
   econstructor.
@@ -1350,7 +1230,7 @@ Defined.
 (** Operations *)
 
 Lemma norm_zero :
-  forall {V K} {FK : AbsField K} {NVS : NormedVectorSpace V K},
+  forall {V K} {FK : AbsRing K} {NVS : NormedVectorSpace V K},
   norm zero = 0.
 Proof.
   intros V K FK NVS.
@@ -1358,7 +1238,7 @@ Proof.
   exact: Rmult_0_l.
 Qed.
 Lemma norm_opp :
-  forall {V K} {FK : AbsField K} {NVS : NormedVectorSpace V K} (x : V),
+  forall {V K} {FK : AbsRing K} {NVS : NormedVectorSpace V K} (x : V),
   norm (opp x) = norm x.
 Proof.
   intros V K FK NVS x.
@@ -1366,7 +1246,7 @@ Proof.
   exact: Rmult_1_l.
 Qed.
 Lemma norm_ge_0 :
-  forall {V K} {FK : AbsField K} {NVS : NormedVectorSpace V K} (x : V),
+  forall {V K} {FK : AbsRing K} {NVS : NormedVectorSpace V K} (x : V),
   0 <= norm x.
 Proof.
   intros V K FK NVS x.
@@ -1381,7 +1261,7 @@ Qed.
 
 (** Paricular normed vector spaces *)
 
-Global Instance Normed_MetricBall {V K : Type} {FK : AbsField K} :
+Global Instance Normed_MetricBall {V K : Type} {FK : AbsRing K} :
   NormedVectorSpace V K -> MetricBall V.
 Proof.
   intro NVS.
@@ -1402,7 +1282,7 @@ Proof.
     now apply Rlt_le_trans with (1 := Hy).
 Defined.
 
-Global Instance Normed_MetricVectorSpace {V K : Type} {FK : AbsField K} :
+Global Instance Normed_MetricVectorSpace {V K : Type} {FK : AbsRing K} :
   NormedVectorSpace V K -> MetricVectorSpace V K.
 Proof.
   intro NVS.
@@ -1449,14 +1329,14 @@ Defined.
 
 (** ** Complete Normed Vector Space *)
 
-Class CompleteNormedVectorSpace V K {FK : AbsField K} := {
+Class CompleteNormedVectorSpace V K {FK : AbsRing K} := {
   cnvspace_group :> AbelianGroup V ;
   cnvspace_vector :> VectorSpace_mixin V K cnvspace_group ;
   cnvspace_normed :> NormedVectorSpace_mixin V K (Build_VectorSpace _ _ _ _ cnvspace_vector) ;
   cnvspace_complete :> CompleteSpace_mixin V (Normed_MetricBall (Build_NormedVectorSpace _ _ _ _ _ cnvspace_normed))
 }.
 
-Global Instance Complete_NormedVectorSpace {V K} {FK : AbsField K} :
+Global Instance Complete_NormedVectorSpace {V K} {FK : AbsRing K} :
   CompleteNormedVectorSpace V K -> NormedVectorSpace V K.
 Proof.
   intro CNVS.
@@ -1464,7 +1344,7 @@ Proof.
   by apply cnvspace_normed.
 Defined.
 
-Global Instance Complete_NormedVectorSpace_CompleteSpace {V K} {FK : AbsField K} :
+Global Instance Complete_NormedVectorSpace_CompleteSpace {V K} {FK : AbsRing K} :
   CompleteNormedVectorSpace V K -> CompleteSpace V.
 Proof.
   intro CNVS.
@@ -1474,7 +1354,7 @@ Defined.
 
 (** Particular complete normed vector space *)
 
-Global Instance CompleteNormed_MetricVectorSpace {V K} {FK : AbsField K} :
+Global Instance CompleteNormed_MetricVectorSpace {V K} {FK : AbsRing K} :
   CompleteNormedVectorSpace V K -> CompleteMetricVectorSpace V K.
 Proof.
   intro CNVS.
@@ -1524,7 +1404,7 @@ apply (Build_MetricBall _ (fun x eps y => ball (fst x) eps (fst y) /\ ball (snd 
 Defined.
 
 Global Instance VectorSpace_mixin_prod :
-  forall {U V K} {FK : ncRing K} {GU GV}
+  forall {U V K} {FK : Ring K} {GU GV}
     (VU : VectorSpace_mixin U K GU) (VV : VectorSpace_mixin V K GV),
       VectorSpace_mixin (U * V) K (AbelianGroup_prod GU GV).
 Proof.
@@ -1544,7 +1424,7 @@ apply f_equal2 ; apply scal_distr_r.
 Defined.
 
 Global Instance VectorSpace_prod :
-  forall {U V K} {FK : ncRing K} (VU : VectorSpace U K) (VV : VectorSpace V K),
+  forall {U V K} {FK : Ring K} (VU : VectorSpace U K) (VV : VectorSpace V K),
   VectorSpace (U * V) K.
 Proof.
 intros U V K FK VU VV.
@@ -1555,7 +1435,7 @@ by apply VV.
 Defined.
 
 Global Instance MetricVectorSpace_prod :
-  forall {U V K} {FK : ncRing K} (VU : MetricVectorSpace U K) (VV : MetricVectorSpace V K),
+  forall {U V K} {FK : Ring K} (VU : MetricVectorSpace U K) (VV : MetricVectorSpace V K),
   MetricVectorSpace (U * V) K.
 Proof.
   intros U V K FK VU VV.
@@ -1610,7 +1490,7 @@ Proof.
 Defined.
 
 Global Instance NormedVectorSpace_prod :
-  forall {U V K} {FK : AbsField K} (VU : NormedVectorSpace U K) (VV : NormedVectorSpace V K),
+  forall {U V K} {FK : AbsRing K} (VU : NormedVectorSpace U K) (VV : NormedVectorSpace V K),
   NormedVectorSpace (U * V) K.
 Proof.
   intros U V K FK VU VV.
@@ -1801,19 +1681,19 @@ Proof.
 Qed.
 
 Definition Mzero {T m n} {GT : AbelianGroup T} := mk_matrix m n (fun i j => @zero T GT).
-Fixpoint Mone_seq {T} {RT : ncRing T} i j : T :=
+Fixpoint Mone_seq {T} {RT : Ring T} i j : T :=
   match i,j with
-    | O, O => nc_one
+    | O, O => one
     | O, S _ | S _, O => zero
     | S i, S j => Mone_seq i j end.
-Definition Mone {T n} {RT : ncRing T} : @matrix T n n :=
+Definition Mone {T n} {RT : Ring T} : @matrix T n n :=
   mk_matrix n n Mone_seq.
 Definition Mplus {T m n} {GT : AbelianGroup T} (A B : @matrix T m n) :=
   mk_matrix m n (fun i j => (@plus T GT) (coeff_mat zero A i j) (coeff_mat zero B i j)).
 Definition Mopp {T m n} {GT : AbelianGroup T} (A : @matrix T m n) :=
   mk_matrix m n (fun i j => (@opp T GT) (coeff_mat zero A i j)).
-Definition Mmult {T n m k} {RT : ncRing T} (A : @matrix T n m) (B : @matrix T m k) :=
-  mk_matrix n k (fun i j => @sum_n T (@ncring_group T RT) (fun l => (@nc_mult T (@ncring_group T RT) (@ncring_mixin T RT)) (coeff_mat zero A i l) (coeff_mat zero B l j)) (pred m)).
+Definition Mmult {T n m k} {RT : Ring T} (A : @matrix T n m) (B : @matrix T m k) :=
+  mk_matrix n k (fun i j => @sum_n T (@ring_group T RT) (fun l => (@mult T (@ring_group T RT) (@ring_mixin T RT)) (coeff_mat zero A i l) (coeff_mat zero B l j)) (pred m)).
 
 
 Global Instance AbelianGroup_matrix {T} :
@@ -1838,47 +1718,47 @@ Proof.
     by apply plus_opp_r.
 Defined.
 
-Lemma Mmult_assoc {T n m k l} {RT : ncRing T} :
+Lemma Mmult_assoc {T n m k l} {RT : Ring T} :
   forall (A : @matrix T n m) (B : @matrix T m k) (C : @matrix T k l),
     Mmult A (Mmult B C) = Mmult (Mmult A B) C.
 Proof.
   intros A B C.
   apply mk_matrix_ext => n' l' Hn' Hl'.
   unfold Mmult at 1.
-  - transitivity (sum_n (fun l0 : nat => nc_mult (coeff_mat zero A n' l0)
-      (sum_n (fun l1 : nat => nc_mult (coeff_mat zero B l0 l1) (coeff_mat zero C l1 l')) (pred k))) (pred m)).
+  - transitivity (sum_n (fun l0 : nat => mult (coeff_mat zero A n' l0)
+      (sum_n (fun l1 : nat => mult (coeff_mat zero B l0 l1) (coeff_mat zero C l1 l')) (pred k))) (pred m)).
     destruct m ; simpl.
     unfold coeff_mat ; simpl.
-    by rewrite 2!nc_mult_zero_l.
+    by rewrite 2!mult_zero_l.
     apply sum_n_ext_aux ; simpl => m' Hm'.
     apply f_equal.
     by rewrite coeff_mat_bij.
   - transitivity (sum_n (fun l0 : nat => sum_n
-      (fun l1 : nat => nc_mult (coeff_mat zero A n' l0) (nc_mult (coeff_mat zero B l0 l1) (coeff_mat zero C l1 l'))) (pred k)) (pred m)).
+      (fun l1 : nat => mult (coeff_mat zero A n' l0) (mult (coeff_mat zero B l0 l1) (coeff_mat zero C l1 l'))) (pred k)) (pred m)).
     destruct m ; simpl.
     unfold coeff_mat ; simpl.
-    rewrite nc_mult_zero_l.
+    rewrite mult_zero_l.
     rewrite sum_n_mult_l.
-    by rewrite nc_mult_zero_l.
+    by rewrite mult_zero_l.
     apply sum_n_ext_aux ; simpl => m' Hm'.
     apply sym_eq, sum_n_mult_l.
   rewrite sum_n_switch.
   destruct k ; simpl.
   unfold coeff_mat ; simpl.
-  rewrite nc_mult_zero_l.
+  rewrite mult_zero_l.
   rewrite sum_n_mult_r.
-  by rewrite nc_mult_zero_r.
+  by rewrite mult_zero_r.
   apply sum_n_ext_aux => k' Hk'.
-  transitivity (nc_mult (sum_n (fun l1 : nat => nc_mult (coeff_mat zero A n' l1) (coeff_mat zero B l1 k')) (pred m))
+  transitivity (mult (sum_n (fun l1 : nat => mult (coeff_mat zero A n' l1) (coeff_mat zero B l1 k')) (pred m))
     (coeff_mat zero C k' l')).
   rewrite -sum_n_mult_r.
   apply sum_n_ext_aux => m' Hm'.
-  apply nc_mult_assoc.
+  apply mult_assoc.
   apply f_equal2.
   now unfold Mmult ; rewrite coeff_mat_bij.
   by [].
 Qed.
-Lemma Mmult_one_r {T m n} {RT : ncRing T} :
+Lemma Mmult_one_r {T m n} {RT : Ring T} :
   forall x : @matrix T m n, Mmult x Mone = x.
 Proof.
   intros A.
@@ -1888,17 +1768,17 @@ Proof.
   by apply lt_n_O in Hj.
   move: (coeff_mat zero A) => {A} A.
   unfold Mone ; simpl.
-  transitivity (sum_n (fun k : nat => nc_mult (A i k)
+  transitivity (sum_n (fun k : nat => mult (A i k)
     (Mone_seq k j)) n).
   apply sum_n_ext_aux => /= k Hk.
   now rewrite coeff_mat_bij.
   - elim: n Hj => [ | n IH] Hj ; rewrite /sum_n -/sum_n.
     apply lt_n_Sm_le, le_n_0_eq in Hj.
     rewrite -Hj => {j Hj} /=.
-    by apply nc_mult_one_r.
+    by apply mult_one_r.
   - apply le_lt_eq_dec in Hj ; case: Hj => Hj.
     replace (Mone_seq (S n) j : T) with (zero : T).
-    rewrite nc_mult_zero_r plus_zero_r.
+    rewrite mult_zero_r plus_zero_r.
     apply lt_n_Sm_le in Hj.
     by apply IH.
     apply lt_S_n in Hj.
@@ -1909,17 +1789,17 @@ Proof.
     by apply IH, lt_S_n.
   - apply eq_add_S in Hj.
     rewrite Hj => /= {j Hj IH}.
-    replace (Mone_seq n n : T) with (nc_one : T).
-    rewrite nc_mult_one_r.
+    replace (Mone_seq n n : T) with (one : T).
+    rewrite mult_one_r.
     apply plus_reg_r with (opp (A i (S n))).
     rewrite -plus_assoc plus_opp_r plus_zero_r.
   - elim: n (S n) (lt_n_Sn n) => {m Hi} [ | n IH] m Hm ;
     rewrite /sum_n -/sum_n.
     destruct m.
     by apply lt_n_O in Hm.
-    by apply nc_mult_zero_r.
+    by apply mult_zero_r.
     replace (Mone_seq (S n) m : T) with (zero : T).
-    rewrite nc_mult_zero_r plus_zero_r.
+    rewrite mult_zero_r plus_zero_r.
     apply IH.
     by apply lt_trans with (1 := lt_n_Sn _).
     clear -Hm ; destruct m.
@@ -1932,7 +1812,7 @@ Proof.
     by apply lt_S_n.
     by elim: n.
 Qed.
-Lemma Mmult_one_l {T m n} {RT : ncRing T} :
+Lemma Mmult_one_l {T m n} {RT : Ring T} :
   forall x : matrix m n, Mmult Mone x = x.
 Proof.
   intros A.
@@ -1942,17 +1822,17 @@ Proof.
   by apply lt_n_O in Hi.
   move: (coeff_mat zero A) => {A} A.
   unfold Mone ; simpl.
-  transitivity (sum_n (fun k : nat => nc_mult
+  transitivity (sum_n (fun k : nat => mult
     (Mone_seq i k) (A k j)) m).
   apply sum_n_ext_aux => /= k Hk.
   now rewrite coeff_mat_bij.
   - elim: m Hi => [ | m IH] Hi ; rewrite /sum_n -/sum_n.
     apply lt_n_Sm_le, le_n_0_eq in Hi.
     rewrite -Hi => {i Hi} /=.
-    by apply nc_mult_one_l.
+    by apply mult_one_l.
   - apply le_lt_eq_dec in Hi ; case: Hi => Hi.
     replace (Mone_seq i (S m) : T) with (zero : T).
-    rewrite nc_mult_zero_l plus_zero_r.
+    rewrite mult_zero_l plus_zero_r.
     apply lt_n_Sm_le in Hi.
     by apply IH.
     apply lt_S_n in Hi.
@@ -1963,15 +1843,15 @@ Proof.
     by apply IH, lt_S_n.
   - apply eq_add_S in Hi.
     rewrite Hi => /= {i Hi IH}.
-    replace (Mone_seq m m : T) with (nc_one : T).
-    rewrite nc_mult_one_l.
+    replace (Mone_seq m m : T) with (one : T).
+    rewrite mult_one_l.
     apply plus_reg_r with (opp (A (S m) j)).
     rewrite -plus_assoc plus_opp_r plus_zero_r.
   - elim: m {2 3}(m) (le_refl m) => {n Hj} [ | n IH] m Hm ;
     rewrite /sum_n -/sum_n.
-    by apply nc_mult_zero_l.
+    by apply mult_zero_l.
     replace (Mone_seq m n : T) with (zero : T).
-    rewrite nc_mult_zero_l plus_zero_r.
+    rewrite mult_zero_l plus_zero_r.
     apply IH.
     by apply le_trans with (1 := le_n_Sn _).
     clear -Hm ; destruct m.
@@ -1985,7 +1865,7 @@ Proof.
     by elim: m.
 Qed.
 
-Lemma Mmult_distr_r {T m n k} {RT : ncRing T} :
+Lemma Mmult_distr_r {T m n k} {RT : Ring T} :
   forall (A B : @matrix T m n) (C : @matrix T n k),
   Mmult (plus A B) C = plus (Mmult A C) (Mmult B C).
 Proof.
@@ -1996,13 +1876,13 @@ Proof.
   rewrite -sum_n_plus.
   destruct n ; simpl.
   unfold coeff_mat ; simpl.
-  by rewrite ?nc_mult_zero_l plus_zero_l.
+  by rewrite ?mult_zero_l plus_zero_l.
   apply sum_n_ext_aux => l Hl.
   rewrite ?coeff_mat_bij => //=.
-  by apply nc_mult_distr_r.
+  by apply mult_distr_r.
 Qed.
 
-Lemma Mmult_distr_l {T m n k} {RT : ncRing T} : 
+Lemma Mmult_distr_l {T m n k} {RT : Ring T} : 
   forall (A : @matrix T m n) (B C : @matrix T n k),
   Mmult A (plus B C) = plus (Mmult A B) (Mmult A C).
 Proof.
@@ -2013,18 +1893,18 @@ Proof.
   rewrite -sum_n_plus.
   destruct n ; simpl.
   unfold coeff_mat ; simpl.
-  by rewrite ?nc_mult_zero_l plus_zero_l.
+  by rewrite ?mult_zero_l plus_zero_l.
   apply sum_n_ext_aux => l Hl.
   rewrite ?coeff_mat_bij => //=.
-  by apply nc_mult_distr_l.
+  by apply mult_distr_l.
 Qed.
 
-Global Instance ncRing_matrix {T n} :
-  ncRing T -> ncRing (@matrix T n n).
+Global Instance Ring_matrix {T n} :
+  Ring T -> Ring (@matrix T n n).
 Proof.
   intros RT.
-  apply Build_ncRing with (AbelianGroup_matrix _ _ _).
-  apply Build_ncRing_mixin with Mmult Mone.
+  apply Build_Ring with (AbelianGroup_matrix _ _ _).
+  apply Build_Ring_mixin with Mmult Mone.
   + by apply Mmult_assoc.
   + by apply Mmult_one_r.
   + by apply Mmult_one_l.
@@ -2033,7 +1913,7 @@ Proof.
 Defined.
 
 Global Instance ModuleSpace_matrix {T m n} :
-  forall RT : ncRing T, VectorSpace (@matrix T m n) (@matrix T m m).
+  forall RT : Ring T, VectorSpace (@matrix T m n) (@matrix T m m).
 Proof.
   intros RT.
   apply Build_VectorSpace with (AbelianGroup_matrix _ _ _).
@@ -2087,30 +1967,29 @@ apply Rplus_0_r.
 apply Rplus_opp_r.
 Defined.
 
-Lemma R_field_mixin : Field_mixin R R_abelian_group.
+Global Instance R_ring_mixin : Ring_mixin R R_abelian_group.
 Proof.
   econstructor => /=.
-  exact Rmult_comm.
-  move => x y z ; by rewrite Rmult_assoc.
+  move => x y z ; apply eq_sym, Rmult_assoc.
   exact Rmult_1_r.
-  exact Rinv_r.
-  apply Rmult_plus_distr_r.
+  exact Rmult_1_l.
+  exact Rmult_plus_distr_r.
+  exact Rmult_plus_distr_l.
 Defined.
 
-Lemma R_absfield_mixin : AbsField_mixin R
-  {| field_group := R_abelian_group; field_field := R_field_mixin |}.
+Global Instance R_absring_mixin : AbsRing_mixin R (Build_Ring _ R_abelian_group R_ring_mixin).
 Proof.
-  apply Build_AbsField_mixin with Rabs ; simpl.
+  apply Build_AbsRing_mixin with Rabs ; simpl.
   exact Rabs_R0.
   rewrite Rabs_Ropp ; exact Rabs_R1.
   exact Rabs_triang.
   exact Rabs_mult.
 Defined.
 
-Global Instance R_metric_field : AbsField R.
+Global Instance R_absring : AbsRing R.
 Proof.
-  apply Build_AbsField with R_abelian_group R_field_mixin.
-  by apply R_absfield_mixin.
+  apply Build_AbsRing with R_abelian_group R_ring_mixin.
+  exact R_absring_mixin.
 Defined.
 
 Lemma R_complete :
