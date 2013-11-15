@@ -63,13 +63,14 @@ Qed.
 
 Lemma abs_pow_n :
   forall (x : K) n,
-  abs (pow_n x n) = (abs x)^n.
+  abs (pow_n x n) <= (abs x)^n.
 Proof.
 induction n.
-apply abs_one.
+apply Req_le, abs_one.
 simpl.
-rewrite abs_mult.
-now apply f_equal.
+apply: Rle_trans (abs_mult _ _) _.
+apply Rmult_le_compat_l with (2 := IHn).
+apply abs_ge_0.
 Qed.
 
 End pow_n.

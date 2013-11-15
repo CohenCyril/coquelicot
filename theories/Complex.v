@@ -221,6 +221,8 @@ apply Cmod_0.
 rewrite Cmod_opp.
 apply Cmod_1.
 apply Cmod_triangle.
+intros x y.
+apply Req_le.
 apply Cmod_mult.
 Defined.
 

@@ -1342,8 +1342,9 @@ Proof.
       eapply Rle_lt_trans with (norm (scal (SF_h ptd - x) (f x)) + norm (scal (x - SF_h ptd) (f y1))).
       apply: norm_triangle.
       replace (2 * eps * M) with (eps * M + eps * M) by ring.
-      rewrite ?norm_scal /=.
-      apply Rplus_lt_compat ; apply Rmult_le_0_lt_compat.
+      apply Rplus_lt_compat ;
+        apply: Rle_lt_trans (norm_scal _ _) _ ;
+        apply Rmult_le_0_lt_compat.
       by apply Rabs_pos.
       by apply norm_ge_0.
       apply Rle_lt_trans with (2 := Hstep).
@@ -1380,7 +1381,8 @@ Proof.
       rewrite -plus_assoc -scal_distr_r /=.
       replace (SF_h ptd - x + (x0 - SF_h ptd)) with (opp (x - x0)) by (simpl ; ring).
       rewrite (scal_opp_l (VV := Normed_VectorSpace _)) -scal_opp_r.
-      rewrite -scal_distr_l norm_scal /=.
+      rewrite -scal_distr_l.
+      apply: Rle_lt_trans (norm_scal _ _) _.
       replace (2 * eps * M) with (eps * (M + M)) by ring.
       apply Rmult_le_0_lt_compat.
       by apply Rabs_pos.
@@ -1423,7 +1425,8 @@ Proof.
   eapply Rle_trans.
   by apply @norm_triangle.
   apply Rplus_le_compat.
-  rewrite norm_scal /= (Rabs_right (_-_)).
+  apply: Rle_trans (norm_scal _ _) _.
+  rewrite /= Rabs_right.
   apply Rmult_le_compat_l.
   apply -> Rminus_le_0 ; apply Rle_trans with y0 ;
   apply (Hs O) ; rewrite SF_size_cons ; exact: lt_O_Sn.

@@ -377,6 +377,7 @@ Proof.
     by apply Hex.
     by rewrite /minus -plus_assoc plus_opp_l plus_zero_r.
   clearbody n ; move: H => {Hex} Hex.
+
   assert (forall i, (S i < size (unif_part a b n))%nat ->
     exists M, forall t,
       nth 0 (unif_part a b n) i <= t <= nth 0 (unif_part a b n) (S i)
@@ -481,10 +482,20 @@ Proof.
     by [].
     apply SSR_leq ; by intuition.
   specialize (Hex' _ _ Ht Hg).
-  apply Rle_div_r.
-  simpl ; apply Rabs_pos_lt, Rgt_not_eq.
+  rewrite -(scal_one (f t)).
+  simpl one.
+  rewrite -(Rinv_l (x1 - x0)).
+  2: by apply Rgt_not_eq, Rgt_minus, Hlt.
+  rewrite -scal_assoc.
+  apply: Rle_trans (norm_scal _ _) _.
+  rewrite Rmult_comm.
+  simpl abs.
+  rewrite Rabs_Rinv.
+  2: by apply Rgt_not_eq, Rgt_minus, Hlt.
+  apply Rmult_le_compat_r.
+  apply Rlt_le, Rinv_0_lt_compat.
+  apply Rabs_pos_lt, Rgt_not_eq.
   by apply Rgt_minus, Hlt.
-  rewrite Rmult_comm -norm_scal.
   replace (scal (x1 - x0) (f t))
     with (minus (plus (scal (x1 - x0) (f t))
             (Riemann_sum f (SF_seq_f2 (fun x _ : R => x) (x1 :: s) 0)))

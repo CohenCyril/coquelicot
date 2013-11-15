@@ -603,7 +603,7 @@ Class AbsRing_mixin K (RK : Ring K) := {
   abs_zero : abs zero = 0 ;
   abs_opp_one : abs (opp one) = 1 ;
   abs_triangle : forall x y, abs (plus x y) <= abs x + abs y ;
-  abs_mult : forall x y, abs (mult x y) = abs x * abs y
+  abs_mult : forall x y, abs (mult x y) <= abs x * abs y
 }.
 Class AbsRing K := {
   absring_group :> AbelianGroup K ;
@@ -625,21 +625,25 @@ Section AbsRing.
 
 Context {K} {AK : AbsRing K}.
 
-Lemma abs_one :
-  abs one = 1.
-Proof.
-  rewrite -(Rmult_1_l 1).
-  rewrite -abs_opp_one -abs_mult.
-  by rewrite -opp_mult_l opp_mult_r opp_opp mult_one_l.
-Qed.
-
 Lemma abs_opp :
   forall x, abs (opp x) = abs x.
 Proof.
-  intros x.
+intros x.
+apply Rle_antisym.
+- rewrite (opp_mult_m1 (RK := AbsRing_Ring AK)).
+  rewrite -(Rmult_1_l (abs x)) -abs_opp_one.
+  apply abs_mult.
+- rewrite -{1}[x]opp_opp.
   rewrite (opp_mult_m1 (RK := AbsRing_Ring AK)).
-  rewrite abs_mult abs_opp_one.
-  by rewrite Rmult_1_l.
+  rewrite -(Rmult_1_l (abs (opp x))) -abs_opp_one.
+  apply abs_mult.
+Qed.
+
+Lemma abs_one :
+  abs one = 1.
+Proof.
+rewrite -abs_opp.
+exact abs_opp_one.
 Qed.
 
 Lemma abs_ge_0 :
@@ -1146,7 +1150,7 @@ Qed.
 Class NormedVectorSpace_mixin V K {FK : AbsRing K} (VS : VectorSpace V K) := {
   norm : V -> R ;
   norm_triangle : forall (x y : V), norm (plus x y) <= norm x + norm y ;
-  norm_scal : forall (l : K) (x : V), norm (scal l x) = abs l * norm x
+  norm_scal : forall (l : K) (x : V), norm (scal l x) <= abs l * norm x
 }.
 Class NormedVectorSpace V K {FK : AbsRing K} := {
   nvspace_group :> AbelianGroup V ;
@@ -1174,27 +1178,43 @@ Defined.
 
 (** Operations *)
 
+Section NormedVectorSpace.
+
+Context {V K} {FK : AbsRing K} {NVS : NormedVectorSpace V K}.
+
 Lemma norm_zero :
-  forall {V K} {FK : AbsRing K} {NVS : NormedVectorSpace V K},
   norm zero = 0.
 Proof.
-  intros V K FK NVS.
-  rewrite -(scal_zero_l (VV := Normed_VectorSpace NVS) zero) norm_scal abs_zero.
-  exact: Rmult_0_l.
+apply Rle_antisym.
+- rewrite -(scal_zero_l (VV := Normed_VectorSpace NVS) zero).
+  rewrite -(Rmult_0_l (norm zero)).
+  rewrite -abs_zero.
+  apply norm_scal.
+- apply Rplus_le_reg_r with (norm zero).
+  rewrite Rplus_0_l.
+  rewrite -{1}[zero]plus_zero_r.
+  exact (norm_triangle zero zero).
 Qed.
+
 Lemma norm_opp :
-  forall {V K} {FK : AbsRing K} {NVS : NormedVectorSpace V K} (x : V),
+  forall x : V,
   norm (opp x) = norm x.
 Proof.
-  intros V K FK NVS x.
-  rewrite -(scal_opp_one (VV := Normed_VectorSpace NVS)) norm_scal abs_opp_one.
-  exact: Rmult_1_l.
+intros x.
+apply Rle_antisym.
+- rewrite -(scal_opp_one (VV := Normed_VectorSpace NVS)).
+  rewrite -(Rmult_1_l (norm x)) -abs_opp_one.
+  apply norm_scal.
+- rewrite -{1}[x]opp_opp -(scal_opp_one (VV := Normed_VectorSpace NVS)).
+  rewrite -(Rmult_1_l (norm (opp x))) -abs_opp_one.
+  apply norm_scal.
 Qed.
+
 Lemma norm_ge_0 :
-  forall {V K} {FK : AbsRing K} {NVS : NormedVectorSpace V K} (x : V),
+  forall x : V,
   0 <= norm x.
 Proof.
-  intros V K FK NVS x.
+  intros x.
   apply Rmult_le_reg_l with 2.
   by apply Rlt_0_2.
   rewrite Rmult_0_r -norm_zero -(plus_opp_r x).
@@ -1204,7 +1224,9 @@ Proof.
   ring.
 Qed.
 
-(** Paricular normed vector spaces *)
+End NormedVectorSpace.
+
+(** Specific normed vector spaces *)
 
 Global Instance Normed_MetricBall {V K : Type} {FK : AbsRing K} :
   NormedVectorSpace V K -> MetricBall V.
@@ -1261,7 +1283,7 @@ Proof.
     exists (mkposreal _ He) => /= y Hy.
     apply HP ; simpl.
     replace (minus (scal k y) (scal k x)) with (scal k (minus y x)).
-    rewrite norm_scal.
+    apply: Rle_lt_trans (norm_scal _ _) _.
     apply Rle_lt_trans with (Rmax 1 (abs k) * norm (minus y x)).
     apply Rmult_le_compat_r.
     by apply norm_ge_0.
@@ -1396,9 +1418,8 @@ Proof.
     by apply @norm_triangle.
     apply Rplus_le_compat ; by apply Rmax_r.
   - intros l x ; simpl.
-    rewrite ?norm_scal.
     rewrite Rmult_max_distr_l.
-    by [].
+    apply Rmax_le_compat ; apply @norm_scal.
     by apply abs_ge_0.
 Defined.
 
@@ -1791,7 +1812,7 @@ Proof.
 Qed.
 
 Global Instance Ring_matrix {T n} :
-  Ring T -> Ring (@matrix T n n).
+  Ring T -> Ring (@matrix T n n) | 4.
 Proof.
   intros RT.
   apply Build_Ring with (AbelianGroup_matrix _ _ _).
@@ -1874,7 +1895,9 @@ Proof.
   exact Rabs_R0.
   rewrite Rabs_Ropp ; exact Rabs_R1.
   exact Rabs_triang.
-  exact Rabs_mult.
+  intros x y.
+  apply Req_le.
+  apply Rabs_mult.
 Defined.
 
 Global Instance R_absring : AbsRing R.
