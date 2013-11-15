@@ -1432,90 +1432,6 @@ Proof.
   by rewrite IH.
 Qed.
 
-(** sorted *)
-Fixpoint sorted {T : Type} (Ord : T -> T -> Prop) (s : seq T) :=
-  match s with
-    | [::] | [:: _] => True
-    | h0 :: (h1 :: t1) as t0 => Ord h0 h1 /\ sorted Ord t0
-  end.
-Lemma sorted_nth {T : Type} (Ord : T -> T -> Prop) (s : seq T) :
-  sorted Ord s <-> (forall i : nat,
-    (i < Peano.pred (size s))%nat -> forall x0 : T, Ord (nth x0 s i) (nth x0 s (S i))).
-Proof.
-  case: s.
-  split => // _ i Hi ; contradict Hi ; apply lt_n_O.
-  move => t s ; elim: s t => [ t | t s IHs t0] ; split => // H.
-  move => i Hi ; contradict Hi ; apply lt_n_O.
-  case => [| i] Hi x0 ; simpl in Hi.
-  apply H.
-  case: (IHs t) => {IHs} IHs _ ;
-  apply (IHs (proj2 H) i (lt_S_n _ _ Hi) x0).
-  split.
-  apply (H O (lt_0_Sn _) t).
-  case: (IHs t) => {IHs} _ IHs.
-  apply: IHs => i Hi x0 ; apply: (H (S i)) ; simpl ; apply lt_n_S, Hi.
-Qed.
-Lemma sorted_cat  {T : Type} (Ord : T -> T -> Prop) (s1 s2 : seq T) x0 :
-  sorted Ord s1 -> sorted Ord s2 -> Ord (last x0 s1)  (head x0 s2)
-  -> sorted Ord (s1 ++ s2).
-Proof.
-  move/sorted_nth => H1.
-  move/sorted_nth => H2 H0.
-  apply sorted_nth => i Hi => x1.
-  rewrite ?nth_cat.
-  rewrite ?SSR_minus.
-  case: (le_dec (S i) (size s1)) => Hi0.
-  move: (proj2 (SSR_leq _ _) Hi0) ;
-  case: (ssrnat.leq (S i) (size s1)) => // _.
-  case: (le_dec (S (S i)) (size s1)) => Hi1.
-  move: (proj2 (SSR_leq _ _) Hi1) ;
-  case: (ssrnat.leq (S (S i)) (size s1)) => // _.
-  apply H1 ; intuition.
-  have : ~ (ssrnat.leq (S (S i)) (size s1)).
-  contradict Hi1 ; by apply SSR_leq.
-  case: (ssrnat.leq (S (S i)) (size s1)) => // _.
-  suff Hi' : i = Peano.pred (size s1).
-  rewrite Hi' nth_last.
-  replace (S (Peano.pred (size s1)) - size s1)%nat with O.
-  rewrite nth0.
-  apply not_le in Hi1.
-  case: (s1) H0 Hi Hi' Hi0 Hi1 => [ | x2 s1'] //= H0 Hi Hi' Hi0 Hi1.
-  by apply le_Sn_O in Hi0.
-  case: (s2) H0 Hi0 Hi => [ | x3 s2'] //= H0 Hi0 Hi.
-  rewrite cats0 /= in Hi.
-  rewrite Hi' in Hi.
-  by apply lt_irrefl in Hi.
-  case: (s1) Hi0 => //= [ | x2 s0] Hi0.
-  by apply le_Sn_O in Hi0.
-  by rewrite minus_diag.
-  apply sym_eq, le_antisym.
-  apply NPeano.Nat.le_pred_le_succ.
-  apply not_le in Hi1.
-  by apply lt_n_Sm_le.
-  replace i with (Peano.pred (S i)) by auto.
-  by apply le_pred.
-  have : ~ (ssrnat.leq (S i) (size s1)).
-  contradict Hi0 ; by apply SSR_leq.
-  case: (ssrnat.leq (S i) (size s1)) => // _.
-  have : ~ssrnat.leq (S (S i)) (size s1).
-  contradict Hi0.
-  apply SSR_leq in Hi0.
-  intuition.
-  case: (ssrnat.leq (S (S i)) (size s1)) => // _.
-  replace (S i - size s1)%nat with (S (i - size s1)).
-  apply H2.
-  rewrite size_cat in Hi.
-  apply not_le in Hi0.
-  elim: (size s1) i Hi Hi0 => [ | n IH] /= i Hi Hi0.
-  rewrite -minus_n_O.
-  unfold ssrnat.addn, ssrnat.addn_rec in Hi.
-  by rewrite plus_0_l in Hi.
-  case: i Hi Hi0 => [ | i] /= Hi Hi0.
-  by apply lt_S_n, lt_n_O in Hi0.
-  apply IH ; by intuition.
-  apply not_le in Hi0.
-  rewrite minus_Sn_m ; by intuition.
-Qed.
 (* head, last, behead and belast *)
 Lemma head_rcons {T : Type} (x0 : T) (s : seq T) (t : T) : head x0 (rcons s t) = head t s.
 Proof.
@@ -1627,6 +1543,94 @@ Proof.
 Qed.
 
 (** * Operations on the Riemann integral *)
+
+Lemma StepFun_bound {a b : R} (f : StepFun a b) :
+  exists s : R, forall x, Rmin a b <= x <= Rmax a b -> f x <= s.
+Proof.
+  case: f => /= f [lx [ly [Hsort [Hhead [Hlast [Hsize Hval]]]]]];
+  rename a into a0 ; rename b into b0 ; set a := Rmin a0 b0 ; set b := Rmax a0 b0 ;
+  set Rl_max := fun x0 => fix f l := match l with
+    | RList.nil => x0
+    | RList.cons h t => Rmax h (f t)
+  end ;
+  set f_lx := (fix app l := match l with
+    | RList.nil => RList.nil
+    | RList.cons h t => RList.cons (f h) (app t)
+  end) lx ;
+  set M_f_lx := Rl_max (f 0) f_lx ;
+  set M_ly := Rl_max 0 ly.
+  exists (Rmax M_f_lx M_ly) => x [Hx Hx'].
+  rewrite /M_f_lx /f_lx ;
+  case: lx Hsort Hhead Hlast Hsize Hval {f_lx M_f_lx}.
+(* lx = [::] *)
+  move => _ _ _ H ; contradict H ; apply O_S.
+  move => h l ; case: l h.
+(* lx = [:: h] *)
+  move => h _ Ha Hb _ _ ; simpl in Ha, Hb.
+  rewrite /a -Ha in Hx ; rewrite /b -Hb in Hx'.
+  rewrite (Rle_antisym _ _ Hx Hx') /= ; apply Rle_trans with (2 := RmaxLess1 _ _) ;
+  apply RmaxLess1.
+(* lx = [:: h,h'::l] *)
+  move => h l h' Hsort Hhead Hlast Hsize Hval.
+  apply Rle_lt_or_eq_dec in Hx' ; case: Hx' => Hx'.
+  have H : exists i : nat, (i < S (Rlength l))%nat /\
+    (pos_Rl (RList.cons h' (RList.cons h l)) i) <= x
+    < (pos_Rl (RList.cons h' (RList.cons h l)) (S i)).
+    rewrite /a -Hhead in Hx ; rewrite /b -Hlast in Hx'.
+    elim: l h' h Hx Hx' Hsort {Hhead Hlast Hsize Hval} => [| h'' l IH] h' h Hx Hx' Hsort ; simpl in Hx, Hsort.
+    case: (Rlt_le_dec x h) => H.
+    exists O ; intuition.
+    exists O => /= ; intuition.
+    case: (Rlt_le_dec x h) => H.
+    exists O => /= ; intuition.
+    have H0 : ordered_Rlist (RList.cons h (RList.cons h'' l)).
+    move => i Hi ; apply (Hsort (S i)) => /= ; apply lt_n_S, Hi.
+    case: (IH _ _ H Hx' H0) => {IH} i Hi.
+    exists (S i) ; split.
+    simpl ; apply lt_n_S, Hi => /=.
+    apply Hi.
+  case: H => i [Hi [Ht Ht']].
+  apply Rle_lt_or_eq_dec in Ht ; case: Ht => Ht.
+  rewrite (Hval i Hi x).
+  apply Rle_trans with (2 := RmaxLess2 _ _).
+  rewrite /M_ly ; case: (ly).
+  apply Rle_refl.
+  move => y ly' ; elim: ly' (i) y.
+  move => i0 y ; case: i0 => //=.
+  apply RmaxLess1.
+  move => _; apply RmaxLess2.
+  move => y ly' IH i0 y' ; case: i0.
+  apply RmaxLess1.
+  move => n ; apply Rle_trans with (1 := IH n y) ; apply RmaxLess2.
+  split => //.
+  rewrite -Ht ; apply Rle_trans with (2 := RmaxLess1 _ _).
+  case: (i).
+  apply RmaxLess1.
+  move => n ; elim: n (h) (h') (l).
+  move => h0 h'0 l0 ; apply Rle_trans with (2 := RmaxLess2 _ _), RmaxLess1.
+  move => n IH h0 h'0 l0.
+  case: l0.
+  apply Rle_trans with (2 := RmaxLess2 _ _), RmaxLess2.
+  move => h''0 l0 ; apply Rle_trans with (1 := IH h''0 h0 l0), RmaxLess2.
+  rewrite Hx' /b -Hlast.
+  apply Rle_trans with (2 := RmaxLess1 _ _).
+  elim: (l) (h') (h) => [| h''0 l0 IH] h'0 h0.
+  apply Rle_trans with (2 := RmaxLess2 _ _), RmaxLess1.
+  apply Rle_trans with (1 := IH h0 h''0), RmaxLess2.
+Qed.
+
+Lemma Riemann_integrable_bound (f : R -> R) (a b : R) :
+  Riemann_integrable f a b -> exists s : R, forall x, Rmin a b <= x <= Rmax a b -> f x <= s.
+Proof.
+  move => pr ;
+  case (pr (mkposreal _ Rlt_0_1)) => {pr} phi [psi [pr _]] ;
+  case: (StepFun_bound phi) => M_phi H_phi ;
+  case: (StepFun_bound psi) => M_psi H_psi ;
+  exists (M_psi + M_phi) => x Hx.
+  apply Rle_trans with (2 := Rplus_le_compat _ _ _ _ (H_psi _ Hx) (H_phi _ Hx)).
+  have: (f x = (f x - phi x) + phi x) ; first by ring.
+  move => -> ; apply Rplus_le_compat_r, Rle_trans with (1 := Rle_abs _), pr, Hx.
+Qed.
 
 (** Extensionality *)
 

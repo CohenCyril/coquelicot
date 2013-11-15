@@ -1061,7 +1061,7 @@ Qed.
 
 (** ** Exchange limit and integrals *)
 
-Require Import RInt.
+Require Import RInt SF_seq.
 
 Lemma filterlim_RInt {U V} {VV : CompleteNormedVectorSpace V R} :
   forall (f : U -> R -> V) (a b : R) F (FF : ProperFilter F) 
@@ -1144,7 +1144,7 @@ apply HP.
 case => t [Ht [Ha Hb]] /=.
 rewrite (proj1 (sign_0_lt _)).
 rewrite 2!scal_one.
-generalize (Riemann_sum_minus _ _ (f x) g t) => <-.
+generalize (Riemann_sum_minus (f x) g t) => <-.
 refine (_ (Riemann_sum_norm (fun x0 : R => minus (f x x0) (g x0)) (fun _ => (eps / (b - a)) / 2) t Ht _)).
 move => H ; apply Rle_lt_trans with (1 := H).
 rewrite Riemann_sum_const.
