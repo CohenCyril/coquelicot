@@ -36,7 +36,7 @@ Fixpoint pow_n (x : K) (N : nat) {struct N} : K :=
   end.
 
 Lemma pow_n_plus :
-  forall (x : K) (n m : nat), pow_n x (n+m) %nat= mult (pow_n x n) (pow_n x m).
+  forall (x : K) (n m : nat), pow_n x (n+m) = mult (pow_n x n) (pow_n x m).
 Proof.
   intros x.
   elim => /= [ | n IH] m.
@@ -61,9 +61,22 @@ Proof.
   by apply f_equal, Plus.plus_comm.
 Qed. 
 
+Lemma abs_pow_n :
+  forall (x : K) n,
+  abs (pow_n x n) = (abs x)^n.
+Proof.
+induction n.
+apply abs_one.
+simpl.
+rewrite abs_mult.
+now apply f_equal.
+Qed.
+
 End pow_n.
 
-Lemma pow_n_pow: forall (x:R) k, pow_n x k = x^k.
+Lemma pow_n_pow :
+  forall (x : R) k, pow_n x k = x^k.
+Proof.
 intros x; induction k; simpl.
 easy.
 now rewrite IHk.
