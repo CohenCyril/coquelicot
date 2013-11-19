@@ -538,6 +538,17 @@ Proof.
   by rewrite SF_ly_rev ?SF_map_ly ?SF_ly_rev map_rev.
 Qed.
 
+Lemma SF_map_sort (f : T -> T0) (s : SF_seq) (Ord : R -> R -> Prop) :
+  SF_sorted Ord s -> SF_sorted Ord (SF_map f s).
+Proof.
+  unfold SF_sorted ;
+  apply SF_cons_ind with (s := s) => {s} /= [x0 | [x0 _] /= s IH] Hs.
+  by [].
+  split.
+  by apply Hs.
+  now apply IH.
+Qed.
+
 End SF_map.
 
 (** * Pointed subvivision *)
@@ -1116,27 +1127,165 @@ Proof.
   rewrite ?rev_rcons /= IH //.
 Qed.
 
-(** * Riemann sums *)
+(** ** A proper filter on SF_seq *)
 
-(** RInt_seq *)
-
-Definition RInt_seq {T : Type} (s : SF_seq) (Tplus : T -> T -> T)
-  (Tmult : R -> T -> T) x0 :=
-  foldr Tplus x0 (pairmap (fun x y => (Tmult (fst y - fst x) (snd y))) (SF_h s,x0) (SF_t s)).
-
-Lemma RInt_seq_cons {T : Type} h (s : SF_seq) (Tplus : T -> T -> T)
-  (Tmult : R -> T -> T) x0 :
-  RInt_seq (SF_cons h s) Tplus Tmult x0 = Tplus
-    (Tmult (SF_h s - fst h) (snd h)) (RInt_seq s Tplus Tmult x0).
+Lemma Riemann_fine_unif_part :
+  forall (f : R -> R -> R) (a b : R) (n : nat),
+  (forall a b, a <= b -> a <= f a b <= b) ->
+  a <= b ->
+  seq_step (SF_lx (SF_seq_f2 f (unif_part a b n) 0)) <= (b - a) / (INR n + 1) /\
+  pointed_subdiv (SF_seq_f2 f (unif_part a b n) 0) /\
+  SF_h (SF_seq_f2 f (unif_part a b n) 0) = a /\
+  last (SF_h (SF_seq_f2 f (unif_part a b n) 0)) (SF_lx (SF_seq_f2 f (unif_part a b n) 0)) = b.
 Proof.
-  rewrite /RInt_seq //=.
-  apply SF_cons_dec with (s := s) => {s} [x1 | h0 s] //=.
+intros f a b n Hf Hab.
+assert (Hab' : 0 <= (b - a) / (INR n + 1)).
+  apply Rdiv_le_0_compat.
+  apply -> Rminus_le_0.
+  apply Hab.
+  apply INRp1_pos.
+unfold pointed_subdiv.
+rewrite SF_lx_f2.
+change (head 0 (unif_part a b n) :: behead (unif_part a b n)) with (unif_part a b n).
+split ; [|split ; [|split]].
+- cut (forall i, (S i < size (unif_part a b n))%nat ->
+    nth 0 (unif_part a b n) (S i) - nth 0 (unif_part a b n) i = (b - a) / (INR n + 1)).
+  + induction (unif_part a b n) as [|x0 l IHl].
+    now intros _.
+    intros H.
+    destruct l as [|x1 l].
+    easy.
+    change (seq_step _) with (Rmax (Rabs (x1 - x0)) (seq_step (x1 :: l))).
+    apply Rmax_case.
+    apply Req_le.
+    rewrite (H 0%nat).
+    now apply Rabs_pos_eq.
+    apply lt_n_S.
+    apply lt_0_Sn.
+    apply IHl.
+    intros i Hi.
+    apply (H (S i)).
+    now apply lt_n_S.
+  + rewrite size_mkseq.
+    intros i Hi.
+    rewrite !nth_mkseq.
+    rewrite S_INR.
+    unfold Rdiv.
+    ring.
+    apply SSR_leq.
+    now apply lt_le_weak.
+    now apply SSR_leq.
+- unfold pointed_subdiv.
+  rewrite SF_size_f2.
+  rewrite size_mkseq.
+  intros i Hi.
+  rewrite SF_ly_f2.
+  rewrite nth_behead.
+  rewrite (nth_pairmap 0).
+  change (nth 0 (0 :: unif_part a b n) (S i)) with (nth 0 (unif_part a b n) i).
+  rewrite !nth_mkseq.
+  apply Hf.
+  apply Rminus_le_0.
+  rewrite S_INR.
+  unfold Rdiv.
+  replace (a + (INR i + 1) * (b - a) * / (INR n + 1) - (a + INR i * (b - a) * / (INR n + 1)))
+    with ((b - a) * / (INR n + 1)) by ring.
+  exact Hab'.
+  apply SSR_leq.
+  now apply le_n_S.
+  apply SSR_leq.
+  apply le_n_S.
+  now apply lt_le_weak.
+  rewrite size_mkseq.
+  apply SSR_leq.
+  now apply le_n_S.
+- simpl.
+  unfold Rdiv.
+  ring.
+- rewrite -nth_last.
+  rewrite size_mkseq nth_mkseq.
+  rewrite S_INR.
+  field.
+  apply Rgt_not_eq.
+  apply INRp1_pos.
+  apply SSR_leq.
+  apply le_refl.
 Qed.
 
-Definition RInt_f1 {T : Type} Tplus Tmult (f1 : R -> T) (P : seq R) x0 :=
-  RInt_seq (SF_seq_f1 f1 P (fst x0)) Tplus Tmult (snd x0).
-Definition RInt_f2 {T : Type} Tplus Tmult (f2 : R -> R -> T) (P : seq R) x0 :=
-  RInt_seq (SF_seq_f2 f2 P (fst x0)) Tplus Tmult (snd x0).
+Definition Riemann_fine (a b : R) :=
+  within (fun ptd => pointed_subdiv ptd /\ SF_h ptd = Rmin a b /\ last (SF_h ptd) (SF_lx ptd) = Rmax a b)
+    (locally_dist (fun ptd => seq_step (SF_lx ptd))).
+
+Global Instance Riemann_fine_filter :
+  forall a b, ProperFilter (Riemann_fine a b).
+Proof.
+intros a b.
+constructor.
+- intros P [alpha H].
+  assert (Hab : Rmin a b <= Rmax a b).
+    apply Rmax_case.
+    apply Rmin_l.
+    apply Rmin_r.
+  assert (Hn : 0 <= ((Rmax a b - Rmin a b) / alpha)).
+    apply Rdiv_le_0_compat.
+    apply -> Rminus_le_0.
+    apply Hab.
+    apply cond_pos.
+  set n := (nfloor _ Hn).
+  exists (SF_seq_f2 (fun x y => x) (unif_part (Rmin a b) (Rmax a b) n) 0).
+  destruct (Riemann_fine_unif_part (fun x y => x) (Rmin a b) (Rmax a b) n).
+  intros u v Huv.
+  split.
+  apply Rle_refl.
+  exact Huv.
+  exact Hab.
+  apply H.
+  apply Rle_lt_trans with (1 := H0).
+  apply Rlt_div_l.
+  apply INRp1_pos.
+  unfold n, nfloor.
+  destruct nfloor_ex as [n' Hn'].
+  simpl.
+  rewrite Rmult_comm.
+  apply Rlt_div_l.
+  apply cond_pos.
+  apply Hn'.
+  exact H1.
+- apply within_filter.
+  apply locally_dist_filter.
+Qed.
+
+(** * Riemann sums *)
+
+(** RInt_val *)
+
+Section RInt_val.
+
+Context {V} {VV : VectorSpace V R}.
+
+Definition RInt_val (f : R -> V) (a b : R) (n : nat) :=
+  scal ((b-a)/(INR n+1)) (foldr plus zero (SF_val_ly f a b n)).
+
+Lemma RInt_val_swap :
+  forall (f : R -> V) (a b : R) (n : nat),
+  RInt_val f a b n = opp (RInt_val f b a n).
+Proof.
+  intros f a b n.
+  rewrite /RInt_val.
+  rewrite -scal_opp_l.
+  apply f_equal2.
+  simpl.
+  unfold Rdiv.
+  ring.
+  rewrite (SF_val_ly_bound _ b a).
+  rewrite -(plus_zero_l (foldr plus zero (SF_val_ly f a b n))).
+  elim: (SF_val_ly f a b n) {1 3}(zero) => /= [ | x1 s IH] x0.
+  apply plus_zero_r.
+  rewrite rev_cons foldr_rcons plus_assoc (plus_comm x0 x1).
+  exact: IH.
+Qed.
+
+End RInt_val.
 
 (** Riemann_sum *)
 
@@ -1144,14 +1293,14 @@ Section Riemann_sum.
 
 Context {V} {VV : VectorSpace V R}.
 
-Definition Riemann_sum (f : R -> V) (ptd : SF_seq) :=
-  RInt_seq (SF_map f ptd) plus scal zero.
+Definition Riemann_sum (f : R -> V) (ptd : SF_seq) : V :=
+  foldr plus zero (pairmap (fun x y => (scal (fst y - fst x) (f (snd y)))) (SF_h ptd,zero) (SF_t ptd)).
 
-Lemma Riemann_sum_cons (f : R -> V) h0 ptd :
+Lemma Riemann_sum_cons (f : R -> V) (h0 : R * R) (ptd : SF_seq) :
   Riemann_sum f (SF_cons h0 ptd) =
     plus (scal (SF_h ptd - fst h0) (f (snd h0))) (Riemann_sum f ptd).
 Proof.
-  rewrite /Riemann_sum /RInt_seq /=.
+  rewrite /Riemann_sum /=.
   case: h0 => x0 y0 ;
   apply SF_cons_dec with (s := ptd) => {ptd} [ x1 | [x1 y1] ptd ] //=.
 Qed.
@@ -1160,18 +1309,17 @@ Lemma Riemann_sum_rcons (f : R -> V) ptd l0 :
   Riemann_sum f (SF_rcons ptd l0) =
     plus (Riemann_sum f ptd) (scal (fst l0 - last (SF_h ptd) (SF_lx ptd)) (f (snd l0))).
 Proof.
-  rewrite /Riemann_sum /RInt_seq.
+  rewrite /Riemann_sum .
   case: l0 => x0 y0.
   apply SF_rcons_dec with (s := ptd) => {ptd} [ x1 | ptd [x1 y1]].
   apply plus_comm.
   rewrite ?SF_map_rcons /=.
   rewrite pairmap_rcons foldr_rcons /=.
   rewrite unzip1_rcons last_rcons /=.
-  elim: (pairmap (fun x y => scal (fst y - fst x) (snd y)) (SF_h ptd, zero)
-    (rcons [seq (fst x, f (snd x)) | x <- SF_t ptd] (x1, f y1))) (scal (x0 - x1) (f y0)) {1 3}(zero)
-     => /= [ | h s IH] a b.
+  induction (pairmap (fun x y : R * R => scal (fst y - fst x) (f (snd y)))
+     (SF_h ptd, 0) (rcons (SF_t ptd) (x1, y1))) ; simpl.
   apply plus_comm.
-  rewrite IH.
+  rewrite IHl.
   apply plus_assoc.
 Qed.
 
@@ -1208,7 +1356,7 @@ Lemma Riemann_sum_const (v : V) ptd :
   Riemann_sum (fun _ => v) ptd = scal (last (SF_h ptd) (SF_lx ptd) - SF_h ptd) v.
 Proof.
 apply SF_cons_ind with (s := ptd) => {ptd} [x0 | [x0 y0] s IH] /=.
-by rewrite /Riemann_sum /RInt_seq /= Rminus_eq_0 scal_zero_l.
+by rewrite /Riemann_sum /= Rminus_eq_0 scal_zero_l.
 rewrite Riemann_sum_cons IH /=.
 rewrite -scal_distr_r /=.
 apply (f_equal (fun x => scal x v)).
@@ -1219,7 +1367,7 @@ Lemma Riemann_sum_scal (a : R) (f : R -> V) ptd :
   Riemann_sum (fun x => scal a (f x)) ptd = scal a (Riemann_sum f ptd).
 Proof.
 apply SF_cons_ind with (s := ptd) => {ptd} /= [x0 | [x0 y0] s IH].
-rewrite /Riemann_sum /RInt_seq /=.
+rewrite /Riemann_sum /=.
 apply sym_eq. apply @scal_zero_r.
 rewrite !Riemann_sum_cons /= IH.
 rewrite scal_distr_l.
@@ -1232,7 +1380,7 @@ Lemma Riemann_sum_opp (f : R -> V) ptd :
   Riemann_sum (fun x => opp (f x)) ptd = opp (Riemann_sum f ptd).
 Proof.
 apply SF_cons_ind with (s := ptd) => {ptd} /= [x0 | [x0 y0] s IH].
-rewrite /Riemann_sum /RInt_seq /=.
+rewrite /Riemann_sum /=.
 apply sym_eq, @opp_zero.
 rewrite !Riemann_sum_cons /= IH.
 rewrite opp_plus.
@@ -1245,7 +1393,7 @@ Lemma Riemann_sum_plus (f g : R -> V) ptd :
     plus (Riemann_sum f ptd) (Riemann_sum g ptd).
 Proof.
   apply SF_cons_ind with (s := ptd) => {ptd} /= [x0 | [x0 y0] s IH].
-  rewrite /Riemann_sum /RInt_seq /=.
+  rewrite /Riemann_sum /=.
   apply sym_eq, @plus_zero_l.
   rewrite !Riemann_sum_cons /= ; rewrite IH.
   rewrite scal_distr_l.
@@ -1267,7 +1415,11 @@ Qed.
 
 End Riemann_sum.
 
-Lemma Riemann_sum_Chasles_0 {V} {VV : NormedVectorSpace V R}
+Section Riemann_sum_Normed.
+
+Context {V : Type} {VV : NormedVectorSpace V R}.
+
+Lemma Riemann_sum_Chasles_0 
   (f : R -> V) (M : R) (x : R) ptd :
   forall (eps : posreal),
   (forall x, SF_h ptd <= x <= last (SF_h ptd) (SF_lx ptd) -> norm (f x) < M) ->
@@ -1281,7 +1433,7 @@ Proof.
   apply (SF_cons_ind (T := R)) with (s := ptd)
     => {ptd} /= [ x0 | [x0 y1] ptd IH] /= Hfx [ Hx0 Hl] Hptd Hstep.
   + rewrite (Rle_antisym _ _ Hx0 Hl) ; clear -Hfx.
-    rewrite /Riemann_sum /RInt_seq /=.
+    rewrite /Riemann_sum /=.
     case: Rle_dec (Rle_refl x) => //= _ _.
     rewrite ?plus_zero_r Rminus_eq_0.
     rewrite (scal_zero_l (VV := Normed_VectorSpace _)).
@@ -1414,7 +1566,7 @@ Proof.
       by split.
 Qed.
 
-Lemma Riemann_sum_norm {V : Type} {VV : NormedVectorSpace V R} (f : R -> V) (g : R -> R) ptd : 
+Lemma Riemann_sum_norm (f : R -> V) (g : R -> R) ptd : 
   pointed_subdiv ptd ->
   (forall t, SF_h ptd <= t <= last (SF_h ptd) (SF_lx ptd) -> norm (f t) <= g t)
   -> norm (Riemann_sum f ptd) <= Riemann_sum g ptd.
@@ -1446,6 +1598,8 @@ Proof.
   by apply Ht.
 Qed.
 
+End Riemann_sum_Normed.
+
 (** ** From SF_seq to StepFun *)
 
 (** Alternative Chasles relation *)
@@ -1476,26 +1630,26 @@ Definition SF_cut_up' (sf : @SF_seq R) (x : R) x0 :=
   let s := seq_cut_up' ((SF_h sf,x0) :: (SF_t sf)) x x0 in
   mkSF_seq (fst (head (SF_h sf,x0) s)) (behead s).
 
-Lemma SF_Chasles (s : SF_seq) x x0 :
+Lemma SF_Chasles f (s : SF_seq) x x0 :
   (SF_h s <= x <= fst (last (SF_h s,SF_h s) (SF_t s))) ->
-  RInt_seq s Rplus Rmult 0 =
-  (RInt_seq (SF_cut_down' s x x0) Rplus Rmult 0)
-  + (RInt_seq (SF_cut_up' s x x0) Rplus Rmult 0).
+  Riemann_sum f s =
+  (Riemann_sum f (SF_cut_down' s x x0))
+  + (Riemann_sum f (SF_cut_up' s x x0)).
 Proof.
   rename x0 into z0.
   apply SF_cons_ind with (s := s) => {s} /= [ x0 | [x0 y0] s IH] /= Hx.
   rewrite (Rle_antisym _ _ (proj1 Hx) (proj2 Hx)).
   move: (Rle_refl x).
   rewrite /SF_cut_down' /SF_cut_up' /= ; case: Rle_dec => //= _ _.
-  rewrite /RInt_seq /= ; ring.
+  rewrite /Riemann_sum /= ; ring.
   rewrite -!(last_map (@fst R R)) /= -!unzip1_fst in IH, Hx.
   move: (fun Hx1 => IH (conj Hx1 (proj2 Hx))) => {IH}.
   rewrite /SF_cut_down' /SF_cut_up' /= ;
   case: (Rle_dec x0 _) (proj1 Hx) => //= Hx0 _.
   case: (Rle_dec (SF_h s) x) => //= Hx1 IH.
   move: (IH Hx1) => {IH} IH.
-  rewrite (RInt_seq_cons (x0,y0))
-    (RInt_seq_cons (x0,y0) (mkSF_seq (SF_h s) (seq_cut_down' (SF_t s) x y0)))
+  rewrite (Riemann_sum_cons _ (x0,y0))
+    (Riemann_sum_cons _ (x0,y0) (mkSF_seq (SF_h s) (seq_cut_down' (SF_t s) x y0)))
     IH /= => {IH}.
   rewrite Rplus_assoc ; apply f_equal.
   assert (forall x0 y0, fst (head (x0, z0) (seq_cut_up' (SF_t s) x y0)) = x).
@@ -1504,10 +1658,10 @@ Proof.
   rewrite ?H.
   move: (proj2 Hx) Hx1 => {Hx} ;
   apply SF_cons_dec with (s := s) => {s H} /= [x1 | [x1 y1] s] //= Hx Hx1.
-  rewrite /RInt_seq /= ; rewrite (Rle_antisym _ _ Hx Hx1) ; ring.
+  rewrite /Riemann_sum /= ; rewrite (Rle_antisym _ _ Hx Hx1) ; ring.
   by case: Rle_dec.
   clear IH.
-  rewrite RInt_seq_cons (RInt_seq_cons (x,y0) s) {2}/RInt_seq /=.
+  rewrite Riemann_sum_cons (Riemann_sum_cons _ (x,y0) s) {2}/Riemann_sum /=.
   ring.
 Qed.
 Lemma seq_cut_up_head' (s : seq (R*R)) x x0 z :
@@ -1563,20 +1717,21 @@ Proof.
   by apply ad_SF_compat.
 Defined.
 
-Lemma RInt_compat (s : SF_seq) (pr : SF_sorted Rle s) :
-  RInt_seq s Rplus Rmult 0 = RiemannInt_SF (SF_compat_le s pr).
+Lemma Riemann_sum_compat f (s : SF_seq) (pr : SF_sorted Rle s) :
+  Riemann_sum f s = RiemannInt_SF (SF_compat_le (SF_map f s) (SF_map_sort f s _ pr)).
 Proof.
   rewrite /RiemannInt_SF ; case: Rle_dec => // [_ | H].
   move: pr ; apply SF_cons_ind with (s := s) => {s} [x0 | h s IH] pr //=.
-  rewrite /= -IH /RInt_seq /= => {IH}.
+  rewrite /= -IH /Riemann_sum /SF_map /= => {IH}.
   rewrite Rmult_comm.
   by apply SF_cons_dec with (s := s).
   apply pr.
-  contradict H ; rewrite -nth_last -nth0 ; move: (le_refl (ssrnat.predn (size (SF_lx s)))) ;
-  elim: {1 3}(ssrnat.predn (size (SF_lx s))) => /= [| i IH] Hi.
+  contradict H ; rewrite -nth_last -nth0 ; move: (le_refl (ssrnat.predn (size (SF_lx (SF_map f s))))) ;
+  elim: {1 3}(ssrnat.predn (size (SF_lx (SF_map f s)))) => /= [| i IH] Hi.
   apply Rle_refl.
   apply Rle_trans with (1 := IH (le_trans _ _ _ (le_n_Sn i) Hi)), (sorted_nth Rle) ;
   intuition.
+  by apply SF_map_sort.
 Qed.
 
 (** Build StepFun using uniform partition *)
@@ -1702,6 +1857,37 @@ Proof.
   contradict Hx0 ; apply Rle_not_lt, Rle_trans with (2 := proj1 Hx),
   (sorted_head [:: h0, h1 & s] _ (proj2 Hs)) ; simpl; intuition.
   rewrite size_mkseq ; by apply lt_n_S, lt_O_Sn.
+Qed.
+
+Lemma RInt_val_Reals (f : R -> R) (a b : R) (n : nat) :
+  RInt_val f a b n = RiemannInt_SF (sf_SF_val_fun f a b n).
+Proof.
+have H : (forall a b i, (S i < size (unif_part a b n))%nat ->
+  nth 0 (unif_part a b n) (S i) - nth 0 (unif_part a b n) i = (b-a)/(INR n + 1)).
+  move => {a b} a b i Hi ; rewrite size_mkseq in Hi ; rewrite ?nth_mkseq ?S_INR.
+  field ; apply Rgt_not_eq ; intuition.
+  apply SSR_leq ; intuition.
+  apply SSR_leq ; intuition.
+rewrite /RInt_val /RiemannInt_SF SF_val_subdiv SF_val_subdiv_val ;
+case: Rle_dec => Hab.
+(* a <= b *)
+  rewrite /SF_val_ly ; case: (unif_part a b n) (H a b) => [| h s] /=.
+  move => _ ; field ; apply Rgt_not_eq ; intuition.
+  elim: s h => [|h0 s IH] h Hs /=.
+  field ; apply Rgt_not_eq ; intuition.
+  rewrite Rmult_plus_distr_l (IH) ; move: (Hs O (lt_n_S _ _ (lt_O_Sn _))) => /= Hs'.
+  rewrite Hs' ; field ; apply Rgt_not_eq ; intuition.
+  move => i Hi ; apply (Hs (S i)), lt_n_S, Hi.
+(* ~ a <= b *)
+  rewrite (SF_val_ly_bound f a b n) /SF_val_ly.
+  case: (unif_part b a n) (H b a) => [| h s] /=.
+  move => _ ; field ; apply Rgt_not_eq ; intuition.
+  rewrite -Rminus_0_l -{4}(Rmult_0_l ((b-a)/(INR n + 1))) ;
+  elim: s {3 4}(0) h => [|h0 s IH] x0 h Hs /=.
+  field ; apply Rgt_not_eq ; intuition.
+  rewrite rev_cons foldr_rcons (IH) ; move: (Hs O (lt_n_S _ _ (lt_O_Sn _))) => /= Hs'.
+  rewrite Hs' ; field ; apply Rgt_not_eq ; intuition.
+  move => i Hi ; apply (Hs (S i)), lt_n_S, Hi.
 Qed.
 
 (** ** Upper and lower step functions *)
