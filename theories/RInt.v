@@ -1395,8 +1395,14 @@ rewrite /RInt ; case: Rle_dec (Rle_refl a) => // _ _ ;
 apply f_equal, Lim_seq_ext.
 intros n.
 unfold RInt_val.
-rewrite Rminus_eq_0 /Rdiv Rmult_0_l.
-by apply (@scal_zero_l R R).
+rewrite Riemann_sum_zero //.
+unfold SF_sorted.
+rewrite SF_lx_f2.
+by apply unif_part_sort, Rle_refl.
+rewrite SF_lx_f2 /=.
+elim: (iota 2 n) {2}(1) ; simpl ; intros.
+unfold Rdiv ; ring.
+by apply H.
 Qed.
 
 Lemma RInt_swap :
@@ -1444,8 +1450,7 @@ Proof.
     now apply @is_RInt_swap.
 
     assert (forall n, RInt_val f a a n = 0).
-      move => n ; rewrite /RInt_val Rminus_eq_0 /Rdiv Rmult_0_l.
-      by apply @scal_zero_l.
+      move => n ; by rewrite RInt_val_point.
     rewrite -Hab in Hex |- * => {Hab b}.
     replace If with 0.
     apply is_lim_seq_spec.
@@ -1572,21 +1577,7 @@ Proof.
   case: Rle_dec (Rlt_le _ _ (Rgt_minus _ _ Hab)) => // Hab' _.
   case: Rle_lt_or_eq_dec (Rlt_not_eq _ _ (Rgt_minus _ _ Hab)) => // _ _.
   rewrite Rmult_1_l.
-  rewrite /Riemann_sum /RInt_val /ptd /SF_val_ly.
-  suff : forall i, (S i < size (unif_part a b n))%nat ->
-    nth 0 (unif_part a b n) (S i) - nth 0 (unif_part a b n) i = (b-a)/(INR n + 1).
-  change zero with 0.
-  elim : (unif_part a b n) {5}(0) => /= [ | x1].
-  move => _ Hnth ; ring.
-  case => /= [ | x2 s] IH x0 Hnth.
-  ring.
-  rewrite (Hnth O (lt_n_S _ _ (lt_O_Sn _))) IH.
-  ring.
-  move => i Hi ; exact: (Hnth (S i) (lt_n_S _ _ Hi)).
-  rewrite size_mkseq => i Hi ; rewrite !nth_mkseq ?S_INR.
-  field ; apply Rgt_not_eq, INRp1_pos.
-  apply SSR_leq ; by intuition.
-  apply SSR_leq ; by intuition.
+  by [].
 Qed.
 
 (** Correction of RInt *)
@@ -1682,35 +1673,8 @@ destruct (Rle_dec a b) as [Hab|Hab].
 clear H.
 2: easy.
 apply f_equal, Lim_seq_ext => n.
-rewrite /RInt /RInt_val.
-apply f_equal.
-rewrite /SF_val_ly.
-move: Heq.
-pattern b at 1 ; replace b with (seq.last 0 (unif_part a b n)).
-pattern a at 1 ; replace a with (seq.head 0 (unif_part a b n)).
-move: (unif_part_sort a b n Hab).
-elim: (unif_part a b n) => [ | x0].
-by [].
-case => /= [ | x1 s] IH Hs Heq.
-by [].
-apply f_equal2.
-apply Heq ; split.
-pattern x0 at 1 ; replace x0 with ((x0+x0)/2) by field.
-apply Rmult_le_compat_r ; by intuition.
-apply Rle_trans with x1.
-pattern x1 at 2 ; replace x1 with ((x1+x1)/2) by field.
-apply Rmult_le_compat_r ; by intuition.
-apply (SF_seq.sorted_last (seq.Cons _ x1 s) O (proj2 Hs) (lt_O_Sn _) 0).
-apply IH.
-by apply Hs.
-move => x Hx ; apply: Heq ; split.
-apply Rle_trans with (2 := proj1 Hx) ; by apply Hs.
-by apply Hx.
-simpl ; field ; by apply Rgt_not_eq, INRp1_pos.
-rewrite -seq.nth_last seq.size_mkseq seq.nth_mkseq.
-simpl ssrnat.predn ; rewrite S_INR ;
-field ; by apply Rgt_not_eq, INRp1_pos.
-by [].
+apply sym_eq, RInt_val_ext.
+rewrite /Rmin /Rmax ; by case: Rle_dec.
 Qed.
 
 Lemma RInt_const (a b c : R) :
@@ -1739,35 +1703,41 @@ Proof.
   apply f_equal.
   rewrite -Lim_seq_opp.
   apply Lim_seq_ext => n.
-  rewrite (RInt_val_swap f).
-  rewrite Ropp_involutive.
-  rewrite /RInt_val.
-  change scal with Rmult.
-  change plus with Rplus.
-  change zero with 0.
-  replace ((- b - - a) / (INR n + 1) * foldr Rplus 0 (SF_val_ly f (- a) (- b) n))
-  with ((b - a) / (INR n + 1) * (- foldr Rplus 0 (SF_val_ly f (- a) (- b) n)))
-  by (rewrite /Rdiv ; ring).
-  apply f_equal.
-  rewrite /SF_val_ly /unif_part.
-  case: (S (S n)) => /= [ | m].
-  by rewrite Ropp_0.
-  pattern 0 at 2 4 ;
-  replace 0 with (INR O) by auto.
-  elim: m (0%nat) => [ | m IH] m0.
-  simpl ; by rewrite Ropp_0.
-  simpl iota.
-  rewrite ?map_cons S_INR.
-  simpl.
-  rewrite -(S_INR m0) IH S_INR.
-  have Hn : INR n + 1 <> 0.
-    rewrite -S_INR.
-    apply not_0_INR, sym_not_eq, O_S.
-  field_simplify (- ((a + INR m0 * (b - a) / (INR n + 1) +
-     (a + (INR m0 + 1) * (b - a) / (INR n + 1))) / 2)) => //.
-  field_simplify ((- a + INR m0 * (- b - - a) / (INR n + 1) +
-     (- a + (INR m0 + 1) * (- b - - a) / (INR n + 1))) / 2) => //.
-  ring.
+  rewrite RInt_val_swap /RInt_val Riemann_sum_opp.
+  simpl opp ; apply f_equal.
+  rewrite Riemann_sum_map SF_map_f2.
+  replace (unif_part (- b) (- a) n) with (map Ropp (unif_part b a n)).
+Focus 2.
+apply eq_from_nth with 0.
+by rewrite size_map !size_mkseq.
+rewrite size_map !size_mkseq => i Hi.
+rewrite (nth_map 0 0).
+rewrite ?(nth_mkseq 0) => //.
+field ; rewrite -S_INR ; apply not_0_INR, sym_not_eq, O_S.
+by rewrite size_mkseq.
+elim: (unif_part b a n) => /= [ | x0 s IH].
+rewrite /Riemann_sum /= ; ring.
+destruct s as [ | x1 s].
+rewrite /Riemann_sum /= ; ring.
+rewrite (SF_cons_f2 _ (- x0)).
+2: by apply lt_O_Sn.
+rewrite Riemann_sum_cons /=.
+rewrite (SF_cons_f2 _ (x0)).
+2: by apply lt_O_Sn.
+rewrite Riemann_sum_cons /=.
+rewrite -IH Ropp_plus_distr.
+apply f_equal2.
+replace (- ((x0 + x1) / 2)) with ((- x0 + - x1) / 2) by field.
+ring.
+apply f_equal.
+clear.
+case: s x0 x1 => [ | x2 s] x0 x1.
+by [].
+rewrite !(SF_cons_f2 _ (x1)).
+2: by apply lt_O_Sn.
+2: by apply lt_O_Sn.
+rewrite Riemann_sum_cons /=.
+by [].
 Qed.
 
 Lemma RInt_comp_lin (f : R -> R) (u v a b : R) :
@@ -1816,25 +1786,27 @@ Proof.
   replace ((u * b + v - (u * a + v)) / (INR n + 1) * foldr Rplus 0 (SF_val_ly f (u * a + v) (u * b + v) n))
   with ((b - a) / (INR n + 1) * (u * foldr Rplus 0 (SF_val_ly f (u * a + v) (u * b + v) n)))
   by (rewrite /Rdiv ; ring).
-  apply f_equal.
-  rewrite /SF_val_ly /unif_part.
-  case: (S (S n)) => /= [ | m].
-  by rewrite Rmult_0_r.
-  pattern 0 at 2 4 ;
-  replace 0 with (INR O) by auto.
-  elim: m (0%nat) => [ | m IH] m0.
-  simpl ; by rewrite Rmult_0_r.
-  simpl iota.
-  rewrite ?map_cons S_INR.
-  simpl.
-  rewrite -(S_INR m0) IH S_INR.
-  rewrite -Rmult_plus_distr_l.
-  apply f_equal.
-  apply (f_equal (fun y => y + _)).
-  apply f_equal.
-  field.
-  rewrite -S_INR.
-  apply not_0_INR, sym_not_eq, O_S.
+  replace (unif_part (u * a + v) (u * b + v) n) with (map (fun x => u * x + v) (unif_part a b n)).
+  elim: (unif_part a b n) {1}0 {2}0 => /= [ | x2 s IH] x0 x1.
+  by [].
+  destruct s as [ | x3 s].
+  by [].
+  rewrite (SF_cons_f2 _ (u * x2 + v)).
+  rewrite SF_cons_f2.
+  rewrite !Riemann_sum_cons /=.
+  apply f_equal2.
+  replace (u * ((x2 + x3) / 2) + v) with ((u * x2 + v + (u * x3 + v)) / 2) by field.
+  ring.
+  by apply IH.
+  by apply lt_O_Sn.
+  by apply lt_O_Sn.
+apply eq_from_nth with 0.
+by rewrite size_map !size_mkseq.
+rewrite size_map !size_mkseq => i Hi.
+rewrite (nth_map 0 0).
+rewrite ?(nth_mkseq 0) => //.
+field ; rewrite -S_INR ; apply not_0_INR, sym_not_eq, O_S.
+by rewrite size_mkseq.
 Qed.
 
 Lemma RInt_Chasles :
@@ -1861,20 +1833,7 @@ intros a b.
 rewrite -Lim_seq_scal_l.
 apply Lim_seq_ext => n.
 unfold RInt_val.
-simpl scal.
-rewrite -Rmult_assoc (Rmult_comm l) Rmult_assoc.
-apply f_equal.
-unfold SF_val_ly.
-apply Logic.eq_sym.
-destruct (unif_part a b n) as [|h q].
-apply Rmult_0_r.
-simpl.
-revert h.
-induction q => h.
-apply Rmult_0_r.
-simpl.
-rewrite -IHq.
-apply Rmult_plus_distr_l.
+by rewrite (Riemann_sum_scal l).
 (* *)
 intros a b.
 unfold RInt.

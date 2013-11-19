@@ -1257,36 +1257,6 @@ Qed.
 
 (** * Riemann sums *)
 
-(** RInt_val *)
-
-Section RInt_val.
-
-Context {V} {VV : VectorSpace V R}.
-
-Definition RInt_val (f : R -> V) (a b : R) (n : nat) :=
-  scal ((b-a)/(INR n+1)) (foldr plus zero (SF_val_ly f a b n)).
-
-Lemma RInt_val_swap :
-  forall (f : R -> V) (a b : R) (n : nat),
-  RInt_val f a b n = opp (RInt_val f b a n).
-Proof.
-  intros f a b n.
-  rewrite /RInt_val.
-  rewrite -scal_opp_l.
-  apply f_equal2.
-  simpl.
-  unfold Rdiv.
-  ring.
-  rewrite (SF_val_ly_bound _ b a).
-  rewrite -(plus_zero_l (foldr plus zero (SF_val_ly f a b n))).
-  elim: (SF_val_ly f a b n) {1 3}(zero) => /= [ | x1 s IH] x0.
-  apply plus_zero_r.
-  rewrite rev_cons foldr_rcons plus_assoc (plus_comm x0 x1).
-  exact: IH.
-Qed.
-
-End RInt_val.
-
 (** Riemann_sum *)
 
 Section Riemann_sum.
@@ -1350,6 +1320,15 @@ Proof.
   apply SF_cons_ind with (s := ptd) => {ptd Hs Hhl} [x1 | [x1 y1] ptd IH] //=.
   apply lt_O_Sn.
   move: Hhl ; rewrite -?(last_map (@fst R R)) /= => <- ; apply Hs.
+Qed.
+
+Lemma Riemann_sum_map (f : R -> V) (g : R -> R) ptd :
+  Riemann_sum (fun x => f (g x)) ptd = Riemann_sum f (SF_map g ptd).
+Proof.
+  apply SF_cons_ind with (s := ptd) => {ptd} [x0 | h ptd IH].
+  by [].
+  rewrite SF_map_cons !Riemann_sum_cons /=.
+  by rewrite IH.
 Qed.
 
 Lemma Riemann_sum_const (v : V) ptd :
@@ -1599,6 +1578,126 @@ Proof.
 Qed.
 
 End Riemann_sum_Normed.
+
+(** RInt_val *)
+
+Section RInt_val.
+
+Context {V} {VV : VectorSpace V R}.
+
+Definition RInt_val (f : R -> V) (a b : R) (n : nat) :=
+  Riemann_sum f (SF_seq_f2 (fun x y => (x + y) / 2) (unif_part a b n) 0).
+
+Lemma RInt_val_point (f : R -> V) (a : R) (n : nat) :
+  RInt_val f a a n = zero.
+Proof.
+  unfold RInt_val ; apply Riemann_sum_zero.
+  unfold SF_sorted ; rewrite SF_lx_f2 ; apply unif_part_sort.
+  by apply Rle_refl.
+  rewrite SF_lx_f2 /=.
+  elim: (iota 2 n) {2}(1) => /= [ | x1 s IH] x0.
+  unfold Rdiv ; ring.
+  by apply IH.
+Qed.
+
+Lemma RInt_val_swap :
+  forall (f : R -> V) (a b : R) (n : nat),
+  RInt_val f a b n = opp (RInt_val f b a n).
+Proof.
+  intros f a b n.
+  rewrite /RInt_val.
+  rewrite -Riemann_sum_opp.
+  rewrite unif_part_bound.
+  elim: (unif_part b a n) (0) => [ | x1 s IH] x0 /=.
+  by [].
+  clear -IH.
+  rewrite rev_cons.
+  destruct s as [ | x2 s].
+  by [].
+  rewrite SF_cons_f2.
+  2: by apply lt_O_Sn.
+  rewrite Riemann_sum_cons /= -IH => {IH}.
+  rewrite scal_opp_r -scal_opp_l /=.
+  rewrite rev_cons.
+  elim: (rev s) x0 {4}(x1) => {s} /= [ | x3 s IH] x0 x1'.
+  rewrite /Riemann_sum /=.
+  apply (f_equal2 (fun x y => plus (scal x (f y)) _)) ;
+  unfold Rdiv ; ring.
+  rewrite !(SF_cons_f2 _ x3) ; try (by apply lt_O_Sn).
+  rewrite !Riemann_sum_cons /= (IH _ x3) !plus_assoc => {IH}.
+  2:rewrite size_rcons ; by apply lt_O_Sn.
+  2:rewrite size_rcons ; by apply lt_O_Sn.
+  apply (f_equal (fun x => plus x _)).
+  rewrite plus_comm.
+  apply f_equal.
+  apply (f_equal2 (fun x y => scal (x - x3)
+  (f ((x3 + y) / 2)))) ; clear ;
+  by elim: s.
+Qed.
+
+Lemma RInt_val_ext (f g : R -> V) (a b : R) (n : nat) :
+  (forall x, Rmin a b <= x <= Rmax a b -> f x = g x)
+  -> RInt_val g a b n = RInt_val f a b n.
+Proof.
+  wlog: a b / (a <= b) => [Hw | Hab].
+    case: (Rle_lt_dec a b) => Hab.
+    by apply Hw.
+    rewrite Rmin_comm Rmax_comm => Heq.
+    apply Rlt_le in Hab.
+    rewrite RInt_val_swap Hw => //=.
+    apply sym_eq ; by apply RInt_val_swap.
+  rewrite /Rmin /Rmax ; case: Rle_dec => //= _ Heq.
+  unfold RInt_val.
+  set l := (SF_seq_f2 (fun x y : R => (x + y) / 2) (unif_part a b n) 0).
+  assert (forall i, (i < size (SF_ly l))%nat -> f (nth 0 (SF_ly l) i) = g (nth 0 (SF_ly l) i)).
+    move => i Hi.
+    apply Heq.
+    destruct (fun H0 => Riemann_fine_unif_part (fun x y : R => (x + y) / 2) a b n H0 Hab) as [H [H0 [H1 H2]]].
+    clear.
+    intros a b Hab.
+    pattern b at 3 ; replace b with ((b+b)/2) by field.
+    pattern a at 1 ; replace a with ((a+a)/2) by field.
+    split ; apply Rmult_le_compat_r ; by intuition.
+    fold l in H, H0, H1, H2.
+    rewrite -H1 -H2 ; split.
+    apply Rle_trans with (head 0 (SF_ly l)).
+    apply (H0 O).
+    by apply lt_O_Sn.
+    apply sorted_head.
+    by apply ptd_sort'.
+    by [].
+    apply Rle_trans with (last 0 (SF_ly l)).
+    apply sorted_last.
+    by apply ptd_sort'.
+    by [].
+    rewrite -!nth_last SF_size_ly SF_size_lx SF_size_f2 size_mkseq.
+    simpl Peano.pred.
+    replace (nth (SF_h l) (SF_lx l) (S n)) with (nth 0 (SF_lx l) (S n)).
+    apply (H0 n).
+    rewrite SF_size_f2 size_mkseq /=.
+    by apply lt_n_Sn.
+    rewrite SF_lx_f2.
+    assert (size (unif_part a b n) = S (S n)).
+      by apply size_mkseq.
+    elim: (S n) (unif_part a b n) H3 ; simpl ; clear ; intros.
+    by intuition.
+    destruct unif_part0 ; simpl.
+    by intuition.
+    replace unif_part0 with (head 0 unif_part0 :: behead unif_part0).
+    apply H.
+    by intuition.
+    destruct unif_part0 ; by intuition.
+  move: H => {Heq}.
+  apply SF_cons_ind with (s := l) => {l} [x0 | h0 s IH] /= Heq.
+  by [].
+  rewrite !Riemann_sum_cons.
+  apply (f_equal2 (fun x y => plus (scal (SF_h s - fst h0) x) y)).
+  by apply sym_eq, (Heq O), lt_O_Sn.
+  apply IH => i Hi.
+  now apply (Heq (S i)), lt_n_S.
+Qed.
+
+End RInt_val.
 
 (** ** From SF_seq to StepFun *)
 
@@ -1862,32 +1961,27 @@ Qed.
 Lemma RInt_val_Reals (f : R -> R) (a b : R) (n : nat) :
   RInt_val f a b n = RiemannInt_SF (sf_SF_val_fun f a b n).
 Proof.
-have H : (forall a b i, (S i < size (unif_part a b n))%nat ->
-  nth 0 (unif_part a b n) (S i) - nth 0 (unif_part a b n) i = (b-a)/(INR n + 1)).
-  move => {a b} a b i Hi ; rewrite size_mkseq in Hi ; rewrite ?nth_mkseq ?S_INR.
-  field ; apply Rgt_not_eq ; intuition.
-  apply SSR_leq ; intuition.
-  apply SSR_leq ; intuition.
-rewrite /RInt_val /RiemannInt_SF SF_val_subdiv SF_val_subdiv_val ;
+rewrite /RiemannInt_SF SF_val_subdiv SF_val_subdiv_val ;
 case: Rle_dec => Hab.
 (* a <= b *)
-  rewrite /SF_val_ly ; case: (unif_part a b n) (H a b) => [| h s] /=.
-  move => _ ; field ; apply Rgt_not_eq ; intuition.
-  elim: s h => [|h0 s IH] h Hs /=.
-  field ; apply Rgt_not_eq ; intuition.
-  rewrite Rmult_plus_distr_l (IH) ; move: (Hs O (lt_n_S _ _ (lt_O_Sn _))) => /= Hs'.
-  rewrite Hs' ; field ; apply Rgt_not_eq ; intuition.
-  move => i Hi ; apply (Hs (S i)), lt_n_S, Hi.
-(* ~ a <= b *)
-  rewrite (SF_val_ly_bound f a b n) /SF_val_ly.
-  case: (unif_part b a n) (H b a) => [| h s] /=.
-  move => _ ; field ; apply Rgt_not_eq ; intuition.
-  rewrite -Rminus_0_l -{4}(Rmult_0_l ((b-a)/(INR n + 1))) ;
-  elim: s {3 4}(0) h => [|h0 s IH] x0 h Hs /=.
-  field ; apply Rgt_not_eq ; intuition.
-  rewrite rev_cons foldr_rcons (IH) ; move: (Hs O (lt_n_S _ _ (lt_O_Sn _))) => /= Hs'.
-  rewrite Hs' ; field ; apply Rgt_not_eq ; intuition.
-  move => i Hi ; apply (Hs (S i)), lt_n_S, Hi.
+  rewrite /RInt_val /SF_val_ly ; case: (unif_part a b n) => [| h s] /=.
+  by [].
+  elim: s h => [|h0 s IH] h /=.
+  by [].
+  rewrite (SF_cons_f2 _ h).
+  2: by apply lt_O_Sn.
+  rewrite Riemann_sum_cons /= IH ; ring.
+(* ~ a <= Rmult_plus_distr_l (b )*)
+  rewrite RInt_val_swap /SF_val_ly /RInt_val.
+  simpl opp ; apply f_equal.
+  case: (unif_part b a n) => [| h s] /=.
+  by [].
+  elim: s h => [|h0 s IH] h /=.
+  by [].
+  rewrite SF_cons_f2.
+  2: by apply lt_O_Sn.
+  rewrite Riemann_sum_cons IH /=.
+  ring.
 Qed.
 
 (** ** Upper and lower step functions *)
