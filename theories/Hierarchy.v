@@ -949,7 +949,7 @@ Qed.
 Lemma filterlim_locally_cauchy :
   forall {T U} {CU : CompleteSpace U} {F} {FF : ProperFilter F} (f : T -> U),
   (forall eps : posreal, exists P, F P /\ forall u v : T, P u -> P v -> ball (f u) eps (f v)) <->
-  exists y, filterlim f F (fun P => exists eps : posreal, forall x, ball y eps x -> P x).
+  exists y, filterlim f F (locally y).
 Proof.
 intros T U CU F FF f.
 split.
@@ -1224,6 +1224,22 @@ Proof.
   ring.
 Qed.
 
+Lemma norm_triangle_inv : forall (x y : V),
+  Rabs (norm x - norm y) <= norm (minus x y).
+Proof.
+  intros x y.
+  apply Rabs_le_between' ; split.
+  rewrite -(norm_opp (minus _ _)).
+  apply Rle_minus_l ; eapply Rle_trans.
+  2 : apply norm_triangle.
+  apply Req_le, f_equal.
+  by rewrite /minus opp_plus plus_assoc plus_opp_r plus_zero_l opp_opp.
+  eapply Rle_trans.
+  2 : apply norm_triangle.
+  apply Req_le, f_equal.
+  by rewrite /minus plus_comm -plus_assoc plus_opp_l plus_zero_r.
+Qed.
+
 End NormedVectorSpace.
 
 (** Specific normed vector spaces *)
@@ -1249,7 +1265,11 @@ Proof.
     now apply Rlt_le_trans with (1 := Hy).
 Defined.
 
-Lemma mvspace_plus {V K} {FK : AbsRing K} {VV : NormedVectorSpace V K} : forall x y,
+Section NVS_continuity.
+
+Context {V K} {FK : AbsRing K} {VV : NormedVectorSpace V K}.
+
+Lemma mvspace_plus : forall x y,
    filterlim (fun z : V * V => plus (fst z) (snd z)) (filter_prod (locally x) (locally y))
   (locally (plus x y)).
 Proof.
@@ -1271,7 +1291,7 @@ Proof.
     by apply plus_comm.
     by [].
 Qed.
-Lemma mvspace_scal {V K} {FK : AbsRing K} {VV : NormedVectorSpace V K} : forall x y,
+Lemma mvspace_scal : forall x y,
  filterlim (fun z : V => scal x z) (locally y) (locally (scal x y)).
 Proof.
    intros k x P [eps HP].
@@ -1297,7 +1317,7 @@ Proof.
     by generalize (scal_opp_r k x) => <-.
 Qed.
 
-Lemma filterlim_opp_2 {K} {V} {FK : AbsRing K} {VV : NormedVectorSpace V K}: forall (x:V), 
+Lemma filterlim_opp_2 : forall (x:V), 
    filterlim opp (locally x) (locally (opp x)).
 Proof.
 intros x.
@@ -1306,6 +1326,7 @@ apply filterlim_ext with (2:=mvspace_scal _ _).
 intros; apply (scal_opp_one (VV := Normed_VectorSpace VV)).
 Qed.
 
+End NVS_continuity.
 
 (** ** Complete Normed Vector Space *)
 
@@ -1402,12 +1423,12 @@ by apply VU.
 by apply VV.
 Defined.
 
-Global Instance NormedVectorSpace_prod :
-  forall {U V K} {FK : AbsRing K} (VU : NormedVectorSpace U K) (VV : NormedVectorSpace V K),
-  NormedVectorSpace (U * V) K.
+Global Instance NormedVectorSpace_mixin_prod :
+  forall {U V K} {FK : AbsRing K} (VU : VectorSpace U K) (VV : VectorSpace V K), 
+   NormedVectorSpace_mixin U K VU -> NormedVectorSpace_mixin V K VV ->
+   NormedVectorSpace_mixin (U * V) K (VectorSpace_prod VU VV).
 Proof.
-  intros U V K FK VU VV.
-  apply Build_NormedVectorSpace with (AbelianGroup_prod _ _) (VectorSpace_mixin_prod _ _).
+  intros U V K FK VU VV NVU NVV.
   apply Build_NormedVectorSpace_mixin with (fun x => Rmax (norm (fst x)) (norm (snd x))).
   - intros x y ; simpl.
     apply Rmax_case.
@@ -1422,6 +1443,20 @@ Proof.
     apply Rmax_le_compat ; apply @norm_scal.
     by apply abs_ge_0.
 Defined.
+Global Instance NormedVectorSpace_prod :
+  forall {U V K} {FK : AbsRing K} , 
+   NormedVectorSpace U K -> NormedVectorSpace V K ->
+   NormedVectorSpace (U * V) K.
+Proof.
+  intros U V K FK VU VV.
+  apply Build_NormedVectorSpace with 
+    (AbelianGroup_prod nvspace_group nvspace_group)
+    (VectorSpace_mixin_prod nvspace_vector nvspace_vector).
+  apply (NormedVectorSpace_mixin_prod (Normed_VectorSpace _) (Normed_VectorSpace _)).
+  by apply VU.
+  by apply VV.
+Defined.
+
 
 (** ** Iterated Products *)
 
@@ -1511,6 +1546,48 @@ intros T MT n.
 elim: n => [ | n MTn].
 by apply Build_MetricBall with (fun _ _ _ => True).
 by apply MetricBall_prod.
+Defined.
+
+Global Instance VectorSpace_mixin_Tn {T} {K} {FK : Ring K} :
+  forall (GT : AbelianGroup T),
+  VectorSpace_mixin T K GT -> forall n, VectorSpace_mixin (Tn n T) K (AbelianGroup_Tn GT n).
+Proof.
+  intros GT VV.
+  elim => [ | n VVn].
+  apply Build_VectorSpace_mixin with (fun _ _ => tt) ; by apply unit_ind.
+  by apply VectorSpace_mixin_prod.
+Defined.
+
+Global Instance VectorSpace_Tn {T} {K} {FK : Ring K} :
+  VectorSpace T K -> forall n, VectorSpace (Tn n T) K.
+Proof.
+  intros VV n.
+  apply Build_VectorSpace with (AbelianGroup_Tn _ n).
+  now apply VectorSpace_mixin_Tn, VV.
+Defined.
+
+Global Instance NormedVectorSpace_mixin_Tn {T} {K} {FK : AbsRing K} :
+  forall VT,
+  NormedVectorSpace_mixin T K VT -> 
+    forall n, NormedVectorSpace_mixin (Tn n T) K (VectorSpace_Tn VT n).
+Proof.
+  move => VT NVT.
+  elim => /= [ | n NVTn].
+  - apply Build_NormedVectorSpace_mixin with (fun _ => 0).
+    move => _ _.
+    rewrite Rplus_0_l ; by apply Rle_refl.
+    move => l _ ; rewrite Rmult_0_r ; by apply Rle_refl.
+  - by apply (NormedVectorSpace_mixin_prod VT (VectorSpace_Tn VT n)).
+Defined.
+
+Global Instance NormedVectorSpace_Tn {T} {K} {FK : AbsRing K} :
+  NormedVectorSpace T K -> 
+    forall n, NormedVectorSpace (Tn n T) K.
+Proof.
+  move => NVT n.
+  apply Build_NormedVectorSpace
+    with (AbelianGroup_Tn nvspace_group n) (VectorSpace_mixin_Tn _ nvspace_vector n).
+  by apply (NormedVectorSpace_mixin_Tn _ nvspace_norm).
 Defined.
 
 (** *)
@@ -1984,6 +2061,17 @@ Defined.
 
 Notation at_left x := (within (fun u : R => Rlt u x) (locally (x)%R)).
 Notation at_right x := (within (fun u : R => Rlt x u) (locally (x)%R)).
+
+(** Continuity of norm *)
+
+Lemma filterlim_norm {V K} {FK : AbsRing K} {VV : NormedVectorSpace V K} :
+  forall (x : V), filterlim norm (locally x) (locally (norm x)).
+Proof.
+  intros x ; apply filterlim_locally => eps /=.
+  exists eps ; move => /= y Hy.
+  apply Rle_lt_trans with (2 := Hy).
+  apply norm_triangle_inv.
+Qed.
 
 (** Some open sets of [R] *)
 

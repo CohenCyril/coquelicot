@@ -1470,11 +1470,11 @@ Proof.
       rewrite (plus_comm (scal (x - x0) (f y1))) -plus_assoc.
       rewrite -scal_distr_r /=.
       ring_simplify (x - x0 + (x0 - SF_h ptd)).
-      eapply Rle_lt_trans with (norm (scal (SF_h ptd - x) (f x)) + norm (scal (x - SF_h ptd) (f y1))).
-      apply: norm_triangle.
+      eapply Rle_lt_trans.
+      apply @norm_triangle.
       replace (2 * eps * M) with (eps * M + eps * M) by ring.
       apply Rplus_lt_compat ;
-        apply: Rle_lt_trans (norm_scal _ _) _ ;
+        eapply Rle_lt_trans ; try (apply @norm_scal) ;
         apply Rmult_le_0_lt_compat.
       by apply Rabs_pos.
       by apply norm_ge_0.
@@ -1513,7 +1513,7 @@ Proof.
       replace (SF_h ptd - x + (x0 - SF_h ptd)) with (opp (x - x0)) by (simpl ; ring).
       rewrite (scal_opp_l (VV := Normed_VectorSpace _)) -scal_opp_r.
       rewrite -scal_distr_l.
-      apply: Rle_lt_trans (norm_scal _ _) _.
+      eapply Rle_lt_trans. apply @norm_scal.
       replace (2 * eps * M) with (eps * (M + M)) by ring.
       apply Rmult_le_0_lt_compat.
       by apply Rabs_pos.
@@ -1528,7 +1528,7 @@ Proof.
       rewrite ?Rabs_pos_eq //.
       by apply Rplus_le_compat_r.
       apply Rle_lt_trans with (norm (f x) + norm (opp (f y1))).
-      apply: norm_triangle.
+      apply @norm_triangle.
       apply Rplus_lt_compat.
       apply Hfx.
       by split.
@@ -1556,7 +1556,7 @@ Proof.
   eapply Rle_trans.
   by apply @norm_triangle.
   apply Rplus_le_compat.
-  apply: Rle_trans (norm_scal _ _) _.
+  eapply Rle_trans. apply @norm_scal.
   rewrite /= Rabs_right.
   apply Rmult_le_compat_l.
   apply -> Rminus_le_0 ; apply Rle_trans with y0 ;
@@ -1578,6 +1578,19 @@ Proof.
 Qed.
 
 End Riemann_sum_Normed.
+
+(** Structures *)
+
+Lemma Riemann_sum_pair {U V} {VU : VectorSpace U R} {VV : VectorSpace V R}
+  (f : R -> U * V) ptd :
+  Riemann_sum f ptd = 
+    (Riemann_sum (fun t => fst (f t)) ptd, Riemann_sum (fun t => snd (f t)) ptd).
+Proof.
+  apply SF_cons_ind with (s := ptd) => {ptd} [x0 | h0 ptd IH].
+  by [].
+  rewrite !Riemann_sum_cons IH.
+  by apply injective_projections.
+Qed.
 
 (** RInt_val *)
 
@@ -1695,6 +1708,62 @@ Proof.
   by apply sym_eq, (Heq O), lt_O_Sn.
   apply IH => i Hi.
   now apply (Heq (S i)), lt_n_S.
+Qed.
+
+Lemma RInt_val_comp_opp (f : R -> V) (a b : R) (n : nat) :
+  RInt_val (fun x => f (- x)) a b n = opp (RInt_val f (- a) (- b) n).
+Proof.
+  rewrite /RInt_val.
+  replace (unif_part (- a) (- b) n) with (map Ropp (unif_part a b n)).
+  elim: (unif_part a b n) {1}0 {2}0 => /= [ | x1 s IH] x0 x0'.
+  rewrite /Riemann_sum /=.
+  by apply sym_eq, @opp_zero.
+  destruct s as [ | x2 s].
+  rewrite /Riemann_sum /=.
+  by apply sym_eq, @opp_zero.
+  rewrite (SF_cons_f2 _ x1) ; try by apply lt_O_Sn.
+  rewrite (SF_cons_f2 _ (- x1)) ; try by apply lt_O_Sn.
+  rewrite !Riemann_sum_cons /=.
+  rewrite opp_plus.
+  apply f_equal2.
+  rewrite -scal_opp_l.
+  apply (f_equal2 (fun x y => scal x (f y))) ; simpl ; field.
+  by apply IH.
+  apply eq_from_nth with 0.
+  by rewrite size_map !size_mkseq.
+  rewrite size_map => i Hi.
+  rewrite (nth_map 0 0) => //.
+  rewrite size_mkseq in Hi.
+  rewrite !nth_mkseq => //.
+  field.
+  now rewrite -S_INR ; apply not_0_INR, sym_not_eq, O_S.
+Qed.
+
+Lemma RInt_val_comp_lim (f : R -> V) (u v : R) (a b : R) (n : nat) :
+  scal u (RInt_val (fun x => f (u * x + v)) a b n) = RInt_val f (u * a + v) (u * b + v) n.
+Proof.
+  rewrite /RInt_val.
+  replace (unif_part (u * a + v) (u * b + v) n) with (map (fun x => u * x + v) (unif_part a b n)).
+  elim: (unif_part a b n) {1}0 {2}0 => /= [ | x1 s IH] x0 x0'.
+  by apply @scal_zero_r.
+  destruct s as [ | x2 s].
+  by apply @scal_zero_r.
+  rewrite (SF_cons_f2 _ x1) ; try by apply lt_O_Sn.
+  rewrite (SF_cons_f2 _ (u * x1 + v)) ; try by apply lt_O_Sn.
+  rewrite !Riemann_sum_cons /=.
+  rewrite scal_distr_l.
+  apply f_equal2.
+  rewrite scal_assoc.
+  apply (f_equal2 (fun x y => scal x (f y))) ; simpl ; field.
+  by apply IH.
+  apply eq_from_nth with 0.
+  by rewrite size_map !size_mkseq.
+  rewrite size_map => i Hi.
+  rewrite (nth_map 0 0) => //.
+  rewrite size_mkseq in Hi.
+  rewrite !nth_mkseq => //.
+  field.
+  now rewrite -S_INR ; apply not_0_INR, sym_not_eq, O_S.
 Qed.
 
 End RInt_val.
