@@ -351,47 +351,49 @@ Class AbelianGroup G := {
 
 (** Arithmetic operations *)
 
+Section AbelianGroup.
+
+Context {G} {GG : AbelianGroup G}.
+
 Lemma plus_zero_l :
-  forall {G} {GG : AbelianGroup G} (x : G),
+  forall x : G,
   plus zero x = x.
 Proof.
-intros G GG x.
+intros x.
 now rewrite plus_comm plus_zero_r.
 Qed.
 
 Lemma plus_opp_l :
-  forall {G} {GG : AbelianGroup G} (x : G),
+  forall x : G,
   plus (opp x) x = zero.
 Proof.
-intros G GG x.
+intros x.
 rewrite plus_comm.
 apply plus_opp_r.
 Qed.
 
 Lemma opp_zero :
-  forall {G} {GG : AbelianGroup G},
   opp zero = zero.
 Proof.
-intros G GG.
 rewrite <- (plus_zero_r (opp zero)).
 apply plus_opp_l.
 Qed.
 
 Lemma minus_zero_r :
-  forall {G} {GG : AbelianGroup G} (x : G),
+  forall x : G,
   minus x zero = x.
 Proof.
-intros G GG x.
+intros x.
 unfold minus.
 rewrite opp_zero.
 apply plus_zero_r.
 Qed.
 
 Lemma plus_reg_r :
-  forall {G} {GG : AbelianGroup G} (x y z : G),
+  forall x y z : G,
   plus x z = plus y z -> x = y.
 Proof.
-intros G GG x y z H.
+intros x y z H.
 rewrite <- (plus_zero_r x), <- (plus_zero_r y).
 rewrite <- (plus_opp_r z).
 rewrite 2!plus_assoc.
@@ -399,10 +401,10 @@ now rewrite H.
 Qed.
 
 Lemma opp_plus :
-  forall {G} {GG : AbelianGroup G} (x y : G),
+  forall x y : G,
   opp (plus x y) = plus (opp x) (opp y).
 Proof.
-intros G GG x y.
+intros x y.
 apply plus_reg_r with (plus x y).
 rewrite plus_opp_l.
 rewrite plus_assoc.
@@ -414,19 +416,20 @@ apply sym_eq, plus_opp_l.
 Qed.
 
 Lemma opp_opp :
-  forall {G} {GG : AbelianGroup G} (x : G),
+  forall x : G,
   opp (opp x) = x.
 Proof.
-intros G GG x.
+intros x.
 apply plus_reg_r with (opp x).
 rewrite plus_opp_r.
 apply plus_opp_l.
 Qed.
 
-Lemma plus_eq_compat_l: forall {G} {GG : AbelianGroup G}
-  (r x y: G), plus r x = plus r y -> x = y.
+Lemma plus_eq_compat_l :
+  forall r x y : G,
+  plus r x = plus r y -> x = y.
 Proof.
-intros K FK r x y H.
+intros r x y H.
 rewrite -(plus_zero_l x) -(plus_opp_l r) -plus_assoc.
 rewrite H.
 now rewrite plus_assoc plus_opp_l plus_zero_l.
@@ -434,16 +437,18 @@ Qed.
 
 (** Sum *)
 
-Fixpoint sum_n {G} {GG: AbelianGroup G} (a:nat -> G) (N : nat) {struct N} : G :=
+Fixpoint sum_n (a:nat -> G) (N : nat) {struct N} : G :=
   match N with
    | 0%nat => a 0%nat
    | S i => plus (sum_n a i)  (a (S i))
   end.
 
-Lemma sum_n_ext_aux: forall {G} {GG: AbelianGroup G} (a b:nat-> G) N, 
-   (forall n, (n < S N)%nat -> a n = b n) -> sum_n a N = sum_n b N.
+Lemma sum_n_ext_aux :
+  forall (a b : nat -> G) N,
+  (forall n, (n < S N)%nat -> a n = b n) ->
+  sum_n a N = sum_n b N.
 Proof.
-  intros G GG a b N H; induction N; simpl.
+  intros a b N H; induction N; simpl.
   apply H.
   by apply le_refl.
   rewrite IHN.
@@ -451,19 +456,23 @@ Proof.
   move => n Hn.
   now apply H, le_trans with (1 := Hn), le_n_Sn.
 Qed.
-Lemma sum_n_ext: forall {G} {GG: AbelianGroup G} (a b:nat-> G) N, 
-   (forall n, a n = b n) -> sum_n a N = sum_n b N.
+
+Lemma sum_n_ext :
+  forall (a b : nat -> G) N,
+  (forall n, a n = b n) ->
+  sum_n a N = sum_n b N.
 Proof.
-  intros G GG a b N H; induction N; simpl.
+  intros a b N H; induction N; simpl.
   apply H.
   now rewrite IHN; rewrite H.
 Qed.
 
-Lemma decomp_sum_n: forall {G} {GG: AbelianGroup G} (a:nat-> G) N, 
+Lemma decomp_sum_n :
+  forall (a : nat-> G) N,
   (0 < N)%nat ->
-   sum_n a N = plus (a 0%nat) (sum_n (fun i : nat => a (S i)) (pred N)).
+  sum_n a N = plus (a 0%nat) (sum_n (fun i : nat => a (S i)) (pred N)).
 Proof.
-  intros G GG a N HN; destruct N; simpl.
+  intros a N HN; destruct N; simpl.
   exfalso; omega.
   clear HN; induction N; simpl.
   easy.
@@ -471,7 +480,8 @@ Proof.
   apply sym_eq, plus_assoc.
 Qed.  
 
-Lemma sum_n_plus {G} {GG : AbelianGroup G} : forall (u v : nat -> G) (n : nat),
+Lemma sum_n_plus :
+  forall (u v : nat -> G) (n : nat),
   sum_n (fun k => plus (u k) (v k)) n = plus (sum_n u n) (sum_n v n).
 Proof.
   intros u v.
@@ -486,7 +496,8 @@ Proof.
   by [].
 Qed.
 
-Lemma sum_n_switch {G} {GG : AbelianGroup G} : forall (u : nat -> nat -> G) (m n : nat),
+Lemma sum_n_switch :
+  forall (u : nat -> nat -> G) (m n : nat),
   sum_n (fun i => sum_n (u i) n) m = sum_n (fun j => sum_n (fun i => u i j) m) n.
 Proof.
   intros u.
@@ -496,6 +507,7 @@ Proof.
   by rewrite -sum_n_plus.
 Qed.
 
+End AbelianGroup.
 
 (** ** Noncommutative rings *)
 
@@ -849,15 +861,19 @@ Qed.
 
 (** ** Open sets in metric spaces *)
 
-Definition open {T} {MT : MetricBall T} (D : T -> Prop) :=
+Section Open.
+
+Context {T} {MT : MetricBall T}.
+
+Definition open (D : T -> Prop) :=
   forall x, D x -> locally x D.
 
 Lemma open_ext :
-  forall {T} {MT : MetricBall T} (D E : T -> Prop),
+  forall D E : T -> Prop,
   (forall x, D x <-> E x) ->
   open D -> open E.
 Proof.
-intros T MT D E H OD x Ex.
+intros D E H OD x Ex.
 generalize (OD x (proj2 (H x) Ex)).
 apply filter_imp.
 intros y.
@@ -865,22 +881,22 @@ apply H.
 Qed.
 
 Lemma open_and :
-  forall {T} {MT : MetricBall T} (D E : T -> Prop),
+  forall D E : T -> Prop,
   open D -> open E ->
   open (fun x => D x /\ E x).
 Proof.
-intros T MT D E OD OE x [Dx Ex].
+intros D E OD OE x [Dx Ex].
 apply filter_and.
 now apply OD.
 now apply OE.
 Qed.
 
 Lemma open_or :
-  forall {T} {MT : MetricBall T} (D E : T -> Prop),
+  forall D E : T -> Prop,
   open D -> open E ->
   open (fun x => D x \/ E x).
 Proof.
-intros T MT D E OD OE x [Dx|Ex].
+intros D E OD OE x [Dx|Ex].
 generalize (OD x Dx).
 apply filter_imp.
 intros y Dy.
@@ -892,19 +908,19 @@ now right.
 Qed.
 
 Lemma open_true :
-  forall {T} {MT : MetricBall T},
   open (fun x : T => True).
 Proof.
-intros T MT x _.
+intros x _.
 apply filter_true.
 Qed.
 
 Lemma open_false :
-  forall {T} {MT : MetricBall T},
   open (fun x : T => False).
 Proof.
-now intros T MT x Hx.
+now intros x Hx.
 Qed.
+
+End Open.
 
 (** ** Complete metric spaces *)
 
@@ -1078,11 +1094,15 @@ Defined.
 
 (** Operations *)
 
+Section VectorSpace.
+
+Context {V K} {FK : Ring K} {VV : VectorSpace V K}.
+
 Lemma scal_zero_r :
-  forall {V K} {FK : Ring K} {VV : VectorSpace V K} (x : K),
-  scal (V := V) x zero = zero.
+  forall x : K,
+  scal x zero = zero.
 Proof.
-intros V K FK VV x.
+intros x.
 apply plus_reg_r with (scal x zero).
 rewrite <- scal_distr_l.
 rewrite plus_zero_r.
@@ -1090,10 +1110,10 @@ now rewrite plus_zero_l.
 Qed.
 
 Lemma scal_zero_l :
-  forall {V K} {FK : Ring K} {VV : VectorSpace V K} (u : V),
+  forall u : V,
   scal zero u = zero.
 Proof.
-intros V K FK VV u.
+intros u.
 apply plus_reg_r with (z := scal zero u).
 rewrite plus_zero_l.
 rewrite <- scal_distr_r.
@@ -1101,10 +1121,10 @@ now rewrite plus_zero_r.
 Qed.
 
 Lemma scal_opp_l :
-  forall {V K} {FK : Ring K} {VV : VectorSpace V K} (x : K) (u : V),
+  forall (x : K) (u : V),
   scal (opp x) u = opp (scal x u).
 Proof.
-intros V K FK VV x u.
+intros x u.
 apply plus_reg_r with (z := (scal x u)).
 rewrite plus_opp_l.
 rewrite <- scal_distr_r.
@@ -1113,10 +1133,10 @@ apply scal_zero_l.
 Qed.
 
 Lemma scal_opp_r :
-  forall {V K} {FK : Ring K} {VV : VectorSpace V K} (x : K) (u : V),
+  forall (x : K) (u : V),
   scal x (opp u) = opp (scal x u).
 Proof.
-intros V K FK VV x u.
+intros x u.
 apply plus_reg_r with (z := (scal x u)).
 rewrite plus_opp_l.
 rewrite <- scal_distr_l.
@@ -1125,16 +1145,16 @@ apply scal_zero_r.
 Qed.
 
 Lemma scal_opp_one :
-  forall {V K} {FK : Ring K} {VV : VectorSpace V K} (u : V),
+  forall u : V,
   scal (opp one) u = opp u.
 Proof.
-intros V K FK VV u.
+intros u.
 rewrite scal_opp_l.
 now rewrite scal_one.
 Qed.
 
-Lemma sum_n_scal_l {T K} {RK : Ring K} {MT : VectorSpace T K} :
- forall (a : K) (u : nat -> T) (n : nat),
+Lemma sum_n_scal_l :
+  forall (a : K) (u : nat -> V) (n : nat),
   sum_n (fun k => scal a (u k)) n = scal a (sum_n u n).
 Proof.
   intros a u n.
@@ -1144,6 +1164,8 @@ Proof.
   apply eq_sym.
   by apply scal_distr_l.
 Qed.
+
+End VectorSpace.
 
 (** ** Normed Vector Space *)
 
@@ -1226,7 +1248,7 @@ Qed.
 
 End NormedVectorSpace.
 
-(** Specific normed vector spaces *)
+(** Normed vector spaces have a metric *)
 
 Global Instance Normed_MetricBall {V K : Type} {FK : AbsRing K} :
   NormedVectorSpace V K -> MetricBall V.
@@ -1532,13 +1554,19 @@ Defined.
 
 (** ** Matrices *)
 
-Definition matrix {T : Type} (m n : nat) := Tn m (Tn n T).
-Definition coeff_mat {T} {m n : nat} (x0 : T) (A : @matrix T m n) (i j : nat) :=
+Section Matrices.
+
+Context {T : Type}.
+
+Definition matrix (m n : nat) := Tn m (Tn n T).
+
+Definition coeff_mat {m n : nat} (x0 : T) (A : @matrix m n) (i j : nat) :=
   coeff_Tn x0 (coeff_Tn (mk_Tn _ (fun _ => x0)) A i) j.
-Definition mk_matrix {T} (m n : nat) (U : nat -> nat -> T) : @matrix T m n :=
+
+Definition mk_matrix (m n : nat) (U : nat -> nat -> T) : @matrix m n :=
   mk_Tn m (fun i => (mk_Tn n (U i))).
 
-Lemma mk_matrix_bij {T} {m n : nat} (x0 : T) (A : @matrix T m n) :
+Lemma mk_matrix_bij {m n : nat} (x0 : T) (A : @matrix m n) :
   mk_matrix m n (coeff_mat x0 A) = A.
 Proof.
   unfold mk_matrix, coeff_mat.
@@ -1548,14 +1576,16 @@ Proof.
   intros i Hi.
   by rewrite mk_Tn_bij.
 Qed.
-Lemma coeff_mat_bij {T} {m n : nat} (x0 : T) (u : nat -> nat -> T) :
+
+Lemma coeff_mat_bij {m n : nat} (x0 : T) (u : nat -> nat -> T) :
   forall i j, (i < m)%nat -> (j < n)%nat -> coeff_mat x0 (mk_matrix m n u) i j = u i j.
 Proof.
   intros i j Hi Hj.
   unfold mk_matrix, coeff_mat.
   by rewrite 2?coeff_Tn_bij .
 Qed.
-Lemma coeff_mat_ext_aux {T} {m n : nat} (x1 x2 : T) (v1 v2 : @matrix T m n) :
+
+Lemma coeff_mat_ext_aux {m n : nat} (x1 x2 : T) (v1 v2 : @matrix m n) :
   v1 = v2 <-> forall i j, (i < m)%nat -> (j < n)%nat -> (coeff_mat x1 v1 i j) = (coeff_mat x2 v2 i j).
 Proof.
   split => Hv.
@@ -1568,7 +1598,8 @@ Proof.
     apply mk_Tn_ext => j Hj.
     by apply Hv.
 Qed.
-Lemma coeff_mat_ext {T} {m n : nat} (x0 : T) (v1 v2 : @matrix T m n) :
+
+Lemma coeff_mat_ext {m n : nat} (x0 : T) (v1 v2 : @matrix m n) :
   v1 = v2 <-> forall i j, (coeff_mat x0 v1 i j) = (coeff_mat x0 v2 i j).
 Proof.
   split.
@@ -1576,7 +1607,8 @@ Proof.
   intro H.
   now apply (coeff_mat_ext_aux x0 x0 v1 v2).
 Qed.
-Lemma mk_matrix_ext {T} (m n : nat) (u1 u2 : nat -> nat -> T) :
+
+Lemma mk_matrix_ext (m n : nat) (u1 u2 : nat -> nat -> T) :
   (forall i j, (i < m)%nat -> (j < n)%nat -> (u1 i j) = (u2 i j))
     <-> (mk_matrix m n u1) = (mk_matrix m n u2).
 Proof.
@@ -1592,24 +1624,22 @@ Proof.
     by [].
 Qed.
 
-Definition Mzero {T m n} {GT : AbelianGroup T} := mk_matrix m n (fun i j => @zero T GT).
-Fixpoint Mone_seq {T} {RT : Ring T} i j : T :=
-  match i,j with
-    | O, O => one
-    | O, S _ | S _, O => zero
-    | S i, S j => Mone_seq i j end.
-Definition Mone {T n} {RT : Ring T} : @matrix T n n :=
-  mk_matrix n n Mone_seq.
-Definition Mplus {T m n} {GT : AbelianGroup T} (A B : @matrix T m n) :=
-  mk_matrix m n (fun i j => (@plus T GT) (coeff_mat zero A i j) (coeff_mat zero B i j)).
-Definition Mopp {T m n} {GT : AbelianGroup T} (A : @matrix T m n) :=
-  mk_matrix m n (fun i j => (@opp T GT) (coeff_mat zero A i j)).
-Definition Mmult {T n m k} {RT : Ring T} (A : @matrix T n m) (B : @matrix T m k) :=
-  mk_matrix n k (fun i j => @sum_n T (@ring_group T RT) (fun l => (@mult T (@ring_group T RT) (@ring_mixin T RT)) (coeff_mat zero A i l) (coeff_mat zero B l j)) (pred m)).
+Section MatrixGroup.
 
+Context {GT : AbelianGroup T}.
 
-Global Instance AbelianGroup_matrix {T} :
-  AbelianGroup T -> forall m n, AbelianGroup (@matrix T m n).
+Definition Mzero {m n} := mk_matrix m n (fun i j => @zero T GT).
+
+Definition Mplus {m n} (A B : @matrix m n) :=
+  mk_matrix m n (fun i j => plus (coeff_mat zero A i j) (coeff_mat zero B i j)).
+
+Definition Mopp {m n} (A : @matrix m n) :=
+  mk_matrix m n (fun i j => opp (coeff_mat zero A i j)).
+
+End MatrixGroup.
+
+Global Instance AbelianGroup_matrix :
+  AbelianGroup T -> forall m n, AbelianGroup (@matrix m n).
 Proof.
   intros GT m n.
   apply Build_AbelianGroup with Mplus Mopp Mzero.
@@ -1630,9 +1660,25 @@ Proof.
     by apply plus_opp_r.
 Defined.
 
-Lemma Mmult_assoc {T n m k l} {RT : Ring T} :
-  forall (A : @matrix T n m) (B : @matrix T m k) (C : @matrix T k l),
-    Mmult A (Mmult B C) = Mmult (Mmult A B) C.
+Section MatrixRing.
+
+Context {RT : Ring T}.
+
+Fixpoint Mone_seq i j : T :=
+  match i,j with
+    | O, O => one
+    | O, S _ | S _, O => zero
+    | S i, S j => Mone_seq i j end.
+
+Definition Mone {n} : @matrix n n :=
+  mk_matrix n n Mone_seq.
+
+Definition Mmult {n m k} (A : @matrix n m) (B : @matrix m k) :=
+  mk_matrix n k (fun i j => sum_n (fun l => mult (coeff_mat zero A i l) (coeff_mat zero B l j)) (pred m)).
+
+Lemma Mmult_assoc {n m k l} :
+  forall (A : @matrix n m) (B : @matrix m k) (C : @matrix k l),
+  Mmult A (Mmult B C) = Mmult (Mmult A B) C.
 Proof.
   intros A B C.
   apply mk_matrix_ext => n' l' Hn' Hl'.
@@ -1670,8 +1716,9 @@ Proof.
   now unfold Mmult ; rewrite coeff_mat_bij.
   by [].
 Qed.
-Lemma Mmult_one_r {T m n} {RT : Ring T} :
-  forall x : @matrix T m n, Mmult x Mone = x.
+
+Lemma Mmult_one_r {m n} :
+  forall x : @matrix m n, Mmult x Mone = x.
 Proof.
   intros A.
   rewrite -{2}(mk_matrix_bij zero A).
@@ -1724,7 +1771,7 @@ Proof.
     by apply lt_S_n.
     by elim: n.
 Qed.
-Lemma Mmult_one_l {T m n} {RT : Ring T} :
+Lemma Mmult_one_l {m n} :
   forall x : matrix m n, Mmult Mone x = x.
 Proof.
   intros A.
@@ -1777,8 +1824,8 @@ Proof.
     by elim: m.
 Qed.
 
-Lemma Mmult_distr_r {T m n k} {RT : Ring T} :
-  forall (A B : @matrix T m n) (C : @matrix T n k),
+Lemma Mmult_distr_r {m n k} :
+  forall (A B : @matrix m n) (C : @matrix n k),
   Mmult (plus A B) C = plus (Mmult A C) (Mmult B C).
 Proof.
   intros A B C.
@@ -1794,8 +1841,8 @@ Proof.
   by apply mult_distr_r.
 Qed.
 
-Lemma Mmult_distr_l {T m n k} {RT : Ring T} : 
-  forall (A : @matrix T m n) (B C : @matrix T n k),
+Lemma Mmult_distr_l {m n k} :
+  forall (A : @matrix m n) (B C : @matrix n k),
   Mmult A (plus B C) = plus (Mmult A B) (Mmult A C).
 Proof.
   intros A B C.
@@ -1811,8 +1858,10 @@ Proof.
   by apply mult_distr_l.
 Qed.
 
-Global Instance Ring_matrix {T n} :
-  Ring T -> Ring (@matrix T n n) | 4.
+End MatrixRing.
+
+Global Instance Ring_matrix {n} :
+  Ring T -> Ring (@matrix n n) | 4.
 Proof.
   intros RT.
   apply Build_Ring with (AbelianGroup_matrix _ _ _).
@@ -1824,8 +1873,8 @@ Proof.
   + by apply Mmult_distr_l.
 Defined.
 
-Global Instance ModuleSpace_matrix {T m n} :
-  forall RT : Ring T, VectorSpace (@matrix T m n) (@matrix T m m).
+Global Instance ModuleSpace_matrix {m n} :
+  forall RT : Ring T, VectorSpace (@matrix m n) (@matrix m m).
 Proof.
   intros RT.
   apply Build_VectorSpace with (AbelianGroup_matrix _ _ _).
@@ -1835,6 +1884,8 @@ Proof.
   + by apply Mmult_distr_l.
   + by apply Mmult_distr_r.
 Defined.
+
+End Matrices.
 
 (** * The topology on natural numbers *)
 
