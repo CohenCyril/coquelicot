@@ -1560,13 +1560,13 @@ Context {T : Type}.
 
 Definition matrix (m n : nat) := Tn m (Tn n T).
 
-Definition coeff_mat {m n : nat} (x0 : T) (A : @matrix m n) (i j : nat) :=
+Definition coeff_mat {m n : nat} (x0 : T) (A : matrix m n) (i j : nat) :=
   coeff_Tn x0 (coeff_Tn (mk_Tn _ (fun _ => x0)) A i) j.
 
-Definition mk_matrix (m n : nat) (U : nat -> nat -> T) : @matrix m n :=
+Definition mk_matrix (m n : nat) (U : nat -> nat -> T) : matrix m n :=
   mk_Tn m (fun i => (mk_Tn n (U i))).
 
-Lemma mk_matrix_bij {m n : nat} (x0 : T) (A : @matrix m n) :
+Lemma mk_matrix_bij {m n : nat} (x0 : T) (A : matrix m n) :
   mk_matrix m n (coeff_mat x0 A) = A.
 Proof.
   unfold mk_matrix, coeff_mat.
@@ -1585,7 +1585,7 @@ Proof.
   by rewrite 2?coeff_Tn_bij .
 Qed.
 
-Lemma coeff_mat_ext_aux {m n : nat} (x1 x2 : T) (v1 v2 : @matrix m n) :
+Lemma coeff_mat_ext_aux {m n : nat} (x1 x2 : T) (v1 v2 : matrix m n) :
   v1 = v2 <-> forall i j, (i < m)%nat -> (j < n)%nat -> (coeff_mat x1 v1 i j) = (coeff_mat x2 v2 i j).
 Proof.
   split => Hv.
@@ -1599,7 +1599,7 @@ Proof.
     by apply Hv.
 Qed.
 
-Lemma coeff_mat_ext {m n : nat} (x0 : T) (v1 v2 : @matrix m n) :
+Lemma coeff_mat_ext {m n : nat} (x0 : T) (v1 v2 : matrix m n) :
   v1 = v2 <-> forall i j, (coeff_mat x0 v1 i j) = (coeff_mat x0 v2 i j).
 Proof.
   split.
@@ -1630,16 +1630,16 @@ Context {GT : AbelianGroup T}.
 
 Definition Mzero {m n} := mk_matrix m n (fun i j => @zero T GT).
 
-Definition Mplus {m n} (A B : @matrix m n) :=
+Definition Mplus {m n} (A B : matrix m n) :=
   mk_matrix m n (fun i j => plus (coeff_mat zero A i j) (coeff_mat zero B i j)).
 
-Definition Mopp {m n} (A : @matrix m n) :=
+Definition Mopp {m n} (A : matrix m n) :=
   mk_matrix m n (fun i j => opp (coeff_mat zero A i j)).
 
 End MatrixGroup.
 
 Global Instance AbelianGroup_matrix :
-  AbelianGroup T -> forall m n, AbelianGroup (@matrix m n).
+  AbelianGroup T -> forall m n, AbelianGroup (matrix m n).
 Proof.
   intros GT m n.
   apply Build_AbelianGroup with Mplus Mopp Mzero.
@@ -1670,14 +1670,14 @@ Fixpoint Mone_seq i j : T :=
     | O, S _ | S _, O => zero
     | S i, S j => Mone_seq i j end.
 
-Definition Mone {n} : @matrix n n :=
+Definition Mone {n} : matrix n n :=
   mk_matrix n n Mone_seq.
 
-Definition Mmult {n m k} (A : @matrix n m) (B : @matrix m k) :=
+Definition Mmult {n m k} (A : matrix n m) (B : matrix m k) :=
   mk_matrix n k (fun i j => sum_n (fun l => mult (coeff_mat zero A i l) (coeff_mat zero B l j)) (pred m)).
 
 Lemma Mmult_assoc {n m k l} :
-  forall (A : @matrix n m) (B : @matrix m k) (C : @matrix k l),
+  forall (A : matrix n m) (B : matrix m k) (C : matrix k l),
   Mmult A (Mmult B C) = Mmult (Mmult A B) C.
 Proof.
   intros A B C.
@@ -1718,7 +1718,7 @@ Proof.
 Qed.
 
 Lemma Mmult_one_r {m n} :
-  forall x : @matrix m n, Mmult x Mone = x.
+  forall x : matrix m n, Mmult x Mone = x.
 Proof.
   intros A.
   rewrite -{2}(mk_matrix_bij zero A).
@@ -1825,7 +1825,7 @@ Proof.
 Qed.
 
 Lemma Mmult_distr_r {m n k} :
-  forall (A B : @matrix m n) (C : @matrix n k),
+  forall (A B : matrix m n) (C : matrix n k),
   Mmult (plus A B) C = plus (Mmult A C) (Mmult B C).
 Proof.
   intros A B C.
@@ -1842,7 +1842,7 @@ Proof.
 Qed.
 
 Lemma Mmult_distr_l {m n k} :
-  forall (A : @matrix m n) (B C : @matrix n k),
+  forall (A : matrix m n) (B C : matrix n k),
   Mmult A (plus B C) = plus (Mmult A B) (Mmult A C).
 Proof.
   intros A B C.
@@ -1861,7 +1861,7 @@ Qed.
 End MatrixRing.
 
 Global Instance Ring_matrix {n} :
-  Ring T -> Ring (@matrix n n) | 4.
+  Ring T -> Ring (matrix n n) | 4.
 Proof.
   intros RT.
   apply Build_Ring with (AbelianGroup_matrix _ _ _).
@@ -1874,7 +1874,7 @@ Proof.
 Defined.
 
 Global Instance ModuleSpace_matrix {m n} :
-  forall RT : Ring T, VectorSpace (@matrix m n) (@matrix m m).
+  forall RT : Ring T, VectorSpace (matrix m n) (matrix m m).
 Proof.
   intros RT.
   apply Build_VectorSpace with (AbelianGroup_matrix _ _ _).
