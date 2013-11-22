@@ -410,7 +410,7 @@ Proof.
   by [].
 Qed.
 
-(** Extentionality *)
+(** Extensionality *)
 
 Lemma is_RInt_ext :
   forall (f g : R -> V) (a b : R) (l : V),
