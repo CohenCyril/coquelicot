@@ -1622,10 +1622,10 @@ Proof.
 Qed.
 
 Lemma is_RInt_fct_extend_pair {U V} {MU : NormedVectorSpace U R} {MV : NormedVectorSpace V R}
-  (f : R -> U * V) (a b : R) (l : U * V) :
-  is_RInt (fun t => fst (f t)) a b (fst l) -> 
-  is_RInt (fun t => snd (f t)) a b (snd l) 
-    -> is_RInt f a b l.
+  (f : R -> U * V) (a b : R) lu lv :
+  is_RInt (fun t => fst (f t)) a b lu -> 
+  is_RInt (fun t => snd (f t)) a b lv 
+    -> is_RInt f a b (lu,lv).
 Proof.
   move => H1 H2.
   apply filterlim_locally => eps.
@@ -1639,6 +1639,34 @@ Proof.
   by apply Rlt_le_trans with (2 := Rmin_l d1 d2).
   apply H2 => //.
   by apply Rlt_le_trans with (2 := Rmin_r d1 d2).
+Qed.
+
+Lemma ex_RInt_fct_extend_fst {U V} {MU : NormedVectorSpace U R} {MV : NormedVectorSpace V R}
+  (f : R -> U * V) (a b : R) :
+  ex_RInt f a b -> ex_RInt (fun t => fst (f t)) a b.
+Proof.
+  intros [l Hl].
+  exists (fst l).
+  by apply is_RInt_fct_extend_fst.
+Qed.  
+Lemma ex_RInt_fct_extend_snd {U V} {MU : NormedVectorSpace U R} {MV : NormedVectorSpace V R}
+  (f : R -> U * V) (a b : R) :
+  ex_RInt f a b -> ex_RInt (fun t => snd (f t)) a b.
+Proof.
+  intros [l Hl].
+  exists (snd l).
+  by apply is_RInt_fct_extend_snd.
+Qed.
+
+Lemma ex_RInt_fct_extend_pair {U V} {MU : NormedVectorSpace U R} {MV : NormedVectorSpace V R}
+  (f : R -> U * V) (a b : R) :
+  ex_RInt (fun t => fst (f t)) a b -> 
+  ex_RInt (fun t => snd (f t)) a b 
+    -> ex_RInt f a b.
+Proof.
+  move => [l1 H1] [l2 H2].
+  exists (l1,l2).
+  by apply is_RInt_fct_extend_pair.
 Qed.
 
 Lemma RInt_fct_extend_pair {U V} {MU : NormedVectorSpace U R} {MV : NormedVectorSpace V R}
@@ -4425,7 +4453,7 @@ Qed.
 
 Lemma RInt_le: forall f g a b,
     a <= b ->
-   ex_RInt f a b ->  ex_RInt g a b ->
+   ex_RInt f a b ->  ex_RInt g a b -> 
    (forall x,  a <= x <= b -> f x <= g x) ->
    RInt f a b <= RInt g a b.
 Proof.

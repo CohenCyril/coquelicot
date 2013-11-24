@@ -9,10 +9,22 @@ Definition C := (R * R)%type.
 Definition RtoC (x : R) : C := (x,0).
 Coercion RtoC : R >-> C.
 
+Lemma Ceq_dec (z1 z2 : C) : { z1 = z2 } + { z1 <> z2 }.
+Proof.
+  destruct z1 as [x1 y1].
+  destruct z2 as [x2 y2].
+  case: (Req_EM_T x1 x2) => [ -> | Hx ].
+  case: (Req_EM_T y1 y2) => [ -> | Hy ].
+  by left.
+  right ; contradict Hy.
+  now apply (f_equal (@snd R R)) in Hy ; simpl in Hy.
+  right ; contradict Hx.
+  now apply (f_equal (@fst R R)) in Hx ; simpl in Hx.
+Qed.
+
 (** ** Constants and usual functions *)
 
-Definition C0 : C := 0.
-Definition C1 : C := 1.
+(** 0 and 1 for complex are defined as [RtoC 0] and [RtoC 1] *)
 Definition Ci : C := (0,1).
 
 (** *** Arithmetic operations *)
@@ -35,6 +47,10 @@ Notation "/ x" := (Cinv x) : C_scope.
 Infix "/" := Cdiv : C_scope.
 
 (** *** Other usual functions *)
+
+Definition Re (z : C) : R := fst z.
+
+Definition Im (z : C) : R := snd z.
 
 Definition Cmod (x : C) : R := sqrt (fst x ^ 2 + snd x ^ 2).
 
@@ -107,6 +123,27 @@ Proof.
   apply Rplus_le_le_0_compat ; apply pow2_ge_0.
 Qed.
 
+Lemma Rmax_Cmod : forall x,
+  Rmax (Rabs (fst x)) (Rabs (snd x)) <= Cmod x.
+Proof.
+  case => x y /=.
+  rewrite -!sqrt_Rsqr_abs.
+  apply Rmax_case ; apply sqrt_le_1_alt, Rminus_le_0 ;
+  rewrite /Rsqr /= ; ring_simplify ; by apply pow2_ge_0.
+Qed.
+Lemma Cmod_2Rmax : forall x,
+  Cmod x <= sqrt 2 * Rmax (Rabs (fst x)) (Rabs (snd x)).
+Proof.
+  case => x y /= ; apply Rmax_case_strong => H0 ;
+  rewrite -!sqrt_Rsqr_abs ;
+  rewrite -?sqrt_mult ;
+  try (by apply Rle_0_sqr) ;
+  try (by apply Rlt_le, Rlt_0_2) ;
+  apply sqrt_le_1_alt ; simpl ; [ rewrite Rplus_comm | ] ;
+  rewrite /Rsqr ; apply Rle_minus_r ; ring_simplify ;
+  apply Rsqr_le_abs_1 in H0 ; by rewrite /pow !Rmult_1_r.
+Qed.
+
 (** ** C is a field *)
 
 Lemma Cplus_comm (x y : C) : x + y = y + x.
@@ -128,6 +165,15 @@ Qed.
 Lemma Cplus_opp_r (x : C) : x + -x = 0.
 Proof.
   apply injective_projections ; simpl ; apply Rplus_opp_r.
+Qed.
+
+Lemma Copp_plus_distr (z1 z2 : C) : - (z1 + z2) = (- z1 + - z2).
+Proof.
+  apply injective_projections ; by apply Ropp_plus_distr.
+Qed.
+Lemma Copp_minus_distr (z1 z2 : C) : - (z1 - z2) = z2 - z1.
+Proof.
+  apply injective_projections ; by apply Ropp_minus_distr.
 Qed.
 
 Lemma Cmult_comm (x y : C) : x * y = y * x.
@@ -279,7 +325,26 @@ contradict Zx.
 now apply Cmod_eq_0.
 Qed.
 
-Lemma C_field_theory : field_theory C0 C1 Cplus Cmult Cminus Copp Cdiv Cinv eq.
+Lemma Cmult_neq_0 (z1 z2 : C) : z1 <> 0 -> z2 <> 0 -> z1 * z2 <> 0.
+Proof.
+  intros Hz1 Hz2 => Hz.
+  assert (Cmod (z1 * z2) = 0).
+  by rewrite Hz Cmod_0.
+  rewrite Cmod_mult in H.
+  apply Rmult_integral in H ; destruct H.
+  now apply Hz1, Cmod_eq_0.
+  now apply Hz2, Cmod_eq_0.
+Qed.
+
+Lemma Cminus_eq_contra : forall r1 r2 : C, r1 <> r2 -> r1 - r2 <> 0.
+Proof.
+  intros ; contradict H ; apply injective_projections ;
+  apply Rminus_diag_uniq.
+  now apply (f_equal (@fst R R)) in H.
+  now apply (f_equal (@snd R R)) in H.
+Qed.
+
+Lemma C_field_theory : field_theory (RtoC 0) (RtoC 1) Cplus Cmult Cminus Copp Cdiv Cinv eq.
 Proof.
 constructor.
 constructor.
