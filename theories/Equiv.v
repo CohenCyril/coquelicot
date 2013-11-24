@@ -169,7 +169,7 @@ Proof.
   apply filter_imp.
   intros x [H2 H1].
   replace (g1 x) with (plus (opp (minus (g2 x) (g1 x))) (g2 x)).
-  apply: Rle_trans (norm_triangle _ _) _.
+  eapply Rle_trans. 1: apply @norm_triangle.
   rewrite norm_opp.
   apply Rle_trans with (1 * norm (g2 x) + norm (g2 x)).
   now apply Rplus_le_compat_r.
@@ -212,7 +212,7 @@ Proof.
   generalize (filter_and _ _ (Hfg (pos_div_2 eps)) (Hgh (pos_div_2 eps))) => {Hfg Hgh}.
   apply filter_imp => x /= [Hfg Hgh].
   replace (minus (h x) (f x)) with (plus (minus (g x) (f x)) (opp (minus (g x) (h x)))).
-  apply: Rle_trans (norm_triangle _ _) _.
+  eapply Rle_trans. 1 : by apply @norm_triangle.
   rewrite norm_opp (double_var eps) Rmult_plus_distr_r.
   by apply Rplus_le_compat.
   rewrite /minus opp_plus opp_opp plus_comm plus_assoc.
