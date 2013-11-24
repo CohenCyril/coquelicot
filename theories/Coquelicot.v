@@ -64,8 +64,7 @@ Limits and continuity are expressed by filters using the generic construction
 domain of f, and L a filter describing a limit point of the range of f.
 
 The following filters are available:
-- [locally x] is the set of all the open balls centered on x, with x an element
-  from a [MetricSpace].
+- [locally x] is the set of balls centered on x, as defined by the [MetricBall] class.
 - [locally' x] is similar to [locally x], except that x is missing from every ball.
 - [Rbar_locally x] is defined for x in [Rbar]. It is [locally x] if x is finite,
   otherwise it is the set of half-bounded open intervals extending to either
