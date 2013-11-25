@@ -830,6 +830,48 @@ by apply H.
 by apply ball_sym, H.
 Qed.
 
+Lemma locally_ex_dec :
+  forall {T} {MT : MetricBall T} (P : T -> Prop) (x : T),
+  (forall x, P x \/ ~P x) ->
+  locally x P ->
+  {d : posreal | forall y, ball x d y -> P y}.
+Proof.
+intros T MT P x P_dec H.
+set (Q := fun z => z <= 1 /\ forall y, ball x z y -> P y).
+assert (He : exists e : posreal, Q e).
+  destruct H as [eps Heps].
+  exists (mkposreal _ (Rmin_stable_in_posreal eps (mkposreal _ Rlt_0_1))).
+  split.
+  apply Rmin_r.
+  intros y Hy.
+  apply Heps.
+  apply ball_le with (2 := Hy).
+  apply Rmin_l.
+destruct (completeness Q) as [d [H1 H2]].
+- exists 1.
+  now intros y [Hy _].
+- destruct He as [eps Heps].
+  now exists eps.
+assert (Zd : 0 < d).
+  destruct He as [eps Heps].
+  apply Rlt_le_trans with (1 := cond_pos eps).
+  now apply H1.
+exists (mkposreal _ (is_pos_div_2 (mkposreal _ Zd))).
+simpl Rdiv.
+intros y Hy.
+destruct (P_dec y) as [HP|HP].
+exact HP.
+exfalso.
+apply (Rlt_not_le _ _ (Rlt_eps2_eps _ Zd)).
+apply H2.
+intros z Hz.
+apply Rnot_lt_le.
+contradict HP.
+apply Hz.
+apply ball_le with (2 := Hy).
+now apply Rlt_le.
+Qed.
+
 (** locally' *)
 
 Definition locally' {T} {MT : MetricBall T} (x : T) (P : T -> Prop) :=
@@ -1349,44 +1391,6 @@ intros x.
 rewrite <- (scal_opp_one (VV := Normed_VectorSpace VV)).
 apply filterlim_ext with (2 := filterlim_scal _ _).
 intros; apply (scal_opp_one (VV := Normed_VectorSpace VV)).
-Qed.
-
-Lemma locally_ex_dec :
-  forall (P : V -> Prop) (x : V),
-  (forall x, P x \/ ~P x) ->
-  locally x P ->
-  {d : posreal | forall y, ball x d y -> P y}.
-Proof.
-intros P x P_dec H.
-set (Q := fun z => z <= 1 /\ forall y, ball x z y -> P y).
-assert (He : exists e : posreal, Q e).
-  destruct H as [eps Heps].
-  exists (mkposreal _ (Rmin_stable_in_posreal eps (mkposreal _ Rlt_0_1))).
-  split.
-  apply Rmin_r.
-  intros y Hy.
-  apply Heps.
-  apply Rlt_le_trans with (1 := Hy).
-  apply Rmin_l.
-destruct (completeness Q) as [d [H1 H2]].
-- exists 1.
-  now intros y [Hy _].
-- destruct He as [eps Heps].
-  now exists eps.
-assert (Zd : 0 < d).
-  destruct He as [eps Heps].
-  apply Rlt_le_trans with (1 := cond_pos eps).
-  now apply H1.
-exists (mkposreal _ Zd).
-intros y Hy.
-destruct (P_dec y) as [HP|HP].
-exact HP.
-elim Rlt_not_le with (1 := Hy).
-apply H2.
-intros z Hz.
-apply Rnot_lt_le.
-contradict HP.
-now apply Hz.
 Qed.
 
 End NVS_continuity.
@@ -2460,15 +2464,13 @@ destruct (locally_ex_dec (fun z => P (fst z) (snd z)) (x, y)) as [d Hd].
   exists e.
   intros [u v] Huv.
   apply H.
-  apply Rle_lt_trans with (2 := Huv).
-  apply Rmax_l.
-  apply Rle_lt_trans with (2 := Huv).
-  apply Rmax_r.
+  apply Huv.
+  apply Huv.
 exists d.
 intros u v Hu Hv.
 apply (Hd (u, v)).
 simpl.
-now apply Rmax_case.
+now split.
 Qed.
 
 (** * Some Topology on [Rbar] *)
