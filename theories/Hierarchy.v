@@ -1594,7 +1594,7 @@ Proof.
 Qed.
 
 Global Instance AbelianGroup_Tn {T} :
-  AbelianGroup T -> forall n, AbelianGroup (Tn n T).
+  AbelianGroup T -> forall n, AbelianGroup (Tn n T) | 10.
 Proof.
   intro GT.
   elim => /= [ | n IH].
@@ -1603,7 +1603,8 @@ Proof.
   - by apply AbelianGroup_prod.
 Defined.
 
-Global Instance MetricBall_Tn : forall T, MetricBall T -> forall n, MetricBall (Tn n T).
+Global Instance MetricBall_Tn :
+  forall T, MetricBall T -> forall n, MetricBall (Tn n T) | 10.
 Proof.
 intros T MT n.
 elim: n => [ | n MTn].
@@ -1612,8 +1613,9 @@ by apply MetricBall_prod.
 Defined.
 
 Global Instance VectorSpace_mixin_Tn {T} {K} {FK : Ring K} :
-  forall (GT : AbelianGroup T),
-  VectorSpace_mixin T K GT -> forall n, VectorSpace_mixin (Tn n T) K (AbelianGroup_Tn GT n).
+  forall GT : AbelianGroup T,
+  VectorSpace_mixin T K GT ->
+  forall n, VectorSpace_mixin (Tn n T) K (AbelianGroup_Tn GT n) | 10.
 Proof.
   intros GT VV.
   elim => [ | n VVn].
@@ -1622,7 +1624,7 @@ Proof.
 Defined.
 
 Global Instance VectorSpace_Tn {T} {K} {FK : Ring K} :
-  VectorSpace T K -> forall n, VectorSpace (Tn n T) K.
+  VectorSpace T K -> forall n, VectorSpace (Tn n T) K | 10.
 Proof.
   intros VV n.
   apply Build_VectorSpace with (AbelianGroup_Tn _ n).
@@ -1632,7 +1634,7 @@ Defined.
 Global Instance NormedVectorSpace_mixin_Tn {T} {K} {FK : AbsRing K} :
   forall VT,
   NormedVectorSpace_mixin T K VT -> 
-    forall n, NormedVectorSpace_mixin (Tn n T) K (VectorSpace_Tn VT n).
+  forall n, NormedVectorSpace_mixin (Tn n T) K (VectorSpace_Tn VT n) | 10.
 Proof.
   move => VT NVT.
   elim => /= [ | n NVTn].
@@ -1645,7 +1647,7 @@ Defined.
 
 Global Instance NormedVectorSpace_Tn {T} {K} {FK : AbsRing K} :
   NormedVectorSpace T K -> 
-    forall n, NormedVectorSpace (Tn n T) K.
+  forall n, NormedVectorSpace (Tn n T) K | 10.
 Proof.
   move => NVT n.
   apply Build_NormedVectorSpace
@@ -1979,7 +1981,7 @@ Qed.
 End MatrixRing.
 
 Global Instance Ring_matrix {n} :
-  Ring T -> Ring (matrix n n) | 4.
+  Ring T -> Ring (matrix n n) | 10.
 Proof.
   intros RT.
   apply Build_Ring with (AbelianGroup_matrix _ _ _).
@@ -2245,12 +2247,21 @@ intros P x y.
 split ; intros [d H] ; exists d.
 - simpl.
   move => [u [v t]] /= {t} H'.
-  now apply H.
+  apply H.
+  apply Rle_lt_trans with (2 := H').
+  apply Rmax_l.
+  apply Rle_lt_trans with (2 := H').
+  rewrite (Rmax_left _ 0).
+  apply Rmax_r.
+  apply Rabs_pos.
 - intros u v Hu Hv.
   simpl in H.
   apply (H (u,(v,tt))) ; repeat split.
+  apply Rmax_case.
   exact Hu.
+  apply Rmax_case.
   exact Hv.
+  apply cond_pos.
 Qed.
 
 Lemma locally_2d_impl_strong :
