@@ -1084,7 +1084,7 @@ wlog: a b h Hfh / (a <= b) => [Hw | Hab].
   by apply opp_opp.
   eapply (filterlim_compose _ _ _ (fun x => opp (h x)) opp).
   by apply Hfh'.
-  now generalize (filterlim_opp_2 If).
+  now generalize (filterlim_opp If).
   by apply @is_RInt_swap.
 
 case: Hab => Hab.
@@ -1179,4 +1179,3 @@ apply filter_imp with (1 := HP).
 now apply filter_imp with (2 := filter_true).
 now apply @is_RInt_point.
 Qed.
-

@@ -79,7 +79,7 @@ Proof.
   unfold Riemann_fine.
   rewrite Rmin_comm Rmax_comm.
   apply filterlim_compose with (1 := HIf).
-  apply mvspace_scal.
+  apply filterlim_scal.
 Qed.
 
 Lemma ex_RInt_swap :
@@ -1405,7 +1405,7 @@ rewrite 2!scal_assoc.
 apply (f_equal (fun x => scal x _)).
 apply Rmult_comm.
 apply filterlim_compose with (1 := Hf).
-apply mvspace_scal.
+apply filterlim_scal.
 Qed.
 
 Lemma ex_RInt_scal :
@@ -1431,7 +1431,7 @@ rewrite (scal_opp_one (VV := Normed_VectorSpace VV)).
 apply sym_eq, (scal_opp_r (VV := Normed_VectorSpace VV)).
 apply filterlim_compose with (1 := Hf).
 rewrite -(scal_opp_one (VV := Normed_VectorSpace VV)).
-apply mvspace_scal.
+apply filterlim_scal.
 Qed.
 
 Lemma ex_RInt_opp :
@@ -1456,7 +1456,7 @@ intros ptd.
 rewrite Riemann_sum_plus.
 apply sym_eq, @scal_distr_l.
 apply filterlim_compose_2 with (1 := Hf) (2 := Hg).
-apply mvspace_plus.
+apply filterlim_plus.
 Qed.
 
 Lemma ex_RInt_plus :
@@ -1486,9 +1486,9 @@ rewrite -scal_opp_r.
 apply sym_eq, @scal_distr_l.
 eapply filterlim_compose_2 with (1 := Hf).
 apply filterlim_compose with (1 := Hg).
-apply mvspace_scal.
+apply filterlim_scal.
 rewrite (scal_opp_one (VV := Normed_VectorSpace VV)).
-apply mvspace_plus.
+apply filterlim_plus.
 Qed.
 
 Lemma ex_RInt_minus :
@@ -5662,4 +5662,3 @@ left; apply cond_pos.
 rewrite RInt_point.
 ring.
 Qed.
-

@@ -333,7 +333,7 @@ Proof.
 intros Cf.
 eapply filterlim_compose.
 apply Cf.
-apply filterlim_opp.
+apply filterlim_Rbar_opp.
 Qed.
 Lemma ex_lim_opp (f : R -> R) (x : Rbar) :
   ex_lim f x -> ex_lim (fun y => - f y) x.
@@ -358,7 +358,7 @@ Lemma is_lim_plus (f g : R -> R) (x lf lg : Rbar) :
 Proof.
 intros Cf Cg Hp.
 eapply filterlim_compose_2 ; try eassumption.
-now apply filterlim_plus.
+now apply filterlim_Rbar_plus.
 Qed.
 Lemma ex_lim_plus (f g : R -> R) (x : Rbar) :
   ex_lim f x -> ex_lim g x ->
@@ -426,7 +426,7 @@ Lemma is_lim_inv (f : R -> R) (x l : Rbar) :
 Proof.
   intros Hf Hl.
   apply filterlim_compose with (1 := Hf).
-  now apply filterlim_inv.
+  now apply filterlim_Rbar_inv.
 Qed.
 Lemma ex_lim_inv (f : R -> R) (x : Rbar) :
   ex_lim f x -> Lim f x <> 0 -> ex_lim (fun y => / f y) x.
@@ -452,7 +452,7 @@ Lemma is_lim_mult (f g : R -> R) (x lf lg : Rbar) :
 Proof.
 intros Cf Cg Hp.
 eapply filterlim_compose_2 ; try eassumption.
-now apply filterlim_mult.
+now apply filterlim_Rbar_mult.
 Qed.
 Lemma ex_lim_mult (f g : R -> R) (x : Rbar) :
   ex_lim f x -> ex_lim g x ->
@@ -1246,7 +1246,7 @@ apply continuity_2d_pt_filterlim.
 eapply filterlim_compose_2.
 apply Cf.
 apply Cg.
-now apply (filterlim_plus (f x y) (g x y)).
+apply @filterlim_plus.
 Qed.
 
 Lemma continuity_2d_pt_minus (f g : R -> R -> R) (x y : R) :
@@ -1271,7 +1271,7 @@ intros Cf Df.
 apply continuity_2d_pt_filterlim in Cf.
 apply continuity_2d_pt_filterlim.
 apply filterlim_compose with (1 := Cf).
-apply (filterlim_inv (f x y)).
+apply (filterlim_Rbar_inv (f x y)).
 contradict Df.
 now injection Df.
 Qed.
@@ -1288,5 +1288,5 @@ apply continuity_2d_pt_filterlim.
 eapply filterlim_compose_2.
 apply Cf.
 apply Cg.
-now apply (filterlim_mult (f x y) (g x y)).
+now apply (filterlim_Rbar_mult (f x y) (g x y)).
 Qed.
