@@ -1757,7 +1757,7 @@ Ltac reify fct nb :=
     | ?f ?a =>
       let e := reify a nb in
       let ud := constr:(_ : UnaryDiff' f) in
-      constr:(Unary (Efct f (@UnaryDiff'_f' f ud) (@UnaryDiff'_df f ud) (@UnaryDiff'_H f ud)) e)
+      constr:(Unary (Efct' f (@UnaryDiff'_f' f ud) (@UnaryDiff'_df f ud) (@UnaryDiff'_H f ud)) e)
     | _ =>
       match reify_aux fct (Nil expr) O with
       | (?f,?le,?k) => constr:(AppExt k f le)
