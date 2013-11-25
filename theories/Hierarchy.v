@@ -19,8 +19,8 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 COPYING file for more details.
 *)
 
-Require Import Reals List Morphisms ssreflect.
-Require Import Rcomplements Rbar Lub.
+Require Import Reals ssreflect.
+Require Import Rcomplements Rbar.
 Open Scope R_scope.
 
 (** * Filters *)
@@ -1351,6 +1351,44 @@ apply filterlim_ext with (2 := filterlim_scal _ _).
 intros; apply (scal_opp_one (VV := Normed_VectorSpace VV)).
 Qed.
 
+Lemma locally_ex_dec :
+  forall (P : V -> Prop) (x : V),
+  (forall x, P x \/ ~P x) ->
+  locally x P ->
+  {d : posreal | forall y, ball x d y -> P y}.
+Proof.
+intros P x P_dec H.
+set (Q := fun z => z <= 1 /\ forall y, ball x z y -> P y).
+assert (He : exists e : posreal, Q e).
+  destruct H as [eps Heps].
+  exists (mkposreal _ (Rmin_stable_in_posreal eps (mkposreal _ Rlt_0_1))).
+  split.
+  apply Rmin_r.
+  intros y Hy.
+  apply Heps.
+  apply Rlt_le_trans with (1 := Hy).
+  apply Rmin_l.
+destruct (completeness Q) as [d [H1 H2]].
+- exists 1.
+  now intros y [Hy _].
+- destruct He as [eps Heps].
+  now exists eps.
+assert (Zd : 0 < d).
+  destruct He as [eps Heps].
+  apply Rlt_le_trans with (1 := cond_pos eps).
+  now apply H1.
+exists (mkposreal _ Zd).
+intros y Hy.
+destruct (P_dec y) as [HP|HP].
+exact HP.
+elim Rlt_not_le with (1 := Hy).
+apply H2.
+intros z Hz.
+apply Rnot_lt_le.
+contradict HP.
+now apply Hz.
+Qed.
+
 End NVS_continuity.
 
 (** ** Complete Normed Vector Space *)
@@ -2180,60 +2218,6 @@ Proof.
   now apply Hp ; apply Hd.
 Qed.
 
-Lemma locally_ex_dec :
-  forall P (x : R),
-  (forall x, P x \/ ~P x) ->
-  locally x P ->
-  {d:posreal | forall y, Rabs (y-x) < d -> P y}.
-Proof.
-intros P x P_dec H.
-set (Q := fun z => forall y,  Rabs (y-x) < z -> P y).
-destruct (ex_lub_Rbar_ne Q) as ([d| |],(H1,H2)).
-destruct H as (d1,Hd1).
-exists d1 => y Hy.
-now apply Hd1.
-(* *)
-assert (Zd: 0 < d).
-destruct H as (d1,Hd1).
-apply Rlt_le_trans with (1 := cond_pos d1).
-apply Rbar_finite_le.
-apply H1 => y Hy.
-by apply Hd1.
-exists (mkposreal d Zd).
-simpl.
-intros y Hy.
-destruct (P_dec y) as [Py|Py].
-exact Py.
-elim (Rlt_not_le _ _ Hy).
-apply Rbar_finite_le.
-apply H2.
-intros u Hu.
-apply Rbar_finite_le.
-apply Rnot_lt_le.
-contradict Py.
-now apply Hu.
-(* *)
-exists (mkposreal 1 Rlt_0_1).
-simpl.
-intros y Hy.
-destruct (P_dec y) as [Py|Py].
-exact Py.
-elim (Rlt_not_le _ _ Hy).
-apply Rbar_finite_le.
-apply Rbar_le_trans with p_infty.
-now left.
-apply H2.
-intros u Hu.
-apply Rbar_finite_le.
-apply Rnot_lt_le.
-contradict Py.
-now apply Hu.
-(* *)
-elimtype False.
-destruct H as (d1,Hd1).
-now destruct (H1 d1).
-Qed.
-
 (** * Topology on [R]² *)
 
 Definition locally_2d (P : R -> R -> Prop) x y :=
@@ -2452,65 +2436,28 @@ specialize (H t Ht).
 apply locally_singleton with (1 := H).
 Qed.
 
-Lemma locally_2d_ex_dec: forall P x y, (forall x y, P x y \/ ~P x y) -> locally_2d P x y
-   -> {d:posreal| forall u v, Rabs (u-x) < d -> Rabs (v-y) < d -> P u v}.
+Lemma locally_2d_ex_dec :
+  forall P x y,
+  (forall x y, P x y \/ ~P x y) ->
+  locally_2d P x y ->
+  {d : posreal | forall u v, Rabs (u-x) < d -> Rabs (v-y) < d -> P u v}.
 Proof.
 intros P x y P_dec H.
-set (Q := fun z => forall u v,   Rabs (u-x) < z -> Rabs (v-y) < z -> P u v).
-destruct (ex_lub_Rbar_ne Q) as ([d| |],(H1,H2)).
-destruct H as (d1,Hd1).
-now exists d1.
-(* *)
-assert (Zd: 0 < d).
-destruct H as (d1,Hd1).
-apply Rlt_le_trans with (1 := cond_pos d1).
-apply Rbar_finite_le.
-now apply H1.
-exists (mkposreal d Zd).
-simpl.
+destruct (locally_ex_dec (fun z => P (fst z) (snd z)) (x, y)) as [d Hd].
+- now intros [u v].
+- destruct H as [e H].
+  exists e.
+  intros [u v] Huv.
+  apply H.
+  apply Rle_lt_trans with (2 := Huv).
+  apply Rmax_l.
+  apply Rle_lt_trans with (2 := Huv).
+  apply Rmax_r.
+exists d.
 intros u v Hu Hv.
-destruct (P_dec  u v) as [Puv|Puv].
-exact Puv.
-assert (Hi:(Rmax (Rabs (u - x)) (Rabs (v - y)) < d)).
-now apply Rmax_case.
-elim (Rlt_not_le _ _ Hi).
-apply Rbar_finite_le.
-apply H2.
-intros z Hz.
-apply Rbar_finite_le.
-apply Rnot_lt_le.
-contradict Puv.
-apply Hz.
-apply Rle_lt_trans with (2:=Puv).
-apply Rmax_l.
-apply Rle_lt_trans with (2:=Puv).
-apply Rmax_r.
-(* *)
-exists (mkposreal 1 Rlt_0_1).
+apply (Hd (u, v)).
 simpl.
-intros u v Hu Hv.
-destruct (P_dec u v) as [Puv|Puv].
-exact Puv.
-assert (Hi:(Rmax (Rabs (u - x)) (Rabs (v - y)) < 1)).
 now apply Rmax_case.
-elim (Rlt_not_le _ _ Hi).
-apply Rbar_finite_le.
-apply Rbar_le_trans with p_infty.
-now left.
-apply H2.
-intros z Hz.
-apply Rbar_finite_le.
-apply Rnot_lt_le.
-contradict Puv.
-apply Hz.
-apply Rle_lt_trans with (2:=Puv).
-apply Rmax_l.
-apply Rle_lt_trans with (2:=Puv).
-apply Rmax_r.
-(* *)
-elimtype False.
-destruct H as (d1,Hd1).
-now destruct (H1 d1).
 Qed.
 
 (** * Some Topology on [Rbar] *)
