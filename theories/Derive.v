@@ -26,12 +26,116 @@ Require Import Hierarchy Continuity.
 Require Import Rcomplements.
 Open Scope R_scope.
 
-(** * One-direction differentiability using filters *)
+(** * Linear functions *)
+
+Record linear_fct (U V : Type) {K} {FK : AbsRing K}
+  {VU : NormedVectorSpace U K} {VV : NormedVectorSpace V K} := 
+  { lin_fct :> U -> V ;
+    lin_plus : forall x y, lin_fct (plus x y) = plus (lin_fct x) (lin_fct y) ;
+    lin_scal : forall k x, lin_fct (scal k x) = scal k (lin_fct x) ;
+    lin_norm : exists M : R, 0 <= M /\ (forall x, norm (lin_fct x) <= M * norm x)
+  }.
+
+Section LinearFct.
+
+Context {U V K} {FK : AbsRing K} {VU : NormedVectorSpace U K} {VV : NormedVectorSpace V K}.
+
+Lemma linear_fct_zero (l : linear_fct U V) :
+  l zero = zero.
+Proof.
+  rewrite -(scal_zero_l (VV := Normed_VectorSpace _) zero).
+  by rewrite lin_scal !(scal_zero_l (VV := Normed_VectorSpace _)).
+Qed.
+Lemma linear_fct_opp (l : linear_fct U V) (x : U) :
+  l (opp x) = opp (l x).
+Proof.
+  apply plus_reg_r with (l x).
+  rewrite -lin_plus !plus_opp_l.
+  by apply linear_fct_zero.
+Qed.
+
+(** zero in a linear function *)
+Definition zero_linear_fct : linear_fct U V.
+Proof.
+  exists (fun _ => zero).
+  - move => _ _ ; by rewrite plus_zero_l.
+  - move => k _ ; by rewrite (scal_zero_r (VV := Normed_VectorSpace _)).
+  - exists 0 ; split.
+    by apply Rle_refl.
+    move => x ; rewrite Rmult_0_l norm_zero.
+    by apply Rle_refl.
+Defined.
+
+End LinearFct.
+
+Section Op_LinearFct.
+
+Context {V K} {FK : AbsRing K} {VV : NormedVectorSpace V K}.
+
+(** opp is a linear function *)
+Definition opp_linear_fct : linear_fct V V.
+Proof.
+  exists opp.
+  - move => x y.
+    now apply opp_plus.
+  - move => k x.
+    apply sym_eq, (scal_opp_r (VV := Normed_VectorSpace _)).
+  - exists 1 ; split. 
+    by apply Rle_0_1.
+    move => x ; rewrite norm_opp Rmult_1_l.
+    by apply Rle_refl.
+Defined.
+(** plus is a linear function *)
+Definition plus_linear_fct : linear_fct (V * V) V.
+Proof.
+  exists (fun x => plus (fst x) (snd x)) ; simpl.
+  - move => x y.
+    rewrite -!plus_assoc ; apply f_equal.
+    rewrite plus_comm -!plus_assoc.
+    by apply f_equal, @plus_comm.
+  - move => k x.
+    now rewrite scal_distr_l.
+  - exists 2 ; split.
+    now apply Rlt_le, Rlt_0_2.
+    move => x /= ; eapply Rle_trans.
+    by apply @norm_triangle.
+    rewrite Rmult_plus_distr_r Rmult_1_l ; apply Rplus_le_compat.
+    by apply Rmax_l.
+    by apply Rmax_r.
+Defined.
+
+Definition scal_linear (x : V) :
+  linear_fct K V.
+Proof.
+  exists (fun k => scal k x).
+  - move => u v ; by apply scal_distr_r.
+  - move => u v /= ; apply sym_eq, @scal_assoc.
+  - exists (norm x) ; split.
+    by apply norm_ge_0.
+    move => k /=.
+    now rewrite Rmult_comm ; apply @norm_scal.
+Defined.
+
+End Op_LinearFct.
+
+
+(** * Differentiability using filters *)
 
 Definition filterderive {U K} {RK : AbsRing K} {VSU : NormedVectorSpace U K}
   (f : K -> U) (x : K) (l : U) :=
   filterlim (fun y => norm (minus (minus (f y) (f x)) (scal (minus y x) l)) / abs (minus y x))
     (locally' x) (locally R0).
+Definition filterdiff {U V K} {FK : AbsRing K} {VU : NormedVectorSpace U K} {VV : NormedVectorSpace V K}
+  (f : U -> V) (x : U) (l : linear_fct U V) :=
+  filterlim (fun y => norm (minus (minus (f y) (f x)) (l (minus y x))) / norm (minus y x))
+    (locally' x) (locally R0).
+
+Lemma filterdiff_derive {V K} {FK : AbsRing K} {VV : NormedVectorSpace V K}
+  (f : K -> V) (x : K) (l : V) :
+  filterdiff f x (scal_linear l) <-> filterderive f x l.
+Proof.
+  by split.
+Qed.
 
 Lemma filterderive_Reals (f : R -> R) (x l : R) :
  (derivable_pt_lim f x l <-> filterderive f x l).
@@ -66,7 +170,81 @@ Proof.
     by ring_simplify (x + h + - x).
 Qed.
 
-(** * Definitions *)
+(** ** Operations *)
+
+Lemma locally_locally' {T} {MT : MetricBall T} (x : T) (P : T -> Prop) :
+  locally x P -> locally' x P.
+Proof.
+  intros [d Hd].
+  exists d => y Hy _.
+  now apply Hd.
+Qed.
+
+Section Properties1.
+
+Context {U V K} {RK : AbsRing K} {VU : NormedVectorSpace U K} {VV : NormedVectorSpace V K}.
+
+Lemma filterdiff_ext_loc (f g : U -> V) (x : U) (l : linear_fct U V) :
+  locally x (fun y => f y = g y)
+  -> filterdiff f x l -> filterdiff g x l.
+Proof.
+  move => H.
+  apply filterlim_ext_loc.
+  move: (locally_locally' _ _ H) ;
+  apply filter_imp => y ->.
+  apply locally_singleton in H.
+  by rewrite H.
+Qed.
+Lemma filterdiff_ext (f g : U -> V) (x : U) (l : linear_fct U V) :
+  (forall y , f y = g y)
+  -> filterdiff f x l -> filterdiff g x l.
+Proof.
+  move => H.
+  apply filterdiff_ext_loc.
+  now apply filter_imp with (2 := filter_true).
+Qed.
+
+Lemma filterdiff_const (a : V) (x : U) :
+  filterdiff (fun _ => a) x zero_linear_fct.
+Proof.
+  move => P HP.
+  exists (mkposreal _ Rlt_0_1) => y /= Hy Hy0.
+  rewrite /minus plus_opp_r opp_zero plus_zero_l norm_zero /Rdiv Rmult_0_l.
+  by apply locally_singleton in HP.
+Qed.
+
+End Properties1.
+
+Section Operations.
+
+Context {V K} {RK : AbsRing K} {VV : NormedVectorSpace V K}.
+
+Lemma filterdiff_opp (x : V) :
+  filterdiff opp x opp_linear_fct.
+Proof.
+  apply filterlim_locally => eps.
+  exists eps => y /= Hy Hy0.
+  rewrite /minus -!opp_plus plus_opp_r norm_opp norm_zero.
+  rewrite /Rdiv Rmult_0_l Ropp_0 Rplus_0_l Rabs_R0.
+  by apply eps.
+Qed.
+Lemma filterdiff_plus (x y : V) :
+  filterdiff (fun u => plus (fst u) (snd u)) (x,y) plus_linear_fct.
+Proof.
+  apply filterlim_locally => eps.
+  exists eps => u /= Hu Hu0.
+  replace (plus (plus (fst u) (opp x)) (plus (snd u) (opp y)))
+    with (minus (plus (fst u) (snd u)) (plus x y)).
+  rewrite /minus plus_opp_r norm_zero.
+  rewrite /Rdiv Rmult_0_l Ropp_0 Rplus_0_l Rabs_R0.
+  by apply eps.
+  rewrite /minus -!plus_assoc ; apply f_equal.
+  rewrite opp_plus plus_comm -!plus_assoc ; apply f_equal, @plus_comm.
+Qed.
+
+End Operations.
+
+(** * Definitions on [R] *)
 
 Notation is_derive f x l := (derivable_pt_lim f x l).
 Definition ex_derive f x := exists l, is_derive f x l.

@@ -5,24 +5,6 @@ Open Local Scope C_scope.
 
 (** * New in Coquelicot *)
 
-Global Instance C_NVS_mixin :
-  NormedVectorSpace_mixin C R (VectorSpace_prod _ _).
-Proof.
-  apply Build_NormedVectorSpace_mixin with Cmod.
-  by apply Cmod_triangle.
-  move => l x /=.
-  rewrite -Cmod_R -Cmod_mult.
-  apply Req_le, f_equal.
-  apply injective_projections ; simpl ; ring.
-Defined.
-
-Global Instance C_NVS :
-  NormedVectorSpace C R.
-Proof.
-  apply Build_NormedVectorSpace with (AbelianGroup_prod _ _) (VectorSpace_mixin_prod _ _).
-  by apply C_NVS_mixin.
-Defined.
-
 Definition C_RInt (f : R -> C) (a b : R) : C :=
   (RInt (fun t => fst (f t)) a b, RInt (fun t => snd (f t)) a b).
 
@@ -328,41 +310,20 @@ Focus 2.
     with ((1 - x) * z1 + x * z3).
   now apply injective_projections ; simpl ; field ; apply Rminus_eq_contra.
   now apply injective_projections ; simpl ; field ; apply Rminus_eq_contra.
-  
-  apply injective_projections ; simpl ; field.
-  replace ((fst z3 + - ((1 + - p) * fst z1 + p * fst z3)) *
-    (fst z3 + - ((1 + - p) * fst z1 + p * fst z3)) +
-    (snd z3 + - ((1 + - p) * snd z1 + p * snd z3)) *
-    (snd z3 + - ((1 + - p) * snd z1 + p * snd z3)))%R
-    with ((1 - p) ^ 2 * ((fst z3 - fst z1)² + (snd z3 - snd z1)²))%R
-    by (now rewrite /Rsqr /= ; field).
-  replace (((1 + - p) * fst z1 + p * fst z3 + - fst z1) *
-    ((1 + - p) * fst z1 + p * fst z3 + - fst z1) +
-    ((1 + - p) * snd z1 + p * snd z3 + - snd z1) *
-    ((1 + - p) * snd z1 + p * snd z3 + - snd z1))%R
-    with (p ^ 2 * ((fst z3 - fst z1)² + (snd z3 - snd z1)²))%R
-    by (now rewrite /Rsqr /= ; field).
-  split ; apply Rmult_integral_contrapositive_currified ;
-  try (apply pow_nonzero) ; try (apply Rminus_eq_contra) ; auto ;
-  contradict Hz ; apply Rplus_sqr_eq_0 in Hz ;
-  now apply sym_eq, injective_projections ; apply Rminus_diag_uniq.
-  
-  replace ((fst z3 + - ((1 + - p) * fst z1 + p * fst z3)) *
-    (fst z3 + - ((1 + - p) * fst z1 + p * fst z3)) +
-    (snd z3 + - ((1 + - p) * snd z1 + p * snd z3)) *
-    (snd z3 + - ((1 + - p) * snd z1 + p * snd z3)))%R
-    with ((1 - p) ^ 2 * ((fst z3 - fst z1)² + (snd z3 - snd z1)²))%R
-    by (now rewrite /Rsqr /= ; field).
-  replace (((1 + - p) * fst z1 + p * fst z3 + - fst z1) *
-    ((1 + - p) * fst z1 + p * fst z3 + - fst z1) +
-    ((1 + - p) * snd z1 + p * snd z3 + - snd z1) *
-    ((1 + - p) * snd z1 + p * snd z3 + - snd z1))%R
-    with (p ^ 2 * ((fst z3 - fst z1)² + (snd z3 - snd z1)²))%R
-    by (now rewrite /Rsqr /= ; field).
-  split ; apply Rmult_integral_contrapositive_currified ;
-  try (apply pow_nonzero) ; try (apply Rminus_eq_contra) ; auto ;
-  contradict Hz ; apply Rplus_sqr_eq_0 in Hz ;
-  now apply sym_eq, injective_projections ; apply Rminus_diag_uniq.
+
+  unfold k ; change plus with Cplus.
+  field.
+  change (1, 0) with (RtoC 1).
+  split.
+  replace (z3 - ((1 - p) * z1 + p * z3)) with ((1 - p) * (z3 - z1)) by ring.
+  apply Cmult_neq_0.
+  apply Cminus_eq_contra.
+  contradict Hp1 ; by apply RtoC_inj.
+  by apply Cminus_eq_contra, sym_not_eq.
+  replace ((1 - p) * z1 + p * z3 - z1) with (p * (z3 - z1)) by ring.
+  apply Cmult_neq_0.
+  contradict Hp0 ; by apply RtoC_inj.
+  by apply Cminus_eq_contra, sym_not_eq.
 Qed.
 Lemma ex_C_RInt_segm_Chasles (f : C -> C) (z1 z2 z3 : C) :
   (exists p : R, z2 = ((1 - p) * z1 + p * z3))
@@ -406,41 +367,83 @@ Proof.
   rewrite -Cmod_opp Copp_minus_distr ; simpl ; ring.
 Qed.
 
+(** * Proposition 5 *)
+
+Section is_RInt_Derive.
+
+Context {V : Type} {VV : NormedVectorSpace V R}.
+
+Lemma is_RInt_Derive (f : R -> V) (a b : R) (g : R -> V) :
+  (forall x : R, Rmin a b <= x <= Rmax a b -> filterderive f x (g x)) ->
+  (forall x : R, Rmin a b <= x <= Rmax a b -> filterlim g (locally x) (locally (g x))) ->
+  is_RInt g a b (minus (f b) (f a)).
+Proof.
+  wlog: a b / (a <= b) => [Hw | Hab].
+    case: (Rle_lt_dec a b) => Hab.
+    by apply Hw.
+    rewrite Rmax_comm Rmin_comm => Df Cg.
+    replace (minus (f b) (f a)) with (opp (minus (f a) (f b))).
+    apply is_RInt_swap.
+    apply Rlt_le in Hab.
+    by apply Hw.
+    rewrite /minus opp_plus opp_opp.
+    by apply plus_comm.
+  rewrite /Rmin /Rmax ; case: Rle_dec => // _ Df Cg.
+  case: Hab => Hab.
+  
+  cut (forall c, a <= c < b -> is_RInt g a c (minus (f c) (f a))).
+    move => H.
+    apply filterlim_locally => eps.
+Admitted.
+
+End is_RInt_Derive.
+
+Lemma prop5 (f g : C -> C) (z1 z2 : C) :
+  (forall z, is_C_derive g z (f z))
+  -> (forall z, filterlim f (locally (MT := Normed_MetricBall C_NVS) z)
+        (locally (MT := Normed_MetricBall C_NVS) (f z)))
+  -> is_C_RInt_segm f z1 z2 (g z1 - g z2).
+Admitted.
+
 Require Import seq.
 
 Lemma ex_RInt_norm {V} {VV : CompleteNormedVectorSpace V R} (f : R -> V) (a b : R) :
   ex_RInt f a b -> ex_RInt (fun x => norm (f x)) a b.
 Proof.
-  wlog: a b / (a <= b) => [Hw | Hab].
+  wlog: a b / (a <= b) => [Hw | Hab] Hf.
     case: (Rle_lt_dec a b) => Hab.
     by apply Hw.
-    move/ex_RInt_swap => H ; apply ex_RInt_swap.
+    apply ex_RInt_swap in Hf ; apply ex_RInt_swap.
     apply Hw.
     by apply Rlt_le.
     by [].
-  case: Hab => Hab Hf.
+  destruct (ex_RInt_ub f a b Hf) as [Mf Hm].
+  move: Hm ; rewrite /Rmin /Rmax ; case: Rle_dec => //= _ Hm.
+  case: Hab => Hab.
   destruct (proj1 (filterlim_locally_cauchy (fun ptd : SF_seq =>
      scal (sign (b - a)) (Riemann_sum (fun x : R => norm (f x)) ptd))
-     (F := Riemann_fine a b))).
-Focus 2.
-  exists x ; by apply H.
+     (F := Riemann_fine a b))) ; [ | exists x ; by apply H].
 
   simpl ; intros.
-  destruct (proj2 (filterlim_locally_cauchy (F := (Riemann_fine a b)) (fun ptd : SF_seq => scal (sign (b - a)) (Riemann_sum f ptd))) Hf eps) as [P [FP HP]].
+
+  destruct (proj2 (filterlim_locally_cauchy (F := (Riemann_fine a b))
+    (fun ptd : SF_seq => scal (sign (b - a)) (Riemann_sum f ptd)))
+    Hf (pos_div_2 eps)) as [P [[dP FP] HP]].
   simpl in HP.
-  clear Hf.
-  exists P ; split ; intros.
-  by apply FP.
-  eapply Rle_lt_trans.
-  2: by apply (HP u v).
-  apply Rminus_lt_0 in Hab.
-  rewrite /sign ; case: Rle_dec (Rlt_le _ _ Hab) => // Hab' _.
-  case: Rle_lt_or_eq_dec (Rlt_not_eq _ _ Hab) => // _ _ {Hab'}.
-  rewrite !scal_one !Rmult_1_l.
-  clear HP.
-  wlog: u H / (exists x h, u = mkSF_seq x ([:: h])) => [Hw | Hu].
-  move: H ; apply SF_cons_ind with (s := u) => {u} [x0 | h u IH] H.
   
+  cut (exists P0 : SF_seq -> Prop, Riemann_fine a b P0 /\
+    (forall u v : SF_seq, SF_lx u = SF_lx v ->
+    P0 u -> P0 v ->
+    Rabs (Riemann_sum (fun x : R => norm (f x)) v 
+      - Riemann_sum (fun x : R => norm (f x)) u) < eps)).
+  case => P0 [RP0 HP0].
+  exists P0 ; split.
+  by apply RP0.
+  intros.
+  rewrite (proj1 (sign_0_lt _)) ?Rmult_1_l.
+  move: v H H0 ;
+  apply SF_cons_ind with (s := u) => {u} [x0 | h u IH] v H H0.
+  rewrite {2}/Riemann_sum /= Ropp_R0 Rplus_.
 Admitted.
 
 Lemma cont_unif {V} {VV : NormedVectorSpace V R} (f : R -> V) a b :

@@ -9,6 +9,13 @@ Definition C := (R * R)%type.
 Definition RtoC (x : R) : C := (x,0).
 Coercion RtoC : R >-> C.
 
+Lemma RtoC_inj : forall (x y : R),
+  RtoC x = RtoC y -> x = y.
+Proof.
+  intros x y H.
+  now apply (f_equal (@fst R R)) in H.
+Qed.
+
 Lemma Ceq_dec (z1 z2 : C) : { z1 = z2 } + { z1 <> z2 }.
 Proof.
   destruct z1 as [x1 y1].
@@ -366,6 +373,26 @@ Qed.
 
 Add Field C_field_field : C_field_theory.
 
+(** * C in a NormedVectorSpace on R *)
+
+Global Instance C_NVS_mixin :
+  NormedVectorSpace_mixin C R (VectorSpace_prod _ _).
+Proof.
+  apply Build_NormedVectorSpace_mixin with Cmod.
+  by apply Cmod_triangle.
+  move => l x /=.
+  rewrite -Cmod_R -Cmod_mult.
+  apply Req_le, f_equal.
+  apply injective_projections ; simpl ; ring.
+Defined.
+
+Global Instance C_NVS :
+  NormedVectorSpace C R.
+Proof.
+  apply Build_NormedVectorSpace with (AbelianGroup_prod _ _) (VectorSpace_mixin_prod _ _).
+  by apply C_NVS_mixin.
+Defined.
+
 (** * Limits *)
 
 Definition is_C_lim (f : C -> C) (z l : C) :=
@@ -385,7 +412,7 @@ Proof.
 
   apply (f_equal real (y := Finite lx)).
   apply is_lim_unique => /= P [eps Hp].
-  destruct (H (fun z => P (fst z))) as [delta Hd].
+  destruct (H (fun z => P (fst z))) as [delta Hd] ; clear H.
   exists eps => y Hy.
   apply Hp.
   apply Rle_lt_trans with (2 := Hy).
@@ -410,7 +437,7 @@ Proof.
   
   apply (f_equal real (y := Finite ly)).
   apply is_lim_unique => /= P [eps Hp].
-  destruct (H (fun z => P (snd z))) as [delta Hd].
+  destruct (H (fun z => P (snd z))) as [delta Hd] ; clear H.
   exists eps => y Hy.
   apply Hp.
   apply Rle_lt_trans with (2 := Hy).
