@@ -24,18 +24,15 @@ Require Import Rbar Rcomplements Hierarchy.
 
 (** * Definitions of equivalent and dominant *)
 
-Section Equiv.
-
-Context {T V K : Type} {RK : AbsRing K} {VV : NormedVectorSpace V K}.
-
-Definition is_domin (F : (T -> Prop) -> Prop) (f g : T -> V) :=
+Definition is_domin {T U V K : Type} {RK : AbsRing K} {VU : NormedVectorSpace U K} {VV : NormedVectorSpace V K}
+  (F : (T -> Prop) -> Prop) (f : T -> U) (g : T -> V) :=
   forall eps : posreal, F (fun x => norm (g x) <= eps * norm (f x)).
-Definition is_equiv (F : (T -> Prop) -> Prop) (f g : T -> V) :=
+Definition is_equiv {T V K : Type} {RK : AbsRing K} {VV : NormedVectorSpace V K} (F : (T -> Prop) -> Prop) (f g : T -> V) :=
   is_domin F g (fun x => minus (g x) (f x)).
 
 (** To be dominant is a partial strict order *)
 
-Lemma domin_antisym :
+Lemma domin_antisym {T V K}  {RK : AbsRing K} {VV : NormedVectorSpace V K} :
   forall {F : (T -> Prop) -> Prop} {FF : ProperFilter F} (f : T -> V),
   F (fun x => norm (f x) <> 0) -> ~ is_domin F f f.
 Proof.
@@ -59,8 +56,8 @@ apply Rle_refl.
 apply Rlt_plus_1.
 Qed.
 
-Lemma domin_trans :
-  forall {F : (T -> Prop) -> Prop} {FF : Filter F} (f g h : T -> V),
+Lemma domin_trans {T U V W K : Type} {RK : AbsRing K} {VU : NormedVectorSpace U K} {VV : NormedVectorSpace V K} {VW : NormedVectorSpace W K} :
+  forall {F : (T -> Prop) -> Prop} {FF : Filter F} (f : T -> U) (g : T -> V) (h : T -> W),
   is_domin F f g -> is_domin F g h -> is_domin F f h.
 Proof.
   intros F FF f g h Hfg Hgh eps.
@@ -80,8 +77,8 @@ Qed.
 
 (** Relations between domination and equivalence *)
 
-Lemma domin_rw_l :
-  forall {F : (T -> Prop) -> Prop} {FF : Filter F} (f1 f2 g : T -> V),
+Lemma domin_rw_l {T U V K : Type} {RK : AbsRing K} {VU : NormedVectorSpace U K} {VV : NormedVectorSpace V K} :
+  forall {F : (T -> Prop) -> Prop} {FF : Filter F} (f1 f2 : T -> U) (g : T -> V),
   is_equiv F f1 f2 -> (is_domin F f1 g <-> is_domin F f2 g).
 Proof.
   intros F FF f1 f2 g Hf.
@@ -143,7 +140,7 @@ Proof.
   by apply Hf.
 Qed.
 
-Lemma equiv_sym :
+Lemma equiv_sym {T V K : Type} {RK : AbsRing K} {VV : NormedVectorSpace V K} :
   forall {F : (T -> Prop) -> Prop} {FF : Filter F} (f g : T -> V),
   is_equiv F f g -> is_equiv F g f.
 Proof.
@@ -154,8 +151,8 @@ Proof.
   by rewrite /minus plus_comm -norm_opp opp_plus opp_opp.
 Qed.
 
-Lemma domin_rw_r :
-  forall {F : (T -> Prop) -> Prop} {FF : Filter F} (f g1 g2 : T -> V),
+Lemma domin_rw_r {T U V K : Type} {RK : AbsRing K} {VU : NormedVectorSpace U K} {VV : NormedVectorSpace V K} :
+  forall {F : (T -> Prop) -> Prop} {FF : Filter F} (f : T -> U) (g1 g2 : T -> V),
   is_equiv F g1 g2 -> (is_domin F f g1 <-> is_domin F f g2).
 Proof.
   intros F FF f g1 g2.
@@ -188,6 +185,10 @@ Proof.
 Qed.
 
 (** To be equivalent is an equivalence relation *)
+
+Section Equiv.
+
+Context {T V K : Type} {RK : AbsRing K} {VV : NormedVectorSpace V K}.
 
 Lemma equiv_refl :
   forall {F : (T -> Prop) -> Prop} {FF : Filter F} (f : T -> V),
@@ -255,105 +256,134 @@ End Equiv.
 (** * Vector space *)
 (** is_domin is a vector space *)
 
-Lemma domin_scal_r :
-  forall {T} {F : (T -> Prop) -> Prop} {FF : Filter F} (f g : T -> R) (c : R),
-  is_domin F f g -> is_domin F f (fun x => c * g x).
+Section Domin.
+
+Context {T U V K : Type} {RK : AbsRing K} {VU : NormedVectorSpace U K} {VV : NormedVectorSpace V K}.
+
+Lemma domin_scal_r  :
+  forall {F : (T -> Prop) -> Prop} {FF : Filter F} (f : T -> U) (g : T -> V) (c : K),
+  is_domin F f g -> is_domin F f (fun x => scal c (g x)).
 Proof.
-  intros T F FF f g c H.
-  wlog: c / (0 < c) => [Hw  {H} | Hc].
-    case: (Rlt_le_dec 0 c) => Hc.
-    by apply Hw.
-    case: Hc => Hc.
-    apply Ropp_0_gt_lt_contravar in Hc.
-    move: (Hw _ Hc) => {Hw} H eps ; move: (H eps).
-    apply filter_imp => x.
-    by rewrite /= Ropp_mult_distr_l_reverse Rabs_Ropp.
-    rewrite Hc => {c Hc Hw} eps.
-    apply: filter_forall => x.
-    rewrite /= Rmult_0_l Rabs_R0.
-    apply Rmult_le_pos.
-    by apply Rlt_le, eps.
-    by apply Rabs_pos.
+  intros F FF f g c H.
+  case: (Req_dec (abs c) 0) => Hc.
   move => eps /=.
-  have He : 0 < eps / c.
+  apply filter_imp with (2 := filter_true) => x _.
+  eapply Rle_trans.
+  apply @norm_scal.
+  rewrite Hc Rmult_0_l.
+  apply Rmult_le_pos.
+  by apply Rlt_le, eps.
+  by apply norm_ge_0.
+  
+  destruct (abs_ge_0 c) => //.
+  clear Hc ; rename H0 into Hc.
+  move => eps /=.
+  assert (He : 0 < eps / abs c).
     apply Rdiv_lt_0_compat.
     by apply eps.
     by apply Hc.
   move: (H (mkposreal _ He)) => /= {H}.
   apply filter_imp => x H.
-  rewrite Rabs_mult (Rabs_right c).
-  replace (eps * Rabs (f x)) with (c*(eps / c * Rabs (f x))).
-  apply Rmult_le_compat_l.
-  by apply Rlt_le, Hc.
-  by apply H.
-  field ; by apply Rgt_not_eq.
-  by apply Rle_ge, Rlt_le.
+  eapply Rle_trans.
+  apply @norm_scal.
+  rewrite Rmult_comm ; apply Rle_div_r.
+  by [].
+  apply Rle_trans with (1 := H).
+  apply Req_le ; rewrite /Rdiv ; ring.
+  by apply sym_eq in H0.
 Qed.
 
 Lemma domin_scal_l :
-  forall {T} {F : (T -> Prop) -> Prop} {FF : Filter F} (f g : T -> R) (c : R),
-  c <> 0 -> is_domin F f g -> is_domin F (fun x => c * f x) g.
+  forall {F : (T -> Prop) -> Prop} {FF : Filter F} (f : T -> U) (g : T -> V) (c : K),
+  (exists y, mult y c = one) -> is_domin F f g -> is_domin F (fun x => scal c (f x)) g.
 Proof.
-  intros T F FF f g c Hc H eps.
-  have He : (0 < eps * Rabs c).
-    apply Rmult_lt_0_compat.
+  intros F FF f g c Hc H eps.
+  destruct Hc as [y Hc].
+  assert (0 < abs c).
+    apply Rnot_le_lt => H0.
+    destruct H0.
+    move: H0 ; by apply Rle_not_lt, abs_ge_0.
+    move: H0.
+    apply (Rmult_neq_0_reg (abs y)).
+    apply Rgt_not_eq.
+    eapply Rlt_le_trans, abs_mult.
+    rewrite Hc abs_one ; by apply Rlt_0_1.
+  assert (0 < abs y).
+    apply Rmult_lt_reg_r with (abs c).
+    by [].
+    rewrite Rmult_0_l.
+    eapply Rlt_le_trans, abs_mult.
+    rewrite Hc abs_one ; by apply Rlt_0_1.
+  assert (He : (0 < eps / abs y)).
+    apply Rdiv_lt_0_compat.
     by apply eps.
-    by apply Rabs_pos_lt.
+    by [].
   move: (H (mkposreal _ He)) => /= {H}.
   apply filter_imp => x Hx.
-  by rewrite Rabs_mult -Rmult_assoc.
+  apply Rle_trans with (1 := Hx).
+  rewrite /Rdiv Rmult_assoc ; apply Rmult_le_compat_l.
+  by apply Rlt_le, eps.
+  rewrite -{1}(scal_one (f x)) -Hc -scal_assoc.
+  eapply Rle_trans.
+  apply Rmult_le_compat_l.
+  by apply Rlt_le, Rinv_0_lt_compat.
+  apply @norm_scal.
+  apply Req_le ; field.
+  by apply Rgt_not_eq.
 Qed.
 
 Lemma domin_plus :
-  forall {T} {F : (T -> Prop) -> Prop} {FF : Filter F} (f g1 g2 : T -> R),
-  is_domin F f g1 -> is_domin F f g2 -> is_domin F f (fun x => g1 x + g2 x).
+  forall {F : (T -> Prop) -> Prop} {FF : Filter F} (f : T -> U) (g1 g2 : T -> V),
+  is_domin F f g1 -> is_domin F f g2 -> is_domin F f (fun x => plus (g1 x) (g2 x)).
 Proof.
-  intros T F FF f g1 g2 Hg1 Hg2 eps.
+  intros F FF f g1 g2 Hg1 Hg2 eps.
   generalize (filter_and _ _ (Hg1 (pos_div_2 eps)) (Hg2 (pos_div_2 eps)))
     => /= {Hg1 Hg2}.
   apply filter_imp => x [Hg1 Hg2].
-  apply Rle_trans with (1 := Rabs_triang _ _).
-  replace (eps * Rabs (f x))
-    with (eps / 2 * Rabs (f x) + eps / 2 * Rabs (f x))
-    by field.
-  by apply Rplus_le_compat.
+  eapply Rle_trans.
+  apply @norm_triangle.
+  eapply Rle_trans.
+  apply Rplus_le_compat.
+  by apply Hg1.
+  by apply Hg2.
+  apply Req_le ; field.
 Qed.
+
+End Domin.
 
 (** is_equiv is compatible with the vector space structure *)
 
+Section Equiv_VS.
+
+Context {T V K : Type} {RK : AbsRing K} {VV : NormedVectorSpace V K}.
+
 Lemma equiv_scal :
-  forall {T} {F : (T -> Prop) -> Prop} {FF : Filter F} (f g : T -> R) (c : R),
-  is_equiv F f g -> is_equiv F (fun x => c * f x) (fun x => c * g x).
+  forall {F : (T -> Prop) -> Prop} {FF : Filter F} (f g : T -> V) (c : K),
+  (exists y : K, mult y c = one) ->
+  is_equiv F f g -> is_equiv F (fun x => scal c (f x)) (fun x => scal c (g x)).
 Proof.
-  intros T F FF f g c.
-  case: (Req_dec c 0) ; move => Hc H.
-(* c = 0 *)
-  rewrite Hc => {c Hc}.
-  move => eps /= ; apply: filter_forall => x.
-  rewrite 2!Rmult_0_l Rplus_0_l Ropp_0 Rabs_R0 Rmult_0_r.
-  apply Rle_refl.
-(* c <> 0 *)
+  intros F FF f g c [y Hc] H.
   apply domin_scal_l.
-  by apply Hc.
+  by exists y.
   move => eps /=.
-  have : F (fun x => Rabs (c * (g x - f x)) <= eps * Rabs (g x)).
-  apply (domin_scal_r g (fun x => g x - f x) c).
-  by apply H.
+  cut (F (fun x => norm (scal c (minus (g x) (f x))) <= eps * norm (g x))).
   apply filter_imp => x.
-  by rewrite Rmult_minus_distr_l.
+  now rewrite scal_distr_l (scal_opp_r (VV := Normed_VectorSpace _)).
+  now apply domin_scal_r.
 Qed.
 
 Lemma equiv_plus :
-  forall {T} {F : (T -> Prop) -> Prop} {FF : Filter F} (f o : T -> R),
-  is_domin F f o -> is_equiv F (fun x => f x + o x) f.
+  forall {F : (T -> Prop) -> Prop} {FF : Filter F} (f o : T -> V),
+  is_domin F f o -> is_equiv F (fun x => plus (f x) (o x)) f.
 Proof.
-  intros T F FF f o H eps.
+  intros F FF f o H eps.
   move: (H eps) => {H}.
   apply filter_imp => x Hx.
   simpl.
-  ring_simplify (f x + - (f x + o x)).
-  by rewrite Rabs_Ropp.
+  now rewrite /minus opp_plus plus_assoc plus_opp_r plus_zero_l norm_opp.
 Qed.
+
+End Equiv_VS.
 
 (** * Multiplication and inverse *)
 (** Domination *)
@@ -444,8 +474,7 @@ Proof.
   case: (equiv_carac_0 _ _ H2) => {H2} o2 [H2 Ho2].
   apply equiv_carac_1 with (fun x => o1 x * g2 x + g1 x * o2 x + o1 x * o2 x).
   move => x ; rewrite H1 H2 /= ; ring.
-  apply domin_plus.
-  apply domin_plus.
+  repeat apply @domin_plus => //.
   by apply domin_mult_r.
   by apply domin_mult_l.
   by apply domin_mult.
