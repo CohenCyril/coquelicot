@@ -464,7 +464,8 @@ Qed.
 (** * Derivatives *)
 
 Definition is_C_derive (f : C -> C) (z l : C) :=
-  filterderive f z l.
+  let MS := Normed_MetricBall (AbsRing_NormedVectorSpace C _) in
+  filterderive f z (locally z) l.
 Definition ex_C_derive (f : C -> C) (z : C) :=
   exists l : C, is_C_derive f z l.
 Definition C_derive (f : C -> C) (z : C) := C_lim (fun x => (f x - f z) / (x - z)) z.
@@ -472,7 +473,7 @@ Definition C_derive (f : C -> C) (z : C) := C_lim (fun x => (f x - f z) / (x - z
 Lemma C_derive_unique (f : C -> C) (z l : C) :
   is_C_derive f z l -> C_derive f z = l.
 Proof.
-  intros Df.
+  intros [H Df].
   apply is_C_lim_unique.
   intros P HP.
   destruct HP as [eps HP].
@@ -497,7 +498,7 @@ Proof.
   now field.
   apply Rle_ge.
   apply Cmod_ge_0.
-  exact H.
+  exact H0.
 Qed.
 
 (** * Integrals *)
