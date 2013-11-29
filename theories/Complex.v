@@ -305,6 +305,17 @@ intros x.
 apply sqrt_pos.
 Qed.
 
+Lemma Cmod_norm :
+  forall x : C, Cmod x = (@norm (R * R) R _ _ _ _ x).
+Proof.
+intros [u v].
+unfold Cmod.
+simpl.
+apply (f_equal2 (fun x y => sqrt (x + y))) ;
+  rewrite !Rmult_1_r ;
+  apply Rsqr_abs.
+Qed.
+
 Lemma Cmod_R :
   forall x : R, Cmod x = Rabs x.
 Proof.
@@ -375,28 +386,34 @@ Add Field C_field_field : C_field_theory.
 
 (** * C in a NormedVectorSpace on R *)
 
-Global Instance C_NVS_mixin :
-  NormedVectorSpace_mixin C R (VectorSpace_prod _ _).
+Global Instance R_NVS : NormedVectorSpace R R.
 Proof.
-  apply Build_NormedVectorSpace_mixin with Cmod.
-  by apply Cmod_triangle.
-  move => l x /=.
-  rewrite -Cmod_R -Cmod_mult.
-  apply Req_le, f_equal.
-  apply injective_projections ; simpl ; ring.
+  apply NormedVectorSpace_AbsRing.
 Defined.
+
+Global Instance C_NVS_mixin :
+  NormedVectorSpace_mixin C R _ (MetricBall_prod _ _).
+Proof.
+  unfold C.
+  exact (NormedVectorSpace_mixin_prod R_NVS R_NVS).
+Defined.
+
+(*
+Check (fun x : C => @norm C R _ _ _ _ x).
+
+Eval simpl in (fun x : C => @norm C R _ _ _ _ x).
 
 Global Instance C_NVS :
   NormedVectorSpace C R.
 Proof.
-  apply Build_NormedVectorSpace with (AbelianGroup_prod _ _) (VectorSpace_mixin_prod _ _).
+  eapply Build_NormedVectorSpace. with (AbelianGroup_prod _ _) (VectorSpace_mixin_prod _ _).
   by apply C_NVS_mixin.
 Defined.
+*)
 
 (** * Limits *)
 
 Definition is_C_lim (f : C -> C) (z l : C) :=
-  let MS := Normed_MetricBall (AbsRing_NormedVectorSpace C _) in
   filterlim f (locally' z) (locally l).
 Definition ex_C_lim (f : C -> C) (z : C) :=
   exists (l : C), is_C_lim f z l.
@@ -464,7 +481,6 @@ Qed.
 (** * Derivatives *)
 
 Definition is_C_derive (f : C -> C) (z l : C) :=
-  let MS := Normed_MetricBall (AbsRing_NormedVectorSpace C _) in
   filterderive f z (locally z) l.
 Definition ex_C_derive (f : C -> C) (z : C) :=
   exists l : C, is_C_derive f z l.

@@ -22,7 +22,7 @@ COPYING file for more details.
 Require Import Reals Rbar.
 Require Import ssreflect.
 Require Import Limit.
-Require Import Hierarchy Continuity Equiv.
+Require Import Hierarchy Continuity.
 Require Import Rcomplements.
 Open Scope R_scope.
 
@@ -58,6 +58,7 @@ Qed.
 
 End Filter_Lim.
 
+(*
 Lemma is_filter_lim_prod_compat {U V K : Type} {FK : AbsRing K} 
   {VU : NormedVectorSpace U K} {VV : NormedVectorSpace V K}
   (x : U * V) (F : (U * V -> Prop) -> Prop) :
@@ -98,6 +99,7 @@ Proof.
     move: Hf ; unfold filtermap ; simpl ; apply filter_imp => x Hx.
     by apply Hx.
 Qed.
+*)
 
 (** * Linear functions *)
 
@@ -114,8 +116,8 @@ Lemma linear_fct_zero (l : U -> V) : is_linear l ->
   l zero = zero.
 Proof.
   intros [Hplus [Hscal Hnorm]].
-  rewrite -(scal_zero_l (VV := Normed_VectorSpace _) zero).
-  by rewrite Hscal !(scal_zero_l (VV := Normed_VectorSpace _)).
+  rewrite -(scal_zero_l (VV := nvspace_vector) zero).
+  by rewrite Hscal !(scal_zero_l (VV := nvspace_vector)).
 Qed.
 Lemma linear_fct_opp (l : U -> V) (x : U) : is_linear l ->
   l (opp x) = opp (l x).
@@ -131,7 +133,7 @@ Lemma is_linear_zero : is_linear (fun _ => zero).
 Proof.
   repeat split.
   - move => _ _ ; by rewrite plus_zero_l.
-  - move => k _ ; by rewrite (scal_zero_r (VV := Normed_VectorSpace _)).
+  - move => k _ ; by rewrite (scal_zero_r (VV := nvspace_vector)).
   - exists 0 ; split.
     by apply Rle_refl.
     move => x ; rewrite Rmult_0_l norm_zero.
@@ -179,7 +181,7 @@ Proof.
   - move => x y.
     now apply opp_plus.
   - move => k x.
-    apply sym_eq, (scal_opp_r (VV := Normed_VectorSpace _)).
+    apply sym_eq, (scal_opp_r (VV := nvspace_vector)).
   - exists 1 ; split. 
     by apply Rle_0_1.
     move => x ; rewrite norm_opp Rmult_1_l.
@@ -200,7 +202,11 @@ Proof.
     move => x /= ; eapply Rle_trans.
     by apply @norm_triangle.
     rewrite Rmult_plus_distr_r Rmult_1_l ; apply Rplus_le_compat.
+    apply Rle_trans with (2 := proj1 (sqrt_plus_sqr _ _)).
+    rewrite -> Rabs_pos_eq by apply norm_ge_0.
     by apply Rmax_l.
+    apply Rle_trans with (2 := proj1 (sqrt_plus_sqr _ _)).
+    rewrite -> (Rabs_pos_eq (norm (snd x))) by apply norm_ge_0.
     by apply Rmax_r.
 Qed.
 (** [fun k => scal k x] is a linear function *)
@@ -208,7 +214,7 @@ Lemma is_linear_scal (x : V) :
   is_linear (fun k => scal k x).
 Proof.
   repeat split.
-  - move => u v ; by apply scal_distr_r.
+  - move => u v ; by apply @scal_distr_r.
   - move => u v /= ; apply sym_eq, @scal_assoc.
   - exists (norm x) ; split.
     by apply norm_ge_0.
@@ -233,6 +239,7 @@ Definition filterdiff (f : U -> V) (x : U) F (l : U -> V) :=
   filterlim (fun y => norm (minus (minus (f y) (f x)) (l (minus y x))) / norm (minus y x))
     (within (fun y => y <> x) F) (locally R0).
 
+(*
 Lemma filterdiff_cont (f : U -> V) (x : U) F {FF : Filter F} (l : U -> V) :
   proper_norm (V := U) ->
   filterdiff f x F l -> filterlim f F (locally (f x)).
@@ -294,6 +301,7 @@ Proof.
   by apply Rlt_0_1.
   by apply Hm.
 Qed.
+*)
 
 (** ** Operations *)
 
@@ -374,7 +382,7 @@ Proof.
   split.
   by apply is_linear_plus.
   split.
-  by apply is_filter_lim_prod_compat.
+  exact H.
   move => P [eps HP].
   apply H ; exists eps => u /= Hu Hu0.
   replace (plus (plus (fst u) (opp x)) (plus (snd u) (opp y)))

@@ -212,8 +212,8 @@ Proof.
   elim => [ | n IH] /=.
   now rewrite scal_one.
   rewrite -IH.
-  rewrite -> (mult_zero_l (RK := AbsRing_Ring RK)).
-  now rewrite (scal_zero_l (VV := Normed_VectorSpace VV)) plus_zero_r.  
+  rewrite (mult_zero_l (RK := absring_ring)).
+  now rewrite (scal_zero_l (VV := nvspace_vector)) plus_zero_r.
   apply filterlim_const.
 Qed.
 
@@ -1215,9 +1215,9 @@ Proof.
   repeat rewrite (scal_distr_l _ l).
   rewrite -plus_assoc; apply f_equal.
   rewrite opp_plus scal_distr_l; apply f_equal.
-  rewrite plus_0_r -(scal_opp_l (VV := Normed_VectorSpace VV)) scal_assoc.
+  rewrite plus_0_r -(scal_opp_l (VV := nvspace_vector)) scal_assoc.
   apply trans_eq with (scal (opp (one : K)) (a (S n))).
-  now rewrite (scal_opp_l (VV := Normed_VectorSpace VV)) scal_one.
+  now rewrite (scal_opp_l (VV := nvspace_vector)) scal_one.
   apply f_equal2; try reflexivity.
   rewrite <- opp_mult_r; apply f_equal.
   clear -Hx.
@@ -1585,12 +1585,12 @@ Lemma is_pseries_opp (a : nat -> V) (x :K) (l : V) :
 Proof.
   intros H.
   replace (opp l) with (scal (opp (one : K)) l).
-  2: now rewrite (scal_opp_l (VV := Normed_VectorSpace VV)) scal_one.
+  2: now rewrite (scal_opp_l (VV := nvspace_vector)) scal_one.
   apply is_pseries_ext with (PS_scal (opp one) a).
   intros n; unfold PS_scal, PS_opp.
-  now rewrite (scal_opp_l (VV := Normed_VectorSpace VV)) scal_one.
+  now rewrite (scal_opp_l (VV := nvspace_vector)) scal_one.
   apply is_pseries_scal.
-  rewrite -(opp_mult_l (RK := AbsRing_Ring _)) -(opp_mult_r (RK := AbsRing_Ring _)).
+  rewrite -(opp_mult_l (RK := absring_ring)) -(opp_mult_r (RK := absring_ring)).
   by rewrite mult_one_l mult_one_r.
   by apply H.
 Qed.

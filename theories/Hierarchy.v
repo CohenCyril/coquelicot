@@ -617,19 +617,15 @@ Class AbsRing_mixin K (RK : Ring K) := {
   abs_triangle : forall x y, abs (plus x y) <= abs x + abs y ;
   abs_mult : forall x y, abs (mult x y) <= abs x * abs y
 }.
+
 Class AbsRing K := {
   absring_group :> AbelianGroup K ;
-  absring_ring :> Ring_mixin K absring_group ;
-  absring_mixin :> AbsRing_mixin K (Build_Ring _ _ absring_ring)
+  absring_ring' :> Ring_mixin K absring_group ;
+  absring_ring := Build_Ring _ _ absring_ring' ;
+  absring_mixin :> AbsRing_mixin K absring_ring
 }.
 
-Global Instance AbsRing_Ring {K} :
-  AbsRing K -> Ring K.
-Proof.
-  intro MF.
-  apply Build_Ring with absring_group.
-  by apply MF.
-Defined.
+Global Existing Instance absring_ring.
 
 (** Usual properties *)
 
@@ -642,13 +638,20 @@ Lemma abs_opp :
 Proof.
 intros x.
 apply Rle_antisym.
-- rewrite (opp_mult_m1 (RK := AbsRing_Ring AK)).
+- rewrite (opp_mult_m1 (RK := absring_ring)).
   rewrite -(Rmult_1_l (abs x)) -abs_opp_one.
   apply abs_mult.
 - rewrite -{1}[x]opp_opp.
-  rewrite (opp_mult_m1 (RK := AbsRing_Ring AK)).
+  rewrite (opp_mult_m1 (RK := absring_ring)).
   rewrite -(Rmult_1_l (abs (opp x))) -abs_opp_one.
   apply abs_mult.
+Qed.
+
+Lemma abs_minus :
+  forall x y : K, abs (minus x y) = abs (minus y x).
+Proof.
+intros x y.
+by rewrite /minus -abs_opp opp_plus opp_opp plus_comm.
 Qed.
 
 Lemma abs_one :
@@ -683,6 +686,37 @@ Class MetricBall M := {
 }.
 
 (** ** Specific metric spaces *)
+
+(** Rings with absolute value *)
+
+Lemma MetricBall_AbsRing_triangle :
+  forall {K} {AK : AbsRing K} (x y z : K) (e1 e2 : R),
+  abs (minus y x) < e1 -> abs (minus z y) < e2 -> abs (minus z x) < e1 + e2.
+Proof.
+intros K AK x y z e1 e2 H1 H2.
+replace (minus z x) with (plus (minus y x) (minus z y)).
+apply: Rle_lt_trans (abs_triangle _ _) _.
+now apply Rplus_lt_compat.
+rewrite plus_comm /minus plus_assoc.
+apply (f_equal (fun y => plus y _)).
+rewrite <- plus_assoc.
+now rewrite plus_opp_l plus_zero_r.
+Qed.
+
+Global Instance MetricBall_AbsRing {K} :
+  AbsRing K -> MetricBall K.
+Proof.
+intros AK.
+apply Build_MetricBall with (fun x eps y => abs (minus y x) < eps).
+- intros x e.
+  rewrite /minus plus_opp_r abs_zero.
+  apply cond_pos.
+- intros x y e.
+  now rewrite abs_minus.
+- apply MetricBall_AbsRing_triangle.
+- intros x e1 e2 H y H'.
+  apply: Rlt_le_trans H' H.
+Defined.
 
 (** Functional metric spaces *)
 
@@ -1122,16 +1156,38 @@ Class VectorSpace V K {RK : Ring K} := {
   vspace_mixin :> VectorSpace_mixin V K vspace_group
 }.
 
-Global Instance Ring_VectorSpace :
-  forall K (F : Ring K), VectorSpace K K.
+Global Instance VectorSpace_mixin_Ring :
+  forall K (RK : Ring K), VectorSpace_mixin K K ring_group.
 Proof.
-  move => K F.
-  econstructor.
+  intros K RK.
   apply Build_VectorSpace_mixin with mult.
   exact mult_assoc.
   exact mult_one_l.
   exact mult_distr_l.
   exact mult_distr_r.
+Defined.
+
+Global Instance VectorSpace_Ring :
+  forall K (RK : Ring K), VectorSpace K K.
+Proof.
+  intros K RK.
+  eapply Build_VectorSpace.
+  apply VectorSpace_mixin_Ring.
+Defined.
+
+Global Instance VectorSpace_mixin_AbsRing :
+  forall K (AK : AbsRing K), VectorSpace_mixin K K absring_group.
+Proof.
+  intros K AK.
+  apply VectorSpace_mixin_Ring.
+Defined.
+
+Global Instance VectorSpace_AbsRing :
+  forall K (AK : AbsRing K), VectorSpace K K.
+Proof.
+  intros K AK.
+  eapply Build_VectorSpace.
+  apply VectorSpace_mixin_AbsRing.
 Defined.
 
 (** Operations *)
@@ -1142,7 +1198,7 @@ Context {V K} {FK : Ring K} {VV : VectorSpace V K}.
 
 Lemma scal_zero_r :
   forall x : K,
-  scal x zero = zero.
+  scal x (@zero V _) = zero.
 Proof.
 intros x.
 apply plus_reg_r with (scal x zero).
@@ -1211,34 +1267,23 @@ End VectorSpace.
 
 (** ** Normed Vector Space *)
 
-Class NormedVectorSpace_mixin V K {FK : AbsRing K} (VS : VectorSpace V K) := {
+Class NormedVectorSpace_mixin V K {FK : AbsRing K} (VS : VectorSpace V K) (MV : MetricBall V) := {
   norm : V -> R ;
   norm_triangle : forall (x y : V), norm (plus x y) <= norm x + norm y ;
-  norm_scal : forall (l : K) (x : V), norm (scal l x) <= abs l * norm x
+  norm_scal : forall (l : K) (x : V), norm (scal l x) <= abs l * norm x ;
+  norm_compat1 : forall (x y : V) (eps : R), norm (minus y x) < eps -> ball x eps y ;
+  norm_compat2 : { M : posreal | forall (x y : V) (eps : posreal), ball x eps y -> norm (minus y x) < M * eps }
 }.
+
 Class NormedVectorSpace V K {FK : AbsRing K} := {
   nvspace_group :> AbelianGroup V ;
-  nvspace_vector :> VectorSpace_mixin V K nvspace_group ;
-  nvspace_norm :> NormedVectorSpace_mixin V K (Build_VectorSpace V K _ _ nvspace_vector)
+  nvspace_vector' :> VectorSpace_mixin V K nvspace_group ;
+  nvspace_metric :> MetricBall V ;
+  nvspace_vector := Build_VectorSpace V K _ _ nvspace_vector' ;
+  nvspace_mixin :> NormedVectorSpace_mixin V K nvspace_vector nvspace_metric
 }.
 
-Global Instance Normed_VectorSpace {V K : Type} {FK : AbsRing K} :
-  NormedVectorSpace V K -> VectorSpace V K.
-Proof.
-  intro NVS.
-  apply Build_VectorSpace with nvspace_group.
-  by apply nvspace_vector.
-Defined.
-
-Global Instance AbsRing_NormedVectorSpace :
-  forall K (AF : AbsRing K), NormedVectorSpace K K.
-Proof.
-  move => K AF.
-  econstructor.
-  econstructor.
-  exact abs_triangle.
-  exact abs_mult.
-Defined.
+Global Existing Instance nvspace_vector.
 
 (** Operations *)
 
@@ -1247,10 +1292,10 @@ Section NormedVectorSpace.
 Context {V K} {FK : AbsRing K} {NVS : NormedVectorSpace V K}.
 
 Lemma norm_zero :
-  norm zero = 0.
+  norm (@zero V _) = 0.
 Proof.
 apply Rle_antisym.
-- rewrite -(scal_zero_l (VV := Normed_VectorSpace NVS) zero).
+- rewrite -(scal_zero_l (VV := nvspace_vector) zero).
   rewrite -(Rmult_0_l (norm zero)).
   rewrite -abs_zero.
   apply norm_scal.
@@ -1266,10 +1311,10 @@ Lemma norm_opp :
 Proof.
 intros x.
 apply Rle_antisym.
-- rewrite -(scal_opp_one (VV := Normed_VectorSpace NVS)).
+- rewrite -(scal_opp_one (VV := nvspace_vector)).
   rewrite -(Rmult_1_l (norm x)) -abs_opp_one.
   apply norm_scal.
-- rewrite -{1}[x]opp_opp -(scal_opp_one (VV := Normed_VectorSpace NVS)).
+- rewrite -{1}[x]opp_opp -(scal_opp_one (VV := nvspace_vector)).
   rewrite -(Rmult_1_l (norm (opp x))) -abs_opp_one.
   apply norm_scal.
 Qed.
@@ -1304,30 +1349,71 @@ Proof.
   by rewrite /minus plus_comm -plus_assoc plus_opp_l plus_zero_r.
 Qed.
 
+Definition ball_norm (x : V) (eps : R) (y : V) := norm (minus y x) < eps.
+
+Definition locally_norm (x : V) (P : V -> Prop) :=
+  exists eps : posreal, forall y, ball_norm x eps y -> P y.
+
+Lemma locally_le_locally_norm :
+  forall x, filter_le (locally x) (locally_norm x).
+Proof.
+destruct norm_compat2 as [M HM].
+intros x P [eps H].
+assert (He : 0 < / M * eps).
+  apply Rmult_lt_0_compat.
+  apply Rinv_0_lt_compat.
+  apply cond_pos.
+  apply cond_pos.
+exists (mkposreal _ He).
+intros y By.
+apply H.
+unfold ball_norm.
+rewrite -(Rmult_1_l eps) -(Rinv_r M).
+rewrite Rmult_assoc.
+now apply (HM x y (mkposreal _ He)).
+apply Rgt_not_eq.
+apply cond_pos.
+Qed.
+
+Lemma locally_norm_le_locally :
+  forall x, filter_le (locally_norm x) (locally x).
+Proof.
+intros x P [eps H].
+exists eps.
+intros y By.
+apply H.
+now apply norm_compat1.
+Qed.
+
+Lemma locally_norm_ball_norm :
+  forall (x : V) (eps : posreal),
+  locally_norm x (ball_norm x eps).
+Proof.
+intros x eps.
+now exists eps.
+Qed.
+
+Lemma locally_norm_ball :
+  forall (x : V) (eps : posreal),
+  locally_norm x (ball x eps).
+Proof.
+intros x eps.
+apply locally_norm_le_locally.
+apply locally_ball.
+Qed.
+
+Lemma locally_ball_norm :
+  forall (x : V) (eps : posreal),
+  @locally V nvspace_metric x (ball_norm x eps).
+Proof.
+intros x eps.
+apply locally_le_locally_norm.
+apply locally_norm_ball_norm.
+Qed.
+
 End NormedVectorSpace.
 
-(** Normed vector spaces have a metric *)
-
-Global Instance Normed_MetricBall {V K : Type} {FK : AbsRing K} :
-  NormedVectorSpace V K -> MetricBall V.
-Proof.
-  intro NVS.
-  apply Build_MetricBall with (fun x e y => norm (minus y x) < e).
-  - intros x e.
-    rewrite /minus plus_opp_r norm_zero.
-    by apply e.
-  - intros x y e H.
-    by rewrite -norm_opp /minus opp_plus opp_opp plus_comm.
-  - intros x y z e1 e2 H1 H2.
-    apply Rle_lt_trans with (2 := Rplus_lt_compat _ _ _ _ H1 H2).
-    apply Rle_trans with (2 := norm_triangle _ _).
-    apply Req_le, f_equal.
-    rewrite plus_comm /minus -plus_assoc.
-    apply f_equal.
-    by rewrite plus_assoc plus_opp_l plus_zero_l.
-  - intros x e1 e2 He y Hy.
-    now apply Rlt_le_trans with (1 := Hy).
-Defined.
+(** Normed vector spaces have some continuous functions *)
 
 Section NVS_continuity.
 
@@ -1337,50 +1423,64 @@ Lemma filterlim_plus :
   forall x y : V,
   filterlim (fun z : V * V => plus (fst z) (snd z)) (filter_prod (locally x) (locally y)) (locally (plus x y)).
 Proof.
- intros x y P [eps HP].
-    unfold filtermap.
-    exists (ball x (pos_div_2 eps)) (ball y (pos_div_2 eps)).
-    by apply locally_ball.
-    by apply locally_ball.
-    intros u v Hu Hv.
-    apply HP.
-    rewrite (double_var eps).
-    apply Rle_lt_trans with (2 := Rplus_lt_compat _ _ _ _ Hu Hv).
-    apply Rle_trans with (2 := norm_triangle _ _).
-    apply Req_le, f_equal.
-    rewrite /minus /= opp_plus -2!plus_assoc.
-    apply f_equal.
-    rewrite 2!plus_assoc.
-    apply f_equal2.
-    by apply plus_comm.
-    by [].
+intros x y.
+apply (filterlim_filter_le_1 (F := filter_prod (locally_norm x) (locally_norm y))).
+  intros P [Q R LQ LR H].
+  exists Q R.
+  now apply locally_le_locally_norm.
+  now apply locally_le_locally_norm.
+  exact H.
+apply (filterlim_filter_le_2 (G := locally_norm (plus x y))).
+  apply locally_norm_le_locally.
+intros P [eps HP].
+exists (ball_norm x (pos_div_2 eps)) (ball_norm y (pos_div_2 eps)).
+by apply locally_norm_ball_norm.
+by apply locally_norm_ball_norm.
+intros u v Hu Hv.
+apply HP.
+rewrite /ball_norm /= (double_var eps).
+apply Rle_lt_trans with (2 := Rplus_lt_compat _ _ _ _ Hu Hv).
+apply Rle_trans with (2 := norm_triangle _ _).
+apply Req_le, f_equal.
+rewrite /minus /= opp_plus -2!plus_assoc.
+apply f_equal.
+rewrite 2!plus_assoc.
+apply f_equal2.
+by apply plus_comm.
+by [].
 Qed.
 
 Lemma filterlim_scal :
-  forall (x : K) (y : V),
-  filterlim (fun z : V => scal x z) (locally y) (locally (scal x y)).
+  forall (k : K) (x : V),
+  filterlim (fun z : V => scal k z) (locally x) (locally (scal k x)).
 Proof.
-   intros k x P [eps HP].
-    assert (He : 0 < eps / (Rmax 1 (abs k))).
-      apply Rdiv_lt_0_compat.
-      by apply eps.
-      apply Rlt_le_trans with (2 := Rmax_l _ _).
-      by apply Rlt_0_1.
-    exists (mkposreal _ He) => /= y Hy.
-    apply HP ; simpl.
-    replace (minus (scal k y) (scal k x)) with (scal k (minus y x)).
-    apply: Rle_lt_trans (norm_scal _ _) _.
-    apply Rle_lt_trans with (Rmax 1 (abs k) * norm (minus y x)).
-    apply Rmult_le_compat_r.
-    by apply norm_ge_0.
-    by apply Rmax_r.
-    rewrite Rmult_comm.
-    apply Rlt_div_r.
-    apply Rlt_le_trans with (2 := Rmax_l _ _).
-    by apply Rlt_0_1.
-    by [].
-    rewrite /minus scal_distr_l ;
-    by generalize (scal_opp_r k x) => <-.
+intros k x.
+apply (filterlim_filter_le_1 (F := locally_norm x)).
+  apply locally_le_locally_norm.
+apply (filterlim_filter_le_2 (G := locally_norm (scal k x))).
+  apply locally_norm_le_locally.
+intros P [eps HP].
+assert (He : 0 < eps / (Rmax 1 (abs k))).
+  apply Rdiv_lt_0_compat.
+  by apply eps.
+  apply Rlt_le_trans with (2 := Rmax_l _ _).
+  by apply Rlt_0_1.
+exists (mkposreal _ He) => /= y Hy.
+apply HP.
+unfold ball_norm.
+replace (minus (scal k y) (scal k x)) with (scal k (minus y x)).
+apply: Rle_lt_trans (norm_scal _ _) _.
+apply Rle_lt_trans with (Rmax 1 (abs k) * norm (minus y x)).
+apply Rmult_le_compat_r.
+by apply norm_ge_0.
+by apply Rmax_r.
+rewrite Rmult_comm.
+apply Rlt_div_r.
+apply Rlt_le_trans with (2 := Rmax_l _ _).
+by apply Rlt_0_1.
+by [].
+rewrite /minus scal_distr_l ;
+by generalize (scal_opp_r k x) => <-.
 Qed.
 
 Lemma filterlim_opp :
@@ -1388,39 +1488,75 @@ Lemma filterlim_opp :
   filterlim opp (locally x) (locally (opp x)).
 Proof.
 intros x.
-rewrite <- (scal_opp_one (VV := Normed_VectorSpace VV)).
+rewrite -(scal_opp_one (VV := nvspace_vector)).
 apply filterlim_ext with (2 := filterlim_scal _ _).
-intros; apply (scal_opp_one (VV := Normed_VectorSpace VV)).
+intros; apply (scal_opp_one (VV := nvspace_vector)).
 Qed.
 
 End NVS_continuity.
+
+Lemma filterlim_locally_ball_norm :
+  forall {K} {RK : AbsRing K} {T U} {VU : NormedVectorSpace U K} {F : (T -> Prop) -> Prop} {FF : Filter F} (f : T -> U) (y : U),
+  filterlim f F (locally y) <-> forall eps : posreal, F (fun x => ball_norm y eps (f x)).
+Proof.
+intros K RK T U VU F FF f y.
+split.
+- intros Cf eps.
+  apply (Cf (fun x => ball_norm y eps x)).
+  apply locally_le_locally_norm.
+  apply locally_norm_ball_norm.
+- intros Cf.
+  apply (filterlim_filter_le_2 _ (locally_norm_le_locally y)).
+  intros P [eps He].
+  apply: filter_imp (Cf eps).
+  intros t.
+  apply He.
+Qed.
+
+(** Rings with absolute values are normed vector spaces *)
+
+Section NormedVectorSpace_AbsRing.
+
+Context {K} {RK : AbsRing K}.
+
+Global Instance NormedVectorSpace_mixin_AbsRing :
+  NormedVectorSpace_mixin K K _ _.
+Proof.
+apply Build_NormedVectorSpace_mixin with abs.
+- exact abs_triangle.
+- exact abs_mult.
+- now intros x P.
+- exists (mkposreal _ Rlt_0_1).
+  intros x y eps H.
+  now rewrite Rmult_1_l.
+Defined.
+
+Global Instance NormedVectorSpace_AbsRing :
+  NormedVectorSpace K K.
+Proof.
+  eapply Build_NormedVectorSpace.
+  exact NormedVectorSpace_mixin_AbsRing.
+Defined.
+
+End NormedVectorSpace_AbsRing.
 
 (** ** Complete Normed Vector Space *)
 
 Class CompleteNormedVectorSpace V K {FK : AbsRing K} := {
   cnvspace_group :> AbelianGroup V ;
-  cnvspace_vector :> VectorSpace_mixin V K cnvspace_group ;
-  cnvspace_normed :> NormedVectorSpace_mixin V K (Build_VectorSpace _ _ _ _ cnvspace_vector) ;
-  cnvspace_complete :> CompleteSpace_mixin V (Normed_MetricBall (Build_NormedVectorSpace _ _ _ _ _ cnvspace_normed))
+  cnvspace_vector' :> VectorSpace_mixin V K cnvspace_group ;
+  cnvspace_vector := Build_VectorSpace _ _ _ _ cnvspace_vector' ;
+  cnvspace_metric :> MetricBall V ;
+  cnvspace_normed' :> NormedVectorSpace_mixin V K cnvspace_vector cnvspace_metric ;
+  cnvspace_normed := Build_NormedVectorSpace _ _ _ _ cnvspace_vector' cnvspace_metric ;
+  cnvspace_complete :> CompleteSpace_mixin V _
 }.
 
-Global Instance Complete_NormedVectorSpace {V K} {FK : AbsRing K} :
-  CompleteNormedVectorSpace V K -> NormedVectorSpace V K.
-Proof.
-  intro CNVS.
-  apply Build_NormedVectorSpace with cnvspace_group cnvspace_vector.
-  by apply cnvspace_normed.
-Defined.
+Global Existing Instance cnvspace_vector.
 
-Global Instance Complete_NormedVectorSpace_CompleteSpace {V K} {FK : AbsRing K} :
-  CompleteNormedVectorSpace V K -> CompleteSpace V.
-Proof.
-  intro CNVS.
-  econstructor.
-  by apply cnvspace_complete.
-Defined.
+Global Existing Instance cnvspace_normed.
 
-(** * Extended Typed *)
+(** * Extended Types *)
 
 (** ** Pairs *)
 
@@ -1490,40 +1626,177 @@ by apply VU.
 by apply VV.
 Defined.
 
+Lemma sqrt_plus_sqr :
+  forall x y : R, Rmax (Rabs x) (Rabs y) <= sqrt (x ^ 2 + y ^ 2) <= sqrt 2 * Rmax (Rabs x) (Rabs y).
+Proof.
+intros x y.
+split.
+- rewrite -!sqrt_Rsqr_abs.
+  apply Rmax_case ; apply sqrt_le_1_alt, Rminus_le_0 ;
+  rewrite /Rsqr /= ; ring_simplify ; by apply pow2_ge_0.
+- apply Rmax_case_strong ; intros H0 ;
+  rewrite -!sqrt_Rsqr_abs ;
+  rewrite -?sqrt_mult ;
+  try (by apply Rle_0_sqr) ;
+  try (by apply Rlt_le, Rlt_0_2) ;
+  apply sqrt_le_1_alt ; simpl ; [ rewrite Rplus_comm | ] ;
+  rewrite /Rsqr ; apply Rle_minus_r ; ring_simplify ;
+  apply Rsqr_le_abs_1 in H0 ; by rewrite /pow !Rmult_1_r.
+Qed.
+
+Lemma NormedVectorSpace_mixin_prod_norm_triangle :
+  forall {U V K} {FK : AbsRing K} (NU : NormedVectorSpace U K) (NV : NormedVectorSpace V K),
+  forall x y : U * V,
+  sqrt (norm (fst (plus x y)) ^ 2 + norm (snd (plus x y)) ^ 2) <=
+    sqrt (norm (fst x) ^ 2 + norm (snd x) ^ 2) + sqrt (norm (fst y) ^ 2 + norm (snd y) ^ 2).
+Proof.
+intros U V K FK NU NV [xu xv] [yu yv].
+simpl.
+rewrite !Rmult_1_r.
+apply Rle_trans with (sqrt (Rsqr (norm xu + norm yu) + Rsqr (norm xv + norm yv))).
+- apply sqrt_le_1_alt.
+  apply Rplus_le_compat.
+  apply Rsqr_le_abs_1.
+  rewrite -> 2!Rabs_pos_eq.
+  apply: norm_triangle.
+  apply Rplus_le_le_0_compat ; apply norm_ge_0.
+  apply norm_ge_0.
+  apply Rsqr_le_abs_1.
+  rewrite -> 2!Rabs_pos_eq.
+  apply: norm_triangle.
+  apply Rplus_le_le_0_compat ; apply norm_ge_0.
+  apply norm_ge_0.
+- apply Rsqr_incr_0_var.
+  apply Rminus_le_0.
+  unfold Rsqr ; simpl ; ring_simplify.
+  rewrite /pow ?Rmult_1_r.
+  rewrite ?sqrt_sqrt ; ring_simplify.
+  replace (-2 * norm xu * norm yu - 2 * norm xv * norm yv)
+    with (-(2 * (norm xu * norm yu + norm xv * norm yv))) by ring.
+  rewrite Rmult_assoc -sqrt_mult.
+  rewrite Rplus_comm.
+  apply -> Rminus_le_0.
+  apply Rmult_le_compat_l.
+  apply Rlt_le, Rlt_0_2.
+  apply Rsqr_incr_0_var.
+  apply Rminus_le_0.
+  rewrite /Rsqr ?sqrt_sqrt ; ring_simplify.
+  replace (norm xu ^ 2 * norm yv ^ 2 - 2 * norm xu * norm xv * norm yu * norm yv + norm xv ^ 2 * norm yu ^ 2)
+    with ((norm xu * norm yv - norm xv * norm yu) ^ 2) by ring.
+  apply pow2_ge_0.
+  repeat apply Rplus_le_le_0_compat ; apply Rmult_le_pos ; apply pow2_ge_0.
+  apply sqrt_pos.
+  apply Rplus_le_le_0_compat ; apply Rle_0_sqr.
+  apply Rplus_le_le_0_compat ; apply Rle_0_sqr.
+  replace (norm xu ^ 2 + 2 * norm xu * norm yu + norm yu ^ 2 + norm xv ^ 2 + 2 * norm xv * norm yv + norm yv ^ 2)
+    with ((norm xu + norm yu) ^ 2 + (norm xv + norm yv) ^ 2) by ring.
+  apply Rplus_le_le_0_compat ; apply pow2_ge_0.
+  apply Rplus_le_le_0_compat ; apply pow2_ge_0.
+  apply Rplus_le_le_0_compat ; apply pow2_ge_0.
+  apply Rplus_le_le_0_compat ; apply sqrt_pos.
+Qed.
+
+Lemma NormedVectorSpace_mixin_prod_norm_scal :
+  forall {U V K} {FK : AbsRing K} (NU : NormedVectorSpace U K) (NV : NormedVectorSpace V K),
+  forall (l : K) (x : U * V),
+  sqrt (norm (fst (scal l x)) ^ 2 + norm (snd (scal l x)) ^ 2) <=
+    abs l * sqrt (norm (fst x) ^ 2 + norm (snd x) ^ 2).
+Proof.
+intros U V K FK NU NV l [xu xv].
+simpl.
+rewrite -(sqrt_Rsqr (abs l)).
+2: apply abs_ge_0.
+rewrite !Rmult_1_r.
+rewrite -sqrt_mult.
+2: apply Rle_0_sqr.
+apply sqrt_le_1_alt.
+rewrite Rmult_plus_distr_l.
+unfold Rsqr.
+apply Rplus_le_compat.
+replace (abs l * abs l * (norm xu * norm xu)) with ((abs l * norm xu) * (abs l * norm xu)) by ring.
+apply Rmult_le_compat.
+apply norm_ge_0.
+apply norm_ge_0.
+exact (norm_scal l xu).
+exact (norm_scal l xu).
+replace (abs l * abs l * (norm xv * norm xv)) with ((abs l * norm xv) * (abs l * norm xv)) by ring.
+apply Rmult_le_compat.
+apply norm_ge_0.
+apply norm_ge_0.
+exact (norm_scal l xv).
+exact (norm_scal l xv).
+apply Rplus_le_le_0_compat ; apply Rle_0_sqr.
+Qed.
+
+Lemma NormedVectorSpace_mixin_prod_norm_compat1 :
+  forall {U V K} {FK : AbsRing K} (NU : NormedVectorSpace U K) (NV : NormedVectorSpace V K),
+  forall (x y : U * V) (eps : R),
+  sqrt (norm (fst (minus y x)) ^ 2 + norm (snd (minus y x)) ^ 2) < eps -> ball x eps y.
+Proof.
+intros U V K FK NU NV [xu xv] [yu yv] eps H.
+generalize (Rle_lt_trans _ _ _ (proj1 (sqrt_plus_sqr _ _)) H).
+rewrite -> !Rabs_pos_eq by apply norm_ge_0.
+intros H'.
+split ;
+  apply norm_compat1 ;
+  apply Rle_lt_trans with (2 := H').
+apply Rmax_l.
+apply Rmax_r.
+Qed.
+
+Lemma NormedVectorSpace_mixin_prod_norm_compat2 :
+  forall {U V K} {FK : AbsRing K} (NU : NormedVectorSpace U K) (NV : NormedVectorSpace V K),
+  { M : posreal | forall (x y : U * V) (eps : posreal),
+    ball x eps y -> sqrt (norm (fst (minus y x)) ^ 2 + norm (snd (minus y x)) ^ 2) < M * eps }.
+Proof.
+intros U V K FK NU NV.
+destruct (@norm_compat2 U K _ _ _ _) as [Mu Hu].
+destruct (@norm_compat2 V K _ _ _ _) as [Mv Hv].
+assert (H : 0 < sqrt 2 * Rmax Mu Mv).
+  apply Rmult_lt_0_compat.
+  apply sqrt_lt_R0.
+  apply Rlt_0_2.
+  apply Rmax_case ; apply cond_pos.
+exists (mkposreal _ H).
+intros [xu xv] [yu yv] eps [Bu Bv].
+apply Rle_lt_trans with (1 := proj2 (sqrt_plus_sqr _ _)).
+simpl.
+rewrite Rmult_assoc.
+apply Rmult_lt_compat_l.
+apply sqrt_lt_R0.
+apply Rlt_0_2.
+rewrite -> !Rabs_pos_eq by apply norm_ge_0.
+rewrite Rmax_mult.
+apply Rmax_case.
+apply Rlt_le_trans with (2 := Rmax_l _ _).
+now apply Hu.
+apply Rlt_le_trans with (2 := Rmax_r _ _).
+now apply Hv.
+apply Rlt_le.
+apply cond_pos.
+Qed.
+
 Global Instance NormedVectorSpace_mixin_prod :
-  forall {U V K} {FK : AbsRing K} (VU : VectorSpace U K) (VV : VectorSpace V K), 
-   NormedVectorSpace_mixin U K VU -> NormedVectorSpace_mixin V K VV ->
-   NormedVectorSpace_mixin (U * V) K (VectorSpace_prod VU VV).
+  forall {U V K} {FK : AbsRing K} (NU : NormedVectorSpace U K) (NV : NormedVectorSpace V K),
+  NormedVectorSpace_mixin (U * V) K (VectorSpace_prod _ _) (MetricBall_prod _ _).
 Proof.
-  intros U V K FK VU VV NVU NVV.
-  apply Build_NormedVectorSpace_mixin with (fun x => Rmax (norm (fst x)) (norm (snd x))).
-  - intros x y ; simpl.
-    apply Rmax_case.
-    apply Rle_trans with (norm (fst x) + norm (fst y)).
-    by apply @norm_triangle.
-    apply Rplus_le_compat ; by apply Rmax_l.
-    apply Rle_trans with (norm (snd x) + norm (snd y)).
-    by apply @norm_triangle.
-    apply Rplus_le_compat ; by apply Rmax_r.
-  - intros l x ; simpl.
-    rewrite Rmult_max_distr_l.
-    apply Rmax_le_compat ; apply @norm_scal.
-    by apply abs_ge_0.
-Defined.
-Global Instance NormedVectorSpace_prod :
-  forall {U V K} {FK : AbsRing K} , 
-   NormedVectorSpace U K -> NormedVectorSpace V K ->
-   NormedVectorSpace (U * V) K.
-Proof.
-  intros U V K FK VU VV.
-  apply Build_NormedVectorSpace with 
-    (AbelianGroup_prod nvspace_group nvspace_group)
-    (VectorSpace_mixin_prod nvspace_vector nvspace_vector).
-  apply (NormedVectorSpace_mixin_prod (Normed_VectorSpace _) (Normed_VectorSpace _)).
-  by apply VU.
-  by apply VV.
+intros U V K FK NU NV.
+apply Build_NormedVectorSpace_mixin with (fun x => sqrt ((norm (fst x))^2 + (norm (snd x))^2)).
+apply NormedVectorSpace_mixin_prod_norm_triangle.
+apply NormedVectorSpace_mixin_prod_norm_scal.
+apply NormedVectorSpace_mixin_prod_norm_compat1.
+apply NormedVectorSpace_mixin_prod_norm_compat2.
 Defined.
 
+Global Instance NormedVectorSpace_prod :
+  forall {U V K} {FK : AbsRing K} , 
+  NormedVectorSpace U K -> NormedVectorSpace V K ->
+  NormedVectorSpace (U * V) K.
+Proof.
+  intros U V K FK VU VV.
+  eapply Build_NormedVectorSpace.
+  apply NormedVectorSpace_mixin_prod.
+Defined.
 
 (** ** Iterated Products *)
 
@@ -1635,28 +1908,23 @@ Proof.
   now apply VectorSpace_mixin_Tn, VV.
 Defined.
 
-Global Instance NormedVectorSpace_mixin_Tn {T} {K} {FK : AbsRing K} :
-  forall VT,
-  NormedVectorSpace_mixin T K VT -> 
-  forall n, NormedVectorSpace_mixin (Tn n T) K (VectorSpace_Tn VT n) | 10.
+Global Instance NormedVectorSpace_Tn {T} {K} {FK : AbsRing K} :
+  NormedVectorSpace T K ->
+  forall n, NormedVectorSpace (Tn n T) K | 10.
 Proof.
-  move => VT NVT.
-  elim => /= [ | n NVTn].
-  - apply Build_NormedVectorSpace_mixin with (fun _ => 0).
+  move => VT.
+  elim => [ | n NVTn].
+  - econstructor.
+    apply Build_NormedVectorSpace_mixin with (fun _ => 0).
     move => _ _.
     rewrite Rplus_0_l ; by apply Rle_refl.
     move => l _ ; rewrite Rmult_0_r ; by apply Rle_refl.
-  - by apply (NormedVectorSpace_mixin_prod VT (VectorSpace_Tn VT n)).
-Defined.
-
-Global Instance NormedVectorSpace_Tn {T} {K} {FK : AbsRing K} :
-  NormedVectorSpace T K -> 
-  forall n, NormedVectorSpace (Tn n T) K | 10.
-Proof.
-  move => NVT n.
-  apply Build_NormedVectorSpace
-    with (AbelianGroup_Tn nvspace_group n) (VectorSpace_mixin_Tn _ nvspace_vector n).
-  by apply (NormedVectorSpace_mixin_Tn _ nvspace_norm).
+    easy.
+    exists (mkposreal _ Rlt_0_1).
+    intros x y eps _.
+    rewrite Rmult_1_l.
+    apply cond_pos.
+  - by apply NormedVectorSpace_prod.
 Defined.
 
 (** *)
@@ -1668,7 +1936,7 @@ Fixpoint Fn (n : nat) (T U : Type) : Type :=
   end.
 
 Global Instance MetricBall_Fn {T M} (n : nat) :
-  MetricBall M -> MetricBall (Fn n T M).
+  MetricBall M -> MetricBall (Fn n T M) | 10.
 Proof.
   intros MM.
   elim: n => /= [ | n IHn].
@@ -2165,7 +2433,9 @@ Notation at_right x := (within (fun u : R => Rlt x u) (locally (x)%R)).
 Lemma filterlim_norm {V K} {FK : AbsRing K} {VV : NormedVectorSpace V K} :
   forall (x : V), filterlim norm (locally x) (locally (norm x)).
 Proof.
-  intros x ; apply filterlim_locally => eps /=.
+  intros x.
+  apply (filterlim_filter_le_1 _ (locally_le_locally_norm x)).
+  apply filterlim_locally => eps /=.
   exists eps ; move => /= y Hy.
   apply Rle_lt_trans with (2 := Hy).
   apply norm_triangle_inv.
@@ -2249,23 +2519,10 @@ Lemma locally_2d_locally' :
 Proof.
 intros P x y.
 split ; intros [d H] ; exists d.
-- simpl.
-  move => [u [v t]] /= {t} H'.
-  apply H.
-  apply Rle_lt_trans with (2 := H').
-  apply Rmax_l.
-  apply Rle_lt_trans with (2 := H').
-  rewrite (Rmax_left _ 0).
-  apply Rmax_r.
-  apply Rabs_pos.
+- move => [u [v _]] /= [H1 [H2 _]].
+  now apply H.
 - intros u v Hu Hv.
-  simpl in H.
-  apply (H (u,(v,tt))) ; repeat split.
-  apply Rmax_case.
-  exact Hu.
-  apply Rmax_case.
-  exact Hv.
-  apply cond_pos.
+  now apply (H (u,(v,tt))) ; repeat split.
 Qed.
 
 Lemma locally_2d_impl_strong :

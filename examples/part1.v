@@ -8,45 +8,13 @@ Open Local Scope C_scope.
 Definition C_RInt (f : R -> C) (a b : R) : C :=
   (RInt (fun t => fst (f t)) a b, RInt (fun t => snd (f t)) a b).
 
-Lemma is_C_R2_RInt_compat : forall (f : R -> C) a b (l : C),
-  is_RInt (VV := NormedVectorSpace_prod _ _) f a b l
-  <-> is_RInt f a b l.
-Proof.
-  move => f a b l ; split => Hf ;
-  apply filterlim_locally => eps.
-  - assert (0 < eps / sqrt 2).
-      apply Rdiv_lt_0_compat.
-      by apply eps.
-      by apply sqrt_lt_R0, Rlt_0_2.
-    generalize (proj1 (filterlim_locally _ _) Hf (mkposreal _ H)) ; case => d {Hf} /= Hf.
-    exists d ; simpl ; intros.
-    apply Rle_lt_trans with (1 := Cmod_2Rmax _).
-    rewrite Rmult_comm ; apply Rlt_div_r.
-    by apply sqrt_lt_R0, Rlt_0_2.
-    by apply (Hf y).
-
-  - generalize (proj1 (filterlim_locally _ _) Hf eps) ; case => d {Hf} Hf.
-    exists d ; simpl ; intros.
-    eapply Rle_lt_trans, (Hf y H H0).
-    eapply Rle_trans, Rmax_Cmod.
-    simpl ; by apply Rle_refl.
-Qed.
-Lemma ex_C_R2_RInt_compat : forall (f : R -> C) a b,
-  ex_RInt (VV := NormedVectorSpace_prod _ _) f a b
-  <-> ex_RInt f a b.
-Proof.
-  intros f a b.
-  split ; intros [l Hl] ; exists l ; by apply is_C_R2_RInt_compat.
-Qed.
-
 Lemma is_C_RInt_unique (f : R -> C) (a b : R) (l : C) :
   is_RInt f a b l -> C_RInt f a b = l.
 Proof.
   intros Hf.
-  apply RInt_fct_extend_pair.
+  apply RInt_fct_extend_pair with (3 := Hf).
   by apply is_RInt_unique.
   by apply is_RInt_unique.
-  by apply is_C_R2_RInt_compat.
 Qed.
 Lemma C_RInt_correct (f : R -> C) (a b : R) :
   ex_RInt f a b -> is_RInt f a b (C_RInt f a b).
@@ -80,20 +48,18 @@ Qed.
 Lemma is_C_RInt_scal f a b (k : C) l :
   is_RInt f a b l -> is_RInt (fun t => k * f t) a b (k * l).
 Proof.
-  move/is_C_R2_RInt_compat => H.
-  apply is_C_R2_RInt_compat.
- 
+  intros H.
   move: (is_RInt_fct_extend_fst _ _ _ _ H) => /= H1.
   move: (is_RInt_fct_extend_snd _ _ _ _ H) => /= {H} H2.
   apply is_RInt_fct_extend_pair ; simpl.
 
-  apply (is_RInt_minus (VV := AbsRing_NormedVectorSpace _ _)) ;
-  apply (is_RInt_scal (VV := AbsRing_NormedVectorSpace _ _)).
+  apply (is_RInt_minus (VV := NormedVectorSpace_AbsRing)) ;
+  apply (is_RInt_scal (VV := NormedVectorSpace_AbsRing)).
   by apply H1.
   by apply H2.
-  
-  apply (is_RInt_plus (VV := AbsRing_NormedVectorSpace _ _)) ;
-  apply (is_RInt_scal (VV := AbsRing_NormedVectorSpace _ _)).
+
+  apply (is_RInt_plus (VV := NormedVectorSpace_AbsRing)) ;
+  apply (is_RInt_scal (VV := NormedVectorSpace_AbsRing)).
   by apply H2.
   by apply H1.
 Qed.
@@ -129,14 +95,13 @@ Lemma C_RInt_Chasles (f : R -> C) (a b c : R) :
 Proof.
   intros Hf1 Hf2.
   apply sym_eq, is_C_RInt_unique.
-  apply C_RInt_correct, is_C_R2_RInt_compat in Hf1.
-  apply C_RInt_correct, is_C_R2_RInt_compat in Hf2.
+  apply C_RInt_correct in Hf1.
+  apply C_RInt_correct in Hf2.
   
   move: (is_RInt_fct_extend_fst _ _ _ _ Hf1) => /= Hf1_1.
   move: (is_RInt_fct_extend_snd _ _ _ _ Hf1) => /= Hf1_2.
   move: (is_RInt_fct_extend_fst _ _ _ _ Hf2) => /= Hf2_1.
   move: (is_RInt_fct_extend_snd _ _ _ _ Hf2) => /= Hf2_2.
-  apply is_C_R2_RInt_compat.
   now apply @is_RInt_Chasles with b ; apply @is_RInt_fct_extend_pair.
 Qed.
 
@@ -169,14 +134,14 @@ Proof.
   rewrite /is_C_RInt_segm => H.
   evar (k : C).
   replace (- l) with k.
-  apply (is_RInt_swap (VV := C_NVS)).
+  apply is_RInt_swap.
   apply is_RInt_ext with (fun t : R => scal (-1)((z1 - z2) * f ((1 - (-1 * t + 1)%R) * z2 + (-1 * t + 1)%R * z1)%C)).
     move => x _.
     replace ((1 - (-1 * x + 1)%R) * z2 + (-1 * x + 1)%R * z1)
       with ((1 - x) * z1 + x * z2)
       by (apply injective_projections ; simpl ; ring).
     apply injective_projections ; simpl ; ring.
-  apply (is_RInt_comp_lin (VV := C_NVS)  (fun t : R => (z1 - z2) * f ((1 - t) * z2 + t * z1)) (-1) (1) 1 0).
+  apply: (is_RInt_comp_lin (fun t : R => (z1 - z2) * f ((1 - t) * z2 + t * z1)) (-1) (1) 1 0).
   ring_simplify (-1 * 1 + 1)%R (-1 * 0 + 1)%R.
   apply H.
   by [].
@@ -191,7 +156,7 @@ Lemma C_RInt_segm_swap (f : C -> C) (z1 z2 : C) :
   - C_RInt_segm f z1 z2 = C_RInt_segm f z2 z1.
 Proof.
   unfold C_RInt_segm.
-  generalize (opp_mult_l (RK := AbsRing_Ring _) (z2 - z1) (C_RInt (fun t : R => f ((1 - t) * z1 + t * z2)) 0 1)).
+  generalize (opp_mult_l (z2 - z1) (C_RInt (fun t : R => f ((1 - t) * z1 + t * z2)) 0 1)).
   move => /= ->.
   apply f_equal2.
   apply injective_projections ; simpl ; ring.
@@ -352,19 +317,21 @@ Lemma prop4 (f : C -> C) (z1 z2 : C) lf (m : R) :
   -> Cmod lf <= m * (Cmod (z1 - z2)).
 Proof.
   intros Cf Hm.
-  apply (RInt_norm (VV := C_NVS)) with (fun t => (z2 - z1) * f ((1 - t) * z1 + t * z2)) (fun _ => Rmult (Cmod (z2 - z1)) m) 0 1.
+  rewrite 2!Cmod_norm.
+  apply: (RInt_norm (fun t => (z2 - z1) * f ((1 - t) * z1 + t * z2)) (fun _ => Rmult (Cmod (z2 - z1)) m) 0 1).
   by apply Rle_0_1.
-  move => x Hx /=.
+  intros x Hx.
+  rewrite <- Cmod_norm.
   rewrite Cmod_mult.
   apply Rmult_le_compat_l.
   by apply Cmod_ge_0.
   apply Hm.
   now exists x ; split.
   by apply Cf.
-  replace (m * Cmod (z1 - z2)%C)%R
+  replace (m * norm (z1 - z2)%C)%R
     with (scal (1 - 0)%R (Cmod (z2 - z1)%C * m)%R).
-  apply is_RInt_const.
-  rewrite -Cmod_opp Copp_minus_distr ; simpl ; ring.
+  apply @is_RInt_const.
+  rewrite -Cmod_norm -Cmod_opp Copp_minus_distr ; simpl ; ring.
 Qed.
 
 (** * Proposition 5 *)
@@ -373,6 +340,7 @@ Section is_RInt_Derive.
 
 Context {V : Type} {VV : NormedVectorSpace V R}.
 
+(*
 Lemma is_RInt_Derive (f : R -> V) (a b : R) (g : R -> V) :
   (forall x : R, Rmin a b <= x <= Rmax a b -> filterderive f x (g x)) ->
   (forall x : R, Rmin a b <= x <= Rmax a b -> filterlim g (locally x) (locally (g x))) ->
@@ -395,13 +363,14 @@ Proof.
     move => H.
     apply filterlim_locally => eps.
 Admitted.
+*)
 
 End is_RInt_Derive.
 
 Lemma prop5 (f g : C -> C) (z1 z2 : C) :
   (forall z, is_C_derive g z (f z))
-  -> (forall z, filterlim f (locally (MT := Normed_MetricBall C_NVS) z)
-        (locally (MT := Normed_MetricBall C_NVS) (f z)))
+  -> (forall z, filterlim f (locally z)
+        (locally (f z)))
   -> is_C_RInt_segm f z1 z2 (g z1 - g z2).
 Admitted.
 
@@ -426,6 +395,7 @@ Proof.
 
   simpl ; intros.
 
+(*
   destruct (proj2 (filterlim_locally_cauchy (F := (Riemann_fine a b))
     (fun ptd : SF_seq => scal (sign (b - a)) (Riemann_sum f ptd)))
     Hf (pos_div_2 eps)) as [P [[dP FP] HP]].
@@ -444,6 +414,7 @@ Proof.
   move: v H H0 ;
   apply SF_cons_ind with (s := u) => {u} [x0 | h u IH] v H H0.
   rewrite {2}/Riemann_sum /= Ropp_R0 Rplus_.
+*)
 Admitted.
 
 Lemma cont_unif {V} {VV : NormedVectorSpace V R} (f : R -> V) a b :
@@ -516,6 +487,7 @@ Proof.
     apply Hw => //.
     by left.
   rewrite /Rmin /Rmax ; case: Rle_dec => // _ Cf.
+(*
   destruct (proj1 (filterlim_locally_cauchy (fun ptd : SF_seq =>
      scal (sign (b - a)) (Riemann_sum (fun x : R => f x) ptd))
      (F := Riemann_fine a b))).
@@ -525,7 +497,7 @@ Focus 2.
   by apply H.
   
   move => eps.
-  
+*)
 Admitted.
 
 

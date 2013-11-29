@@ -1246,7 +1246,7 @@ apply continuity_2d_pt_filterlim.
 eapply filterlim_compose_2.
 apply Cf.
 apply Cg.
-apply @filterlim_plus.
+apply: filterlim_plus.
 Qed.
 
 Lemma continuity_2d_pt_minus (f g : R -> R -> R) (x y : R) :

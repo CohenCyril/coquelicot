@@ -1405,8 +1405,8 @@ Lemma Riemann_sum_Chasles_0
   SF_h ptd <= x <= last (SF_h ptd) (SF_lx ptd) ->
   pointed_subdiv ptd ->
   seq_step (SF_lx ptd) < eps ->
-  ball (Riemann_sum f ptd) (2 * eps * M)
-    (plus (Riemann_sum f (SF_cut_down ptd x)) (Riemann_sum f (SF_cut_up ptd x))).
+  norm (minus (plus (Riemann_sum f (SF_cut_down ptd x)) (Riemann_sum f (SF_cut_up ptd x)))
+    (Riemann_sum f ptd)) < 2 * eps * M.
 Proof.
   intros eps.
   apply (SF_cons_ind (T := R)) with (s := ptd)
@@ -1415,7 +1415,7 @@ Proof.
     rewrite /Riemann_sum /=.
     case: Rle_dec (Rle_refl x) => //= _ _.
     rewrite ?plus_zero_r Rminus_eq_0.
-    rewrite (scal_zero_l (VV := Normed_VectorSpace _)).
+    rewrite (scal_zero_l (VV := nvspace_vector)).
     rewrite /minus plus_zero_l norm_opp norm_zero.
     apply Rmult_lt_0_compat.
     apply Rmult_lt_0_compat.
@@ -1464,7 +1464,7 @@ Proof.
       rewrite (plus_comm (opp (scal (SF_h ptd - x0) (f y1)))).
       rewrite ?plus_assoc -(plus_assoc _ _ (opp (Riemann_sum f ptd))).
       rewrite plus_opp_r plus_zero_r.
-      rewrite -(scal_opp_l (VV := (Normed_VectorSpace _))).
+      rewrite -(scal_opp_l (VV := nvspace_vector)).
       rewrite /= Ropp_minus_distr.
       rewrite /Rmin /Rmax ; case: Rle_dec => _.
       rewrite (plus_comm (scal (x - x0) (f y1))) -plus_assoc.
@@ -1511,7 +1511,7 @@ Proof.
       by apply Hptd.
       rewrite -plus_assoc -scal_distr_r /=.
       replace (SF_h ptd - x + (x0 - SF_h ptd)) with (opp (x - x0)) by (simpl ; ring).
-      rewrite (scal_opp_l (VV := Normed_VectorSpace _)) -scal_opp_r.
+      rewrite (scal_opp_l (VV := nvspace_vector)) -scal_opp_r.
       rewrite -scal_distr_l.
       eapply Rle_lt_trans. apply @norm_scal.
       replace (2 * eps * M) with (eps * (M + M)) by ring.

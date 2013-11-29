@@ -89,8 +89,7 @@ Proof.
     move: (Hf eps) => {Hf}.
     apply filter_imp => x Hf.
     rewrite Rmult_plus_distr_r Rmult_1_l.
-    replace (norm (f1 x)) with ((norm (f1 x) - norm (f2 x)) + norm (f2 x))
-      by (unfold Normed_VectorSpace ; ring).
+    replace (norm (f1 x)) with ((norm (f1 x) - norm (f2 x)) + norm (f2 x)) by ring.
     apply Rplus_le_compat_r.
     apply Rle_trans with (2 := Hf).
     rewrite -(norm_opp (minus _ _)).
@@ -117,8 +116,7 @@ Proof.
     move: (Hf eps) => {Hf}.
     apply filter_imp => x Hf.
     rewrite Rmult_minus_distr_r Rmult_1_l.
-    replace (norm (f1 x)) with (norm (f2 x) - (norm (f2 x) - norm (f1 x)))
-      by (unfold Normed_VectorSpace ; ring).
+    replace (norm (f1 x)) with (norm (f2 x) - (norm (f2 x) - norm (f1 x))) by ring.
     apply Rplus_le_compat_l.
     apply Ropp_le_contravar.
     apply Rle_trans with (2 := Hf).
@@ -368,7 +366,7 @@ Proof.
   move => eps /=.
   cut (F (fun x => norm (scal c (minus (g x) (f x))) <= eps * norm (g x))).
   apply filter_imp => x.
-  now rewrite scal_distr_l (scal_opp_r (VV := Normed_VectorSpace _)).
+  now rewrite scal_distr_l (scal_opp_r (VV := nvspace_vector)).
   now apply domin_scal_r.
 Qed.
 

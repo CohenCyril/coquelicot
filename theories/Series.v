@@ -553,7 +553,8 @@ Lemma Series_plus (a b : nat -> R) :
 Proof.
   intros Ha Hb.
   replace (Series a + Series b) with (real (Series a + Series b)) by auto.
-  apply (f_equal real), is_lim_seq_unique, (@is_series_plus ) ;
+  apply (f_equal real), is_lim_seq_unique.
+  apply: is_series_plus ;
   by apply Series_correct.
 Qed.
 

@@ -1089,7 +1089,7 @@ wlog: a b h Hfh / (a <= b) => [Hw | Hab].
 
 case: Hab => Hab.
 
-pose CS := Build_CompleteSpace V _ cnvspace_complete.
+pose (CS := Build_CompleteSpace V _ cnvspace_complete).
 
 destruct (fun FF2 HF2 => filterlim_switch_dom
   (fun (x : U) ptd => scal (sign (b - a)) (Riemann_sum (f x) ptd))
@@ -1130,35 +1130,46 @@ assert (Hn : 0 <= ((b - a) / eP)).
   rewrite /Rmin /Rmax ; case: Rle_dec (Rlt_le _ _ Hab)  => // _ _.
 2: by apply Hfh.
 
+destruct (@norm_compat2 V R _ _ _ _) as [M HM].
 intros P [eps HP].
-have He : 0 < (eps / (b - a)) / 2.
+have He: 0 < (eps / (b - a)) / (2 * M).
   apply Rdiv_lt_0_compat.
   apply Rdiv_lt_0_compat.
   by apply eps.
   by rewrite -Rminus_lt_0.
+  apply Rmult_lt_0_compat.
   by apply Rlt_0_2.
-move: (Hfg _ (locally_ball g (mkposreal _ He))) => {Hfg Hfh}.
+  apply cond_pos.
+generalize (Hfg _ (locally_ball g (mkposreal _ He))) => {Hfg Hfh}.
 unfold filtermap ;
 apply filter_imp => x Hx.
 apply HP.
 case => t [Ht [Ha Hb]] /=.
 rewrite (proj1 (sign_0_lt _)).
 rewrite 2!scal_one.
+apply norm_compat1.
 generalize (Riemann_sum_minus (f x) g t) => <-.
-refine (_ (Riemann_sum_norm (fun x0 : R => minus (f x x0) (g x0)) (fun _ => (eps / (b - a)) / 2) t Ht _)).
+refine (_ (Riemann_sum_norm (fun x0 : R => minus (f x x0) (g x0)) (fun _ => M * ((eps / (b - a)) / (2 * M))) t Ht _)).
 move => H ; apply Rle_lt_trans with (1 := H).
 rewrite Riemann_sum_const.
 rewrite Hb Ha ; simpl.
-rewrite Rmult_comm Rlt_div_r.
-rewrite Rlt_div_l.
-apply Rminus_lt_0 ; ring_simplify.
+replace ((b - a) * (M * ((eps / (b - a)) / (2 * M)))) with (eps / 2).
+rewrite {2}(double_var eps) -{1}(Rplus_0_l (eps / 2)).
+apply Rplus_lt_compat_r.
 apply Rdiv_lt_0_compat.
 by apply eps.
-by rewrite -Rminus_lt_0.
 by apply Rlt_0_2.
-apply Rlt_gt ; by rewrite -Rminus_lt_0.
+field.
+split.
+apply Rgt_not_eq.
+apply Rlt_gt.
+by rewrite -Rminus_lt_0.
+apply Rgt_not_eq.
+apply cond_pos.
 intros t0 Ht0.
-now apply Rlt_le, Hx.
+apply Rlt_le.
+apply (HM _ _ (mkposreal _ He)).
+apply Hx.
 by rewrite -Rminus_lt_0.
 exists If ; split.
 by apply Hh.
