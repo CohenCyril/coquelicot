@@ -312,16 +312,6 @@ Qed.
 
 (** * Rmult *)
 
-
-Lemma Rmult_le_reg_r : forall r r1 r2 : R, 0 < r -> r1 * r <= r2 * r -> r1 <= r2.
-Proof.
-  intros.
-  apply (Rmult_le_reg_l r).
-  apply H.
-  repeat rewrite (Rmult_comm r).
-  apply H0.
-Qed.
-
 Lemma Rle_mult_Rlt : forall c a b : R, 0 < b -> c < 1 -> a <= b*c -> a < b.
 Proof.
   intros.
