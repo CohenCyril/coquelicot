@@ -156,8 +156,8 @@ Proof.
   specialize (Cx eps').
   move: (locally_2d_and _ _ _ _ Dx Cx) => {Dx Cx}.
   intros (d1,Hd1).
-  specialize (equiv_deriv_pt_lim_0 _ _ _ Dy); intros Dy'.
-  destruct (Dy' eps') as (d2,Hd2).
+  specialize (proj1 (filterderive_Reals _ _ _) Dy); intros Dy'.
+  destruct (proj2 Dy' eps') as (d2,Hd2).
   set (l1 := Derive (fun u : R => f u y) x).
   exists (mkposreal _ (Rmin_stable_in_posreal d1 d2)).
   simpl; intros u v Hu Hv.
@@ -204,7 +204,7 @@ Proof.
   apply Rle_trans with (Rabs (f x v - f x y - l2 * (v - y))).
   right; apply f_equal.
   unfold g2; ring.
-  apply Hd2.
+  rewrite Rmult_comm ; apply Hd2.
   apply Rlt_le_trans with (1:=Hv).
   apply Rmin_r.
   apply Rmult_le_compat_l.
@@ -293,12 +293,12 @@ Lemma differentiable_pt_lim_proj1_0 (f : R -> R) (x y l : R) :
   derivable_pt_lim f x l -> differentiable_pt_lim (fun u v => f u) x y l 0.
 Proof.
   intros Df eps.
-  apply equiv_deriv_pt_lim_0 in Df ;
-  elim (Df eps) ; clear Df ; intros delta Df.
+  apply filterderive_Reals in Df ;
+  elim (proj2 Df eps) ; clear Df ; intros delta Df.
   exists delta ; simpl ; intros.
   rewrite Rmult_0_l Rplus_0_r.
   apply (Rle_trans _ (eps * Rabs (u - x))).
-  apply (Df _ H).
+  rewrite Rmult_comm ; apply (Df _ H).
   apply Rmult_le_compat_l.
   apply Rlt_le, eps.
   apply RmaxLess1.
@@ -308,10 +308,11 @@ Lemma differentiable_pt_lim_proj1_1 (f : R -> R) (x y l : R) :
   differentiable_pt_lim (fun u v => f u) x y l 0 -> derivable_pt_lim f x l.
 Proof.
   intros Df.
-  apply (equiv_deriv_pt_lim_1 _ _ _) ; intro eps.
+  apply filterderive_Reals ; split ; [ | intro eps].
+  by [].
   elim (Df eps) ; clear Df ; intros delta Df.
-  exists delta ; simpl in Df ; intros.
-  replace (f y0 - f x - l * (y0 - x)) with (f y0 - f x - (l * (y0 - x) + 0 * (y - y))) by ring.
+  exists delta ; simpl in Df ; simpl ; intros.
+  replace (f y0 + - f x + - ((y0 + - x) * l)) with (f y0 - f x - (l * (y0 - x) + 0 * (y - y))) by ring.
   assert (Rabs (y0 - x) = Rmax (Rabs (y0 - x)) (Rabs (y-y))).
     rewrite Rmax_comm ; apply sym_equal, Rmax_right.
     rewrite Rminus_eq_0 Rabs_R0 ; apply Rabs_pos.
@@ -789,11 +790,23 @@ intros f g x y H (H1&H2&H3&H4&H5).
 split.
 apply (continuity_2d_pt_ext_loc _ _ _ _ H H1).
 split.
-apply ex_derive_ext_loc with (2:=H2).
+apply ex_filterderive_Reals, ex_filterdiff_derive.
+by apply locally_filter.
+apply ex_filterderive_Reals, ex_filterdiff_derive in H2.
+move: H2 ; apply ex_filterdiff_ext_loc.
+by apply locally_filter.
 apply locally_2d_1d_const_y with (1:=H).
+by apply locally_2d_1d_const_y, locally_singleton in H.
+by apply locally_filter.
 split.
-apply ex_derive_ext_loc with (2:=H3).
+apply ex_filterderive_Reals, ex_filterdiff_derive.
+by apply locally_filter.
+apply ex_filterderive_Reals, ex_filterdiff_derive in H3.
+move: H3 ; apply ex_filterdiff_ext_loc.
+by apply locally_filter.
 apply locally_2d_1d_const_x with (1:=H).
+by apply locally_2d_1d_const_x, locally_singleton in H.
+by apply locally_filter.
 split.
 apply IHn with (2:=H4).
 apply locally_2d_impl_strong with (2:=H).
@@ -1290,14 +1303,27 @@ specialize (IHk (le_S _ _ (le_S_n _ _ Hk))).
 rewrite /is_derive_n.
 apply locally_locally in IHk.
 move: IHk ; apply filter_imp => {t Ht} z IHk HH.
-apply is_derive_ext_loc with (fun t => sum_f_R0 (fun m => C k m *
+apply filterderive_Reals ; apply -> filterdiff_derive.
+2: by apply locally_filter.
+assert (locally z (fun y0 : R => sum_f_R0 (fun m : nat =>
+      C k m *
+      partial_derive m (k - m) f (x + y0 * (u - x)) (y + y0 * (v - y)) *
+      (u - x) ^ m * (v - y) ^ (k - m)) k = Derive_n g k y0)).
+  apply locally_locally in HH.
+  generalize (filter_and _ _ HH IHk).
+  apply filter_imp => {z HH IHk} z [Hz HH].
+  specialize (HH Hz).
+  apply sym_eq.
+  now apply is_derive_n_unique.
+apply filterdiff_ext_loc with (fun t => sum_f_R0 (fun m => C k m *
   partial_derive m (k - m) f (x + t * (u - x)) (y + t * (v - y)) * (u - x) ^ m * (v - y) ^ (k - m)) k).
-apply locally_locally in HH.
-generalize (filter_and _ _ HH IHk).
-apply filter_imp => {z HH IHk} z [Hz HH].
-specialize (HH Hz).
-apply sym_eq.
-now apply is_derive_n_unique.
+by apply locally_filter.
+by [].
+by apply locally_singleton in H.
+clear H.
+apply filterdiff_derive.
+by apply locally_filter.
+apply filterderive_Reals.
 replace (sum_f_R0 (fun m : nat => C (S k) m *
     partial_derive m (S k - m) f (x + z * (u - x)) (y + z * (v - y)) * (u - x) ^ m * (v - y) ^ (S k - m)) (S k)) with
   (sum_f_R0 (fun m : nat => C k m * (u - x) ^ m  * (v - y) ^ (k - m) *

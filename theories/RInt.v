@@ -4586,7 +4586,7 @@ Lemma derivable_pt_lim_RInt (f : R -> R) (a : R) (x : R) :
   continuity_pt f x -> derivable_pt_lim (fun x => RInt f a x) x (f x).
 Proof.
   move => Iax Iloc Cx.
-  apply equiv_deriv_pt_lim_1.
+  apply filterderive_Reals ; split => //.
   intros eps.
   destruct (Cx eps (cond_pos eps)) as (d,(Hd1,Hd2)).
   unfold dist in Hd2; simpl in Hd2; unfold R_dist in Hd2.
@@ -4618,7 +4618,7 @@ Proof.
   assert (ex_RInt f a y).
   now apply ex_RInt_Chasles with x.
   (* *)
-  replace (RInt f a y - RInt f a x - f x * (y - x)) with
+  replace (RInt f a y + - RInt f a x + - ((y + - x) * f x)) with
     (RInt (fun z => f z - f x) x y).
   rewrite Rmult_comm.
   apply RInt_le_const.
@@ -5093,7 +5093,7 @@ now apply ex_RInt_swap.
 rewrite Rmin_left. 2: now apply Rlt_le.
 rewrite Rmax_right. 2: now apply Rlt_le.
 intros Df Cdf If IDf.
-apply equiv_deriv_pt_lim_1.
+apply filterderive_Reals ; split => //.
 refine (let Cdf' := uniform_continuity_2d_1d (fun u v => Derive (fun z => f z u) v) a b x _ in _).
 intros t Ht eps.
 specialize (Cdf t Ht eps).
@@ -5123,9 +5123,9 @@ apply cond_pos.
 assert (D2: ex_RInt (fun t => f x t) a b).
 apply DIf.
 apply ball_center.
-rewrite -RInt_minus //.
+rewrite -!/(Rminus _ _) -RInt_minus //.
 rewrite Rmult_comm.
-rewrite -RInt_scal //.
+rewrite Rmult_comm -RInt_scal //.
 assert (D3: ex_RInt (fun t => f y t - f x t) a b).
   apply @ex_RInt_minus.
   by apply D1.

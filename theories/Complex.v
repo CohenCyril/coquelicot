@@ -304,6 +304,13 @@ Proof.
 intros x.
 apply sqrt_pos.
 Qed.
+Lemma Cmod_gt_0 :
+  forall (x : C), x <> 0 -> 0 < Cmod x.
+Proof.
+intros x Hx.
+destruct (Cmod_ge_0 x) => //.
+by apply sym_eq, Cmod_eq_0 in H.
+Qed.
 
 Lemma Cmod_norm :
   forall x : C, Cmod x = (@norm (R * R) R _ _ _ _ x).
@@ -341,6 +348,15 @@ contradict Zx.
 now apply Cmod_eq_0.
 contradict Zx.
 now apply Cmod_eq_0.
+Qed.
+
+Lemma Cmod_div (x y : C) : y <> 0 ->
+  Cmod (x / y) = Rdiv (Cmod x) (Cmod y).
+Proof.
+  move => Hy.
+  rewrite /Cdiv.
+  rewrite Cmod_mult.
+  by rewrite Cmod_inv.
 Qed.
 
 Lemma Cmult_neq_0 (z1 z2 : C) : z1 <> 0 -> z2 <> 0 -> z1 * z2 <> 0.
@@ -493,8 +509,7 @@ Proof.
   apply is_C_lim_unique.
   intros P HP.
   destruct HP as [eps HP].
-  destruct (Df (ball 0 eps)) as [eps' Df'].
-  apply locally_ball.
+  destruct (Df (pos_div_2 eps)) as [eps' Df'].
   exists eps'.
   intros y Hy Hyz.
   apply HP.
@@ -503,18 +518,23 @@ Proof.
   replace y with (y - z + z) by ring.
   rewrite Hyz.
   apply Cplus_0_l.
-  generalize (Df' y Hy Hyz).
-  congr (_ < eps).
+  apply norm_compat1 ; simpl.
+  replace ((f y - f z) / (y - z) + - l) with
+    ((f y + - f z + - ((y + - z) * l)) / (y + - z)).
+  2: by field.
+  rewrite Cmod_div => //.
+  apply Rlt_div_l.
+  by apply Cmod_gt_0.
+  eapply Rle_lt_trans.
+  apply (Df' y Hy).
   simpl.
-  unfold Rdiv.
-  rewrite  Ropp_0 Rplus_0_r -Cmod_inv.
-  rewrite -Cmod_mult.
-  rewrite Rabs_right.
-  apply f_equal.
-  now field.
-  apply Rle_ge.
-  apply Cmod_ge_0.
-  exact H0.
+  rewrite /Rdiv Rmult_assoc.
+  apply Rmult_lt_compat_l.
+  by apply eps.
+  rewrite Rmult_comm Rlt_div_l.
+  apply Rminus_lt_0 ; ring_simplify.
+  by apply Cmod_gt_0.
+  by apply Rlt_0_2.
 Qed.
 
 (** * Integrals *)
