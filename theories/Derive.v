@@ -71,7 +71,8 @@ End Filter_Lim.
 
 Section LinearFct.
 
-Context {U V K} {FK : AbsRing K} {VU : NormedVectorSpace U K} {VV : NormedVectorSpace V K}.
+Context {U V K} {FK : AbsRing K}
+  {VU : NormedVectorSpace U K} {VV : NormedVectorSpace V K}.
 
 Record is_linear (l : U -> V) := {
   linear_plus : forall (x y : U), l (plus x y) = plus (l x) (l y) ;
@@ -236,6 +237,40 @@ Qed.
 End Op_LinearFct.
 
 
+Section Linear_domin.
+
+Context {T W U V Kw K : Type} {FKw : AbsRing Kw} {FK : AbsRing K}
+  {VW : NormedVectorSpace W Kw} {VU : NormedVectorSpace U K} {VV : NormedVectorSpace V K}.
+
+Lemma is_domin_linear {F : (T -> Prop) -> Prop} {FF : Filter F} (f : T -> W) (g : T -> U) (l : U -> V) :
+  is_linear l -> is_domin F f g -> is_domin F f (fun t => l (g t)).
+Proof.
+  intros [_ _ [M [Hm Hn]]] H eps.
+  assert (He : 0 < eps / (1 + M)).
+    apply Rdiv_lt_0_compat.
+    by apply eps.
+    apply Rplus_lt_le_0_compat.
+    by apply Rlt_0_1.
+    by apply Hm.
+  specialize (H (mkposreal _ He)).
+  move: H ;
+  apply filter_imp => /= x Hx.
+  apply Rle_trans with (1 := Hn _).
+  apply Rle_trans with ((1 + M) * norm (g x)).
+  apply Rmult_le_compat_r.
+  by apply norm_ge_0.
+  rewrite -{1}(Rplus_0_l M).
+  apply Rplus_le_compat_r.
+  apply Rle_0_1.
+  rewrite Rmult_comm ; apply Rle_div_r.
+  apply Rplus_lt_le_0_compat.
+  by apply Rlt_0_1.
+  by apply Hm.
+  by rewrite /Rdiv Rmult_assoc (Rmult_comm (norm _)) -Rmult_assoc.
+Qed.
+
+End Linear_domin.
+
 (** * Differentiability using filters *)
 
 Section Diff.
@@ -362,13 +397,79 @@ Lemma filterdiff_comp {U V W K} {FK : AbsRing K} {VU : NormedVectorSpace U K}
   filterdiff f F lf -> filterdiff g (filtermap f F) lg
   -> filterdiff (fun y => g (f y)) F (fun y => lg (lf y)).
 Proof.
-  intros [Hlf Df] [Hlg Dg].
+  intros Df Dg.
   split.
-  by apply is_linear_comp.
+    apply is_linear_comp.
+    by apply Df.
+    by apply Dg.
   intros x Hx.
+  assert (Cf : filterlim f F (locally (f x))).
+    apply filterdiff_cont.
+    exact FF.
+    eexists ; by apply Df.
+    exact Hx.
+  assert (is_domin (filtermap f F) (fun y : V => minus y (f x))
+    (fun y : V => minus (minus (g y) (g (f x))) (lg (minus y (f x))))).
+    apply Dg.
+    move => P HP.
+    by apply Cf.
+  destruct Dg as [Hg _].
+  rename H into Dg.
+  destruct Df as [Hf Df].
+  apply domin_rw_r with
+    (fun y : U => plus (minus (minus (g (f y)) (g (f x))) (lg (minus (f y) (f x))))
+                       (lg (minus (minus (f y) (f x)) (lf (minus y x))))).
+  apply equiv_ext_loc.
+  apply filter_forall => y.
+  rewrite /minus -!plus_assoc.
+  repeat apply f_equal.
+  rewrite plus_assoc.
+  rewrite (linear_plus _ Hg (plus _ _)).
+  rewrite plus_assoc.
+  rewrite plus_opp_l plus_zero_l.
+  by apply linear_opp.
   
-  apply domin_rw_r with (fun y : U => minus (minus (g (f y)) (g (f x))) (lg (lf (minus y x)))).
-Admitted. (** Admitted. *)
+  apply domin_plus.
+  intros eps.
+  destruct (linear_norm _ Hf) as [mf [Hmf Hnf]].
+  assert (F (fun y => norm (minus (f y) (f x)) <= (1 + mf) * norm  (minus y x))).
+    specialize (Df x Hx (mkposreal _ Rlt_0_1)).
+    move: Df ; apply filter_imp.
+    move => y /= Hy.
+    replace (minus (f y) (f x))
+    with (plus (minus (minus (f y) (f x)) (lf (minus y x))) (lf (minus y x))).
+    eapply Rle_trans.
+    apply @norm_triangle.
+    rewrite Rmult_plus_distr_r.
+    apply Rplus_le_compat.
+    exact Hy.
+    by apply Hnf.
+    by rewrite {1}/minus -plus_assoc plus_opp_l plus_zero_r.
+  clear Df ; rename H into Df.
+  assert (He : 0 < eps / (1 + mf)).
+    apply Rdiv_lt_0_compat.
+    by apply eps.
+    apply Rplus_lt_le_0_compat.
+    by apply Rlt_0_1.
+    exact Hmf.
+  specialize (Dg (mkposreal _ He)).
+  unfold filtermap in Dg.
+  generalize (filter_and _ _ Df Dg).
+  apply filter_imp => /= y {Df Dg} [Df Dg].
+  apply Rle_trans with (1 := Dg).
+  unfold Rdiv.
+  rewrite Rmult_assoc.
+  apply Rmult_le_compat_l.
+  apply Rlt_le, eps.
+  rewrite Rmult_comm ; apply Rle_div_l.
+  apply Rplus_lt_le_0_compat.
+  by apply Rlt_0_1.
+  exact Hmf.
+  rewrite Rmult_comm ; by apply Df.
+  
+  specialize (Df x Hx).
+  by apply is_domin_linear.
+Qed.
 
 Section Operations.
 
