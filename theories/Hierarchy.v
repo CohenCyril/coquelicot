@@ -286,6 +286,15 @@ constructor.
   now apply filter_forall.
 Qed.
 
+Lemma filter_le_within :
+  forall {T} {F : (T -> Prop) -> Prop} {FF : Filter F} D,
+  filter_le (within D F) F.
+Proof.
+intros T F D P HP.
+unfold within.
+now apply filter_imp.
+Qed.
+
 Lemma filterlim_within_ext :
   forall {T U F G} {FF : Filter F} D (f g : T -> U),
   (forall x, D x -> f x = g x) ->
@@ -767,13 +776,17 @@ Qed.
 
 (** locally *)
 
-Definition locally {T} {MT : MetricBall T} (x : T) (P : T -> Prop) :=
+Section Locally.
+
+Context {T} {MT : MetricBall T}.
+
+Definition locally (x : T) (P : T -> Prop) :=
   exists eps : posreal, forall y, ball x eps y -> P y.
 
 Global Instance locally_filter :
-  forall {T} {MT : MetricBall T} (x : T), ProperFilter (locally x).
+  forall x : T, ProperFilter (locally x).
 Proof.
-intros T MT x.
+intros x.
 constructor ; [idtac|constructor].
 - intros P [eps H].
   exists x.
@@ -798,27 +811,11 @@ constructor ; [idtac|constructor].
   now apply HP.
 Qed.
 
-Lemma filterlim_locally :
-  forall {T U} {MU : MetricBall U} {F} {FF : Filter F} (f : T -> U) y,
-  filterlim f F (locally y) <->
-  forall eps : posreal, F (fun x => ball y eps (f x)).
-Proof.
-intros T U MU F FF f y.
-split.
-- intros Cf eps.
-  apply (Cf (fun x => ball y eps x)).
-  now exists eps.
-- intros Cf P [eps He].
-  apply: filter_imp (Cf eps).
-  intros t.
-  apply He.
-Qed.
-
 Lemma locally_locally :
-  forall {T} {MT : MetricBall T} x (P : T -> Prop),
+  forall (x : T) (P : T -> Prop),
   locally x P -> locally x (fun y => locally y P).
 Proof.
-intros T MT x P [dp Hp].
+intros x P [dp Hp].
 exists (pos_div_2 dp).
 intros y Hy.
 exists (pos_div_2 dp) => /= z Hz.
@@ -828,49 +825,28 @@ now apply ball_triangle with y.
 Qed.
 
 Lemma locally_singleton :
-  forall {T} {MT : MetricBall T} x (P : T -> Prop),
+  forall (x : T) (P : T -> Prop),
   locally x P -> P x.
 Proof.
-intros T MT x P [dp H].
+intros x P [dp H].
 apply H.
 by apply ball_center.
 Qed.
 
-Lemma locally_ball {T} {MT : MetricBall T} :
-  forall x (eps : posreal), locally x (ball x eps).
+Lemma locally_ball :
+  forall (x : T) (eps : posreal), locally x (ball x eps).
 Proof.
   intros x eps.
   now exists eps.
 Qed.
 
-Lemma filterlim_locally_unique: forall {T U} {MU : MetricBall U} {F} {FF: ProperFilter F}
-  (f:T -> U) l l', filterlim f F (locally l) ->  filterlim f F (locally l') ->
-    (forall eps : posreal, ball l eps l').
-Proof.
-intros T U MU F FF f l l' Hl Hl' eps.
-assert (locally l (ball l (pos_div_2 eps))).
-  by apply locally_ball.
-specialize (Hl (ball l (pos_div_2 eps)) H).
-assert (locally l' (ball l' (pos_div_2 eps))).
-  by apply locally_ball.
-specialize (Hl' (ball l' (pos_div_2 eps)) H0).
-unfold filtermap in Hl, Hl'.
-generalize (filter_and _ _ Hl Hl') => {H H0} H.
-apply filter_ex in H.
-case: H => x H.
-rewrite (double_var eps).
-apply ball_triangle with (f x).
-by apply H.
-by apply ball_sym, H.
-Qed.
-
 Lemma locally_ex_dec :
-  forall {T} {MT : MetricBall T} (P : T -> Prop) (x : T),
+  forall (x : T) (P : T -> Prop),
   (forall x, P x \/ ~P x) ->
   locally x P ->
   {d : posreal | forall y, ball x d y -> P y}.
 Proof.
-intros T MT P x P_dec H.
+intros x P P_dec H.
 set (Q := fun z => z <= 1 /\ forall y, ball x z y -> P y).
 assert (He : exists e : posreal, Q e).
   destruct H as [eps Heps].
@@ -906,33 +882,69 @@ apply ball_le with (2 := Hy).
 now apply Rlt_le.
 Qed.
 
+Definition is_filter_lim (F : (T -> Prop) -> Prop) (x : T) :=
+  forall P, locally x P -> F P.
+
+Lemma is_filter_lim_filter_le :
+  forall {F G} (x : T),
+  filter_le G F ->
+  is_filter_lim F x -> is_filter_lim G x.
+Proof.
+intros F G x L Fx P HP.
+apply L.
+now apply Fx.
+Qed.
+
+End Locally.
+
+Lemma filterlim_locally :
+  forall {T U} {MU : MetricBall U} {F} {FF : Filter F} (f : T -> U) y,
+  filterlim f F (locally y) <->
+  forall eps : posreal, F (fun x => ball y eps (f x)).
+Proof.
+intros T U MU F FF f y.
+split.
+- intros Cf eps.
+  apply (Cf (fun x => ball y eps x)).
+  now exists eps.
+- intros Cf P [eps He].
+  apply: filter_imp (Cf eps).
+  intros t.
+  apply He.
+Qed.
+
+Lemma filterlim_locally_unique: forall {T U} {MU : MetricBall U} {F} {FF: ProperFilter F}
+  (f:T -> U) l l', filterlim f F (locally l) ->  filterlim f F (locally l') ->
+    (forall eps : posreal, ball l eps l').
+Proof.
+intros T U MU F FF f l l' Hl Hl' eps.
+assert (locally l (ball l (pos_div_2 eps))).
+  by apply locally_ball.
+specialize (Hl (ball l (pos_div_2 eps)) H).
+assert (locally l' (ball l' (pos_div_2 eps))).
+  by apply locally_ball.
+specialize (Hl' (ball l' (pos_div_2 eps)) H0).
+unfold filtermap in Hl, Hl'.
+generalize (filter_and _ _ Hl Hl') => {H H0} H.
+apply filter_ex in H.
+case: H => x H.
+rewrite (double_var eps).
+apply ball_triangle with (f x).
+by apply H.
+by apply ball_sym, H.
+Qed.
+
 (** locally' *)
 
-Definition locally' {T} {MT : MetricBall T} (x : T) (P : T -> Prop) :=
-  exists eps : posreal, forall y, ball x eps y -> y <> x -> P y.
+Definition locally' {T} {MT : MetricBall T} (x : T) :=
+  within (fun y => y <> x) (locally x).
 
 Global Instance locally'_filter :
-  forall T (MT : MetricBall T) (x : T), Filter (locally' x).
+  forall {T} {MT : MetricBall T} (x : T), Filter (locally' x).
 Proof.
 intros T MT x.
-constructor.
-- now exists (mkposreal _ Rlt_0_1).
-- intros P Q [dP HP] [dQ HQ].
-  exists (mkposreal _ (Rmin_stable_in_posreal dP dQ)).
-  simpl.
-  intros y Hy Hy'.
-  split.
-  apply HP with (2 := Hy').
-  apply ball_le with (2 := Hy).
-  apply Rmin_l.
-  apply HQ with (2 := Hy').
-  apply ball_le with (2 := Hy).
-  apply Rmin_r.
-- intros P Q H [dP HP].
-  exists dP.
-  intros y Hy Hy'.
-  apply H.
-  now apply HP.
+apply within_filter.
+apply locally_filter.
 Qed.
 
 (** ** Open sets in metric spaces *)
@@ -2715,7 +2727,7 @@ Lemma locally_2d_ex_dec :
   {d : posreal | forall u v, Rabs (u-x) < d -> Rabs (v-y) < d -> P u v}.
 Proof.
 intros P x y P_dec H.
-destruct (locally_ex_dec (fun z => P (fst z) (snd z)) (x, y)) as [d Hd].
+destruct (locally_ex_dec (x, y) (fun z => P (fst z) (snd z))) as [d Hd].
 - now intros [u v].
 - destruct H as [e H].
   exists e.

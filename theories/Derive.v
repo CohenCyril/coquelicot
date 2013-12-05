@@ -32,32 +32,8 @@ Section Filter_Lim.
 
 Context {T : Type} {MT : MetricBall T}.
 
-Lemma locally_locally' (x : T) (P : T -> Prop) :
-  locally x P -> locally' x P.
-Proof.
-  intros [d Hd].
-  exists d => y Hy _.
-  now apply Hd.
-Qed.
-Lemma locally'_locally (x : T) (P : T -> Prop) :
-  locally' x P -> within (fun y => y <> x) (locally x) P.
-Proof.
-  intros [d Hd].
-  exists d => y Hy Hy0.
-  now apply Hd.
-Qed.
-
-Definition is_filter_lim (x : T) (F : (T -> Prop) -> Prop) :=
-  forall P, locally x P -> F P.
-
-Lemma is_filter_lim_locally' (x : T) : is_filter_lim x (locally' x).
-Proof.
-  intros P lP.
-  by apply locally_locally'.
-Qed.
-
 Lemma is_filter_lim_locally (x y : T) :
-  is_filter_lim y (locally x) -> forall eps : posreal, ball x eps y.
+  is_filter_lim (locally x) y -> forall eps : posreal, ball x eps y.
 Proof.
   intros H eps.
   specialize (H _ (locally_ball y eps)).
@@ -68,7 +44,7 @@ Qed.
 End Filter_Lim.
 
 Lemma is_filter_lim_locally_R (x y : R) :
-  is_filter_lim y (locally x) -> x = y.
+  is_filter_lim (locally x) y -> x = y.
 Proof.
   intros H.
   apply sym_eq, Req_lt_aux.
@@ -286,13 +262,13 @@ Section Diff.
 Context {U V K} {RK : AbsRing K} {VU : NormedVectorSpace U K} {VV : NormedVectorSpace V K}.
 
 Definition filterdiff (f : U -> V) F (l : U -> V) :=
-  is_linear l /\ forall x, is_filter_lim x F ->
+  is_linear l /\ forall x, is_filter_lim F x ->
   is_domin F (fun y => minus y x) (fun y => minus (minus (f y) (f x)) (l (minus y x))).
 Definition ex_filterdiff (f : U -> V) F :=
   exists (l : U -> V), filterdiff f F l.
 
 Lemma filterdiff_cont (f : U -> V) F {FF : Filter F} :
-  ex_filterdiff f F -> forall x, is_filter_lim x F -> filterlim f F (locally (f x)).
+  ex_filterdiff f F -> forall x, is_filter_lim F x -> filterlim f F (locally (f x)).
 Proof.
   intros [l [Hl Df]] x Hx.
   specialize (Df x Hx).
@@ -340,7 +316,7 @@ Qed.
 (** ** Operations *)
 
 Lemma filterdiff_ext_loc (f g : U -> V) F {FF : Filter F} (l : U -> V) :
-  F (fun y => f y = g y) -> (forall x, is_filter_lim x F -> f x = g x)
+  F (fun y => f y = g y) -> (forall x, is_filter_lim F x -> f x = g x)
   -> filterdiff f F l -> filterdiff g F l.
 Proof.
   move => H H0 [Hl Df].
@@ -354,7 +330,7 @@ Proof.
   by apply Req_le ; rewrite Hy H0.
 Qed.
 Lemma ex_filterdiff_ext_loc (f g : U -> V) F {FF : Filter F} :
-  F (fun y => f y = g y) -> (forall x, is_filter_lim x F -> f x = g x)
+  F (fun y => f y = g y) -> (forall x, is_filter_lim F x -> f x = g x)
   -> ex_filterdiff f F -> ex_filterdiff g F.
 Proof.
   intros H H0 [l Hl].
@@ -575,7 +551,7 @@ Section Derive.
 Context {V K} {RK : AbsRing K} {VV : NormedVectorSpace V K}.
 
 Definition filterderive (f : K -> V) F (l : V) :=
-  forall x, is_filter_lim x F ->
+  forall x, is_filter_lim F x ->
   is_domin F (fun y => minus y x) (fun y => minus (minus (f y) (f x)) (scal (minus y x) l)).
 Definition ex_filterderive (f : K -> V) F :=
   exists l, filterderive f F l.
