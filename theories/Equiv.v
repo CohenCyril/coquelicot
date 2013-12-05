@@ -369,7 +369,7 @@ Proof.
   now apply domin_scal_r.
 Qed.
 
-(* Lemma equiv_plus :
+Lemma equiv_plus :
   forall {F : (T -> Prop) -> Prop} {FF : Filter F} (f o : T -> V),
   is_domin F f o -> is_equiv F (fun x => plus (f x) (o x)) f.
 Proof.
@@ -378,39 +378,7 @@ Proof.
   apply filter_imp => x Hx.
   simpl.
   now rewrite /minus opp_plus plus_assoc plus_opp_r plus_zero_l norm_opp.
-Qed. *)
-
-Lemma equiv_plus_l :
-  forall {F : (T -> Prop) -> Prop} {FF : Filter F} (f g1 g2 : T -> V),
-  is_equiv F g1 g2
-   -> is_equiv F (fun x => plus (f x) (g1 x)) (fun x => plus (f x) (g2 x)).
-Proof.
-  intros.
-  intro eps.
-  apply filter_imp with (fun x : T => 
-    norm (minus (g2 x) (g1 x)) <= eps * norm (plus (f x) (g2 x))).
-   move => x.
-   apply Rle_trans.
-   apply Req_le, f_equal.
-   rewrite plus_comm /minus opp_plus -!plus_assoc.
-   apply f_equal.
-   by rewrite plus_assoc plus_opp_r plus_zero_l.
- evar (e : posreal).
- specialize (H e) ; simpl in H.
- move: H ; apply filter_imp => x Hx.
- apply Rle_trans with (1 := Hx).
- eapply Rle_trans.
- 2: apply Rmult_le_compat_l.
- 2: by apply Rlt_le, eps.
- 2: rewrite -(opp_opp (g2 x)).
- 2: apply norm_triangle_inv.
- rewrite norm_opp.
- eapply Rle_trans.
- 2: apply Rmult_le_compat_l.
- 2: by apply Rlt_le, eps.
- 2: by apply Rle_abs.
- rewrite Rmult_minus_distr_l Rle_minus_r -Rmult_plus_distr_r.
-Admitted.
+Qed.
 
 End Equiv_VS.
 

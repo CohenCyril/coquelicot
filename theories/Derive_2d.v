@@ -157,7 +157,7 @@ Proof.
   move: (locally_2d_and _ _ _ _ Dx Cx) => {Dx Cx}.
   intros (d1,Hd1).
   specialize (proj1 (filterderive_Reals _ _ _) Dy); intros Dy'.
-  destruct (proj2 Dy' eps') as (d2,Hd2).
+  destruct (Dy' y (fun P H => H) eps') as (d2,Hd2).
   set (l1 := Derive (fun u : R => f u y) x).
   exists (mkposreal _ (Rmin_stable_in_posreal d1 d2)).
   simpl; intros u v Hu Hv.
@@ -294,7 +294,7 @@ Lemma differentiable_pt_lim_proj1_0 (f : R -> R) (x y l : R) :
 Proof.
   intros Df eps.
   apply filterderive_Reals in Df ;
-  elim (proj2 Df eps) ; clear Df ; intros delta Df.
+  elim (Df x (fun P H => H) eps) ; clear Df ; intros delta Df.
   exists delta ; simpl ; intros.
   rewrite Rmult_0_l Rplus_0_r.
   apply (Rle_trans _ (eps * Rabs (u - x))).
@@ -308,8 +308,8 @@ Lemma differentiable_pt_lim_proj1_1 (f : R -> R) (x y l : R) :
   differentiable_pt_lim (fun u v => f u) x y l 0 -> derivable_pt_lim f x l.
 Proof.
   intros Df.
-  apply filterderive_Reals ; split ; [ | intro eps].
-  by [].
+  apply filterderive_Reals => z Hz eps.
+  rewrite -(is_filter_lim_locally_R _ _ Hz) => {z Hz}.
   elim (Df eps) ; clear Df ; intros delta Df.
   exists delta ; simpl in Df ; simpl ; intros.
   replace (f y0 + - f x + - ((y0 + - x) * l)) with (f y0 - f x - (l * (y0 - x) + 0 * (y - y))) by ring.
@@ -796,6 +796,7 @@ apply ex_filterderive_Reals, ex_filterdiff_derive in H2.
 move: H2 ; apply ex_filterdiff_ext_loc.
 by apply locally_filter.
 apply locally_2d_1d_const_y with (1:=H).
+move => z Hz ; rewrite -(is_filter_lim_locally_R _ _ Hz) ;
 by apply locally_2d_1d_const_y, locally_singleton in H.
 by apply locally_filter.
 split.
@@ -805,6 +806,7 @@ apply ex_filterderive_Reals, ex_filterdiff_derive in H3.
 move: H3 ; apply ex_filterdiff_ext_loc.
 by apply locally_filter.
 apply locally_2d_1d_const_x with (1:=H).
+move => z Hz ; rewrite -(is_filter_lim_locally_R _ _ Hz) ;
 by apply locally_2d_1d_const_x, locally_singleton in H.
 by apply locally_filter.
 split.
@@ -1319,6 +1321,7 @@ apply filterdiff_ext_loc with (fun t => sum_f_R0 (fun m => C k m *
   partial_derive m (k - m) f (x + t * (u - x)) (y + t * (v - y)) * (u - x) ^ m * (v - y) ^ (k - m)) k).
 by apply locally_filter.
 by [].
+move => t Ht ; rewrite -(is_filter_lim_locally_R _ _ Ht) ;
 by apply locally_singleton in H.
 clear H.
 apply filterdiff_derive.

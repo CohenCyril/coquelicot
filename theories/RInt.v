@@ -4586,8 +4586,9 @@ Lemma derivable_pt_lim_RInt (f : R -> R) (a : R) (x : R) :
   continuity_pt f x -> derivable_pt_lim (fun x => RInt f a x) x (f x).
 Proof.
   move => Iax Iloc Cx.
-  apply filterderive_Reals ; split => //.
-  intros eps.
+  apply filterderive_Reals.
+  intros y Hy eps.
+  rewrite -(is_filter_lim_locally_R _ _ Hy) => {y Hy}.
   destruct (Cx eps (cond_pos eps)) as (d,(Hd1,Hd2)).
   unfold dist in Hd2; simpl in Hd2; unfold R_dist in Hd2.
   destruct Iloc as (e,He).
@@ -5093,7 +5094,8 @@ now apply ex_RInt_swap.
 rewrite Rmin_left. 2: now apply Rlt_le.
 rewrite Rmax_right. 2: now apply Rlt_le.
 intros Df Cdf If IDf.
-apply filterderive_Reals ; split => //.
+apply filterderive_Reals => y Hy.
+rewrite -(is_filter_lim_locally_R _ _ Hy) => {y Hy}.
 refine (let Cdf' := uniform_continuity_2d_1d (fun u v => Derive (fun z => f z u) v) a b x _ in _).
 intros t Ht eps.
 specialize (Cdf t Ht eps).
