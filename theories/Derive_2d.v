@@ -156,8 +156,8 @@ Proof.
   specialize (Cx eps').
   move: (locally_2d_and _ _ _ _ Dx Cx) => {Dx Cx}.
   intros (d1,Hd1).
-  specialize (proj1 (filterderive_Reals _ _ _) Dy); intros Dy'.
-  destruct (Dy' y (fun P H => H) eps') as (d2,Hd2).
+  specialize (proj1 (filterdiff_Reals _ _ _) Dy); intros Dy'.
+  destruct (proj2 Dy' y (fun P H => H) eps') as (d2,Hd2).
   set (l1 := Derive (fun u : R => f u y) x).
   exists (mkposreal _ (Rmin_stable_in_posreal d1 d2)).
   simpl; intros u v Hu Hv.
@@ -293,8 +293,8 @@ Lemma differentiable_pt_lim_proj1_0 (f : R -> R) (x y l : R) :
   derivable_pt_lim f x l -> differentiable_pt_lim (fun u v => f u) x y l 0.
 Proof.
   intros Df eps.
-  apply filterderive_Reals in Df ;
-  elim (Df x (fun P H => H) eps) ; clear Df ; intros delta Df.
+  apply filterdiff_Reals in Df ;
+  elim (proj2 Df x (fun P H => H) eps) ; clear Df ; intros delta Df.
   exists delta ; simpl ; intros.
   rewrite Rmult_0_l Rplus_0_r.
   apply (Rle_trans _ (eps * Rabs (u - x))).
@@ -308,7 +308,8 @@ Lemma differentiable_pt_lim_proj1_1 (f : R -> R) (x y l : R) :
   differentiable_pt_lim (fun u v => f u) x y l 0 -> derivable_pt_lim f x l.
 Proof.
   intros Df.
-  apply filterderive_Reals => z Hz eps.
+  apply filterdiff_Reals ; split => [ | z Hz eps].
+    by apply @is_linear_scal.
   rewrite -(is_filter_lim_locally_R _ _ Hz) => {z Hz}.
   elim (Df eps) ; clear Df ; intros delta Df.
   exists delta ; simpl in Df ; simpl ; intros.
@@ -790,19 +791,15 @@ intros f g x y H (H1&H2&H3&H4&H5).
 split.
 apply (continuity_2d_pt_ext_loc _ _ _ _ H H1).
 split.
-apply ex_filterderive_Reals.
-apply ex_filterdiff_derive.
-apply ex_filterderive_Reals in H2.
-apply ex_filterdiff_derive in H2.
+apply ex_filterdiff_Reals.
+apply ex_filterdiff_Reals in H2.
 move: H2 ; apply ex_filterdiff_ext_loc.
 apply locally_2d_1d_const_y with (1:=H).
 move => z Hz ; rewrite -(is_filter_lim_locally_R _ _ Hz) ;
 by apply locally_2d_1d_const_y, locally_singleton in H.
 split.
-apply ex_filterderive_Reals.
-apply ex_filterdiff_derive.
-apply ex_filterderive_Reals in H3.
-apply ex_filterdiff_derive in H3.
+apply ex_filterdiff_Reals.
+apply ex_filterdiff_Reals in H3.
 move: H3 ; apply ex_filterdiff_ext_loc.
 apply locally_2d_1d_const_x with (1:=H).
 move => z Hz ; rewrite -(is_filter_lim_locally_R _ _ Hz) ;
@@ -1303,7 +1300,7 @@ specialize (IHk (le_S _ _ (le_S_n _ _ Hk))).
 rewrite /is_derive_n.
 apply locally_locally in IHk.
 move: IHk ; apply filter_imp => {t Ht} z IHk HH.
-apply filterderive_Reals ; apply filterdiff_derive.
+apply filterdiff_Reals.
 apply @filterdiff_ext_locally with (fun t => sum_f_R0 (fun m => C k m *
   partial_derive m (k - m) f (x + t * (u - x)) (y + t * (v - y)) * (u - x) ^ m * (v - y) ^ (k - m)) k).
   apply locally_locally in HH.
@@ -1312,8 +1309,7 @@ apply @filterdiff_ext_locally with (fun t => sum_f_R0 (fun m => C k m *
   specialize (HH Hz).
   apply sym_eq.
   now apply is_derive_n_unique.
-apply filterdiff_derive.
-apply filterderive_Reals.
+apply filterdiff_Reals.
 replace (sum_f_R0 (fun m : nat => C (S k) m *
     partial_derive m (S k - m) f (x + z * (u - x)) (y + z * (v - y)) * (u - x) ^ m * (v - y) ^ (S k - m)) (S k)) with
   (sum_f_R0 (fun m : nat => C k m * (u - x) ^ m  * (v - y) ^ (k - m) *
