@@ -316,6 +316,24 @@ Qed.
 
 (** ** Operations *)
 
+Lemma filterdiff_ext_lin {F} {FF : Filter F} (f : U -> V) (l1 l2 : U -> V) :
+  filterdiff f F l1 -> (forall y, l1 y = l2 y) -> filterdiff f F l2.
+Proof.
+  intros [Hl1 Hf1] Hl ; split => [ | x Hx eps].
+  + split.
+    - intros x y ; rewrite -!Hl.
+      by apply linear_plus.
+    - intros k x ; rewrite -!Hl.
+      by apply linear_scal.
+    - destruct (linear_norm _ Hl1) as [M Hm].
+      exists M ; split.
+      by apply Hm.
+      move => x ; now rewrite -Hl.
+  + move: (Hf1 x Hx eps).
+    apply filter_imp => y.
+    by rewrite !Hl.
+Qed.
+
 Lemma filterdiff_ext_loc {F} {FF : Filter F} (f g : U -> V) (l : U -> V) :
   F (fun y => f y = g y) -> (forall x, is_filter_lim F x -> f x = g x)
   -> filterdiff f F l -> filterdiff g F l.
@@ -1941,13 +1959,10 @@ by [].
 move/ex_filterderive_Reals/ex_filterdiff_derive => Hl.
 specialize (Hl _).
 apply ex_filterderive_Reals ; apply ex_filterdiff_derive.
-apply ex_filterdiff_ext_loc with (Derive_n f n).
+apply @ex_filterdiff_ext_locally with (Derive_n f n).
 apply locally_locally in Heq.
 apply filter_imp with (2 := Heq) => {Heq}.
 by apply Derive_n_ext_loc.
-move => y Hy.
-apply Derive_n_ext_loc.
-by rewrite -(is_filter_lim_locally_R _ _ Hy).
 by [].
 Qed.
 
@@ -1962,13 +1977,10 @@ Proof.
   pattern x ; now apply locally_singleton.
   move => Hf.
   apply filterderive_Reals ; apply filterdiff_derive.
-  apply filterdiff_ext_loc with (Derive_n f n).
+  apply @filterdiff_ext_locally with (Derive_n f n).
   apply locally_locally in Heq.
   apply filter_imp with (2 := Heq) => {Heq}.
   by apply Derive_n_ext_loc.
-move => y Hy.
-apply Derive_n_ext_loc.
-by rewrite -(is_filter_lim_locally_R _ _ Hy).
   apply filterdiff_derive, filterderive_Reals => //.
 Qed.
 
@@ -2302,8 +2314,8 @@ Proof.
   by apply Rabs_pos_lt.
   rewrite /r1 ; by apply Rmin_l.
   by apply lt_n_Sn.
-  apply ex_derive_ext with (2 := ex_derive_scal id a y (ex_derive_id _)).
-  by [].
+  apply ex_derive_scal.
+  by apply ex_derive_id.
   simpl in Hy.
   apply Rabs_lt_between' in Hy.
   case: Hy => Hy1 Hy2.
@@ -2387,8 +2399,8 @@ Proof.
   apply ex_derive_comp.
   apply (locally_singleton _ _) in Hf.
   by apply Hf with (k := S n).
-  apply ex_derive_ext with (2 := ex_derive_scal id a x (ex_derive_id _)).
-  by [].
+  
+  apply (ex_derive_scal id a x (ex_derive_id _)).
 Qed.
 Lemma is_derive_n_comp_scal (f : R -> R) (a : R) (n : nat) (x l : R) :
   locally (a * x) (fun x => forall k, (k <= n)%nat -> ex_derive_n f k x)

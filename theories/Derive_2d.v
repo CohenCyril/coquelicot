@@ -1304,22 +1304,14 @@ rewrite /is_derive_n.
 apply locally_locally in IHk.
 move: IHk ; apply filter_imp => {t Ht} z IHk HH.
 apply filterderive_Reals ; apply filterdiff_derive.
-assert (locally z (fun y0 : R => sum_f_R0 (fun m : nat =>
-      C k m *
-      partial_derive m (k - m) f (x + y0 * (u - x)) (y + y0 * (v - y)) *
-      (u - x) ^ m * (v - y) ^ (k - m)) k = Derive_n g k y0)).
+apply @filterdiff_ext_locally with (fun t => sum_f_R0 (fun m => C k m *
+  partial_derive m (k - m) f (x + t * (u - x)) (y + t * (v - y)) * (u - x) ^ m * (v - y) ^ (k - m)) k).
   apply locally_locally in HH.
   generalize (filter_and _ _ HH IHk).
   apply filter_imp => {z HH IHk} z [Hz HH].
   specialize (HH Hz).
   apply sym_eq.
   now apply is_derive_n_unique.
-apply filterdiff_ext_loc with (fun t => sum_f_R0 (fun m => C k m *
-  partial_derive m (k - m) f (x + t * (u - x)) (y + t * (v - y)) * (u - x) ^ m * (v - y) ^ (k - m)) k).
-by [].
-move => t Ht ; rewrite -(is_filter_lim_locally_R _ _ Ht) ;
-by apply locally_singleton in H.
-clear H.
 apply filterdiff_derive.
 apply filterderive_Reals.
 replace (sum_f_R0 (fun m : nat => C (S k) m *
