@@ -790,25 +790,23 @@ intros f g x y H (H1&H2&H3&H4&H5).
 split.
 apply (continuity_2d_pt_ext_loc _ _ _ _ H H1).
 split.
-apply ex_filterderive_Reals, ex_filterdiff_derive.
-by apply locally_filter.
-apply ex_filterderive_Reals, ex_filterdiff_derive in H2.
+apply ex_filterderive_Reals.
+apply ex_filterdiff_derive.
+apply ex_filterderive_Reals in H2.
+apply ex_filterdiff_derive in H2.
 move: H2 ; apply ex_filterdiff_ext_loc.
-by apply locally_filter.
 apply locally_2d_1d_const_y with (1:=H).
 move => z Hz ; rewrite -(is_filter_lim_locally_R _ _ Hz) ;
 by apply locally_2d_1d_const_y, locally_singleton in H.
-by apply locally_filter.
 split.
-apply ex_filterderive_Reals, ex_filterdiff_derive.
-by apply locally_filter.
-apply ex_filterderive_Reals, ex_filterdiff_derive in H3.
+apply ex_filterderive_Reals.
+apply ex_filterdiff_derive.
+apply ex_filterderive_Reals in H3.
+apply ex_filterdiff_derive in H3.
 move: H3 ; apply ex_filterdiff_ext_loc.
-by apply locally_filter.
 apply locally_2d_1d_const_x with (1:=H).
 move => z Hz ; rewrite -(is_filter_lim_locally_R _ _ Hz) ;
 by apply locally_2d_1d_const_x, locally_singleton in H.
-by apply locally_filter.
 split.
 apply IHn with (2:=H4).
 apply locally_2d_impl_strong with (2:=H).
@@ -1305,8 +1303,7 @@ specialize (IHk (le_S _ _ (le_S_n _ _ Hk))).
 rewrite /is_derive_n.
 apply locally_locally in IHk.
 move: IHk ; apply filter_imp => {t Ht} z IHk HH.
-apply filterderive_Reals ; apply -> filterdiff_derive.
-2: by apply locally_filter.
+apply filterderive_Reals ; apply filterdiff_derive.
 assert (locally z (fun y0 : R => sum_f_R0 (fun m : nat =>
       C k m *
       partial_derive m (k - m) f (x + y0 * (u - x)) (y + y0 * (v - y)) *
@@ -1319,13 +1316,11 @@ assert (locally z (fun y0 : R => sum_f_R0 (fun m : nat =>
   now apply is_derive_n_unique.
 apply filterdiff_ext_loc with (fun t => sum_f_R0 (fun m => C k m *
   partial_derive m (k - m) f (x + t * (u - x)) (y + t * (v - y)) * (u - x) ^ m * (v - y) ^ (k - m)) k).
-by apply locally_filter.
 by [].
 move => t Ht ; rewrite -(is_filter_lim_locally_R _ _ Ht) ;
 by apply locally_singleton in H.
 clear H.
 apply filterdiff_derive.
-by apply locally_filter.
 apply filterderive_Reals.
 replace (sum_f_R0 (fun m : nat => C (S k) m *
     partial_derive m (S k - m) f (x + z * (u - x)) (y + z * (v - y)) * (u - x) ^ m * (v - y) ^ (S k - m)) (S k)) with
