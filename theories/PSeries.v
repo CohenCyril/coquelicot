@@ -332,15 +332,14 @@ Proof.
 
   have Hc0 : Rbar_le (Finite 0) cv.
   apply ub, CV_disk_0.
-  case: (cv) Hc0 => [c | | ] Hc0 Hcv.
-  apply Rbar_finite_le.
+  case: (cv) Hc0 => [c | | ] // Hc0 Hcv.
 
   case: (Rle_lt_dec r 0) => Hr0.
-  by apply Rle_trans with (1 := Hr0), Rbar_finite_le.
+  by apply Rle_trans with (1 := Hr0).
 
   have H0 : forall e, 0 < e <= r -> r - e <= c.
     intros.
-    apply Rbar_finite_le, Hcv.
+    apply Hcv.
     apply Rlt_le_trans with (2 := Rle_abs _).
     rewrite Rabs_pos_eq.
     rewrite -(Rplus_0_r (r - e)).
@@ -349,7 +348,6 @@ Proof.
     rewrite -Rminus_le_0 ; by apply H0.
 
   apply Rnot_lt_le => H1.
-  apply Rbar_finite_le in Hc0.
   have H2: (c < ((c+r)/2) < r).
     pattern r at 3 ; replace r with ((r+r)/2) by field.
     pattern c at 1 ; replace c with ((c+c)/2) by field.
@@ -373,9 +371,6 @@ Proof.
   rewrite Rdiv_minus ; try by [intuition | apply Rgt_not_eq ; intuition].
   ring_simplify (r * 2 - (r - c) * 1) ; rewrite Rmult_1_l.
   rewrite Rplus_comm ; by apply H2.
-
-  by left.
-  by case: Hc0.
 
 (* lub *)
   move => b Hb.
@@ -416,7 +411,6 @@ Proof.
     rewrite /CV_radius /Lub_Rbar_ne ;
     case: ex_lub_Rbar_ne => l /= [ub lub].
     apply: lub => r Hr.
-    apply Rbar_finite_le.
     apply Rnot_lt_le ; contradict Ha.
     move: Hr.
     apply CV_disk_le.
@@ -565,7 +559,6 @@ Proof.
   rewrite /CV_radius /Lub_Rbar_ne ;
   case: ex_lub_Rbar_ne => /= cv [ub lub].
   apply lub => x Hax.
-  apply Rbar_finite_le.
   case: (Rle_lt_dec x 0) => Hx.
   apply Rlt_le, Rle_lt_trans with 0.
   by apply Hx.
@@ -612,7 +605,7 @@ Proof.
   rewrite Rabs_pos_eq.
   by apply H0.
   apply Rlt_le, Rle_lt_trans with (2 := proj1 H0).
-  apply Rbar_finite_le, ub.
+  apply ub.
   exists (Rabs (a O)).
   apply (is_lim_seq_ext (fun _ => Rabs (a O)) _ (Rabs (a 0%nat))).
     elim => [ | n IH] /=.
@@ -647,7 +640,7 @@ Proof.
       apply Rlt_le_trans with (0+1).
       rewrite Rplus_0_l ; by apply Rlt_0_1.
       apply Rplus_le_compat_r.
-      apply Rbar_finite_le, ub.
+      apply ub.
       exists (Rabs (a O)).
       apply (is_lim_seq_ext (fun _ => Rabs (a O)) _ (Rabs (a 0%nat))).
       elim => [ | k IH] /=.
@@ -748,9 +741,8 @@ Proof.
     move => y Hy.
     by apply H1, H2.
     have H4 := CV_radius_ge_0 a.
-    case: (CV_radius a) H3 H4 => /= [cv | | ] H3 H4.
-    apply Rbar_not_lt_le => /= H5.
-    apply Rbar_finite_le in H4.
+    case: (CV_radius a) H3 H4 => /= [cv | | ] // H3 H4.
+    apply Rnot_lt_le => /= H5.
     have H6 : 0 < (cv+r)/2 < r.
       split.
       apply Rdiv_lt_0_compat.
@@ -761,11 +753,9 @@ Proof.
       pattern (pos r) at 2 ; replace (pos r) with ((r+r)/2) by field.
       apply Rmult_lt_compat_r ; by intuition.
     move: (H3 _ H6).
-    apply Rbar_lt_not_le => /=.
+    apply Rlt_not_le.
     pattern cv at 1 ; replace cv with ((cv+cv)/2) by field.
     apply Rmult_lt_compat_r ; by intuition.
-    by left.
-    by case: H4.
 Qed.
 
 Lemma CV_radius_Reals_2 (a : nat -> R) (x : R) :
@@ -871,7 +861,8 @@ Proof.
     (fun x => (CV_disk a x) /\ (CV_disk b x)).
   move => x [Ha Hb] ; by apply CV_disk_plus.
   rewrite /CV_radius /Lub_Rbar_ne ; by case: ex_lub_Rbar_ne.
-  rewrite /Rbar_min ; case: Rbar_le_dec => Hle ; [case: Hle => Hle | ].
+  rewrite /Rbar_min ; case: Rbar_le_dec => Hle ;
+    [case: (Rbar_le_lt_or_eq_dec _ _ Hle) => {Hle} Hle | ].
 
   apply is_lub_Rbar_eqset with (CV_disk a).
   move => x ; split => Hx.
@@ -898,21 +889,18 @@ Proof.
   have H1 : Rbar_le (Finite 0) l.
     apply Hl ; split ; by apply CV_disk_0.
   case: l Hl Ha Hb H1 => [l | | ] Hl Ha Hb H1.
-  apply Rbar_finite_le in H1.
   apply Rbar_not_lt_le => H0.
   case: {1 2 3 5 6}(CV_radius a) H0 Hl Ha Hb (eq_refl (CV_radius a)) Ha0 => /= [c | | ] H0 Hl Ha Hb Heq Ha0.
   case: (Hl ((l+c)/2)).
   split ; apply CV_disk_inside ; rewrite -?Hle ?Heq /=.
   have H : 0 <= ((l + c) / 2).
     apply Rmult_le_pos ; intuition.
-    apply Rbar_finite_le in Ha0.
     by apply Rplus_le_le_0_compat.
   rewrite (Rabs_pos_eq _ H).
   pattern c at 2 ; replace c with ((c+c)/2) by field.
   apply Rmult_lt_compat_r ; by intuition.
   have H : 0 <= ((l + c) / 2).
     apply Rmult_le_pos ; intuition.
-    apply Rbar_finite_le in Ha0.
     by apply Rplus_le_le_0_compat.
   rewrite (Rabs_pos_eq _ H).
   pattern c at 2 ; replace c with ((c+c)/2) by field.
@@ -920,13 +908,13 @@ Proof.
   apply Rle_not_lt, Rlt_le.
   pattern l at 1 ; replace l with ((l+l)/2) by field.
   apply Rmult_lt_compat_r ; by intuition.
-  rewrite Rbar_finite_eq ; apply Rgt_not_eq.
+  apply Rgt_not_eq.
   pattern l at 2 ; replace l with ((l+l)/2) by field.
   apply Rmult_lt_compat_r ; by intuition.
   case: (Hl (l+1)).
   split ; apply CV_disk_inside ; by rewrite -?Hle ?Heq.
   apply Rle_not_lt, Rlt_le, Rlt_plus_1.
-  rewrite Rbar_finite_eq ; apply Rgt_not_eq, Rlt_plus_1.
+  apply Rgt_not_eq, Rlt_plus_1.
   by case: Ha0.
   by apply Rbar_not_lt_le => /=.
   by case: H1.
@@ -1558,7 +1546,7 @@ Proof.
   case H : (CV_radius (fun _ : nat => 0)) => [cv | | ] //= H0.
   case: (Rle_lt_dec 0 cv) => Hcv.
   move: (H0 (cv + 1)) => {H0} H0.
-  contradict H0 ; apply Rbar_lt_not_le => /=.
+  contradict H0 ; apply Rlt_not_le => /=.
   apply Rlt_le_trans with (2 := Rle_abs _).
   apply Rminus_lt_0 ; ring_simplify ; by apply Rlt_0_1.
   contradict Hcv ; apply (Rbar_le_not_lt cv 0).
@@ -1728,15 +1716,14 @@ Proof.
   wlog: x Hx / (0 < x) => [Hw |  Hx0].
     case: (Rle_lt_dec x 0) => Hx0.
     apply Rbar_le_trans with (Finite 0).
-    by apply Rbar_finite_le.
+    exact Hx0.
     by apply H1.
     by apply Hw.
 
   suff : forall y, 0 < y < x -> Rbar_le (Finite y) (CV_radius (PS_derive a)).
-    case: (CV_radius (PS_derive a)) H1 => [l | | ] /= H1 H2.
-    apply Rbar_not_lt_le => /= H3.
+    case: (CV_radius (PS_derive a)) H1 => [l | | ] //= H1 H2.
+    apply Rnot_lt_le => /= H3.
     have H4 : (0 < (x+l)/2 < x).
-      apply Rbar_finite_le in H1.
       split.
       apply Rdiv_lt_0_compat.
       by apply Rplus_lt_le_0_compat.
@@ -1746,13 +1733,11 @@ Proof.
       by apply -> Rminus_lt_0.
       by apply Rlt_R0_R2.
     move: (H2 _ H4).
-    apply Rbar_lt_not_le => /=.
+    apply Rlt_not_le.
     apply Rminus_lt, Ropp_lt_cancel ; field_simplify.
     rewrite Rdiv_1 ; apply Rdiv_lt_0_compat.
     rewrite Rplus_comm ; by apply -> Rminus_lt_0.
     by apply Rlt_R0_R2.
-    by left.
-    by case: H1.
   move => y Hy.
   apply H0 ; rewrite /PS_derive.
   have H2 : is_lim_seq (fun n => INR (S n) / x * (y/x) ^ n) 0.
@@ -2438,7 +2423,6 @@ Proof.
   have H : forall y, Rmin 0 x <= y <= Rmax 0 x -> Rbar_lt (Rabs y) (CV_radius a).
     move => y Hy.
     apply: Rbar_le_lt_trans Hx.
-    apply Rbar_finite_le.
     apply Rabs_le_between.
     split.
     apply Rle_trans with (2 := proj1 Hy).
@@ -2476,10 +2460,9 @@ Proof.
   apply locally_interval with (Rbar_opp (CV_radius a)) (CV_radius a).
   apply Rbar_opp_lt ; rewrite Rbar_opp_involutive.
   apply: Rbar_le_lt_trans (H _ Hy).
-  simpl ; apply Rbar_finite_le.
   apply Rabs_maj2.
   apply: Rbar_le_lt_trans (H _ Hy).
-  apply Rbar_finite_le, Rle_abs.
+  apply Rle_abs.
   move => z Hz Hz'.
   rewrite Derive_PSeries.
   apply PSeries_ext ; rewrite /PS_derive /PS_Int => n ; rewrite S_INR.

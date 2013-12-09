@@ -2149,7 +2149,7 @@ Proof.
   by [].
   case: (ub (Finite M)) => //.
   move => _ [x [-> Hx]].
-  by apply Rbar_finite_le, Hf.
+  by apply Hf.
   case: (lub (f((a+b)/2))) => //.
   exists ((a + b) / 2) ; split.
   by [].
@@ -2194,7 +2194,7 @@ Proof.
   split ; apply Rmult_lt_compat_r ; by intuition.
   case: (ub (Finite m)) => //.
   move => _ [x [-> Hx]].
-  by apply Rbar_finite_le, Hf.
+  by apply Hf.
 Qed.
 
 (** SF_sup and SF_inf *)

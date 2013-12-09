@@ -58,9 +58,13 @@ Definition Rbar_lt (x y : Rbar) : Prop :=
     | m_infty, _ | _, p_infty => True
     | Finite x, Finite y => Rlt x y
   end.
-Definition Rbar_gt x y := (Rbar_lt y x).
-Definition Rbar_le x y := (Rbar_lt x y \/ x = y).
-Definition Rbar_ge x y := (Rbar_le y x).
+
+Definition Rbar_le (x y : Rbar) : Prop :=
+  match x,y with
+    | m_infty, _ | _, p_infty => True
+    | p_infty, _ | _, m_infty => False
+    | Finite x, Finite y => Rle x y
+  end.
 
 (** ** Operations *)
 (** *** Additive operators *)
@@ -176,47 +180,71 @@ Lemma Rbar_finite_neq (x y : R) :
 Proof.
   split => H ; contradict H ; by apply Rbar_finite_eq.
 Qed.
-Lemma Rbar_finite_lt (x y : R) :
-  Rbar_lt (Finite x) (Finite y) <-> x < y.
-Proof.
-  split ; intuition.
-Qed.
-Lemma Rbar_finite_le (x y : R) :
-  Rbar_le (Finite x) (Finite y) <-> x <= y.
-Proof.
-  split ; intros.
-  destruct H.
-  apply Rlt_le, (Rbar_finite_lt _ _), H.
-  apply Req_le, (Rbar_finite_eq _ _), H.
-  destruct H.
-  left ; apply (Rbar_finite_lt _ _), H.
-  right ; apply (Rbar_finite_eq _ _), H.
-Qed.
-Lemma Rbar_finite_gt (x y : R) :
-  Rbar_gt (Finite x) (Finite y) <-> x > y.
-Proof.
-  intros.
-  apply (Rbar_finite_lt y x).
-Qed.
-Lemma Rbar_finite_ge (x y : R) :
-  Rbar_ge (Finite x) (Finite y) <-> x >= y.
-Proof.
-  split ; intros.
-  apply Rle_ge, (Rbar_finite_le y x), H.
-  destruct H.
-  left ; apply (Rbar_finite_lt _ _), H.
-  right ; apply sym_eq, (Rbar_finite_eq _ _), H.
-Qed.
 
 (** * Properties of order *)
+
+(** ** Relations between inequalities *)
+
+Lemma Rbar_lt_not_eq (x y : Rbar) :
+  Rbar_lt x y -> x<>y.
+Proof.
+  destruct x ; destruct y ; simpl ; try easy.
+  intros H H0.
+  apply Rbar_finite_eq in H0 ; revert H0 ; apply Rlt_not_eq, H.
+Qed.
+
+Lemma Rbar_not_le_lt (x y : Rbar) :
+  ~ Rbar_le x y -> Rbar_lt y x.
+Proof.
+  destruct x ; destruct y ; simpl ; intuition.
+Qed.
+
+Lemma Rbar_lt_not_le (x y : Rbar) :
+  Rbar_lt y x -> ~ Rbar_le x y.
+Proof.
+  destruct x ; destruct y ; simpl ; intuition.
+  apply (Rlt_irrefl r0).
+  now apply Rlt_le_trans with (1 := H).
+Qed.
+
+Lemma Rbar_not_lt_le (x y : Rbar) :
+  ~ Rbar_lt x y -> Rbar_le y x.
+Proof.
+  destruct x ; destruct y ; simpl ; intuition.
+  now apply Rnot_lt_le.
+Qed.
+
+Lemma Rbar_le_not_lt (x y : Rbar) :
+  Rbar_le y x -> ~ Rbar_lt x y.
+Proof.
+  destruct x ; destruct y ; simpl ; intuition ; contradict H0.
+  now apply Rle_not_lt.
+Qed.
+
+Lemma Rbar_le_refl :
+  forall x : Rbar, Rbar_le x x.
+Proof.
+intros [x| |] ; try easy.
+apply Rle_refl.
+Qed.
+
+Lemma Rbar_lt_le :
+  forall x y : Rbar,
+  Rbar_lt x y -> Rbar_le x y.
+Proof.
+  intros [x| |] [y| |] ; try easy.
+  apply Rlt_le.
+Qed.
+
 (** ** Decidability *)
 
 Lemma Rbar_total_order (x y : Rbar) :
-  {Rbar_lt x y} + {x = y} + {Rbar_gt x y}.
+  {Rbar_lt x y} + {x = y} + {Rbar_lt y x}.
 Proof.
   destruct x ; destruct y ; simpl ; intuition.
   destruct (total_order_T r r0) ; intuition.
 Qed.
+
 Lemma Rbar_eq_dec (x y : Rbar) :
   {x = y} + {x <> y}.
 Proof.
@@ -236,94 +264,57 @@ Lemma Rbar_lt_dec (x y : Rbar) :
   {Rbar_lt x y} + {~Rbar_lt x y}.
 Proof.
   destruct (Rbar_total_order x y) as [H|H] ; [ destruct H as [H|H]|].
-  left ; auto.
+  now left.
   right ; rewrite H ; clear H ; destruct y ; auto ; apply Rlt_irrefl ; auto.
   right ; revert H ; destruct x as [x | | ] ; destruct y as [y | | ] ; intros H ; auto ;
   apply Rle_not_lt, Rlt_le ; auto.
 Qed.
+
 Lemma Rbar_lt_le_dec (x y : Rbar) :
   {Rbar_lt x y} + {Rbar_le y x}.
 Proof.
   destruct (Rbar_total_order x y) as [[H|H]|H].
-  left ; auto.
-  right ; right ; auto.
-  right ; left ; auto.
+  now left.
+  right.
+  rewrite H.
+  apply Rbar_le_refl.
+  right.
+  now apply Rbar_lt_le.
 Qed.
 
 Lemma Rbar_le_dec (x y : Rbar) :
   {Rbar_le x y} + {~Rbar_le x y}.
 Proof.
   destruct (Rbar_total_order x y) as [[H|H]|H].
-  left ; left ; auto.
-  left ; rewrite H ; clear H ; destruct y as [y | | ] ; right ; auto.
-  right ; revert H ; destruct x as [x | | ] ; destruct y as [y | | ] ; auto ; intros H ;
-  contradict H ; destruct H as [H|H] ; auto ; [apply Rle_not_lt, Rlt_le ; auto |
-  apply Rbar_finite_eq in H ; rewrite H ; apply Rlt_irrefl | | | ].
-  rewrite H ; auto.
-  rewrite <- H ; auto.
-  rewrite H ; auto.
+  left.
+  now apply Rbar_lt_le.
+  left.
+  rewrite H.
+  apply Rbar_le_refl.
+  right.
+  now apply Rbar_lt_not_le.
 Qed.
+
 Lemma Rbar_le_lt_dec (x y : Rbar) :
   {Rbar_le x y} + {Rbar_lt y x}.
 Proof.
   destruct (Rbar_total_order x y) as [[H|H]|H].
-  left ; left ; auto.
-  left ; rewrite H ; right ; auto.
-  right ; auto.
+  left.
+  now apply Rbar_lt_le.
+  left.
+  rewrite H.
+  apply Rbar_le_refl.
+  now right.
 Qed.
 
-(** ** Relations between inequalities *)
-
-Lemma Rbar_lt_not_eq (x y : Rbar) :
-  Rbar_lt x y -> x<>y.
+Lemma Rbar_le_lt_or_eq_dec (x y : Rbar) :
+  Rbar_le x y -> { Rbar_lt x y } + { x = y }.
 Proof.
-  destruct x ; destruct y ; simpl ; try easy.
-  intros H H0.
-  apply Rbar_finite_eq in H0 ; revert H0 ; apply Rlt_not_eq, H.
-Qed.
-
-Lemma Rbar_not_le_lt (x y : Rbar) :
-  ~ Rbar_le x y -> Rbar_lt y x.
-Proof.
-  destruct x ; destruct y ; simpl ; intuition.
-  apply Rnot_le_lt. contradict H. apply (Rbar_finite_le _ _), H.
-  apply H ; left ; apply I.
-  apply H ; right ; reflexivity.
-  apply H ; left ; apply I.
-  apply H ; left ; apply I.
-  apply H ; right ; reflexivity.
-Qed.
-Lemma Rbar_lt_not_le (x y : Rbar) :
-  Rbar_lt y x -> ~ Rbar_le x y.
-Proof.
-  destruct x ; destruct y ; simpl ; intuition ;
-  [ | destruct H0 | destruct H0 | destruct H0] ; try easy.
-  contradict H ; apply Rle_not_lt, (Rbar_finite_le _ _), H0.
-Qed.
-Lemma Rbar_not_lt_le (x y : Rbar) :
-  ~ Rbar_lt x y -> Rbar_le y x.
-Proof.
-  destruct x ; destruct y ; simpl ; intuition.
-  apply (Rbar_finite_le _ _), (Rnot_lt_le _ _ H).
-  left ; simpl ; auto.
-  left ; simpl ; auto.
-  right ; reflexivity.
-  left ; simpl ; auto.
-  right ; reflexivity.
-Qed.
-Lemma Rbar_le_not_lt (x y : Rbar) :
-  Rbar_le y x -> ~ Rbar_lt x y.
-Proof.
-  destruct x ; destruct y ; simpl ; intuition ; contradict H0.
-  apply Rle_not_lt, (Rbar_finite_le _ _), H.
-  now destruct H.
-  now destruct H.
-  now destruct H.
-Qed.
-Lemma Rbar_lt_le (x y : Rbar) :
-  Rbar_lt x y -> Rbar_le x y.
-Proof.
-  intros ; left ; apply H.
+  destruct (Rbar_total_order x y) as [[H|H]|H].
+  now left.
+  now right.
+  intros K.
+  now elim (Rbar_le_not_lt _ _ K).
 Qed.
 
 (** ** Transitivity *)
@@ -331,70 +322,35 @@ Qed.
 Lemma Rbar_lt_trans (x y z : Rbar) :
   Rbar_lt x y -> Rbar_lt y z -> Rbar_lt x z.
 Proof.
-  destruct x ; destruct y ; destruct z ; intuition.
-  apply (Rbar_finite_lt _ _), Rlt_trans with (r2 := r0).
-  apply (Rbar_finite_lt _ _), H.
-  apply (Rbar_finite_lt _ _), H0.
-  contradict H0.
-  contradict H.
+  destruct x ; destruct y ; destruct z ; simpl ; intuition.
+  now apply Rlt_trans with r0.
 Qed.
+
 Lemma Rbar_lt_le_trans (x y z : Rbar) :
   Rbar_lt x y -> Rbar_le y z -> Rbar_lt x z.
 Proof.
   destruct x ; destruct y ; destruct z ; simpl ; intuition.
-  apply (Rbar_finite_lt _ _), Rlt_le_trans with (r2 := r0).
-  apply (Rbar_finite_lt _ _), H.
-  apply (Rbar_finite_le _ _), H0.
-  now destruct H0 as [H1|H1] ; contradict H1.
-  now destruct H0 as [H1|H1] ; contradict H1.
-  now destruct H0 as [H1|H1] ; contradict H1.
-  now destruct H0 as [H1|H1] ; contradict H1.
-  now destruct H0 as [H1|H1] ; contradict H1.
+  now apply Rlt_le_trans with r0.
 Qed.
+
 Lemma Rbar_le_lt_trans (x y z : Rbar) :
   Rbar_le x y -> Rbar_lt y z -> Rbar_lt x z.
 Proof.
   destruct x ; destruct y ; destruct z ; simpl ; intuition.
-  apply (Rbar_finite_lt _ _), Rle_lt_trans with (r2 := r0).
-  apply (Rbar_finite_le _ _), H.
-  apply H0.
-  now destruct H as [H1|H1] ; contradict H1.
-  now destruct H as [H1|H1] ; contradict H1.
-  now destruct H as [H1|H1] ; contradict H1.
-  now destruct H as [H1|H1] ; contradict H1.
-  now destruct H as [H1|H1] ; contradict H1.
+  now apply Rle_lt_trans with r0.
 Qed.
+
 Lemma Rbar_le_trans (x y z : Rbar) :
   Rbar_le x y -> Rbar_le y z -> Rbar_le x z.
 Proof.
-  intros ; destruct H.
-  left ; apply Rbar_lt_le_trans with (1 := H), H0.
-  rewrite H ; apply H0.
+  destruct x ; destruct y ; destruct z ; simpl ; intuition.
+  now apply Rle_trans with r0.
 Qed.
+
 Lemma Rbar_le_antisym (x y : Rbar) :
   Rbar_le x y -> Rbar_le y x -> x = y.
 Proof.
   destruct x ; destruct y ; simpl ; intuition.
-  apply (Rbar_finite_eq _ _), Rle_antisym ; apply (Rbar_finite_le _ _) ; [apply H|apply H0].
-  now destruct H0 ; contradict H0.
-  now destruct H ; contradict H.
-  now destruct H ; contradict H.
-  now destruct H ; contradict H.
-  now destruct H0 ; contradict H0.
-  now destruct H0 ; contradict H0.
-Qed.
-
-(** Other *)
-
-Lemma Rbar_le_p_infty (x : Rbar) : Rbar_le x p_infty.
-Proof.
-  case: x => [x | | ] ; try by left.
-  by right.
-Qed.
-Lemma Rbar_le_m_infty (x : Rbar) : Rbar_le m_infty x.
-Proof.
-  case: x => [x | | ] ; try by left.
-  by right.
 Qed.
 
 (** * Properties of operations *)
@@ -405,6 +361,7 @@ Lemma Rbar_opp_involutive (x : Rbar) : (Rbar_opp (Rbar_opp x)) = x.
 Proof.
   destruct x as [x| | ] ; auto ; simpl ; rewrite Ropp_involutive ; auto.
 Qed.
+
 Lemma Rbar_opp_lt (x y : Rbar) : Rbar_lt (Rbar_opp x) (Rbar_opp y) <-> Rbar_lt y x.
 Proof.
   destruct x as [x | | ] ; destruct y as [y | | ] ;
@@ -412,14 +369,12 @@ Proof.
   apply Ropp_lt_cancel ; auto.
   apply Ropp_lt_contravar ; auto.
 Qed.
+
 Lemma Rbar_opp_le (x y : Rbar) : Rbar_le (Rbar_opp x) (Rbar_opp y) <-> Rbar_le y x.
 Proof.
-  split ; intros H ; destruct H.
-  apply Rbar_lt_le, Rbar_opp_lt, H.
-  right ; rewrite <- (Rbar_opp_involutive x), H, Rbar_opp_involutive ; reflexivity.
-  apply Rbar_lt_le, Rbar_opp_lt, H.
-  rewrite H ; right ; intuition.
+  destruct x as [x| |] ; destruct y as [y| |] ; simpl ; intuition.
 Qed.
+
 Lemma Rbar_opp_eq (x y : Rbar) : (Rbar_opp x) = (Rbar_opp y) <-> x = y.
 Proof.
   split ; intros H.
@@ -459,7 +414,9 @@ Qed.
 
 Lemma Rbar_plus_comm (x y : Rbar) : Rbar_plus x y = Rbar_plus y x.
 Proof.
-  case x ; case y ; intuition ; simpl ; rewrite Rplus_comm ; auto.
+  case x ; case y ; intuition.
+  simpl.
+  apply f_equal, Rplus_comm.
 Qed.
 
 Lemma Rbar_plus_lt_compat (a b c d : Rbar) :
@@ -469,28 +426,17 @@ Proof.
   case: c => [c | | ] // ; case: d => [d | | ] // ;
   apply Rplus_lt_compat.
 Qed.
-Lemma Rbar_plus_lt_le_compat (a b c d : Rbar) :
-  Rbar_lt a b -> Rbar_le c d -> Rbar_le (Rbar_plus a c) (Rbar_plus b d).
-Proof.
-  case: a => [a | | ] // ; case: b => [b | | ] // ;
-  case: c => [c | | ] // ; case: d => [d | | ] // Hab ;
-  case => Hcd // ; rewrite ?Hcd //= ; try by left.
-  left ; by apply Rplus_lt_compat.
-  left ; by apply Rplus_lt_compat_r.
-Qed.
-Lemma Rbar_plus_le_lt_compat (a b c d : Rbar) :
-  Rbar_le a b -> Rbar_lt c d -> Rbar_le (Rbar_plus a c) (Rbar_plus b d).
-Proof.
-  move => Hab Hcd ; rewrite (Rbar_plus_comm a c) (Rbar_plus_comm b d) ;
-  by apply Rbar_plus_lt_le_compat.
-Qed.
+
 Lemma Rbar_plus_le_compat (a b c d : Rbar) :
   Rbar_le a b -> Rbar_le c d -> Rbar_le (Rbar_plus a c) (Rbar_plus b d).
 Proof.
-  case => [Hab | ->].
-  by apply Rbar_plus_lt_le_compat.
-  case => [Hcd | ->] ; try by right.
-  apply Rbar_plus_le_lt_compat => // ; by right.
+  case: a => [a | | ] // ; case: b => [b | | ] // ;
+  case: c => [c | | ] // ; case: d => [d | | ] //.
+  apply Rplus_le_compat.
+  intros _ _.
+  apply Rle_refl.
+  intros _ _.
+  apply Rle_refl.
 Qed.
 
 Lemma Rbar_plus_opp (x y : Rbar) :
@@ -618,11 +564,11 @@ Qed.
 Lemma Rbar_mult_pos_le (x y : Rbar) (z : posreal) :
   Rbar_le x y <-> Rbar_le (Rbar_mult_pos x z) (Rbar_mult_pos y z).
 Proof.
-  split ; case => H.
-  left ; by apply Rbar_mult_pos_lt.
-  right ; by apply Rbar_mult_pos_eq.
-  left ; by apply Rbar_mult_pos_lt with z.
-  right ; by apply Rbar_mult_pos_eq with z.
+  case: z => z Hz ; case: x => [x | | ] ; case: y => [y | | ] ;
+  split => //= H.
+  apply Rmult_le_compat_r with (2 := H).
+  now apply Rlt_le.
+  now apply Rmult_le_reg_r with (2 := H).
 Qed.
 
 (** Rbar_div_pos *)
@@ -649,11 +595,12 @@ Qed.
 Lemma Rbar_div_pos_le (x y : Rbar) (z : posreal) :
   Rbar_le x y <-> Rbar_le (Rbar_div_pos x z) (Rbar_div_pos y z).
 Proof.
-  split ; case => H.
-  left ; by apply Rbar_div_pos_lt.
-  right ; by apply Rbar_div_pos_eq.
-  left ; by apply Rbar_div_pos_lt with z.
-  right ; by apply Rbar_div_pos_eq with z.
+  case: z => z Hz ; case: x => [x | | ] ; case: y => [y | | ] ;
+  split => //= H.
+  apply Rmult_le_compat_r with (2 := H).
+  now apply Rlt_le, Rinv_0_lt_compat.
+  apply Rmult_le_reg_r with (2 := H).
+  now apply Rinv_0_lt_compat.
 Qed.
 
 (** * Rbar_min *)
@@ -669,8 +616,6 @@ Lemma Rbar_finite_min (x y : R) :
 Proof.
   rewrite /Rbar_min /Rmin.
   case: Rbar_le_dec ; case: Rle_dec => // Hf Hi.
-  by apply Rbar_finite_le in Hi.
-  by apply Rbar_finite_le in Hf.
 Qed.
 
 Lemma Rbar_lt_locally (a b : Rbar) (x : R) :
@@ -697,42 +642,41 @@ Proof.
   apply Rplus_lt_reg_r with (-x).
   replace (a+-x) with (-(x-a)) by ring.
   apply (Rabs_lt_between (y - x)).
-  apply Rlt_le_trans with (1 := Hy), Rbar_finite_le.
+  apply Rlt_le_trans with (1 := Hy).
+  change (Rbar_le d (x - a)).
   rewrite -Hd_val /Rbar_min ; case: Rbar_le_dec => // H.
   by right.
   by apply Rbar_lt_le, Rbar_not_le_lt.
   apply Rplus_lt_reg_r with (-x).
   rewrite ?(Rplus_comm (-x)).
   apply (Rabs_lt_between (y - x)).
-  apply Rlt_le_trans with (1 := Hy), Rbar_finite_le.
+  apply Rlt_le_trans with (1 := Hy).
+  change (Rbar_le d (b - x)).
   rewrite -Hd_val /Rbar_min ; case: Rbar_le_dec => // H.
   by right.
   apply Rplus_lt_reg_r with (-x).
   replace (a+-x) with (-(x-a)) by ring.
   apply (Rabs_lt_between (y - x)).
-  apply Rlt_le_trans with (1 := Hy), Rbar_finite_le.
+  apply Rlt_le_trans with (1 := Hy).
+  change (Rbar_le d (x - a)).
   rewrite -Hd_val /Rbar_min ; case: Rbar_le_dec => // H.
   by right.
-  by apply Rbar_lt_le, Rbar_not_le_lt.
   apply Rplus_lt_reg_r with (-x).
   rewrite ?(Rplus_comm (-x)).
   apply (Rabs_lt_between (y - x)).
-  apply Rlt_le_trans with (1 := Hy), Rbar_finite_le.
+  apply Rlt_le_trans with (1 := Hy).
+  change (Rbar_le d (b - x)).
   rewrite -Hd_val /Rbar_min ; case: Rbar_le_dec => // H.
   by right.
 (* d = p_infty *)
   exists (mkposreal _ Rlt_0_1) => y Hy ; simpl in Hy.
   case: a b Hax Hxb Hd_val => [a | | ] ;
   case => [b | | ] //= Hax Hxb ;
-  rewrite /Rbar_min ; case: Rbar_le_dec => //= H Hd_val ;
-  try apply Rbar_not_le_lt in H.
-  by [].
-  by case: H.
+  rewrite /Rbar_min ; case: Rbar_le_dec => //.
 (* d = m_infty *)
   case: a b Hax Hxb Hd_val => [a | | ] ;
   case => [b | | ] //= Hax Hxb ;
-  rewrite /Rbar_min ; case: Rbar_le_dec => //= H Hd_val ;
-  try apply Rbar_not_le_lt in H.
+  rewrite /Rbar_min ; case: Rbar_le_dec => //.
 Qed.
 
 Lemma Rbar_min_comm (x y : Rbar) : Rbar_min x y = Rbar_min y x.
@@ -745,9 +689,8 @@ Qed.
 
 Lemma Rbar_min_r (x y : Rbar) : Rbar_le (Rbar_min x y) y.
 Proof.
-  rewrite /Rbar_min ; case: Rbar_le_dec => H.
-  by [].
-  by right.
+  rewrite /Rbar_min ; case: Rbar_le_dec => H //.
+  apply Rbar_le_refl.
 Qed.
 
 Lemma Rbar_min_l (x y : Rbar) : Rbar_le (Rbar_min x y) x.
