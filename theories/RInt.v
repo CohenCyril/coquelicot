@@ -1556,7 +1556,8 @@ Lemma RInt_norm {V} {VV : NormedVectorSpace V R}
     -> norm lf <= lg.
 Proof.
   intros Hab H Hf Hg.
-  apply Rbar_finite_le, filterlim_le 
+  change (Rbar_le (norm lf) lg).
+  apply filterlim_le
     with (fun ptd : SF_seq => norm (scal (sign (b - a)) (Riemann_sum f ptd)))
       (fun ptd : SF_seq => scal (sign (b - a)) (Riemann_sum g ptd)).
   3: apply Hg.
@@ -3502,7 +3503,7 @@ have Hfin : forall i, (S i < size (unif_part a b n))%nat ->
   by [].
   case: (lub (Finite (Rmax (M - m') (-(-M - M'))))) => //.
   move => _ [x [-> Hx]].
-  apply Rbar_finite_le, Rabs_le_between_Rmax.
+  apply Rabs_le_between_Rmax.
   suff H2 : Rmin a b <= x <= Rmax a b.
   split ; apply Rplus_le_compat, Ropp_le_contravar.
   apply Ropp_le_cancel, Rle_trans with (Rabs (f x)).
@@ -3564,7 +3565,8 @@ have Hfin' : forall t, is_finite (SF_sup_fun (fun t : R => Rabs (f t - phi t)) a
   rewrite /= /psi2_aux /= ; case: (Haux t) => [ [i Hi] | Hi ] ;
   ring_simplify.
   exact: Rle_refl.
-  apply Rbar_finite_le ; rewrite Hfin'.
+  change (Rbar_le (Rabs (f t - phi t)) (real (SF_sup_fun (fun t0 : R => Rabs (f t0 - phi t0)) a b n t))).
+  rewrite Hfin'.
   rewrite /SF_sup_fun ; case: Rle_dec (Rlt_le _ _ Hab) => // _ _.
   rewrite /SF_fun /SF_sup_seq.
   move: (unif_part_sort a b n (Rlt_le _ _ Hab)).
@@ -4053,7 +4055,7 @@ have Hfin' : forall t, is_finite (SF_sup_fun (fun t : R => Rabs (f t - phi t)) a
   case => [l | | ] [ub lub] /=.
   apply Rle_trans with (Rabs (f ((x0+x1)/2) - phi ((x0+x1)/2))).
   apply Rabs_pos.
-  apply Rbar_finite_le, ub.
+  apply ub.
   exists ((x0+x1)/2) ; split.
   by [].
   rewrite /Rmin /Rmax ; case: Rle_dec (proj1 Hsort) => // _ _.
@@ -4181,7 +4183,7 @@ have Hfin' : forall t, is_finite (SF_sup_fun (fun t : R => Rabs (f t - phi t)) a
     move => _ [t [Ht ->]].
     apply Rmult_le_compat_r.
     apply -> Rminus_le_0 ; apply Hle.
-    apply Rbar_finite_le, ub ; exists t ; split.
+    apply ub ; exists t ; split.
     by [].
     rewrite /Rmin /Rmax ; case: Rle_dec (proj1 Hle) => // _ _ ;
     by intuition.
@@ -4191,8 +4193,8 @@ have Hfin' : forall t, is_finite (SF_sup_fun (fun t : R => Rabs (f t - phi t)) a
       (field ; by apply Rgt_not_eq).
     apply Rmult_le_compat_r.
     by apply Rlt_le.
-    apply Rbar_finite_le, lub => _ [t [-> Ht]].
-    apply Rbar_finite_le.
+    change (Rbar_le l (b0 / (x2 - x1))).
+    apply lub => _ [t [-> Ht]].
     replace (Rabs (f t - phi t)) with ((Rabs (f t - phi t) * (x2 - x1)) / (x2 - x1))
       by (field ; by apply Rgt_not_eq).
     apply Rmult_le_compat_r.
@@ -4671,34 +4673,34 @@ rewrite Rmax_right in Df Cdf; try exact Hab.
 
 wlog : f Df Cdf /((forall x, ex_derive f x) /\ (forall x, continuity_pt (Derive f) x))
   => [Hw | {Df Cdf} [Df Cdf]].
-  rewrite -?(extension_C1_ext f a b) ; try (apply Rbar_finite_le ; intuition).
+  rewrite -?(extension_C1_ext f a b) ; try apply Rle_refl ; try easy.
   rewrite -(RInt_ext (Derive (extension_C1 f a b))).
   apply Hw.
   move => x Hx.
   apply extension_C1_ex_derive.
-  by apply Rbar_finite_le.
+  exact Hab.
   move => y Hay Hyb.
-  apply Df ; split ; by apply Rbar_finite_le.
+  by apply Df.
   move => y Hy.
   apply extension_C1_Derive_cont.
-  by apply Rbar_finite_le.
+  exact Hab.
   move => x Hax Hxb ; split.
-  apply Df ; split ; by apply Rbar_finite_le.
-  apply Cdf ; split ; by apply Rbar_finite_le.
+  by apply Df.
+  by apply Cdf.
   split => x.
   apply extension_C1_ex_derive.
-  by apply Rbar_finite_le.
+  exact Hab.
   move => y Hay Hyb.
-  apply Df ; split ; by apply Rbar_finite_le.
+  by apply Df.
   apply extension_C1_Derive_cont.
-  by apply Rbar_finite_le.
+  exact Hab.
   move => y Hay Hyb ; split.
-  apply Df ; split ; by apply Rbar_finite_le.
-  apply Cdf ; split ; by apply Rbar_finite_le.
+  by apply Df.
+  by apply Cdf.
   rewrite /Rmin /Rmax ; case: Rle_dec => // _ x Hx.
   apply is_derive_unique, extension_C1_is_derive.
-  by apply Rbar_finite_le, Hx.
-  by apply Rbar_finite_le, Hx.
+  apply Hx.
+  apply Hx.
   apply Derive_correct.
   by apply Df.
 
@@ -4805,31 +4807,29 @@ Proof.
     apply f_equal2.
     apply is_derive_unique.
     apply extension_C1_is_derive.
-    by apply Rbar_finite_le, Hx.
-    by apply Rbar_finite_le, Hx.
+    apply Hx.
+    apply Hx.
     by apply Derive_correct, Hg.
     apply f_equal.
     apply extension_C1_ext.
-    by apply Rbar_finite_le, Hx.
-    by apply Rbar_finite_le, Hx.
+    apply Hx.
+    apply Hx.
     have Hg0 : forall x : R, ex_derive g0 x /\ continuity_pt (Derive g0) x.
     move => x ; rewrite /g0 ; split.
     apply extension_C1_ex_derive.
     by left.
-    move => y Hay Hyb ; apply Hg.
-    split ; by apply Rbar_finite_le.
+    by move => y Hay Hyb ; apply Hg.
     apply extension_C1_Derive_cont.
     by left.
     move => y Hay Hyb.
-    apply Hg.
-    split ; by apply Rbar_finite_le.
+    by apply Hg.
     apply Hw.
     by apply Hg0.
     move => x Hx.
     rewrite /g0 extension_C1_ext.
     by apply Hf.
-    by apply Rbar_finite_le, Hx.
-    by apply Rbar_finite_le, Hx.
+    apply Hx.
+    apply Hx.
     move => x Hx.
     by apply Hg0.
   wlog: f Hf / (forall x, continuity_pt f x) => [Hw | {Hf} Hf].

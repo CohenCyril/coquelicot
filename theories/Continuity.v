@@ -829,11 +829,9 @@ destruct Hex as [x' Hx'].
 assert (Hax : Rbar_lt a x).
   apply Rbar_lt_le_trans with x'.
   apply Hx'.
-  apply Rbar_finite_le.
   now apply Hub.
 assert (Hxb : Rbar_lt x b).
   apply Rbar_le_lt_trans with b'.
-  apply Rbar_finite_le.
   now apply Hlub.
   exact Hb.
 repeat split ; try assumption.

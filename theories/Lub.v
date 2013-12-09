@@ -65,15 +65,13 @@ Qed.
 Lemma Rbar_ub_p_infty (E : Rbar -> Prop) :
   Rbar_is_upper_bound E p_infty.
 Proof.
-  move => x Hx.
-  by apply Rbar_le_p_infty.
+  now intros [x| |] Hx.
 Qed.
 
 Lemma Rbar_lb_m_infty (E : Rbar -> Prop) :
   Rbar_is_lower_bound E m_infty.
 Proof.
-  move => x Hx.
-  by apply Rbar_le_m_infty.
+  easy.
 Qed.
 
 Lemma Rbar_ub_Finite (E : Rbar -> Prop) (l : R) :
@@ -81,7 +79,7 @@ Lemma Rbar_ub_Finite (E : Rbar -> Prop) (l : R) :
     is_upper_bound (fun (x : R) => E x) l.
 Proof.
   intros H x Ex.
-  apply Rbar_finite_le, H ; auto.
+  now apply (H (Finite x)).
 Qed.
 
 Lemma Rbar_lb_Finite (E : Rbar -> Prop) (l : R) :
@@ -89,15 +87,14 @@ Lemma Rbar_lb_Finite (E : Rbar -> Prop) (l : R) :
 Proof.
   intros H x Ex.
   apply Ropp_le_cancel ; rewrite Ropp_involutive ;
-  apply Rbar_finite_le, H ; auto.
+  now apply (H (Finite (-x))).
 Qed.
 
 Lemma Rbar_ub_m_infty (E : Rbar -> Prop) :
   Rbar_is_upper_bound E m_infty -> forall x, E x -> x = m_infty.
 Proof.
-  intros H x ;
-  destruct x as [x | | ] ; intro Hx ;
-  destruct (H _ Hx) as [H0|H0] ; simpl in H0 ; intuition.
+  intros H [x| |] Hx ;
+  now specialize (H _ Hx).
 Qed.
 
 Lemma Rbar_lb_p_infty (E : Rbar -> Prop) :
@@ -140,13 +137,13 @@ Proof.
   cut ({N : nat | forall n, (g n <= INR N)} + {(forall N, exists n, (INR N < g n))}).
   intro H ; destruct H as[(N, H) | H].
   left ; exists (INR N) ; intros x Hx ; destruct x as [x | | ] ; intuition.
-  apply Rbar_finite_le ; case (Rlt_le_dec 0 x) ; intro Hx0.
+  case (Rlt_le_dec 0 x) ; intro Hx0.
   apply Rle_trans with (2 := H (S (nfloor1 _ Hx0))) ; clear H ;
   unfold nfloor1 ; case (nfloor1_ex _ _) ; simpl ; intros n Hn ;
   unfold g ; case (completeness _ _ _) ; intros l (Hl, Hl') ; apply Hl ;
   right ; intuition ; rewrite S_INR ; apply H0.
   apply Rle_trans with (1 := Hx0), pos_INR.
-  left ; simpl ; auto.
+  easy.
   right ; intro M ; case (Rlt_le_dec 0 M) ; intro Hm0.
   case (H (S (nfloor1 M Hm0))) ; clear H ; intros n Hn.
   contradict Hn.
@@ -155,12 +152,12 @@ Proof.
   unfold g ; case (completeness _ _ _) ; simpl ; intros x (Hx, Hx').
   apply Hx' ; intros x0 Hx0 ; case Hx0 ; clear Hx0 ; intros Hx0.
   rewrite Hx0 ; apply Rlt_le, Hm0.
-  apply Rbar_finite_le, (Hn (Finite x0)), Hx0.
+  apply (Hn (Finite x0)), Hx0.
   case (H O) ; clear H ; intros n Hn ; contradict Hn.
   unfold g ; case (completeness _ _ _) ; simpl ; intros m (Hm, Hm').
   apply Rle_not_lt, Hm' ; intros x Hx ; case Hx ; clear Hx ; intro Hx.
   apply Req_le, Hx.
-  apply Rle_trans with (2 := Hm0), Rbar_finite_le, Hn, Hx.
+  apply Rle_trans with (2 := Hm0), (Hn (Finite x)), Hx.
   cut ({n : nat | forall n0 : nat, g n0 <= INR n} +
   {(forall n : nat, ~ (forall n0 : nat, g n0 <= INR n))}).
   intro H ; destruct H as [(N, H)|H].
@@ -215,15 +212,14 @@ Lemma Rbar_ub_R_ub (E : R -> Prop) (l : R) :
   Rbar_is_upper_bound (fun x => is_finite x /\ E x) l
   <-> is_upper_bound E l.
 Proof.
-  split => [H x Hx | H x [<- Hx]] ; apply Rbar_finite_le, H => // ;
-  by exists x.
+  split => [H x Hx | H x [<- Hx]] ; apply (H (Finite x)) => //.
 Qed.
+
 Lemma Rbar_lb_R_lb (E : R -> Prop) (l : R) :
   Rbar_is_lower_bound (fun x => is_finite x /\ E x) (Finite l)
   <-> is_lower_bound E l.
 Proof.
-  split => [H x Hx | H x [<- Hx]] ; apply Rbar_finite_le, H => // ;
-  by exists x.
+  split => [H x Hx | H x [<- Hx]] ; apply (H (Finite x)) => //.
 Qed.
 
 Lemma u_bound_dec (E : R -> Prop) :
@@ -330,7 +326,7 @@ Proof.
   apply Rbar_ub_p_infty.
   intros b ; destruct b as [b | | ] ; intro ub.
   apply (ub _ Hp).
-  right ; auto.
+  easy.
   apply (ub _ Hp).
 (* ~ E p_infty *)
   case (Rbar_ub_dec _ Hp).
@@ -340,12 +336,12 @@ Proof.
   rename x into l ; destruct i as (ub,lub).
   exists (Finite l) ; split.
   intro x ; case x ; clear x ; [intro x | | ] ; intro Hx.
-  apply Rbar_finite_le, ub ; auto.
+  now apply ub.
   generalize (Hp Hx) ; intuition.
-  left ; simpl ; auto.
+  easy.
   intro b ; destruct b as [b | | ] ; intro Hb.
-  apply Rbar_finite_le, lub, Rbar_ub_Finite, Hb.
-  left ; simpl ; auto.
+  apply lub, Rbar_ub_Finite, Hb.
+  easy.
   generalize (Rbar_ub_m_infty _ Hb) ; clear Hb ; intro Hb.
   case Hex ; intros x Hx.
   discriminate (Hb _ Hx).
@@ -353,8 +349,8 @@ Proof.
   intro H ; exists p_infty ; split.
   apply Rbar_ub_p_infty.
   intro b ; destruct b as [b | | ] ; intro Hb.
-  contradict Hb ; auto.
-  right ; auto.
+  now contradict Hb.
+  easy.
   case Hex ; intros x Hx.
   generalize (Hb _ Hx) ; clear Hb Hx ; intro Hb.
   contradict Hb ; apply Rbar_lt_not_le ; simpl ; auto.
@@ -430,7 +426,7 @@ Proof.
   case Hex1 ; intros x Hex.
   apply Rbar_le_trans with (y := Finite x).
   unfold Rbar_glb_ne ; case (Rbar_ex_glb_ne _ _ _) ; simpl ; intros g (Hg, _) ; apply Hg ; auto.
-  unfold Rbar_lub_ne ; case (Rbar_ex_lub_ne _ _ _) ; simpl ; intros l (Hl, _) ; apply Hl ; auto.
+  unfold Rbar_lub_ne ; case (Rbar_ex_lub_ne _ _ _) ; simpl ; intros l (Hl, _) ; apply (Hl (Finite x)) ; auto.
 Qed.
 
 Lemma Rbar_is_lub_subset (E1 E2 : Rbar -> Prop) (l1 l2 : Rbar) :
@@ -671,26 +667,27 @@ Proof.
   case : (ex_lub_Rbar_ne (fun x : R => x = 0 \/ E x) (not_empty_0 E)) E0 => /= s0 Hs0 ;
   case : (ex_glb_Rbar_ne (fun x : R => x = 0 \/ E x) (not_empty_0 E)) => i0 Hi0 /= E0.
   have : (x = 0) ; last move => {s0 Hs0 i0 Hi0 E0}.
-  apply: Rle_antisym ; apply (Rbar_finite_le _ _).
-  apply Rbar_le_trans with (y := s0).
+  apply Rle_antisym.
+  apply (Rbar_le_trans x s0 0).
   apply Hs0 ; by right.
   rewrite E0 ; apply Hi0 ; by left.
-  apply Rbar_le_trans with (y := s0).
+  apply (Rbar_le_trans 0 s0 x).
   apply Hs0 ; by left.
   rewrite E0 ; apply Hi0 ; by right.
   rewrite /Lub_Rbar_ne /Glb_Rbar_ne in E1 ;
   case : (ex_lub_Rbar_ne (fun x : R => x = 1 \/ E x) (not_empty_1 E)) E1 => /= s1 Hs1 ;
   case : (ex_glb_Rbar_ne (fun x : R => x = 1 \/ E x) (not_empty_1 E)) => i1 Hi1 /= E1.
   have : (x = 1) ; last move => {s1 Hs1 i1 Hi1 E1}.
-  apply: Rle_antisym ; apply (Rbar_finite_le _ _).
-  apply Rbar_le_trans with (y := s1).
+  apply Rle_antisym.
+  apply (Rbar_le_trans x s1 1).
   apply Hs1 ; by right.
   rewrite E1 ; apply Hi1 ; by left.
-  apply Rbar_le_trans with (y := s1).
+  apply (Rbar_le_trans 1 s1 x).
   apply Hs1 ; by left.
   rewrite E1 ; apply Hi1 ; by right.
   move => -> ; apply R1_neq_R0.
 Qed.
+
 Lemma Empty_correct_2 (E : R -> Prop) :
   (forall x, ~ E x) -> Empty E.
 Proof.
@@ -755,11 +752,9 @@ Proof.
   exists l ; apply lub.
   exists m_infty ; split.
   intros x Ex ; contradict Ex ; apply n.
-  intros ; destruct b ; simpl.
-  left ; simpl ; auto.
-  left ; simpl ; auto.
-  right ; reflexivity.
+  now intros ; destruct b.
 Qed.
+
 Definition Lub_Rbar (E : R -> Prop) (pr : Decidable.decidable (exists x, E x)) :=
   projT1 (Lub_Rbar_ex E pr).
 
@@ -783,11 +778,9 @@ Proof.
   exists l ; apply lub.
   exists p_infty ; split.
   intros x Ex ; contradict Ex ; apply n.
-  intros ; destruct b ; simpl.
-  left ; simpl ; auto.
-  right ; reflexivity.
-  left ; simpl ; auto.
+  now intros ; destruct b.
 Qed.
+
 Definition Glb_Rbar (E : R -> Prop) (pr : Decidable.decidable (exists x, E x)) :=
   projT1 (Glb_Rbar_ex E pr).
 
@@ -815,7 +808,7 @@ Proof.
   apply f_equal, sym_eq, is_lub_Rbar_ne_unique.
   split.
   move => y Hy.
-  right ; by apply f_equal, sym_eq, Hx.
+  right ; by apply sym_eq, Hx.
   move => b Hb.
   by apply Hb, Hx.
 Qed.

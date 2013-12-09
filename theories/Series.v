@@ -392,7 +392,7 @@ Proof.
   replace (Lim_seq (sum_n (fun k : nat => Rabs (a k)))) with (Finite lra).
   simpl.
   apply (is_lim_seq_abs _ la) in Ha.
-  apply Rbar_finite_le.
+  change (Rbar_le (Rabs la) lra).
   eapply is_lim_seq_le with (2:=Ha).
   2: apply Hra.
   elim => [ | n IH] /=.
@@ -454,7 +454,6 @@ Proof.
   apply Lim_seq_correct' in Ha.
   apply Lim_seq_correct' in Hb.
   rewrite /Series.
-  apply Rbar_finite_le.
   move: Ha Hb ; apply is_lim_seq_le.
   elim => [ | n IH] /=.
   by apply Hn.

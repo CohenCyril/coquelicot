@@ -101,11 +101,11 @@ Proof.
   destruct l as [l | | ] ; intro Hl ; split.
 (* l = Finite l *)
   intro x ; destruct x as [x | | ] ; simpl ; intros (n, Hn).
-  apply Rbar_finite_le, le_epsilon ; intros e He ; set (eps := mkposreal e He) ;
-  apply Rbar_finite_le ; rewrite Hn ; apply Rbar_lt_le, (Hl eps).
-  generalize (proj1 (Hl (mkposreal _ Rlt_0_1)) n) ; clear Hl ; simpl ; intros Hl ; rewrite <-Hn in Hl ;
-  case Hl ; auto.
-  left ; simpl ; auto.
+  apply le_epsilon ; intros e He ; set (eps := mkposreal e He).
+  change (Rbar_le x (l + e)).
+  rewrite Hn ; apply Rbar_lt_le, (Hl eps).
+  now generalize (proj1 (Hl (mkposreal _ Rlt_0_1)) n) ; clear Hl ; simpl ; intros Hl ; rewrite <-Hn in Hl.
+  easy.
   intros b ; destruct b as [b | | ] ; intros Hb ; apply Rbar_not_lt_le ; auto ; intros He.
   set (eps := mkposreal _ (Rlt_Rminus _ _ He)) ; case (proj2 (Hl eps)) ; clear Hl ; intros n.
   apply Rbar_le_not_lt ; assert (l - eps = b) .
@@ -121,7 +121,7 @@ Proof.
   intro b ; destruct b as [b | | ] ; simpl ; intro Hb.
   case (Hl b) ; clear Hl ; intros n Hl.
   contradict Hl ; apply Rbar_le_not_lt, Hb ; exists n ; auto.
-  right ; auto.
+  easy.
   generalize (Rbar_ub_m_infty _ Hb) ; clear Hb ; intro Hb.
   case (Hl 0) ; clear Hl; intros n Hl.
   assert (H : (exists n0 : nat, u n = u n0)).
@@ -129,14 +129,10 @@ Proof.
   generalize (Hb (u n) H) Hl ; clear Hl ; now case (u n).
 (* l = m_infty *)
   intro x ; destruct x as [x | | ] ; intros (n, Hx).
-  generalize (Hl x n) ; clear Hl ; intro Hl ; rewrite <-Hx in Hl ; apply Rbar_finite_lt, Rlt_irrefl in Hl ; intuition.
+  generalize (Hl x n) ; clear Hl ; intro Hl ; rewrite <-Hx in Hl ; apply Rlt_irrefl in Hl ; intuition.
   generalize (Hl 0 n) ; rewrite <-Hx ; intuition.
-  simpl in H ; intuition.
-  right ; auto.
-  intros b ; destruct b as [b | | ] ; simpl ; intro Hb.
-  left ; simpl ; auto.
-  left ; simpl ; auto.
-  right ; auto.
+  easy.
+  now intros b ; destruct b as [b | | ].
 Qed.
 
 Lemma Rbar_is_lub_sup_seq (u : nat -> Rbar) (l : Rbar) :
@@ -412,7 +408,7 @@ Proof.
     case: (u n) => [un | | ] ; case: (l) => [l' | | ] /= ; try (by case) ;
     try (case: Rle_dec (Rlt_le _ _ Ha) => //= Ha' _ ;
     case: Rle_lt_or_eq_dec (Rlt_not_eq _ _ Ha) => //= _ _ _ ; by left).
-  move/Rbar_finite_le => H ; apply Rbar_finite_le, Rmult_le_compat_l => // ;
+  intros H ; apply Rmult_le_compat_l => // ;
   by apply Rlt_le.
   apply Hu.
   by exists n.
@@ -421,9 +417,8 @@ Proof.
   case: (al) => [al' | | ] ; case: (l) => [l' | | ] /= ; try (by case) ;
     try (case: Rle_dec (Rlt_le _ _ Ha) => //= Ha' _ ;
     case: Rle_lt_or_eq_dec (Rlt_not_eq _ _ Ha) => //= _ _ _ ; by left).
-  move/Rbar_finite_le => H ; rewrite Rmult_comm ;
-  apply Rbar_finite_le, Rle_div_r => //.
-  move => _ ; by left.
+  intros H ; rewrite Rmult_comm ;
+  apply Rle_div_r => //.
   apply is_sup_seq_lub in Hau.
   apply is_sup_seq_lub in Hu.
   apply Hu => _ [n ->].
@@ -431,9 +426,8 @@ Proof.
     case: (u n) => [un | | ] ; case: (al) => [al' | | ] /= ; try (by case) ;
     try (case: Rle_dec (Rlt_le _ _ Ha) => //= Ha' _ ;
     case: Rle_lt_or_eq_dec (Rlt_not_eq _ _ Ha) => //= _ _ ; try (by case) ; by left).
-  move/Rbar_finite_le => H ; rewrite Rmult_comm in H ;
-  apply Rbar_finite_le, Rle_div_r => //.
-  move => _ ; by left.
+  intros H ; rewrite Rmult_comm in H ;
+  apply Rle_div_r => //.
   apply Hau.
   by exists n.
   
@@ -512,9 +506,9 @@ Qed.
 Lemma Inf_le_sup (u : nat -> Rbar) : Rbar_le (Inf_seq u) (Sup_seq u).
 Proof.
   rewrite /Inf_seq ; case: (ex_inf_seq _) ; case => [iu | | ] Hiu ;
-  rewrite /Sup_seq ; case: (ex_sup_seq _) ; case => [su | | ] Hsu /=.
+  rewrite /Sup_seq ; case: (ex_sup_seq _) ; case => [su | | ] Hsu //=.
 (* Finite, Finite *)
-  apply Rbar_finite_le, le_epsilon => e He ; set eps := mkposreal e He ;
+  apply le_epsilon => e He ; set eps := mkposreal e He ;
   case: (Hiu (pos_div_2 eps)) => {Hiu} Hiu _ ;
   case: (Hsu (pos_div_2 eps)) => {Hsu} Hsu _ ;
   apply Rlt_le.
@@ -522,45 +516,30 @@ Proof.
   move => -> ; have : (su+e = su + e/2 + e/2) ; first by field.
   by move => -> ; apply Rplus_lt_compat_r,
   (Rbar_lt_trans (Finite (iu - e/2)) (u O) (Finite (su + e/2))).
-(* Finite, p_infty *)
-  by left.
 (* Finite, m_infty *)
   set eps := mkposreal _ Rlt_0_1 ; case: (Hiu eps) => {Hiu} Hiu _ ;
-  left ; move: (Hiu O) => {Hiu} ; apply Rbar_le_not_lt, Rbar_lt_le, Hsu.
+  move: (Hiu O) => {Hiu} ; apply Rbar_le_not_lt, Rbar_lt_le, Hsu.
 (* p_infty, Finite *)
   set eps := mkposreal _ Rlt_0_1 ; case: (Hsu eps) => {Hsu} Hsu _ ;
-  left ; move: (Hsu O) => {Hsu} ; apply Rbar_le_not_lt, Rbar_lt_le, Hiu.
-(* p_infty, p_infty *)
-  by right.
+  move: (Hsu O) => {Hsu} ; apply Rbar_le_not_lt, Rbar_lt_le, Hiu.
 (* p_infty, m_infty *)
-  left ; move: (Hiu 0 O) => {Hiu} ; apply Rbar_le_not_lt, Rbar_lt_le, Hsu.
-(* m_infty, Finite *)
-  by left.
-(* m_infty, p_infty *)
-  by left.
-(* m_infty, m_infty *)
-  by right.
+  move: (Hiu 0 O) => {Hiu} ; apply Rbar_le_not_lt, Rbar_lt_le, Hsu.
 Qed.
 
 Lemma is_sup_seq_major (u : nat -> Rbar) (l : Rbar) (n : nat) :
   is_sup_seq u l -> Rbar_le (u n) l.
 Proof.
-  case: l => [l | | ] /= Hl.
+  case: l => [l | | ] //= Hl.
   move: (fun eps => proj1 (Hl eps) n) => {Hl}.
-  case: (u n) => [un | | ] /= Hun.
-  apply Rbar_finite_le, le_epsilon => e He ; apply Rlt_le.
+  case: (u n) => [un | | ] //= Hun.
+  apply le_epsilon => e He ; apply Rlt_le.
   apply: Hun (mkposreal e He).
   by move: (Hun (mkposreal _ Rlt_0_1)).
-  by left.
-  case: (u n) => [un | | ].
-  by left.
-  by right.
-  by left.
-  move: (Hl (u n) n) ; case: (u n) => [un | | ] /= {Hl} Hl.
+  case: (u n) => [un | | ] //.
+  move: (Hl (u n) n) ; case: (u n) => [un | | ] //= {Hl} Hl.
   by apply Rlt_irrefl in Hl.
-  by [].
-  by right.
 Qed.
+
 Lemma Sup_seq_minor_lt (u : nat -> Rbar) (M : R) :
   Rbar_lt M (Sup_seq u) <-> exists n, Rbar_lt M (u n).
 Proof.
@@ -581,8 +560,10 @@ Qed.
 Lemma Sup_seq_minor_le (u : nat -> Rbar) (M : R) (n : nat) :
   Rbar_le M (u n) -> Rbar_le M (Sup_seq u).
 Proof.
-  case => H.
-  left ; apply Sup_seq_minor_lt.
+  intros H'.
+  destruct (Rbar_le_lt_or_eq_dec _ _ H') as [H|H].
+  apply Rbar_lt_le.
+  apply Sup_seq_minor_lt.
   by exists n.
   rewrite H.
   rewrite /Sup_seq ; case: ex_sup_seq => l Hl ; simpl projT1.
@@ -922,9 +903,8 @@ Qed.
 Lemma is_LimSup_LimInf_seq_le (u : nat -> R) (ls li : Rbar) :
   is_LimSup_seq u ls -> is_LimInf_seq u li -> Rbar_le li ls.
 Proof.
-  case: ls => [ls | | ] ; case: li => [li | | ] //= Hls Hli ;
-  try by [right | left].
-  apply Rbar_finite_le, le_epsilon => e He ;
+  case: ls => [ls | | ] ; case: li => [li | | ] //= Hls Hli.
+  apply le_epsilon => e He ;
   set eps := pos_div_2 (mkposreal e He).
   replace li with ((li - eps) + eps) by ring.
   replace (ls + e) with ((ls + eps) + eps) by (simpl ; field).
@@ -2195,7 +2175,7 @@ Proof.
     rewrite Rbar_plus_opp.
     replace (Finite 0) with (Rbar_opp 0) by apply (f_equal Finite), Ropp_0.
     apply Rbar_opp_le.
-    by left.
+    now apply Rbar_lt_le.
     revert Hp.
     clear.
     now destruct x as [x| |] ; destruct y as [y| |].
@@ -2344,7 +2324,7 @@ Proof.
     intros Hw.
     case: (Rbar_lt_le_dec 0 l) => Hl.
     by apply Hw.
-    case: Hl => // Hl Hl0.
+    case: (Rbar_le_lt_or_eq_dec _ _ Hl) => // {Hl} Hl Hl0.
     rewrite -(Rbar_opp_involutive (Rbar_inv l)).
     replace (Rbar_opp (Rbar_inv l)) with (Rbar_inv (Rbar_opp l))
     by (case: (l) Hl0 => [x | | ] //= Hl0 ; apply f_equal ;
@@ -2550,8 +2530,6 @@ Proof.
   case: x => [x| |] ; case: y => [y| |] /= Hl Hy Hx Hp ;
   try (by case: Hl) || (by case: Hx) || (by case: Hy).
 (* x, y \in R *)
-  apply Rbar_finite_le in Hx.
-  apply Rbar_finite_le in Hy.
   intros P [eps HP].
   assert (He: 0 < eps / (x + y + 1)).
   apply Rdiv_lt_0_compat.
@@ -2616,7 +2594,6 @@ Proof.
   apply Rmax_l.
   now apply Rabs_lt_between'.
   exact Hv.
-  by apply Rbar_finite_le in Hx.
 (* l1 = l2 = p_infty *)
   clear.
   intros P [N HN].
