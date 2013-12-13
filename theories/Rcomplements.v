@@ -23,6 +23,12 @@ Require Import Reals ssreflect.
 Require Import Even Div2.
 Require Import seq ssrbool.
 
+(** This file describes basic missing facts about the standard library
+of reals and a few concerning ssreflect.seq.
+#<br /># It also contains a definition of the [sign] function. *)
+
+
+
 Open Scope R_scope.
 
 (** * Integers *)

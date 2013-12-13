@@ -21,6 +21,28 @@ COPYING file for more details.
 
 Require Import Reals ssreflect.
 Require Import Rcomplements Rbar.
+
+(** This files describes first filters:
+ 
+ - [Filter]: they are sets of sets of reals. They can be seen for example as the way we will converge towards a point x (from above, by a ball, and so on).
+#<br /># Many of the later definitions are filters, therefore many basic lemmas are only those about filters. It includes [filter_forall] and [filter_const].
+
+ - [filterlim] is the basic tool to use filters. It takes a function f and two filters F and G. The property [filterlim] f F G then states that f transforms filter F into filter G. For example, continuity of f at point x can be stated as f transforms a surrounding of x into a surrounding of (f x). Lemmas about composition, extensionality are given, and filters for pairs are defined. The restriction of a filter to a domain is defined using [within].
+
+----------
+
+This file then describes a hierarchy of type classes for groups, rings, and so on:
+ - [AbelianGroup] for commutative groups. The operation is denoted by [plus], the opposite by [opp] and the zero by [zero].
+#<br /># This allows the definition of a [sum_n] which sums a sequence from 0 to N. It is equivalent to the [sum_f_R0] of the standard library reals.
+ - [Ring] for noncommutative rings
+ 
+STILL WIP
+ lemmas
+ instanciations
+
+ 
+*)
+
 Open Scope R_scope.
 
 (** * Filters *)
