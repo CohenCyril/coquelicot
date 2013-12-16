@@ -45,24 +45,26 @@ Proof.
   apply injective_projections ; simpl ;
   by rewrite -?RInt_scal.
 Qed.
+
 Lemma is_C_RInt_scal f a b (k : C) l :
   is_RInt f a b l -> is_RInt (fun t => k * f t) a b (k * l).
 Proof.
   intros H.
   move: (is_RInt_fct_extend_fst _ _ _ _ H) => /= H1.
   move: (is_RInt_fct_extend_snd _ _ _ _ H) => /= {H} H2.
-  apply is_RInt_fct_extend_pair ; simpl.
+  apply (is_RInt_fct_extend_pair (MU := R_NVS) (MV := R_NVS)) ; simpl.
 
-  apply (is_RInt_minus (VV := NormedVectorSpace_AbsRing)) ;
-  apply (is_RInt_scal (VV := NormedVectorSpace_AbsRing)).
+  apply (is_RInt_minus (VV := R_NVS)) ;
+  apply (is_RInt_scal (VV := R_NVS)).
   by apply H1.
   by apply H2.
 
-  apply (is_RInt_plus (VV := NormedVectorSpace_AbsRing)) ;
-  apply (is_RInt_scal (VV := NormedVectorSpace_AbsRing)).
+  apply (is_RInt_plus (VV := R_NVS)) ;
+  apply (is_RInt_scal (VV := R_NVS)).
   by apply H2.
   by apply H1.
 Qed.
+
 Lemma ex_C_RInt_scal f k a b :
   ex_RInt f a b -> ex_RInt (fun t => k * f t) a b.
 Admitted.

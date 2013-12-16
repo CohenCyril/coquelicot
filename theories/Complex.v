@@ -400,32 +400,48 @@ Qed.
 
 Add Field C_field_field : C_field_theory.
 
-(** * C in a NormedVectorSpace on R *)
+(** * C is a NormedVectorSpace *)
+
+(** on R *)
 
 Global Instance R_NVS : NormedVectorSpace R R.
 Proof.
   apply NormedVectorSpace_AbsRing.
 Defined.
 
-Global Instance C_NVS_mixin :
+Global Instance C_R_NVS_mixin :
   NormedVectorSpace_mixin C R _ (MetricBall_prod _ _).
 Proof.
   unfold C.
   exact (NormedVectorSpace_mixin_prod R_NVS R_NVS).
 Defined.
 
-(*
-Check (fun x : C => @norm C R _ _ _ _ x).
-
-Eval simpl in (fun x : C => @norm C R _ _ _ _ x).
-
-Global Instance C_NVS :
-  NormedVectorSpace C R.
-Proof.
-  eapply Build_NormedVectorSpace. with (AbelianGroup_prod _ _) (VectorSpace_mixin_prod _ _).
-  by apply C_NVS_mixin.
+Global Instance C_R_NVS : NormedVectorSpace C R.
+  apply Build_NormedVectorSpace with (1 := C_R_NVS_mixin).
 Defined.
-*)
+
+(** on C (with the balls of R^2) *)
+
+Global Instance C_NVS_mixin :
+  NormedVectorSpace_mixin C C _ (MetricBall_prod _ _).
+Proof.
+  apply Build_NormedVectorSpace_mixin with Cmod.
+  apply Cmod_triangle.
+  intros x y.
+  apply Req_le, Cmod_mult.
+  intros x y eps.
+  rewrite Cmod_norm.
+  apply NormedVectorSpace_mixin_prod_norm_compat1.
+  destruct (NormedVectorSpace_mixin_prod_norm_compat2 R_NVS R_NVS) as [M H].
+  exists M.
+  intros x y eps.
+  rewrite Cmod_norm.
+  apply H.
+Defined.
+
+Global Instance C_NVS : NormedVectorSpace C C.
+  apply Build_NormedVectorSpace with (1 := C_NVS_mixin).
+Defined.
 
 (** * Limits *)
 
