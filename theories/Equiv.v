@@ -257,6 +257,14 @@ Section Domin.
 Context {T U V Ku Kv : Type} {RKu : AbsRing Ku} {RKv : AbsRing Kv}
   {VU : NormedVectorSpace U Ku} {VV : NormedVectorSpace V Kv}.
 
+Lemma is_domin_le {F G} (f : T -> U) (g : T -> V) :
+  is_domin F f g -> filter_le G F -> is_domin G f g.
+Proof.
+  intros.
+  intros eps.
+  by apply H0.
+Qed.
+
 Lemma domin_scal_r  :
   forall {F : (T -> Prop) -> Prop} {FF : Filter F} (f : T -> U) (g : T -> V) (c : Kv),
   is_domin F f g -> is_domin F f (fun x => scal c (g x)).

@@ -422,8 +422,14 @@ Defined.
 
 (** on C (with the balls of R^2) *)
 
+Global Instance C_metric :
+  MetricBall C.
+Proof.
+  apply MetricBall_prod ; apply MetricBall_AbsRing, R_absring.
+Defined.
+
 Global Instance C_NVS_mixin :
-  NormedVectorSpace_mixin C C _ (MetricBall_prod _ _).
+  NormedVectorSpace_mixin C C _ _.
 Proof.
   apply Build_NormedVectorSpace_mixin with Cmod.
   apply Cmod_triangle.
@@ -447,8 +453,10 @@ Defined.
 
 Definition is_C_lim (f : C -> C) (z l : C) :=
   filterlim f (locally' z) (locally l).
+
 Definition ex_C_lim (f : C -> C) (z : C) :=
   exists (l : C), is_C_lim f z l.
+
 Definition C_lim (f : C -> C) (z : C) : C :=
   (real (Lim (fun x => fst (f (x, snd z))) (fst z)),
   real (Lim (fun x => snd (f (x, snd z))) (fst z))).
@@ -463,22 +471,14 @@ Proof.
   apply is_lim_unique => /= P [eps Hp].
   destruct (H (fun z => P (fst z))) as [delta Hd] ; clear H.
   exists eps => y Hy.
-  apply Hp.
-  apply Rle_lt_trans with (2 := Hy).
-  rewrite /= /Cmod.
-  rewrite -sqrt_Rsqr_abs.
-  apply sqrt_le_1_alt.
-  move: (snd (y + - (lx, ly))) => t.
-  rewrite /Rsqr Rminus_le_0 /= ; ring_simplify.
-  by apply pow2_ge_0.
+  apply Hp, Hy.
   exists delta.
   intros y By Hy.
   apply Hd.
-  apply Rle_lt_trans with (2 := By).
-  rewrite /= /Cmod.
-  rewrite -sqrt_Rsqr_abs /Rsqr /=.
-  apply Req_le, f_equal.
-  ring.
+  split ; simpl.
+  apply By.
+  ring_simplify (@snd R R z + - @snd R R z)%R ;
+  rewrite Rabs_R0 ; by apply delta.
   contradict Hy.
   clear -Hy.
   destruct z as [z1 z2].
@@ -489,21 +489,14 @@ Proof.
   destruct (H (fun z => P (snd z))) as [delta Hd] ; clear H.
   exists eps => y Hy.
   apply Hp.
-  apply Rle_lt_trans with (2 := Hy).
-  rewrite /= /Cmod.
-  rewrite -sqrt_Rsqr_abs.
-  apply sqrt_le_1_alt.
-  move: (fst (y + - (lx, ly))) => t.
-  rewrite /Rsqr Rminus_le_0 /= ; ring_simplify.
-  by apply pow2_ge_0.
+  apply Hy.
   exists delta.
   intros y By Hy.
   apply Hd.
-  apply Rle_lt_trans with (2 := By).
-  rewrite /= /Cmod.
-  rewrite -sqrt_Rsqr_abs /Rsqr /=.
-  apply Req_le, f_equal.
-  ring.
+  split ; simpl.
+  apply By.
+  ring_simplify (@snd R R z + - @snd R R z)%R ;
+  rewrite Rabs_R0 ; by apply delta.
   contradict Hy.
   clear -Hy.
   destruct z as [z1 z2].

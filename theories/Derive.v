@@ -26,31 +26,6 @@ Require Import Hierarchy Continuity Equiv.
 Require Import Rcomplements.
 Open Scope R_scope.
 
-(** TODO : Move to Hierarchy *)
-
-Section Filter_Lim.
-
-Context {T : Type} {MT : MetricBall T}.
-
-Lemma is_filter_lim_locally (x y : T) :
-  is_filter_lim (locally x) y -> forall eps : posreal, ball x eps y.
-Proof.
-  intros H eps.
-  specialize (H _ (locally_ball y eps)).
-  apply locally_singleton in H.
-  by apply ball_sym.
-Qed.
-
-End Filter_Lim.
-
-Lemma is_filter_lim_locally_R (x y : R) :
-  is_filter_lim (locally x) y -> x = y.
-Proof.
-  intros H.
-  apply sym_eq, Req_lt_aux.
-  exact (is_filter_lim_locally x y H).
-Qed.
-
 (** * Linear functions *)
 
 Section LinearFct.
@@ -366,7 +341,7 @@ Proof.
   move => y Hy.
   destruct H as [d Hd].
   apply Hd.
-  by apply is_filter_lim_locally.
+  by apply is_filter_lim_locally_unique.
 Qed.
 
 Lemma ex_filterdiff_ext_locally (f g : U -> V) x :
@@ -628,7 +603,7 @@ Proof.
   + split.
     apply @is_linear_scal.
     move => y Hy eps.
-    rewrite -(is_filter_lim_locally_R _ _ Hy) ; clear y Hy.
+    rewrite -(is_filter_lim_locally_unique_R _ _ Hy) ; clear y Hy.
     case: (Hf eps (cond_pos _)) => {Hf} d Hf.
     exists d => y /= Hy.
     case: (Req_dec y x) => Hxy.

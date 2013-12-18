@@ -917,6 +917,26 @@ apply L.
 now apply Fx.
 Qed.
 
+Lemma is_filter_lim_unique {F} {FF : ProperFilter F} (x y : T) :
+  is_filter_lim F x -> is_filter_lim F y -> forall eps : posreal, ball x eps y.
+Proof.
+  intros Hx Hy eps.
+  specialize (Hy _ (locally_ball y (pos_div_2 eps))).
+  specialize (Hx _ (locally_ball x (pos_div_2 eps))).
+  generalize (filter_and _ _ Hx Hy) => {Hx Hy} H.
+  destruct (filter_ex _ H) as [z Hz].
+  rewrite (double_var eps).
+  apply ball_triangle with z.
+  apply Hz.
+  apply ball_sym, Hz.
+Qed.
+
+Lemma is_filter_lim_locally_unique (x y : T) :
+  is_filter_lim (locally x) y -> forall eps : posreal, ball x eps y.
+Proof.
+  by apply is_filter_lim_unique.
+Qed.
+
 End Locally.
 
 Lemma filterlim_locally :
@@ -2458,6 +2478,14 @@ apply (Build_CompleteSpace R _).
 constructor.
 apply R_complete.
 Defined.
+
+Lemma is_filter_lim_locally_unique_R (x y : R) :
+  is_filter_lim (locally x) y -> x = y.
+Proof.
+  intros H.
+  apply sym_eq, Req_lt_aux.
+  exact (is_filter_lim_locally_unique x y H).
+Qed.
 
 Notation at_left x := (within (fun u : R => Rlt u x) (locally (x)%R)).
 Notation at_right x := (within (fun u : R => Rlt x u) (locally (x)%R)).

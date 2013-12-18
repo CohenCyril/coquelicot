@@ -1739,7 +1739,7 @@ Proof.
   now rewrite -S_INR ; apply not_0_INR, sym_not_eq, O_S.
 Qed.
 
-Lemma RInt_val_comp_lim (f : R -> V) (u v : R) (a b : R) (n : nat) :
+Lemma RInt_val_comp_lin (f : R -> V) (u v : R) (a b : R) (n : nat) :
   scal u (RInt_val (fun x => f (u * x + v)) a b n) = RInt_val f (u * a + v) (u * b + v) n.
 Proof.
   rewrite /RInt_val.

@@ -338,43 +338,238 @@ Qed.
 
 (** * Proposition 5 *)
 
-Section is_RInt_Derive.
+Section Prop5_filter.
 
-Context {V : Type} {VV : NormedVectorSpace V R}.
+Context {T : Type}.
 
-(*
-Lemma is_RInt_Derive (f : R -> V) (a b : R) (g : R -> V) :
-  (forall x : R, Rmin a b <= x <= Rmax a b -> filterderive f x (g x)) ->
-  (forall x : R, Rmin a b <= x <= Rmax a b -> filterlim g (locally x) (locally (g x))) ->
-  is_RInt g a b (minus (f b) (f a)).
+Definition filter_sqr (F : (T -> Prop) -> Prop) (P : (T * T -> Prop)) : Prop :=
+  exists Q, F Q /\ (forall x y, Q x -> Q y -> P (x,y)).
+
+Global Instance filter_sqr_filter :
+  forall {F} {FF : Filter F}, Filter (filter_sqr F).
 Proof.
-  wlog: a b / (a <= b) => [Hw | Hab].
-    case: (Rle_lt_dec a b) => Hab.
-    by apply Hw.
-    rewrite Rmax_comm Rmin_comm => Df Cg.
-    replace (minus (f b) (f a)) with (opp (minus (f a) (f b))).
-    apply is_RInt_swap.
-    apply Rlt_le in Hab.
-    by apply Hw.
-    rewrite /minus opp_plus opp_opp.
-    by apply plus_comm.
-  rewrite /Rmin /Rmax ; case: Rle_dec => // _ Df Cg.
-  case: Hab => Hab.
-  
-  cut (forall c, a <= c < b -> is_RInt g a c (minus (f c) (f a))).
-    move => H.
-    apply filterlim_locally => eps.
-Admitted.
-*)
+  intros F FF.
+  constructor.
+  - exists (fun _ => True) ; split => //.
+    by apply filter_true.
+  - intros P1 P2 [Q1 H1] [Q2 H2].
+    exists (fun x => Q1 x /\ Q2 x) ; split.
+    now apply filter_and.
+    intros ; split.
+    now apply H1.
+    now apply H2.
+  - intros P1 P2 H [Q1 H1].
+    exists Q1 ; split.
+    by apply H1.
+    now intros ; apply H, H1.
+Qed.
 
-End is_RInt_Derive.
+Global Instance filter_sqr_properfilter :
+  forall {F} {FF : ProperFilter F}, ProperFilter (filter_sqr F).
+Proof.
+  intros F FF.
+  constructor.
+  move => P [Q [FQ H]].
+  destruct (filter_ex _ FQ).
+  exists (x,x).
+  by apply H.
+  by apply filter_sqr_filter.
+Qed.
+
+Goal forall F G, filter_le F G -> filter_le (filter_sqr F) (filter_sqr G).
+Admitted.
+
+End Prop5_filter.
+
+Section Prop5_metric.
+
+Context {U V : Type} {MU : MetricBall U} {MV : MetricBall V}.
+
+Lemma is_filter_lim_filtermap : forall F x (f : U -> V),
+  filterlim f (locally x) (locally (f x))
+  -> is_filter_lim F x
+  -> is_filter_lim (filtermap f F) (f x).
+Proof.
+  intros F x f Cf Fx P HP.
+  apply Cf in HP.
+  now apply Fx.
+Qed.
+
+End Prop5_metric.
+
+Section Prop5_derive.
+
+Context {K : Type} {FK : AbsRing K}.
+
+Lemma filterdiff_mult : forall (x : K * K), 
+  filterdiff (fun t => mult (fst t) (snd t)) (locally x)
+    (fun t => plus (mult (fst x) (snd t)) (mult (fst t) (snd x))).
+Proof.
+  move => x ; split.
+  - admit.
+  - move => y Hy.
+    generalize (is_filter_lim_locally_unique _ _ Hy) => {Hy} /= Hy.
+    simpl => eps.
+    apply filter_forall => z.
+    rewrite /minus mult_distr_l mult_distr_r !opp_plus ;
+    rewrite -(opp_mult_l (RK := absring_ring)) -(opp_mult_r (RK := absring_ring)) ;
+    rewrite !opp_opp.
+    rewrite (opp_mult_l (RK := absring_ring) _ (snd z)) (opp_mult_r (RK := absring_ring) (fst z)).
+    
+Admitted.
+
+Context {U} {VU : NormedVectorSpace U K}.
+
+Lemma filterdiff_mult_fct (f g : U -> K) F (lf lg : U -> K) :
+  filterdiff f F lf -> filterdiff g F lg
+  -> filterdiff (fun t => mult (f t) (g t)) F (fun t => mult (lf t) (lg t)).
+Proof.
+Admitted.
+
+End Prop5_derive.
+
+Section Prop5_diff.
+
+Context {U V K : Type} {FK : AbsRing K} {VU : NormedVectorSpace U K} {VV : NormedVectorSpace V K}.
+
+Lemma filterdiff_locally F (f : U -> V) x l :
+  is_filter_lim F x ->
+  filterdiff f (locally x) l ->
+  filterdiff f F l.
+Proof.
+intros Fx [Hl Df].
+split.
+exact Hl.
+intros z Fz eps.
+specialize (Df _ (fun P H => H) eps).
+apply Fz.
+simpl in Df.
+Admitted.
+
+Lemma is_linear_pair_fct (l1 l2 : U -> V) :
+  is_linear l1 -> is_linear l2 -> is_linear (fun t => (l1 t, l2 t)).
+Proof.
+  intros [Hp1 Hs1 [M1 Hn1]] [Hp2 Hs2 [M2 Hn2]] ; split ; simpl.
+  - move => x y ; by rewrite Hp1 Hp2.
+  - move => k x ; by rewrite Hs1 Hs2.
+  - exists (sqrt (M1 ^ 2 + M2 ^ 2)) ; split.
+    apply sqrt_pos.
+    intros x ; ring_simplify (norm (l1 x) * (norm (l1 x) * 1) + norm (l2 x) * (norm (l2 x) * 1))%R.
+    eapply Rle_trans.
+    apply sqrt_le_1_alt.
+    apply Rplus_le_compat ;
+    apply pow_incr ; split.
+    by apply norm_ge_0.
+    by apply Hn1.
+    by apply norm_ge_0.
+    by apply Hn2.
+    apply Req_le.
+    apply Rsqr_inj.
+    by apply sqrt_pos.
+    apply Rmult_le_pos.
+    by apply sqrt_pos.
+    by apply norm_ge_0.
+    rewrite /Rsqr sqrt_sqrt.
+    rewrite {1}(Rmult_comm (sqrt (M1 ^ 2 + M2 ^ 2))) Rmult_assoc.
+    rewrite -(Rmult_assoc (sqrt (M1 ^ 2 + M2 ^ 2))) sqrt_sqrt.
+    ring.
+    apply Rplus_le_le_0_compat ; apply pow2_ge_0.
+    apply Rplus_le_le_0_compat ; apply pow2_ge_0.
+Qed.
+
+Lemma filterdiff_plus_fct {F} {FF : Filter F} (f g : U -> V) (lf lg : U -> V) :
+  filterdiff f F lf -> filterdiff g F lg
+  -> filterdiff (fun t => plus (f t) (g t)) F (fun t => plus (lf t) (lg t)).
+Proof.
+  intros [Lf Df] [Lg Dg].
+  split.
+  admit.
+  move => x Hx /=.
+  generalize (Df _ Hx) => {Df} Df.
+  generalize (Dg _ Hx) => {Dg} Dg.
+  generalize (domin_plus _ _ _ Df Dg) ; simpl.
+  apply domin_rw_r.
+  apply equiv_ext_loc, filter_forall => y /=.
+  rewrite /minus (linear_plus lf Lf) (linear_plus lg Lg)
+    (linear_opp lf _ Lf) (linear_opp lg _ Lg).
+  rewrite !opp_plus !opp_opp -!plus_assoc.
+  apply f_equal.
+  rewrite !(plus_comm (g y)) -!plus_assoc.
+  apply f_equal.
+  by rewrite !(plus_comm (opp (g x))) -!plus_assoc.
+Qed.
+
+Lemma filterdiff_linear {F} {FF : Filter F} (l : U -> V) :
+  is_linear l -> filterdiff l F l.
+Proof.
+  intros Hl.
+  split.
+  by apply Hl.
+  move => x Hx eps.
+  apply filter_forall => y.
+  rewrite /minus linear_plus //.
+  rewrite (linear_opp l) //.
+  rewrite plus_opp_r norm_zero.
+  apply Rmult_le_pos.
+  by apply Rlt_le, eps.
+  by apply norm_ge_0.
+Qed.
+
+End Prop5_diff.
+
+Section Prop5_RInt.
+
+Context {V} {VV : NormedVectorSpace V R}.
+
+Lemma prop5_R (f g : R -> V) (a b : R) :
+  (forall z, Rmin a b <= z <= Rmax a b -> filterdiff g (locally z) (fun y => scal y (f z)))
+  -> (forall z, filterlim f (locally z) (locally (f z)))
+  -> is_RInt f a b (minus (g b) (g a)).
+Admitted.
+
+End Prop5_RInt.
+
+Lemma filterdiff_R2_C (f : C -> C) (z : C) (l : C) :
+  let VV := NormedVectorSpace_prod R_NVS R_NVS in
+  is_C_derive f z l -> filterdiff (VV := VV) f (locally z) (fun z => scal z l).
+Admitted.
 
 Lemma prop5 (f g : C -> C) (z1 z2 : C) :
   (forall z, is_C_derive g z (f z))
-  -> (forall z, filterlim f (locally z)
-        (locally (f z)))
-  -> is_C_RInt_segm f z1 z2 (g z1 - g z2).
-Admitted.
+  -> (forall z, filterlim f (locally z) (locally (f z)))
+  -> is_C_RInt_segm f z1 z2 (g z2 - g z1).
+Proof.
+  intros Dg Cf.
+  unfold is_C_RInt_segm.
+    replace (g z2 - g z1)
+      with (minus (g ((1 - 1) * z1 + 1 * z2)) (g ((1 - 0) * z1 + 0 * z2))).
+    2: simpl ; congr (g _- g _) ; ring.
+    apply (prop5_R (VV := NormedVectorSpace_prod R_NVS R_NVS) (fun t : R => (z2 - z1) * f ((1 - t) * z1 + t * z2)) (fun t => g ((1 - t) * z1 + t * z2)) 0 1).
+    + intros z Hz.
+      eapply filterdiff_ext_lin.
+      apply (filterdiff_comp (fun t : R => (1 - t) * z1 + t * z2) g (fun y : R => scal y (z2 - z1)) (fun t => scal t (f ((1 - z) * z1 + z * z2)))).
+      apply filterdiff_ext with (fun t : R => z1 + scal t (z2 - z1)).
+      intro y ; apply injective_projections ; simpl ; ring.
+      apply filterdiff_ext_lin with (fun y => plus zero (scal y (z2 - z1))).
+      apply: filterdiff_plus_fct.
+      apply: filterdiff_const.
+      apply filterdiff_linear.
+      by apply: is_linear_scal.
+      move => y.
+      by apply plus_zero_l.
+      unfold is_C_derive in Dg.
+      destruct (Dg ((1 - z) * z1 + z * z2)) as [Lf Dg'].
+      apply filterdiff_locally with ((1 - z) * z1 + z * z2).
+      apply (is_filter_lim_filtermap _ _ (fun t : R => (1 - t) * z1 + t * z2)).
+      admit.
+      now intros P HP.
+      apply (filterdiff_R2_C g ((1 - z) * z1 + z * z2) (f ((1 - z) * z1 + z * z2))).
+      apply (Dg ((1 - z) * z1 + z * z2)).
+      intros ; apply injective_projections ; simpl ; ring.
+
+
+  admit.
+Qed.
 
 Require Import seq.
 

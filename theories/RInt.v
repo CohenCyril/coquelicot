@@ -4591,7 +4591,7 @@ Proof.
   apply filterdiff_Reals ; split.
   by apply @is_linear_scal.
   intros y Hy eps.
-  rewrite -(is_filter_lim_locally_R _ _ Hy) => {y Hy}.
+  rewrite -(is_filter_lim_locally_unique_R _ _ Hy) => {y Hy}.
   destruct (Cx eps (cond_pos eps)) as (d,(Hd1,Hd2)).
   unfold dist in Hd2; simpl in Hd2; unfold R_dist in Hd2.
   destruct Iloc as (e,He).
@@ -5097,7 +5097,7 @@ rewrite Rmax_right. 2: now apply Rlt_le.
 intros Df Cdf If IDf.
 apply filterdiff_Reals ; split => [ | y Hy].
 by apply @is_linear_scal.
-rewrite -(is_filter_lim_locally_R _ _ Hy) => {y Hy}.
+rewrite -(is_filter_lim_locally_unique_R _ _ Hy) => {y Hy}.
 refine (let Cdf' := uniform_continuity_2d_1d (fun u v => Derive (fun z => f z u) v) a b x _ in _).
 intros t Ht eps.
 specialize (Cdf t Ht eps).

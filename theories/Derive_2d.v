@@ -310,7 +310,7 @@ Proof.
   intros Df.
   apply filterdiff_Reals ; split => [ | z Hz eps].
     by apply @is_linear_scal.
-  rewrite -(is_filter_lim_locally_R _ _ Hz) => {z Hz}.
+  rewrite -(is_filter_lim_locally_unique_R _ _ Hz) => {z Hz}.
   elim (Df eps) ; clear Df ; intros delta Df.
   exists delta ; simpl in Df ; simpl ; intros.
   replace (f y0 + - f x + - ((y0 + - x) * l)) with (f y0 - f x - (l * (y0 - x) + 0 * (y - y))) by ring.
@@ -795,14 +795,14 @@ apply ex_filterdiff_Reals.
 apply ex_filterdiff_Reals in H2.
 move: H2 ; apply ex_filterdiff_ext_loc.
 apply locally_2d_1d_const_y with (1:=H).
-move => z Hz ; rewrite -(is_filter_lim_locally_R _ _ Hz) ;
+move => z Hz ; rewrite -(is_filter_lim_locally_unique_R _ _ Hz) ;
 by apply locally_2d_1d_const_y, locally_singleton in H.
 split.
 apply ex_filterdiff_Reals.
 apply ex_filterdiff_Reals in H3.
 move: H3 ; apply ex_filterdiff_ext_loc.
 apply locally_2d_1d_const_x with (1:=H).
-move => z Hz ; rewrite -(is_filter_lim_locally_R _ _ Hz) ;
+move => z Hz ; rewrite -(is_filter_lim_locally_unique_R _ _ Hz) ;
 by apply locally_2d_1d_const_x, locally_singleton in H.
 split.
 apply IHn with (2:=H4).
