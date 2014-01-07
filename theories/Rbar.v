@@ -146,9 +146,27 @@ Definition Rbar_mult' (x y : Rbar) :=
 Definition Rbar_mult (x y : Rbar) :=
   match Rbar_mult' x y with Some z => z | None => Finite 0 end.
 Arguments Rbar_mult !x !y /.
+
 Definition ex_Rbar_mult (x y : Rbar) : Prop :=
-  match Rbar_mult' x y with Some _ => True | None => False end.
+  match x with
+    | Finite x => match y with
+      | Finite y => True
+      | p_infty => x <> 0
+      | m_infty => x <> 0
+    end
+    | p_infty => match y with
+      | Finite y => y <> 0
+      | p_infty => True
+      | m_infty => True
+    end
+    | m_infty => match y with
+      | Finite y => y <> 0
+      | p_infty => True
+      | m_infty => True
+    end
+  end.
 Arguments ex_Rbar_mult !x !y /.
+
 Definition Rbar_mult_pos (x : Rbar) (y : posreal) :=
   match x with
     | Finite x => Finite (x*y)
@@ -547,6 +565,40 @@ Lemma Rbar_mult_opp (x y : Rbar) :
   Rbar_mult (Rbar_opp x) (Rbar_opp y) = Rbar_mult x y.
 Proof.
   by rewrite Rbar_mult_opp_l -Rbar_mult_opp_r Rbar_opp_involutive.
+Qed.
+Lemma Rbar_mult_0_l (x : Rbar) : Rbar_mult 0 x = 0.
+Proof.
+  case: x => [x | | ] //=.
+  by rewrite Rmult_0_l.
+  case: Rle_dec (Rle_refl 0) => // H _.
+  case: Rle_lt_or_eq_dec (Rlt_irrefl 0) => // _ _.
+  case: Rle_dec (Rle_refl 0) => // H _.
+  case: Rle_lt_or_eq_dec (Rlt_irrefl 0) => // _ _.
+Qed.
+Lemma Rbar_mult_0_r (x : Rbar) : Rbar_mult x 0 = 0.
+Proof.
+  rewrite Rbar_mult_comm ; by apply Rbar_mult_0_l.
+Qed.
+
+Lemma ex_Rbar_mult_sym (x y : Rbar) :
+  ex_Rbar_mult x y -> ex_Rbar_mult y x.
+Proof.
+  case: x => [x | | ] ;
+  case: y => [y | | ] //.
+Qed.
+Lemma ex_Rbar_mult_opp_l (x y : Rbar) :
+  ex_Rbar_mult x y -> ex_Rbar_mult (Rbar_opp x) y.
+Proof.
+  case: x => [x | | ] ;
+  case: y => [y | | ] //= Hx ;
+  by apply Ropp_neq_0_compat.
+Qed.
+Lemma ex_Rbar_mult_opp_r (x y : Rbar) :
+  ex_Rbar_mult x y -> ex_Rbar_mult x (Rbar_opp y).
+Proof.
+  case: x => [x | | ] ;
+  case: y => [y | | ] //= Hx ;
+  by apply Ropp_neq_0_compat.
 Qed.
 
 (** Rbar_mult_pos *)

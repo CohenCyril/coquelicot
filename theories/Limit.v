@@ -2467,10 +2467,7 @@ Proof.
     replace (Finite 0) with (Rbar_opp 0) by apply (f_equal Finite), Ropp_0.
     apply Rbar_opp_le.
     by apply Rbar_lt_le.
-    rewrite /ex_Rbar_mult Rbar_mult'_comm Rbar_mult'_opp_r.
-    revert Hp.
-    rewrite /ex_Rbar_mult Rbar_mult'_comm.
-    now case Rbar_mult'.
+    by apply ex_Rbar_mult_opp_l.
     clear Hw.
     rewrite -Rbar_mult_opp_l.
     intros P HP.
@@ -2497,9 +2494,7 @@ Proof.
     apply Rbar_opp_le.
     by apply Rbar_lt_le.
     by [].
-    revert Hp.
-    rewrite /ex_Rbar_mult Rbar_mult'_opp_r.
-    now case Rbar_mult'.
+    by apply ex_Rbar_mult_opp_r.
     clear Hw.
     rewrite -Rbar_mult_opp_r.
     intros P HP.
@@ -2517,7 +2512,7 @@ Proof.
     assert (Hw' : filterlim (fun z => fst z * snd z) (filter_prod (Rbar_locally y) (Rbar_locally x)) (Rbar_locally (Rbar_mult y x))).
     apply Hw ; try assumption.
     by apply Rbar_lt_le.
-    by rewrite /ex_Rbar_mult Rbar_mult'_comm.
+    by apply ex_Rbar_mult_sym.
     rewrite Rbar_mult_comm.
     intros P HP.
     specialize (Hw' P HP).
@@ -2527,7 +2522,7 @@ Proof.
     simpl.
     rewrite Rmult_comm.
     exact (H3 _ _ HQ HR).
-  case: x => [x| |] ; case: y => [y| |] /= Hl Hy Hx Hp ;
+  case: x => [x| | ] ; case: y => [y| | ] Hl Hy Hx Hp ;
   try (by case: Hl) || (by case: Hx) || (by case: Hy).
 (* x, y \in R *)
   intros P [eps HP].
@@ -2573,8 +2568,9 @@ Proof.
   now apply Rplus_le_le_0_compat.
   apply Rlt_0_1.
 (* x \in R and y = p_infty *)
-  case: Rle_dec Hp => // Hx' Hp.
-  case: Rle_lt_or_eq_dec Hp => // {Hl Hx Hy Hx'} Hx _.
+  simpl in Hp |- *.
+  case: Rle_dec => // Hx'.
+  case: Rle_lt_or_eq_dec => {Hl Hx Hy Hx'} Hx.
   intros P [N HN].
   exists (fun u => Rabs (u - x) < x / 2) (fun v => Rmax 0 (N / (x / 2)) < v).
   now exists (pos_div_2 (mkposreal _ Hx)).
@@ -2594,6 +2590,7 @@ Proof.
   apply Rmax_l.
   now apply Rabs_lt_between'.
   exact Hv.
+  by apply sym_eq in Hx.
 (* l1 = l2 = p_infty *)
   clear.
   intros P [N HN].
@@ -2654,27 +2651,13 @@ Proof.
   apply (filterlim_ext (fun _ => 0)).
   intros x.
   apply sym_eq, Rmult_0_l.
-  replace (Rbar_mult 0 l) with (Finite 0).
+  rewrite Rbar_mult_0_l.
   apply filterlim_const.
-  case: l => [x| |] //=.
-  by rewrite Rmult_0_l.
-  case: Rle_dec (Rle_refl 0) => // H _.
-  case: Rle_lt_or_eq_dec (Rlt_irrefl 0) => // _ _.
-  case: Rle_dec (Rle_refl 0) => // H _.
-  case: Rle_lt_or_eq_dec (Rlt_irrefl 0) => // _ _.
   eapply filterlim_compose_2.
   apply filterlim_const.
   apply filterlim_id.
   apply filterlim_Rbar_mult.
   case: l => [x| |] //=.
-  case: Rle_dec => // H.
-  case: Rle_lt_or_eq_dec => //.
-  intros H'.
-  now elim Ha.
-  case: Rle_dec => // H.
-  case: Rle_lt_or_eq_dec => //.
-  intros H'.
-  now elim Ha.
 Qed.
 
 Lemma filterlim_Rbar_mult_r :

@@ -148,9 +148,8 @@ Proof.
   apply filterlim_const.
   by apply is_lim_ln_0.
   apply (filterlim_Rbar_mult 2 m_infty).
-  simpl ;
-  case: Rle_dec (Rlt_le _ _ Rlt_0_2) => // H _ ;
-  case: Rle_lt_or_eq_dec (Rlt_not_eq _ _ Rlt_0_2) => //.
+  simpl.
+  by apply Rgt_not_eq, Rlt_0_2.
   apply (filterlim_Rbar_plus 2 (Rbar_mult 2 m_infty)).
   simpl ;
   case: Rle_dec (Rlt_le _ _ Rlt_0_2) => // H _ ;
@@ -526,8 +525,7 @@ Proof.
   apply is_lim_seq_INR.
   apply is_lim_seq_const.
   simpl.
-  case: Rle_dec Rle_0_1 => // H _.
-  case: Rle_lt_or_eq_dec (Rlt_not_eq _ _ Rlt_0_1) => //.
+  by apply Rgt_not_eq, Rlt_0_1.
   simpl.
   case: Rle_dec Rle_0_1 => // H _.
   case: Rle_lt_or_eq_dec (Rlt_not_eq _ _ Rlt_0_1) => //.

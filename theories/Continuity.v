@@ -480,24 +480,16 @@ Lemma is_lim_scal_l (f : R -> R) (a : R) (x l : Rbar) :
 Proof.
   move => Hf.
   case: (Req_dec 0 a) => [<- {a} | Ha].
-  replace (Rbar_mult 0 l) with (Finite 0).
+  rewrite Rbar_mult_0_l.
   apply is_lim_ext with (fun _ => 0).
   move => y ; by rewrite Rmult_0_l.
   by apply is_lim_const.
-  case: l {Hf} => [l | | ] //=.
-  by rewrite Rmult_0_l.
-  case: Rle_dec (Rle_refl 0) => //= H _.
-  case: Rle_lt_or_eq_dec (Rlt_irrefl 0) => //.
-  case: Rle_dec (Rle_refl 0) => //= H _.
-  case: Rle_lt_or_eq_dec (Rlt_irrefl 0) => //.
 
   apply is_lim_mult.
   by apply is_lim_const.
   by apply Hf.
-  case: l {Hf} => [l | | ] //= ;
-  case: Rle_dec => // H.
-  case: Rle_lt_or_eq_dec => //.
-  case: Rle_lt_or_eq_dec => //.
+  apply sym_not_eq in Ha.
+  case: l {Hf} => [l | | ] //=.
 Qed.
 Lemma ex_lim_scal_l (f : R -> R) (a : R) (x : Rbar) :
   ex_lim f x -> ex_lim (fun y => a * f y) x.

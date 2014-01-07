@@ -230,8 +230,7 @@ Proof.
   apply is_lim_const.
   apply Rbar_finite_neq, Rgt_not_eq, Rlt_0_2.
   simpl.
-  case: Rle_dec (Rlt_le _ _ (Rinv_0_lt_compat 2 (Rlt_0_2))) => //= H _.
-  case: Rle_lt_or_eq_dec (Rlt_not_eq _ _ (Rinv_0_lt_compat 2 (Rlt_0_2))) => //= H _.
+  apply Rgt_not_eq, Rinv_0_lt_compat, Rlt_0_2.
   simpl.
   case: Rle_dec (Rlt_le _ _ (Rinv_0_lt_compat 2 (Rlt_0_2))) => //= H _.
   case: Rle_lt_or_eq_dec (Rlt_not_eq _ _ (Rinv_0_lt_compat 2 (Rlt_0_2))) => //= H _.
