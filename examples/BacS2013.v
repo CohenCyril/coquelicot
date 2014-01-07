@@ -137,36 +137,29 @@ Qed.
 
 (** 2.b. *)
 
-(*
-Lemma filterlim_abs_0 :
-  forall f : R -> R,
-  is_lim (fun x => f (Rabs x)) 0 <->
-  filterlim
-*)
-
-Lemma Lim_f_0 : is_lim (fun x => f (Rabs x)) 0 m_infty.
+Lemma filterlim_f_0 :
+  filterlim f (at_right 0) (Rbar_locally m_infty).
 Proof.
-  search_lim.
   unfold f, fab.
-  apply is_lim_mult.
-  apply is_lim_plus.
-  by apply is_lim_const.
-  apply is_lim_scal_l.
-  eapply filterlim_compose.
-  apply filterlim_abs_0.
+  eapply (filterlim_compose_2 _ _ Rmult).
+  eapply filterlim_compose_2.
+  apply filterlim_const.
+  eapply filterlim_compose_2.
+  apply filterlim_const.
   by apply is_lim_ln_0.
+  apply (filterlim_Rbar_mult 2 m_infty).
   simpl ;
   case: Rle_dec (Rlt_le _ _ Rlt_0_2) => // H _ ;
   case: Rle_lt_or_eq_dec (Rlt_not_eq _ _ Rlt_0_2) => //.
-  eapply filterlim_compose.
-  apply filterlim_abs_0.
+  apply (filterlim_Rbar_plus 2 (Rbar_mult 2 m_infty)).
+  simpl ;
+  case: Rle_dec (Rlt_le _ _ Rlt_0_2) => // H _ ;
+  case: Rle_lt_or_eq_dec (Rlt_not_eq _ _ Rlt_0_2) => //.
   by apply is_lim_Rinv_0.
   simpl ;
   case: Rle_dec (Rlt_le _ _ Rlt_0_2) => // H _ ;
-  case: Rle_lt_or_eq_dec (Rlt_not_eq _ _ Rlt_0_2) => //.
-  simpl ;
-  case: Rle_dec (Rlt_le _ _ Rlt_0_2) => // H _ ;
-  case: Rle_lt_or_eq_dec (Rlt_not_eq _ _ Rlt_0_2) => //.
+  case: Rle_lt_or_eq_dec (Rlt_not_eq _ _ Rlt_0_2) => //= _ _.
+  by apply (filterlim_Rbar_mult m_infty p_infty).
 Qed.
 
 Lemma Lim_f_p_infty : is_lim f p_infty 0.
@@ -243,7 +236,9 @@ Qed.
 Lemma f_eq_1_0_1 : exists x, 0 < x <= 1 /\ f x = 1.
 Proof.
   case: (IVT_Rbar_incr (fun x => f (Rabs x)) 0 1 m_infty 2 1).
-  apply Lim_f_0.
+    eapply filterlim_compose.
+    apply filterlim_abs_0.
+    by apply filterlim_f_0.
   apply is_lim_comp with 1.
   replace 2 with (f 1).
   apply is_lim_continuity.
