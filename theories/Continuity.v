@@ -351,14 +351,24 @@ Qed.
 
 (** Addition *)
 
-Lemma is_lim_plus (f g : R -> R) (x lf lg : Rbar) :
+Lemma is_lim_plus (f g : R -> R) (x lf lg l : Rbar) :
   is_lim f x lf -> is_lim g x lg ->
-  ex_Rbar_plus lf lg ->
-  is_lim (fun y => f y + g y) x (Rbar_plus lf lg).
+  is_Rbar_plus lf lg l ->
+  is_lim (fun y => f y + g y) x l.
 Proof.
 intros Cf Cg Hp.
 eapply filterlim_compose_2 ; try eassumption.
-now apply filterlim_Rbar_plus.
+by apply filterlim_Rbar_plus.
+Qed.
+Lemma is_lim_plus' (f g : R -> R) (x : Rbar) (lf lg : R) :
+  is_lim f x lf -> is_lim g x lg ->
+  is_lim (fun y => f y + g y) x (lf + lg).
+Proof.
+  intros Hf Hg.
+  eapply is_lim_plus.
+  by apply Hf.
+  by apply Hg.
+  by [].
 Qed.
 Lemma ex_lim_plus (f g : R -> R) (x : Rbar) :
   ex_lim f x -> ex_lim g x ->
@@ -367,7 +377,8 @@ Lemma ex_lim_plus (f g : R -> R) (x : Rbar) :
 Proof.
   move/Lim_correct => Hf ; move/Lim_correct => Hg Hl.
   exists (Rbar_plus (Lim f x) (Lim g x)).
-  now apply is_lim_plus.
+  eapply is_lim_plus ; try eassumption.
+  by apply Rbar_plus_correct.
 Qed.
 Lemma Lim_plus (f g : R -> R) (x : Rbar) :
   ex_lim f x -> ex_lim g x ->
@@ -376,19 +387,28 @@ Lemma Lim_plus (f g : R -> R) (x : Rbar) :
 Proof.
   move/Lim_correct => Hf ; move/Lim_correct => Hg Hl.
   apply is_lim_unique.
-  now apply is_lim_plus.
+  eapply is_lim_plus ; try eassumption.
+  by apply Rbar_plus_correct.
 Qed.
 
 (** Subtraction *)
 
-Lemma is_lim_minus (f g : R -> R) (x lf lg : Rbar) :
+Lemma is_lim_minus (f g : R -> R) (x lf lg l : Rbar) :
   is_lim f x lf -> is_lim g x lg ->
-  ex_Rbar_minus lf lg ->
-  is_lim (fun y => f y - g y) x (Rbar_minus lf lg).
+  is_Rbar_minus lf lg l ->
+  is_lim (fun y => f y - g y) x l.
 Proof.
   move => Hf Hg Hl.
-  apply is_lim_plus ; try assumption.
+  eapply is_lim_plus ; try eassumption.
   now apply is_lim_opp.
+Qed.
+Lemma is_lim_minus' (f g : R -> R) (x : Rbar) (lf lg : R) :
+  is_lim f x lf -> is_lim g x lg ->
+  is_lim (fun y => f y - g y) x (lf - lg).
+Proof.
+  intros Hf Hg.
+  eapply is_lim_minus ; try eassumption.
+  by [].
 Qed.
 Lemma ex_lim_minus (f g : R -> R) (x : Rbar) :
   ex_lim f x -> ex_lim g x ->
@@ -568,13 +588,12 @@ Proof.
   move => Hf Ha.
   apply is_lim_comp with (Rbar_plus (Rbar_mult a x) b).
   by apply Hf.
-  search_lim.
-  apply is_lim_plus.
+  eapply is_lim_plus.
   apply is_lim_scal_l.
   apply is_lim_id.
   apply is_lim_const.
+  apply Rbar_plus_correct.
   case: (Rbar_mult a x) => //.
-  by [].
   case: x {Hf} => [x | | ] //=.
   exists (mkposreal _ Rlt_0_1) => y _ Hy.
   apply Rbar_finite_neq, Rminus_not_eq ; ring_simplify (a * y + b - (a * x + b)).

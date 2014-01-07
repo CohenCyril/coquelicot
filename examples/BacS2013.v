@@ -23,6 +23,7 @@ COPYING file for more details.
 (** https://www.lri.fr/~lelay/Bac2013/Bac_S_2013_Metropole.pdf *)
 
 Require Import Reals ssreflect.
+Require Import Psatz.
 Require Import Rcomplements Rbar Hierarchy.
 Require Import Derive RInt Continuity Limit ElemFct.
 
@@ -155,31 +156,26 @@ Proof.
   case: Rle_dec (Rlt_le _ _ Rlt_0_2) => // H _ ;
   case: Rle_lt_or_eq_dec (Rlt_not_eq _ _ Rlt_0_2) => //.
   by apply is_lim_Rinv_0.
-  simpl ;
-  case: Rle_dec (Rlt_le _ _ Rlt_0_2) => // H _ ;
-  case: Rle_lt_or_eq_dec (Rlt_not_eq _ _ Rlt_0_2) => //= _ _.
   by apply (filterlim_Rbar_mult m_infty p_infty).
 Qed.
 
 Lemma Lim_f_p_infty : is_lim f p_infty 0.
 Proof.
-  search_lim.
+(*  search_lim.*)
   apply is_lim_ext_loc with (fun x => 2 / x + 2 * (ln x / x)).
     exists 0.
     move => y Hy.
     rewrite /f /fab.
     field.
     by apply Rgt_not_eq.
-  apply is_lim_plus.
+  eapply is_lim_plus.
   apply is_lim_scal_l.
   apply is_lim_inv.
   by apply is_lim_id.
   by [].
   apply is_lim_scal_l.
   by apply is_lim_div_ln_p.
-  simpl.
-  reflexivity.
-  simpl ; apply Rbar_finite_eq ; ring.
+  unfold is_Rbar_plus, Rbar_plus' ; apply f_equal, f_equal ; ring.
 Qed.
 
 (** 2.c. *)
@@ -453,21 +449,15 @@ Qed.
 
 Lemma Q3c : is_lim_seq u p_infty.
 Proof.
-  search_lim_seq.
   apply is_lim_seq_ext with (fun n => 2 * (2/3)^n + INR n).
   move => n ; by rewrite Q3b.
-  apply is_lim_seq_plus.
+  eapply is_lim_seq_plus.
   apply is_lim_seq_scal_l.
   apply is_lim_seq_geom.
   rewrite Rabs_pos_eq.
-  apply Rlt_div_l.
-  repeat apply Rplus_lt_0_compat ; apply Rlt_0_1.
-  apply Rminus_lt_0 ; ring_simplify ; apply Rlt_0_1.
-  apply Rdiv_le_0_compat.
-  by apply Rlt_le, Rlt_0_2.
-  repeat apply Rplus_lt_0_compat ; apply Rlt_0_1.
+  lra.
+  lra.
   apply is_lim_seq_INR.
-  by [].
   by [].
 Qed.
 
@@ -500,15 +490,14 @@ Qed.
 
 Lemma Q4b : is_lim_seq Tu (1/2).
 Proof.
-  search_lim_seq.
   apply is_lim_seq_ext_loc with (fun n => (6 - 4 * (2/3)^n) / (INR n ^2) + / (2 * INR n) + /2).
     exists 1%nat => n Hn ; rewrite /Tu Q4a.
     simpl ; field.
     apply Rgt_not_eq, (lt_INR O) ; intuition.
-  apply is_lim_seq_plus.
-  apply is_lim_seq_plus.
+  eapply is_lim_seq_plus.
+  eapply is_lim_seq_plus.
   apply is_lim_seq_div.
-  apply is_lim_seq_minus.
+  eapply is_lim_seq_minus.
   apply is_lim_seq_const.
   apply is_lim_seq_scal_l.
   apply is_lim_seq_geom.
@@ -548,15 +537,7 @@ Proof.
   case: Rle_lt_or_eq_dec (Rlt_not_eq _ _ Rlt_0_2) => //.
   apply is_lim_seq_const.
   simpl.
-  case: Rle_dec Rle_0_1 => // H _.
-  case: Rle_lt_or_eq_dec (Rlt_not_eq _ _ Rlt_0_1) => //= _ _.
-  case: Rle_dec (Rlt_le _ _ Rlt_0_2) => // H0 _ ;
-  case: Rle_lt_or_eq_dec (Rlt_not_eq _ _ Rlt_0_2) => //.
-  simpl.
-  case: Rle_dec Rle_0_1 => // H _.
-  case: Rle_lt_or_eq_dec (Rlt_not_eq _ _ Rlt_0_1) => //= _ _.
-  case: Rle_dec (Rlt_le _ _ Rlt_0_2) => // H0 _ ;
-  case: Rle_lt_or_eq_dec (Rlt_not_eq _ _ Rlt_0_2) => //= _ _.
-  apply Rbar_finite_eq ; field.
+  apply (f_equal (@Some _)), f_equal.
+  field.
 Qed.
 (* 11:33 *)

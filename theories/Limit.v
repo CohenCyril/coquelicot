@@ -2155,32 +2155,33 @@ Qed.
 (** Addition *)
 
 Lemma filterlim_Rbar_plus :
-  forall x y,
-  ex_Rbar_plus x y ->
-  filterlim (fun z => fst z + snd z) (filter_prod (Rbar_locally x) (Rbar_locally y)) (Rbar_locally (Rbar_plus x y)).
+  forall x y z,
+  is_Rbar_plus x y z ->
+  filterlim (fun z => fst z + snd z) (filter_prod (Rbar_locally x) (Rbar_locally y)) (Rbar_locally z).
 Proof.
-  intros x y.
-  wlog: x y / (Rbar_le 0 (Rbar_plus x y)).
+  intros x y z.
+  wlog: x y z / (Rbar_le 0 z).
     intros Hw.
-    case: (Rbar_le_lt_dec 0 (Rbar_plus x y)) => Hz Hp.
+    case: (Rbar_le_lt_dec 0 z) => Hz Hp.
     by apply Hw.
     apply (filterlim_ext (fun z => - (- fst z + - snd z))).
-    intros z.
+    intros t.
     ring.
-    rewrite -(Rbar_opp_involutive (Rbar_plus x y)).
+    rewrite -(Rbar_opp_involutive z).
     eapply filterlim_compose.
     2: apply filterlim_Rbar_opp.
-    assert (Hw' : filterlim (fun z => fst z + snd z) (filter_prod (Rbar_locally (Rbar_opp x)) (Rbar_locally (Rbar_opp y))) (Rbar_locally (Rbar_plus (Rbar_opp x) (Rbar_opp y)))).
+    assert (Hw' : filterlim (fun z => fst z + snd z) (filter_prod (Rbar_locally (Rbar_opp x)) (Rbar_locally (Rbar_opp y))) (Rbar_locally (Rbar_opp z))).
     apply Hw.
-    rewrite Rbar_plus_opp.
-    replace (Finite 0) with (Rbar_opp 0) by apply (f_equal Finite), Ropp_0.
-    apply Rbar_opp_le.
+    rewrite -Ropp_0 -/(Rbar_opp 0).
+    apply <- Rbar_opp_le.
     now apply Rbar_lt_le.
     revert Hp.
     clear.
-    now destruct x as [x| |] ; destruct y as [y| |].
+    destruct x as [x| |] ; destruct y as [y| |] ; destruct z as [z| |] => //=.
+    unfold is_Rbar_plus ; simpl => H.
+    injection H => <-.
+    apply f_equal, f_equal ; ring.
     clear Hw.
-    rewrite -Rbar_plus_opp.
     intros P HP.
     specialize (Hw' P HP).
     destruct Hw' as [Q R H1 H2 H3].
@@ -2190,13 +2191,12 @@ Proof.
     intros u v HQ HR.
     exact (H3 _ _ HQ HR).
 
-  unfold Rbar_plus, ex_Rbar_plus.
-  case Hlp: Rbar_plus' => [[z| |]|] Hz Hp ;
+  unfold is_Rbar_plus.
+  case: z => [z| |] Hz Hp ;
   try by case: Hz.
 
 (* x + y \in R *)
-  case: x y Hlp Hz {Hp} => [x| |] ;
-  case => [y| |] //= ; case => <- Hlp.
+  case: x y Hp Hz => [x| |] ; case => [y| |] //= ; case => <- Hz.
   intros P [eps He].
   exists (fun u => Rabs (u - x) < pos_div_2 eps) (fun v => Rabs (v - y) < pos_div_2 eps).
   now exists (pos_div_2 eps).
@@ -2211,8 +2211,8 @@ Proof.
   now apply Hv.
 
 (* x + y = p_infty *)
-  wlog: x y Hlp {Hp Hz} / (is_finite x) => [Hw|Hx].
-    case: x y Hlp {Hp Hz} => [x| |] ;
+  wlog: x y Hp {Hz} / (is_finite x) => [Hw|Hx].
+    case: x y Hp {Hz} => [x| |] ;
     case => [y| |] // _.
     now apply (Hw x p_infty).
     assert (Hw': filterlim (fun z => fst z + snd z) (filter_prod (Rbar_locally y) (Rbar_locally p_infty)) (Rbar_locally p_infty)).
@@ -2234,7 +2234,7 @@ Proof.
     apply HN.
     rewrite (double_var N).
     now apply Rplus_lt_compat.
-  case: x y Hlp Hx => [x| |] ;
+  case: x y Hp Hx => [x| |] ;
   case => [y| | ] //= _ _.
   intros P [N HN].
   exists (fun u => Rabs (u - x) < 1) (fun v => N - x + 1 < v).
@@ -2249,14 +2249,24 @@ Proof.
   exact Hv.
 Qed.
 
-Lemma is_lim_seq_plus (u v : nat -> R) (l1 l2 : Rbar) :
+Lemma is_lim_seq_plus (u v : nat -> R) (l1 l2 l : Rbar) :
   is_lim_seq u l1 -> is_lim_seq v l2 ->
-  ex_Rbar_plus l1 l2 ->
-  is_lim_seq (fun n => u n + v n) (Rbar_plus l1 l2).
+  is_Rbar_plus l1 l2 l ->
+  is_lim_seq (fun n => u n + v n) l.
 Proof.
 intros Hu Hv Hl.
 eapply filterlim_compose_2 ; try eassumption.
 now apply filterlim_Rbar_plus.
+Qed.
+Lemma is_lim_seq_plus' (u v : nat -> R) (l1 l2 : R) :
+  is_lim_seq u l1 -> is_lim_seq v l2 ->
+  is_lim_seq (fun n => u n + v n) (l1 + l2).
+Proof.
+intros Hu Hv.
+eapply is_lim_seq_plus.
+by apply Hu.
+by apply Hv.
+by [].
 Qed.
 
 Lemma ex_lim_seq_plus (u v : nat -> R) :
@@ -2265,9 +2275,10 @@ Lemma ex_lim_seq_plus (u v : nat -> R) :
   ex_lim_seq (fun n => u n + v n).
 Proof.
   intros [lu Hu] [lv Hv] Hl ; exists (Rbar_plus lu lv).
-  apply is_lim_seq_plus ; try assumption.
+  apply is_lim_seq_plus with lu lv ; try assumption.
   rewrite -(is_lim_seq_unique u lu) //.
   rewrite -(is_lim_seq_unique v lv) //.
+  by apply Rbar_plus_correct.
 Qed.
 
 Lemma Lim_seq_plus (u v : nat -> R) :
@@ -2276,19 +2287,29 @@ Lemma Lim_seq_plus (u v : nat -> R) :
   Lim_seq (fun n => u n + v n) = Rbar_plus (Lim_seq u) (Lim_seq v).
 Proof.
   intros Hu Hv Hl.
-  apply is_lim_seq_unique, is_lim_seq_plus ; try apply Lim_seq_correct ; assumption.
+  apply is_lim_seq_unique.
+  eapply is_lim_seq_plus ; try apply Lim_seq_correct ; try assumption.
+  by apply Rbar_plus_correct.
 Qed.
 
 (** Subtraction *)
 
-Lemma is_lim_seq_minus (u v : nat -> R) (l1 l2 : Rbar) :
+Lemma is_lim_seq_minus (u v : nat -> R) (l1 l2 l : Rbar) :
   is_lim_seq u l1 -> is_lim_seq v l2 ->
-  ex_Rbar_minus l1 l2 ->
-  is_lim_seq (fun n => u n - v n) (Rbar_minus l1 l2).
+  is_Rbar_minus l1 l2 l ->
+  is_lim_seq (fun n => u n - v n) l.
 Proof.
   intros H1 H2 Hl.
-  apply is_lim_seq_plus ; try assumption.
-  by apply -> is_lim_seq_opp.
+  eapply is_lim_seq_plus ; try eassumption.
+  apply -> is_lim_seq_opp ; apply H2.
+Qed.
+Lemma is_lim_seq_minus' (u v : nat -> R) (l1 l2 : R) :
+  is_lim_seq u l1 -> is_lim_seq v l2 ->
+  is_lim_seq (fun n => u n - v n) (l1 - l2).
+Proof.
+intros Hu Hv.
+eapply is_lim_seq_minus ; try eassumption.
+by [].
 Qed.
 
 Lemma ex_lim_seq_minus (u v : nat -> R) :
@@ -2297,9 +2318,10 @@ Lemma ex_lim_seq_minus (u v : nat -> R) :
   ex_lim_seq (fun n => u n - v n).
 Proof.
   intros [lu Hu] [lv Hv] Hl ; exists (Rbar_minus lu lv).
-  apply is_lim_seq_minus ; try assumption.
+  eapply is_lim_seq_minus ; try eassumption.
   rewrite -(is_lim_seq_unique u lu) //.
   rewrite -(is_lim_seq_unique v lv) //.
+  by apply Rbar_plus_correct.
 Qed.
 
 Lemma Lim_seq_minus (u v : nat -> R) :
@@ -2308,7 +2330,9 @@ Lemma Lim_seq_minus (u v : nat -> R) :
   Lim_seq (fun n => u n - v n) = Rbar_minus (Lim_seq u) (Lim_seq v).
 Proof.
   intros Hu Hv Hl.
-  apply is_lim_seq_unique, is_lim_seq_minus ; try apply Lim_seq_correct ; assumption.
+  apply is_lim_seq_unique.
+  eapply is_lim_seq_minus ; try apply Lim_seq_correct ; try assumption.
+  by apply Rbar_plus_correct.
 Qed.
 
 (** *** Multiplicative operators *)

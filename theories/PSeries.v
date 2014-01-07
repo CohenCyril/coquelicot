@@ -1469,7 +1469,7 @@ Proof.
     by (rewrite -double_S /double ; ring).
   replace (S (S (double n)) + 1)%nat with (S (S (S (double n)))) by ring.
   move => <- ; simpl ; ring.
-  apply (is_lim_seq_plus _ _ l1 (x*l2)).
+  apply (is_lim_seq_plus' _ _ l1 (x*l2)).
 (* a(2k)x^(2k) *)
   apply filterlim_compose with (2:=H1).
   intros P [N HN].
@@ -1511,7 +1511,6 @@ Proof.
   case n; simpl; try easy.
   now apply le_S.
   simpl; now rewrite plus_0_r.
-  by [].
 Qed.
 Lemma ex_pseries_odd_even (a : nat -> R) (x : R) :
   ex_pseries (fun n => a (2*n)%nat) (x^2) -> ex_pseries (fun n => a (2*n+1)%nat) (x^2)

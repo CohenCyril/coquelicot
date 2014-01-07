@@ -137,7 +137,7 @@ Proof.
   by apply Rlt_le, exp_ineq1.
   pattern p_infty at 2.
   replace p_infty with (Rbar_plus 1 p_infty) by auto.
-  apply is_lim_plus.
+  eapply is_lim_plus.
   apply is_lim_const.
   apply is_lim_id.
   by [].
@@ -211,15 +211,12 @@ Proof.
   apply Rlt_le, Rinv_0_lt_compat, INR_fact_lt_0.
   apply pow_le.
   by apply Rlt_le.
-  evar (l : Rbar).
-  pattern p_infty at 2.
-  replace p_infty with l.
   apply is_lim_ext_loc with (fun y => /y + 1 + y / 2).
   exists 0 => y Hy.
   field.
   by apply Rgt_not_eq.
-  apply is_lim_plus.
-  apply is_lim_plus.
+  eapply is_lim_plus.
+  eapply is_lim_plus.
   apply is_lim_inv.
   apply is_lim_id.
   by [].
@@ -232,9 +229,6 @@ Proof.
   simpl.
   apply Rgt_not_eq, Rinv_0_lt_compat, Rlt_0_2.
   simpl.
-  case: Rle_dec (Rlt_le _ _ (Rinv_0_lt_compat 2 (Rlt_0_2))) => //= H _.
-  case: Rle_lt_or_eq_dec (Rlt_not_eq _ _ (Rinv_0_lt_compat 2 (Rlt_0_2))) => //= H _.
-  rewrite /l /=.
   case: Rle_dec (Rlt_le _ _ (Rinv_0_lt_compat 2 (Rlt_0_2))) => //= H _.
   case: Rle_lt_or_eq_dec (Rlt_not_eq _ _ (Rinv_0_lt_compat 2 (Rlt_0_2))) => //= H _.
 Qed.

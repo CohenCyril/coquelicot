@@ -1023,11 +1023,10 @@ Proof.
   replace ((/ (1 - q))) with (real (Rbar_mult (Rbar_minus 1 0) (/ (1 - q)))).
   unfold Rdiv.
   apply (is_lim_seq_scal_r (fun n : nat => (1 - q ^ S n)) (/ (1 - q)) (Rbar_minus 1 0)).
-  apply is_lim_seq_minus.
+  apply is_lim_seq_minus'.
   by apply is_lim_seq_const.
   apply (is_lim_seq_incr_1 (fun n => q^n)).
   by apply is_lim_seq_geom.
-  easy.
   simpl; ring.  
 Qed.
 Lemma ex_series_geom (q : R) :
