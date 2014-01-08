@@ -795,15 +795,12 @@ Proof.
     replace (2 * S (Div2.div2 k))%nat with (S (S (2 * Div2.div2 k))) by ring.
     by repeat apply le_n_S.
 
-    apply is_lim_seq_mult.
+    apply is_lim_seq_mult'.
     apply filterlim_ext with (2:=Hla); apply sum_n_sum_f_R0.
     apply filterlim_ext with (2:=Hlb); apply sum_n_sum_f_R0.
-    by [].
-    replace (Finite (la * lb)) with (Rbar_mult la lb) by auto.
-    apply is_lim_seq_mult.
+    apply is_lim_seq_mult'.
     apply filterlim_ext with (2:=Hla); apply sum_n_sum_f_R0.
     apply filterlim_ext with (2:=Hlb); apply sum_n_sum_f_R0.
-    by [].
 Qed.
 
 Lemma is_series_mult (a b : nat -> R) (la lb : R) :

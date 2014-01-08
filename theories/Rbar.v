@@ -643,6 +643,93 @@ Proof.
   by apply Rlt_not_eq, Rnot_le_lt.
 Qed.
 
+Lemma is_Rbar_mult_sym (x y z : Rbar) :
+  is_Rbar_mult x y z -> is_Rbar_mult y x z.
+Proof.
+  case: x => [x | | ] ;
+  case: y => [y | | ] ;
+  case: z => [z | | ] //= ;
+  unfold is_Rbar_mult, Rbar_mult' ;
+  try (case: Rle_dec => // H) ;
+  try (case: Rle_lt_or_eq_dec => // H0) ;
+  try (case => <-) ; try (move => _).
+  by rewrite Rmult_comm.
+Qed.
+Lemma is_Rbar_mult_opp_l (x y z : Rbar) :
+  is_Rbar_mult x y z -> is_Rbar_mult (Rbar_opp x) y (Rbar_opp z).
+Proof.
+  case: x => [x | | ] ;
+  case: y => [y | | ] ;
+  case: z => [z | | ] //= ;
+  unfold is_Rbar_mult, Rbar_mult' ;
+  try (case: Rle_dec => // H) ;
+  try (case: Rle_lt_or_eq_dec => // H0) ;
+  try (case => <-) ; try (move => _).
+  apply (f_equal (@Some _)), f_equal ; ring.
+  apply Ropp_lt_contravar in H0 ; rewrite Ropp_0 in H0 ;
+  now move/Rlt_not_le: H0 ; case: Rle_dec.
+  apply Rnot_le_lt, Ropp_lt_contravar in H ; rewrite Ropp_0 in H ;
+  move/Rlt_le: (H) ; case: Rle_dec => // H0 _ ;
+  now move/Rlt_not_eq: H ; case: Rle_lt_or_eq_dec.
+  apply Rnot_le_lt, Ropp_lt_contravar in H ; rewrite Ropp_0 in H ;
+  move/Rlt_le: (H) ; case: Rle_dec => // H0 _ ;
+  now move/Rlt_not_eq: H ; case: Rle_lt_or_eq_dec.
+  apply Ropp_lt_contravar in H0 ; rewrite Ropp_0 in H0 ;
+  now move/Rlt_not_le: H0 ; case: Rle_dec.
+Qed.
+Lemma is_Rbar_mult_opp_r (x y z : Rbar) :
+  is_Rbar_mult x y z -> is_Rbar_mult x (Rbar_opp y) (Rbar_opp z).
+Proof.
+  move/is_Rbar_mult_sym => H.
+  now apply is_Rbar_mult_sym, is_Rbar_mult_opp_l.
+Qed.
+
+Lemma is_Rbar_mult_p_infty_pos (x : Rbar) :
+  Rbar_lt 0 x -> is_Rbar_mult p_infty x p_infty.
+Proof.
+  case: x => [x | | ] // Hx.
+  unfold is_Rbar_mult, Rbar_mult'.
+  case: Rle_dec (Rlt_le _ _ Hx) => // Hx' _.
+  now case: Rle_lt_or_eq_dec (Rlt_not_eq _ _ Hx).
+Qed.
+Lemma is_Rbar_mult_p_infty_neg (x : Rbar) :
+  Rbar_lt x 0 -> is_Rbar_mult p_infty x m_infty.
+Proof.
+  case: x => [x | | ] // Hx.
+  unfold is_Rbar_mult, Rbar_mult'.
+  case: Rle_dec (Rlt_not_le _ _ Hx) => // Hx' _.
+Qed.
+Lemma is_Rbar_mult_m_infty_pos (x : Rbar) :
+  Rbar_lt 0 x -> is_Rbar_mult m_infty x m_infty.
+Proof.
+  case: x => [x | | ] // Hx.
+  unfold is_Rbar_mult, Rbar_mult'.
+  case: Rle_dec (Rlt_le _ _ Hx) => // Hx' _.
+  now case: Rle_lt_or_eq_dec (Rlt_not_eq _ _ Hx).
+Qed.
+Lemma is_Rbar_mult_m_infty_neg (x : Rbar) :
+  Rbar_lt x 0 -> is_Rbar_mult m_infty x p_infty.
+Proof.
+  case: x => [x | | ] // Hx.
+  unfold is_Rbar_mult, Rbar_mult'.
+  case: Rle_dec (Rlt_not_le _ _ Hx) => // Hx' _.
+Qed.
+
+(** Rbar_div *)
+
+Lemma is_Rbar_div_p_infty (x : R) :
+  is_Rbar_div x p_infty 0.
+Proof.
+  apply (f_equal (@Some _)).
+  by rewrite Rmult_0_r.
+Qed.
+Lemma is_Rbar_div_m_infty (x : R) :
+  is_Rbar_div x m_infty 0.
+Proof.
+  apply (f_equal (@Some _)).
+  by rewrite Rmult_0_r.
+Qed.
+
 (** Rbar_mult_pos *)
 
 Lemma Rbar_mult_pos_eq (x y : Rbar) (z : posreal) :

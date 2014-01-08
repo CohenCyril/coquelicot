@@ -148,13 +148,12 @@ Proof.
   eapply filterlim_compose_2.
   apply filterlim_const.
   by apply is_lim_ln_0.
-  apply (filterlim_Rbar_mult 2 m_infty).
-  simpl.
-  by apply Rgt_not_eq, Rlt_0_2.
-  apply (filterlim_Rbar_plus 2 (Rbar_mult 2 m_infty)).
-  simpl ;
+  apply (filterlim_Rbar_mult 2 m_infty m_infty).
+  unfold is_Rbar_mult, Rbar_mult'.
   case: Rle_dec (Rlt_le _ _ Rlt_0_2) => // H _ ;
   case: Rle_lt_or_eq_dec (Rlt_not_eq _ _ Rlt_0_2) => //.
+  apply (filterlim_Rbar_plus 2 _ m_infty).
+  by [].
   by apply is_lim_Rinv_0.
   by apply (filterlim_Rbar_mult m_infty p_infty).
 Qed.
@@ -452,11 +451,13 @@ Proof.
   apply is_lim_seq_ext with (fun n => 2 * (2/3)^n + INR n).
   move => n ; by rewrite Q3b.
   eapply is_lim_seq_plus.
-  apply is_lim_seq_scal_l.
+  eapply is_lim_seq_mult.
+  by apply is_lim_seq_const.
   apply is_lim_seq_geom.
   rewrite Rabs_pos_eq.
   lra.
   lra.
+  by [].
   apply is_lim_seq_INR.
   by [].
 Qed.
@@ -496,47 +497,35 @@ Proof.
     apply Rgt_not_eq, (lt_INR O) ; intuition.
   eapply is_lim_seq_plus.
   eapply is_lim_seq_plus.
-  apply is_lim_seq_div.
+  eapply is_lim_seq_div.
   eapply is_lim_seq_minus.
   apply is_lim_seq_const.
-  apply is_lim_seq_scal_l.
+  eapply is_lim_seq_mult.
+  by apply is_lim_seq_const.
   apply is_lim_seq_geom.
   rewrite Rabs_pos_eq.
-  apply Rlt_div_l.
-  repeat apply Rplus_lt_0_compat ; apply Rlt_0_1.
-  apply Rminus_lt_0 ; ring_simplify ; apply Rlt_0_1.
-  apply Rdiv_le_0_compat.
-  by apply Rlt_le, Rlt_0_2.
-  repeat apply Rplus_lt_0_compat ; apply Rlt_0_1.
+  lra.
+  lra.
   by [].
-  repeat apply is_lim_seq_mult.
+  rewrite /is_Rbar_minus /is_Rbar_plus /=.
+  now ring_simplify (6 + - (4 * 0)).
+  repeat eapply is_lim_seq_mult.
   apply is_lim_seq_INR.
   apply is_lim_seq_INR.
   apply is_lim_seq_const.
-  simpl.
-  by apply Rgt_not_eq, Rlt_0_1.
-  simpl.
-  case: Rle_dec Rle_0_1 => // H _.
-  case: Rle_lt_or_eq_dec (Rlt_not_eq _ _ Rlt_0_1) => //.
-  simpl.
-  case: Rle_dec Rle_0_1 => // H _.
-  case: Rle_lt_or_eq_dec (Rlt_not_eq _ _ Rlt_0_1) => //.
-  simpl.
-  case: Rle_dec Rle_0_1 => // H _.
-  case: Rle_lt_or_eq_dec (Rlt_not_eq _ _ Rlt_0_1) => //.
+  apply is_Rbar_mult_p_infty_pos.
+  by apply Rlt_0_1.
+  by [].
+  by [].
+  by apply is_Rbar_div_p_infty.
   apply is_lim_seq_inv.
-  apply is_lim_seq_scal_l.
+  eapply is_lim_seq_mult.
+  by apply is_lim_seq_const.
   by apply is_lim_seq_INR.
-  simpl.
-  case: Rle_dec (Rlt_le _ _ Rlt_0_2) => // H _.
-  case: Rle_lt_or_eq_dec (Rlt_not_eq _ _ Rlt_0_2) => //.
-  simpl.
-  case: Rle_dec Rle_0_1 => // H _.
-  case: Rle_lt_or_eq_dec (Rlt_not_eq _ _ Rlt_0_1) => //= _ _.
-  case: Rle_dec (Rlt_le _ _ Rlt_0_2) => // H0 _ ;
-  case: Rle_lt_or_eq_dec (Rlt_not_eq _ _ Rlt_0_2) => //.
+  by apply is_Rbar_mult_sym, is_Rbar_mult_p_infty_pos, Rlt_0_2.
+  by [].
+  by [].
   apply is_lim_seq_const.
-  simpl.
   apply (f_equal (@Some _)), f_equal.
   field.
 Qed.

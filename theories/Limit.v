@@ -2471,29 +2471,28 @@ Qed.
 (** Multiplication *)
 
 Lemma filterlim_Rbar_mult :
-  forall x y,
-  ex_Rbar_mult x y ->
-  filterlim (fun z => fst z * snd z) (filter_prod (Rbar_locally x) (Rbar_locally y)) (Rbar_locally (Rbar_mult x y)).
+  forall x y z,
+  is_Rbar_mult x y z ->
+  filterlim (fun z => fst z * snd z) (filter_prod (Rbar_locally x) (Rbar_locally y)) (Rbar_locally z).
 Proof.
-  intros x y.
-  wlog: x y / (Rbar_le 0 x).
+  intros x y z.
+  wlog: x y z / (Rbar_le 0 x).
     intros Hw.
     case: (Rbar_le_lt_dec 0 x) => Hx Hp.
     by apply Hw.
     apply (filterlim_ext (fun z => - (- fst z * snd z))).
-    intros z.
+    intros t.
     ring.
-    rewrite -(Rbar_opp_involutive (Rbar_mult x y)).
+    rewrite -(Rbar_opp_involutive z).
     eapply filterlim_compose.
     2: apply filterlim_Rbar_opp.
-    assert (Hw' : filterlim (fun z => fst z * snd z) (filter_prod (Rbar_locally (Rbar_opp x)) (Rbar_locally y)) (Rbar_locally (Rbar_mult (Rbar_opp x) y))).
+    assert (Hw' : filterlim (fun z => fst z * snd z) (filter_prod (Rbar_locally (Rbar_opp x)) (Rbar_locally y)) (Rbar_locally (Rbar_opp z))).
     apply Hw.
     replace (Finite 0) with (Rbar_opp 0) by apply (f_equal Finite), Ropp_0.
     apply Rbar_opp_le.
     by apply Rbar_lt_le.
-    by apply ex_Rbar_mult_opp_l.
+    by apply is_Rbar_mult_opp_l.
     clear Hw.
-    rewrite -Rbar_mult_opp_l.
     intros P HP.
     specialize (Hw' P HP).
     destruct Hw' as [Q R H1 H2 H3].
@@ -2502,25 +2501,24 @@ Proof.
     exact H2.
     intros u v HQ HR.
     exact (H3 _ _ HQ HR).
-  wlog: x y / (Rbar_le 0 y).
+  wlog: x y z / (Rbar_le 0 y).
     intros Hw.
     case: (Rbar_le_lt_dec 0 y) => Hy Hx Hp.
     by apply Hw.
     apply (filterlim_ext (fun z => - (fst z * -snd z))).
-    intros z.
+    intros t.
     ring.
-    rewrite -(Rbar_opp_involutive (Rbar_mult x y)).
+    rewrite -(Rbar_opp_involutive z).
     eapply filterlim_compose.
     2: apply filterlim_Rbar_opp.
-    assert (Hw' : filterlim (fun z => fst z * snd z) (filter_prod (Rbar_locally x) (Rbar_locally (Rbar_opp y))) (Rbar_locally (Rbar_mult x (Rbar_opp y)))).
+    assert (Hw' : filterlim (fun z => fst z * snd z) (filter_prod (Rbar_locally x) (Rbar_locally (Rbar_opp y))) (Rbar_locally (Rbar_opp z))).
     apply Hw.
     replace (Finite 0) with (Rbar_opp 0) by apply (f_equal Finite), Ropp_0.
     apply Rbar_opp_le.
     by apply Rbar_lt_le.
     by [].
-    by apply ex_Rbar_mult_opp_r.
+    by apply is_Rbar_mult_opp_r.
     clear Hw.
-    rewrite -Rbar_mult_opp_r.
     intros P HP.
     specialize (Hw' P HP).
     destruct Hw' as [Q R H1 H2 H3].
@@ -2529,15 +2527,14 @@ Proof.
     now apply filterlim_Rbar_opp.
     intros u v HQ HR.
     exact (H3 _ _ HQ HR).
-  wlog: x y / (Rbar_le x y).
+  wlog: x y z / (Rbar_le x y).
     intros Hw.
     case: (Rbar_le_lt_dec x y) => Hl Hx Hy Hp.
     by apply Hw.
-    assert (Hw' : filterlim (fun z => fst z * snd z) (filter_prod (Rbar_locally y) (Rbar_locally x)) (Rbar_locally (Rbar_mult y x))).
+    assert (Hw' : filterlim (fun z => fst z * snd z) (filter_prod (Rbar_locally y) (Rbar_locally x)) (Rbar_locally z)).
     apply Hw ; try assumption.
     by apply Rbar_lt_le.
-    by apply ex_Rbar_mult_sym.
-    rewrite Rbar_mult_comm.
+    by apply is_Rbar_mult_sym.
     intros P HP.
     specialize (Hw' P HP).
     destruct Hw' as [Q R H1 H2 H3].
@@ -2546,9 +2543,10 @@ Proof.
     simpl.
     rewrite Rmult_comm.
     exact (H3 _ _ HQ HR).
-  case: x => [x| | ] ; case: y => [y| | ] Hl Hy Hx Hp ;
+  case: x => [x| | ] ; case: y => [y| | ] ; case: z => [z| | ] Hl Hy Hx Hp ;
   try (by case: Hl) || (by case: Hx) || (by case: Hy).
 (* x, y \in R *)
+  case: Hp => <-.
   intros P [eps HP].
   assert (He: 0 < eps / (x + y + 1)).
   apply Rdiv_lt_0_compat.
@@ -2592,9 +2590,12 @@ Proof.
   now apply Rplus_le_le_0_compat.
   apply Rlt_0_1.
 (* x \in R and y = p_infty *)
-  simpl in Hp |- *.
+  move: Hp ; unfold is_Rbar_mult, Rbar_mult'.
   case: Rle_dec => // Hx'.
-  case: Rle_lt_or_eq_dec => {Hl Hx Hy Hx'} Hx.
+  case: Rle_lt_or_eq_dec => {Hl Hx Hy Hx'} // Hx.
+  move: Hp ; unfold is_Rbar_mult, Rbar_mult'.
+  case: Rle_dec => // Hx'.
+  case: Rle_lt_or_eq_dec => {Hl Hx Hy Hx'} // Hx _.
   intros P [N HN].
   exists (fun u => Rabs (u - x) < x / 2) (fun v => Rmax 0 (N / (x / 2)) < v).
   now exists (pos_div_2 (mkposreal _ Hx)).
@@ -2614,7 +2615,9 @@ Proof.
   apply Rmax_l.
   now apply Rabs_lt_between'.
   exact Hv.
-  by apply sym_eq in Hx.
+  move: Hp ; unfold is_Rbar_mult, Rbar_mult'.
+  case: Rle_dec => // Hx'.
+  case: Rle_lt_or_eq_dec => {Hl Hx Hy Hx'} // Hx.
 (* l1 = l2 = p_infty *)
   clear.
   intros P [N HN].
@@ -2633,14 +2636,22 @@ Proof.
   exact Hv.
 Qed.
 
-Lemma is_lim_seq_mult (u v : nat -> R) (l1 l2 : Rbar) :
+Lemma is_lim_seq_mult (u v : nat -> R) (l1 l2 l : Rbar) :
   is_lim_seq u l1 -> is_lim_seq v l2 ->
-  ex_Rbar_mult l1 l2 ->
-  is_lim_seq (fun n => u n * v n) (Rbar_mult l1 l2).
+  is_Rbar_mult l1 l2 l ->
+  is_lim_seq (fun n => u n * v n) l.
 Proof.
 intros Hu Hv Hp.
 eapply filterlim_compose_2 ; try eassumption.
 now apply filterlim_Rbar_mult.
+Qed.
+Lemma is_lim_seq_mult' (u v : nat -> R) (l1 l2 : R) :
+  is_lim_seq u l1 -> is_lim_seq v l2 ->
+  is_lim_seq (fun n => u n * v n) (l1 * l2).
+Proof.
+intros Hu Hv.
+eapply is_lim_seq_mult ; try eassumption.
+by [].
 Qed.
 
 Lemma ex_lim_seq_mult (u v : nat -> R) :
@@ -2649,9 +2660,10 @@ Lemma ex_lim_seq_mult (u v : nat -> R) :
   ex_lim_seq (fun n => u n * v n).
 Proof.
   intros [lu Hu] [lv Hv] H ; exists (Rbar_mult lu lv).
-  apply is_lim_seq_mult ; try assumption.
+  eapply is_lim_seq_mult ; try eassumption.
   rewrite -(is_lim_seq_unique u lu) //.
   rewrite -(is_lim_seq_unique v lv) //.
+  by apply Rbar_mult_correct.
 Qed.
 
 Lemma Lim_seq_mult (u v : nat -> R) :
@@ -2661,7 +2673,8 @@ Lemma Lim_seq_mult (u v : nat -> R) :
 Proof.
   move => H1 H2 Hl.
   apply is_lim_seq_unique.
-  apply is_lim_seq_mult ; try apply Lim_seq_correct ; assumption.
+  eapply is_lim_seq_mult ; try apply Lim_seq_correct ; try eassumption.
+  by apply Rbar_mult_correct.
 Qed.
 
 (** Multiplication by a scalar *)
@@ -2680,8 +2693,8 @@ Proof.
   eapply filterlim_compose_2.
   apply filterlim_const.
   apply filterlim_id.
-  apply filterlim_Rbar_mult.
-  case: l => [x| |] //=.
+  eapply (filterlim_Rbar_mult a l).
+  apply Rbar_mult_correct ; by case: l.
 Qed.
 
 Lemma filterlim_Rbar_mult_r :
@@ -2699,9 +2712,9 @@ Lemma is_lim_seq_scal_l (u : nat -> R) (a : R) (lu : Rbar) :
   is_lim_seq u lu ->
   is_lim_seq (fun n => a * u n) (Rbar_mult a lu).
 Proof.
-intros Hu.
+intros Hu H.
 apply filterlim_compose with (1 := Hu).
-apply filterlim_Rbar_mult_l.
+by apply filterlim_Rbar_mult_l.
 Qed.
 
 Lemma ex_lim_seq_scal_l (u : nat -> R) (a : R) :
@@ -2709,7 +2722,7 @@ Lemma ex_lim_seq_scal_l (u : nat -> R) (a : R) :
 Proof.
   move => [l H].
   exists (Rbar_mult a l).
-  by apply is_lim_seq_scal_l.
+  eapply is_lim_seq_scal_l ; try eassumption.
 Qed.
 
 Lemma Lim_seq_scal_l (u : nat -> R) (a : R) :
@@ -2754,8 +2767,9 @@ Lemma is_lim_seq_scal_r (u : nat -> R) (a : R) (lu : Rbar) :
   is_lim_seq u lu ->
     is_lim_seq (fun n => u n * a) (Rbar_mult lu a).
 Proof.
-  move => Hu.
-  apply is_lim_seq_ext with ((fun n : nat => a * u n)) ; try by intuition.
+  move => Hu Ha.
+  apply is_lim_seq_ext with ((fun n : nat => a * u n)).
+  move => n ; by apply Rmult_comm.
   rewrite Rbar_mult_comm.
   apply is_lim_seq_scal_l.
   by apply Hu.
@@ -2779,14 +2793,23 @@ Qed.
 
 (** Division *)
 
-Lemma is_lim_seq_div (u v : nat -> R) (l1 l2 : Rbar) :
+Lemma is_lim_seq_div (u v : nat -> R) (l1 l2 l : Rbar) :
   is_lim_seq u l1 -> is_lim_seq v l2 -> l2 <> 0 ->
-  ex_Rbar_div l1 l2 ->
-  is_lim_seq (fun n => u n / v n) (Rbar_div l1 l2).
+  is_Rbar_div l1 l2 l ->
+  is_lim_seq (fun n => u n / v n) l.
 Proof.
   intros.
-  apply is_lim_seq_mult ; try assumption.
+  eapply is_lim_seq_mult ; try eassumption.
   now apply is_lim_seq_inv.
+Qed.
+Lemma is_lim_seq_div' (u v : nat -> R) (l1 l2 : R) :
+  is_lim_seq u l1 -> is_lim_seq v l2 -> l2 <> 0 ->
+  is_lim_seq (fun n => u n / v n) (l1 / l2).
+Proof.
+  intros.
+  eapply is_lim_seq_div ; try eassumption.
+  now contradict H1 ; case: H1 => ->.
+  by [].
 Qed.
 Lemma ex_lim_seq_div (u v : nat -> R) :
   ex_lim_seq u -> ex_lim_seq v -> Lim_seq v <> 0 ->
@@ -2797,7 +2820,8 @@ Proof.
   apply Lim_seq_correct in H.
   apply Lim_seq_correct in H0.
   exists (Rbar_div (Lim_seq u) (Lim_seq v)).
-  now apply is_lim_seq_div.
+  eapply is_lim_seq_div ; try eassumption.
+  by apply Rbar_mult_correct.
 Qed.
 Lemma Lim_seq_div (u v : nat -> R) :
   ex_lim_seq u -> ex_lim_seq v -> (Lim_seq v <> 0) ->
@@ -2806,7 +2830,8 @@ Lemma Lim_seq_div (u v : nat -> R) :
 Proof.
   move => H0 H1 H2 H3.
   apply is_lim_seq_unique.
-  apply is_lim_seq_div ; try apply Lim_seq_correct ; assumption.
+  eapply is_lim_seq_div ; try apply Lim_seq_correct ; try eassumption.
+  by apply Rbar_mult_correct.
 Qed.
 
 (** *** Additional limits *)

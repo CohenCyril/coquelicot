@@ -57,9 +57,9 @@ Proof.
   by apply Rgt_not_eq, lt_0_INR, lt_O_Sn.
   by apply Rgt_not_eq, lt_0_INR, lt_O_Sn.
   by apply pow_nonzero, Rlt_not_eq, (IZR_lt (-1) 0).
-  search_lim_seq.
+  replace (Finite 0) with (Rbar_inv p_infty) by auto.
   apply is_lim_seq_inv.
-  apply is_lim_seq_mult.
+  eapply is_lim_seq_mult.
   apply -> is_lim_seq_incr_1.
   by apply is_lim_seq_INR.
   apply is_lim_seq_ext with (fun k => INR (k + S n)).
@@ -67,7 +67,6 @@ Proof.
   by rewrite (Plus.plus_comm n k) plus_n_Sm.
   apply is_lim_seq_incr_n.
   by apply is_lim_seq_INR.
-  by [].
   by [].
   by [].
 Qed.
