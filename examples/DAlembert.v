@@ -35,11 +35,12 @@ Ltac auto_derive_2 :=
       let H := fresh "H" in
       let u := fresh "u" in
       intro H ;
-      apply (is_derive_ext d) ;
+      apply filterdiff_Reals ;
+      apply (filterdiff_ext d) ;
       [ intro u ;
         apply sym_eq, is_derive_unique ;
         apply H
-      | auto_derive ] ;
+      | apply filterdiff_Reals ; auto_derive ] ;
       clear H
     end
   end.

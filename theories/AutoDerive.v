@@ -718,12 +718,17 @@ induction e using expr_ind'.
 
 (* Var *)
 simpl => l k _.
-apply (is_derive_ext (fun x => if ssrnat.eqn n k then x else nth 0 l n)).
+apply filterdiff_Reals.
+apply (filterdiff_ext (fun x => if ssrnat.eqn n k then x else nth 0 l n)).
 intros t.
 now rewrite nth_set_nth.
 case ssrnat.eqnP => [H|H].
-apply derivable_pt_lim_id.
-apply derivable_pt_lim_const.
+eapply filterdiff_ext_lin.
+apply filterdiff_id.
+simpl => y ; ring.
+eapply filterdiff_ext_lin.
+apply filterdiff_const.
+simpl => y ; ring.
 
 (* AppExt *)
 simpl D => l n.
@@ -743,11 +748,14 @@ move: (interp_AppExt_set_nth_not_const k f le l n) (uniq_index_not_const n le).
 case (index_not_const le n) => [|v1 [|v2 [|v3 q]]] /= Hc.
 (* . *)
 intros _ _.
-apply (is_derive_ext (fun x => apply k f (nth 0 (map (interp l) le)))).
+apply filterdiff_Reals.
+apply (filterdiff_ext (fun x => apply k f (nth 0 (map (interp l) le)))).
 intros t.
 apply sym_eq.
 apply Hc.
-apply derivable_pt_lim_const.
+eapply filterdiff_ext_lin.
+apply filterdiff_const.
+simpl => y ; ring.
 (* . *)
 intros _.
 case (ssrnat.leqP (size le) v1) => Hv1.
@@ -758,9 +766,11 @@ move: (Dle v1 n l).
 case (D (nth (Cst 0) le v1)) => /= [d1 d2] {Dle} Dle [H1 [H2 _]].
 rewrite Rmult_comm.
 specialize (Dle H2).
-apply (is_derive_ext (fun x => apply k f (fun i => if ssrnat.eqn i v1 then interp (set_nth 0 l n x) (nth (Cst 0) le v1) else nth 0 (map (interp l) le) i))).
+apply filterdiff_Reals.
+apply (filterdiff_ext (fun x => apply k f (fun i => if ssrnat.eqn i v1 then interp (set_nth 0 l n x) (nth (Cst 0) le v1) else nth 0 (map (interp l) le) i))).
 intros t.
 now apply sym_eq.
+apply filterdiff_Reals.
 apply derivable_pt_lim_comp with (f2 := fun x => apply k f (fun i => if ssrnat.eqn i v1 then x else nth 0 (map (interp l) le) i)) (1 := Dle).
 rewrite interp_set_nth.
 rewrite -(nth_map (Cst 0) 0) //.
@@ -785,17 +795,21 @@ specialize (Dle1 H3).
 specialize (Dle2 H5).
 set (g u v := apply k f (fun i =>
   if ssrnat.eqn i v1 then u else if ssrnat.eqn i v2 then v else nth 0 (map (interp l) le) i)).
-apply (is_derive_ext (fun x => g (interp (set_nth 0 l n x) (nth (Cst 0) le v1)) (interp (set_nth 0 l n x) (nth (Cst 0) le v2)))).
+apply filterdiff_Reals.
+apply (filterdiff_ext (fun x => g (interp (set_nth 0 l n x) (nth (Cst 0) le v1)) (interp (set_nth 0 l n x) (nth (Cst 0) le v2)))).
 intros t.
 unfold g.
 now apply sym_eq.
+apply filterdiff_Reals.
 apply derivable_pt_lim_comp_2d with (f1 := g).
 rewrite 2!interp_set_nth.
 assert (H1': ex_derive_Rn k f v1 (nth 0 (map (interp l) le))).
 apply locally_2d_singleton in H1.
 unfold ex_derive_Rn in H1 |- *.
 rewrite ssrnat.eqnE eqtype.eq_refl in H1.
-apply: ex_derive_ext H1 => t.
+apply ex_filterdiff_Reals.
+apply ex_filterdiff_Reals in H1.
+apply: ex_filterdiff_ext H1 => t.
 apply apply_ext => p Hp.
 rewrite -ssrnat.eqnE.
 case E: (ssrnat.eqn p v1) => //.
@@ -811,11 +825,15 @@ apply locally_2d_forall => u v H'.
 unfold g.
 unfold ex_derive_Rn in H'.
 rewrite ssrnat.eqnE eqtype.eq_refl in H'.
-apply: ex_derive_ext H' => t.
+apply ex_filterdiff_Reals.
+apply ex_filterdiff_Reals in H'.
+apply: ex_filterdiff_ext H' => t.
 apply apply_ext => p Hp.
 rewrite -ssrnat.eqnE.
 now case E: (ssrnat.eqn p v1).
-apply: is_derive_ext (Derive_correct _ _ H4) => t.
+apply filterdiff_Reals.
+move/filterdiff_Reals: (Derive_correct _ _ H4).
+apply: filterdiff_ext  => t.
 apply apply_ext => p Hp.
 case E: (ssrnat.eqn p v1) => //.
 rewrite (ssrnat.eqnP E).
@@ -865,17 +883,23 @@ assert (H1 := is_const_correct e1 n C1 l).
 case o ; intros H2.
 rewrite -(Rplus_0_l (interp l a2)).
 apply derivable_pt_lim_plus.
-apply (is_derive_ext (fun x => interp (set_nth 0 l n 0) e1)).
+apply filterdiff_Reals.
+apply (filterdiff_ext (fun x => interp (set_nth 0 l n 0) e1)).
 apply H1.
-apply derivable_pt_lim_const.
+eapply filterdiff_ext_lin.
+apply filterdiff_const.
+move => /= y ; ring.
 now apply IHe2.
 simpl.
 replace (interp l e1 * interp l a2) with (0 * interp (set_nth 0 l n (nth 0 l n)) e2 + interp l e1 * interp l a2) by ring.
 rewrite -(interp_set_nth n _ e1).
 apply (derivable_pt_lim_mult (fun x => interp (set_nth 0 l n x) e1) (fun x => interp (set_nth 0 l n x) e2)).
-apply (is_derive_ext (fun x => interp (set_nth 0 l n 0) e1)).
+apply filterdiff_Reals.
+apply (filterdiff_ext (fun x => interp (set_nth 0 l n 0) e1)).
 apply H1.
-apply derivable_pt_lim_const.
+eapply filterdiff_ext_lin.
+apply filterdiff_const.
+simpl => y ; ring.
 now apply IHe2.
 case C2: (is_const e2 n) => {C1}.
 (* . *)
@@ -884,17 +908,23 @@ case o ; intros H1.
 rewrite -(Rplus_0_r (interp l a1)).
 apply derivable_pt_lim_plus.
 now apply IHe1.
-apply (is_derive_ext (fun x => interp (set_nth 0 l n 0) e2)).
+apply filterdiff_Reals.
+apply (filterdiff_ext (fun x => interp (set_nth 0 l n 0) e2)).
 apply H2.
-apply derivable_pt_lim_const.
+eapply filterdiff_ext_lin.
+apply filterdiff_const.
+simpl => y ; ring.
 simpl.
 replace (interp l a1 * interp l e2) with (interp l a1 * interp l e2 + interp (set_nth 0 l n (nth 0 l n)) e1 * 0) by ring.
 rewrite -(interp_set_nth n _ e2).
 apply (derivable_pt_lim_mult (fun x => interp (set_nth 0 l n x) e1) (fun x => interp (set_nth 0 l n x) e2)).
 now apply IHe1.
-apply (is_derive_ext (fun x => interp (set_nth 0 l n 0) e2)).
+apply filterdiff_Reals.
+apply (filterdiff_ext (fun x => interp (set_nth 0 l n 0) e2)).
 apply H2.
-apply derivable_pt_lim_const.
+eapply filterdiff_ext_lin.
+apply filterdiff_const.
+simpl => y ; ring.
 (* . *)
 clear C2.
 case o ; simpl ;
@@ -980,9 +1010,10 @@ apply Rle_lt_trans with (2 := proj1 Hv).
 now apply Rplus_le_compat_r.
 apply Rlt_le_trans with (1 := proj2 Hv).
 now apply Rplus_le_compat_r.
-move: (IHe1 _ (H v u H' Hu)) => {IHe1} /=.
+apply filterdiff_Reals.
+move/filterdiff_Reals: (IHe1 _ (H v u H' Hu)) => {IHe1} /=.
 rewrite nth_set_nth /= eqtype.eq_refl.
-apply is_derive_ext => z.
+apply filterdiff_ext => z.
 now rewrite set_set_nth /= eqtype.eq_refl.
 (* . *)
 assert (Htw: forall e : posreal, forall t, Rmin (interp l e2) (interp l e3) <= t <= Rmax (interp l e2) (interp l e3) ->
@@ -1005,7 +1036,8 @@ case C2: (is_const e2 n).
 simpl.
 intros (H3&Hi&H1&_).
 rewrite Rmult_comm.
-apply (is_derive_ext (comp (fun x => RInt (fun t => interp (t :: l) e1) (interp (set_nth 0 l n (nth 0 l n)) e2) x) (fun x => interp (set_nth 0 l n x) e3))).
+apply filterdiff_Reals.
+apply (filterdiff_ext (comp (fun x => RInt (fun t => interp (t :: l) e1) (interp (set_nth 0 l n (nth 0 l n)) e2) x) (fun x => interp (set_nth 0 l n x) e3))).
 intros t.
 unfold comp.
 rewrite -(is_const_correct e2 n C2 l (nth 0 l n)).
@@ -1013,6 +1045,7 @@ apply RInt_ext.
 intros z _.
 rewrite -(interp_set_nth (S n)).
 apply (is_const_correct e1 (S n) C1 (z :: l)).
+apply filterdiff_Reals.
 apply derivable_pt_lim_comp.
 now apply IHe3.
 rewrite 2!interp_set_nth.
@@ -1025,7 +1058,8 @@ case C3: (is_const e3 n).
 simpl.
 intros (H2&Hi&H1&_).
 rewrite Rmult_comm -Ropp_mult_distr_l_reverse.
-apply (is_derive_ext (fun x => comp (fun x => RInt (fun t => interp (t :: l) e1) x (interp (set_nth 0 l n (nth 0 l n)) e3)) (fun x => interp (set_nth 0 l n x) e2) x)).
+apply filterdiff_Reals.
+apply (filterdiff_ext (fun x => comp (fun x => RInt (fun t => interp (t :: l) e1) x (interp (set_nth 0 l n (nth 0 l n)) e3)) (fun x => interp (set_nth 0 l n x) e2) x)).
 intros t.
 unfold comp.
 rewrite -(is_const_correct e3 n C3 l (nth 0 l n)).
@@ -1033,6 +1067,7 @@ apply RInt_ext.
 intros z _.
 rewrite -(interp_set_nth (S n)).
 apply (is_const_correct e1 (S n) C1 (z :: l)).
+apply filterdiff_Reals.
 apply (derivable_pt_lim_comp (fun x0 : R => interp (set_nth 0 l n x0) e2)
   (fun x0 : R => RInt (fun t : R => interp (t :: l) e1) x0 (interp (set_nth 0 l n (nth 0 l n)) e3))).
 now apply IHe2.
@@ -1044,13 +1079,15 @@ now apply locally_singleton.
 clear C3.
 simpl.
 intros (H2&H3&Hi&H12&H13&_).
-apply (is_derive_ext (fun x => RInt (fun t => interp (t :: l) e1) (interp (set_nth 0 l n x) e2) (interp (set_nth 0 l n x) e3))).
+apply filterdiff_Reals.
+apply (filterdiff_ext (fun x => RInt (fun t => interp (t :: l) e1) (interp (set_nth 0 l n x) e2) (interp (set_nth 0 l n x) e3))).
 intros t.
 apply RInt_ext.
 intros z _.
 rewrite -(interp_set_nth (S n)).
 apply (is_const_correct e1 (S n) C1 (z :: l)).
 rewrite -(interp_set_nth n l e2) -(interp_set_nth n l e3).
+apply filterdiff_Reals.
 apply derivable_pt_lim_RInt_bound_comp.
 now rewrite 2!interp_set_nth.
 rewrite interp_set_nth.
@@ -1071,7 +1108,8 @@ clear IHe3.
 clear C1.
 simpl.
 intros (H3&H2&H4&_).
-apply (is_derive_ext (fun x => RInt (fun t => interp (t :: set_nth 0 l n x) e1) (interp (set_nth 0 l n (nth 0 l n)) e2) (interp (set_nth 0 l n (nth 0 l n)) e3))).
+apply filterdiff_Reals.
+apply (filterdiff_ext (fun x => RInt (fun t => interp (t :: set_nth 0 l n x) e1) (interp (set_nth 0 l n (nth 0 l n)) e2) (interp (set_nth 0 l n (nth 0 l n)) e3))).
 intros t.
 apply f_equal2.
 now apply is_const_correct.
@@ -1094,12 +1132,15 @@ apply Rplus_lt_compat_l.
 apply cond_pos.
 exact Hy.
 rewrite (RInt_ext (fun x => interp (x :: l) a1) (fun x => Derive (fun t => interp (set_nth 0 (x :: l) (S n) t) e1) (nth 0 (x :: l) (S n)))).
+apply filterdiff_Reals.
 apply derivable_pt_lim_param.
 move: H3' ; apply filter_imp => y H3' t Ht.
 specialize (IHe1 _ (H3' t Ht)).
 rewrite nth_set_nth /= eqtype.eq_refl in IHe1.
 exists (interp (set_nth 0 (t :: l) (S n) y) a1).
-apply is_derive_ext with (f := fun x => interp (set_nth 0 (set_nth 0 (t :: l) (S n) y) (S n) x) e1) (2 := IHe1).
+apply filterdiff_Reals.
+apply filterdiff_Reals in IHe1.
+apply filterdiff_ext with (f := fun x => interp (set_nth 0 (set_nth 0 (t :: l) (S n) y) (S n) x) e1) (2 := IHe1).
 intros t'.
 now rewrite set_set_nth eqtype.eq_refl.
 intros t Ht.
@@ -1107,10 +1148,12 @@ apply continuity_2d_pt_ext_loc with (f := fun x y => interp (set_nth 0 (y :: l) 
 exists d => u v Hu Hv.
 apply sym_eq.
 apply is_derive_unique.
-apply is_derive_ext with (f := fun z => interp (set_nth 0 (set_nth 0 (v :: l) (S n) u) (S n) z) e1).
+apply filterdiff_Reals.
+apply filterdiff_ext with (f := fun z => interp (set_nth 0 (set_nth 0 (v :: l) (S n) u) (S n) z) e1).
 intros z.
 now rewrite set_set_nth eqtype.eq_refl.
 pattern u at 2; replace u with (nth 0 (set_nth 0 (v :: l) (S n) u) (S n)).
+apply filterdiff_Reals.
 apply IHe1.
 apply H3.
 apply Rabs_lt_between' in Hv.
@@ -1138,13 +1181,15 @@ clear C1 C3.
 simpl.
 intros (H2&H3&H6&H7&H8&H10&H11&_).
 rewrite Rplus_comm Rmult_comm.
-apply (is_derive_ext (fun x => RInt (fun t => interp (t :: set_nth 0 l n x) e1) (interp l e2) (interp (set_nth 0 l n x) e3))).
+apply filterdiff_Reals.
+apply (filterdiff_ext (fun x => RInt (fun t => interp (t :: set_nth 0 l n x) e1) (interp l e2) (interp (set_nth 0 l n x) e3))).
 intros x.
 rewrite (is_const_correct e2 n C2 l x (nth 0 l n)).
 now rewrite interp_set_nth.
 rewrite -(RInt_ext (fun x => Derive (fun t => interp (x :: set_nth 0 l n t) e1) (nth 0 l n))).
 rewrite -(interp_set_nth (S n) (interp l e3 :: l) e1).
 rewrite -(interp_set_nth n l e3) /=.
+apply filterdiff_Reals.
 apply (derivable_pt_lim_RInt_param_bound_comp_aux3 (fun x t => interp (t :: set_nth 0 l n x) e1)
   (interp l e2) (fun x => interp (set_nth 0 l n x) e3)).
 now rewrite interp_set_nth.
@@ -1181,9 +1226,10 @@ rewrite -(Rplus_0_r (pos_div_2 e)) /= {2}(double_var e).
 apply Rplus_lt_compat_l.
 apply is_pos_div_2.
 eexists.
-move: (IHe1 _ (H11 t y Ht' Hy)) => {IHe1} /=.
+apply filterdiff_Reals.
+move/filterdiff_Reals: (IHe1 _ (H11 t y Ht' Hy)) => {IHe1} /=.
 rewrite nth_set_nth /= eqtype.eq_refl.
-apply is_derive_ext => z.
+apply filterdiff_ext => z.
 now rewrite set_set_nth eqtype.eq_refl.
 rewrite interp_set_nth.
 intros t Ht.
@@ -1228,13 +1274,15 @@ clear C1 C2.
 simpl.
 intros (H2&H3&H6&H7&H8&H10&H11&_).
 rewrite Rplus_comm Rmult_comm -Ropp_mult_distr_l_reverse.
-apply (is_derive_ext (fun x => RInt (fun t => interp (t :: set_nth 0 l n x) e1) (interp (set_nth 0 l n x) e2) (interp l e3))).
+apply filterdiff_Reals.
+apply (filterdiff_ext (fun x => RInt (fun t => interp (t :: set_nth 0 l n x) e1) (interp (set_nth 0 l n x) e2) (interp l e3))).
 intros x.
 rewrite (is_const_correct e3 n C3 l x (nth 0 l n)).
 now rewrite interp_set_nth.
 rewrite -(RInt_ext (fun x => Derive (fun t => interp (x :: set_nth 0 l n t) e1) (nth 0 l n))).
 rewrite -(interp_set_nth (S n) (interp l e2 :: l) e1).
 rewrite -(interp_set_nth n l e2) /=.
+apply filterdiff_Reals.
 apply (derivable_pt_lim_RInt_param_bound_comp_aux2 (fun x t => interp (t :: set_nth 0 l n x) e1)
   (fun x => interp (set_nth 0 l n x) e2) (interp l e3)).
 now rewrite interp_set_nth.
@@ -1271,9 +1319,10 @@ rewrite -(Rplus_0_r (pos_div_2 e)) /= {2}(double_var e).
 apply Rplus_lt_compat_l.
 apply is_pos_div_2.
 eexists.
-move: (IHe1 _ (H11 t y Ht' Hy)) => {IHe1} /=.
+apply filterdiff_Reals.
+move/filterdiff_Reals: (IHe1 _ (H11 t y Ht' Hy)) => {IHe1} /=.
 rewrite nth_set_nth /= eqtype.eq_refl.
-apply is_derive_ext => z.
+apply filterdiff_ext => z.
 now rewrite set_set_nth eqtype.eq_refl.
 rewrite interp_set_nth.
 intros t Ht.
@@ -1350,9 +1399,10 @@ rewrite -(Rplus_0_r (pos_div_2 e)) /= {2}(double_var e).
 apply Rplus_lt_compat_l.
 apply is_pos_div_2.
 eexists.
-move: (IHe1 _ (H11 t y Ht' Hy)) => {IHe1} /=.
+apply filterdiff_Reals.
+move/filterdiff_Reals: (IHe1 _ (H11 t y Ht' Hy)) => {IHe1} /=.
 rewrite nth_set_nth /= eqtype.eq_refl.
-apply is_derive_ext => z.
+apply filterdiff_ext => z.
 now rewrite set_set_nth eqtype.eq_refl.
 rewrite 2!interp_set_nth.
 intros t Ht.

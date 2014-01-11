@@ -1976,7 +1976,8 @@ Proof.
     with (real (Lim_seq
          (fun n : nat =>
           Derive (fun y : R => sum_f_R0 (fun k : nat => a k * y ^ k) n) x))).
-  move: H ; apply is_derive_ext => t.
+  apply filterdiff_Reals.
+  move/filterdiff_Reals: H ; apply filterdiff_ext => t.
   apply (f_equal real), Lim_seq_ext.
   intros n; apply sym_eq, sum_n_sum_f_R0.
   rewrite -Lim_seq_incr_1.

@@ -4766,14 +4766,18 @@ Lemma derivable_pt_lim_RInt' :
   derivable_pt_lim (fun x => RInt f x a) x (- f x).
 Proof.
 intros f a x Hi Ix Cx.
-apply (is_derive_ext (fun u => - RInt f a u)).
+apply filterdiff_Reals.
+eapply filterdiff_ext_lin.
+apply (filterdiff_ext (fun u => - RInt f a u)).
 intros t.
 apply RInt_swap.
-apply derivable_pt_lim_opp.
+apply @filterdiff_opp_fct ; try by apply locally_filter.
+apply filterdiff_Reals.
 apply derivable_pt_lim_RInt ; try easy.
 apply ex_RInt_Reals_1.
 apply RiemannInt_P1.
 now apply ex_RInt_Reals_2.
+move => /= y ; ring.
 Qed.
 
 Lemma is_RInt_comp (f g : R -> R) (a b : R) :
@@ -5086,24 +5090,29 @@ now apply H.
 intros _ _ _ _.
 rewrite Hab.
 rewrite RInt_point.
-apply (is_derive_ext (fun _ => 0)).
+apply filterdiff_Reals.
+eapply filterdiff_ext_lin.
+apply (filterdiff_ext (fun _ => 0)).
 intros t.
 apply sym_eq.
 apply RInt_point.
-apply derivable_pt_lim_const.
+apply filterdiff_const.
+simpl => y ; ring.
 intros H1 H2 H3 H4.
-apply (is_derive_ext (fun u => - RInt (fun t => f u t) b a)).
+apply filterdiff_Reals.
+eapply filterdiff_ext_lin.
+apply (filterdiff_ext (fun u => - RInt (fun t => f u t) b a)).
 intros t.
 apply RInt_swap.
-rewrite -RInt_swap.
-apply derivable_pt_lim_opp.
-apply H.
+apply @filterdiff_opp_fct ; try by apply locally_filter.
+apply filterdiff_Reals, H.
 exact Hab.
 now rewrite Rmin_comm Rmax_comm.
 now rewrite Rmin_comm Rmax_comm.
 move: H3 ; apply filter_imp => y H3.
 now apply ex_RInt_swap.
 now apply ex_RInt_swap.
+rewrite -RInt_swap => /= y ; ring.
 (* *)
 rewrite Rmin_left. 2: now apply Rlt_le.
 rewrite Rmax_right. 2: now apply Rlt_le.
@@ -5567,8 +5576,10 @@ Lemma derivable_pt_lim_RInt_param_bound_comp_aux3 :
     (RInt (fun t : R => Derive (fun u => f u t) x) a (b x) +f x (b x)*db).
 Proof.
 intros f a b x db If Ib Db Df Cf1 Cf2 Cfb.
-apply is_derive_ext with (fun x0 => - RInt (fun t : R => f x0 t) (b x0) a).
+apply filterdiff_Reals.
+apply filterdiff_ext with (fun x0 => - RInt (fun t : R => f x0 t) (b x0) a).
 intros t; apply RInt_swap.
+apply filterdiff_Reals.
 replace (RInt (fun t : R => Derive (fun u => f u t) x) a (b x) +f x (b x)*db) with
       (- ((RInt (fun t : R => Derive (fun u : R => f u t) x) (b x) a) + - f x (b x)*db)).
 apply derivable_pt_lim_opp.

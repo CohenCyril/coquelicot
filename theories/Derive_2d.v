@@ -930,7 +930,8 @@ revert H0; rewrite plus_0_l.
 case_eq (n-n0)%nat.
 intros H1; contradict H; auto with zarith.
 intros n1 H1 H2.
-apply ex_derive_ext with (fun z => Derive (fun t => (partial_derive 0 n0 f z) t) y).
+apply ex_filterdiff_Reals.
+apply ex_filterdiff_ext with (fun z => Derive (fun t => (partial_derive 0 n0 f z) t) y).
 intros y0; unfold partial_derive; simpl.
 reflexivity.
 simpl in H2.
@@ -939,6 +940,7 @@ case_eq n1.
 intros H2; rewrite H2 in H1.
 clear -H H1; contradict H; auto with zarith.
 intros n2 Hn2; rewrite Hn2 in T5.
+apply ex_filterdiff_Reals.
 apply T5.
 (* . *)
 intros p q H f x y Hf.
@@ -949,7 +951,8 @@ exact Hf.
 case_eq (n-(p+q))%nat.
 intros H1; contradict H; auto with zarith.
 intros n1 H1.
-apply ex_derive_ext with (fun z => Derive (fun t => (partial_derive p q f t) y) z).
+apply ex_filterdiff_Reals.
+apply ex_filterdiff_ext with (fun z => Derive (fun t => (partial_derive p q f t) y) z).
 intros x0; unfold partial_derive; simpl.
 reflexivity.
 rewrite H1 in H0; simpl in H0.
@@ -958,6 +961,7 @@ case_eq n1.
 intros H2; rewrite H2 in H1.
 clear -H H1; contradict H; auto with zarith.
 intros n2 Hn2; rewrite Hn2 in T4.
+apply ex_filterdiff_Reals.
 apply T4.
 Qed.
 
@@ -983,7 +987,8 @@ revert H0; rewrite plus_0_l.
 case_eq (n-n0)%nat.
 intros H1; contradict H; auto with zarith.
 intros n1 H1 H2.
-apply ex_derive_ext with (fun z => Derive (fun t => (partial_derive 0 n0 f x) t) z).
+apply ex_filterdiff_Reals.
+apply ex_filterdiff_ext with (fun z => Derive (fun t => (partial_derive 0 n0 f x) t) z).
 intros y0; unfold partial_derive; simpl.
 reflexivity.
 simpl in H2.
@@ -992,6 +997,7 @@ case_eq n1.
 intros H2; rewrite H2 in H1.
 clear -H H1; contradict H; auto with zarith.
 intros n2 Hn2; rewrite Hn2 in T5.
+apply ex_filterdiff_Reals.
 apply T5.
 (* . *)
 intros p q H f x y Hf.
@@ -1002,7 +1008,8 @@ exact Hf.
 case_eq (n-(p+q))%nat.
 intros H1; contradict H; auto with zarith.
 intros n1 H1.
-apply ex_derive_ext with (fun z => Derive (fun t => (partial_derive p q f t) z) x).
+apply ex_filterdiff_Reals.
+apply ex_filterdiff_ext with (fun z => Derive (fun t => (partial_derive p q f t) z) x).
 intros x0; unfold partial_derive; simpl.
 reflexivity.
 rewrite H1 in H0; simpl in H0.
@@ -1011,6 +1018,7 @@ case_eq n1.
 intros H2; rewrite H2 in H1.
 clear -H H1; contradict H; auto with zarith.
 intros n2 Hn2; rewrite Hn2 in T4.
+apply ex_filterdiff_Reals.
 apply T4.
 Qed.
 
@@ -1316,9 +1324,11 @@ replace (sum_f_R0 (fun m : nat => C (S k) m *
     ((u - x) * partial_derive (S m) (k - m) f (x + z * (u - x)) (y + z * (v - y)) +
      (v - y) * partial_derive m (S (k - m)) f (x + z * (u - x)) (y + z * (v - y)))) k).
 apply is_derive_sum => p Hp.
-apply is_derive_ext with (fun u0 => C k p * (u - x) ^ p * (v - y) ^ (k - p) * partial_derive p (k - p) f (x + u0 * (u - x)) (y + u0 * (v - y))).
+apply filterdiff_Reals.
+apply filterdiff_ext with (fun u0 => C k p * (u - x) ^ p * (v - y) ^ (k - p) * partial_derive p (k - p) f (x + u0 * (u - x)) (y + u0 * (v - y))).
 intros w.
 ring.
+apply filterdiff_Reals.
 apply derivable_pt_lim_scal.
 rewrite (Rmult_comm (u - x)) (Rmult_comm (v - y)).
 apply derivable_pt_lim_comp_2d.

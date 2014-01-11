@@ -434,6 +434,17 @@ by apply norm_ge_0.
 by apply Rlt_le, eps.
 by apply norm_ge_0.
 Qed.
+Lemma ex_filterdiff_locally {F} {FF : ProperFilter F} (f : U -> V) x :
+  is_filter_lim F x ->
+  ex_filterdiff f (locally x) ->
+  ex_filterdiff f F.
+Proof.
+  intros Fx [l Df].
+  eexists.
+  apply filterdiff_locally with x.
+  by [].
+  by apply Df.
+Qed.
 
 (** ** Operations *)
 
@@ -760,6 +771,37 @@ Proof.
   by apply filterdiff_plus.
 Qed.
 
+Lemma filterdiff_minus F : 
+  filterdiff (fun u => minus (fst u) (snd u)) F (fun u => minus (fst u) (snd u)).
+Proof.
+  split.
+  apply (is_linear_compose (fun u => (fst u, opp (snd u))) (fun u => plus (fst u) (snd u))).
+  apply is_linear_prod.
+  by apply is_linear_fst.
+  apply is_linear_compose.
+  by apply is_linear_snd.
+  by apply is_linear_opp.
+  by apply is_linear_plus.
+  move => x Hx eps.
+  apply Hx ; exists eps => u Hu.
+  simpl fst ; simpl snd.
+  replace (minus (plus (fst u) (opp (fst x))) (plus (snd u) (opp (snd x))))
+    with (minus (minus (fst u) (snd u)) (minus (fst x) (snd x))).
+  rewrite /minus plus_opp_r norm_zero.
+  apply Rmult_le_pos.
+  by apply Rlt_le, eps.
+  by apply sqrt_pos.
+  rewrite /minus -!plus_assoc ; apply f_equal.
+  rewrite !opp_plus !opp_opp plus_comm -!plus_assoc ;
+  apply f_equal, @plus_comm.
+Qed.
+Lemma ex_filterdiff_minus F : 
+  ex_filterdiff (fun u => minus (fst u) (snd u)) F.
+Proof.
+  eexists.
+  by apply filterdiff_minus.
+Qed.
+
 Lemma filterdiff_scal : forall {F} {FF : ProperFilter F} (x : K * V), 
   is_filter_lim F x ->
   (forall (n m : K), mult n m = mult m n) ->
@@ -954,6 +996,25 @@ Proof.
   intros [lf Df] [lg Dg].
   eexists.
   apply filterdiff_plus_fct ; eassumption.
+Qed.
+
+Lemma filterdiff_minus_fct {F} {FF : Filter F} (f g : U -> V) (lf lg : U -> V) : 
+  filterdiff f F lf -> filterdiff g F lg ->
+  filterdiff (fun u => minus (f u) (g u)) F (fun u => minus (lf u) (lg u)).
+Proof.
+  intros Df Dg.
+  apply filterdiff_compose_2.
+  by [].
+  by [].
+  by apply filterdiff_minus.
+Qed.
+Lemma ex_filterdiff_minus_fct {F} {FF : Filter F} (f g : U -> V) : 
+  ex_filterdiff f F -> ex_filterdiff g F ->
+  ex_filterdiff (fun u => minus (f u) (g u)) F.
+Proof.
+  intros [lf Df] [lg Dg].
+  eexists.
+  apply filterdiff_minus_fct ; eassumption.
 Qed.
 
 Lemma filterdiff_scal_fct x (f : U -> K) (g : U -> V) lf lg :
@@ -1276,7 +1337,7 @@ simpl.
 now replace (x + h + - x) with (h - 0) by ring.
 Qed.
 
-(* TODO : A supprimer *)
+(*(* TODO : A supprimer *)
 Lemma is_derive_ext :
   forall f g x l,
   (forall t, f t = g t) ->
@@ -1296,7 +1357,7 @@ Lemma ex_derive_ext :
 Proof.
 intros f g x Heq [l Hf].
 exists l ; move: Hf ; by apply is_derive_ext.
-Qed. (* fin TODO *)
+Qed. (* fin TODO *)*)
 
 Lemma Derive_ext :
   forall f g x,
@@ -1453,13 +1514,16 @@ Lemma derivable_pt_lim_inv (f : R -> R) (x l : R) :
     -> is_derive (fun y => / f y) x (-l/(f x)^2).
 Proof.
   move => Hf Hl.
-  search_derive.
-  apply is_derive_ext with (fun y => 1/f y).
+  apply filterdiff_Reals.
+  eapply filterdiff_ext_lin.
+  apply filterdiff_ext with (fun y => 1/f y).
   move => t ; by rewrite /Rdiv Rmult_1_l.
+  apply filterdiff_Reals.
   apply derivable_pt_lim_div.
   apply derivable_pt_lim_const.
   apply Hf.
   apply Hl.
+  simpl => y.
   rewrite /Rsqr ; by field.
 Qed.
 Lemma ex_derive_inv (f : R -> R) (x : R) :
@@ -2137,37 +2201,42 @@ Proof.
   case: a Hab Hf => [a | | ] // ;
   case: b => [b | | ] // Hab Hf.
   rewrite -Hab in Hf |- * => {b Hab}.
-  apply ex_derive_ext with (fun y => f (real a) + (y - real a) * Derive f (real a)).
+  apply ex_filterdiff_Reals.
+  apply ex_filterdiff_ext with (fun y => f (real a) + (y - real a) * Derive f (real a)).
   move => t ; rewrite /extension_C1.
   repeat case: Rbar_le_dec => // ; intros.
   simpl ; rewrite (Rle_antisym t a) ; try easy.
   ring.
-  apply ex_derive_plus.
-  apply ex_derive_const.
-  apply ex_derive_scal_r.
-  apply ex_derive_minus.
-  apply ex_derive_id.
-  apply ex_derive_const.
+  apply @ex_filterdiff_plus_fct ; try by apply locally_filter.
+  apply ex_filterdiff_const.
+  apply @ex_filterdiff_scal_l_fct with (x := Derive f a) (f := fun u => u - a).
+  by apply locally_filter.
+  apply @ex_filterdiff_minus_fct.
+  by apply locally_filter.
+  apply ex_filterdiff_id.
+  apply ex_filterdiff_const.
 
-  apply ex_derive_ext with (fun y => f 0 + (y - 0) * Derive f 0).
+  apply ex_filterdiff_Reals.
+  apply ex_filterdiff_ext with (fun y => f 0 + (y - 0) * Derive f 0).
   move => t ; rewrite /extension_C1.
   repeat case: Rbar_le_dec => // ; intros.
-  apply ex_derive_plus.
-  apply ex_derive_const.
-  apply ex_derive_scal_r.
-  apply ex_derive_minus.
-  apply ex_derive_id.
-  apply ex_derive_const.
+  apply @ex_filterdiff_plus_fct ; try by apply locally_filter.
+  apply ex_filterdiff_const.
+  apply @ex_filterdiff_scal_l_fct ; try by apply locally_filter.
+  apply @ex_filterdiff_minus_fct ; try by apply locally_filter.
+  apply ex_filterdiff_id.
+  apply ex_filterdiff_const.
 
-  apply ex_derive_ext with (fun y => f 0 + (y - 0) * Derive f 0).
+  apply ex_filterdiff_Reals.
+  apply ex_filterdiff_ext with (fun y => f 0 + (y - 0) * Derive f 0).
   move => t ; rewrite /extension_C1.
   repeat case: Rbar_le_dec => // ; intros.
-  apply ex_derive_plus.
-  apply ex_derive_const.
-  apply ex_derive_scal_r.
-  apply ex_derive_minus.
-  apply ex_derive_id.
-  apply ex_derive_const.
+  apply @ex_filterdiff_plus_fct ; try by apply locally_filter.
+  apply ex_filterdiff_const.
+  apply @ex_filterdiff_scal_l_fct ; try by apply locally_filter.
+  apply @ex_filterdiff_minus_fct ; try by apply locally_filter.
+  apply ex_filterdiff_id.
+  apply ex_filterdiff_const.
 Qed.
 
 Lemma extension_C1_Derive_cont (f : R -> R) (a b : Rbar) :
@@ -2550,8 +2619,9 @@ Proof.
   case: n x => [ | n] /= x Hf.
   by [].
   apply ex_derive_opp in Hf.
-  move: Hf.
-  apply ex_derive_ext.
+  apply ex_filterdiff_Reals.
+  move/ex_filterdiff_Reals: Hf.
+  apply ex_filterdiff_ext.
   move => y ; by rewrite Derive_n_opp.
 Qed.
 Lemma is_derive_n_opp (f : R -> R) (n : nat) (x l : R) :
@@ -2560,8 +2630,9 @@ Proof.
   case: n x => [ | n] /= x Hf.
   by rewrite Hf.
   apply derivable_pt_lim_opp in Hf.
-  move: Hf.
-  apply is_derive_ext.
+  apply filterdiff_Reals.
+  move/filterdiff_Reals: Hf.
+  apply filterdiff_ext.
   move => y ; by rewrite Derive_n_opp.
 Qed.
 
@@ -2715,18 +2786,26 @@ Lemma ex_derive_n_scal_l (f : R -> R) (n : nat) (a x : R) :
 Proof.
   case: n x => /= [ | n] x Hf.
   by [].
-  apply ex_derive_ext with (fun y => a * Derive_n f n y).
+  apply ex_filterdiff_Reals.
+  apply ex_filterdiff_ext with (fun y => a * Derive_n f n y).
   move => t ; by rewrite Derive_n_scal_l.
-  by apply ex_derive_scal.
+  apply @ex_filterdiff_scal_r_fct ; try by apply locally_filter.
+  apply Rmult_comm.
+  by apply ex_filterdiff_Reals.
 Qed.
 Lemma is_derive_n_scal_l (f : R -> R) (n : nat) (a x l : R) :
   is_derive_n f n x l -> is_derive_n (fun y => a * f y) n x (a * l).
 Proof.
   case: n x => /= [ | n] x Hf.
   by rewrite Hf.
-  apply is_derive_ext with (fun y => a * Derive_n f n y).
+  apply filterdiff_Reals.
+  eapply filterdiff_ext_lin.
+  apply filterdiff_ext with (fun y => a * Derive_n f n y).
   move => t ; by rewrite Derive_n_scal_l.
-  by apply derivable_pt_lim_scal.
+  apply @filterdiff_scal_r_fct ; try by apply locally_filter.
+  by apply Rmult_comm.
+  apply filterdiff_Reals, Hf.
+  move => /= y ; ring.
 Qed.
 
 Lemma Derive_n_scal_r (f : R -> R) (n : nat) (a x : R) :
@@ -2836,12 +2915,13 @@ Proof.
 
   case: (Req_dec a 0) => Ha.
   rewrite Ha => {a Ha Hf}.
-  apply ex_derive_ext with (fun _ => Derive_n (fun y : R => f (0 * y)) n 0).
+  apply ex_filterdiff_Reals.
+  apply ex_filterdiff_ext with (fun _ => Derive_n (fun y : R => f (0 * y)) n 0).
   elim: n => /= [ | n IH] t.
   by rewrite ?Rmult_0_l.
   rewrite -?(Derive_ext _ _ _ IH).
   by rewrite ?Derive_const.
-  by apply ex_derive_const.
+  by apply ex_filterdiff_const.
   apply ex_filterdiff_Reals.
   apply @ex_filterdiff_ext_locally with (fun x => a^n * Derive_n f n (a * x)).
     case: Hf => r Hf.
@@ -2948,13 +3028,20 @@ Lemma ex_derive_n_comp_trans (f : R -> R) (n : nat) (x b : R) :
 Proof.
   case: n => [ | n] /= Df.
   by [].
-  apply (ex_derive_ext _ _ _ (fun x => sym_eq (Derive_n_comp_trans f n x b))).
+  apply ex_filterdiff_Reals.
+  apply (ex_filterdiff_ext _ _ (fun x => sym_eq (Derive_n_comp_trans f n x b))).
   move: (Derive_n f n) Df => {f} f Df.
-  apply ex_derive_comp.
-  by [].
-  apply ex_derive_plus.
-  by apply ex_derive_id.
-  by apply ex_derive_const.
+  apply ex_filterdiff_compose.
+  apply @ex_filterdiff_plus_fct ; try by apply locally_filter.
+  by apply ex_filterdiff_id.
+  by apply ex_filterdiff_const.
+  apply ex_filterdiff_locally with (x + b).
+  apply (is_filter_lim_filtermap _ x (fun y => y + b)) => //.
+  apply (filterdiff_cont (fun y => y + b)) => //.
+  apply @ex_filterdiff_plus_fct ; try by apply locally_filter.
+  by apply ex_filterdiff_id.
+  by apply ex_filterdiff_const.
+  by apply ex_filterdiff_Reals.
 Qed.
 Lemma is_derive_n_comp_trans (f : R -> R) (n : nat) (x b l : R) :
   is_derive_n f n (x + b) l ->
@@ -2962,15 +3049,23 @@ Lemma is_derive_n_comp_trans (f : R -> R) (n : nat) (x b l : R) :
 Proof.
   case: n => [ | n] /= Df.
   by [].
-  apply (is_derive_ext _ _ _ _ (fun x => sym_eq (Derive_n_comp_trans f n x b))).
+  apply filterdiff_Reals.
+  apply (filterdiff_ext _ _ _ (fun x => sym_eq (Derive_n_comp_trans f n x b))).
   move: (Derive_n f n) Df => {f} f Df.
-  search_derive.
-  apply derivable_pt_lim_comp.
-  apply derivable_pt_lim_plus.
-  by apply derivable_pt_lim_id.
-  by apply derivable_pt_lim_const.
+  eapply filterdiff_ext_lin.
+  apply filterdiff_compose.
+  apply @filterdiff_plus_fct ; try by apply locally_filter.
+  by apply filterdiff_id.
+  by apply filterdiff_const.
+  apply filterdiff_locally with (x + b).
+  apply (is_filter_lim_filtermap _ x (fun y => y + b)) => //.
+  apply (filterdiff_cont (fun y => y + b)) => //.
+  apply @ex_filterdiff_plus_fct ; try by apply locally_filter.
+  by apply ex_filterdiff_id.
+  by apply ex_filterdiff_const.
+  apply filterdiff_Reals.
   by apply Df.
-  ring.
+  move => /= y ; ring.
 Qed.
 
 (** * Taylor-Lagrange formula *)
@@ -3005,58 +3100,72 @@ clear c g.
 rename n into N.
 generalize (le_refl N).
 generalize N at -2.
-intros n.
+intros n Hn.
+apply filterdiff_Reals.
+move: Hn.
 induction n.
 (* .. *)
 intros _.
 simpl.
-replace (-1 / 1 * Derive (fun x0 : R => f x0) t) with (0 - (1/1 * Derive (fun x0 : R => f x0) t)) by field.
-apply derivable_pt_lim_minus.
-apply derivable_pt_lim_const.
-apply derivable_pt_lim_scal with (f := fun u => f u).
+eapply filterdiff_ext_lin.
+apply @filterdiff_minus_fct ; try by apply locally_filter.
+apply filterdiff_const.
+apply @filterdiff_scal_r_fct with (f := fun u => f u).
+by apply locally_filter.
+by apply Rmult_comm.
+apply filterdiff_Reals.
 apply Derive_correct.
 apply (Df t Ht 1%nat).
 apply le_n_S.
 apply le_0_n.
+simpl => z ; field.
 (* .. *)
 intros Hn.
-apply is_derive_ext with (fun x0 : R =>
+apply filterdiff_ext with (fun x0 : R =>
    (f y -
    (sum_f_R0 (fun m : nat => (y - x0) ^ m / INR (fact m) * Derive_n f m x0) n)) -
     (y - x0) ^ (S n) / INR (fact (S n)) *
      Derive_n f (S n) x0).
 simpl.
 intros; ring.
-replace (- (y - t) ^ S n / INR (fact (S n)) * Derive_n f (S (S n)) t) with
-  ((- (y - t) ^ n / INR (fact n) * Derive_n f (S n) t) -
-      (- (y - t) ^ n / INR (fact n) * (Derive_n f (S n) t) +
-       ( (y - t) ^ S n / INR (fact (S n)) * Derive_n f (S (S n)) t))).
-2: rewrite /Rdiv Ropp_mult_distr_l_reverse ; ring.
-apply derivable_pt_lim_plus.
+eapply filterdiff_ext_lin.
+apply @filterdiff_plus_fct ; try by apply locally_filter.
 apply IHn.
 now apply lt_le_weak.
-apply derivable_pt_lim_opp.
-apply (derivable_pt_lim_mult (fun x0 => ((y - x0) ^ S n / INR (fact (S n))))
-  (fun x0 => Derive_n f (S n) x0)).
-replace (- (y - t) ^ n / INR (fact n)) with
-   (/ INR (fact (S n)) * (INR (S n)*(y - t) ^ n*(0-1))).
-apply is_derive_ext with (fun x0 : R => (/ INR (fact (S n)) * (y - x0) ^ S n)).
-intros; unfold Rdiv; apply Rmult_comm.
-now apply derivable_pt_lim_scal.
-change (fact (S n)) with ((S n)*fact n)%nat.
-rewrite mult_INR.
-field.
-split.
-apply INR_fact_neq_0.
-now apply not_0_INR.
+apply @filterdiff_opp_fct ; try by apply locally_filter.
+generalize (filterdiff_mult_fct (fun x0 => ((y - x0) ^ S n / INR (fact (S n))))
+  (fun x0 => Derive_n f (S n) x0)) => /= H.
+apply H ; clear H.
+by apply Rmult_comm.
+apply @filterdiff_scal_l_fct ; try by apply locally_filter.
+apply filterdiff_Reals.
+apply (derivable_pt_lim_comp _ (fun x => pow x (S n))).
+apply derivable_pt_lim_minus.
+apply derivable_pt_lim_const.
+apply derivable_pt_lim_id.
+apply derivable_pt_lim_pow.
+apply filterdiff_Reals.
 apply Derive_correct.
 apply (Df t Ht (S (S n))).
 now apply le_n_S.
+move => z.
+change (fact (S n)) with ((S n)*fact n)%nat.
+rewrite mult_INR.
+simpl ; field.
+split.
+apply INR_fact_neq_0.
+destruct n.
+apply Rgt_not_eq, Rlt_0_1.
+apply Rgt_not_eq, INRp1_pos.
 (* . *)
-apply is_derive_ext with (fun x0 : R => -c * (y - x0) ^ S n).
+apply filterdiff_Reals.
+eapply filterdiff_ext_lin.
+apply filterdiff_ext with (fun x0 : R => -c * (y - x0) ^ S n).
 intros; ring.
-replace (c * INR (S n) * (y - t) ^ n) with ((-c) * ((INR (S n) * (y - t) ^ n) * (0-1))) by ring.
-now apply derivable_pt_lim_scal.
+apply @filterdiff_scal_r_fct ; try by apply locally_filter.
+by apply Rmult_comm.
+apply filterdiff_Reals, Dp.
+move => z ; simpl ; ring.
 (* *)
 assert (Dg' : forall t : R, x <= t <= y -> derivable_pt g t).
 intros t Ht.

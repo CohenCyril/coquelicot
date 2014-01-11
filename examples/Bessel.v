@@ -103,11 +103,13 @@ Lemma is_derive_2_Bessel1 (n : nat) (x : R) :
     + (INR (n * pred n) / 4 * (x / 2) ^ pred (pred n) * PSeries (Bessel1_seq n) ((x / 2) ^ 2))).
 Proof.
   rewrite plus_INR ?mult_INR ; simpl INR.
-  apply is_derive_ext
+  apply filterdiff_Reals.
+  apply filterdiff_ext
     with (fun x => ((x / 2) ^ S n * PSeries (PS_derive (Bessel1_seq n)) ((x / 2) ^ 2)
     + (INR n)/2 * (x / 2) ^ pred n * PSeries (Bessel1_seq n) ((x / 2) ^ 2))).
   move => y ;
   by apply sym_eq, is_derive_unique, is_derive_Bessel1.
+  apply filterdiff_Reals.
   auto_derive.
   repeat split.
   apply ex_derive_PSeries.
