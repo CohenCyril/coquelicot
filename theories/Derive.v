@@ -469,7 +469,6 @@ Proof.
   apply Rle_trans.
   by apply Req_le ; rewrite Hy H0.
 Qed.
-
 Lemma ex_filterdiff_ext_loc {F} {FF : Filter F} (f g : U -> V) :
   F (fun y => f y = g y) -> (forall x, is_filter_lim F x -> f x = g x)
   -> ex_filterdiff f F -> ex_filterdiff g F.
@@ -489,7 +488,6 @@ Proof.
   apply Hd.
   by apply is_filter_lim_locally_unique.
 Qed.
-
 Lemma ex_filterdiff_ext_locally (f g : U -> V) x :
   locally x (fun y => f y = g y)
   -> ex_filterdiff f (locally x) -> ex_filterdiff g (locally x).
@@ -506,7 +504,6 @@ Proof.
   apply filterdiff_ext_loc => //.
   now apply filter_imp with (2 := filter_true).
 Qed.
-
 Lemma ex_filterdiff_ext {F} {FF : Filter F} (f g : U -> V) :
   (forall y , f y = g y)
   -> ex_filterdiff f F -> ex_filterdiff g F.
@@ -527,7 +524,6 @@ Proof.
   by apply Rlt_le, eps.
   by apply norm_ge_0.
 Qed.
-
 Lemma ex_filterdiff_const {F} {FF : Filter F} (a : V) :
   ex_filterdiff (fun _ => a) F.
 Proof.
@@ -706,6 +702,7 @@ Lemma filterdiff_id F :
 Proof.
   split.
   by apply is_linear_id.
+  
   move => x Hx eps.
   apply Hx ; exists eps => y /= Hy.
   rewrite /minus plus_opp_r norm_zero.
@@ -916,6 +913,146 @@ Proof.
   by apply (filterdiff_mult x).
 Qed.
 
+(** Composed operations *)
+
+Section Operations_fct.
+
+Context {U V K : Type} {RK : AbsRing K} {VU : NormedVectorSpace U K} {VV : NormedVectorSpace V K}.
+
+Lemma filterdiff_opp_fct {F} {FF : Filter F} (f lf : U -> V) :
+  filterdiff f F lf ->
+  filterdiff (fun t => opp (f t)) F (fun t => opp (lf t)).
+Proof.
+  intro Df.
+  apply filterdiff_compose.
+  by [].
+  by apply filterdiff_opp.
+Qed.
+Lemma ex_filterdiff_opp_fct {F} {FF : Filter F} (f : U -> V) :
+  ex_filterdiff f F ->
+  ex_filterdiff (fun t => opp (f t)) F.
+Proof.
+  intros [lf Df].
+  eexists.
+  apply filterdiff_opp_fct ; eassumption.
+Qed.
+
+Lemma filterdiff_plus_fct {F} {FF : Filter F} (f g : U -> V) (lf lg : U -> V) : 
+  filterdiff f F lf -> filterdiff g F lg ->
+  filterdiff (fun u => plus (f u) (g u)) F (fun u => plus (lf u) (lg u)).
+Proof.
+  intros Df Dg.
+  apply filterdiff_compose_2.
+  by [].
+  by [].
+  by apply filterdiff_plus.
+Qed.
+Lemma ex_filterdiff_plus_fct {F} {FF : Filter F} (f g : U -> V) : 
+  ex_filterdiff f F -> ex_filterdiff g F ->
+  ex_filterdiff (fun u => plus (f u) (g u)) F.
+Proof.
+  intros [lf Df] [lg Dg].
+  eexists.
+  apply filterdiff_plus_fct ; eassumption.
+Qed.
+
+Lemma filterdiff_scal_fct x (f : U -> K) (g : U -> V) lf lg :
+  (forall (n m : K), mult n m = mult m n) ->
+  filterdiff f (locally x) lf -> filterdiff g (locally x) lg ->
+  filterdiff (fun t => scal (f t) (g t)) (locally x)
+    (fun t => plus (scal (lf t) (g x)) (scal (f x) (lg t))).
+Proof.
+  intros Hcomm Df Dg.
+  apply (filterdiff_compose_2 f g scal lf lg (fun k v => plus (scal k (g x)) (scal (f x) v))) => //.
+  generalize (filterdiff_scal (F := (filtermap (fun t : U => (f t, g t)) (locally x))) (f x, g x))
+    => /= H.
+  apply: H => //.
+
+  apply (is_filter_lim_filtermap _ x (fun t : U => (f t, g t))) => //.
+  generalize (fun H => filterdiff_cont (fun t : U => (f t, g t)) H x (fun P H => H))
+    => /= H.
+  apply H.
+  apply ex_filterdiff_compose_2.
+  by exists lf.
+  by exists lg.
+  apply ex_filterdiff_linear.
+  apply is_linear_prod.
+  by apply is_linear_fst.
+  by apply is_linear_snd.
+Qed.
+Lemma ex_filterdiff_scal_fct x (f : U -> K) (g : U -> V) :
+  (forall (n m : K), mult n m = mult m n) ->
+  ex_filterdiff f (locally x) -> ex_filterdiff g (locally x) ->
+  ex_filterdiff (fun t => scal (f t) (g t)) (locally x).
+Proof.
+  intros Hcomm [lf Df] [lg Dg].
+  eexists.
+  apply (filterdiff_scal_fct x) ; eassumption.
+Qed.
+
+Lemma filterdiff_scal_l_fct : forall {F} {FF : Filter F} (x : V) (f : U -> K) lf,
+  filterdiff f F lf ->
+  filterdiff (fun u => scal (f u) x) F (fun u => scal (lf u) x).
+Proof.
+  move => F FF x f lf Df.
+  apply (filterdiff_compose f (fun k => scal k x) lf (fun k => scal k x)).
+  by [].
+  apply filterdiff_linear.
+  by apply is_linear_scal_l.
+Qed.
+Lemma ex_filterdiff_scal_l_fct : forall {F} {FF : Filter F} (x : V) (f : U -> K),
+  ex_filterdiff f F ->
+  ex_filterdiff (fun u => scal (f u) x) F.
+Proof.
+  intros F FF x f [lf Df].
+  eexists.
+  apply (filterdiff_scal_l_fct x) ; eassumption.
+Qed.
+
+Lemma filterdiff_scal_r_fct : forall {F} {FF : Filter F} (k : K) (f lf : U -> V), 
+  (forall (n m : K), mult n m = mult m n) ->
+  filterdiff f F lf ->
+  filterdiff (fun x => scal k (f x)) F (fun x => scal k (lf x)).
+Proof.
+  move => F FF k f lf Hcomm Df.
+  apply (filterdiff_compose f (fun x => scal k x) lf (fun x => scal k x)).
+  by [].
+  apply filterdiff_linear.
+  by apply is_linear_scal_r.
+Qed.
+Lemma ex_filterdiff_scal_r_fct : forall {F} {FF : Filter F} (k : K) (f : U -> V), 
+  (forall (n m : K), mult n m = mult m n) ->
+  ex_filterdiff f F ->
+  ex_filterdiff (fun x => scal k (f x)) F.
+Proof.
+  move => F FF k f Hcomm [lf Df].
+  eexists.
+  apply (filterdiff_scal_r_fct k) ; eassumption.
+Qed.
+
+End Operations_fct.
+
+Lemma filterdiff_mult_fct {U K} {FK : AbsRing K} {VU : NormedVectorSpace U K}
+  (f g : U -> K) x (lf lg : U -> K) :
+  (forall (n m : K), mult n m = mult m n) ->
+  filterdiff f (locally x) lf -> filterdiff g (locally x) lg
+  -> filterdiff (fun t => mult (f t) (g t)) (locally x) 
+    (fun t => plus (mult (lf t) (g x)) (mult (f x) (lg t))).
+Proof.
+  intros.
+  by apply @filterdiff_scal_fct.
+Qed.
+Lemma ex_filterdiff_mult_fct {U K} {FK : AbsRing K} {VU : NormedVectorSpace U K}
+  (f g : U -> K) x :
+  (forall (n m : K), mult n m = mult m n) ->
+  ex_filterdiff f (locally x) -> ex_filterdiff g (locally x)
+  -> ex_filterdiff (fun t => mult (f t) (g t)) (locally x).
+Proof.
+  intros Hcomm [lf Df] [lg Dg].
+  eexists.
+  apply @filterdiff_mult_fct ; eassumption.
+Qed.
+
 (** * Differentiability in 1 dimentional space *)
 
 Section Derive.
@@ -1098,7 +1235,7 @@ end.
 
 (** Extensionality *)
 
-(* TODO : à supprimer *)
+(* (* TODO : à supprimer *)
 Lemma is_derive_ext_loc :
   forall f g x l,
   locally x (fun t => f t = g t) ->
@@ -1118,7 +1255,7 @@ Proof.
 intros f g x Hfg (l,Hf).
 exists l.
 apply: is_derive_ext_loc Hfg Hf.
-Qed. (* fin TODO *)
+Qed. (* fin TODO *) *)
 
 Lemma Derive_ext_loc :
   forall f g x,
@@ -1139,6 +1276,7 @@ simpl.
 now replace (x + h + - x) with (h - 0) by ring.
 Qed.
 
+(* TODO : A supprimer *)
 Lemma is_derive_ext :
   forall f g x l,
   (forall t, f t = g t) ->
@@ -1158,7 +1296,7 @@ Lemma ex_derive_ext :
 Proof.
 intros f g x Heq [l Hf].
 exists l ; move: Hf ; by apply is_derive_ext.
-Qed.
+Qed. (* fin TODO *)
 
 Lemma Derive_ext :
   forall f g x,
@@ -1173,13 +1311,14 @@ Qed.
 (** * Operations *)
 (** Constant functions *)
 
+(* TODO : supprimer *)
 Lemma ex_derive_const :
   forall a x, ex_derive (fun _ => a) x.
 Proof.
 intros x.
 exists 0.
 apply derivable_pt_lim_const.
-Qed.
+Qed. (* fin TODO *)
 Lemma Derive_const :
   forall a x,
   Derive (fun _ => a) x = 0.
@@ -1191,13 +1330,14 @@ Qed.
 
 (** Identity function *)
 
+(* TODO : supprimer *)
 Lemma ex_derive_id :
   forall x, ex_derive id x.
 Proof.
 intros x.
 exists 1.
 apply derivable_pt_lim_id.
-Qed.
+Qed. (* fin TODO *)
 Lemma Derive_id :
   forall x,
   Derive id x = 1.

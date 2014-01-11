@@ -381,71 +381,25 @@ Admitted.
 
 End Prop5_filter.
 
-Section Prop5_derive.
-
-Context {K : Type} {FK : AbsRing K}.
-
-Context {U} {VU : NormedVectorSpace U K}.
-
-Lemma filterdiff_mult_fct (f g : U -> K) x (lf lg : U -> K) :
-  filterdiff f (locally x) lf -> filterdiff g (locally x) lg
-  -> filterdiff (fun t => mult (f t) (g t)) (locally x) 
-    (fun t => plus (mult (lf t) (g x)) (mult (f x) (lg t))).
-Proof.
-  intros Df Dg.
-  apply (filterdiff_compose_2 _ _ mult
-    lf lg (fun t u => plus (mult t (g x)) (mult (f x) u))).
-  by [].
-  by [].
-  apply (filterdiff_mult (f x, g x)).
-  apply (is_filter_lim_filtermap (locally x) x (fun t : U => (f t, g t))).
-  2: by [].
-  generalize (fun Df => filterdiff_cont (VU := VU) (F := locally x) (fun t : U => (f t, g t)) Df x (fun x P => P)).
-  simpl => H ; apply: H.
-  exists (fun t => (lf t, lg t)).
-  apply filterdiff_compose_2 => //=.
-  apply filterdiff_linear.
-Search _ filterdiff.
-Admitted.
-
-End Prop5_derive.
-
-Section Prop5_diff.
-
-Context {U V K : Type} {FK : AbsRing K} {VU : NormedVectorSpace U K} {VV : NormedVectorSpace V K}.
-
-Lemma filterdiff_plus_fct {F} {FF : Filter F} (f g : U -> V) (lf lg : U -> V) :
-  filterdiff f F lf -> filterdiff g F lg
-  -> filterdiff (fun t => plus (f t) (g t)) F (fun t => plus (lf t) (lg t)).
-Proof.
-  intros [Lf Df] [Lg Dg].
-  split.
-  admit.
-  move => x Hx /=.
-  generalize (Df _ Hx) => {Df} Df.
-  generalize (Dg _ Hx) => {Dg} Dg.
-  generalize (domin_plus _ _ _ Df Dg) ; simpl.
-  apply domin_rw_r.
-  apply equiv_ext_loc, filter_forall => y /=.
-  rewrite /minus (linear_plus lf Lf) (linear_plus lg Lg)
-    (linear_opp lf _ Lf) (linear_opp lg _ Lg).
-  rewrite !opp_plus !opp_opp -!plus_assoc.
-  apply f_equal.
-  rewrite !(plus_comm (g y)) -!plus_assoc.
-  apply f_equal.
-  by rewrite !(plus_comm (opp (g x))) -!plus_assoc.
-Qed.
-
-End Prop5_diff.
-
 Section Prop5_RInt.
 
 Context {V} {VV : NormedVectorSpace V R}.
 
 Lemma prop5_R (f g : R -> V) (a b : R) :
   (forall z, Rmin a b <= z <= Rmax a b -> filterdiff g (locally z) (fun y => scal y (f z)))
-  -> (forall z, filterlim f (locally z) (locally (f z)))
+  -> (forall z, Rmin a b <= z <= Rmax a b -> filterlim f (locally z) (locally (f z)))
   -> is_RInt f a b (minus (g b) (g a)).
+Proof.
+  wlog: a b / (a <= b) => [Hw | Hab].
+    case: (Rle_lt_dec a b) => Hab.
+    by apply Hw.
+    rewrite Rmin_comm Rmax_comm => Dg Cf.
+    rewrite -opp_minus.
+    apply is_RInt_swap.
+    apply Hw => //.
+    by apply Rlt_le.
+  rewrite /Rmin /Rmax ; case: Rle_dec => //= _ Dg Cf.
+  apply filterlim_locally => eps.
 Admitted.
 
 End Prop5_RInt.
@@ -475,7 +429,7 @@ Proof.
       apply: filterdiff_plus_fct.
       apply: filterdiff_const.
       apply filterdiff_linear.
-      by apply: is_linear_scal.
+      by apply: is_linear_scal_l.
       move => y.
       by apply plus_zero_l.
       unfold is_C_derive in Dg.

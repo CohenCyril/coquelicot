@@ -2055,7 +2055,9 @@ Proof.
   apply Rgt_not_eq.
   by apply INR_fact_lt_0.
   simpl ; rewrite /PS_derive_n /=.
-  apply is_derive_ext_loc
+  apply filterdiff_Reals.
+  eapply filterdiff_ext_lin.
+  apply @filterdiff_ext_locally
     with (PSeries (fun k : nat => INR (fact (k + n)) / INR (fact k) * a (k + n)%nat)).
   case Ha : (CV_radius a) => [cva | | ].
   move: (Hx) ; rewrite Ha ; move/Rminus_lt_0 => Hx0.
@@ -2073,9 +2075,7 @@ Proof.
   apply IH.
   by rewrite Ha /=.
   by rewrite Ha in Hx.
-  replace (PSeries (fun k : nat => INR (fact (k + S n)) / INR (fact k) * a (k + S n)%nat) x)
-    with (PSeries (PS_derive
-      (fun k : nat => INR (fact (k + n)) / INR (fact k) * a (k + n)%nat)) x).
+  apply filterdiff_Reals.
   apply is_derive_PSeries.
   replace (CV_radius (fun k : nat => INR (fact (k + n)) / INR (fact k) * a (k + n)%nat))
     with (CV_radius a).
@@ -2095,6 +2095,8 @@ Proof.
   rewrite -S_INR ; split ; apply Rgt_not_eq.
   by apply INR_fact_lt_0.
   apply (lt_INR O), lt_O_Sn.
+  move => /= y.
+  apply f_equal.
   apply PSeries_ext.
   move => k ; rewrite /PS_derive.
   rewrite -plus_n_Sm plus_Sn_m /fact -/fact ?mult_INR ?S_INR.
