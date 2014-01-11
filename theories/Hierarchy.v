@@ -420,15 +420,32 @@ rewrite opp_zero.
 apply plus_zero_r.
 Qed.
 
-Lemma plus_reg_r :
-  forall x y z : G,
-  plus x z = plus y z -> x = y.
+Lemma plus_reg_l :
+  forall r x y : G,
+  plus r x = plus r y -> x = y.
 Proof.
-intros x y z H.
-rewrite <- (plus_zero_r x), <- (plus_zero_r y).
-rewrite <- (plus_opp_r z).
-rewrite 2!plus_assoc.
-now rewrite H.
+intros r x y H.
+rewrite -(plus_zero_l x) -(plus_opp_l r) -plus_assoc.
+rewrite H.
+now rewrite plus_assoc plus_opp_l plus_zero_l.
+Qed.
+Lemma plus_reg_r :
+  forall r x y : G,
+  plus x r = plus y r -> x = y.
+Proof.
+intros z x y.
+rewrite !(plus_comm _ z).
+by apply plus_reg_l.
+Qed.
+
+Lemma opp_opp :
+  forall x : G,
+  opp (opp x) = x.
+Proof.
+intros x.
+apply plus_reg_r with (opp x).
+rewrite plus_opp_r.
+apply plus_opp_l.
 Qed.
 
 Lemma opp_plus :
@@ -445,25 +462,11 @@ rewrite plus_opp_l.
 rewrite plus_zero_r.
 apply sym_eq, plus_opp_l.
 Qed.
-
-Lemma opp_opp :
-  forall x : G,
-  opp (opp x) = x.
+Lemma opp_minus (x y : G) :
+  opp (minus x y) = minus y x.
 Proof.
-intros x.
-apply plus_reg_r with (opp x).
-rewrite plus_opp_r.
-apply plus_opp_l.
-Qed.
-
-Lemma plus_eq_compat_l :
-  forall r x y : G,
-  plus r x = plus r y -> x = y.
-Proof.
-intros r x y H.
-rewrite -(plus_zero_l x) -(plus_opp_l r) -plus_assoc.
-rewrite H.
-now rewrite plus_assoc plus_opp_l plus_zero_l.
+  rewrite /minus opp_plus opp_opp.
+  by apply plus_comm.
 Qed.
 
 (** Sum *)
@@ -589,7 +592,7 @@ Lemma opp_mult_r :
   opp (mult x y) = mult x (opp y).
 Proof.
 intros x y.
-apply plus_eq_compat_l with (mult x y).
+apply plus_reg_l with (mult x y).
 rewrite plus_opp_r -mult_distr_l.
 now rewrite plus_opp_r mult_zero_r.
 Qed.
@@ -599,7 +602,7 @@ Lemma opp_mult_l :
   opp (mult x y) = mult (opp x) y.
 Proof.
 intros x y.
-apply plus_eq_compat_l with (mult x y).
+apply plus_reg_l with (mult x y).
 rewrite plus_opp_r -mult_distr_r.
 now rewrite plus_opp_r mult_zero_l.
 Qed.
@@ -939,12 +942,16 @@ Qed.
 
 End Locally.
 
+Section Locally_fct.
+
+Context {T U : Type} {MU : MetricBall U}.
+
 Lemma filterlim_locally :
-  forall {T U} {MU : MetricBall U} {F} {FF : Filter F} (f : T -> U) y,
+  forall {F} {FF : Filter F} (f : T -> U) y,
   filterlim f F (locally y) <->
   forall eps : posreal, F (fun x => ball y eps (f x)).
 Proof.
-intros T U MU F FF f y.
+intros F FF f y.
 split.
 - intros Cf eps.
   apply (Cf (fun x => ball y eps x)).
@@ -955,11 +962,11 @@ split.
   apply He.
 Qed.
 
-Lemma filterlim_locally_unique: forall {T U} {MU : MetricBall U} {F} {FF: ProperFilter F}
+Lemma filterlim_locally_unique: forall {F} {FF: ProperFilter F}
   (f:T -> U) l l', filterlim f F (locally l) ->  filterlim f F (locally l') ->
     (forall eps : posreal, ball l eps l').
 Proof.
-intros T U MU F FF f l l' Hl Hl' eps.
+intros F FF f l l' Hl Hl' eps.
 assert (locally l (ball l (pos_div_2 eps))).
   by apply locally_ball.
 specialize (Hl (ball l (pos_div_2 eps)) H).
@@ -975,6 +982,20 @@ apply ball_triangle with (f x).
 by apply H.
 by apply ball_sym, H.
 Qed.
+
+End Locally_fct.
+
+Lemma is_filter_lim_filtermap {T U} {MT: MetricBall T} {MU : MetricBall U} : 
+forall F x (f : T -> U),
+  filterlim f (locally x) (locally (f x))
+  -> is_filter_lim F x
+  -> is_filter_lim (filtermap f F) (f x).
+Proof.
+  intros F x f Cf Fx P HP.
+  apply Cf in HP.
+  now apply Fx.
+Qed.
+
 
 (** locally' *)
 
@@ -1266,7 +1287,7 @@ Lemma scal_zero_l :
   scal zero u = zero.
 Proof.
 intros u.
-apply plus_reg_r with (z := scal zero u).
+apply plus_reg_r with (r := scal zero u).
 rewrite plus_zero_l.
 rewrite <- scal_distr_r.
 now rewrite plus_zero_r.
@@ -1277,7 +1298,7 @@ Lemma scal_opp_l :
   scal (opp x) u = opp (scal x u).
 Proof.
 intros x u.
-apply plus_reg_r with (z := (scal x u)).
+apply plus_reg_r with (r := (scal x u)).
 rewrite plus_opp_l.
 rewrite <- scal_distr_r.
 rewrite plus_opp_l.
@@ -1289,7 +1310,7 @@ Lemma scal_opp_r :
   scal x (opp u) = opp (scal x u).
 Proof.
 intros x u.
-apply plus_reg_r with (z := (scal x u)).
+apply plus_reg_r with (r := (scal x u)).
 rewrite plus_opp_l.
 rewrite <- scal_distr_l.
 rewrite plus_opp_l.
@@ -1851,6 +1872,18 @@ Proof.
   eapply Build_NormedVectorSpace.
   apply NormedVectorSpace_mixin_prod.
 Defined.
+
+Lemma norm_prod {U V K} {FK : AbsRing K}
+  {VU : NormedVectorSpace U K} {VV : NormedVectorSpace V K}
+  (x : U) (y : V) :
+  Rmax (norm x) (norm y) <= norm (x,y) <= sqrt 2 * Rmax (norm x) (norm y).
+Proof.
+  rewrite -(Rabs_pos_eq (norm x)).
+  rewrite -(Rabs_pos_eq (norm y)).
+  apply sqrt_plus_sqr.
+  by apply norm_ge_0.
+  by apply norm_ge_0.
+Qed.
 
 (** ** Iterated Products *)
 

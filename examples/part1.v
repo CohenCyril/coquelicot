@@ -381,49 +381,31 @@ Admitted.
 
 End Prop5_filter.
 
-Section Prop5_metric.
-
-Context {U V : Type} {MU : MetricBall U} {MV : MetricBall V}.
-
-Lemma is_filter_lim_filtermap : forall F x (f : U -> V),
-  filterlim f (locally x) (locally (f x))
-  -> is_filter_lim F x
-  -> is_filter_lim (filtermap f F) (f x).
-Proof.
-  intros F x f Cf Fx P HP.
-  apply Cf in HP.
-  now apply Fx.
-Qed.
-
-End Prop5_metric.
-
 Section Prop5_derive.
 
 Context {K : Type} {FK : AbsRing K}.
 
-Lemma filterdiff_mult : forall (x : K * K), 
-  filterdiff (fun t => mult (fst t) (snd t)) (locally x)
-    (fun t => plus (mult (fst x) (snd t)) (mult (fst t) (snd x))).
-Proof.
-  move => x ; split.
-  - admit.
-  - move => y Hy.
-    generalize (is_filter_lim_locally_unique _ _ Hy) => {Hy} /= Hy.
-    simpl => eps.
-    apply filter_forall => z.
-    rewrite /minus mult_distr_l mult_distr_r !opp_plus ;
-    rewrite -(opp_mult_l (RK := absring_ring)) -(opp_mult_r (RK := absring_ring)) ;
-    rewrite !opp_opp.
-    rewrite (opp_mult_l (RK := absring_ring) _ (snd z)) (opp_mult_r (RK := absring_ring) (fst z)).
-    
-Admitted.
-
 Context {U} {VU : NormedVectorSpace U K}.
 
-Lemma filterdiff_mult_fct (f g : U -> K) F (lf lg : U -> K) :
-  filterdiff f F lf -> filterdiff g F lg
-  -> filterdiff (fun t => mult (f t) (g t)) F (fun t => mult (lf t) (lg t)).
+Lemma filterdiff_mult_fct (f g : U -> K) x (lf lg : U -> K) :
+  filterdiff f (locally x) lf -> filterdiff g (locally x) lg
+  -> filterdiff (fun t => mult (f t) (g t)) (locally x) 
+    (fun t => plus (mult (lf t) (g x)) (mult (f x) (lg t))).
 Proof.
+  intros Df Dg.
+  apply (filterdiff_compose_2 _ _ mult
+    lf lg (fun t u => plus (mult t (g x)) (mult (f x) u))).
+  by [].
+  by [].
+  apply (filterdiff_mult (f x, g x)).
+  apply (is_filter_lim_filtermap (locally x) x (fun t : U => (f t, g t))).
+  2: by [].
+  generalize (fun Df => filterdiff_cont (VU := VU) (F := locally x) (fun t : U => (f t, g t)) Df x (fun x P => P)).
+  simpl => H ; apply: H.
+  exists (fun t => (lf t, lg t)).
+  apply filterdiff_compose_2 => //=.
+  apply filterdiff_linear.
+Search _ filterdiff.
 Admitted.
 
 End Prop5_derive.
@@ -431,51 +413,6 @@ End Prop5_derive.
 Section Prop5_diff.
 
 Context {U V K : Type} {FK : AbsRing K} {VU : NormedVectorSpace U K} {VV : NormedVectorSpace V K}.
-
-Lemma filterdiff_locally F (f : U -> V) x l :
-  is_filter_lim F x ->
-  filterdiff f (locally x) l ->
-  filterdiff f F l.
-Proof.
-intros Fx [Hl Df].
-split.
-exact Hl.
-intros z Fz eps.
-specialize (Df _ (fun P H => H) eps).
-apply Fz.
-simpl in Df.
-Admitted.
-
-Lemma is_linear_pair_fct (l1 l2 : U -> V) :
-  is_linear l1 -> is_linear l2 -> is_linear (fun t => (l1 t, l2 t)).
-Proof.
-  intros [Hp1 Hs1 [M1 Hn1]] [Hp2 Hs2 [M2 Hn2]] ; split ; simpl.
-  - move => x y ; by rewrite Hp1 Hp2.
-  - move => k x ; by rewrite Hs1 Hs2.
-  - exists (sqrt (M1 ^ 2 + M2 ^ 2)) ; split.
-    apply sqrt_pos.
-    intros x ; ring_simplify (norm (l1 x) * (norm (l1 x) * 1) + norm (l2 x) * (norm (l2 x) * 1))%R.
-    eapply Rle_trans.
-    apply sqrt_le_1_alt.
-    apply Rplus_le_compat ;
-    apply pow_incr ; split.
-    by apply norm_ge_0.
-    by apply Hn1.
-    by apply norm_ge_0.
-    by apply Hn2.
-    apply Req_le.
-    apply Rsqr_inj.
-    by apply sqrt_pos.
-    apply Rmult_le_pos.
-    by apply sqrt_pos.
-    by apply norm_ge_0.
-    rewrite /Rsqr sqrt_sqrt.
-    rewrite {1}(Rmult_comm (sqrt (M1 ^ 2 + M2 ^ 2))) Rmult_assoc.
-    rewrite -(Rmult_assoc (sqrt (M1 ^ 2 + M2 ^ 2))) sqrt_sqrt.
-    ring.
-    apply Rplus_le_le_0_compat ; apply pow2_ge_0.
-    apply Rplus_le_le_0_compat ; apply pow2_ge_0.
-Qed.
 
 Lemma filterdiff_plus_fct {F} {FF : Filter F} (f g : U -> V) (lf lg : U -> V) :
   filterdiff f F lf -> filterdiff g F lg
@@ -497,22 +434,6 @@ Proof.
   rewrite !(plus_comm (g y)) -!plus_assoc.
   apply f_equal.
   by rewrite !(plus_comm (opp (g x))) -!plus_assoc.
-Qed.
-
-Lemma filterdiff_linear {F} {FF : Filter F} (l : U -> V) :
-  is_linear l -> filterdiff l F l.
-Proof.
-  intros Hl.
-  split.
-  by apply Hl.
-  move => x Hx eps.
-  apply filter_forall => y.
-  rewrite /minus linear_plus //.
-  rewrite (linear_opp l) //.
-  rewrite plus_opp_r norm_zero.
-  apply Rmult_le_pos.
-  by apply Rlt_le, eps.
-  by apply norm_ge_0.
 Qed.
 
 End Prop5_diff.
@@ -547,7 +468,7 @@ Proof.
     apply (prop5_R (VV := NormedVectorSpace_prod R_NVS R_NVS) (fun t : R => (z2 - z1) * f ((1 - t) * z1 + t * z2)) (fun t => g ((1 - t) * z1 + t * z2)) 0 1).
     + intros z Hz.
       eapply filterdiff_ext_lin.
-      apply (filterdiff_comp (fun t : R => (1 - t) * z1 + t * z2) g (fun y : R => scal y (z2 - z1)) (fun t => scal t (f ((1 - z) * z1 + z * z2)))).
+      apply (filterdiff_compose (fun t : R => (1 - t) * z1 + t * z2) g (fun y : R => scal y (z2 - z1)) (fun t => scal t (f ((1 - z) * z1 + z * z2)))).
       apply filterdiff_ext with (fun t : R => z1 + scal t (z2 - z1)).
       intro y ; apply injective_projections ; simpl ; ring.
       apply filterdiff_ext_lin with (fun y => plus zero (scal y (z2 - z1))).

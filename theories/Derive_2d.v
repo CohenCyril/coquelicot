@@ -309,7 +309,7 @@ Lemma differentiable_pt_lim_proj1_1 (f : R -> R) (x y l : R) :
 Proof.
   intros Df.
   apply filterdiff_Reals ; split => [ | z Hz eps].
-    by apply @is_linear_scal.
+    by apply @is_linear_scal_l.
   rewrite -(is_filter_lim_locally_unique_R _ _ Hz) => {z Hz}.
   elim (Df eps) ; clear Df ; intros delta Df.
   exists delta ; simpl in Df ; simpl ; intros.

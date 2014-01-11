@@ -111,7 +111,7 @@ Qed.
 
 End LinearFct.
 
-Lemma is_linear_comp {U V W K} {FK : AbsRing K} {VU : NormedVectorSpace U K}
+Lemma is_linear_compose {U V W K} {FK : AbsRing K} {VU : NormedVectorSpace U K}
   {VV : NormedVectorSpace V K} {VW : NormedVectorSpace W K}
   (l1 : U -> V) (l2 : V -> W) :
   is_linear l1 -> is_linear l2 -> is_linear (fun x => l2 (l1 x)).
@@ -181,10 +181,10 @@ Proof.
     by apply Rmax_r.
 Qed.
 (** [fun k => scal k x] is a linear function *)
-Lemma is_linear_scal (x : V) :
+Lemma is_linear_scal_l (x : V) :
   is_linear (fun k => scal k x).
 Proof.
-  repeat split.
+  split.
   - move => u v ; by apply @scal_distr_r.
   - move => u v /= ; apply sym_eq, @scal_assoc.
   - exists (norm x) ; split.
@@ -192,9 +192,85 @@ Proof.
     move => k /=.
     now rewrite Rmult_comm ; apply @norm_scal.
 Qed.
+(** [fun x => scal k x] is a linear function if [mult] is commutative *)
+Lemma is_linear_scal_r (k : K) :
+  (forall n m : K, mult n m = mult m n)
+  -> is_linear (fun x => scal k x).
+Proof.
+  split.
+  - move => u v ; by apply @scal_distr_l.
+  - move => u v /= ; apply sym_eq ; rewrite !@scal_assoc.
+    by rewrite H.
+  - exists (abs k) ; split.
+    by apply @abs_ge_0.
+    move => x /=.
+    now apply @norm_scal.
+Qed.
 
 End Op_LinearFct.
 
+Lemma is_linear_prod {T U V K} {FK : AbsRing K} {VT : NormedVectorSpace T K}
+  {VU : NormedVectorSpace U K} {VV : NormedVectorSpace V K} 
+  (l1 : T -> U) (l2 : T -> V) :
+  is_linear l1 -> is_linear l2 -> is_linear (fun t : T => (l1 t, l2 t)).
+Proof.
+  intros H1 H2.
+  split.
+  - intros x y.
+    apply injective_projections ; simpl.
+    by apply H1.
+    by apply H2.
+  - intros k x.
+    apply injective_projections ; simpl.
+    by apply H1.
+    by apply H2.
+  - destruct (linear_norm l1 H1) as [M1 [HM1 Hn1]].
+    destruct (linear_norm l2 H2) as [M2 [HM2 Hn2]].
+    exists (sqrt 2 * Rmax M1 M2)%R ; split.
+    apply Rmult_le_pos.
+    apply sqrt_pos.
+    by apply Rmax_case.
+    intros x.
+    eapply Rle_trans.
+    apply norm_prod.
+    rewrite Rmult_assoc.
+    apply Rmult_le_compat_l.
+    by apply sqrt_pos.
+    rewrite Rmult_max_distr_r.
+    apply Rmax_case.
+    by eapply Rle_trans, Rmax_l.
+    by eapply Rle_trans, Rmax_r.
+    by apply norm_ge_0.
+Qed.
+
+Lemma is_linear_fst {U V K} {FK : AbsRing K} 
+  {VU : NormedVectorSpace U K} {VV : NormedVectorSpace V K} :
+  is_linear (fun t : U * V => fst t).
+Proof.
+  split.
+  - intros [x1 x2] [y1 y2] ; by simpl.
+  - intros k [x1 x2] ; by simpl.
+  - exists 1 ; split.
+    by apply Rle_0_1.
+    intros [x1 x2] ; simpl fst ; rewrite Rmult_1_l.
+    eapply Rle_trans.
+    2: by apply norm_prod.
+    by apply Rmax_l.
+Qed.
+Lemma is_linear_snd {U V K} {FK : AbsRing K} 
+  {VU : NormedVectorSpace U K} {VV : NormedVectorSpace V K} :
+  is_linear (fun t : U * V => snd t).
+Proof.
+  split.
+  - intros [x1 x2] [y1 y2] ; by simpl.
+  - intros k [x1 x2] ; by simpl.
+  - exists 1 ; split.
+    by apply Rle_0_1.
+    intros [x1 x2] ; simpl snd ; rewrite Rmult_1_l.
+    eapply Rle_trans.
+    2: by apply norm_prod.
+    by apply Rmax_r.
+Qed.
 
 Section Linear_domin.
 
@@ -287,6 +363,76 @@ Proof.
   apply Rplus_le_lt_0_compat.
   by apply Hm.
   by apply Rlt_0_1.
+Qed.
+
+Lemma filterdiff_locally {F} {FF : ProperFilter F} (f : U -> V) x l :
+  is_filter_lim F x ->
+  filterdiff f (locally x) l ->
+  filterdiff f F l.
+Proof.
+intros Fx [Hl Df].
+split.
+exact Hl.
+intros z Fz.
+specialize (Df _ (fun P H => H)).
+generalize (is_filter_lim_unique _ _ Fx Fz) => Hxz.
+assert (norm (minus x z) = 0)%R.
+  apply Req_lt_aux => e.
+  rewrite Rminus_0_r Rabs_pos_eq.
+  destruct (norm_compat2 (V := U)) as [M HM].
+  move: (fun eps => HM _ _ _ (ball_sym _ _ _ (Hxz eps))) => {HM Hxz} HM.
+  replace (pos e) with (M * (e/M))%R.
+  generalize (fun H => HM (mkposreal (e/M) H)) => {HM} /= HM.
+  apply HM.
+  apply Rdiv_lt_0_compat.
+  by apply e.
+  by apply M.
+  field ; apply Rgt_not_eq, M.
+  by apply norm_ge_0.
+eapply is_domin_le.
+2: apply Fx.
+apply domin_rw_l with (fun y : U => minus y x).
+move => eps /=.
+apply filter_forall => y.
+replace (minus (minus y z) (minus y x)) with (minus x z).
+rewrite H.
+apply Rmult_le_pos.
+by apply Rlt_le, eps.
+by apply norm_ge_0.
+rewrite /minus opp_plus opp_opp.
+rewrite (plus_comm y) -plus_assoc plus_comm.
+apply f_equal.
+by rewrite plus_assoc plus_opp_r plus_zero_l.
+eapply domin_rw_r.
+2: by apply Df.
+move => eps /=.
+apply filter_forall => y.
+eapply Rle_trans.
+2: apply Rmult_le_pos.
+apply Req_le.
+apply Req_le_aux => e.
+rewrite Rminus_0_r Rabs_pos_eq.
+destruct (Df e) as [d Hd].
+move: (Hd _ (Hxz _)) => {Hd} Hd.
+eapply Rle_trans.
+eapply Rle_trans.
+2: apply Hd.
+apply Req_le.
+rewrite -norm_opp opp_minus.
+apply f_equal.
+rewrite /minus !(linear_plus l Hl) !(linear_opp l _ Hl) !opp_plus !opp_opp -!plus_assoc.
+rewrite (plus_comm (f y)) !(plus_comm (f z)) -!plus_assoc.
+apply f_equal.
+rewrite (plus_comm (opp (l y))) !(plus_comm (opp (l z))) -!plus_assoc.
+apply f_equal.
+rewrite (plus_comm (opp (f y))) (plus_comm (l y)) -!plus_assoc (plus_assoc (opp (l y))) plus_opp_l plus_zero_l.
+apply f_equal.
+by rewrite plus_comm -plus_assoc plus_opp_l plus_zero_r.
+rewrite -norm_opp opp_minus H Rmult_0_r.
+by apply Rlt_le, e.
+by apply norm_ge_0.
+by apply Rlt_le, eps.
+by apply norm_ge_0.
 Qed.
 
 (** ** Operations *)
@@ -390,9 +536,29 @@ Proof.
   by apply filterdiff_const.
 Qed.
 
+Lemma filterdiff_linear {F} {FF : Filter F}
+  (l : U -> V) :
+  is_linear l -> filterdiff l F l.
+Proof.
+  move => Hl ; split.
+  by [].
+  move => x Hx eps.
+  apply filter_forall => y.
+  rewrite /minus -(linear_opp l x Hl) -linear_plus // plus_opp_r norm_zero.
+  apply Rmult_le_pos.
+  apply Rlt_le, eps.
+  by apply norm_ge_0.
+Qed.
+Lemma ex_filterdiff_linear {F} {FF : Filter F}
+  (l : U -> V) :
+  is_linear l -> ex_filterdiff l F.
+Proof.
+  intro Hl ; exists l; by apply filterdiff_linear.
+Qed.
+
 End Diff.
 
-Lemma filterdiff_comp {U V W K} {FK : AbsRing K} {VU : NormedVectorSpace U K}
+Lemma filterdiff_compose {U V W K} {FK : AbsRing K} {VU : NormedVectorSpace U K}
   {VV : NormedVectorSpace V K} {VW : NormedVectorSpace W K}
   {F} {FF : Filter F} f g (lf : U -> V) (lg : V -> W) :
   filterdiff f F lf -> filterdiff g (filtermap f F) lg
@@ -400,7 +566,7 @@ Lemma filterdiff_comp {U V W K} {FK : AbsRing K} {VU : NormedVectorSpace U K}
 Proof.
   intros Df Dg.
   split.
-    apply is_linear_comp.
+    apply is_linear_compose.
     by apply Df.
     by apply Dg.
   intros x Hx.
@@ -469,6 +635,67 @@ Proof.
   specialize (Df x Hx).
   by apply is_domin_linear.
 Qed.
+Lemma ex_filterdiff_compose {U V W K} {FK : AbsRing K} {VU : NormedVectorSpace U K}
+  {VV : NormedVectorSpace V K} {VW : NormedVectorSpace W K}
+  {F} {FF : Filter F} f g :
+  ex_filterdiff f F -> ex_filterdiff g (filtermap f F)
+  -> ex_filterdiff (fun y => g (f y)) F.
+Proof.
+  intros [lf Df] [lg Dg].
+  eexists ; eapply filterdiff_compose ; eassumption.
+Qed.
+
+Lemma filterdiff_compose_2 {T U V W K : Type} {FK : AbsRing K} {VT : NormedVectorSpace T K}
+  {VU : NormedVectorSpace U K} {VV : NormedVectorSpace V K} {VW : NormedVectorSpace W K}
+  {F : (T -> Prop) -> Prop} {FF : Filter F} :
+  forall (f : T -> U) (g : T -> V) (h : U -> V -> W) (lf : T -> U) (lg : T -> V)
+    (lh : U -> V -> W),
+    filterdiff f F lf ->
+    filterdiff g F lg ->
+    filterdiff (fun t => h (fst t) (snd t)) (filtermap (fun t => (f t,g t)) F) (fun t => lh (fst t) (snd t)) ->
+    filterdiff (fun y : T => h (f y) (g y)) F (fun y : T => lh (lf y) (lg y)).
+Proof.
+  intros f g h lf lg lh [Hf Df] [Hg Dg] Dh.
+  apply (filterdiff_compose (fun t => (f t, g t)) _ (fun t => (lf t, lg t)) _) in Dh.
+  by [].
+  split.
+  by apply is_linear_prod.
+  intros x Hx eps.
+  assert (0 < eps / sqrt 2).
+    apply Rdiv_lt_0_compat.
+    by apply eps.
+    apply Rlt_sqrt2_0.
+  generalize (filter_and _ _ (Df x Hx (mkposreal _ H)) (Dg x Hx (mkposreal _ H))).
+  simpl pos.
+  apply filter_imp ; intros y [Hnf Hng].
+  eapply Rle_trans.
+  apply norm_prod.
+  simpl fst ; simpl snd.
+  eapply Rle_trans.
+  apply Rmult_le_compat_l.
+  by apply sqrt_pos.
+  apply Rmax_case.
+  apply Hnf.
+  apply Hng.
+  apply Req_le ; field.
+  apply Rgt_not_eq, Rlt_sqrt2_0.
+Qed.
+Lemma ex_filterdiff_compose_2 {T U V W K : Type} {FK : AbsRing K} {VT : NormedVectorSpace T K}
+  {VU : NormedVectorSpace U K} {VV : NormedVectorSpace V K} {VW : NormedVectorSpace W K}
+  {F : (T -> Prop) -> Prop} {FF : Filter F} :
+  forall (f : T -> U) (g : T -> V) (h : U -> V -> W),
+    ex_filterdiff f F ->
+    ex_filterdiff g F ->
+    ex_filterdiff (fun t => h (fst t) (snd t)) (filtermap (fun t => (f t,g t)) F) ->
+    ex_filterdiff (fun y : T => h (f y) (g y)) F.
+Proof.
+  intros f g h [lf Df] [lg Dg] [lh Dh].
+  set lh' := fun x y => lh (x,y).
+  eexists ; eapply (filterdiff_compose_2 _ _ _ _ _ lh') ; try eassumption.
+  eapply filterdiff_ext_lin.
+  by apply Dh.
+  by case.
+Qed.
 
 Section Operations.
 
@@ -536,7 +763,158 @@ Proof.
   by apply filterdiff_plus.
 Qed.
 
+Lemma filterdiff_scal : forall {F} {FF : ProperFilter F} (x : K * V), 
+  is_filter_lim F x ->
+  (forall (n m : K), mult n m = mult m n) ->
+  filterdiff (fun t => scal (fst t) (snd t)) F
+    (fun t => plus (scal (fst t) (snd x)) (scal (fst x) (snd t))).
+Proof.
+  move => F FF [x1 x2] Hx Hcomm ; split.
+  - apply (is_linear_compose (fun t => (scal (fst t) x2,scal x1 (snd t))) (fun t => plus (fst t) (snd t))).
+    apply is_linear_prod.
+    apply (is_linear_compose (fun t => fst t) (fun k => scal k x2)).
+    by apply is_linear_fst.
+    by apply is_linear_scal_l.
+    apply is_linear_compose.
+    by apply is_linear_snd.
+    by apply is_linear_scal_r.
+    apply is_linear_plus.
+  - move => y Hy.
+    generalize (is_filter_lim_unique _ _ Hx Hy) => {Hy} Hy eps.
+    apply Hx ; clear Hx.
+    destruct (norm_compat2 (V := V)) as [M HM].
+    assert (0 < Rmin (eps / 2) (eps / 2 / M)).
+      apply Rmin_case.
+      by apply is_pos_div_2.
+      apply Rdiv_lt_0_compat.
+      by apply is_pos_div_2.
+      by apply M.
+    set eps' := mkposreal _ H.
+
+    exists eps' => z Hz.
+    move: (conj (proj1 Hz) (HM _ _ _ (proj2 Hz))) => {Hz} Hz.
+    specialize (Hy eps').
+    move: (conj (proj1 Hy) (HM _ _ _ (proj2 Hy))) => {Hy} Hy.
+    destruct y as [y1 y2].
+    destruct z as [z1 z2].
+    simpl in Hy, Hz ; simpl fst in Hy, Hz |- * ; simpl snd in Hy, Hz |- *.
+    rewrite -!/(minus _ _).
+    eapply Rle_trans.
+    2: apply Rmult_le_compat_l.
+    2: apply Rlt_le, eps.
+    2: apply sqrt_plus_sqr.
+    simpl.
+    rewrite !Rabs_pos_eq ; try by apply abs_ge_0.
+    replace (pos eps)%R with ((eps / 2) * 2)%R by field.
+    rewrite Rmult_assoc.
+    eapply Rle_trans.
+    2: apply Rmult_le_compat_l.
+    2: apply Rlt_le, is_pos_div_2.
+    2: by apply Rplus_le_Rmax.
+    
+    replace (minus (scal z1 z2) (scal y1 y2))
+      with (plus (scal (minus z1 y1) z2) (scal y1 (minus z2 y2))).
+    Focus 2.
+      rewrite /minus scal_distr_r scal_distr_l -!plus_assoc.
+      apply f_equal.
+      rewrite (scal_opp_r (VV := nvspace_vector) y1 y2).
+      apply (plus_reg_r (scal y1 y2)) ;
+      rewrite plus_assoc -plus_assoc.
+      rewrite plus_opp_l plus_zero_r.
+      rewrite (scal_opp_l (VV := nvspace_vector) y1 z2).
+      by apply plus_opp_l.
+    replace (minus (plus (scal (minus z1 y1) z2) (scal y1 (minus z2 y2)))
+      (plus (scal (minus z1 y1) x2) (scal x1 (minus z2 y2))))
+      with (plus (scal (minus z1 y1) (minus z2 x2)) (scal (minus y1 x1) (minus z2 y2))).
+    eapply Rle_trans.
+    apply @norm_triangle.
+    eapply Rle_trans.
+    apply Rplus_le_compat ; simpl ; apply @norm_scal.
+    rewrite Rmult_plus_distr_l.
+    rewrite Rmult_comm.
+    apply Rplus_le_compat ; apply Rmult_le_compat_r.
+    by apply abs_ge_0.
+    eapply Rle_trans.
+    by apply Rlt_le, Hz.
+    eapply Rle_trans.
+    apply Rmult_le_compat_l.
+    by apply Rlt_le, M.
+    apply Rmin_r.
+    apply Req_le ; field.
+    by apply Rgt_not_eq, M.
+    by apply norm_ge_0.
+    eapply Rle_trans.
+    by apply Rlt_le, Hy.
+    apply Rmin_l.
+    rewrite /minus !scal_distr_l !scal_distr_r !opp_plus  !(scal_opp_r (VV := nvspace_vector)) !(scal_opp_l (VV := nvspace_vector)) !opp_opp -!plus_assoc.
+    apply f_equal, f_equal.
+    rewrite plus_comm -!plus_assoc plus_comm -!plus_assoc.
+    apply f_equal.
+    rewrite plus_comm -!plus_assoc.
+    apply f_equal.
+    by rewrite plus_comm -!plus_assoc.
+    by apply norm_ge_0.
+Qed.
+Lemma ex_filterdiff_scal : forall {F} {FF : ProperFilter F} (x : K * V), 
+  is_filter_lim F x ->
+  (forall (n m : K), mult n m = mult m n) ->
+  ex_filterdiff (fun t => scal (fst t) (snd t)) F.
+Proof.
+  eexists.
+  by apply (filterdiff_scal x).
+Qed.
+
+Lemma filterdiff_scal_l : forall {F} {FF : Filter F} (x : V), 
+  filterdiff (fun k => scal k x) F (fun k => scal k x).
+Proof.
+  move => F FF x.
+  apply filterdiff_linear.
+  by apply is_linear_scal_l.
+Qed.
+Lemma ex_filterdiff_scal_l : forall {F} {FF : Filter F} (x : V), 
+  ex_filterdiff (fun k => scal k x) F.
+Proof.
+  eexists.
+  by apply (filterdiff_scal_l x).
+Qed.
+
+Lemma filterdiff_scal_r : forall {F} {FF : Filter F} (k : K), 
+  (forall (n m : K), mult n m = mult m n) ->
+  filterdiff (fun x => scal k x) F (fun x => scal k x).
+Proof.
+  move => F FF x Hcomm.
+  apply filterdiff_linear.
+  by apply is_linear_scal_r.
+Qed.
+Lemma ex_filterdiff_scal_r : forall {F} {FF : Filter F} (k : K), 
+  (forall (n m : K), mult n m = mult m n) ->
+  ex_filterdiff (fun x => scal k x) F.
+Proof.
+  eexists.
+  by apply (filterdiff_scal_r k).
+Qed.
+
 End Operations.
+
+Lemma filterdiff_mult {K} {FK : AbsRing K} :
+ forall {F} {FF : ProperFilter F} (x : K * K), 
+  is_filter_lim F x ->
+  (forall (n m : K), mult n m = mult m n) ->
+  filterdiff (fun t => mult (fst t) (snd t)) F
+    (fun t => plus (mult (fst t) (snd x)) (mult (fst x) (snd t))).
+Proof.
+  intros.
+  generalize (filterdiff_scal x H H0) ; by simpl.
+Qed.
+Lemma ex_filterdiff_mult {K} {FK : AbsRing K} :
+ forall {F} {FF : ProperFilter F} (x : K * K), 
+  is_filter_lim F x ->
+  (forall (n m : K), mult n m = mult m n) ->
+  ex_filterdiff (fun t => mult (fst t) (snd t)) F.
+Proof.
+  eexists.
+  by apply (filterdiff_mult x).
+Qed.
 
 (** * Differentiability in 1 dimentional space *)
 
@@ -558,7 +936,7 @@ Proof.
   - case => Hl Df x Hx.
     by apply Df.
   - move => Df ; split => [ | x Hx].
-    by apply is_linear_scal.
+    by apply is_linear_scal_l.
     by apply Df.
 Qed.
 
@@ -601,7 +979,7 @@ Lemma filterdiff_Reals (f : R -> R) (x l : R) :
 Proof.
   split => Hf.
   + split.
-    apply @is_linear_scal.
+    apply @is_linear_scal_l.
     move => y Hy eps.
     rewrite -(is_filter_lim_locally_unique_R _ _ Hy) ; clear y Hy.
     case: (Hf eps (cond_pos _)) => {Hf} d Hf.
