@@ -1360,24 +1360,16 @@ apply locally_2d_forall.
 intros u' v' (Y,_).
 apply ex_diff_n_m with (2:=Y).
 omega.
-pattern (u-x) at 2; replace (u-x) with (0+(u-x)*1) by ring.
-apply derivable_pt_lim_plus.
-apply derivable_pt_lim_const.
-specialize (derivable_pt_lim_scal (fun x => x) (u - x) z 1 (derivable_pt_lim_id z)).
-unfold derivable_pt_lim, mult_real_fct.
-intros H e He; destruct (H e He) as (d, Hd).
-exists d; intros h Hh1 Hh2.
-apply Rle_lt_trans with (2:=Hd h Hh1 Hh2).
-right; apply f_equal; unfold Rdiv; ring.
-pattern (v-y) at 2; replace (v-y) with (0+(v-y)*1) by ring.
-apply derivable_pt_lim_plus.
-apply derivable_pt_lim_const.
-specialize (derivable_pt_lim_scal (fun x => x) (v - y) z 1 (derivable_pt_lim_id z)).
-unfold derivable_pt_lim, mult_real_fct.
-intros H e He; destruct (H e He) as (d, Hd).
-exists d; intros h Hh1 Hh2.
-apply Rle_lt_trans with (2:=Hd h Hh1 Hh2).
-right; apply f_equal; unfold Rdiv; ring.
+apply filterdiff_Reals ; eapply filterdiff_ext_lin.
+apply @filterdiff_plus_fct ; try apply locally_filter.
+apply filterdiff_const.
+apply @filterdiff_scal_l ; try apply locally_filter.
+simpl => y0 ; ring.
+apply filterdiff_Reals ; eapply filterdiff_ext_lin.
+apply @filterdiff_plus_fct ; try apply locally_filter.
+apply filterdiff_const.
+apply @filterdiff_scal_l ; try apply locally_filter.
+simpl => y0 ; ring.
 rewrite -(sum_eq (fun m =>
   C k m * (u - x) ^ (S m) * (v - y) ^ (k - m) * partial_derive (S m) (k - m) f (x + z * (u - x)) (y + z * (v - y)) +
   C k m * (u - x) ^ m * (v - y) ^ (S (k - m)) * partial_derive m (S (k - m)) f (x + z * (u - x)) (y + z * (v - y)))).

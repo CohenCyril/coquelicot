@@ -5052,21 +5052,14 @@ eapply filterdiff_ext_lin.
 generalize (filterdiff_plus_fct (F := locally x) (fun x0 => (fun y : R => RInt f y (a x)) (a x0))
   (fun x0 => (fun y : R => RInt f (a x) y) (b x0))) => /= H.
 apply H ; clear H.
-apply (filterdiff_compose a (fun y : R => RInt f y (a x))).
+generalize (filterdiff_compose' a (fun y : R => RInt f y (a x)) x) => /= H ;
+apply H ; clear H.
 apply filterdiff_Reals ; exact Da.
-apply (filterdiff_locally _ (a x)).
-apply is_filter_lim_filtermap => //.
-apply filterdiff_cont => //.
-apply ex_filterdiff_Reals ; by exists da.
 apply filterdiff_Reals.
 apply derivable_pt_lim_RInt' ; trivial.
 apply ex_RInt_point.
-apply (filterdiff_compose).
+generalize (filterdiff_compose' b (RInt f (a x)) x) => /= H ; apply H ; clear H.
 apply filterdiff_Reals ; exact Db.
-apply (filterdiff_locally _ (b x)).
-apply is_filter_lim_filtermap => //.
-apply filterdiff_cont => //.
-apply ex_filterdiff_Reals ; by exists db.
 apply filterdiff_Reals.
 now apply derivable_pt_lim_RInt.
 simpl => y ; ring.
@@ -5285,7 +5278,10 @@ simpl; intros u v Hu Hv.
 rewrite (Derive_ext (fun z : R => RInt (fun t : R => f z t) (a x) (a x)) (fun z => 0)).
 2: intros t; apply RInt_point.
 replace (Derive (fun _ : R => 0) x) with 0%R.
-2: apply sym_eq, is_derive_unique, derivable_pt_lim_const.
+2: apply sym_eq, is_derive_unique, filterdiff_Reals.
+2: eapply filterdiff_ext_lin.
+2: apply filterdiff_const.
+2: simpl => y ; ring.
 rewrite Rminus_0_r.
 replace (Derive (fun z : R => RInt (fun t : R => f z t) v (a x)) u) with
   (RInt (fun z => Derive (fun u => f u z) u) v (a x)).
