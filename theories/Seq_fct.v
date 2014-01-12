@@ -1089,8 +1089,6 @@ wlog: a b h Hfh / (a <= b) => [Hw | Hab].
 
 case: Hab => Hab.
 
-pose (CS := Build_CompleteSpace V _ cnvspace_complete).
-
 destruct (fun FF2 HF2 => filterlim_switch_dom
   (fun (x : U) ptd => scal (sign (b - a)) (Riemann_sum (f x) ptd))
   F (locally_dist (fun ptd : SF_seq.SF_seq => SF_seq.seq_step (SF_seq.SF_lx ptd)))

@@ -1624,12 +1624,15 @@ Class CompleteNormedVectorSpace V K {FK : AbsRing K} := {
   cnvspace_metric :> MetricBall V ;
   cnvspace_normed' :> NormedVectorSpace_mixin V K cnvspace_vector cnvspace_metric ;
   cnvspace_normed := Build_NormedVectorSpace _ _ _ _ cnvspace_vector' cnvspace_metric ;
-  cnvspace_complete :> CompleteSpace_mixin V _
+  cnvspace_complete' :> CompleteSpace_mixin V _ ;
+  cnvspace_complete := Build_CompleteSpace _  cnvspace_metric cnvspace_complete'
 }.
 
 Global Existing Instance cnvspace_vector.
 
 Global Existing Instance cnvspace_normed.
+
+Global Existing Instance cnvspace_complete.
 
 (** * Extended Types *)
 

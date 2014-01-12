@@ -236,6 +236,35 @@ Qed.
 Definition seq_step (s : seq R) :=
   foldr Rmax 0 (pairmap (fun x y => Rabs (Rminus y x)) (head 0 s) (behead s)).
 
+Lemma seq_step_ge_0 x : (0 <= seq_step x).
+Proof.
+  clear ; unfold seq_step ; case: x => [ | x0 x] //= .
+  by apply Rle_refl.
+  elim: x x0 => [ | x1 x IH] //= x0.
+  by apply Rle_refl.
+  apply Rmax_case.
+  by apply Rabs_pos.
+  by [].
+Qed.
+Lemma seq_step_cat (x y : seq R) :
+  (0 < size x)%nat -> (0 < size y)%nat ->
+  last 0 x = head 0 y ->
+  seq_step (cat x (behead y)) = Rmax (seq_step x) (seq_step y).
+Proof.
+  case: x => /= [ H | x0 x _].
+  by apply lt_irrefl in H.
+  case: y => /= [ H | y0 y _].
+  by apply lt_irrefl in H.
+  move => <-.
+  elim: x y x0 {y0} => /= [ | x1 x IH] y x0.
+  rewrite {2}/seq_step /=.
+  rewrite /Rmax ; case: Rle_dec (seq_step_ge_0 (x0 :: y)) => // _ _.
+  unfold seq_step ; simpl.
+  rewrite -Rmax_assoc.
+  apply f_equal.
+  by apply IH.
+Qed.
+
 (** * Definitions of SF_seq *)
 
 Section SF_seq.
@@ -471,6 +500,30 @@ Proof.
   move => H ; by rewrite -(SF_rev_invol s) -(SF_rev_invol s0) H.
 Qed.
 
+(** ** SF_cat *)
+
+Definition SF_cat (x y : SF_seq) := mkSF_seq (SF_h x) ((SF_t x) ++ (SF_t y)).
+Lemma SF_lx_cat (x y : SF_seq) :
+  SF_lx (SF_cat x y) = (SF_lx x) ++ (behead (SF_lx y)).
+Proof.
+  unfold SF_cat, SF_lx ; simpl.
+  apply f_equal.
+  by elim: (SF_t x) => //= t h ->.
+Qed.
+Lemma SF_last_cat (x y : SF_seq) :
+  last (SF_h x) (SF_lx x) = head (SF_h y) (SF_lx y) ->
+  last (SF_h (SF_cat x y)) (SF_lx (SF_cat x y)) = (last (SF_h y) (SF_lx y)).
+Proof.
+  rewrite SF_lx_cat.
+  unfold SF_cat, SF_lx ; simpl => <- /=.
+  elim: (SF_t x) (SF_h x) => //= {x} x1 x x0.
+Qed.
+Lemma SF_cons_cat x0 (x y : SF_seq) :
+  SF_cons x0 (SF_cat x y) = SF_cat (SF_cons x0 x) y.
+Proof.
+  reflexivity.
+Qed.
+
 (** ** first and last pair *)
 
 Definition SF_head (y0 : T) (s : SF_seq) := (SF_h s, head y0 (SF_ly s)).
@@ -580,6 +633,25 @@ Proof.
   apply Rle_trans with x1 ; [apply (Hptd O) | apply (Hptd 1%nat)] ;
   rewrite ?SF_size_cons ; repeat apply lt_n_S ; apply lt_O_Sn.
   apply IH, (ptd_cons (x0,y0)) => //.
+Qed.
+
+Lemma SF_cat_pointed (x y : SF_seq) :
+  last (SF_h x) (SF_lx x) = head (SF_h y) (SF_lx y) ->
+  pointed_subdiv x -> pointed_subdiv y
+  -> pointed_subdiv (SF_cat x y).
+Proof.
+  intros Hxy Hx Hy.
+  move: Hxy Hx.
+  apply (SF_cons_ind (fun x => last (SF_h x) (SF_lx x) = head (SF_h y) (SF_lx y) -> pointed_subdiv x -> pointed_subdiv (SF_cat x y)))
+    => {x} /= [x0 | x0 x IH] Hxy Hx.
+  rewrite Hxy.
+  by apply Hy.
+  rewrite -SF_cons_cat.
+  case => [ | i] Hi.
+  apply (Hx O), lt_O_Sn.
+  apply IH =>//.
+  by apply ptd_cons with x0.
+  by apply lt_S_n, Hi.
 Qed.
 
 (** * SF_seq for Chasles *)
