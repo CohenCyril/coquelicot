@@ -732,10 +732,10 @@ Proof.
   clear a b.
   - intros.
     rewrite /minus plus_opp_r.
-    by apply is_RInt_point.
+    by apply @is_RInt_point.
   - intros.
     rewrite -opp_minus.
-    by apply is_RInt_swap.
+    by apply @is_RInt_swap.
   - intros.
     evar (l : V) ; replace (minus (g c) (g a)) with l.
     eapply is_RInt_Chasles ; eassumption.
@@ -756,13 +756,6 @@ Lemma prop5_R (f g : R -> V) (a b : R) :
   -> (forall z, Rmin a b <= z <= Rmax a b -> filterlim f (locally z) (locally (f z)))
   -> is_RInt f a b (minus (g b) (g a)).
 Proof.
-  wlog: f g / ((forall z : R, @filterdiff R V R R_absring R_NVS VV g
-    (@locally R (@complete_metric R R_complete_metric) z)
-    (fun y : R => @scal V R (@absring_ring R R_absring) (@nvspace_group V R R_absring VV)
-      (@nvspace_vector' V R R_absring VV) y (f z))) /\
-    (forall z : R, @filterlim R V f (@locally R (@complete_metric R R_complete_metric) z)
-    (@locally V (@nvspace_metric V R R_absring VV) (f z)))) => [ Hw Dg Cf | [Dg Cf] _ _].
-  admit. (** *)
 Admitted.
 
 End Prop5_RInt.
@@ -771,6 +764,74 @@ Lemma filterdiff_R2_C (f : C -> C) (z : C) (l : C) :
   let VV := NormedVectorSpace_prod R_NVS R_NVS in
   is_C_derive f z l -> filterdiff (VV := VV) f (locally z) (fun z => scal z l).
 Admitted.
+
+Global Instance C_complete : CompleteSpace_mixin C
+  (MetricBall_prod complete_metric complete_metric).
+Proof.
+  apply Build_CompleteSpace_mixin.
+  intros.
+
+  set (F1 := fun (P : R -> Prop) => exists Q, F Q /\ forall z : C, Q z -> P (fst z)).
+  destruct (complete_cauchy F1) as [x Hx].
+  repeat split.
+  - intros P [Q [HQ HP]].
+    destruct (filter_ex Q HQ).
+    exists (fst x).
+    by apply HP.
+  - exists (fun _ => True) ; split => //.
+    by apply filter_forall.
+  - intros P1 P2 [Q1 [HQ1 HP1]] [Q2 [HQ2 HP2]].
+    exists (fun x => Q1 x /\ Q2 x) ; split.
+    by apply filter_and.
+    split ; intuition.
+  - intros P1 P2 H1 [Q1 [HQ1 HP1]].
+    exists Q1 ; split ; intuition.
+  - intros eps.
+    destruct (H0 eps).
+    exists (fst x).
+    eexists ; split.
+    apply H1.
+    simpl ; intros.
+    by apply H2.
+  
+  set (F2 := fun (P : R -> Prop) => exists Q, F Q /\ forall z : C, Q z -> P (snd z)).
+  destruct (complete_cauchy F2) as [y Hy].
+  repeat split.
+  - intros P [Q [HQ HP]].
+    destruct (filter_ex Q HQ).
+    exists (snd x0).
+    by apply HP.
+  - exists (fun _ => True) ; split => //.
+    by apply filter_forall.
+  - intros P1 P2 [Q1 [HQ1 HP1]] [Q2 [HQ2 HP2]].
+    exists (fun x => Q1 x /\ Q2 x) ; split.
+    by apply filter_and.
+    split ; intuition.
+  - intros P1 P2 H1 [Q1 [HQ1 HP1]].
+    exists Q1 ; split ; intuition.
+  - intros eps.
+    destruct (H0 eps).
+    exists (snd x0).
+    eexists ; split.
+    apply H1.
+    simpl ; intros.
+    by apply H2.
+  
+  exists (x,y) => eps.
+  destruct (Hx eps) as [Qx [HQx HPx]].
+  destruct (Hy eps) as [Qy [HQy HPy]].
+  generalize (filter_and _ _ HQx HQy).
+  apply filter_imp => z [Qxz Qyz].
+  split.
+  by apply HPx.
+  by apply HPy.
+Qed.
+
+Global Instance C_R_CNVS : CompleteNormedVectorSpace C R.
+Proof.
+  econstructor.
+  apply C_R_NVS_mixin.
+Defined.
 
 Lemma prop5 (f g : C -> C) (z1 z2 : C) :
   (forall z, is_C_derive g z (f z))
@@ -782,7 +843,7 @@ Proof.
     replace (g z2 - g z1)
       with (minus (g ((1 - 1) * z1 + 1 * z2)) (g ((1 - 0) * z1 + 0 * z2))).
     2: simpl ; congr (g _- g _) ; ring.
-    apply (prop5_R (VV := NormedVectorSpace_prod R_NVS R_NVS) (fun t : R => (z2 - z1) * f ((1 - t) * z1 + t * z2)) (fun t => g ((1 - t) * z1 + t * z2)) 0 1).
+    apply (prop5_R (VV := C_R_CNVS) (fun t : R => (z2 - z1) * f ((1 - t) * z1 + t * z2)) (fun t => g ((1 - t) * z1 + t * z2)) 0 1).
     + intros z Hz.
       eapply filterdiff_ext_lin.
       apply (filterdiff_compose (fun t : R => (1 - t) * z1 + t * z2) g (fun y : R => scal y (z2 - z1)) (fun t => scal t (f ((1 - z) * z1 + z * z2)))).
