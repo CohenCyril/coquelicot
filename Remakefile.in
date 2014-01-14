@@ -22,6 +22,9 @@ FILES = \
 
 OBJS = $(addprefix theories/,$(addsuffix o,$(FILES)))
 
+.PHONY: all check dist doc install
+.PHONY: clean theories/clean examples/clean
+
 all: $(OBJS)
 
 clean: theories/clean examples/clean
