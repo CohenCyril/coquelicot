@@ -35,7 +35,7 @@ Qed.
 
 Section Definitions.
 
-Context {K} {V} {RK : AbsRing K} {VV : NormedVectorSpace V K}.
+Context {K : AbsRing} {V : NormedModule K}.
 
 Definition is_series (a : nat -> V) (l : V) :=
    filterlim (sum_n a) (eventually) (locally l).
@@ -142,7 +142,7 @@ Qed.
 
 Section Properties1.
 
-Context {K} {V} {RK : AbsRing K} {VV : NormedVectorSpace V K}.
+Context {K : AbsRing} {V : NormedModule K}.
 
 (** Extensionality *)
 
@@ -270,6 +270,7 @@ Proof.
   apply is_series_decr_1.
   now rewrite <- plus_assoc, plus_opp_r, plus_zero_r.
 Qed.
+
 Lemma ex_series_decal_n (a : nat -> V) (n : nat) :
   ex_series a <-> ex_series (fun k => a (n + k)%nat).
 Proof.
@@ -295,10 +296,12 @@ Proof.
   apply is_series_unique.
   rewrite Rplus_comm.
   apply is_series_decr_1.
-  unfold plus; simpl; ring_simplify (Series (fun k : nat => a (S k)) + a 0%nat +- a 0%nat).
+  rewrite /plus /opp /=.
+  ring_simplify (Series (fun k : nat => a (S k)) + a 0%nat +- a 0%nat).
   apply Series_correct.
   by apply (ex_series_decal_1 a).
 Qed.
+
 Lemma Series_decal_n (a : nat -> R) (n : nat) :
   (0 < n)%nat -> ex_series a
     -> Series a = sum_f_R0 a (pred n)  + Series (fun k => a (n + k)%nat).
@@ -308,11 +311,10 @@ Proof.
   rewrite Rplus_comm.
   apply is_series_decr_n with n.
   by [].
-  unfold plus; simpl; rewrite sum_n_sum_f_R0.
-  ring_simplify (Series (fun k : nat => a (n+ k)%nat) + sum_f_R0 a (pred n) +-
-   sum_f_R0 a (pred n)).
+  rewrite /plus /opp /= sum_n_sum_f_R0.
+  ring_simplify (Series (fun k : nat => a (n+ k)%nat) + sum_f_R0 a (pred n) + - sum_f_R0 a (pred n)).
   apply Series_correct.
-  by apply @ex_series_decal_n.
+  by apply ex_series_decal_n.
 Qed.
 
 Lemma Series_decal_1_aux (a : nat -> R) :
@@ -469,7 +471,7 @@ Qed.
 
 Section Properties2.
 
-Context {K} {V} {RK : AbsRing K} {VV : NormedVectorSpace V K}.
+Context {K : AbsRing} {V : NormedModule K}.
 
 Lemma is_series_opp (a : nat -> V) (la : V) :
   is_series a la
@@ -502,7 +504,8 @@ Proof.
   by rewrite Rbar_opp_real.
   elim => [ | n IH].
   simpl ; ring.
-  simpl ; rewrite IH ; ring.
+  rewrite /= IH /plus /=.
+  ring.
 Qed.
 
 Lemma is_series_plus (a b : nat -> V) (la lb : V) :
@@ -572,7 +575,7 @@ Qed.
 
 Section Properties3.
 
-Context {K} {V} {RK : AbsRing K} {VV : NormedVectorSpace V K}.
+Context {K : AbsRing} {V : NormedModule K}.
 
 Lemma is_series_scal (c : K) (a : nat -> V) (l : V) :
   is_series a l -> is_series (fun n => scal c (a n)) (scal c l).
@@ -582,7 +585,7 @@ Proof.
   elim => [ | n IH]; simpl.
   easy.
   rewrite -IH.
-  apply scal_distr_l.
+  apply: scal_distr_l.
   now apply filterlim_compose with (2 := filterlim_scal _ _).
 Qed.
 Lemma is_series_scal_l : forall (c : K) (a : nat -> V) (l : V),
@@ -625,7 +628,8 @@ Proof.
   apply f_equal, Lim_seq_ext.
   elim => [ | n IH].
   simpl ; ring.
-  simpl ; rewrite IH ; ring.
+  rewrite /= IH /plus /=.
+  ring.
 Qed.
 
 Lemma is_series_scal_r (c : R) (a : nat -> R) (l : R) :

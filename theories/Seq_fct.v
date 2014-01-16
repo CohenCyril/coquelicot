@@ -253,7 +253,8 @@ Proof.
     rewrite (double_var (eps/2)) ;
     apply Rle_lt_trans with (1 := Rabs_triang _ _), Rplus_lt_compat.
     rewrite Rabs_Ropp ; apply Hex_n.
-    rewrite /y ; ring_simplify ((x + Rmin (Rmin dn dm) d0 / 2) + - x).
+    rewrite /y /ball /= /AbsRing_ball /= /minus /plus /opp /abs /=.
+    ring_simplify ((x + Rmin (Rmin dn dm) d0 / 2) + - x).
     rewrite (Rabs_pos_eq _ (Rlt_le _ _ Hd)).
     apply Rle_lt_trans with (Rmin dn dm / 2).
     apply Rmult_le_compat_r.
@@ -268,7 +269,8 @@ Proof.
     apply Rgt_not_eq, Rlt_gt, Rminus_lt_0.
     rewrite /y ; by ring_simplify ((x + Rmin (Rmin dn dm) d0 / 2) - x).
     apply Hex_m.
-    rewrite /y ; ring_simplify ((x + Rmin (Rmin dn dm) d0 / 2) + - x).
+    rewrite /y /ball /= /AbsRing_ball /= /minus /plus /opp /abs /=.
+    ring_simplify ((x + Rmin (Rmin dn dm) d0 / 2) + - x).
     rewrite (Rabs_pos_eq _ (Rlt_le _ _ Hd)).
     apply Rle_lt_trans with (Rmin dn dm / 2).
     apply Rmult_le_compat_r.
@@ -406,7 +408,9 @@ Proof.
     intros x Dx h Hh.
     destruct (Ho _ Hh) as [d Hd].
     exists d => /= y Hy.
-    apply Hd ; simpl ; ring_simplify (x + y + - (x + h)).
+    apply Hd.
+    rewrite /ball /= /AbsRing_ball /= /minus /plus /opp /=.
+    ring_simplify (x + y + - (x + h)).
     by apply Hy.
 
   have Crn : forall x, D x -> forall n h, D (x+h) -> is_lim (rn x n) h (rn x n h).
@@ -423,7 +427,8 @@ Proof.
     apply Derive_correct in Edn.
     case: (Edn eps (cond_pos eps)) => {Edn} delta Edn.
     exists delta => y Hy Hxy.
-    rewrite /= -/(Rminus _ _) Rminus_0_r in Hy.
+    rewrite /ball /= /AbsRing_ball /= /minus /plus /opp /= in Hy.
+    rewrite -/(Rminus _ _) Rminus_0_r in Hy.
     by apply Edn.
 
     have H : continuity_pt (fun h => ((fn n (x + h) - fn n x) / h)) h.
@@ -449,7 +454,9 @@ Proof.
     exists (mkposreal _ Hd0) => /= y Hy Hhy.
     rewrite /rn ; case: Req_EM_T => /= Hy'.
     contradict Hy.
-    apply Rle_not_lt ; rewrite Hy' -/(Rminus _ _) Rminus_0_l Rabs_Ropp ; by apply Rmin_r.
+    apply Rle_not_lt.
+    rewrite /abs /minus /plus /opp /=.
+    rewrite Hy' -/(Rminus _ _) Rminus_0_l Rabs_Ropp ; by apply Rmin_r.
     apply (H y) ; split.
     split.
     exact: I.
@@ -537,6 +544,7 @@ Proof.
   replace (Lim_seq (fun n : nat => / h * (fn n (x + h) - fn n x)))
     with (Lim_seq (fun n : nat => rn x n h)).
   apply H0.
+  rewrite /ball /= /AbsRing_ball /= /minus /plus /opp /=.
   rewrite -/(Rminus _ _) Rminus_0_r ; apply Rlt_le_trans with (1 := Hh), Rmin_l.
   exact: Hh0.
   apply Lim_seq_ext => n.
@@ -555,6 +563,7 @@ Proof.
   exact: Hfn.
   apply Hd.
   simpl.
+  rewrite /ball /= /AbsRing_ball /= /minus /plus /opp /=.
   ring_simplify (x + h + - x) ; apply Rlt_le_trans with (1 := Hh), Rmin_r.
   apply ex_finite_lim_seq_correct, CVU_CVS_dom with D.
   exact: Hfn.
@@ -569,7 +578,7 @@ Proof.
   apply F0.
   apply ball_center.
   apply F.
-  simpl.
+  rewrite /ball /= /AbsRing_ball /= /minus /plus /opp /=.
   ring_simplify (x + h + - x).
   apply Rlt_le_trans with (1 := Hh), Rmin_r.
   apply (CVU_CVS_dom fn D) in Hfn ; rewrite /CVS_dom in Hfn.
@@ -581,7 +590,7 @@ Proof.
   apply F0.
   apply ball_center.
   apply F.
-  simpl.
+  rewrite /ball /= /AbsRing_ball /= /minus /plus /opp /=.
   ring_simplify (x + h + - x).
   apply Rlt_le_trans with (1 := Hh), Rmin_r.
 
@@ -627,7 +636,7 @@ Proof.
   apply ex_finite_lim_seq_correct, CVU_CVS_dom with D.
   exact: Hfn.
   apply Hd.
-  simpl.
+  rewrite /ball /= /AbsRing_ball /= /minus /plus /opp /=.
   ring_simplify (x + h + - x) ; rewrite -(Rminus_0_r h) ;
   apply Rlt_le_trans with (1 := Hh0), Rmin_r.
   apply ex_finite_lim_seq_correct, CVU_CVS_dom with D.
@@ -643,8 +652,9 @@ Proof.
   apply F0.
   apply ball_center.
   apply F.
-  simpl.
+  rewrite /ball /= /AbsRing_ball /= /minus /plus /opp /=.
   ring_simplify (x + h + - x).
+  rewrite /ball /= /AbsRing_ball /= /minus /plus /opp /= in Hh0.
   rewrite -/(Rminus _ _) Rminus_0_r in Hh0.
   apply Rlt_le_trans with (1 := Hh0), Rmin_r.
   apply (CVU_CVS_dom fn D) in Hfn ; rewrite /CVS_dom in Hfn.
@@ -656,8 +666,9 @@ Proof.
   apply F0.
   apply ball_center.
   apply F.
-  simpl.
+  rewrite /ball /= /AbsRing_ball /= /minus /plus /opp /=.
   ring_simplify (x + h + - x).
+  rewrite /ball /= /AbsRing_ball /= /minus /plus /opp /= in Hh0.
   rewrite -/(Rminus _ _) Rminus_0_r in Hh0.
   apply Rlt_le_trans with (1 := Hh0), Rmin_r.
 
@@ -933,7 +944,7 @@ Qed.
 
 (** * Swich limits *)
 
-Lemma filterlim_switch_1 {T1 T2 G} {MG : MetricBall G} 
+Lemma filterlim_switch_1 {T1 T2} {G : UniformSpace}
   (f : T1 -> T2 -> G) F1 F2 (FF1 : ProperFilter F1) (FF2 : Filter F2) g h (l : G) :
   (filterlim f F1 (locally g))
   -> (forall x, filterlim (f x) F2 (locally (h x)))
@@ -948,7 +959,7 @@ Proof.
 
   assert (filter_prod F1 F2 (fun x => ball (g (snd x)) (eps / 2 / 2) (f (fst x) (snd x)))).
     apply Filter_prod with (fun x : T1 => ball g (eps / 2 / 2) (f x)) (fun _ => True).
-    move: (proj1 (@filterlim_locally _ _ _ F1 FF1 f g) Hfg (pos_div_2 (pos_div_2 eps))) => {Hfg} /= Hfg.
+    move: (proj1 (@filterlim_locally _ _ F1 FF1 f g) Hfg (pos_div_2 (pos_div_2 eps))) => {Hfg} /= Hfg.
     by [].
     by apply FF2.
     simpl ; intros.
@@ -957,7 +968,7 @@ Proof.
 
   assert (filter_prod F1 F2 (fun x : T1 * T2 => ball l (eps / 2) (h (fst x)))).
     apply Filter_prod with (fun x : T1 => ball l (eps / 2) (h x)) (fun _ => True).
-    move: (proj1 (@filterlim_locally _ _ _ F1 FF1 h l) Hhl (pos_div_2 eps)) => {Hhl} /= Hhl.
+    move: (proj1 (@filterlim_locally _ _ F1 FF1 h l) Hhl (pos_div_2 eps)) => {Hhl} /= Hhl.
     by [].
     by apply FF2.
     by [].
@@ -965,7 +976,7 @@ Proof.
 
   case: (@filter_and _ _ FF _ _ Hhl Hfg) => {Hhl Hfg} /= ; intros.
   
-  move: (fun x => proj1 (@filterlim_locally _ _ _ F2 FF2 (f x) (h x)) (Hfh x) (pos_div_2 (pos_div_2 eps))) => {Hfh} /= Hfh.
+  move: (fun x => proj1 (@filterlim_locally _ _ F2 FF2 (f x) (h x)) (Hfh x) (pos_div_2 (pos_div_2 eps))) => {Hfh} /= Hfh.
   case: (HF1 Q f0) => x Hx.
   move: (@filter_and _ _ FF2 _ _ (Hfh x) g0) => {Hfh}.
   apply filter_imp => y Hy.
@@ -982,7 +993,7 @@ Proof.
   by apply Hy.
 Qed.
 
-Lemma filterlim_switch_2 {T1 T2 U} {CMS : CompleteSpace U}
+Lemma filterlim_switch_2 {T1 T2} {U : CompleteSpace}
   (f : T1 -> T2 -> U) F1 F2 (FF1 : ProperFilter F1) (FF2 : ProperFilter F2) g h :
   (filterlim f F1 (locally g))
   -> (forall x, filterlim (f x) F2 (locally (h x)))
@@ -1026,7 +1037,7 @@ Proof.
   by exists l.
 Qed.
 
-Lemma filterlim_switch {T1 T2 U} {MU : CompleteSpace U} 
+Lemma filterlim_switch {T1 T2} {U : CompleteSpace}
   (f : T1 -> T2 -> U) F1 F2 (FF1 : ProperFilter F1) (FF2 : ProperFilter F2) g h :
   (filterlim f F1 (locally g))
   -> (forall x, filterlim (f x) F2 (locally (h x)))
@@ -1040,9 +1051,9 @@ Proof.
   now apply (filterlim_switch_1 f F1 F2 FF1 FF2 g h l).
 Qed.
 
-Lemma filterlim_switch_dom {T1 T2 U} {MU : CompleteSpace U} 
+Lemma filterlim_switch_dom {T1 T2} {U : CompleteSpace}
   (f : T1 -> T2 -> U) F1 F2 (dom : T2 -> Prop) (FF1 : ProperFilter F1) (FF2 : Filter F2) (HF2 : forall P, F2 P -> exists x, dom x /\ P x) g h :
-  (filterlim (fun x (y : {z : T2 | dom z}) => f x (projT1 y)) F1 (locally (fun y : {z : T2 | dom z} => g (projT1 y))))
+  (filterlim (fun x (y : {z : T2 | dom z}) => f x (projT1 y)) F1 (locally (T := fct_UniformSpace _ _) (fun y : {z : T2 | dom z} => g (projT1 y))))
   -> (forall x, filterlim (f x) (within dom F2) (locally (h x)))
   -> (exists l : U, filterlim h F1 (locally l) /\ filterlim g (within dom F2) (locally l)).
 Proof.
@@ -1063,7 +1074,7 @@ Qed.
 
 Require Import RInt SF_seq.
 
-Lemma filterlim_RInt {U V} {VV : CompleteNormedVectorSpace V R} :
+Lemma filterlim_RInt {U} {V : CompleteNormedModule R_AbsRing} :
   forall (f : U -> R -> V) (a b : R) F (FF : ProperFilter F) 
     g h,
   (forall x, is_RInt (f x) a b (h x))
@@ -1128,7 +1139,7 @@ assert (Hn : 0 <= ((b - a) / eP)).
   rewrite /Rmin /Rmax ; case: Rle_dec (Rlt_le _ _ Hab)  => // _ _.
 2: by apply Hfh.
 
-destruct (@norm_compat2 V R _ _ _ _) as [M HM].
+destruct (@norm_compat2 _ V) as [M HM].
 intros P [eps HP].
 have He: 0 < (eps / (b - a)) / (2 * M).
   apply Rdiv_lt_0_compat.
@@ -1145,12 +1156,13 @@ apply HP.
 case => t [Ht [Ha Hb]] /=.
 rewrite (proj1 (sign_0_lt _)).
 rewrite 2!scal_one.
-apply norm_compat1.
+apply: norm_compat1.
 generalize (Riemann_sum_minus (f x) g t) => <-.
 refine (_ (Riemann_sum_norm (fun x0 : R => minus (f x x0) (g x0)) (fun _ => M * ((eps / (b - a)) / (2 * M))) t Ht _)).
 move => H ; apply Rle_lt_trans with (1 := H).
 rewrite Riemann_sum_const.
-rewrite Hb Ha ; simpl.
+rewrite Hb Ha.
+rewrite /scal /= /mult /=.
 replace ((b - a) * (M * ((eps / (b - a)) / (2 * M)))) with (eps / 2).
 rewrite {2}(double_var eps) -{1}(Rplus_0_l (eps / 2)).
 apply Rplus_lt_compat_r.
@@ -1176,7 +1188,7 @@ by apply Hg.
 exists zero.
 rewrite -Hab in Hfh |- * => {b Hab}.
 split.
-assert (forall (eps : posreal) t, ball zero eps (h t)).
+assert (forall (eps : posreal) t, ball (@zero V) eps (h t)).
   intros eps t.
   specialize (Hfh t).
   apply filterlim_locally_unique with (2 := Hfh).

@@ -245,6 +245,7 @@ Proof.
   by apply continuity_pt_Rabs.
   by apply Rle_0_1.
   exists (mkposreal _ Rlt_0_1) => /= x H0x Hx.
+  rewrite /ball /= /AbsRing_ball /= in H0x.
   apply Rabs_lt_between' in H0x.
   rewrite Rminus_eq_0 in H0x.
   contradict Hx.

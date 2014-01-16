@@ -725,10 +725,10 @@ now rewrite nth_set_nth.
 case ssrnat.eqnP => [H|H].
 eapply filterdiff_ext_lin.
 apply filterdiff_id.
-simpl => y ; ring.
+simpl => y ; apply sym_eq, Rmult_1_r.
 eapply filterdiff_ext_lin.
 apply filterdiff_const.
-simpl => y ; ring.
+simpl => y ; apply sym_eq, Rmult_0_r.
 
 (* AppExt *)
 simpl D => l n.
@@ -755,7 +755,7 @@ apply sym_eq.
 apply Hc.
 eapply filterdiff_ext_lin.
 apply filterdiff_const.
-simpl => y ; ring.
+simpl => y ; apply sym_eq, Rmult_0_r.
 (* . *)
 intros _.
 case (ssrnat.leqP (size le) v1) => Hv1.
@@ -888,7 +888,7 @@ apply (filterdiff_ext (fun x => interp (set_nth 0 l n 0) e1)).
 apply H1.
 eapply filterdiff_ext_lin.
 apply filterdiff_const.
-move => /= y ; ring.
+simpl => y ; apply sym_eq, Rmult_0_r.
 now apply IHe2.
 simpl.
 replace (interp l e1 * interp l a2) with (0 * interp (set_nth 0 l n (nth 0 l n)) e2 + interp l e1 * interp l a2) by ring.
@@ -899,7 +899,7 @@ apply (filterdiff_ext (fun x => interp (set_nth 0 l n 0) e1)).
 apply H1.
 eapply filterdiff_ext_lin.
 apply filterdiff_const.
-simpl => y ; ring.
+simpl => y ; apply sym_eq, Rmult_0_r.
 now apply IHe2.
 case C2: (is_const e2 n) => {C1}.
 (* . *)
@@ -913,7 +913,7 @@ apply (filterdiff_ext (fun x => interp (set_nth 0 l n 0) e2)).
 apply H2.
 eapply filterdiff_ext_lin.
 apply filterdiff_const.
-simpl => y ; ring.
+simpl => y ; apply sym_eq, Rmult_0_r.
 simpl.
 replace (interp l a1 * interp l e2) with (interp l a1 * interp l e2 + interp (set_nth 0 l n (nth 0 l n)) e1 * 0) by ring.
 rewrite -(interp_set_nth n _ e2).
@@ -924,7 +924,7 @@ apply (filterdiff_ext (fun x => interp (set_nth 0 l n 0) e2)).
 apply H2.
 eapply filterdiff_ext_lin.
 apply filterdiff_const.
-simpl => y ; ring.
+simpl => y ; apply sym_eq, Rmult_0_r.
 (* . *)
 clear C2.
 case o ; simpl ;

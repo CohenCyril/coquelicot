@@ -30,8 +30,7 @@ Open Scope R_scope.
 
 Section LinearFct.
 
-Context {U V K} {FK : AbsRing K}
-  {VU : NormedVectorSpace U K} {VV : NormedVectorSpace V K}.
+Context {K : AbsRing} {U V : NormedModule K}.
 
 Record is_linear (l : U -> V) := {
   linear_plus : forall (x y : U), l (plus x y) = plus (l x) (l y) ;
@@ -42,11 +41,12 @@ Lemma linear_zero (l : U -> V) : is_linear l ->
   l zero = zero.
 Proof.
   intros Hl.
-  rewrite -(scal_zero_l (VV := nvspace_vector) zero).
+  rewrite -(scal_zero_l zero).
   rewrite linear_scal.
   exact (scal_zero_l (l zero)).
   exact Hl.
 Qed.
+
 Lemma linear_opp (l : U -> V) (x : U) : is_linear l ->
   l (opp x) = opp (l x).
 Proof.
@@ -102,7 +102,7 @@ Lemma is_linear_zero : is_linear (fun _ => zero).
 Proof.
   repeat split.
   - move => _ _ ; by rewrite plus_zero_l.
-  - move => k _ ; by rewrite (scal_zero_r (VV := nvspace_vector)).
+  - move => k _ ; by rewrite scal_zero_r.
   - exists 0 ; split.
     by apply Rle_refl.
     move => x ; rewrite Rmult_0_l norm_zero.
@@ -111,8 +111,7 @@ Qed.
 
 End LinearFct.
 
-Lemma is_linear_compose {U V W K} {FK : AbsRing K} {VU : NormedVectorSpace U K}
-  {VV : NormedVectorSpace V K} {VW : NormedVectorSpace W K}
+Lemma is_linear_compose {K : AbsRing} {U V W : NormedModule K}
   (l1 : U -> V) (l2 : V -> W) :
   is_linear l1 -> is_linear l2 -> is_linear (fun x => l2 (l1 x)).
 Proof.
@@ -134,7 +133,7 @@ Qed.
 
 Section Op_LinearFct.
 
-Context {V K} {FK : AbsRing K} {VV : NormedVectorSpace V K}.
+Context {K : AbsRing} {V : NormedModule K}.
 
 (** id is a linear function *)
 Lemma is_linear_id : is_linear (fun (x : V) => x).
@@ -145,21 +144,24 @@ Proof.
     move => x ; rewrite Rmult_1_l.
     by apply Rle_refl.
 Qed.
+
 (** opp is a linear function *)
-Lemma is_linear_opp : is_linear opp.
+Lemma is_linear_opp : is_linear (@opp V).
 Proof.
   repeat split.
   - move => x y.
     now apply opp_plus.
   - move => k x.
-    apply sym_eq, (scal_opp_r (VV := nvspace_vector)).
+    apply sym_eq.
+    apply: scal_opp_r.
   - exists 1 ; split. 
     by apply Rle_0_1.
     move => x ; rewrite norm_opp Rmult_1_l.
     by apply Rle_refl.
 Qed.
+
 (** plus is a linear function *)
-Lemma is_linear_plus : is_linear (fun x => plus (fst x) (snd x)).
+Lemma is_linear_plus : is_linear (fun x : V * V => plus (fst x) (snd x)).
 Proof.
   repeat split.
   - move => x y.
@@ -180,9 +182,10 @@ Proof.
     rewrite -> (Rabs_pos_eq (norm (snd x))) by apply norm_ge_0.
     by apply Rmax_r.
 Qed.
+
 (** [fun k => scal k x] is a linear function *)
 Lemma is_linear_scal_l (x : V) :
-  is_linear (fun k => scal k x).
+  is_linear (fun k : K => scal k x).
 Proof.
   split.
   - move => u v ; by apply @scal_distr_r.
@@ -192,10 +195,11 @@ Proof.
     move => k /=.
     now rewrite Rmult_comm ; apply @norm_scal.
 Qed.
+
 (** [fun x => scal k x] is a linear function if [mult] is commutative *)
 Lemma is_linear_scal_r (k : K) :
   (forall n m : K, mult n m = mult m n)
-  -> is_linear (fun x => scal k x).
+  -> is_linear (fun x : V => scal k x).
 Proof.
   split.
   - move => u v ; by apply @scal_distr_l.
@@ -209,8 +213,7 @@ Qed.
 
 End Op_LinearFct.
 
-Lemma is_linear_prod {T U V K} {FK : AbsRing K} {VT : NormedVectorSpace T K}
-  {VU : NormedVectorSpace U K} {VV : NormedVectorSpace V K} 
+Lemma is_linear_prod {K : AbsRing} {T U V : NormedModule K}
   (l1 : T -> U) (l2 : T -> V) :
   is_linear l1 -> is_linear l2 -> is_linear (fun t : T => (l1 t, l2 t)).
 Proof.
@@ -243,8 +246,7 @@ Proof.
     by apply norm_ge_0.
 Qed.
 
-Lemma is_linear_fst {U V K} {FK : AbsRing K} 
-  {VU : NormedVectorSpace U K} {VV : NormedVectorSpace V K} :
+Lemma is_linear_fst {K : AbsRing} {U V : NormedModule K} :
   is_linear (fun t : U * V => fst t).
 Proof.
   split.
@@ -257,8 +259,8 @@ Proof.
     2: by apply norm_prod.
     by apply Rmax_l.
 Qed.
-Lemma is_linear_snd {U V K} {FK : AbsRing K} 
-  {VU : NormedVectorSpace U K} {VV : NormedVectorSpace V K} :
+
+Lemma is_linear_snd {K : AbsRing} {U V : NormedModule K} :
   is_linear (fun t : U * V => snd t).
 Proof.
   split.
@@ -274,8 +276,7 @@ Qed.
 
 Section Linear_domin.
 
-Context {T W U V Kw K : Type} {FKw : AbsRing Kw} {FK : AbsRing K}
-  {VW : NormedVectorSpace W Kw} {VU : NormedVectorSpace U K} {VV : NormedVectorSpace V K}.
+Context {T : Type} {Kw K : AbsRing} {W : NormedModule Kw} {U V : NormedModule K}.
 
 Lemma is_domin_linear {F : (T -> Prop) -> Prop} {FF : Filter F} (f : T -> W) (g : T -> U) (l : U -> V) :
   is_linear l -> is_domin F f g -> is_domin F f (fun t => l (g t)).
@@ -310,11 +311,11 @@ End Linear_domin.
 
 Section Diff.
 
-Context {U V K} {RK : AbsRing K} {VU : NormedVectorSpace U K} {VV : NormedVectorSpace V K}.
+Context {K : AbsRing} {U : NormedModule K} {V : NormedModule K}.
 
 Definition filterdiff (f : U -> V) F (l : U -> V) :=
   is_linear l /\ forall x, is_filter_lim F x ->
-  is_domin F (fun y => minus y x) (fun y => minus (minus (f y) (f x)) (l (minus y x))).
+  is_domin F (fun y : U => minus y x) (fun y => minus (minus (f y) (f x)) (l (minus y x))).
 
 Definition ex_filterdiff (f : U -> V) F :=
   exists (l : U -> V), filterdiff f F l.
@@ -565,8 +566,11 @@ Qed.
 
 End Diff.
 
-Lemma filterdiff_compose {U V W K} {FK : AbsRing K} {VU : NormedVectorSpace U K}
-  {VV : NormedVectorSpace V K} {VW : NormedVectorSpace W K}
+Section Diff_compose.
+
+Context {K : AbsRing} {U V W : NormedModule K}.
+
+Lemma filterdiff_compose
   {F} {FF : Filter F} f g (lf : U -> V) (lg : V -> W) :
   filterdiff f F lf -> filterdiff g (filtermap f F) lg
   -> filterdiff (fun y => g (f y)) F (fun y => lg (lf y)).
@@ -642,9 +646,9 @@ Proof.
   specialize (Df x Hx).
   by apply is_domin_linear.
 Qed.
-Lemma ex_filterdiff_compose {U V W K} {FK : AbsRing K} {VU : NormedVectorSpace U K}
-  {VV : NormedVectorSpace V K} {VW : NormedVectorSpace W K}
-  {F} {FF : Filter F} f g :
+
+Lemma ex_filterdiff_compose
+  {F} {FF : Filter F} (f : U -> V) (g : V -> W) :
   ex_filterdiff f F -> ex_filterdiff g (filtermap f F)
   -> ex_filterdiff (fun y => g (f y)) F.
 Proof.
@@ -652,8 +656,7 @@ Proof.
   eexists ; eapply filterdiff_compose ; eassumption.
 Qed.
 
-Lemma filterdiff_compose' {U V W K} {FK : AbsRing K} {VU : NormedVectorSpace U K}
-  {VV : NormedVectorSpace V K} {VW : NormedVectorSpace W K}
+Lemma filterdiff_compose'
   f g x (lf : U -> V) (lg : V -> W) :
   filterdiff f (locally x) lf -> filterdiff g (locally (f x)) lg
   -> filterdiff (fun y => g (f y)) (locally x) (fun y => lg (lf y)).
@@ -667,8 +670,8 @@ Proof.
   eexists ; by apply H.
   by [].
 Qed.
-Lemma ex_filterdiff_compose' {U V W K} {FK : AbsRing K} {VU : NormedVectorSpace U K}
-  {VV : NormedVectorSpace V K} {VW : NormedVectorSpace W K}
+
+Lemma ex_filterdiff_compose'
   (f : U -> V) (g : V -> W) x :
   ex_filterdiff f (locally x) -> ex_filterdiff g (locally (f x))
   -> ex_filterdiff (fun y => g (f y)) (locally x).
@@ -678,8 +681,17 @@ Proof.
   apply filterdiff_compose' ; eassumption.
 Qed.
 
-Lemma filterdiff_compose_2 {T U V W K : Type} {FK : AbsRing K} {VT : NormedVectorSpace T K}
-  {VU : NormedVectorSpace U K} {VV : NormedVectorSpace V K} {VW : NormedVectorSpace W K}
+End Diff_compose.
+
+Section Diff_compose2.
+
+Context {K : AbsRing} {T U V : NormedModule K}.
+
+Section Diff_compose2'.
+
+Context {W : NormedModule K}.
+
+Lemma filterdiff_compose_2
   {F : (T -> Prop) -> Prop} {FF : Filter F} :
   forall (f : T -> U) (g : T -> V) (h : U -> V -> W) (lf : T -> U) (lg : T -> V)
     (lh : U -> V -> W),
@@ -713,8 +725,8 @@ Proof.
   apply Req_le ; field.
   apply Rgt_not_eq, Rlt_sqrt2_0.
 Qed.
-Lemma ex_filterdiff_compose_2 {T U V W K : Type} {FK : AbsRing K} {VT : NormedVectorSpace T K}
-  {VU : NormedVectorSpace U K} {VV : NormedVectorSpace V K} {VW : NormedVectorSpace W K}
+
+Lemma ex_filterdiff_compose_2
   {F : (T -> Prop) -> Prop} {FF : Filter F} :
   forall (f : T -> U) (g : T -> V) (h : U -> V -> W),
     ex_filterdiff f F ->
@@ -730,8 +742,11 @@ Proof.
   by case.
 Qed.
 
-Lemma filterdiff_compose'_2 {T U V W K : Type} {FK : AbsRing K} {VT : NormedVectorSpace T K}
-  {VU : NormedVectorSpace U K} {VV : NormedVectorSpace V K} {VW : NormedVectorSpace W K} :
+End Diff_compose2'.
+
+Context {W : NormedModule K}.
+
+Lemma filterdiff_compose'_2 :
   forall (f : T -> U) (g : T -> V) (h : U -> V -> W) x (lf : T -> U) (lg : T -> V)
     (lh : U -> V -> W),
     filterdiff f (locally x) lf ->
@@ -755,8 +770,8 @@ Proof.
   by apply is_linear_snd.
   by [].
 Qed.
-Lemma ex_filterdiff_compose'_2 {T U V W K : Type} {FK : AbsRing K} {VT : NormedVectorSpace T K}
-  {VU : NormedVectorSpace U K} {VV : NormedVectorSpace V K} {VW : NormedVectorSpace W K} :
+
+Lemma ex_filterdiff_compose'_2 :
   forall (f : T -> U) (g : T -> V) (h : U -> V -> W) x,
     ex_filterdiff f (locally x) ->
     ex_filterdiff g (locally x) ->
@@ -770,11 +785,13 @@ Proof.
   by case.
 Qed.
 
+End Diff_compose2.
+
 Section Operations.
 
-Context {V K} {RK : AbsRing K} {VV : NormedVectorSpace V K}.
+Context {K : AbsRing} {V : NormedModule K}.
 
-Lemma filterdiff_id F :
+Lemma filterdiff_id (F : (V -> Prop) -> Prop) :
   filterdiff (fun y => y) F (fun y => y).
 Proof.
   split.
@@ -787,14 +804,15 @@ Proof.
   by apply Rlt_le, eps.
   by apply norm_ge_0.
 Qed.
-Lemma ex_filterdiff_id F :
+
+Lemma ex_filterdiff_id (F : (V -> Prop) -> Prop) :
   ex_filterdiff (fun y => y) F.
 Proof.
   eexists.
   by apply filterdiff_id.
 Qed.
 
-Lemma filterdiff_opp F :
+Lemma filterdiff_opp (F : (V -> Prop) -> Prop) :
   filterdiff opp F opp.
 Proof.
   split.
@@ -807,37 +825,39 @@ Proof.
   by apply Rlt_le, eps.
   by apply norm_ge_0.
 Qed.
-Lemma ex_filterdiff_opp F :
+
+Lemma ex_filterdiff_opp (F : (V -> Prop) -> Prop) :
   ex_filterdiff opp F.
 Proof.
   eexists.
   by apply filterdiff_opp.
 Qed.
 
-Lemma filterdiff_plus F : 
+Lemma filterdiff_plus (F : (V * V -> Prop) -> Prop) :
   filterdiff (fun u => plus (fst u) (snd u)) F (fun u => plus (fst u) (snd u)).
 Proof.
   split.
   by apply is_linear_plus.
   move => x Hx eps.
   apply Hx ; exists eps => u /= Hu.
-  replace (plus (plus (fst u) (opp (fst x))) (plus (snd u) (opp (snd x))))
-    with (minus (plus (fst u) (snd u)) (plus (fst x) (snd x))).
+  set v := plus (plus _ _) _.
+  replace v with (minus (plus (fst u) (snd u)) (plus (fst x) (snd x))).
   rewrite /minus plus_opp_r norm_zero.
   apply Rmult_le_pos.
   by apply Rlt_le, eps.
   by apply sqrt_pos.
-  rewrite /minus -!plus_assoc ; apply f_equal.
+  rewrite /v /minus -!plus_assoc ; apply f_equal.
   rewrite opp_plus plus_comm -!plus_assoc ; apply f_equal, @plus_comm.
 Qed.
-Lemma ex_filterdiff_plus F : 
+
+Lemma ex_filterdiff_plus (F : (V * V -> Prop) -> Prop) :
   ex_filterdiff (fun u => plus (fst u) (snd u)) F.
 Proof.
   eexists.
   by apply filterdiff_plus.
 Qed.
 
-Lemma filterdiff_minus F : 
+Lemma filterdiff_minus (F : (V * V -> Prop) -> Prop) :
   filterdiff (fun u => minus (fst u) (snd u)) F (fun u => minus (fst u) (snd u)).
 Proof.
   split.
@@ -851,17 +871,18 @@ Proof.
   move => x Hx eps.
   apply Hx ; exists eps => u Hu.
   simpl fst ; simpl snd.
-  replace (minus (plus (fst u) (opp (fst x))) (plus (snd u) (opp (snd x))))
-    with (minus (minus (fst u) (snd u)) (minus (fst x) (snd x))).
+  set v := minus (plus _ (opp (fst x))) _.
+  replace v with (minus (minus (fst u) (snd u)) (minus (fst x) (snd x))).
   rewrite /minus plus_opp_r norm_zero.
   apply Rmult_le_pos.
   by apply Rlt_le, eps.
   by apply sqrt_pos.
-  rewrite /minus -!plus_assoc ; apply f_equal.
+  rewrite /v /minus -!plus_assoc ; apply f_equal.
   rewrite !opp_plus !opp_opp plus_comm -!plus_assoc ;
   apply f_equal, @plus_comm.
 Qed.
-Lemma ex_filterdiff_minus F : 
+
+Lemma ex_filterdiff_minus (F : (V * V -> Prop) -> Prop) :
   ex_filterdiff (fun u => minus (fst u) (snd u)) F.
 Proof.
   eexists.
@@ -871,13 +892,13 @@ Qed.
 Lemma filterdiff_scal : forall {F} {FF : ProperFilter F} (x : K * V), 
   is_filter_lim F x ->
   (forall (n m : K), mult n m = mult m n) ->
-  filterdiff (fun t => scal (fst t) (snd t)) F
+  filterdiff (fun t : K * V => scal (fst t) (snd t)) F
     (fun t => plus (scal (fst t) (snd x)) (scal (fst x) (snd t))).
 Proof.
   move => F FF [x1 x2] Hx Hcomm ; split.
-  - apply (is_linear_compose (fun t => (scal (fst t) x2,scal x1 (snd t))) (fun t => plus (fst t) (snd t))).
+  - apply (is_linear_compose (fun t : K * V => (scal (fst t) x2,scal x1 (snd t))) (fun t : V * V => plus (fst t) (snd t))).
     apply is_linear_prod.
-    apply (is_linear_compose (fun t => fst t) (fun k => scal k x2)).
+    apply (is_linear_compose (fun t : K * V => fst t) (fun k : K => scal k x2)).
     by apply is_linear_fst.
     by apply is_linear_scal_l.
     apply is_linear_compose.
@@ -916,25 +937,25 @@ Proof.
     2: apply Rmult_le_compat_l.
     2: apply Rlt_le, is_pos_div_2.
     2: by apply Rplus_le_Rmax.
-    
-    replace (minus (scal z1 z2) (scal y1 y2))
-      with (plus (scal (minus z1 y1) z2) (scal y1 (minus z2 y2))).
+
+    set v := minus (scal _ _) _.
+    replace v with (plus (scal (minus z1 y1) z2) (scal y1 (minus z2 y2))).
     Focus 2.
-      rewrite /minus scal_distr_r scal_distr_l -!plus_assoc.
+      rewrite /v /minus scal_distr_r scal_distr_l -!plus_assoc.
       apply f_equal.
-      rewrite (scal_opp_r (VV := nvspace_vector) y1 y2).
+      rewrite scal_opp_r.
       apply (plus_reg_r (scal y1 y2)) ;
       rewrite plus_assoc -plus_assoc.
       rewrite plus_opp_l plus_zero_r.
-      rewrite (scal_opp_l (VV := nvspace_vector) y1 z2).
+      rewrite scal_opp_l.
       by apply plus_opp_l.
-    replace (minus (plus (scal (minus z1 y1) z2) (scal y1 (minus z2 y2)))
-      (plus (scal (minus z1 y1) x2) (scal x1 (minus z2 y2))))
-      with (plus (scal (minus z1 y1) (minus z2 x2)) (scal (minus y1 x1) (minus z2 y2))).
+      clear v.
+      set v := minus (plus _ _) _.
+    replace v with (plus (scal (minus z1 y1) (minus z2 x2)) (scal (minus y1 x1) (minus z2 y2))).
     eapply Rle_trans.
-    apply @norm_triangle.
+    apply norm_triangle.
     eapply Rle_trans.
-    apply Rplus_le_compat ; simpl ; apply @norm_scal.
+    apply Rplus_le_compat ; simpl ; apply norm_scal.
     rewrite Rmult_plus_distr_l.
     rewrite Rmult_comm.
     apply Rplus_le_compat ; apply Rmult_le_compat_r.
@@ -951,7 +972,7 @@ Proof.
     eapply Rle_trans.
     by apply Rlt_le, Hy.
     apply Rmin_l.
-    rewrite /minus !scal_distr_l !scal_distr_r !opp_plus  !(scal_opp_r (VV := nvspace_vector)) !(scal_opp_l (VV := nvspace_vector)) !opp_opp -!plus_assoc.
+    rewrite /v /minus !scal_distr_l !scal_distr_r !opp_plus !scal_opp_r !scal_opp_l !opp_opp -!plus_assoc.
     apply f_equal, f_equal.
     rewrite plus_comm -!plus_assoc plus_comm -!plus_assoc.
     apply f_equal.
@@ -960,24 +981,26 @@ Proof.
     by rewrite plus_comm -!plus_assoc.
     by apply norm_ge_0.
 Qed.
+
 Lemma ex_filterdiff_scal : forall {F} {FF : ProperFilter F} (x : K * V), 
   is_filter_lim F x ->
   (forall (n m : K), mult n m = mult m n) ->
-  ex_filterdiff (fun t => scal (fst t) (snd t)) F.
+  ex_filterdiff (fun t : K * V => scal (fst t) (snd t)) F.
 Proof.
   eexists.
   by apply (filterdiff_scal x).
 Qed.
 
 Lemma filterdiff_scal_l : forall {F} {FF : Filter F} (x : V), 
-  filterdiff (fun k => scal k x) F (fun k => scal k x).
+  filterdiff (fun k : K => scal k x) F (fun k => scal k x).
 Proof.
   move => F FF x.
   apply filterdiff_linear.
   by apply is_linear_scal_l.
 Qed.
+
 Lemma ex_filterdiff_scal_l : forall {F} {FF : Filter F} (x : V), 
-  ex_filterdiff (fun k => scal k x) F.
+  ex_filterdiff (fun k : K => scal k x) F.
 Proof.
   eexists.
   by apply (filterdiff_scal_l x).
@@ -985,15 +1008,16 @@ Qed.
 
 Lemma filterdiff_scal_r : forall {F} {FF : Filter F} (k : K), 
   (forall (n m : K), mult n m = mult m n) ->
-  filterdiff (fun x => scal k x) F (fun x => scal k x).
+  filterdiff (fun x : V => scal k x) F (fun x => scal k x).
 Proof.
   move => F FF x Hcomm.
   apply filterdiff_linear.
   by apply is_linear_scal_r.
 Qed.
+
 Lemma ex_filterdiff_scal_r : forall {F} {FF : Filter F} (k : K), 
   (forall (n m : K), mult n m = mult m n) ->
-  ex_filterdiff (fun x => scal k x) F.
+  ex_filterdiff (fun x : V => scal k x) F.
 Proof.
   eexists.
   by apply (filterdiff_scal_r k).
@@ -1001,21 +1025,22 @@ Qed.
 
 End Operations.
 
-Lemma filterdiff_mult {K} {FK : AbsRing K} :
+Lemma filterdiff_mult {K : AbsRing} :
  forall {F} {FF : ProperFilter F} (x : K * K), 
   is_filter_lim F x ->
   (forall (n m : K), mult n m = mult m n) ->
-  filterdiff (fun t => mult (fst t) (snd t)) F
+  filterdiff (fun t : K * K => mult (fst t) (snd t)) F
     (fun t => plus (mult (fst t) (snd x)) (mult (fst x) (snd t))).
 Proof.
   intros.
   generalize (filterdiff_scal x H H0) ; by simpl.
 Qed.
-Lemma ex_filterdiff_mult {K} {FK : AbsRing K} :
+
+Lemma ex_filterdiff_mult {K : AbsRing} :
  forall {F} {FF : ProperFilter F} (x : K * K), 
   is_filter_lim F x ->
   (forall (n m : K), mult n m = mult m n) ->
-  ex_filterdiff (fun t => mult (fst t) (snd t)) F.
+  ex_filterdiff (fun t : K * K => mult (fst t) (snd t)) F.
 Proof.
   eexists.
   by apply (filterdiff_mult x).
@@ -1025,7 +1050,7 @@ Qed.
 
 Section Operations_fct.
 
-Context {U V K : Type} {RK : AbsRing K} {VU : NormedVectorSpace U K} {VV : NormedVectorSpace V K}.
+Context {K : AbsRing} {U V : NormedModule K}.
 
 Lemma filterdiff_opp_fct {F} {FF : Filter F} (f lf : U -> V) :
   filterdiff f F lf ->
@@ -1145,7 +1170,7 @@ Qed.
 
 End Operations_fct.
 
-Lemma filterdiff_mult_fct {U K} {FK : AbsRing K} {VU : NormedVectorSpace U K}
+Lemma filterdiff_mult_fct {K : AbsRing} {U : NormedModule K}
   (f g : U -> K) x (lf lg : U -> K) :
   (forall (n m : K), mult n m = mult m n) ->
   filterdiff f (locally x) lf -> filterdiff g (locally x) lg
@@ -1155,7 +1180,8 @@ Proof.
   intros.
   by apply @filterdiff_scal_fct.
 Qed.
-Lemma ex_filterdiff_mult_fct {U K} {FK : AbsRing K} {VU : NormedVectorSpace U K}
+
+Lemma ex_filterdiff_mult_fct {K : AbsRing} {U : NormedModule K}
   (f g : U -> K) x :
   (forall (n m : K), mult n m = mult m n) ->
   ex_filterdiff f (locally x) -> ex_filterdiff g (locally x)
@@ -1170,11 +1196,11 @@ Qed.
 
 Section Derive.
 
-Context {V K} {RK : AbsRing K} {VV : NormedVectorSpace V K}.
+Context {K : AbsRing} {V : NormedModule K}.
 
 Definition filterderive (f : K -> V) F (l : V) :=
   forall x, is_filter_lim F x ->
-  is_domin F (fun y => minus y x) (fun y => minus (minus (f y) (f x)) (scal (minus y x) l)).
+  is_domin F (fun y : K => minus y x) (fun y => minus (minus (f y) (f x)) (scal (minus y x) l)).
 
 Definition ex_filterderive (f : K -> V) F :=
   exists l, filterderive f F l.
@@ -1198,12 +1224,14 @@ Proof.
     apply equiv_ext_loc.
     apply filter_imp with (2 := filter_true) => y /= _.
     apply f_equal.
-    by rewrite -linear_scal //= mult_one_r.
+    rewrite -linear_scal //=.
+    apply f_equal, mult_one_r.
   - apply domin_rw_r with (2 := Df x Hx).
     apply equiv_ext_loc.
     apply filter_imp with (2 := filter_true) => y /= _.
     apply f_equal.
-    by rewrite -linear_scal //= mult_one_r.
+    rewrite -linear_scal //=.
+    apply f_equal, sym_eq, mult_one_r.
 Qed.
 
 Lemma ex_filterdiff_derive {F} {FF : Filter F} (f : K -> V) :
@@ -1235,7 +1263,7 @@ Proof.
     case: (Hf eps (cond_pos _)) => {Hf} d Hf.
     exists d => y /= Hy.
     case: (Req_dec y x) => Hxy.
-    rewrite Hxy.
+    rewrite Hxy /norm /scal /= /abs /minus /plus /opp /mult /=.
     ring_simplify (f x + - f x + - ((x + - x) * l)).
     ring_simplify (x + - x).
     rewrite Rabs_R0 Rmult_0_r.
@@ -1245,6 +1273,7 @@ Proof.
     by apply Rminus_eq_contra.
     rewrite -Rabs_div.
     2: by apply Rminus_eq_contra.
+    rewrite /scal /= /minus /plus /opp /mult /=.
     replace ((f y + - f x + - ((y + - x) * l)) / (y + - x))
       with ((f (x + (y-x)) - f x) / (y-x) - l).
     2: ring_simplify (x + (y - x)) ; field ; by apply Rminus_eq_contra.
@@ -1266,6 +1295,7 @@ Proof.
     apply Rle_div_l.
     now ring_simplify (x + h + - x) ; apply Rabs_pos_lt.
     apply Hd.
+    rewrite /ball /= /AbsRing_ball /= /abs /minus /plus /opp /=.
     by ring_simplify (x + h + - x).
     apply Rlt_div_l, Rminus_lt_0 ; ring_simplify.
     by apply Rlt_0_2.
@@ -1284,7 +1314,7 @@ Proof.
   apply filterdiff_ext_lin with (1 := Hf).
   move => y.
   rewrite -(linear_scal l (proj1 Hf) y one).
-  apply f_equal ; simpl ; by rewrite Rmult_1_r.
+  apply f_equal, sym_eq, Rmult_1_r.
 Qed.
 
 (** Derive is correct *)
@@ -1299,7 +1329,7 @@ Proof.
   intros eps.
   destruct (H eps (cond_pos _)) as [d Hd].
   exists d => h.
-  rewrite /= Ropp_0 Rplus_0_r.
+  rewrite /ball /= /AbsRing_ball /= /minus /plus /opp /= Ropp_0 Rplus_0_r.
   intros Hu Zu.
   now apply Hd.
 Qed.
@@ -1385,7 +1415,7 @@ by rewrite (locally_singleton _ _ Hfg).
 destruct Hfg as [eps He].
 exists eps => h H Hh.
 apply He.
-simpl.
+rewrite /ball /= /AbsRing_ball /= /minus /plus /opp /=.
 now replace (x + h + - x) with (h - 0) by ring.
 Qed.
 
@@ -1432,6 +1462,7 @@ intros x.
 exists 0.
 apply derivable_pt_lim_const.
 Qed. (* fin TODO *)*)
+
 Lemma Derive_const :
   forall a x,
   Derive (fun _ => a) x = 0.
@@ -1441,7 +1472,8 @@ apply is_derive_unique.
 apply filterdiff_Reals.
 eapply filterdiff_ext_lin.
 apply filterdiff_const.
-simpl => y ; ring.
+intros y.
+apply sym_eq, Rmult_0_r.
 Qed.
 
 (** Identity function *)
@@ -1582,8 +1614,10 @@ Proof.
   apply Hf.
   apply Hl.
   simpl => y.
-  rewrite /Rsqr ; by field.
+  apply f_equal.
+  rewrite /= /Rsqr ; by field.
 Qed.
+
 Lemma ex_derive_inv (f : R -> R) (x : R) :
   ex_derive f x -> f x <> 0
     -> ex_derive (fun y => / f y) x.
@@ -1643,7 +1677,8 @@ Proof.
   eapply filterdiff_ext_lin.
   apply @filterdiff_scal_l_fct ; try by apply locally_filter.
   apply filterdiff_Reals, Hf.
-  simpl => y ; ring.
+  simpl => y.
+  apply Rmult_assoc.
 Qed.
 Lemma ex_derive_scal_r (f : R -> R) (k x : R) :
   ex_derive f x ->
@@ -2110,7 +2145,9 @@ Proof.
   apply filterdiff_id.
   apply filterdiff_const.
   apply filterdiff_Reals in Hf.
-  simpl => y ; rewrite (is_derive_unique _ _ _ Hf) ; ring.
+  simpl => y ; rewrite (is_derive_unique _ _ _ Hf).
+  rewrite /minus /plus /opp /scal /zero /= /mult /=.
+  ring.
   simpl ; ring.
 (* a = x < b *)
   case: a Hxb Hax Hf => [a | | ] Hxb //= Hax Hf.
@@ -2138,7 +2175,9 @@ Proof.
   apply filterdiff_id.
   apply filterdiff_const.
   apply filterdiff_Reals in Hf.
-  rewrite (is_derive_unique _ _ _ Hf) => /= y ; ring.
+  rewrite (is_derive_unique _ _ _ Hf) => /= y.
+  rewrite /minus /plus /opp /scal /zero /= /mult /=.
+  ring.
   by apply filterdiff_Reals.
   simpl ; ring.
 (* a = x = b *)
@@ -2157,7 +2196,9 @@ Proof.
   apply filterdiff_id.
   apply filterdiff_const.
   apply filterdiff_Reals in Hf.
-  rewrite (is_derive_unique _ _ _ Hf) => /= y ; ring.
+  rewrite (is_derive_unique _ _ _ Hf) => /= y.
+  rewrite /minus /plus /opp /zero /scal /= /mult /=.
+  ring.
 Qed.
 
 Lemma extension_C1_is_derive_a (f : R -> R) (a : R) (b : Rbar) (x : R) :
@@ -2183,8 +2224,9 @@ Proof.
   apply @filterdiff_minus_fct ; try by apply locally_filter.
   apply filterdiff_id.
   apply filterdiff_const.
-  simpl => y ; ring.
-
+  simpl => y.
+  rewrite /minus /plus /opp /zero /scal /= /mult /=.
+  ring.
   apply extension_C1_is_derive => //.
   by right.
 Qed.
@@ -2215,8 +2257,9 @@ Proof.
   apply @filterdiff_minus_fct ; try by apply locally_filter.
   apply filterdiff_id.
   apply filterdiff_const.
-  simpl => y ; ring.
-
+  simpl => y.
+  rewrite /minus /plus /opp /zero /scal /= /mult /=.
+  ring.
   apply extension_C1_is_derive => //.
   by right.
 Qed.
@@ -2368,7 +2411,9 @@ Proof.
     apply @filterdiff_minus_fct ; try by apply locally_filter.
     apply filterdiff_id.
     apply filterdiff_const.
-    simpl => y ; ring.
+    simpl => y.
+    rewrite /minus /plus /opp /zero /scal /= /mult /=.
+    ring.
   move => /= t0 ; rewrite /extension_C1.
   repeat case: Rbar_le_dec => // ; intros.
   by apply continuity_pt_const.
@@ -2417,7 +2462,9 @@ Proof.
     apply @filterdiff_minus_fct ; try by apply locally_filter.
     apply filterdiff_id.
     apply filterdiff_const.
-    simpl => y ; ring.
+    simpl => y.
+    rewrite /minus /plus /opp /zero /scal /= /mult /=.
+    ring.
   move => /= t0 ; rewrite /extension_C1.
   repeat case: Rbar_le_dec => // ; intros.
   rewrite (Rle_antisym t0 a) ; try easy.
@@ -2446,7 +2493,9 @@ Proof.
     apply @filterdiff_minus_fct ; try apply locally_filter.
     apply filterdiff_id.
     apply filterdiff_const.
-    simpl => y ; ring.
+    simpl => y.
+    rewrite /minus /plus /opp /zero /scal /= /mult /=.
+    ring.
   move => /= t0 ; rewrite /extension_C1.
   repeat case: Rbar_le_dec => // ; intros.
   by apply continuity_pt_const.
@@ -2707,30 +2756,30 @@ Proof.
   apply Derive_ext_loc.
   set r := (mkposreal _ (Rmin_stable_in_posreal rf rg)) ;
   exists r => y Hy.
-  simpl in Hy.
+  rewrite /ball /= /AbsRing_ball /= in Hy.
   apply Rabs_lt_between' in Hy.
   case: Hy ; move/Rlt_Rminus => Hy1 ; move/Rlt_Rminus => Hy2.
   set r0 := mkposreal _ (Rmin_pos _ _ Hy1 Hy2).
   apply IH ;
   exists r0 => z Hz k Hk.
   apply Hf.
-  simpl in Hz.
+  rewrite /ball /= /AbsRing_ball /= in Hz.
   apply Rabs_lt_between' in Hz.
   rewrite /Rminus -Rmax_opp_Rmin Rplus_max_distr_l (Rplus_min_distr_l y) in Hz.
   case: Hz ; move => Hz1 Hz2.
   apply Rle_lt_trans with (1 := Rmax_l _ _) in Hz1 ; ring_simplify in Hz1.
-  apply Rlt_le_trans with (2 := Rmin_r _ _) in Hz2 ; ring_simplify in Hz2.
+  apply Rlt_le_trans with (2 := Rmin_r _ _) in Hz2 ; ring_simplify (y + (x + Rmin rf rg + - y)) in Hz2.
   have Hz := (conj Hz1 Hz2) => {Hz1 Hz2}.
   apply Rabs_lt_between' in Hz.
   apply Rlt_le_trans with (1 := Hz) => /= ; by apply Rmin_l.
   by apply le_trans with (1 := Hk), le_n_Sn.
   apply Hg.
-  simpl in Hz.
+  rewrite /ball /= /AbsRing_ball /= in Hz.
   apply Rabs_lt_between' in Hz.
   rewrite /Rminus -Rmax_opp_Rmin Rplus_max_distr_l (Rplus_min_distr_l y) in Hz.
   case: Hz ; move => Hz1 Hz2.
   apply Rle_lt_trans with (1 := Rmax_l _ _) in Hz1 ; ring_simplify in Hz1.
-  apply Rlt_le_trans with (2 := Rmin_r _ _) in Hz2 ; ring_simplify in Hz2.
+  apply Rlt_le_trans with (2 := Rmin_r _ _) in Hz2 ; ring_simplify (y + (x + Rmin rf rg + - y)) in Hz2.
   have Hz := (conj Hz1 Hz2) => {Hz1 Hz2}.
   apply Rabs_lt_between' in Hz.
   apply Rlt_le_trans with (1 := Hz) => /= ; by apply Rmin_r.
@@ -2863,7 +2912,9 @@ Proof.
   apply @filterdiff_scal_r_fct ; try by apply locally_filter.
   by apply Rmult_comm.
   apply filterdiff_Reals, Hf.
-  move => /= y ; ring.
+  move => /= y.
+  rewrite /scal /= /mult /=.
+  ring.
 Qed.
 
 Lemma Derive_n_scal_r (f : R -> R) (n : nat) (a x : R) :
@@ -2926,7 +2977,8 @@ Proof.
   rewrite (Derive_ext (Rmult a) (fun x => a * x)) => //.
   rewrite Derive_scal Derive_id ; ring.
   apply Hf with (k := S n).
-  rewrite /= -/(Rminus _ _) -Rmult_minus_distr_l Rabs_mult.
+  rewrite /ball /= /AbsRing_ball /= /abs /minus /plus /opp /=.
+  rewrite -/(Rminus _ _) -Rmult_minus_distr_l Rabs_mult.
   apply Rlt_le_trans with (Rabs a * r1).
   apply Rmult_lt_compat_l.
   by apply Rabs_pos_lt.
@@ -2937,7 +2989,7 @@ Proof.
   by apply lt_n_Sn.
   apply ex_derive_scal.
   by apply ex_derive_id.
-  simpl in Hy.
+  rewrite /ball /= /AbsRing_ball /= in Hy.
   apply Rabs_lt_between' in Hy.
   case: Hy => Hy1 Hy2.
   apply Rlt_Rminus in Hy1.
@@ -2949,7 +3001,7 @@ Proof.
   move => t Ht.
   apply IH.
   apply Rabs_lt_between'.
-  simpl in Ht.
+  rewrite /ball /= /AbsRing_ball /= in Ht.
   apply Rabs_lt_between' in Ht.
   simpl in Ht.
   split.
@@ -3001,6 +3053,7 @@ Proof.
     apply Rlt_Rminus in Hy1.
     apply Rlt_Rminus in Hy2.
     exists (mkposreal _ (Rmin_pos _ _ Hy1 Hy2)) => /= z Hz k Hk.
+    rewrite /ball /= /AbsRing_ball /= in Hz.
     apply Rabs_lt_between' in Hz ; case: Hz => Hz1 Hz2.
     rewrite /Rminus -Rmax_opp_Rmin in Hz1.
     rewrite Rplus_min_distr_l in Hz2.
@@ -3105,13 +3158,14 @@ Proof.
   apply (filterdiff_ext _ _ _ (fun x => sym_eq (Derive_n_comp_trans f n x b))).
   move: (Derive_n f n) Df => {f} f Df.
   eapply filterdiff_ext_lin.
-  apply @filterdiff_compose' with (VV := NormedVectorSpace_AbsRing).
+  apply @filterdiff_compose'.
   apply @filterdiff_plus_fct ; try by apply locally_filter.
   by apply filterdiff_id.
   by apply filterdiff_const.
   apply filterdiff_Reals.
   by apply Df.
-  move => /= y ; ring.
+  simpl => y.
+  by rewrite plus_zero_r.
 Qed.
 
 (** * Taylor-Lagrange formula *)
@@ -3139,7 +3193,9 @@ apply filterdiff_Reals ; eapply filterdiff_ext_lin.
 apply @filterdiff_minus_fct ; try apply locally_filter.
 apply filterdiff_const.
 apply filterdiff_id.
-simpl => y0 ; ring.
+simpl => y0.
+rewrite /minus /plus /opp /zero /scal /= /mult /=.
+ring.
 apply derivable_pt_lim_pow.
 (* *)
 apply derivable_pt_lim_plus.
@@ -3166,7 +3222,9 @@ apply Derive_correct.
 apply (Df t Ht 1%nat).
 apply le_n_S.
 apply le_0_n.
-simpl => z ; field.
+simpl => z.
+rewrite /minus /plus /opp /zero /scal /= /mult /=.
+field.
 (* .. *)
 intros Hn.
 apply filterdiff_ext with (fun x0 : R =>
@@ -3200,7 +3258,9 @@ now apply le_n_S.
 move => z.
 change (fact (S n)) with ((S n)*fact n)%nat.
 rewrite mult_INR.
-simpl ; field.
+set v := INR (S n).
+rewrite /minus /plus /opp /zero /scal /= /mult /=.
+field.
 split.
 apply INR_fact_neq_0.
 destruct n.
@@ -3210,11 +3270,14 @@ apply Rgt_not_eq, INRp1_pos.
 apply filterdiff_Reals.
 eapply filterdiff_ext_lin.
 apply filterdiff_ext with (fun x0 : R => -c * (y - x0) ^ S n).
-intros; ring.
+simpl => z ; ring.
 apply @filterdiff_scal_r_fct ; try by apply locally_filter.
 by apply Rmult_comm.
 apply filterdiff_Reals, Dp.
-move => z ; simpl ; ring.
+set v := INR (S n).
+simpl => z.
+rewrite /scal /= /mult /=.
+ring.
 (* *)
 assert (Dg' : forall t : R, x <= t <= y -> derivable_pt g t).
 intros t Ht.

@@ -144,7 +144,6 @@ Proof.
   apply sym_not_eq, Rlt_not_eq, (Rlt_trans _ _ _ Rlt_0_1 n).
 Qed.
 
-
 Lemma derivable_differentiable_pt_lim : forall f x y l2,
   locally_2d (fun u v => ex_derive (fun z => f z v) u) x y ->
   is_derive (fun z => f x z) y l2 ->
@@ -212,7 +211,6 @@ Proof.
   apply cond_pos.
   apply Rmax_r.
 Qed.
-
 
 (* old version
 Lemma derivable_differentiable_pt_lim : forall f x y,
@@ -313,10 +311,12 @@ Proof.
   rewrite -(is_filter_lim_locally_unique_R _ _ Hz) => {z Hz}.
   elim (Df eps) ; clear Df ; intros delta Df.
   exists delta ; simpl in Df ; simpl ; intros.
+  rewrite /minus /plus /opp /scal /= /mult /=.
   replace (f y0 + - f x + - ((y0 + - x) * l)) with (f y0 - f x - (l * (y0 - x) + 0 * (y - y))) by ring.
   assert (Rabs (y0 - x) = Rmax (Rabs (y0 - x)) (Rabs (y-y))).
     rewrite Rmax_comm ; apply sym_equal, Rmax_right.
     rewrite Rminus_eq_0 Rabs_R0 ; apply Rabs_pos.
+  rewrite /norm /= /abs /=.
   rewrite H0 ; clear H0.
   apply (Df _ _ H).
   rewrite Rminus_eq_0 Rabs_R0 ; apply delta.
@@ -780,6 +780,7 @@ Fixpoint ex_diff_n f n x y :=
 Lemma ex_diff_n_ext_loc: forall f g n x y,
     locally_2d (fun u v =>  f u v = g u v) x y
       -> ex_diff_n f n x y -> ex_diff_n g n x y.
+Proof.
 intros f g n; revert f g.
 induction n.
 intros f g x y H; simpl.
@@ -819,9 +820,9 @@ apply Derive_ext_loc.
 apply locally_2d_1d_const_x with (1:=H6).
 Qed.
 
-
-
-Lemma ex_diff_n_m : forall n m, (m <= n)%nat -> forall f x y, ex_diff_n f n x y -> ex_diff_n f m x y.
+Lemma ex_diff_n_m :
+  forall n m, (m <= n)%nat -> forall f x y, ex_diff_n f n x y -> ex_diff_n f m x y.
+Proof.
 assert (forall n f x y, ex_diff_n f (S n) x y -> ex_diff_n f n x y).
 induction n.
 simpl.
@@ -844,8 +845,6 @@ apply (H _ _ _ _ Hn).
 intros H2; now rewrite H2.
 Qed.
 
-
-
 Lemma ex_diff_n_deriv_aux1: forall f n x y,
   ex_diff_n f (S n) x y -> ex_diff_n (fun u v => Derive (fun z => f z v) u) n x y.
 Proof.
@@ -858,7 +857,6 @@ simpl in H.
 repeat split; apply H.
 Qed.
 
-
 Lemma ex_diff_n_deriv_aux2: forall f n x y,
   ex_diff_n f (S n) x y -> ex_diff_n (fun u v => Derive (fun z => f u z) v) n x y.
 Proof.
@@ -870,8 +868,6 @@ clear n;intros n H.
 simpl in H.
 repeat split; apply H.
 Qed.
-
-
 
 Lemma ex_diff_n_deriv: forall n p q, (p+q <= n)%nat -> forall f x y,
     ex_diff_n f n x y-> ex_diff_n (partial_derive p q f) (n -(p+q)) x y.
@@ -907,7 +903,6 @@ apply IHp.
 now apply lt_le_weak.
 exact H1.
 Qed.
-
 
 Lemma ex_diff_n_ex_deriv_inf_1 : forall n p k, (p+k < n)%nat -> forall f x y,
     ex_diff_n f n x y ->
@@ -965,7 +960,6 @@ apply ex_filterdiff_Reals.
 apply T4.
 Qed.
 
-
 Lemma ex_diff_n_ex_deriv_inf_2 : forall n p k, (p+k < n)%nat -> forall f x y,
   ex_diff_n f n x y ->
   ex_derive (fun z => partial_derive p k f x z) y.
@@ -1022,8 +1016,6 @@ apply ex_filterdiff_Reals.
 apply T4.
 Qed.
 
-
-
 Lemma ex_diff_n_continuity_inf_1 : forall n p k, (p+k < n)%nat -> forall f x y,
   ex_diff_n f n x y ->
   continuity_2d_pt (fun u v => Derive (fun z : R => partial_derive p k f z v) u) x y.
@@ -1039,7 +1031,6 @@ revert H; case (n - (S p + k))%nat.
 simpl; intros H; apply H.
 intros n0; simpl; intros H; apply H.
 Qed.
-
 
 Lemma Derive_partial_derive_aux1: forall p f x y,
   locally_2d (ex_diff_n f (S p)) x y ->
@@ -1185,7 +1176,6 @@ rewrite plus_0_r.
 omega.
 Qed.
 
-
 Lemma Derive_partial_derive: forall p k f x y,
   locally_2d (ex_diff_n f (p+S k)) x y ->
   Derive (fun v : R => partial_derive p k f x v) y =
@@ -1195,8 +1185,6 @@ intros p k f x y H.
 generalize (Derive_partial_derive_aux2 p k f x y H).
 easy.
 Qed.
-
-
 
 Lemma ex_diff_n_continuity_inf_2 : forall n p k, (p+k < n)%nat -> forall f x y,
   ex_diff_n f n x y ->
@@ -1327,7 +1315,7 @@ apply is_derive_sum => p Hp.
 apply filterdiff_Reals.
 apply filterdiff_ext with (fun u0 => C k p * (u - x) ^ p * (v - y) ^ (k - p) * partial_derive p (k - p) f (x + u0 * (u - x)) (y + u0 * (v - y))).
 intros w.
-ring.
+simpl ; ring.
 apply filterdiff_Reals.
 apply derivable_pt_lim_scal.
 rewrite (Rmult_comm (u - x)) (Rmult_comm (v - y)).
@@ -1364,12 +1352,12 @@ apply filterdiff_Reals ; eapply filterdiff_ext_lin.
 apply @filterdiff_plus_fct ; try apply locally_filter.
 apply filterdiff_const.
 apply @filterdiff_scal_l ; try apply locally_filter.
-simpl => y0 ; ring.
+simpl => y0 ; apply plus_zero_l.
 apply filterdiff_Reals ; eapply filterdiff_ext_lin.
 apply @filterdiff_plus_fct ; try apply locally_filter.
 apply filterdiff_const.
 apply @filterdiff_scal_l ; try apply locally_filter.
-simpl => y0 ; ring.
+simpl => y0 ; apply plus_zero_l.
 rewrite -(sum_eq (fun m =>
   C k m * (u - x) ^ (S m) * (v - y) ^ (k - m) * partial_derive (S m) (k - m) f (x + z * (u - x)) (y + z * (v - y)) +
   C k m * (u - x) ^ m * (v - y) ^ (S (k - m)) * partial_derive m (S (k - m)) f (x + z * (u - x)) (y + z * (v - y)))).

@@ -2103,7 +2103,8 @@ intros [x| |] P [eps He].
 - exists eps.
   intros y Hy.
   apply He.
-  by rewrite /ball /= /Rminus Ropp_involutive Rplus_comm Rabs_minus_sym.
+  rewrite /ball /= /AbsRing_ball /abs /minus /plus /opp /=.
+  by rewrite Ropp_involutive Rplus_comm Rabs_minus_sym.
 - exists (-eps).
   intros y Hy.
   apply He.
@@ -2203,7 +2204,7 @@ Proof.
   now exists (pos_div_2 eps).
   intros u v Hu Hv.
   apply He.
-  simpl.
+  rewrite /ball /= /AbsRing_ball /abs /minus /plus /opp /=.
   replace (u + v + - (x + y)) with ((u - x) + (v - y)) by ring.
   rewrite (double_var eps) ;
   apply Rle_lt_trans with (1 := Rabs_triang _ _), Rplus_lt_compat.
@@ -2358,6 +2359,7 @@ Proof.
     apply Ropp_0_gt_lt_contravar in Hl.
     exists (mkposreal _ Hl) => /= x H.
     field ; apply Rlt_not_eq.
+    rewrite /ball /= /AbsRing_ball /abs /minus /plus /opp /= in H.
     apply Rabs_lt_between' in H.
     apply Rlt_le_trans with (1 := proj2 H), Req_le.
     apply Rplus_opp_r.
@@ -2389,7 +2391,7 @@ Proof.
   apply Rmin_r.
   assert (H3: 0 < x).
   now apply Rlt_trans with (l / 2).
-  simpl.
+  rewrite /ball /= /AbsRing_ball /abs /minus /plus /opp /=.
   replace (/ x + - / l) with (- (x - l) / (x * l)).
   rewrite Rabs_div.
   rewrite Rabs_Ropp.
@@ -2420,7 +2422,7 @@ Proof.
   intros P [eps HP].
   exists (/eps) => n Hn.
   apply HP.
-  simpl.
+  rewrite /ball /= /AbsRing_ball /abs /minus /plus /opp /=.
   rewrite Ropp_0 Rplus_0_r Rabs_Rinv.
   rewrite -(Rinv_involutive eps).
   apply Rinv_lt_contravar.
@@ -2561,7 +2563,7 @@ Proof.
   simpl.
   intros u v Hu Hv.
   apply HP.
-  simpl.
+  rewrite /ball /= /AbsRing_ball /abs /minus /plus /opp /=.
   replace (u * v + - (x * y)) with (x * (v - y) + y * (u - x) + (u - x) * (v - y)) by ring.
   replace (pos eps) with (x * (eps / (x + y + 1)) + y * (eps / (x + y + 1)) + 1 * (eps / (x + y + 1))).
   apply Rle_lt_trans with (1 := Rabs_triang _ _).

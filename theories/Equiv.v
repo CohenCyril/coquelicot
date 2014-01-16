@@ -24,16 +24,18 @@ Require Import Rbar Rcomplements Hierarchy.
 
 (** * Definitions of equivalent and dominant *)
 
-Definition is_domin {T U V Ku Kv : Type} {RKu : AbsRing Ku} {RKu : AbsRing Kv}
-  {VU : NormedVectorSpace U Ku} {VV : NormedVectorSpace V Kv}
+Definition is_domin {T} {Ku Kv : AbsRing}
+  {U : NormedModule Ku} {V : NormedModule Kv}
   (F : (T -> Prop) -> Prop) (f : T -> U) (g : T -> V) :=
   forall eps : posreal, F (fun x => norm (g x) <= eps * norm (f x)).
-Definition is_equiv {T V K : Type} {RK : AbsRing K} {VV : NormedVectorSpace V K} (F : (T -> Prop) -> Prop) (f g : T -> V) :=
+
+Definition is_equiv {T} {K : AbsRing} {V : NormedModule K}
+  (F : (T -> Prop) -> Prop) (f g : T -> V) :=
   is_domin F g (fun x => minus (g x) (f x)).
 
 (** To be dominant is a partial strict order *)
 
-Lemma domin_antisym {T V K}  {RK : AbsRing K} {VV : NormedVectorSpace V K} :
+Lemma domin_antisym {T} {K : AbsRing} {V : NormedModule K} :
   forall {F : (T -> Prop) -> Prop} {FF : ProperFilter F} (f : T -> V),
   F (fun x => norm (f x) <> 0) -> ~ is_domin F f f.
 Proof.
@@ -57,8 +59,8 @@ apply Rle_refl.
 apply Rlt_plus_1.
 Qed.
 
-Lemma domin_trans {T U V W Ku Kv Kw : Type} {RKu : AbsRing Ku} {RKv : AbsRing Kv} {RKw : AbsRing Kw}
-   {VU : NormedVectorSpace U Ku} {VV : NormedVectorSpace V Kv} {VW : NormedVectorSpace W Kw} :
+Lemma domin_trans {T} {Ku Kv Kw : AbsRing}
+   {U : NormedModule Ku} {V : NormedModule Kv} {W : NormedModule Kw} :
   forall {F : (T -> Prop) -> Prop} {FF : Filter F} (f : T -> U) (g : T -> V) (h : T -> W),
   is_domin F f g -> is_domin F g h -> is_domin F f h.
 Proof.
@@ -79,7 +81,7 @@ Qed.
 
 (** Relations between domination and equivalence *)
 
-Lemma equiv_le_2 {T V K : Type} {RK : AbsRing K} {VV : NormedVectorSpace V K}
+Lemma equiv_le_2 {T} {K : AbsRing} {V : NormedModule K}
   F {FF : Filter F} (f g : T -> V) :
   is_equiv F f g ->
   F (fun x => norm (g x) <= 2 * norm (f x) /\ norm (f x) <= 2 * norm (g x)).
@@ -105,8 +107,8 @@ Proof.
     by rewrite !Rdiv_1 in H.
 Qed.
 
-Lemma domin_rw_l {T U V Ku Kv : Type} {RKu : AbsRing Ku} {RKv : AbsRing Kv}
- {VU : NormedVectorSpace U Ku} {VV : NormedVectorSpace V Kv} :
+Lemma domin_rw_l {T} {Ku Kv : AbsRing}
+  {U : NormedModule Ku} {V : NormedModule Kv} :
   forall {F : (T -> Prop) -> Prop} {FF : Filter F} (f1 f2 : T -> U) (g : T -> V),
   is_equiv F f1 f2 -> is_domin F f1 g -> is_domin F f2 g.
 Proof.
@@ -128,8 +130,9 @@ Proof.
   by rewrite Rmult_comm.
   by apply Rlt_0_2.
 Qed.
-Lemma domin_rw_r {T U V Ku Kv : Type} {RKu : AbsRing Ku} {RKv : AbsRing Kv}
-  {VU : NormedVectorSpace U Ku} {VV : NormedVectorSpace V Kv} :
+
+Lemma domin_rw_r {T} {Ku Kv : AbsRing}
+  {U : NormedModule Ku} {V : NormedModule Kv} :
   forall {F : (T -> Prop) -> Prop} {FF : Filter F} (f : T -> U) (g1 g2 : T -> V),
   is_equiv F g1 g2 -> is_domin F f g1 -> is_domin F f g2.
 Proof.
@@ -154,7 +157,7 @@ Qed.
 
 Section Equiv.
 
-Context {T V K : Type} {RK : AbsRing K} {VV : NormedVectorSpace V K}.
+Context {T : Type} {K : AbsRing} {V : NormedModule K}.
 
 Lemma equiv_refl :
   forall {F : (T -> Prop) -> Prop} {FF : Filter F} (f : T -> V),
@@ -254,8 +257,8 @@ End Equiv.
 
 Section Domin.
 
-Context {T U V Ku Kv : Type} {RKu : AbsRing Ku} {RKv : AbsRing Kv}
-  {VU : NormedVectorSpace U Ku} {VV : NormedVectorSpace V Kv}.
+Context {T : Type} {Ku Kv : AbsRing}
+  {U : NormedModule Ku} {V : NormedModule Kv}.
 
 Lemma is_domin_le {F G} (f : T -> U) (g : T -> V) :
   is_domin F f g -> filter_le G F -> is_domin G f g.
@@ -307,7 +310,7 @@ Proof.
   assert (0 < abs c).
     apply Rnot_le_lt => H0.
     destruct H0.
-    move: H0 ; by apply Rle_not_lt, (abs_ge_0 (AK := RKu)).
+    move: H0 ; by apply Rle_not_lt, abs_ge_0.
     move: H0.
     apply (Rmult_neq_0_reg (abs y)).
     apply Rgt_not_eq.
@@ -360,7 +363,7 @@ End Domin.
 
 Section Equiv_VS.
 
-Context {T V K : Type} {RK : AbsRing K} {VV : NormedVectorSpace V K}.
+Context {T : Type} {K : AbsRing} {V : NormedModule K}.
 
 Lemma equiv_scal :
   forall {F : (T -> Prop) -> Prop} {FF : Filter F} (f g : T -> V) (c : K),
@@ -373,7 +376,7 @@ Proof.
   move => eps /=.
   cut (F (fun x => norm (scal c (minus (g x) (f x))) <= eps * norm (g x))).
   apply filter_imp => x.
-  now rewrite scal_distr_l (scal_opp_r (VV := nvspace_vector)).
+  now rewrite scal_distr_l scal_opp_r.
   now apply domin_scal_r.
 Qed.
 
@@ -400,7 +403,7 @@ Proof.
   intros T F FF f g h H eps.
   move: (H eps) => {H}.
   apply filter_imp => x H1.
-  rewrite /= ?Rabs_mult.
+  rewrite /norm /= /abs /= ?Rabs_mult.
   rewrite -Rmult_assoc.
   apply Rmult_le_compat_r.
   by apply Rabs_pos.
@@ -427,7 +430,7 @@ Proof.
     (H2 (mkposreal _ (sqrt_lt_R0 _ (cond_pos eps)))) => {H1 H2} /= H1 H2.
   generalize (filter_and _ _ H1 H2) => {H1 H2}.
   apply filter_imp => x [H1 H2].
-  rewrite ?Rabs_mult.
+  rewrite /norm /= /abs /= ?Rabs_mult.
   rewrite -(sqrt_sqrt _ (Rlt_le _ _ (cond_pos eps))).
   replace (sqrt eps * sqrt eps * (Rabs (f1 x) * Rabs (f2 x)))
     with ((sqrt eps * Rabs (f1 x))*(sqrt eps * Rabs (f2 x))) by ring.
@@ -448,14 +451,14 @@ Proof.
     generalize (filter_and _ _ Hg (H (mkposreal _ Rlt_0_1))) => /=.
     apply filter_imp => x {Hg H} [Hg H].
     case: (Req_dec (f x) 0) => Hf.
-    rewrite Hf Rabs_R0 Rmult_0_r in H.
+    rewrite /norm /= /abs /= Hf Rabs_R0 Rmult_0_r in H.
     apply Rlt_not_le in H.
     move => _ ; apply H.
     by apply Rabs_pos_lt.
     by [].
   generalize (filter_and _ _ (H eps) (filter_and _ _ Hf Hg)) => {H Hf Hg}.
   apply filter_imp => x [H [Hf Hg]].
-  rewrite /= ?Rabs_Rinv => //.
+  rewrite /norm /= /abs /= ?Rabs_Rinv => //.
   replace (/ Rabs (f x))
     with (Rabs (g x) / (Rabs (f x) * Rabs (g x)))
     by (field ; split ; by apply Rabs_no_R0).
@@ -478,7 +481,7 @@ Proof.
   case: (equiv_carac_0 _ _ H1) => {H1} o1 [H1 Ho1].
   case: (equiv_carac_0 _ _ H2) => {H2} o2 [H2 Ho2].
   apply equiv_carac_1 with (fun x => o1 x * g2 x + g1 x * o2 x + o1 x * o2 x).
-  move => x ; rewrite H1 H2 /= ; ring.
+  move => x ; rewrite H1 H2 /plus /= ; ring.
   repeat apply @domin_plus => //.
   by apply domin_mult_r.
   by apply domin_mult_l.
@@ -495,7 +498,7 @@ Proof.
     generalize (filter_and _ _ Hg (H (pos_div_2 (mkposreal _ Rlt_0_1)))) => /=.
     apply filter_imp => x {Hg H} [Hg H].
     case: (Req_dec (f x) 0) => Hf.
-    rewrite Hf Ropp_0 Rplus_0_r in H.
+    rewrite /minus /plus /opp /= Hf Ropp_0 Rplus_0_r in H.
     apply Rle_not_lt in H.
     move => _ ; apply H.
     apply Rminus_lt ; field_simplify ; rewrite Rdiv_1 /Rdiv Ropp_mult_distr_l_reverse ;
@@ -510,7 +513,7 @@ Proof.
   clear -FF.
   apply filter_imp.
   intros x [[Hf Hg] H].
-  simpl.
+  rewrite /norm /= /abs /minus /plus /opp /=.
   replace (/ g x + - / f x)
     with ((f x - g x) / (f x * g x)).
   rewrite Rabs_div ?Rabs_Rinv ?Rabs_mult //.
@@ -527,8 +530,8 @@ Qed.
 
 Section Domin_comp.
 
-Context {T1 T2 U V Ku Kv : Type} {RKu : AbsRing Ku} {RKv : AbsRing Kv}
-  {VU : NormedVectorSpace U Ku} {VV : NormedVectorSpace V Kv}
+Context {T1 T2 : Type} {Ku Kv : AbsRing}
+  {U : NormedModule Ku} {V : NormedModule Kv}
   (F : (T1 -> Prop) -> Prop) {FF : Filter F}
   (G : (T2 -> Prop) -> Prop) {FG : Filter G}.
 
@@ -581,7 +584,7 @@ intros T F FF f g [l| |] Hfg Hf P [eps HP] ;
   simpl.
   intros x [H1 [H2 H3]].
   apply HP.
-  simpl.
+  rewrite /ball /= /AbsRing_ball /= /abs /minus /plus /opp /=.
   replace (g x + - l) with ((f x - l) + -(f x - g x)) by ring.
   apply Rle_lt_trans with (1 := Rabs_triang _ _).
   replace (pos eps) with (eps / 2 + eps / 2 / (Rabs l + 1) * (Rabs l + 1)).
@@ -604,6 +607,7 @@ intros T F FF f g [l| |] Hfg Hf P [eps HP] ;
   apply HP.
   apply Rabs_le_between' in H1.
   generalize (Rplus_le_compat_l (- /2 * Rabs (f x)) _ _ (proj2 H1)).
+  rewrite /norm /= /abs /=.
   replace (- / 2 * Rabs (f x) + (g x + / 2 * Rabs (f x))) with (g x) by ring.
   apply Rlt_le_trans.
   rewrite Rabs_pos_eq.
@@ -623,6 +627,7 @@ intros T F FF f g [l| |] Hfg Hf P [eps HP] ;
   apply HP.
   apply Rabs_le_between' in H1.
   generalize (Rplus_le_compat_l (/2 * Rabs (f x)) _ _ (proj1 H1)).
+  rewrite /norm /= /abs /=.
   replace (/ 2 * Rabs (f x) + (g x - / 2 * Rabs (f x))) with (g x) by ring.
   intros H.
   apply Rle_lt_trans with (1 := H).

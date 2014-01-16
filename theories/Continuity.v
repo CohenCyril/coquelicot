@@ -806,7 +806,7 @@ assert (Hex : exists x : R, Rbar_lt a x /\ Rbar_lt x b /\ f x <= y).
     exact Ha.
     assert (H : Rbar_lt (a + eps / 2) b /\ (f (a + eps / 2) < y)).
       apply He.
-      simpl.
+      rewrite /ball /= /AbsRing_ball /abs /minus /plus /opp /=.
       replace (a + eps / 2 + - a) with (eps / 2) by ring.
       rewrite Rabs_pos_eq.
       apply Rlt_eps2_eps.
@@ -860,7 +860,7 @@ destruct (total_order_T (f x) y) as [[H|H]|H].
   elim Rle_not_lt with x (x + eps / 2).
   apply Hub.
   destruct (H' (x + eps / 2)) as [[H1 H2] H3].
-  simpl.
+  rewrite /ball /= /AbsRing_ball /abs /minus /plus /opp /=.
   replace (x + eps / 2 + - x) with (eps / 2) by ring.
   rewrite Rabs_pos_eq.
   apply Rlt_eps2_eps.
@@ -947,6 +947,7 @@ split.
   now exists eps.
 Qed.
 
+(*
 Lemma continuity_2d_pt_filterlim' :
   forall f x y,
   continuity_2d_pt f x y <->
@@ -967,6 +968,7 @@ split.
   apply Cf.
   now exists eps.
 Qed.
+*)
 
 Lemma uniform_continuity_2d :
   forall f a b c d,

@@ -237,53 +237,35 @@ Proof.
   apply injective_projections ; simpl ; ring.
 Qed.
 
-Global Instance C_AbelianGroup : AbelianGroup C.
-Proof.
-econstructor.
-apply Cplus_comm.
-apply Cplus_assoc.
-apply Cplus_0_r.
-apply Cplus_opp_r.
-Defined.
+Definition C_AbelianGroup_mixin :=
+  AbelianGroup.Mixin _ _ _ _ Cplus_comm Cplus_assoc Cplus_0_r Cplus_opp_r.
+
+Canonical C_AbelianGroup :=
+  AbelianGroup.Pack C C_AbelianGroup_mixin C.
 
 Lemma Copp_0 : Copp 0 = 0.
 Proof.
-  apply (@opp_zero C C_AbelianGroup).
+  apply: opp_zero.
 Qed.
 
-Global Instance Ring_mixin_C : Ring_mixin C _.
-Proof.
-econstructor.
-apply Cmult_assoc.
-apply Cmult_1_r.
-apply Cmult_1_l.
-apply Cmult_plus_distr_r.
-apply Cmult_plus_distr_l.
-Defined.
+Definition C_Ring_mixin :=
+  Ring.Mixin _ _ _ Cmult_assoc Cmult_1_r Cmult_1_l Cmult_plus_distr_r Cmult_plus_distr_l.
 
-Global Instance Ring_C : Ring C.
-Proof.
-econstructor.
-apply Ring_mixin_C.
-Defined.
+Canonical C_Ring :=
+  Ring.Pack C (Ring.Class _ _ C_Ring_mixin) C.
 
-Global Instance AbsRing_mixin_C : AbsRing_mixin C _.
+Lemma Cmod_m1 :
+  Cmod (Copp 1) = 1.
 Proof.
-econstructor.
-apply Cmod_0.
 rewrite Cmod_opp.
 apply Cmod_1.
-apply Cmod_triangle.
-intros x y.
-apply Req_le.
-apply Cmod_mult.
-Defined.
+Qed.
 
-Global Instance AbsRing_C : AbsRing C.
-Proof.
-  econstructor.
-  by apply AbsRing_mixin_C.
-Defined.
+Definition C_AbsRing_mixin :=
+  AbsRing.Mixin _ _ Cmod_0 Cmod_m1 Cmod_triangle (fun x y => Req_le _ _ (Cmod_mult x y)).
+
+Canonical C_AbsRing :=
+  AbsRing.Pack C (AbsRing.Class _ _ C_AbsRing_mixin) C.
 
 Lemma Cmod_eq_0 :
   forall x, Cmod x = 0 -> x = 0.
@@ -313,13 +295,13 @@ by apply sym_eq, Cmod_eq_0 in H.
 Qed.
 
 Lemma Cmod_norm :
-  forall x : C, Cmod x = (@norm (R * R) R _ _ _ _ x).
+  forall x : C, Cmod x = (@norm R_AbsRing _ x).
 Proof.
 intros [u v].
 unfold Cmod.
 simpl.
 apply (f_equal2 (fun x y => sqrt (x + y))) ;
-  rewrite !Rmult_1_r ;
+  rewrite /norm /= !Rmult_1_r ;
   apply Rsqr_abs.
 Qed.
 
@@ -400,54 +382,56 @@ Qed.
 
 Add Field C_field_field : C_field_theory.
 
-(** * C is a NormedVectorSpace *)
+(** * C is a NormedModule *)
 
-(** on R *)
-
-Global Instance R_NVS : NormedVectorSpace R R.
-Proof.
-  apply NormedVectorSpace_AbsRing.
-Defined.
-
-Global Instance C_R_NVS_mixin :
-  NormedVectorSpace_mixin C R _ (MetricBall_prod _ _).
-Proof.
-  unfold C.
-  exact (NormedVectorSpace_mixin_prod R_NVS R_NVS).
-Defined.
-
-Global Instance C_R_NVS : NormedVectorSpace C R.
-  apply Build_NormedVectorSpace with (1 := C_R_NVS_mixin).
-Defined.
+Canonical C_UniformSpace :=
+  UniformSpace.Pack C (UniformSpace.class (prod_UniformSpace _ _)) C.
 
 (** on C (with the balls of R^2) *)
 
-Global Instance C_metric :
-  MetricBall C.
-Proof.
-  apply MetricBall_prod ; apply MetricBall_AbsRing, R_absring.
-Defined.
+Canonical C_ModuleSpace :=
+  ModuleSpace.Pack C_Ring C (ModuleSpace.class _ (Ring_ModuleSpace C_Ring)) C.
 
-Global Instance C_NVS_mixin :
-  NormedVectorSpace_mixin C C _ _.
+Canonical C_NormedModuleAux :=
+  NormedModuleAux.Pack C_AbsRing C (NormedModuleAux.Class C_AbsRing _ (ModuleSpace.class _ C_ModuleSpace) (UniformSpace.class C_UniformSpace)) C.
+
+Lemma C_NormedModule_mixin_compat1 :
+  forall (x y : C) (eps : R),
+  Cmod (minus y x) < eps -> ball x eps y.
 Proof.
-  apply Build_NormedVectorSpace_mixin with Cmod.
-  apply Cmod_triangle.
-  intros x y.
-  apply Req_le, Cmod_mult.
   intros x y eps.
   rewrite Cmod_norm.
-  apply NormedVectorSpace_mixin_prod_norm_compat1.
-  destruct (NormedVectorSpace_mixin_prod_norm_compat2 R_NVS R_NVS) as [M H].
+  apply: prod_norm_compat1.
+Qed.
+
+Lemma C_NormedModule_mixin_compat2 :
+  {M : posreal | forall (x y : C_NormedModuleAux) (eps : posreal),
+  ball x eps y -> Cmod (minus y x) < M * eps}.
+Proof.
+  destruct (@prod_norm_compat2 _ R_NormedModule R_NormedModule) as [M H].
   exists M.
   intros x y eps.
   rewrite Cmod_norm.
   apply H.
-Defined.
+Qed.
 
-Global Instance C_NVS : NormedVectorSpace C C.
-  apply Build_NormedVectorSpace with (1 := C_NVS_mixin).
-Defined.
+Definition C_NormedModule_mixin :=
+  NormedModule.Mixin _ C_NormedModuleAux _ Cmod_triangle (fun x y => Req_le _ _ (Cmod_mult x y))
+    C_NormedModule_mixin_compat1 C_NormedModule_mixin_compat2.
+
+Canonical C_NormedModule :=
+  NormedModule.Pack C_AbsRing C (NormedModule.Class _ _ _ C_NormedModule_mixin) C.
+
+(** on R *)
+
+Canonical C_R_ModuleSpace :=
+  ModuleSpace.Pack R_Ring C (ModuleSpace.class _ (prod_ModuleSpace R_Ring R_ModuleSpace R_ModuleSpace)) C.
+
+Canonical C_R_NormedModuleAux :=
+  NormedModuleAux.Pack R_AbsRing C (NormedModuleAux.Class R_AbsRing _ (ModuleSpace.class _ C_R_ModuleSpace) (UniformSpace.class _)) C.
+
+Canonical C_R_NormedModule :=
+  NormedModule.Pack R_AbsRing C (NormedModule.class _ (prod_NormedModule _ _ _)) C.
 
 (** * Limits *)
 
@@ -477,13 +461,12 @@ Proof.
   apply Hd.
   split ; simpl.
   apply By.
-  ring_simplify (@snd R R z + - @snd R R z)%R ;
-  rewrite Rabs_R0 ; by apply delta.
+  apply ball_center.
   contradict Hy.
   clear -Hy.
   destruct z as [z1 z2].
   now injection Hy.
-  
+
   apply (f_equal real (y := Finite ly)).
   apply is_lim_unique => /= P [eps Hp].
   destruct (H (fun z => P (snd z))) as [delta Hd] ; clear H.
@@ -495,8 +478,7 @@ Proof.
   apply Hd.
   split ; simpl.
   apply By.
-  ring_simplify (@snd R R z + - @snd R R z)%R ;
-  rewrite Rabs_R0 ; by apply delta.
+  apply ball_center.
   contradict Hy.
   clear -Hy.
   destruct z as [z1 z2].
@@ -506,7 +488,7 @@ Qed.
 (** * Derivatives *)
 
 Definition is_C_derive (f : C -> C) (z l : C) :=
-  filterdiff f (locally z) (fun y => scal y l).
+  filterdiff f (locally z) (fun y : C => scal y l).
 Definition ex_C_derive (f : C -> C) (z : C) :=
   exists l : C, is_C_derive f z l.
 Definition C_derive (f : C -> C) (z : C) := C_lim (fun x => (f x - f z) / (x - z)) z.
@@ -528,11 +510,12 @@ Proof.
   replace y with (y - z + z) by ring.
   rewrite Hyz.
   apply Cplus_0_l.
-  apply norm_compat1 ; simpl.
+  apply: norm_compat1.
+  rewrite /minus /plus /opp /=.
   replace ((f y - f z) / (y - z) + - l) with
     ((f y + - f z + - ((y + - z) * l)) / (y + - z)).
   2: by field.
-  rewrite Cmod_div => //.
+  rewrite /norm /= Cmod_div => //.
   apply Rlt_div_l.
   by apply Cmod_gt_0.
   eapply Rle_lt_trans.
@@ -542,6 +525,7 @@ Proof.
   apply Rmult_lt_compat_l.
   by apply eps.
   rewrite Rmult_comm Rlt_div_l.
+  rewrite /norm /minus /plus /opp /=.
   apply Rminus_lt_0 ; ring_simplify.
   by apply Cmod_gt_0.
   by apply Rlt_0_2.

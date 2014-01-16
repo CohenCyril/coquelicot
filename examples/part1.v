@@ -43,7 +43,7 @@ Lemma C_RInt_scal_R (f : R -> C) (a b : R) (k : R) :
   C_RInt (fun t => scal k (f t)) a b = scal k (C_RInt f a b).
 Proof.
   apply injective_projections ; simpl ;
-  by rewrite -?RInt_scal.
+  apply RInt_scal.
 Qed.
 
 Lemma is_C_RInt_scal f a b (k : C) l :
@@ -52,17 +52,9 @@ Proof.
   intros H.
   move: (is_RInt_fct_extend_fst _ _ _ _ H) => /= H1.
   move: (is_RInt_fct_extend_snd _ _ _ _ H) => /= {H} H2.
-  apply (is_RInt_fct_extend_pair (MU := R_NVS) (MV := R_NVS)) ; simpl.
-
-  apply (is_RInt_minus (VV := R_NVS)) ;
-  apply (is_RInt_scal (VV := R_NVS)).
-  by apply H1.
-  by apply H2.
-
-  apply (is_RInt_plus (VV := R_NVS)) ;
-  apply (is_RInt_scal (VV := R_NVS)).
-  by apply H2.
-  by apply H1.
+  apply is_RInt_fct_extend_pair ; simpl.
+  by apply: is_RInt_minus ; apply: is_RInt_scal.
+  by apply: is_RInt_plus ; apply: is_RInt_scal.
 Qed.
 
 Lemma ex_C_RInt_scal f k a b :
@@ -140,6 +132,7 @@ Proof.
     2: apply (fun f => ex_C_RInt_scal f (/(z2 - z1))).
     2: eexists ; apply H.
     simpl => x _.
+    fold C.
     field.
     contradict Hz.
     replace z2 with (z1 + (z2 - z1)) by ring.
@@ -166,12 +159,16 @@ Proof.
     replace ((1 - (-1 * x + 1)%R) * z2 + (-1 * x + 1)%R * z1)
       with ((1 - x) * z1 + x * z2)
       by (apply injective_projections ; simpl ; ring).
-    apply injective_projections ; simpl ; ring.
+    rewrite scal_opp_one.
+    change opp with Copp.
+    change eq with (@eq C).
+    field.
   apply: (is_RInt_comp_lin (fun t : R => (z1 - z2) * f ((1 - t) * z2 + t * z1)) (-1) (1) 1 0).
   ring_simplify (-1 * 1 + 1)%R (-1 * 0 + 1)%R.
   apply H.
   by [].
 Qed.
+
 Lemma ex_C_RInt_segm_swap (f : C -> C) (z1 z2 : C) :
   ex_C_RInt_segm f z2 z1 -> ex_C_RInt_segm f z1 z2.
 Proof.
@@ -183,6 +180,7 @@ Lemma C_RInt_segm_swap (f : C -> C) (z1 z2 : C) :
 Proof.
   unfold C_RInt_segm.
   generalize (opp_mult_l (z2 - z1) (C_RInt (fun t : R => f ((1 - t) * z1 + t * z2)) 0 1)).
+  rewrite /opp /mult /=.
   move => /= ->.
   apply f_equal2.
   apply injective_projections ; simpl ; ring.
@@ -196,6 +194,15 @@ Proof.
   apply injective_projections ; simpl ; ring_simplify ;
   apply f_equal ; apply f_equal ;
   apply injective_projections ; simpl ; ring.
+Qed.
+
+Lemma scal_R_Cmult :
+  forall (x : R) (y : C),
+  scal (V := C_R_ModuleSpace) x y = Cmult x y.
+Proof.
+intros x y.
+apply injective_projections ;
+  rewrite /scal /= /scal /= /mult /= ; ring.
 Qed.
 
 Lemma is_C_RInt_segm_Chasles (f : C -> C) (z1 z2 z3 : C) l1 l2 :
@@ -212,10 +219,14 @@ Proof.
 Focus 2.
   move => x _.
   replace ((1 - x) * ((1 - 0) * z1 + 0 * z3) + x * z3) with ((1 - x) * z1 + x * z3) by ring.
+  change eq with (@eq C).
   ring.
   apply (is_RInt_ext _ (fun _ => zero)) in H1.
 Focus 2.
-  move => x _ ; simpl ; ring.
+  move => x _ ; simpl.
+  change zero with (RtoC 0).
+  change eq with (@eq C).
+  ring.
   move: (is_RInt_plus _ _ _ _ _ _ H1 H2).
   apply is_RInt_ext.
   now move => x _ ; rewrite plus_zero_l.
@@ -226,10 +237,14 @@ Focus 2.
 Focus 2.
   move => x _.
   replace ((1 - x) * z1 + x * ((1 - 1) * z1 + 1 * z3)) with ((1 - x) * z1 + x * z3) by ring.
+  change eq with (@eq C).
   ring.
   apply (is_RInt_ext _ (fun _ => zero)) in H2.
 Focus 2.
-  move => x _ ; simpl ; ring.
+  move => x _ ; simpl.
+  change zero with (RtoC 0).
+  change eq with (@eq C).
+  ring.
   move: (is_RInt_plus _ _ _ _ _ _ H1 H2).
   apply is_RInt_ext.
   now move => x _ ; rewrite plus_zero_r.
@@ -241,12 +256,14 @@ Focus 2.
     replace ((1 - x) * z1 + x * ((1 - p) * z1 + p * z1)) with z1 by ring.
     replace ((1 - x) * ((1 - p) * z1 + p * z1) + x * z1) with z1 by ring.
     replace ((1 - x) * z1 + x * z1) with z1 by ring.
-    apply injective_projections ; simpl ; ring.
+    apply injective_projections ; rewrite /= /plus /= ; ring.
 
   apply (is_C_RInt_scal _ _ _ (/((1 - p) * z1 + p * z3 - z1))) in H1.
   apply (is_RInt_ext _ (fun t => ( (f ((1 - t) * z1 + t * ((1 - p) * z1 + p * z3)))))) in H1.
 Focus 2.
-  move => x _ ; field.
+  move => x _.
+  change eq with (@eq C).
+  field.
   replace (((1, 0) - p) * z1 + p * z3 - z1) with (p * (z3 - z1))
     by (apply injective_projections ; simpl ; ring).
   apply Cmult_neq_0.
@@ -255,12 +272,15 @@ Focus 2.
   now apply Cminus_eq_contra, sym_not_eq.
   apply (is_RInt_ext _ (fun t => opp (scal (-1)%R (f ((1 - t) * z1 + t * ((1 - p) * z1 + p * z3)))))) in H1.
 Focus 2.
-  move => x _ ; apply injective_projections ; simpl ; ring.
+  intros x _.
+  by rewrite scal_opp_one opp_opp.
 
   apply (is_C_RInt_scal _ _ _ (/(z3 - ((1 - p) * z1 + p * z3)))) in H2.
   apply (is_RInt_ext _ (fun t => f ((1 - t) * ((1 - p) * z1 + p * z3) + t * z3))) in H2.
 Focus 2.
-  move => x _ ; field.
+  move => x _.
+  change eq with (@eq C).
+  field.
   replace (z3 - (((1, 0) - p) * z1 + p * z3)) with ((1-p) * (z3 - z1))
     by (apply injective_projections ; simpl ; ring).
   apply Cmult_neq_0.
@@ -270,7 +290,8 @@ Focus 2.
   now apply Cminus_eq_contra, sym_not_eq.
   apply (is_RInt_ext _ (fun t => opp (scal (-1)%R (f ((1 - t) * ((1 - p) * z1 + p * z3) + t * z3))))) in H2.
 Focus 2.
-  move => x _ ; apply injective_projections ; simpl ; ring.
+  intros x _.
+  by rewrite scal_opp_one opp_opp.
 
   evar (k : C).
   replace (plus l1 l2) with k.
@@ -285,7 +306,8 @@ Focus 2.
   move: H1 ; apply is_RInt_ext => x Hx.
   replace ((1 - (/ p * x + 0)%R) * z1 + (/ p * x + 0)%R * ((1 - p) * z1 + p * z3))
     with ((1 - x) * z1 + x * z3).
-  simpl ; apply injective_projections ; simpl ; by field. 
+  rewrite scal_opp_one opp_opp scal_R_Cmult.
+  apply injective_projections ; simpl ; by field. 
   apply injective_projections ; simpl ; by field.
   
   clear H1.
@@ -299,6 +321,7 @@ Focus 2.
   replace ((1 - (/ (1 - p) * x + - / (1 - p) * p)%R) * ((1 - p) * z1 + p * z3) +
       (/ (1 - p) * x + - / (1 - p) * p)%R * z3)
     with ((1 - x) * z1 + x * z3).
+  rewrite scal_opp_one opp_opp scal_R_Cmult.
   now apply injective_projections ; simpl ; field ; apply Rminus_eq_contra.
   now apply injective_projections ; simpl ; field ; apply Rminus_eq_contra.
 
@@ -354,10 +377,12 @@ Proof.
   apply Hm.
   now exists x ; split.
   by apply Cf.
-  replace (m * norm (z1 - z2)%C)%R
+  replace (m * _)%R
     with (scal (1 - 0)%R (Cmod (z2 - z1)%C * m)%R).
-  apply @is_RInt_const.
-  rewrite -Cmod_norm -Cmod_opp Copp_minus_distr ; simpl ; ring.
+  apply: is_RInt_const.
+  rewrite -Cmod_norm -Cmod_opp Copp_minus_distr ; simpl.
+  rewrite /scal /= /mult /=.
+  ring.
 Qed.
 
 (** * Proposition 5 *)
@@ -459,7 +484,7 @@ Proof.
     by [].
     apply Hswap, Hd.
     apply Rle_lt_trans with (c - y)%R ; simpl.
-    rewrite -Rabs_Ropp Rabs_pos_eq ; ring_simplify.
+    rewrite /abs /minus /plus /opp /= -Rabs_Ropp Rabs_pos_eq ; ring_simplify.
     rewrite Rplus_comm.
     rewrite /Rmax ; case: Rle_dec => H1 ; case: Rle_dec => H2.
     by apply Rle_refl.
@@ -514,6 +539,7 @@ Proof.
     apply Rmax_l.
     by apply H1.
     apply Hd ; simpl.
+    rewrite /ball /= /AbsRing_ball /abs /minus /plus /opp /=.
     rewrite Rabs_pos_eq.
     apply Rle_lt_trans with (y - c)%R.
     rewrite /Rmax ; case: Rle_dec => H2 ; case: Rle_dec => H3.
@@ -533,7 +559,7 @@ Proof.
     by apply Rminus_le_0 in H1.
 Qed.
 
-Lemma prolongement_C0 {T} {MT : MetricBall T} (f : R -> T) (a b : R) :
+Lemma prolongement_C0 {T : UniformSpace} (f : R -> T) (a b : R) :
    a <= b ->
    (forall c : R, a <= c <= b -> filterlim f (locally c) (locally (f c))) ->
    {g : R -> T | (forall c, filterlim g (locally c) (locally (g c)))
@@ -587,6 +613,7 @@ Proof.
     2: by apply Rle_refl.
     apply filterlim_locally => eps.
     specialize (H0 b (conj (Rlt_le _ _ Hab) (Rle_refl b))).
+    simpl.
     destruct (proj1 (filterlim_locally _ (f b)) H0 eps) as [d' Hd'].
     assert (Hd : 0 < Rmin d' (b - a)).
       apply Rmin_case.
@@ -601,7 +628,7 @@ Proof.
     2: by apply Hx.
     apply Rmin_l.
     split.
-    simpl in Hx.
+    rewrite /ball /= /AbsRing_ball /minus /plus /opp /= in Hx.
     eapply Rlt_le_trans in Hx.
     2: by apply Rmin_r.
     apply Rabs_lt_between' in Hx.
@@ -638,7 +665,7 @@ Proof.
     apply Rmin_l.
     split.
     by apply Hax.
-    simpl in Hx.
+    rewrite /ball /= /AbsRing_ball /minus /plus /opp /= in Hx.
     eapply Rlt_le_trans in Hx.
     2: by apply Rmin_r.
     apply Rabs_lt_between' in Hx.
@@ -666,15 +693,13 @@ Qed.
 
 Section Prop5_RInt.
 
-Context {V} {VV : CompleteNormedVectorSpace V R}.
+Context {V : CompleteNormedModule R_AbsRing}.
 
 Lemma cont_ex_RInt (f : R -> V) (a b : R) :
   (forall z, Rmin a b <= z <= Rmax a b -> filterlim f (locally z) (locally (f z)))
   -> ex_RInt f a b.
 Proof.
-  wlog: f / (forall z, filterlim f (@locally R (@complete_metric R R_complete_metric) z)
-   (@locally V (@complete_metric V (@cnvspace_complete V R R_absring VV))
-      (f z))) => [ Hw Cf | Cf _ ].
+  wlog: f / (forall z : R, filterlim f (locally z) (locally (f z))) => [ Hw Cf | Cf _ ].
     destruct (prolongement_C0 f (Rmin a b) (Rmax a b)) as [g [Cg Hg]].
     apply Rmin_Rmax.
     by apply Cf.
@@ -737,9 +762,9 @@ Proof.
     rewrite -opp_minus.
     by apply @is_RInt_swap.
   - intros.
-    evar (l : V) ; replace (minus (g c) (g a)) with l.
-    eapply is_RInt_Chasles ; eassumption.
-    rewrite /l /minus -!plus_assoc.
+    replace (minus (g c) (g a)) with (plus (minus (g b) (g a)) (minus (g c) (g b))).
+    apply: is_RInt_Chasles ; eassumption.
+    rewrite /minus -!plus_assoc.
     rewrite plus_comm -!plus_assoc plus_opp_l plus_zero_r.
     apply plus_comm.
   - intros a b c [Hab Hbc] H.
@@ -761,14 +786,14 @@ Admitted.
 End Prop5_RInt.
 
 Lemma filterdiff_R2_C (f : C -> C) (z : C) (l : C) :
-  let VV := NormedVectorSpace_prod R_NVS R_NVS in
-  is_C_derive f z l -> filterdiff (VV := VV) f (locally z) (fun z => scal z l).
+  is_C_derive f z l -> filterdiff (V := C_R_NormedModule) f (locally z) (fun z : C => scal z l).
 Admitted.
 
-Global Instance C_complete : CompleteSpace_mixin C
-  (MetricBall_prod complete_metric complete_metric).
+Lemma C_complete :
+  forall F : (C -> Prop) -> Prop,
+  ProperFilter F -> cauchy F ->
+  {x : C | forall eps : posreal, F (ball x eps)}.
 Proof.
-  apply Build_CompleteSpace_mixin.
   intros.
 
   set (F1 := fun (P : R -> Prop) => exists Q, F Q /\ forall z : C, Q z -> P (fst z)).
@@ -827,11 +852,14 @@ Proof.
   by apply HPy.
 Qed.
 
-Global Instance C_R_CNVS : CompleteNormedVectorSpace C R.
-Proof.
-  econstructor.
-  apply C_R_NVS_mixin.
-Defined.
+Definition C_CompleteSpace_mixin :=
+  CompleteSpace.Mixin C_UniformSpace C_complete.
+
+Canonical C_CompleteSpace :=
+  CompleteSpace.Pack C (CompleteSpace.Class _ _ C_CompleteSpace_mixin) C.
+
+Canonical C_R_CompleteNormedModule :=
+  CompleteNormedModule.Pack R_AbsRing C (CompleteNormedModule.Class _ _ (NormedModule.class _ C_R_NormedModule) (CompleteSpace.class C_CompleteSpace)) C.
 
 Lemma prop5 (f g : C -> C) (z1 z2 : C) :
   (forall z, is_C_derive g z (f z))
@@ -843,18 +871,21 @@ Proof.
     replace (g z2 - g z1)
       with (minus (g ((1 - 1) * z1 + 1 * z2)) (g ((1 - 0) * z1 + 0 * z2))).
     2: simpl ; congr (g _- g _) ; ring.
-    apply (prop5_R (VV := C_R_CNVS) (fun t : R => (z2 - z1) * f ((1 - t) * z1 + t * z2)) (fun t => g ((1 - t) * z1 + t * z2)) 0 1).
+    apply (prop5_R (fun t : R => (z2 - z1) * f ((1 - t) * z1 + t * z2)) (fun t => g ((1 - t) * z1 + t * z2)) 0 1).
     + intros z Hz.
       eapply filterdiff_ext_lin.
-      apply (filterdiff_compose (fun t : R => (1 - t) * z1 + t * z2) g (fun y : R => scal y (z2 - z1)) (fun t => scal t (f ((1 - z) * z1 + z * z2)))).
+      apply (filterdiff_compose (fun t : R => (1 - t) * z1 + t * z2) g (fun y : R => scal y (z2 - z1)) (fun t : C => scal t (f ((1 - z) * z1 + z * z2)))).
       apply filterdiff_ext with (fun t : R => z1 + scal t (z2 - z1)).
-      intro y ; apply injective_projections ; simpl ; ring.
-      apply filterdiff_ext_lin with (fun y => plus zero (scal y (z2 - z1))).
+      simpl => y.
+      rewrite scal_R_Cmult.
+      change eq with (@eq C).
+      ring.
+      apply filterdiff_ext_lin with (fun y : R => plus zero (scal y (z2 - z1))).
       apply: filterdiff_plus_fct.
       apply: filterdiff_const.
       apply filterdiff_linear.
       by apply: is_linear_scal_l.
-      move => y.
+      simpl => y.
       by apply plus_zero_l.
       unfold is_C_derive in Dg.
       destruct (Dg ((1 - z) * z1 + z * z2)) as [Lf Dg'].
@@ -864,15 +895,16 @@ Proof.
       now intros P HP.
       apply (filterdiff_R2_C g ((1 - z) * z1 + z * z2) (f ((1 - z) * z1 + z * z2))).
       apply (Dg ((1 - z) * z1 + z * z2)).
-      intros ; apply injective_projections ; simpl ; ring.
-
+      simpl => y.
+      rewrite !scal_R_Cmult.
+      apply sym_eq, Cmult_assoc.
 
   admit.
 Qed.
 
 Require Import seq.
 
-Lemma ex_RInt_norm {V} {VV : CompleteNormedVectorSpace V R} (f : R -> V) (a b : R) :
+Lemma ex_RInt_norm {V : CompleteNormedModule R_AbsRing} (f : R -> V) (a b : R) :
   ex_RInt f a b -> ex_RInt (fun x => norm (f x)) a b.
 Proof.
   wlog: a b / (a <= b) => [Hw | Hab] Hf.
@@ -913,7 +945,7 @@ Proof.
 *)
 Admitted.
 
-Lemma cont_unif {V} {VV : NormedVectorSpace V R} (f : R -> V) a b :
+Lemma cont_unif {V : NormedModule R_AbsRing} (f : R -> V) a b :
   (forall x : R, Rmin a b <= x <= Rmax a b -> filterlim f (locally x) (locally (f x)))
   -> forall eps : posreal, exists delta : posreal,
     forall x y, Rmin a b <= x <= Rmax a b -> Rmin a b <= y <= Rmax a b ->
@@ -969,7 +1001,7 @@ Proof.
   - by exists a.
 Admitted.
 
-Lemma ex_RInt_cont {V} {VV : CompleteNormedVectorSpace V R} :
+Lemma ex_RInt_cont {V : CompleteNormedModule R_AbsRing} :
    forall (f : R -> V) (a b : R),
    (forall x : R, Rmin a b <= x <= Rmax a b -> filterlim f (locally x) (locally (f x))) ->
    ex_RInt f a b.

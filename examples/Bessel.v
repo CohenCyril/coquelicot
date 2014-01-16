@@ -162,11 +162,13 @@ Proof.
   case => [ | p] ; rewrite /Bessel1_seq ;
   rewrite -?plus_n_Sm ?plus_0_r /fact -/fact ?mult_INR ?S_INR ?plus_INR ; simpl INR ; simpl pow ;
   rewrite ?Rplus_0_l ?Rmult_1_l.
-  simpl; field.
+  rewrite /plus /zero /scal /= /mult /=.
+  field.
   split ; rewrite -?S_INR ; apply Rgt_not_eq.
   by apply INR_fact_lt_0.
   by apply (lt_INR 0), lt_O_Sn.
-  simpl; field.
+  rewrite /plus /scal /= /mult /=.
+  field.
   repeat split ; rewrite -?plus_INR -?S_INR ; apply Rgt_not_eq.
   by apply INR_fact_lt_0.
   by apply (lt_INR 0), lt_O_Sn.
@@ -212,12 +214,9 @@ Proof.
   rewrite /Bessel1_seq /PS_scal /PS_derive plus_0_l.
   replace (1+k)%nat with (S k) by ring.
   rewrite /fact -/fact mult_INR /pow -/pow.
-  simpl; field ; split.
+  change scal with Rmult.
+  field ; split.
   exact: INR_fact_neq_0.
-  replace (match k with
-    | 0%nat => 1
-    | S _ => INR k + 1
-   end) with (INR (S k)) by reflexivity.
   by apply not_0_INR, not_eq_sym, O_S.
 (* * cas S n *)
   replace (S n + 1)%nat with (S(S n)) by ring.
@@ -229,7 +228,8 @@ Proof.
   apply PSeries_ext => k.
   rewrite /Bessel1_seq /PS_scal /PS_derive -?plus_n_Sm ?plus_Sn_m.
   rewrite /pow -/pow /fact -/fact ?mult_INR ?S_INR plus_INR.
-  simpl; field.
+  change scal with Rmult.
+  field.
   rewrite -plus_INR -?S_INR.
   repeat split ;
   try by [exact: INR_fact_neq_0 | apply not_0_INR, not_eq_sym, O_S].
@@ -264,9 +264,11 @@ Focus 2. (* ex_pseries (PS_incr_n (Bessel1_seq n) n) (x / 2) *)
   case: k => [ | k] ;
   rewrite ?plus_0_r -?plus_n_Sm ?plus_Sn_m
     /fact -/fact ?mult_INR ?S_INR ?plus_INR /=.
+  rewrite /plus /zero /scal /= /mult /=.
   field.
   rewrite -?S_INR ; split ;
   by [apply not_0_INR, sym_not_eq, O_S | apply INR_fact_neq_0].
+  rewrite /plus /zero /scal /= /mult /=.
   field ;
   rewrite -?plus_INR -?S_INR ; repeat split ;
   by [apply INR_fact_neq_0 | apply not_0_INR, sym_not_eq, O_S].
@@ -297,6 +299,7 @@ Proof.
   apply PSeries_ext => k.
   rewrite  /PS_minus /PS_incr_1 /PS_scal /PS_derive /Bessel1_seq.
   case: k => [ | k] ; rewrite -?plus_n_Sm ?plus_Sn_m /fact -/fact ?mult_INR ?S_INR -?plus_n_O ?plus_INR /= ;
+  rewrite /plus /opp /zero /scal /= /mult /= ;
   field ; rewrite -?plus_INR -?S_INR.
   split ; (apply INR_fact_neq_0 || apply not_0_INR, sym_not_eq, O_S).
   repeat split ; (apply INR_fact_neq_0 || apply not_0_INR, sym_not_eq, O_S).
@@ -327,7 +330,8 @@ Proof.
   split ; [move: (Haux 0%nat) | move: (fun k => Haux (S k))] => {Haux} Haux.
 (* n = 0 *)
   rewrite /PS_plus /= /PS_incr_1 /PS_derive_n /PS_scal /PS_derive in Haux.
-  simpl in Haux; ring_simplify in Haux.
+  rewrite /plus /zero /scal /= /mult /= in Haux.
+  ring_simplify in Haux.
   apply Rmult_integral in Haux ; case: Haux => Haux.
   right.
   suff : ~ n <> 0%nat.
@@ -340,6 +344,7 @@ Proof.
   split ; [move: (Haux 0%nat) | move: (fun k => Haux (S k))] => {Haux} Haux.
 (* n = 1 *)
   rewrite /PS_plus /= /PS_incr_1 /PS_derive_n /PS_scal /PS_derive /= in Haux.
+  rewrite /plus /zero /scal /= /mult /= in Haux.
   ring_simplify in Haux.
   replace (- a 1%nat * INR n ^ 2 + a 1%nat) with ((1 - INR n ^ 2) * a 1%nat) in Haux.
   apply Rmult_integral in Haux ; case: Haux => Haux.
@@ -363,7 +368,8 @@ Proof.
   rewrite /PS_plus /= /PS_incr_1 /PS_derive_n /PS_scal /PS_derive -?S_INR.
   replace (k + 2)%nat with (S (S k)) by ring.
   rewrite /fact -/fact ?mult_INR ?S_INR => {Haux} Haux.
-  simpl in Haux; field_simplify in Haux.
+  rewrite /plus /scal /= /mult /= in Haux.
+  field_simplify in Haux.
   field_simplify.
   by rewrite (Rmult_comm (INR n ^ 2)).
   move: Haux.
@@ -392,4 +398,3 @@ Proof.
   apply H.
   
 Admitted.
-

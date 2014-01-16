@@ -369,22 +369,77 @@ Qed.
 (** * Algebraic spaces *)
 (** ** Abelian groups *)
 
-Class AbelianGroup G := {
+Module AbelianGroup.
+
+Record mixin_of (G : Type) := Mixin {
   plus : G -> G -> G ;
   opp : G -> G ;
-  minus x y := plus x (opp y) ;
   zero : G ;
-  plus_comm : forall x y, plus x y = plus y x ;
-  plus_assoc : forall x y z, plus x (plus y z) = plus (plus x y) z ;
-  plus_zero_r : forall x, plus x zero = x ;
-  plus_opp_r : forall x, plus x (opp x) = zero
+  ax1 : forall x y, plus x y = plus y x ;
+  ax2 : forall x y z, plus x (plus y z) = plus (plus x y) z ;
+  ax3 : forall x, plus x zero = x ;
+  ax4 : forall x, plus x (opp x) = zero
 }.
+
+Notation class_of := mixin_of (only parsing).
+
+Section ClassDef.
+
+Structure type := Pack { sort; _ : class_of sort ; _ : Type }.
+Local Coercion sort : type >-> Sortclass.
+Definition class (cT : type) := let: Pack _ c _ := cT return class_of cT in c.
+
+End ClassDef.
+
+Module Exports.
+
+Coercion sort : type >-> Sortclass.
+Notation AbelianGroup := type.
+
+End Exports.
+
+End AbelianGroup.
+
+Export AbelianGroup.Exports.
 
 (** Arithmetic operations *)
 
-Section AbelianGroup.
+Section AbelianGroup1.
 
-Context {G} {GG : AbelianGroup G}.
+Context {G : AbelianGroup}.
+
+Definition zero := AbelianGroup.zero _ (AbelianGroup.class G).
+Definition plus := AbelianGroup.plus _ (AbelianGroup.class G).
+Definition opp := AbelianGroup.opp _ (AbelianGroup.class G).
+Definition minus x y := (plus x (opp y)).
+
+Lemma plus_comm :
+  forall x y : G,
+  plus x y = plus y x.
+Proof.
+apply AbelianGroup.ax1.
+Qed.
+
+Lemma plus_assoc :
+  forall x y z : G,
+  plus x (plus y z) = plus (plus x y) z.
+Proof.
+apply AbelianGroup.ax2.
+Qed.
+
+Lemma plus_zero_r :
+  forall x : G,
+  plus x zero = x.
+Proof.
+apply AbelianGroup.ax3.
+Qed.
+
+Lemma plus_opp_r :
+  forall x : G,
+  plus x (opp x) = zero.
+Proof.
+apply AbelianGroup.ax4.
+Qed.
 
 Lemma plus_zero_l :
   forall x : G,
@@ -541,29 +596,102 @@ Proof.
   by rewrite -sum_n_plus.
 Qed.
 
-End AbelianGroup.
+End AbelianGroup1.
 
 (** ** Noncommutative rings *)
 
-Class Ring_mixin (K : Type) (KA : AbelianGroup K) := {
+Module Ring.
+
+Record mixin_of (K : AbelianGroup) := Mixin {
   mult : K -> K -> K ;
   one : K ;
-  mult_assoc : forall x y z, mult x (mult y z) = mult (mult x y) z ;
-  mult_one_r : forall x, mult x one = x ;
-  mult_one_l : forall x, mult one x = x ;
-  mult_distr_r : forall x y z, mult (plus x y) z = plus (mult x z) (mult y z) ;
-  mult_distr_l : forall x y z, mult x (plus y z) = plus (mult x y) (mult x z)
+  ax1 : forall x y z, mult x (mult y z) = mult (mult x y) z ;
+  ax2 : forall x, mult x one = x ;
+  ax3 : forall x, mult one x = x ;
+  ax4 : forall x y z, mult (plus x y) z = plus (mult x z) (mult y z) ;
+  ax5 : forall x y z, mult x (plus y z) = plus (mult x y) (mult x z)
 }.
-Class Ring K := {
-  ring_group :> AbelianGroup K ;
-  ring_mixin :> Ring_mixin K ring_group
+
+Section ClassDef.
+
+Record class_of (K : Type) := Class {
+  base : AbelianGroup.class_of K ;
+  mixin : mixin_of (AbelianGroup.Pack _ base K)
 }.
+Local Coercion base : class_of >-> AbelianGroup.class_of.
+
+Structure type := Pack { sort; _ : class_of sort ; _ : Type }.
+Local Coercion sort : type >-> Sortclass.
+
+Variable cT : type.
+
+Definition class := let: Pack _ c _ := cT return class_of cT in c.
+
+Let xT := let: Pack T _ _ := cT in T.
+Notation xclass := (class : class_of xT).
+
+Definition AbelianGroup := AbelianGroup.Pack cT xclass xT.
+
+End ClassDef.
+
+Module Exports.
+
+Coercion base : class_of >-> AbelianGroup.class_of.
+Coercion mixin : class_of >-> mixin_of.
+Coercion sort : type >-> Sortclass.
+Coercion AbelianGroup : type >-> AbelianGroup.type.
+Canonical AbelianGroup.
+Notation Ring := type.
+
+End Exports.
+
+End Ring.
+
+Export Ring.Exports.
 
 (** Arithmetic operations *)
 
-Section Ring.
+Section Ring1.
 
-Context {K} {RK : Ring K}.
+Context {K : Ring}.
+
+Definition mult : K -> K -> K := Ring.mult _ (Ring.class K).
+Definition one : K := Ring.one _ (Ring.class K).
+
+Lemma mult_assoc :
+  forall x y z : K,
+  mult x (mult y z) = mult (mult x y) z.
+Proof.
+apply Ring.ax1.
+Qed.
+
+Lemma mult_one_r :
+  forall x : K,
+  mult x one = x.
+Proof.
+apply Ring.ax2.
+Qed.
+
+Lemma mult_one_l :
+  forall x : K,
+  mult one x = x.
+Proof.
+apply Ring.ax3.
+Qed.
+
+Lemma mult_distr_r :
+  forall x y z : K,
+  mult (plus x y) z = plus (mult x z) (mult y z).
+Proof.
+apply Ring.ax4.
+Qed.
+
+Lemma mult_distr_l :
+  forall x y z : K,
+  mult x (plus y z) = plus (mult x y) (mult x z).
+Proof.
+apply Ring.ax5.
+Qed.
 
 Lemma mult_zero_r :
   forall x : K,
@@ -640,43 +768,104 @@ Proof.
   by apply mult_distr_l.
 Qed.
 
-End Ring.
+End Ring1.
 
 (** ** Rings with absolute value *)
 
-Class AbsRing_mixin K (RK : Ring K) := {
+Module AbsRing.
+
+Record mixin_of (K : Ring) := Mixin {
   abs : K -> R ;
-  abs_zero : abs zero = 0 ;
-  abs_opp_one : abs (opp one) = 1 ;
-  abs_triangle : forall x y, abs (plus x y) <= abs x + abs y ;
-  abs_mult : forall x y, abs (mult x y) <= abs x * abs y
+  ax1 : abs zero = 0 ;
+  ax2 : abs (opp one) = 1 ;
+  ax3 : forall x y, abs (plus x y) <= abs x + abs y ;
+  ax4 : forall x y, abs (mult x y) <= abs x * abs y
 }.
 
-Class AbsRing K := {
-  absring_group :> AbelianGroup K ;
-  absring_ring' :> Ring_mixin K absring_group ;
-  absring_ring := Build_Ring _ _ absring_ring' ;
-  absring_mixin :> AbsRing_mixin K absring_ring
-}.
+Section ClassDef.
 
-Global Existing Instance absring_ring.
+Record class_of (K : Type) := Class {
+  base : Ring.class_of K ;
+  mixin : mixin_of (Ring.Pack _ base K)
+}.
+Local Coercion base : class_of >-> Ring.class_of.
+
+Structure type := Pack { sort; _ : class_of sort ; _ : Type }.
+Local Coercion sort : type >-> Sortclass.
+
+Variable cT : type.
+
+Definition class := let: Pack _ c _ := cT return class_of cT in c.
+
+Let xT := let: Pack T _ _ := cT in T.
+Notation xclass := (class : class_of xT).
+
+Definition AbelianGroup := AbelianGroup.Pack cT xclass xT.
+Definition Ring := Ring.Pack cT xclass xT.
+
+End ClassDef.
+
+Module Exports.
+
+Coercion base : class_of >-> Ring.class_of.
+Coercion mixin : class_of >-> mixin_of.
+Coercion sort : type >-> Sortclass.
+Coercion AbelianGroup : type >-> AbelianGroup.type.
+Canonical AbelianGroup.
+Coercion Ring : type >-> Ring.type.
+Canonical Ring.
+Notation AbsRing := type.
+
+End Exports.
+
+End AbsRing.
+
+Export AbsRing.Exports.
 
 (** Usual properties *)
 
-Section AbsRing.
+Section AbsRing1.
 
-Context {K} {AK : AbsRing K}.
+Context {K : AbsRing}.
+
+Definition abs : K -> R := AbsRing.abs _ (AbsRing.class K).
+
+Lemma abs_zero :
+  abs zero = 0.
+Proof.
+apply AbsRing.ax1.
+Qed.
+
+Lemma abs_opp_one :
+  abs (opp one) = 1.
+Proof.
+apply AbsRing.ax2.
+Qed.
+
+Lemma abs_triangle :
+  forall x y : K,
+  abs (plus x y) <= abs x + abs y.
+Proof.
+apply: AbsRing.ax3.
+Qed.
+
+Lemma abs_mult :
+  forall x y : K,
+  abs (mult x y) <= abs x * abs y.
+Proof.
+apply AbsRing.ax4.
+Qed.
 
 Lemma abs_opp :
   forall x, abs (opp x) = abs x.
 Proof.
 intros x.
 apply Rle_antisym.
-- rewrite (opp_mult_m1 (RK := absring_ring)).
+- rewrite opp_mult_m1.
   rewrite -(Rmult_1_l (abs x)) -abs_opp_one.
   apply abs_mult.
 - rewrite -{1}[x]opp_opp.
-  rewrite (opp_mult_m1 (RK := absring_ring)).
+  rewrite opp_mult_m1.
   rewrite -(Rmult_1_l (abs (opp x))) -abs_opp_one.
   apply abs_mult.
 Qed.
@@ -707,27 +896,111 @@ Proof.
   apply Req_le ; ring.
 Qed.
 
-End AbsRing.
+End AbsRing1.
 
-(** * Metric spaces defined using balls *)
+(** * Uniform spaces defined using balls *)
 
-Class MetricBall M := {
+Module UniformSpace.
+
+Record mixin_of (M : Type) := Mixin {
   ball : M -> R -> M -> Prop ;
-  ball_center : forall x (e : posreal), ball x e x ;
-  ball_sym : forall x y e, ball x e y -> ball y e x ;
-  ball_triangle : forall x y z e1 e2, ball x e1 y -> ball y e2 z -> ball x (e1 + e2) z ;
-  ball_le : forall x e1 e2, e1 <= e2 -> forall y, ball x e1 y -> ball x e2 y
+  ax1 : forall x (e : posreal), ball x e x ;
+  ax2 : forall x y e, ball x e y -> ball y e x ;
+  ax3 : forall x y z e1 e2, ball x e1 y -> ball y e2 z -> ball x (e1 + e2) z ;
+  ax4 : forall x e1 e2, e1 <= e2 -> forall y, ball x e1 y -> ball x e2 y
 }.
 
-(** ** Specific metric spaces *)
+Notation class_of := mixin_of (only parsing).
+
+Section ClassDef.
+
+Structure type := Pack { sort; _ : class_of sort ; _ : Type }.
+Local Coercion sort : type >-> Sortclass.
+Definition class (cT : type) := let: Pack _ c _ := cT return class_of cT in c.
+
+End ClassDef.
+
+Module Exports.
+
+Coercion sort : type >-> Sortclass.
+Notation UniformSpace := type.
+
+End Exports.
+
+End UniformSpace.
+
+Export UniformSpace.Exports.
+
+Section UniformSpace1.
+
+Context {M : UniformSpace}.
+
+Definition ball := UniformSpace.ball _ (UniformSpace.class M).
+
+Lemma ball_center :
+  forall (x : M) (e : posreal),
+  ball x e x.
+Proof.
+apply UniformSpace.ax1.
+Qed.
+
+Lemma ball_sym :
+  forall (x y : M) (e : R),
+  ball x e y -> ball y e x.
+Proof.
+apply UniformSpace.ax2.
+Qed.
+
+Lemma ball_triangle :
+  forall (x y z : M) (e1 e2 : R),
+  ball x e1 y -> ball y e2 z -> ball x (e1 + e2) z.
+Proof.
+apply UniformSpace.ax3.
+Qed.
+
+Lemma ball_le :
+  forall (x : M) (e1 e2 : R), e1 <= e2 ->
+  forall (y : M), ball x e1 y -> ball x e2 y.
+Proof.
+apply UniformSpace.ax4.
+Qed.
+
+End UniformSpace1.
+
+(** ** Specific uniform spaces *)
 
 (** Rings with absolute value *)
 
-Lemma MetricBall_AbsRing_triangle :
-  forall {K} {AK : AbsRing K} (x y z : K) (e1 e2 : R),
-  abs (minus y x) < e1 -> abs (minus z y) < e2 -> abs (minus z x) < e1 + e2.
+Section AbsRing_UniformSpace.
+
+Variable K : AbsRing.
+
+Definition AbsRing_ball (x : K) (eps : R) (y : K) := abs (minus y x) < eps.
+
+Lemma AbsRing_ball_center :
+  forall (x : K) (e : posreal),
+  AbsRing_ball x e x.
 Proof.
-intros K AK x y z e1 e2 H1 H2.
+  intros x e.
+  rewrite /AbsRing_ball /minus plus_opp_r abs_zero.
+  apply cond_pos.
+Qed.
+
+Lemma AbsRing_ball_sym :
+  forall (x y : K) (e : R),
+  AbsRing_ball x e y -> AbsRing_ball y e x.
+Proof.
+  intros x y e.
+  by rewrite /AbsRing_ball abs_minus.
+Qed.
+
+Lemma AbsRing_ball_triangle :
+  forall (x y z : K) (e1 e2 : R),
+  AbsRing_ball x e1 y -> AbsRing_ball y e2 z ->
+  AbsRing_ball x (e1 + e2) z.
+Proof.
+intros x y z e1 e2 H1 H2.
+unfold AbsRing_ball.
 replace (minus z x) with (plus (minus y x) (minus z y)).
 apply: Rle_lt_trans (abs_triangle _ _) _.
 now apply Rplus_lt_compat.
@@ -737,37 +1010,70 @@ rewrite <- plus_assoc.
 now rewrite plus_opp_l plus_zero_r.
 Qed.
 
-Global Instance MetricBall_AbsRing {K} :
-  AbsRing K -> MetricBall K.
+Lemma AbsRing_ball_le :
+  forall (x : K) (e1 e2 : R), e1 <= e2 ->
+  forall y : K, AbsRing_ball x e1 y -> AbsRing_ball x e2 y.
 Proof.
-intros AK.
-apply Build_MetricBall with (fun x eps y => abs (minus y x) < eps).
-- intros x e.
-  rewrite /minus plus_opp_r abs_zero.
-  apply cond_pos.
-- intros x y e.
-  now rewrite abs_minus.
-- apply MetricBall_AbsRing_triangle.
-- intros x e1 e2 H y H'.
-  apply: Rlt_le_trans H' H.
-Defined.
+  intros x e1 e2 He y H.
+  apply: Rlt_le_trans H He.
+Qed.
+
+Definition AbsRing_UniformSpace_mixin :=
+  UniformSpace.Mixin _ _ AbsRing_ball_center AbsRing_ball_sym AbsRing_ball_triangle AbsRing_ball_le.
+
+Canonical AbsRing_UniformSpace :=
+  UniformSpace.Pack K AbsRing_UniformSpace_mixin K.
+
+End AbsRing_UniformSpace.
 
 (** Functional metric spaces *)
 
-Global Instance MetricBall_fct {T M} :
-  MetricBall M -> MetricBall (T -> M).
+Section fct_UniformSpace.
+
+Variable (T : Type) (U : UniformSpace).
+
+Definition fct_ball (x : T -> U) (eps : R) (y : T -> U) :=
+  forall t : T, ball (x t) eps (y t).
+
+Lemma fct_ball_center :
+  forall (x : T -> U) (e : posreal),
+  fct_ball x e x.
 Proof.
-  intros MM.
-  exists (fun f eps g => forall t, ball (f t) eps (g t)).
-  + intros x e t.
-    exact: ball_center.
-  + intros x y e H t.
-    by apply ball_sym.
-  + intros x y z e1 e2 H1 H2 t.
-    now apply ball_triangle with (y t).
-  + intros x e1 e2 He y H t.
-    now apply ball_le with e1.
-Defined.
+  intros x e t.
+  exact: ball_center.
+Qed.
+
+Lemma fct_ball_sym :
+  forall (x y : T -> U) (e : R),
+  fct_ball x e y -> fct_ball y e x.
+Proof.
+  intros x y e H t.
+  exact: ball_sym.
+Qed.
+
+Lemma fct_ball_triangle :
+  forall (x y z : T -> U) (e1 e2 : R),
+  fct_ball x e1 y -> fct_ball y e2 z -> fct_ball x (e1 + e2) z.
+Proof.
+  intros x y z e1 e2 H1 H2 t.
+  now apply ball_triangle with (y t).
+Qed.
+
+Lemma fct_ball_le :
+  forall (x : T -> U) (e1 e2 : R), e1 <= e2 ->
+  forall y : T -> U, fct_ball x e1 y -> fct_ball x e2 y.
+Proof.
+  intros x e1 e2 He y H t.
+  now apply ball_le with e1.
+Qed.
+
+Definition fct_UniformSpace_mixin :=
+  UniformSpace.Mixin _ _ fct_ball_center fct_ball_sym fct_ball_triangle fct_ball_le.
+
+Canonical fct_UniformSpace :=
+  UniformSpace.Pack (T -> U) fct_UniformSpace_mixin (T -> U).
+
+End fct_UniformSpace.
 
 (** ** Local predicates *)
 (** locally_dist *)
@@ -803,7 +1109,7 @@ Qed.
 
 Section Locally.
 
-Context {T} {MT : MetricBall T}.
+Context {T : UniformSpace}.
 
 Definition locally (x : T) (P : T -> Prop) :=
   exists eps : posreal, forall y, ball x eps y -> P y.
@@ -944,7 +1250,7 @@ End Locally.
 
 Section Locally_fct.
 
-Context {T U : Type} {MU : MetricBall U}.
+Context {T : Type} {U : UniformSpace}.
 
 Lemma filterlim_locally :
   forall {F} {FF : Filter F} (f : T -> U) y,
@@ -985,7 +1291,7 @@ Qed.
 
 End Locally_fct.
 
-Lemma is_filter_lim_filtermap {T U} {MT: MetricBall T} {MU : MetricBall U} : 
+Lemma is_filter_lim_filtermap {T: UniformSpace} {U : UniformSpace} :
 forall F x (f : T -> U),
   filterlim f (locally x) (locally (f x))
   -> is_filter_lim F x
@@ -999,13 +1305,13 @@ Qed.
 
 (** locally' *)
 
-Definition locally' {T} {MT : MetricBall T} (x : T) :=
+Definition locally' {T : UniformSpace} (x : T) :=
   within (fun y => y <> x) (locally x).
 
 Global Instance locally'_filter :
-  forall {T} {MT : MetricBall T} (x : T), Filter (locally' x).
+  forall {T : UniformSpace} (x : T), Filter (locally' x).
 Proof.
-intros T MT x.
+intros T x.
 apply within_filter.
 apply locally_filter.
 Qed.
@@ -1014,7 +1320,7 @@ Qed.
 
 Section Open.
 
-Context {T} {MT : MetricBall T}.
+Context {T : UniformSpace}.
 
 Definition open (D : T -> Prop) :=
   forall x, D x -> locally x D.
@@ -1075,25 +1381,73 @@ End Open.
 
 (** ** Complete metric spaces *)
 
-Class CompleteSpace_mixin T (MT : MetricBall T) := {
-  cauchy := fun (F : (T -> Prop) -> Prop) => forall eps : posreal, exists x, F (ball x eps) ;
-  complete_cauchy : forall F, ProperFilter F -> cauchy F -> {x : T | forall eps : posreal, F (ball x eps)}
+Definition cauchy {T : UniformSpace} (F : (T -> Prop) -> Prop) :=
+  forall eps : posreal, exists x, F (ball x eps).
+
+Module CompleteSpace.
+
+Record mixin_of (T : UniformSpace) := Mixin {
+  ax1 : forall F, ProperFilter F -> cauchy F -> {x : T | forall eps : posreal, F (ball x eps)}
 }.
 
-Class CompleteSpace T := {
-  complete_metric :> MetricBall T ;
-  complete_mixin :> CompleteSpace_mixin T complete_metric
+Section ClassDef.
+
+Record class_of (T : Type) := Class {
+  base : UniformSpace.class_of T ;
+  mixin : mixin_of (UniformSpace.Pack _ base T)
 }.
+Local Coercion base : class_of >-> UniformSpace.class_of.
+
+Structure type := Pack { sort; _ : class_of sort ; _ : Type }.
+Local Coercion sort : type >-> Sortclass.
+
+Variable cT : type.
+
+Definition class := let: Pack _ c _ := cT return class_of cT in c.
+
+Let xT := let: Pack T _ _ := cT in T.
+Notation xclass := (class : class_of xT).
+
+Definition UniformSpace := UniformSpace.Pack cT xclass xT.
+
+End ClassDef.
+
+Module Exports.
+
+Coercion base : class_of >-> UniformSpace.class_of.
+Coercion mixin : class_of >-> mixin_of.
+Coercion sort : type >-> Sortclass.
+Coercion UniformSpace : type >-> UniformSpace.type.
+Canonical UniformSpace.
+Notation CompleteSpace := type.
+
+End Exports.
+
+End CompleteSpace.
+
+Export CompleteSpace.Exports.
+
+Section CompleteSpace1.
+
+Context {T : CompleteSpace}.
+
+Lemma complete_cauchy :
+  forall F, ProperFilter F -> cauchy F -> {x : T | forall eps : posreal, F (ball x eps)}.
+Proof.
+apply CompleteSpace.ax1.
+apply CompleteSpace.mixin. (* ??? *)
+Qed.
+
+End CompleteSpace1.
 
 Lemma cauchy_distance :
-  forall {T} {MT : MetricBall T} {F} {FF : ProperFilter F},
+  forall {T : UniformSpace} {F} {FF : ProperFilter F},
   (forall eps : posreal, exists x, F (ball x eps)) <->
   (forall eps : posreal, exists P, F P /\ forall u v : T, P u -> P v -> ball u eps v).
 Proof.
-  intros T MT F FF.
-  split.
-
-  intros H eps.
+intros T F FF.
+split.
+- intros H eps.
   case: (H (pos_div_2 eps)) => {H} x Hx.
   exists (ball x (pos_div_2 eps)).
   split.
@@ -1103,8 +1457,7 @@ Proof.
   apply ball_triangle with x.
   by apply ball_sym.
   exact Hv.
-
-  intros H eps.
+- intros H eps.
   case: (H eps) => {H} P [HP H].
   destruct (filter_ex P HP) as [x Hx].
   exists x.
@@ -1113,12 +1466,16 @@ Proof.
   by [].
 Qed.
 
+Section fct_CompleteSpace.
+
+Context {T : Type} {U : CompleteSpace}.
+
 Lemma filterlim_locally_cauchy :
-  forall {T U} {CU : CompleteSpace U} {F} {FF : ProperFilter F} (f : T -> U),
+  forall {F} {FF : ProperFilter F} (f : T -> U),
   (forall eps : posreal, exists P, F P /\ forall u v : T, P u -> P v -> ball (f u) eps (f v)) <->
   exists y, filterlim f F (locally y).
 Proof.
-intros T U CU F FF f.
+intros F FF f.
 split.
 - intros H.
   destruct (complete_cauchy (filtermap f F)) as [y Hy].
@@ -1152,8 +1509,8 @@ split.
   exact Hv.
 Qed.
 
-Lemma complete_cauchy_fct {T U} {CMS : CompleteSpace U} : 
-  forall F : ((T -> U) -> Prop) -> Prop,
+Lemma complete_cauchy_fct :
+  forall (F : ((T -> U) -> Prop) -> Prop),
   ProperFilter F ->
     (forall eps : posreal, exists f : T -> U, F (ball f eps)) ->
     {f : T -> U | forall eps : posreal, F (ball f eps)}.
@@ -1207,73 +1564,101 @@ Proof.
   by apply H.
 Qed.
 
-Global Instance CompleteSpace_fct {T U} : 
-  CompleteSpace U -> CompleteSpace (T -> U).
-Proof.
-  intros.
-  apply Build_CompleteSpace with (@MetricBall_fct T _ complete_metric).
-  constructor.
-  apply complete_cauchy_fct.
-Defined.
+Definition fct_CompleteSpace_mixin :=
+  CompleteSpace.Mixin _ complete_cauchy_fct.
 
-(** * Vector Spaces *)
+Canonical fct_CompleteSpace :=
+  CompleteSpace.Pack (T -> U) (CompleteSpace.Class _ _ fct_CompleteSpace_mixin) (T -> U).
 
-Class VectorSpace_mixin V K {RK : Ring K} (AV : AbelianGroup V) := {
+End fct_CompleteSpace.
+
+(** * Modules *)
+
+Module ModuleSpace.
+
+Record mixin_of (K : Ring) (V : AbelianGroup) := Mixin {
   scal : K -> V -> V ;
-  scal_assoc : forall x y u, scal x (scal y u) = scal (mult x y) u ;
-  scal_one : forall u, scal one u = u ;
-  scal_distr_l : forall x u v, scal x (plus u v) = plus (scal x u) (scal x v) ;
-  scal_distr_r : forall x y u, scal (plus x y) u = plus (scal x u) (scal y u)
+  ax1 : forall x y u, scal x (scal y u) = scal (mult x y) u ;
+  ax2 : forall u, scal one u = u ;
+  ax3 : forall x u v, scal x (plus u v) = plus (scal x u) (scal x v) ;
+  ax4 : forall x y u, scal (plus x y) u = plus (scal x u) (scal y u)
 }.
 
-Class VectorSpace V K {RK : Ring K} := {
-  vspace_group :> AbelianGroup V ;
-  vspace_mixin :> VectorSpace_mixin V K vspace_group
+Section ClassDef.
+
+Variable K : Ring.
+
+Record class_of (V : Type) := Class {
+  base : AbelianGroup.class_of V ;
+  mixin : mixin_of K (AbelianGroup.Pack _ base V)
 }.
+Local Coercion base : class_of >-> AbelianGroup.class_of.
 
-Global Instance VectorSpace_mixin_Ring :
-  forall K (RK : Ring K), VectorSpace_mixin K K ring_group.
+Structure type := Pack { sort; _ : class_of sort ; _ : Type }.
+Local Coercion sort : type >-> Sortclass.
+
+Variable cT : type.
+
+Definition class := let: Pack _ c _ := cT return class_of cT in c.
+
+Let xT := let: Pack T _ _ := cT in T.
+Notation xclass := (class : class_of xT).
+
+Definition AbelianGroup := AbelianGroup.Pack cT xclass xT.
+
+End ClassDef.
+
+Module Exports.
+
+Coercion base : class_of >-> AbelianGroup.class_of.
+Coercion mixin : class_of >-> mixin_of.
+Coercion sort : type >-> Sortclass.
+Coercion AbelianGroup : type >-> AbelianGroup.type.
+Canonical AbelianGroup.
+Notation ModuleSpace := type.
+
+End Exports.
+
+End ModuleSpace.
+
+Export ModuleSpace.Exports.
+
+Section ModuleSpace1.
+
+Context {K : Ring} {V : ModuleSpace K}.
+
+Definition scal : K -> V -> V := ModuleSpace.scal _ _ (ModuleSpace.class K V).
+
+Lemma scal_assoc :
+  forall (x y : K) (u : V),
+  scal x (scal y u) = scal (mult x y) u.
 Proof.
-  intros K RK.
-  apply Build_VectorSpace_mixin with mult.
-  exact mult_assoc.
-  exact mult_one_l.
-  exact mult_distr_l.
-  exact mult_distr_r.
-Defined.
+apply ModuleSpace.ax1.
+Qed.
 
-Global Instance VectorSpace_Ring :
-  forall K (RK : Ring K), VectorSpace K K.
+Lemma scal_one :
+  forall (u : V), scal one u = u.
 Proof.
-  intros K RK.
-  eapply Build_VectorSpace.
-  apply VectorSpace_mixin_Ring.
-Defined.
+apply ModuleSpace.ax2.
+Qed.
 
-Global Instance VectorSpace_mixin_AbsRing :
-  forall K (AK : AbsRing K), VectorSpace_mixin K K absring_group.
+Lemma scal_distr_l :
+  forall (x : K) (u v : V),
+  scal x (plus u v) = plus (scal x u) (scal x v).
 Proof.
-  intros K AK.
-  apply VectorSpace_mixin_Ring.
-Defined.
+apply ModuleSpace.ax3.
+Qed.
 
-Global Instance VectorSpace_AbsRing :
-  forall K (AK : AbsRing K), VectorSpace K K.
+Lemma scal_distr_r :
+  forall (x y : K) (u : V),
+  scal (plus x y) u = plus (scal x u) (scal y u).
 Proof.
-  intros K AK.
-  eapply Build_VectorSpace.
-  apply VectorSpace_mixin_AbsRing.
-Defined.
-
-(** Operations *)
-
-Section VectorSpace.
-
-Context {V K} {FK : Ring K} {VV : VectorSpace V K}.
+apply ModuleSpace.ax4.
+Qed.
 
 Lemma scal_zero_r :
   forall x : K,
-  scal x (@zero V _) = zero.
+  scal x zero = zero.
 Proof.
 intros x.
 apply plus_reg_r with (scal x zero).
@@ -1338,41 +1723,182 @@ Proof.
   by apply scal_distr_l.
 Qed.
 
-End VectorSpace.
+End ModuleSpace1.
 
-(** ** Normed Vector Space *)
+(** Rings are modules *)
 
-Class NormedVectorSpace_mixin V K {FK : AbsRing K} (VS : VectorSpace V K) (MV : MetricBall V) := {
+Section Ring_ModuleSpace.
+
+Variable (K : Ring).
+
+Definition Ring_ModuleSpace_mixin :=
+  ModuleSpace.Mixin K _ _ mult_assoc mult_one_l mult_distr_l mult_distr_r.
+
+Canonical Ring_ModuleSpace :=
+  ModuleSpace.Pack K K (ModuleSpace.Class _ _ _ Ring_ModuleSpace_mixin) K.
+
+End Ring_ModuleSpace.
+
+Section AbsRing_ModuleSpace.
+
+Variable (K : AbsRing).
+
+Definition AbsRing_ModuleSpace_mixin :=
+  ModuleSpace.Mixin K _ _ mult_assoc mult_one_l mult_distr_l mult_distr_r.
+
+Canonical AbsRing_ModuleSpace :=
+  ModuleSpace.Pack K K (ModuleSpace.Class _ _ _ AbsRing_ModuleSpace_mixin) K.
+
+End AbsRing_ModuleSpace.
+
+(** ** Modules with a norm *)
+
+Module NormedModuleAux. (* ??? *)
+
+Section ClassDef.
+
+Variable K : AbsRing.
+
+Record class_of (T : Type) := Class {
+  base : ModuleSpace.class_of K T ;
+  mixin : UniformSpace.mixin_of T
+}.
+Local Coercion base : class_of >-> ModuleSpace.class_of.
+Local Coercion mixin : class_of >-> UniformSpace.class_of.
+
+Structure type := Pack { sort; _ : class_of sort ; _ : Type }.
+Local Coercion sort : type >-> Sortclass.
+
+Variable cT : type.
+
+Definition class := let: Pack _ c _ := cT return class_of cT in c.
+
+Let xT := let: Pack T _ _ := cT in T.
+Notation xclass := (class : class_of xT).
+
+Definition AbelianGroup := AbelianGroup.Pack cT xclass xT.
+Definition ModuleSpace := ModuleSpace.Pack _ cT xclass xT.
+Definition UniformSpace := UniformSpace.Pack cT xclass xT.
+
+End ClassDef.
+
+Module Exports.
+
+Coercion base : class_of >-> ModuleSpace.class_of.
+Coercion mixin : class_of >-> UniformSpace.class_of.
+Coercion sort : type >-> Sortclass.
+Coercion AbelianGroup : type >-> AbelianGroup.type.
+Canonical AbelianGroup.
+Coercion ModuleSpace : type >-> ModuleSpace.type.
+Canonical ModuleSpace.
+Coercion UniformSpace : type >-> UniformSpace.type.
+Canonical UniformSpace.
+Notation NormedModuleAux := type.
+
+End Exports.
+
+End NormedModuleAux.
+
+Export NormedModuleAux.Exports.
+
+Module NormedModule.
+
+Record mixin_of (K : AbsRing) (V : NormedModuleAux K) := Mixin {
   norm : V -> R ;
-  norm_triangle : forall (x y : V), norm (plus x y) <= norm x + norm y ;
-  norm_scal : forall (l : K) (x : V), norm (scal l x) <= abs l * norm x ;
-  norm_compat1 : forall (x y : V) (eps : R), norm (minus y x) < eps -> ball x eps y ;
-  norm_compat2 : { M : posreal | forall (x y : V) (eps : posreal), ball x eps y -> norm (minus y x) < M * eps }
+  ax1 : forall (x y : V), norm (plus x y) <= norm x + norm y ;
+  ax2 : forall (l : K) (x : V), norm (scal l x) <= abs l * norm x ;
+  ax3 : forall (x y : V) (eps : R), norm (minus y x) < eps -> ball x eps y ;
+  ax4 : { M : posreal | forall (x y : V) (eps : posreal), ball x eps y -> norm (minus y x) < M * eps }
 }.
 
-Class NormedVectorSpace V K {FK : AbsRing K} := {
-  nvspace_group :> AbelianGroup V ;
-  nvspace_vector' :> VectorSpace_mixin V K nvspace_group ;
-  nvspace_metric :> MetricBall V ;
-  nvspace_vector := Build_VectorSpace V K _ _ nvspace_vector' ;
-  nvspace_mixin :> NormedVectorSpace_mixin V K nvspace_vector nvspace_metric
+Section ClassDef.
+
+Variable K : AbsRing.
+
+Record class_of (T : Type) := Class {
+  base : NormedModuleAux.class_of K T ;
+  mixin : mixin_of K (NormedModuleAux.Pack K T base T)
 }.
+Local Coercion base : class_of >-> NormedModuleAux.class_of.
 
-Global Existing Instance nvspace_vector.
+Structure type := Pack { sort; _ : class_of sort ; _ : Type }.
+Local Coercion sort : type >-> Sortclass.
 
-(** Operations *)
+Variable cT : type.
 
-Section NormedVectorSpace.
+Definition class := let: Pack _ c _ := cT return class_of cT in c.
 
-Context {V K} {FK : AbsRing K} {NVS : NormedVectorSpace V K}.
+Let xT := let: Pack T _ _ := cT in T.
+Notation xclass := (class : class_of xT).
+
+Definition AbelianGroup := AbelianGroup.Pack cT xclass xT.
+Definition ModuleSpace := ModuleSpace.Pack _ cT xclass xT.
+Definition UniformSpace := UniformSpace.Pack cT xclass xT.
+Definition NormedModuleAux := NormedModuleAux.Pack _ cT xclass xT.
+
+End ClassDef.
+
+Module Exports.
+
+Coercion base : class_of >-> NormedModuleAux.class_of.
+Coercion mixin : class_of >-> mixin_of.
+Coercion sort : type >-> Sortclass.
+Coercion AbelianGroup : type >-> AbelianGroup.type.
+Canonical AbelianGroup.
+Coercion ModuleSpace : type >-> ModuleSpace.type.
+Canonical ModuleSpace.
+Coercion UniformSpace : type >-> UniformSpace.type.
+Canonical UniformSpace.
+Coercion NormedModuleAux : type >-> NormedModuleAux.type.
+Canonical NormedModuleAux.
+Notation NormedModule := type.
+
+End Exports.
+
+End NormedModule.
+
+Export NormedModule.Exports.
+
+Section NormedModule1.
+
+Context {K : AbsRing} {V : NormedModule K}.
+
+Definition norm : V -> R := NormedModule.norm K _ (NormedModule.class K V).
+
+Lemma norm_triangle :
+  forall x y : V,
+  norm (plus x y) <= norm x + norm y.
+Proof.
+apply NormedModule.ax1.
+Qed.
+
+Lemma norm_scal :
+  forall (l : K) (x : V),
+  norm (scal l x) <= abs l * norm x.
+Proof.
+apply NormedModule.ax2.
+Qed.
+
+Lemma norm_compat1 :
+  forall (x y : V) (eps : R),
+  norm (minus y x) < eps -> ball x eps y.
+Proof.
+apply NormedModule.ax3.
+Qed.
+
+Lemma norm_compat2 :
+  { M : posreal | forall (x y : V) (eps : posreal), ball x eps y -> norm (minus y x) < M * eps }.
+Proof.
+apply: NormedModule.ax4.
+Qed.
 
 Lemma norm_zero :
-  norm (@zero V _) = 0.
+  norm zero = 0.
 Proof.
 apply Rle_antisym.
-- rewrite -(scal_zero_l (VV := nvspace_vector) zero).
+- rewrite -(scal_zero_l zero).
   rewrite -(Rmult_0_l (norm zero)).
-  rewrite -abs_zero.
+  rewrite -(@abs_zero K).
   apply norm_scal.
 - apply Rplus_le_reg_r with (norm zero).
   rewrite Rplus_0_l.
@@ -1386,11 +1912,11 @@ Lemma norm_opp :
 Proof.
 intros x.
 apply Rle_antisym.
-- rewrite -(scal_opp_one (VV := nvspace_vector)).
-  rewrite -(Rmult_1_l (norm x)) -abs_opp_one.
+- rewrite -scal_opp_one.
+  rewrite -(Rmult_1_l (norm x)) -(@abs_opp_one K).
   apply norm_scal.
-- rewrite -{1}[x]opp_opp -(scal_opp_one (VV := nvspace_vector)).
-  rewrite -(Rmult_1_l (norm (opp x))) -abs_opp_one.
+- rewrite -{1}[x]opp_opp -scal_opp_one.
+  rewrite -(Rmult_1_l (norm (opp x))) -(@abs_opp_one K).
   apply norm_scal.
 Qed.
 
@@ -1403,12 +1929,13 @@ Proof.
   by apply Rlt_0_2.
   rewrite Rmult_0_r -norm_zero -(plus_opp_r x).
   apply Rle_trans with (norm x + norm (opp x)).
-  by apply (@norm_triangle V K).
+  apply norm_triangle.
   apply Req_le ; rewrite norm_opp.
   ring.
 Qed.
 
-Lemma norm_triangle_inv : forall (x y : V),
+Lemma norm_triangle_inv :
+  forall x y : V,
   Rabs (norm x - norm y) <= norm (minus x y).
 Proof.
   intros x y.
@@ -1479,20 +2006,20 @@ Qed.
 
 Lemma locally_ball_norm :
   forall (x : V) (eps : posreal),
-  @locally V nvspace_metric x (ball_norm x eps).
+  locally x (ball_norm x eps).
 Proof.
 intros x eps.
 apply locally_le_locally_norm.
 apply locally_norm_ball_norm.
 Qed.
 
-End NormedVectorSpace.
+End NormedModule1.
 
 (** Normed vector spaces have some continuous functions *)
 
 Section NVS_continuity.
 
-Context {V K} {FK : AbsRing K} {VV : NormedVectorSpace V K}.
+Context {K : AbsRing} {V : NormedModule K}.
 
 Lemma filterlim_plus :
   forall x y : V,
@@ -1543,8 +2070,8 @@ assert (He : 0 < eps / (Rmax 1 (abs k))).
 exists (mkposreal _ He) => /= y Hy.
 apply HP.
 unfold ball_norm.
-replace (minus (scal k y) (scal k x)) with (scal k (minus y x)).
-apply: Rle_lt_trans (norm_scal _ _) _.
+replace (@minus V (scal k y) (scal k x)) with (scal k (minus y x)).
+apply Rle_lt_trans with (1 := norm_scal _ _).
 apply Rle_lt_trans with (Rmax 1 (abs k) * norm (minus y x)).
 apply Rmult_le_compat_r.
 by apply norm_ge_0.
@@ -1563,18 +2090,18 @@ Lemma filterlim_opp :
   filterlim opp (locally x) (locally (opp x)).
 Proof.
 intros x.
-rewrite -(scal_opp_one (VV := nvspace_vector)).
+rewrite -scal_opp_one.
 apply filterlim_ext with (2 := filterlim_scal _ _).
-intros; apply (scal_opp_one (VV := nvspace_vector)).
+apply: scal_opp_one.
 Qed.
 
 End NVS_continuity.
 
 Lemma filterlim_locally_ball_norm :
-  forall {K} {RK : AbsRing K} {T U} {VU : NormedVectorSpace U K} {F : (T -> Prop) -> Prop} {FF : Filter F} (f : T -> U) (y : U),
+  forall {K : AbsRing} {T} {U : NormedModule K} {F : (T -> Prop) -> Prop} {FF : Filter F} (f : T -> U) (y : U),
   filterlim f F (locally y) <-> forall eps : posreal, F (fun x => ball_norm y eps (f x)).
 Proof.
-intros K RK T U VU F FF f y.
+intros K T U F FF f y.
 split.
 - intros Cf eps.
   apply (Cf (fun x => ball_norm y eps x)).
@@ -1588,121 +2115,247 @@ split.
   apply He.
 Qed.
 
-(** Rings with absolute values are normed vector spaces *)
+(** Rings with absolute values are normed modules *)
 
-Section NormedVectorSpace_AbsRing.
+Section AbsRing_NormedModule.
 
-Context {K} {RK : AbsRing K}.
+Variable (K : AbsRing).
 
-Global Instance NormedVectorSpace_mixin_AbsRing :
-  NormedVectorSpace_mixin K K _ _.
+Canonical AbsRing_NormedModuleAux :=
+  NormedModuleAux.Pack K K (NormedModuleAux.Class _ _ (ModuleSpace.class _ (AbsRing_ModuleSpace K)) (UniformSpace.class (AbsRing_UniformSpace K))) K.
+
+Lemma AbsRing_norm_compat2 :
+  {M : posreal | forall (x y : AbsRing_NormedModuleAux) (eps : posreal),
+  ball x eps y -> abs (minus y x) < M * eps}.
 Proof.
-apply Build_NormedVectorSpace_mixin with abs.
-- exact abs_triangle.
-- exact abs_mult.
-- now intros x P.
-- exists (mkposreal _ Rlt_0_1).
+  exists (mkposreal _ Rlt_0_1).
   intros x y eps H.
   now rewrite Rmult_1_l.
-Defined.
+Qed.
 
-Global Instance NormedVectorSpace_AbsRing :
-  NormedVectorSpace K K.
-Proof.
-  eapply Build_NormedVectorSpace.
-  exact NormedVectorSpace_mixin_AbsRing.
-Defined.
+Definition AbsRing_NormedModule_mixin :=
+  NormedModule.Mixin K _ abs abs_triangle abs_mult (fun x y e H => H) AbsRing_norm_compat2.
 
-End NormedVectorSpace_AbsRing.
+Canonical AbsRing_NormedModule :=
+  NormedModule.Pack K _ (NormedModule.Class _ _ _ AbsRing_NormedModule_mixin) K.
 
-(** ** Complete Normed Vector Space *)
+End AbsRing_NormedModule.
 
-Class CompleteNormedVectorSpace V K {FK : AbsRing K} := {
-  cnvspace_group :> AbelianGroup V ;
-  cnvspace_vector' :> VectorSpace_mixin V K cnvspace_group ;
-  cnvspace_vector := Build_VectorSpace _ _ _ _ cnvspace_vector' ;
-  cnvspace_metric :> MetricBall V ;
-  cnvspace_normed' :> NormedVectorSpace_mixin V K cnvspace_vector cnvspace_metric ;
-  cnvspace_normed := Build_NormedVectorSpace _ _ _ _ cnvspace_vector' cnvspace_metric ;
-  cnvspace_complete' :> CompleteSpace_mixin V _ ;
-  cnvspace_complete := Build_CompleteSpace _  cnvspace_metric cnvspace_complete'
+(** ** Complete Normed Modules *)
+
+Module CompleteNormedModule.
+
+Section ClassDef.
+
+Variable K : AbsRing.
+
+Record class_of (T : Type) := Class {
+  base : NormedModule.class_of K T ;
+  mixin : CompleteSpace.mixin_of (UniformSpace.Pack T base T)
 }.
+Local Coercion base : class_of >-> NormedModule.class_of.
+Definition base2 T (cT : class_of T) : CompleteSpace.class_of T :=
+  CompleteSpace.Class _ (base T cT) (mixin T cT).
+Local Coercion base2 : class_of >-> CompleteSpace.class_of.
 
-Global Existing Instance cnvspace_vector.
+Structure type := Pack { sort; _ : class_of sort ; _ : Type }.
+Local Coercion sort : type >-> Sortclass.
 
-Global Existing Instance cnvspace_normed.
+Variable cT : type.
 
-Global Existing Instance cnvspace_complete.
+Definition class := let: Pack _ c _ := cT return class_of cT in c.
+
+Let xT := let: Pack T _ _ := cT in T.
+Notation xclass := (class : class_of xT).
+
+Definition AbelianGroup := AbelianGroup.Pack cT xclass xT.
+Definition ModuleSpace := ModuleSpace.Pack _ cT xclass xT.
+Definition NormedModuleAux := NormedModuleAux.Pack _ cT xclass xT.
+Definition NormedModule := NormedModule.Pack _ cT xclass xT.
+Definition UniformSpace := UniformSpace.Pack cT xclass xT.
+Definition CompleteSpace := CompleteSpace.Pack cT xclass xT.
+
+End ClassDef.
+
+Module Exports.
+
+Coercion base : class_of >-> NormedModule.class_of.
+Coercion mixin : class_of >-> CompleteSpace.mixin_of.
+Coercion base2 : class_of >-> CompleteSpace.class_of.
+Coercion sort : type >-> Sortclass.
+Coercion AbelianGroup : type >-> AbelianGroup.type.
+Canonical AbelianGroup.
+Coercion ModuleSpace : type >-> ModuleSpace.type.
+Canonical ModuleSpace.
+Coercion NormedModuleAux : type >-> NormedModuleAux.type.
+Canonical NormedModuleAux.
+Coercion NormedModule : type >-> NormedModule.type.
+Canonical NormedModule.
+Coercion UniformSpace : type >-> UniformSpace.type.
+Canonical UniformSpace.
+Coercion CompleteSpace : type >-> CompleteSpace.type.
+Canonical CompleteSpace.
+Notation CompleteNormedModule := type.
+
+End Exports.
+
+End CompleteNormedModule.
+
+Export CompleteNormedModule.Exports.
 
 (** * Extended Types *)
 
 (** ** Pairs *)
 
-Global Instance AbelianGroup_prod :
-  forall {U V},
-  AbelianGroup U -> AbelianGroup V
-    -> AbelianGroup (U * V).
+Section prod_AbelianGroup.
+
+Context {U V : AbelianGroup}.
+
+Definition prod_plus (x y : U * V) :=
+  (plus (fst x) (fst y), plus (snd x) (snd y)).
+
+Definition prod_opp (x : U * V) :=
+  (opp (fst x), opp (snd x)).
+
+Definition prod_zero : U * V := (zero, zero).
+
+Lemma prod_plus_comm :
+  forall x y : U * V,
+  prod_plus x y = prod_plus y x.
 Proof.
-intros U V GU GV.
-apply (@Build_AbelianGroup _
-  (fun x y : U * V => (plus (fst x) (fst y), plus (snd x) (snd y)))
-  (fun x : U * V => (opp (fst x), opp (snd x)))
-  (zero, zero)).
 intros x y.
-apply f_equal2 ; apply plus_comm.
+apply (f_equal2 pair) ; apply plus_comm.
+Qed.
+
+Lemma prod_plus_assoc :
+  forall x y z : U * V,
+  prod_plus x (prod_plus y z) = prod_plus (prod_plus x y) z.
+Proof.
 intros x y z.
-apply f_equal2 ; apply plus_assoc.
-intros (x1,x2).
-apply f_equal2 ; apply plus_zero_r.
+apply (f_equal2 pair) ; apply plus_assoc.
+Qed.
+
+Lemma prod_plus_zero_r :
+  forall x : U * V,
+  prod_plus x prod_zero = x.
+Proof.
+intros [u v].
+apply (f_equal2 pair) ; apply plus_zero_r.
+Qed.
+
+Lemma prod_plus_opp_r :
+  forall x : U * V,
+  prod_plus x (prod_opp x) = prod_zero.
+Proof.
 intros x.
-apply f_equal2 ; apply plus_opp_r.
-Defined.
+apply (f_equal2 pair) ; apply plus_opp_r.
+Qed.
 
-Global Instance MetricBall_prod :
-  forall {T U}, MetricBall T -> MetricBall U -> MetricBall (T * U).
-Proof.
-intros T U MT MU.
-apply (Build_MetricBall _ (fun x eps y => ball (fst x) eps (fst y) /\ ball (snd x) eps (snd y))).
-- intros x eps ; split ; by apply ball_center.
-- intros x y eps [H0 H1] ; split ; by apply ball_sym.
-- intros x y z e1 e2 [H0 H1] [H2 H3] ; split ; eapply ball_triangle.
-  by apply H0.
-  by apply H2.
-  by apply H1.
-  by apply H3.
-- intros x e1 e2 He y [H0 H1] ; split ; by apply ball_le with e1.
-Defined.
+End prod_AbelianGroup.
 
-Global Instance VectorSpace_mixin_prod :
-  forall {U V K} {FK : Ring K} {GU GV}
-    (VU : VectorSpace_mixin U K GU) (VV : VectorSpace_mixin V K GV),
-      VectorSpace_mixin (U * V) K (AbelianGroup_prod GU GV).
+Definition prod_AbelianGroup_mixin (U V : AbelianGroup) :=
+  AbelianGroup.Mixin (U * V) _ _ _ prod_plus_comm prod_plus_assoc prod_plus_zero_r prod_plus_opp_r.
+
+Canonical prod_AbelianGroup (U V : AbelianGroup) :=
+  AbelianGroup.Pack (U * V) (prod_AbelianGroup_mixin U V) (U * V).
+
+Section prod_UniformSpace.
+
+Context {U V : UniformSpace}.
+
+Definition prod_ball (x : U * V) (eps : R) (y : U * V) :=
+  ball (fst x) eps (fst y) /\ ball (snd x) eps (snd y).
+
+Lemma prod_ball_center :
+  forall (x : U * V) (eps : posreal),
+  prod_ball x eps x.
 Proof.
-intros U V K FK GU GV VU VV.
-apply (@Build_VectorSpace_mixin _ K FK (AbelianGroup_prod _ _)
-  (fun (x : K) (uv : U * V) => (scal x (fst uv), scal x (snd uv)))).
+intros x eps.
+split ; apply ball_center.
+Qed.
+
+Lemma prod_ball_sym :
+  forall (x y : U * V) (eps : R),
+  prod_ball x eps y -> prod_ball y eps x.
+Proof.
+intros x y eps [H1 H2].
+split ; now apply ball_sym.
+Qed.
+
+Lemma prod_ball_triangle :
+  forall (x y z : U * V) (e1 e2 : R),
+  prod_ball x e1 y -> prod_ball y e2 z ->
+  prod_ball x (e1 + e2) z.
+Proof.
+intros x y z e1 e2 [H1 H2] [H3 H4].
+split ; eapply ball_triangle ; eassumption.
+Qed.
+
+Lemma prod_ball_le :
+  forall (x : U * V) (e1 e2 : R), e1 <= e2 ->
+  forall y : U * V, prod_ball x e1 y -> prod_ball x e2 y.
+Proof.
+intros x e1 e2 H y [H1 H2].
+split ; now apply ball_le with (1 := H).
+Qed.
+
+End prod_UniformSpace.
+
+Definition prod_UniformSpace_mixin (U V : UniformSpace) :=
+  UniformSpace.Mixin (U * V) _ prod_ball_center prod_ball_sym prod_ball_triangle prod_ball_le.
+
+Canonical prod_UniformSpace (U V : UniformSpace) :=
+  UniformSpace.Pack (U * V) (prod_UniformSpace_mixin U V) (U * V).
+
+Section prod_ModuleSpace.
+
+Context {K : Ring} {U V : ModuleSpace K}.
+
+Definition prod_scal (x : K) (u : U * V) :=
+  (scal x (fst u), scal x (snd u)).
+
+Lemma prod_scal_assoc :
+  forall (x y : K) (u : U * V),
+  prod_scal x (prod_scal y u) = prod_scal (mult x y) u.
+Proof.
 intros x y u.
-apply f_equal2 ; apply scal_assoc.
-intros (u,v).
-apply f_equal2 ; apply scal_one.
+apply (f_equal2 pair) ; apply scal_assoc.
+Qed.
+
+Lemma prod_scal_one :
+  forall u : U * V,
+  prod_scal one u = u.
+Proof.
+intros [u v].
+apply (f_equal2 pair) ; apply scal_one.
+Qed.
+
+Lemma prod_scal_distr_l :
+  forall (x : K) (u v : U * V),
+  prod_scal x (prod_plus u v) = prod_plus (prod_scal x u) (prod_scal x v).
+Proof.
 intros x u v.
-simpl.
-apply f_equal2 ; apply scal_distr_l.
-intros x y u.
-simpl.
-apply f_equal2 ; apply scal_distr_r.
-Defined.
+apply (f_equal2 pair) ; apply scal_distr_l.
+Qed.
 
-Global Instance VectorSpace_prod :
-  forall {U V K} {FK : Ring K} (VU : VectorSpace U K) (VV : VectorSpace V K),
-  VectorSpace (U * V) K.
+Lemma prod_scal_distr_r :
+  forall (x y : K) (u : U * V),
+  prod_scal (plus x y) u = prod_plus (prod_scal x u) (prod_scal y u).
 Proof.
-intros U V K FK VU VV.
-apply Build_VectorSpace with (AbelianGroup_prod _ _).
-apply VectorSpace_mixin_prod.
-by apply VU.
-by apply VV.
-Defined.
+intros x y u.
+apply (f_equal2 pair) ; apply scal_distr_r.
+Qed.
+
+End prod_ModuleSpace.
+
+Definition prod_ModuleSpace_mixin (K : Ring) (U V : ModuleSpace K) :=
+  ModuleSpace.Mixin K _ _ (@prod_scal_assoc K U V) prod_scal_one prod_scal_distr_l prod_scal_distr_r.
+
+Canonical prod_ModuleSpace (K : Ring) (U V : ModuleSpace K) :=
+  ModuleSpace.Pack K (U * V) (ModuleSpace.Class _ _ _ (prod_ModuleSpace_mixin K U V)) (U * V).
+
+Canonical prod_NormedModuleAux (K : AbsRing) (U V : NormedModuleAux K) :=
+  NormedModuleAux.Pack K (U * V) (NormedModuleAux.Class _ _ (ModuleSpace.class K _) (UniformSpace.class (prod_UniformSpace U V))) (U * V).
 
 Lemma sqrt_plus_sqr :
   forall x y : R, Rmax (Rabs x) (Rabs y) <= sqrt (x ^ 2 + y ^ 2) <= sqrt 2 * Rmax (Rabs x) (Rabs y).
@@ -1722,13 +2375,16 @@ split.
   apply Rsqr_le_abs_1 in H0 ; by rewrite /pow !Rmult_1_r.
 Qed.
 
-Lemma NormedVectorSpace_mixin_prod_norm_triangle :
-  forall {U V K} {FK : AbsRing K} (NU : NormedVectorSpace U K) (NV : NormedVectorSpace V K),
+Section prod_NormedModule.
+
+Context {K : AbsRing} {U V : NormedModule K}.
+
+Lemma prod_norm_triangle :
   forall x y : U * V,
   sqrt (norm (fst (plus x y)) ^ 2 + norm (snd (plus x y)) ^ 2) <=
     sqrt (norm (fst x) ^ 2 + norm (snd x) ^ 2) + sqrt (norm (fst y) ^ 2 + norm (snd y) ^ 2).
 Proof.
-intros U V K FK NU NV [xu xv] [yu yv].
+intros [xu xv] [yu yv].
 simpl.
 rewrite !Rmult_1_r.
 apply Rle_trans with (sqrt (Rsqr (norm xu + norm yu) + Rsqr (norm xv + norm yv))).
@@ -1774,13 +2430,12 @@ apply Rle_trans with (sqrt (Rsqr (norm xu + norm yu) + Rsqr (norm xv + norm yv))
   apply Rplus_le_le_0_compat ; apply sqrt_pos.
 Qed.
 
-Lemma NormedVectorSpace_mixin_prod_norm_scal :
-  forall {U V K} {FK : AbsRing K} (NU : NormedVectorSpace U K) (NV : NormedVectorSpace V K),
+Lemma prod_norm_scal :
   forall (l : K) (x : U * V),
   sqrt (norm (fst (scal l x)) ^ 2 + norm (snd (scal l x)) ^ 2) <=
     abs l * sqrt (norm (fst x) ^ 2 + norm (snd x) ^ 2).
 Proof.
-intros U V K FK NU NV l [xu xv].
+intros l [xu xv].
 simpl.
 rewrite -(sqrt_Rsqr (abs l)).
 2: apply abs_ge_0.
@@ -1806,12 +2461,11 @@ exact (norm_scal l xv).
 apply Rplus_le_le_0_compat ; apply Rle_0_sqr.
 Qed.
 
-Lemma NormedVectorSpace_mixin_prod_norm_compat1 :
-  forall {U V K} {FK : AbsRing K} (NU : NormedVectorSpace U K) (NV : NormedVectorSpace V K),
+Lemma prod_norm_compat1 :
   forall (x y : U * V) (eps : R),
   sqrt (norm (fst (minus y x)) ^ 2 + norm (snd (minus y x)) ^ 2) < eps -> ball x eps y.
 Proof.
-intros U V K FK NU NV [xu xv] [yu yv] eps H.
+intros [xu xv] [yu yv] eps H.
 generalize (Rle_lt_trans _ _ _ (proj1 (sqrt_plus_sqr _ _)) H).
 rewrite -> !Rabs_pos_eq by apply norm_ge_0.
 intros H'.
@@ -1822,14 +2476,12 @@ apply Rmax_l.
 apply Rmax_r.
 Qed.
 
-Lemma NormedVectorSpace_mixin_prod_norm_compat2 :
-  forall {U V K} {FK : AbsRing K} (NU : NormedVectorSpace U K) (NV : NormedVectorSpace V K),
+Lemma prod_norm_compat2 :
   { M : posreal | forall (x y : U * V) (eps : posreal),
     ball x eps y -> sqrt (norm (fst (minus y x)) ^ 2 + norm (snd (minus y x)) ^ 2) < M * eps }.
 Proof.
-intros U V K FK NU NV.
-destruct (@norm_compat2 U K _ _ _ _) as [Mu Hu].
-destruct (@norm_compat2 V K _ _ _ _) as [Mv Hv].
+destruct (@norm_compat2 K U) as [Mu Hu].
+destruct (@norm_compat2 K V) as [Mv Hv].
 assert (H : 0 < sqrt 2 * Rmax Mu Mv).
   apply Rmult_lt_0_compat.
   apply sqrt_lt_R0.
@@ -1854,30 +2506,17 @@ apply Rlt_le.
 apply cond_pos.
 Qed.
 
-Global Instance NormedVectorSpace_mixin_prod :
-  forall {U V K} {FK : AbsRing K} (NU : NormedVectorSpace U K) (NV : NormedVectorSpace V K),
-  NormedVectorSpace_mixin (U * V) K (VectorSpace_prod _ _) (MetricBall_prod _ _).
-Proof.
-intros U V K FK NU NV.
-apply Build_NormedVectorSpace_mixin with (fun x => sqrt ((norm (fst x))^2 + (norm (snd x))^2)).
-apply NormedVectorSpace_mixin_prod_norm_triangle.
-apply NormedVectorSpace_mixin_prod_norm_scal.
-apply NormedVectorSpace_mixin_prod_norm_compat1.
-apply NormedVectorSpace_mixin_prod_norm_compat2.
-Defined.
+End prod_NormedModule.
 
-Global Instance NormedVectorSpace_prod :
-  forall {U V K} {FK : AbsRing K} , 
-  NormedVectorSpace U K -> NormedVectorSpace V K ->
-  NormedVectorSpace (U * V) K.
-Proof.
-  intros U V K FK VU VV.
-  eapply Build_NormedVectorSpace.
-  apply NormedVectorSpace_mixin_prod.
-Defined.
+Definition prod_NormedModule_mixin (K : AbsRing) (U V : NormedModule K) :=
+  NormedModule.Mixin K _ _ (@prod_norm_triangle K U V)
+  prod_norm_scal prod_norm_compat1 prod_norm_compat2.
 
-Lemma norm_prod {U V K} {FK : AbsRing K}
-  {VU : NormedVectorSpace U K} {VV : NormedVectorSpace V K}
+Canonical prod_NormedModule (K : AbsRing) (U V : NormedModule K) :=
+  NormedModule.Pack K (U * V) (NormedModule.Class K (U * V) _ (prod_NormedModule_mixin K U V)) (U * V).
+
+Lemma norm_prod {K : AbsRing}
+  {U : NormedModule K} {V : NormedModule K}
   (x : U) (y : V) :
   Rmax (norm x) (norm y) <= norm (x,y) <= sqrt 2 * Rmax (norm x) (norm y).
 Proof.
@@ -1960,6 +2599,7 @@ Proof.
   by apply (f_equal (@snd _ _)) in H.
 Qed.
 
+(*
 Global Instance AbelianGroup_Tn {T} :
   AbelianGroup T -> forall n, AbelianGroup (Tn n T) | 10.
 Proof.
@@ -2016,6 +2656,7 @@ Proof.
     apply cond_pos.
   - by apply NormedVectorSpace_prod.
 Defined.
+*)
 
 (** *)
 
@@ -2025,6 +2666,7 @@ Fixpoint Fn (n : nat) (T U : Type) : Type :=
   | S n => T -> Fn n T U
   end.
 
+(*
 Global Instance MetricBall_Fn {T M} (n : nat) :
   MetricBall M -> MetricBall (Fn n T M) | 10.
 Proof.
@@ -2033,6 +2675,7 @@ Proof.
   exact MM.
   exact (MetricBall_fct IHn).
 Defined.
+*)
 
 (** ** Matrices *)
 
@@ -2106,45 +2749,70 @@ Proof.
     by [].
 Qed.
 
+End Matrices.
+
 Section MatrixGroup.
 
-Context {GT : AbelianGroup T}.
+Context {G : AbelianGroup} {m n : nat}.
 
-Definition Mzero {m n} := mk_matrix m n (fun i j => @zero T GT).
+Definition Mzero := mk_matrix m n (fun i j => @zero G).
 
-Definition Mplus {m n} (A B : matrix m n) :=
+Definition Mplus (A B : @matrix G m n) :=
   mk_matrix m n (fun i j => plus (coeff_mat zero A i j) (coeff_mat zero B i j)).
 
-Definition Mopp {m n} (A : matrix m n) :=
+Definition Mopp (A : @matrix G m n) :=
   mk_matrix m n (fun i j => opp (coeff_mat zero A i j)).
+
+Lemma Mplus_comm :
+  forall A B : @matrix G m n,
+  Mplus A B = Mplus B A.
+Proof.
+  intros A B.
+  apply mk_matrix_ext => i j Hi Hj.
+  by apply plus_comm.
+Qed.
+
+Lemma Mplus_assoc :
+  forall A B C : @matrix G m n,
+  Mplus A (Mplus B C) = Mplus (Mplus A B) C.
+Proof.
+  intros A B C.
+  apply mk_matrix_ext => /= i j Hi Hj.
+  rewrite ?coeff_mat_bij => //.
+  by apply plus_assoc.
+Qed.
+
+Lemma Mplus_zero_r :
+  forall A : @matrix G m n,
+  Mplus A Mzero = A.
+Proof.
+  intros A.
+  apply (coeff_mat_ext_aux zero zero) => i j Hi Hj.
+  rewrite ?coeff_mat_bij => //=.
+  by apply plus_zero_r.
+Qed.
+
+Lemma Mplus_opp_r :
+  forall A : @matrix G m n,
+  Mplus A (Mopp A) = Mzero.
+Proof.
+  intros A.
+  apply (coeff_mat_ext_aux zero zero) => i j Hi Hj.
+  rewrite ?coeff_mat_bij => //=.
+  by apply plus_opp_r.
+Qed.
+
+Definition matrix_AbelianGroup_mixin :=
+  AbelianGroup.Mixin _ _ _ _ Mplus_comm Mplus_assoc Mplus_zero_r Mplus_opp_r.
+
+Canonical matrix_AbelianGroup :=
+  AbelianGroup.Pack _ matrix_AbelianGroup_mixin (@matrix G m n).
 
 End MatrixGroup.
 
-Global Instance AbelianGroup_matrix :
-  AbelianGroup T -> forall m n, AbelianGroup (matrix m n).
-Proof.
-  intros GT m n.
-  apply Build_AbelianGroup with Mplus Mopp Mzero.
-  + move => A B.
-    apply mk_matrix_ext => i j Hi Hj.
-    by apply plus_comm.
-  + move => A B C.
-    apply mk_matrix_ext => /= i j Hi Hj.
-    rewrite ?coeff_mat_bij => //.
-    by apply plus_assoc.
-  + move => A.
-    apply (coeff_mat_ext_aux zero zero) => i j Hi Hj.
-    rewrite ?coeff_mat_bij => //=.
-    by apply plus_zero_r.
-  + move => A.
-    apply (coeff_mat_ext_aux zero zero) => i j Hi Hj.
-    rewrite ?coeff_mat_bij => //=.
-    by apply plus_opp_r.
-Defined.
-
 Section MatrixRing.
 
-Context {RT : Ring T}.
+Context {T : Ring}.
 
 Fixpoint Mone_seq i j : T :=
   match i,j with
@@ -2155,7 +2823,7 @@ Fixpoint Mone_seq i j : T :=
 Definition Mone {n} : matrix n n :=
   mk_matrix n n Mone_seq.
 
-Definition Mmult {n m k} (A : matrix n m) (B : matrix m k) :=
+Definition Mmult {n m k} (A : @matrix T n m) (B : @matrix T m k) :=
   mk_matrix n k (fun i j => sum_n (fun l => mult (coeff_mat zero A i l) (coeff_mat zero B l j)) (pred m)).
 
 Lemma Mmult_assoc {n m k l} :
@@ -2253,6 +2921,7 @@ Proof.
     by apply lt_S_n.
     by elim: n.
 Qed.
+
 Lemma Mmult_one_l {m n} :
   forall x : matrix m n, Mmult Mone x = x.
 Proof.
@@ -2307,8 +2976,8 @@ Proof.
 Qed.
 
 Lemma Mmult_distr_r {m n k} :
-  forall (A B : matrix m n) (C : matrix n k),
-  Mmult (plus A B) C = plus (Mmult A C) (Mmult B C).
+  forall (A B : @matrix T m n) (C : @matrix T n k),
+  Mmult (Mplus A B) C = Mplus (Mmult A C) (Mmult B C).
 Proof.
   intros A B C.
   unfold Mmult, plus ; simpl ; unfold Mplus.
@@ -2324,8 +2993,8 @@ Proof.
 Qed.
 
 Lemma Mmult_distr_l {m n k} :
-  forall (A : matrix m n) (B C : matrix n k),
-  Mmult A (plus B C) = plus (Mmult A B) (Mmult A C).
+  forall (A : @matrix T m n) (B C : @matrix T n k),
+  Mmult A (Mplus B C) = Mplus (Mmult A B) (Mmult A C).
 Proof.
   intros A B C.
   unfold Mmult, plus ; simpl ; unfold Mplus.
@@ -2340,21 +3009,15 @@ Proof.
   by apply mult_distr_l.
 Qed.
 
+Definition matrix_Ring_mixin {n} :=
+  Ring.Mixin _ _ _ (@Mmult_assoc n n n n) Mmult_one_r Mmult_one_l Mmult_distr_r Mmult_distr_l.
+
+Canonical matrix_Ring {n} :=
+  Ring.Pack (@matrix T n n) (Ring.Class _ _ matrix_Ring_mixin) (@matrix T n n).
+
 End MatrixRing.
 
-Global Instance Ring_matrix {n} :
-  Ring T -> Ring (matrix n n) | 10.
-Proof.
-  intros RT.
-  apply Build_Ring with (AbelianGroup_matrix _ _ _).
-  apply Build_Ring_mixin with Mmult Mone.
-  + by apply Mmult_assoc.
-  + by apply Mmult_one_r.
-  + by apply Mmult_one_l.
-  + by apply Mmult_distr_r.
-  + by apply Mmult_distr_l.
-Defined.
-
+(*
 Global Instance ModuleSpace_matrix {m n} :
   forall RT : Ring T, VectorSpace (matrix m n) (matrix m m).
 Proof.
@@ -2366,8 +3029,7 @@ Proof.
   + by apply Mmult_distr_l.
   + by apply Mmult_distr_r.
 Defined.
-
-End Matrices.
+*)
 
 (** * The topology on natural numbers *)
 
@@ -2402,42 +3064,36 @@ Qed.
 
 (** * The topology on real numbers *)
 
-Global Instance R_abelian_group : AbelianGroup R.
-Proof.
-apply (@Build_AbelianGroup R Rplus Ropp R0).
-apply Rplus_comm.
-intros x y z.
-apply sym_eq, Rplus_assoc.
-apply Rplus_0_r.
-apply Rplus_opp_r.
-Defined.
+Definition R_AbelianGroup_mixin :=
+  AbelianGroup.Mixin _ _ _ _ Rplus_comm (fun x y z => sym_eq (Rplus_assoc x y z)) Rplus_0_r Rplus_opp_r.
 
-Global Instance R_ring_mixin : Ring_mixin R R_abelian_group.
-Proof.
-  econstructor => /=.
-  move => x y z ; apply eq_sym, Rmult_assoc.
-  exact Rmult_1_r.
-  exact Rmult_1_l.
-  exact Rmult_plus_distr_r.
-  exact Rmult_plus_distr_l.
-Defined.
+Canonical R_AbelianGroup :=
+  AbelianGroup.Pack _ R_AbelianGroup_mixin R.
 
-Global Instance R_absring_mixin : AbsRing_mixin R (Build_Ring _ R_abelian_group R_ring_mixin).
-Proof.
-  apply Build_AbsRing_mixin with Rabs ; simpl.
-  exact Rabs_R0.
-  rewrite Rabs_Ropp ; exact Rabs_R1.
-  exact Rabs_triang.
-  intros x y.
-  apply Req_le.
-  apply Rabs_mult.
-Defined.
+Definition R_Ring_mixin :=
+  Ring.Mixin _ _ _ (fun x y z => sym_eq (Rmult_assoc x y z)) Rmult_1_r Rmult_1_l Rmult_plus_distr_r Rmult_plus_distr_l.
 
-Global Instance R_absring : AbsRing R.
+Canonical R_Ring :=
+  Ring.Pack R (Ring.Class _ _ R_Ring_mixin) R.
+
+Lemma Rabs_m1 :
+  Rabs (-1) = 1.
 Proof.
-  apply Build_AbsRing with R_abelian_group R_ring_mixin.
-  exact R_absring_mixin.
-Defined.
+  rewrite Rabs_Ropp.
+  exact Rabs_R1.
+Qed.
+
+Definition R_AbsRing_mixin :=
+  AbsRing.Mixin _ _ Rabs_R0 Rabs_m1 Rabs_triang (fun x y => Req_le _ _ (Rabs_mult x y)).
+
+Canonical R_AbsRing :=
+  AbsRing.Pack R (AbsRing.Class _ _ R_AbsRing_mixin) R.
+
+Definition R_UniformSpace_mixin :=
+  AbsRing_UniformSpace_mixin R_AbsRing.
+
+Canonical R_UniformSpace :=
+  UniformSpace.Pack R R_UniformSpace_mixin R.
 
 Lemma R_complete :
   forall F : (R -> Prop) -> Prop,
@@ -2475,7 +3131,7 @@ assert (H1 : z - Rmin 2 eps / 2 + 1 <= x).
   revert Hz.
   unfold E.
   apply filter_imp.
-  simpl ; intros u Bu.
+  unfold ball ; simpl ; intros u Bu.
   apply (Rabs_lt_between' u z) in Bu.
   apply Rabs_lt_between'.
   clear -Bu.
@@ -2488,7 +3144,7 @@ assert (H2 : x <= z + Rmin 2 eps / 2 + 1).
   apply filter_const.
   generalize (filter_and _ _ Hz Hv).
   apply filter_imp.
-  simpl ; intros w [Hw1 Hw2].
+  unfold ball ; simpl ; intros w [Hw1 Hw2].
   apply (Rabs_lt_between' w z) in Hw1.
   destruct Hw1 as [_ Hw1].
   apply (Rabs_lt_between' w v) in Hw2.
@@ -2498,7 +3154,7 @@ assert (H2 : x <= z + Rmin 2 eps / 2 + 1).
   Fourier.fourier.
 revert Hz.
 apply filter_imp.
-simpl ; intros u Hu.
+unfold ball ; simpl ; intros u Hu.
 apply (Rabs_lt_between' u z) in Hu.
 apply Rabs_lt_between'.
 assert (H3 := Rmin_l 2 eps).
@@ -2508,12 +3164,29 @@ destruct Hu.
 split ; Fourier.fourier.
 Qed.
 
-Global Instance R_complete_metric : CompleteSpace R.
-Proof.
-apply (Build_CompleteSpace R _).
-constructor.
-apply R_complete.
-Defined.
+Definition R_CompleteSpace_mixin :=
+  CompleteSpace.Mixin _ R_complete.
+
+Canonical R_CompleteSpace :=
+  CompleteSpace.Pack R (CompleteSpace.Class _ _ R_CompleteSpace_mixin) R.
+
+Definition R_ModuleSpace_mixin :=
+  AbsRing_ModuleSpace_mixin R_AbsRing.
+
+Canonical R_ModuleSpace :=
+  ModuleSpace.Pack _ R (ModuleSpace.Class _ _ _ R_ModuleSpace_mixin) R.
+
+Canonical R_NormedModuleAux :=
+  NormedModuleAux.Pack _ R (NormedModuleAux.Class _ _ (ModuleSpace.class _ R_ModuleSpace) (UniformSpace.class R_UniformSpace)) R.
+
+Definition R_NormedModule_mixin :=
+  AbsRing_NormedModule_mixin R_AbsRing.
+
+Canonical R_NormedModule :=
+  NormedModule.Pack _ R (NormedModule.Class _ _ _ R_NormedModule_mixin) R.
+
+Canonical R_CompleteNormedModule :=
+  CompleteNormedModule.Pack _ R (CompleteNormedModule.Class R_AbsRing _ (NormedModule.class _ R_NormedModule) R_CompleteSpace_mixin) R.
 
 Lemma is_filter_lim_locally_unique_R (x y : R) :
   is_filter_lim (locally x) y -> x = y.
@@ -2528,7 +3201,7 @@ Notation at_right x := (within (fun u : R => Rlt x u) (locally (x)%R)).
 
 (** Continuity of norm *)
 
-Lemma filterlim_norm {V K} {FK : AbsRing K} {VV : NormedVectorSpace V K} :
+Lemma filterlim_norm {K : AbsRing} {V : NormedModule K} :
   forall (x : V), filterlim norm (locally x) (locally (norm x)).
 Proof.
   intros x.
@@ -2611,6 +3284,7 @@ split ; intros [d H] ; exists d.
   by split.
 Qed.
 
+(*
 Lemma locally_2d_locally' :
   forall P x y,
   locally_2d P x y <-> locally ((x,(y,tt)) : Tn 2 R) (fun z : Tn 2 R => P (fst z) (fst (snd z))).
@@ -2622,6 +3296,7 @@ split ; intros [d H] ; exists d.
 - intros u v Hu Hv.
   now apply (H (u,(v,tt))) ; repeat split.
 Qed.
+*)
 
 Lemma locally_2d_impl_strong :
   forall (P Q : R -> R -> Prop) x y, locally_2d (fun u v => locally_2d P u v -> Q u v) x y ->
@@ -2850,7 +3525,7 @@ intros [x| |] ; (constructor ; [idtac | constructor]).
 - intros P [eps HP].
   exists (x + eps / 2).
   apply HP.
-  unfold ball ; simpl.
+  rewrite /ball /= /AbsRing_ball /abs /minus /plus /opp /=.
   ring_simplify (x + eps / 2 + - x).
   rewrite Rabs_pos_eq.
   apply Rminus_lt_0.
@@ -3002,6 +3677,7 @@ Proof.
   by apply Rlt_le, Rinv_0_lt_compat, delta.
   exists N => n Hn.
   apply Hp ; simpl.
+  rewrite /ball /= /AbsRing_ball /abs /minus /plus /opp /=.
   ring_simplify (x + / (INR n + 1) + - x).
   rewrite Rabs_pos_eq.
   rewrite -(Rinv_involutive delta).
@@ -3038,10 +3714,10 @@ Proof.
 Qed.
 
 Lemma filterlim_const :
-  forall {T U} {MU : MetricBall U} {F : (T -> Prop) -> Prop} {FF : Filter F},
+  forall {T} {U : UniformSpace} {F : (T -> Prop) -> Prop} {FF : Filter F},
   forall a : U, filterlim (fun _ => a) F (locally a).
 Proof.
-intros T U MU F FF a P [eps HP].
+intros T U F FF a P [eps HP].
 unfold filtermap.
 apply filter_forall.
 intros _.
