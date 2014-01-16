@@ -3015,21 +3015,14 @@ Definition matrix_Ring_mixin {n} :=
 Canonical matrix_Ring {n} :=
   Ring.Pack (@matrix T n n) (Ring.Class _ _ matrix_Ring_mixin) (@matrix T n n).
 
-End MatrixRing.
+Definition matrix_ModuleSpace_mixin {m n} :=
+  ModuleSpace.Mixin (@matrix_Ring m) (@matrix_AbelianGroup T m n) Mmult
+    Mmult_assoc Mmult_one_l Mmult_distr_l Mmult_distr_r.
 
-(*
-Global Instance ModuleSpace_matrix {m n} :
-  forall RT : Ring T, VectorSpace (matrix m n) (matrix m m).
-Proof.
-  intros RT.
-  apply Build_VectorSpace with (AbelianGroup_matrix _ _ _).
-  apply Build_VectorSpace_mixin with Mmult.
-  + by apply Mmult_assoc.
-  + by apply Mmult_one_l.
-  + by apply Mmult_distr_l.
-  + by apply Mmult_distr_r.
-Defined.
-*)
+Canonical matrix_ModuleSpace {m n} :=
+  ModuleSpace.Pack _ (@matrix T m n) (ModuleSpace.Class _ _ _ matrix_ModuleSpace_mixin) (@matrix T m n).
+
+End MatrixRing.
 
 (** * The topology on natural numbers *)
 
