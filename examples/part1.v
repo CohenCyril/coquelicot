@@ -559,137 +559,7 @@ Proof.
     by apply Rminus_le_0 in H1.
 Qed.
 
-Lemma prolongement_C0 {T : UniformSpace} (f : R -> T) (a b : R) :
-   a <= b ->
-   (forall c : R, a <= c <= b -> filterlim f (locally c) (locally (f c))) ->
-   {g : R -> T | (forall c, filterlim g (locally c) (locally (g c)))
-     /\ (forall c : R, a <= c <= b -> g c = f c)}.
-Proof.
-  intros.
-  case: (Rle_lt_or_eq_dec _ _ H) => {H} [ Hab | <-].
-  
-  set g := fun x =>
-    match Rle_dec a x with
-    | left _ => 
-        match Rle_dec x b with
-        | left _ => f x
-        | right _ => f b
-        end
-    | right _ => f a
-    end.
-  assert (Gab : forall c : R, a <= c <= b -> g c = f c).
-    intros c [Hac Hcb].
-    unfold g.
-    by repeat (case: Rle_dec).
-  assert (Ga : forall c : R, c <= a -> g c = f a).
-    intros c Hca.
-    case: Hca => [Hca | ->] ;
-    unfold g.
-    apply Rlt_not_le in Hca.
-    case: Rle_dec => //.
-    case: Rle_dec (Rle_refl a) => // _ _.
-    case: Rle_dec (Rlt_le _ _ Hab) => //.
-  assert (Gb : forall c : R, b <= c -> g c = f b).
-    intros c Hbc.
-    unfold g.
-    case: Rle_dec (Rle_trans _ _ _ (Rlt_le _ _ Hab) Hbc) => // _ _.
-    case: Hbc => [Hbc | <-].
-    apply Rlt_not_le in Hbc.
-    case: Rle_dec => //.
-    case: Rle_dec => //.
 
-  exists g ; split.
-  intros c.
-  case: (Rle_lt_dec a c) ; (try case) => Hac.
-  case: (Rle_lt_dec c b) ; (try case) => Hbc.
-  - apply filterlim_ext_loc with f.
-    apply locally_interval with a b => //= y Hay Hyb.
-    apply sym_eq, Gab ; split ; by apply Rlt_le.
-    rewrite Gab.
-    2: split ; by apply Rlt_le.
-    apply H0 ; split ; by apply Rlt_le.
-  - rewrite Hbc in Hac |- * => {c Hbc Hac}.
-    rewrite Gb.
-    2: by apply Rle_refl.
-    apply filterlim_locally => eps.
-    specialize (H0 b (conj (Rlt_le _ _ Hab) (Rle_refl b))).
-    simpl.
-    destruct (proj1 (filterlim_locally _ (f b)) H0 eps) as [d' Hd'].
-    assert (Hd : 0 < Rmin d' (b - a)).
-      apply Rmin_case.
-      by apply d'.
-      by apply Rminus_lt_0 in Hab.
-    set d := mkposreal _ Hd.
-    exists d => x Hx.
-    case: (Rle_lt_dec x b) => Hxb.
-    rewrite Gab.
-    apply Hd'.
-    eapply ball_le.
-    2: by apply Hx.
-    apply Rmin_l.
-    split.
-    rewrite /ball /= /AbsRing_ball /minus /plus /opp /= in Hx.
-    eapply Rlt_le_trans in Hx.
-    2: by apply Rmin_r.
-    apply Rabs_lt_between' in Hx.
-    eapply Rle_trans, Rlt_le, Hx.
-    apply Req_le ; ring.
-    by apply Hxb.
-    rewrite Gb.
-    by apply ball_center.
-    by apply Rlt_le.
-  - rewrite Gb.
-    2: by apply Rlt_le.
-    eapply filterlim_ext_loc.
-    2: by apply filterlim_const.
-    apply locally_interval with b p_infty => //= y Hby _.
-    apply sym_eq, Gb.
-    by apply Rlt_le.
-  - rewrite -Hac in |- * => {c Hac}.
-    rewrite Ga.
-    2: by apply Rle_refl.
-    apply filterlim_locally => eps.
-    specialize (H0 a (conj (Rle_refl a) (Rlt_le _ _ Hab))).
-    destruct (proj1 (filterlim_locally _ (f a)) H0 eps) as [d' Hd'].
-    assert (Hd : 0 < Rmin d' (b - a)).
-      apply Rmin_case.
-      by apply d'.
-      by apply Rminus_lt_0 in Hab.
-    set d := mkposreal _ Hd.
-    exists d => x Hx.
-    case: (Rle_lt_dec a x) => Hax.
-    rewrite Gab.
-    apply Hd'.
-    eapply ball_le.
-    2: by apply Hx.
-    apply Rmin_l.
-    split.
-    by apply Hax.
-    rewrite /ball /= /AbsRing_ball /minus /plus /opp /= in Hx.
-    eapply Rlt_le_trans in Hx.
-    2: by apply Rmin_r.
-    apply Rabs_lt_between' in Hx.
-    eapply Rle_trans.
-    apply Rlt_le, Hx.
-    apply Req_le ; ring.
-    rewrite Ga.
-    by apply ball_center.
-    by apply Rlt_le.
-  - rewrite Ga.
-    2: by apply Rlt_le.
-    eapply filterlim_ext_loc.
-    2: by apply filterlim_const.
-    apply locally_interval with m_infty a => //= y _ Hya.
-    apply sym_eq, Ga.
-    by apply Rlt_le.
-  by [].
-
-  exists (fun _ => f a) ; split ; simpl.
-  move => c.
-  by apply filterlim_const.
-  intros c [Hac Hca].
-  by apply f_equal, Rle_antisym.
-Qed.
 
 Section Prop5_RInt.
 
@@ -699,9 +569,8 @@ Lemma cont_ex_RInt (f : R -> V) (a b : R) :
   (forall z, Rmin a b <= z <= Rmax a b -> filterlim f (locally z) (locally (f z)))
   -> ex_RInt f a b.
 Proof.
-  wlog: f / (forall z : R, filterlim f (locally z) (locally (f z))) => [ Hw Cf | Cf _ ].
+  wlog: f / (forall z : R, filterlim f (locally z) (locally (f z))) => [ Hw Cf | Cf Cf' ].
     destruct (prolongement_C0 f (Rmin a b) (Rmax a b)) as [g [Cg Hg]].
-    apply Rmin_Rmax.
     by apply Cf.
     eapply ex_RInt_ext.
     by apply Hg.
@@ -710,39 +579,85 @@ Proof.
     move => x _.
     by [].
 
-  wlog: a b / (a < b) => [Hw | Hab].
+  assert (forall eps : posreal, {d : posreal | forall (ptd : SF_seq) (x : R),
+    SF_h ptd <= x <= seq.last (SF_h ptd) (SF_lx ptd) ->
+    SF_h ptd = Rmin a b ->
+    seq.last (SF_h ptd) (SF_lx ptd) = Rmax a b ->
+    pointed_subdiv ptd ->
+    seq_step (SF_lx ptd) < d ->
+    norm (minus (plus (Riemann_sum f (SF_cut_down ptd x))
+      (Riemann_sum f (SF_cut_up ptd x))) (Riemann_sum f ptd)) < eps}).
+    intro.
+    admit.
+  
+  clear Cf'.
+
+  wlog: a b H / (a < b) => [Hw | Hab].
     case: (Rle_lt_dec a b) => Hab.
     case: Hab => Hab.
     by apply Hw.
     rewrite Hab ; by apply ex_RInt_point.
     apply ex_RInt_swap.
-    by apply Hw.
+    apply Hw => //.
+    by rewrite Rmin_comm Rmax_comm.
 
-  (** use [Classical_Prop.classic] *)
-  apply Classical_Prop.NNPP.
-  apply (completeness_any_2) ; clear -Cf.
-  - intros a.
-    by apply ex_RInt_point.
-  - intros a b.
-    by apply ex_RInt_swap.
-  - intros a b c [Hab Hbc].
+  generalize (fun z => proj1 (filterlim_locally _ _) (Cf z)) => {Cf} Cf.
+  assert (forall (z : R) (eps : posreal),
+    locally z (fun x : R => norm (minus (f x) (f z)) < eps)).
     intros.
-    eapply ex_RInt_Chasles.
-    by apply H.
-    by apply H0.
-  - intros a b c [Hab Hbc] ; intros.
-    eapply ex_RInt_Chasles_1.
-    2: by apply H.
-    by split.
-  - intros a.
-    specialize (Cf a).
-    generalize (proj1 (filterlim_locally _ _) Cf) => {Cf} /= Cf.
-(*  assert (H := fun b => filterlim_locally_cauchy (F := (Riemann_fine a b)) (fun ptd : SF_seq => scal (sign (b - a)) (Riemann_sum f ptd))).
-  eapply filter_imp.
-  by apply H.
-  clear H.
-  eexists ; intros.
-  destruct (Cf eps) as [d Hd]. *)
+    destruct (norm_compat2 (V := V)) as [M HM].
+    assert (0 < eps / M).
+      apply Rdiv_lt_0_compat ; apply cond_pos.
+    apply filter_imp with (fun x => ball (f z) {| pos := eps / M; cond_pos := H0 |} (f x)) ; intros.
+    replace (pos eps) with (M * (mkposreal _ H0))%R.
+    by apply HM.
+    simpl ; field ; apply Rgt_not_eq, M.
+    by apply Cf.
+  clear Cf ; rename H0 into Cf.
+  
+  assert (forall z (eps : posreal) x, norm (minus (f x) (f z)) < eps \/ ~ norm (minus (f x) (f z)) < eps).
+    intros.
+    case: (Rlt_dec (norm (minus (f x) (f z))) eps).
+    by left.
+    by right.
+
+
+  assert (H1 := fun b => filterlim_locally_cauchy (F := (Riemann_fine a b)) (fun ptd : SF_seq => scal (sign (b - a)) (Riemann_sum f ptd))).
+  apply H1 ; clear H1.
+  intros.
+
+  set (delta := fun z => projT1 (locally_ex_dec _ _ (H0 _ _) (Cf z (pos_div_2 eps)))).
+  destruct (compactness_value_1d a b delta) as [alpha Halpha].
+
+(*  exists (fun y : SF_seq =>
+    seq_step (SF_lx y) < pos_div_2 alpha /\
+    pointed_subdiv y /\
+    SF_h y = Rmin a b /\ seq.last (SF_h y) (SF_lx y) = Rmax a b) ; split.
+  exists (pos_div_2 alpha) ; intuition.
+  rewrite /Rmin /Rmax ; case: Rle_dec (Rlt_le _ _ Hab) => // _ _ ; intros.
+  apply: norm_compat1.
+  replace (sign (b - a)) with 1.
+  rewrite !scal_one.
+  destruct H1 as [Hus [Hup [Hu0 Hul]]].
+  rewrite -Hu0 in H Hab Halpha H2 => {a Hu0}.
+  rewrite -Hul in H Hab Halpha H2 => {b Hul}.
+  destruct H2 as [Hvs [Hvp [Hv0 Hl]]].
+
+  revert delta Halpha.
+  move: Hus Hup v Hvs Hvp Hv0 Hl H eps {Hab}.
+  apply SF_cons_ind with (s := u)
+    => {u} [u0 | u0 u IH] Hus Hup v Hvs Hvp Hv0 Hl H eps delta Halpha.
+  - rewrite !Riemann_sum_zero => //.
+    rewrite minus_zero_r.
+    rewrite norm_zero.
+    by apply eps.
+    by apply ptd_sort.
+    by rewrite Hl Hv0.
+  - rewrite Riemann_sum_cons.
+    rewrite (double_var eps).
+    eapply Rle_lt_trans.
+    2: apply Rplus_lt_compat.
+    3: apply IH with (eps := pos_div_2 eps).*)
 Admitted.
 
 Lemma prop5_R_aux (f g : R -> V) (a b : R) :
@@ -1000,35 +915,4 @@ Proof.
   - by exists b.
   - by exists a.
 Admitted.
-
-Lemma ex_RInt_cont {V : CompleteNormedModule R_AbsRing} :
-   forall (f : R -> V) (a b : R),
-   (forall x : R, Rmin a b <= x <= Rmax a b -> filterlim f (locally x) (locally (f x))) ->
-   ex_RInt f a b.
-Proof.
-  intros f a b.
-  wlog: a b / (a <= b) => [Hw | Hab].
-    case: (Rle_lt_dec a b) => Hab.
-    by apply Hw.
-    rewrite Rmin_comm Rmax_comm => Cf.
-    apply ex_RInt_swap.
-    apply Hw => //.
-    by left.
-  rewrite /Rmin /Rmax ; case: Rle_dec => // _ Cf.
-(*
-  destruct (proj1 (filterlim_locally_cauchy (fun ptd : SF_seq =>
-     scal (sign (b - a)) (Riemann_sum (fun x : R => f x) ptd))
-     (F := Riemann_fine a b))).
-
-Focus 2.
-  exists x.
-  by apply H.
-  
-  move => eps.
-*)
-Admitted.
-
-
-
-
 

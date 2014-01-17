@@ -22,7 +22,7 @@ COPYING file for more details.
 Require Import Reals.
 Require Import ssreflect.
 Require Import Rcomplements Rbar Hierarchy.
-Require Import Compactness Limit.
+Require Import Compactness Limit SF_seq.
 
 (** * Limit of fonctions *)
 
@@ -653,6 +653,311 @@ Proof.
   move => Hf.
   apply is_lim_unique.
   by apply is_lim_continuity.
+Qed.
+
+Lemma C0_extension_right {T : UniformSpace} (f : R -> T) lb (a b : R) :
+   a < b ->
+   (forall c : R, a < c < b -> filterlim f (locally c) (locally (f c))) ->
+   (filterlim f (at_left b) (locally lb)) ->
+   {g : R -> T | (forall c, a < c -> filterlim g (locally c) (locally (g c)))
+     /\ (forall c : R, c < b -> g c = f c) /\ g b = lb}.
+Proof.
+  intros Hab ; intros.
+  
+  set g := fun x => match Rlt_dec x b with
+                    | left _ => f x
+                    | right _ => lb
+                    end.
+  assert (Gab : forall c : R, c < b -> g c = f c).
+    intros c Hcb.
+    unfold g.
+    by (case: Rlt_dec).
+  assert (Gb : forall c : R, b <= c -> g c = lb).
+    intros c Hbc.
+    unfold g.
+    case: Rlt_dec (Rle_not_lt _ _ Hbc) => //.
+
+  exists g ; split.
+  intros c Hac.
+  case: (Rlt_le_dec c b) ; (try case) => Hbc.
+  - apply filterlim_ext_loc with f.
+    apply locally_interval with m_infty b => //= y _ Hyb.
+    by apply sym_eq, Gab.
+    rewrite Gab //.
+    apply H ; by split.
+  - rewrite Gb.
+    2: by apply Rlt_le.
+    eapply filterlim_ext_loc.
+    2: by apply filterlim_const.
+    apply locally_interval with b p_infty => //= y Hby _.
+    apply sym_eq, Gb.
+    by apply Rlt_le.
+  - rewrite -Hbc => {c Hbc Hac}.
+    rewrite Gb.
+    2: by apply Rle_refl.
+    apply filterlim_locally => eps /= {H}.
+    destruct (proj1 (filterlim_locally _ _) H0 eps) as [d Hd].
+    simpl in Hd.
+    exists d => x Hx.
+    case: (Rlt_le_dec x b) => Hxb.
+    rewrite Gab //.
+    by apply Hd.
+    rewrite Gb //.
+    by apply ball_center.
+  - split.
+    by apply Gab.
+    apply Gb ; by apply Rle_refl.
+Qed.
+Lemma filterlim_Ropp_left (x : R) :
+  filterlim Ropp (at_left x) (at_right (- x)).
+Proof.
+  move => P [d /= Hd].
+  exists d => y /= Hy Hy'.
+  apply Hd.
+  rewrite /ball /= /AbsRing_ball /abs /minus /plus /opp /=.
+  rewrite -Ropp_plus_distr Rabs_Ropp.
+  by apply Hy.
+  by apply Ropp_lt_contravar.
+Qed.
+Lemma filterlim_Ropp_right (x : R) :
+  filterlim Ropp (at_right x) (at_left (- x)).
+Proof.
+  move => P [d /= Hd].
+  exists d => y /= Hy Hy'.
+  apply Hd.
+  rewrite /ball /= /AbsRing_ball /abs /minus /plus /opp /=.
+  rewrite -Ropp_plus_distr Rabs_Ropp.
+  by apply Hy.
+  by apply Ropp_lt_contravar.
+Qed.
+
+Lemma C0_extension_left {T : UniformSpace} (f : R -> T) la (a b : R) :
+   a < b ->
+   (forall c : R, a < c < b -> filterlim f (locally c) (locally (f c))) ->
+   (filterlim f (at_right a) (locally la)) ->
+   {g : R -> T | (forall c, c < b -> filterlim g (locally c) (locally (g c)))
+     /\ (forall c : R, a < c -> g c = f c) /\ g a = la}.
+Proof.
+  intros.
+  destruct (C0_extension_right (fun x => f (- x)) la (-b) (-a)) as [g Hg].
+  by apply Ropp_lt_contravar.
+  intros.
+  eapply filterlim_compose.
+  apply (filterlim_opp c).
+  apply H0.
+  split ; apply Ropp_lt_cancel ; rewrite Ropp_involutive ; by apply H2.
+  eapply filterlim_compose.
+  apply filterlim_Ropp_left.
+  by rewrite Ropp_involutive.
+  exists (fun x => g (- x)) ; split.
+  intros c Hc.
+  eapply filterlim_compose.
+  apply (filterlim_opp c).
+  by apply Hg, Ropp_lt_contravar.
+  split.
+  intros c Hc.
+  rewrite (proj1 (proj2 Hg)).
+  by rewrite Ropp_involutive.
+  by apply Ropp_lt_contravar.
+  by apply Hg.
+Qed.
+
+Lemma C0_extension_lt {T : UniformSpace} (f : R -> T) la lb (a b : R) :
+  a < b ->
+   (forall c : R, a < c < b -> filterlim f (locally c) (locally (f c))) ->
+   (filterlim f (at_right a) (locally la)) ->
+   (filterlim f (at_left b) (locally lb)) ->
+   {g : R -> T | (forall c, filterlim g (locally c) (locally (g c)))
+     /\ (forall c : R, a < c < b -> g c = f c) /\ g a = la /\ g b = lb}.
+Proof.
+  intros.
+  destruct (C0_extension_left f la a b) as [g [Cg [Gab Ga]]] => //.
+  destruct (C0_extension_right g lb a b) as [h [Ch [Hab Hb]]] => //.
+  intros.
+  apply Cg, H3.
+  eapply filterlim_ext_loc.
+  2: by apply H2.
+  apply Rminus_lt_0 in H.
+  exists (mkposreal _ H) => y /= Hy Hy'.
+  apply sym_eq, Gab.
+  apply Ropp_lt_cancel, (Rplus_lt_reg_l b).
+  eapply Rle_lt_trans, Hy.
+  rewrite -abs_opp opp_minus.
+  apply Rle_abs.
+  exists h ; repeat split.
+  intros c.
+  case: (Rlt_le_dec a c) => Hac.
+  by apply Ch.
+  rewrite Hab.
+  eapply filterlim_ext_loc.
+  2: apply Cg.
+  apply locally_interval with m_infty b => //.
+  by eapply Rle_lt_trans, H.
+  intros y _ Hy ; by apply sym_eq, Hab.
+  by eapply Rle_lt_trans, H.
+  by eapply Rle_lt_trans, H.
+  intros c [Hac Hcb].
+  rewrite Hab => //.
+  by apply Gab.
+  by rewrite Hab.
+  by [].
+Qed.
+
+Lemma C0_extension_le {T : UniformSpace} (f : R -> T) (a b : R) :
+   (forall c : R, a <= c <= b -> filterlim f (locally c) (locally (f c))) ->
+   {g : R -> T | (forall c, filterlim g (locally c) (locally (g c)))
+     /\ (forall c : R, a <= c <= b -> g c = f c)}.
+Proof.
+  intros.
+  case: (Rlt_le_dec a b) => Hab.
+  
+  destruct (C0_extension_lt f (f a) (f b) a b Hab) as [g [Cg [Gab [Ga Gb]]]].
+  intros c Hc.
+  apply H ; split ; apply Rlt_le, Hc.
+  eapply filterlim_filter_le_1, H.
+  by apply filter_le_within.
+  intuition.
+  eapply filterlim_filter_le_1, H.
+  by apply filter_le_within.
+  intuition.
+  exists g ; repeat split => //.
+  intros c [Hac Hcb].
+  case: Hac => [ Hac | <-] //.
+  case: Hcb => [ Hcb | ->] //.
+  apply Gab ; by split.
+
+  exists (fun _ => f a) ; split ; simpl.
+  move => c.
+  by apply filterlim_const.
+  intros c [Hac Hca].
+  case: Hab => Hab.
+  contradict Hab ; apply Rle_not_lt.
+  by apply Rle_trans with c.
+  rewrite Hab in Hca.
+  by apply f_equal, Rle_antisym.
+Qed.
+
+Lemma continue_bounded {K : AbsRing} {V : NormedModule K}
+  (f : R -> V) a b : 
+  (forall x, a <= x <= b -> filterlim f (locally x) (locally (f x)))
+  -> {M : R | forall x, a <= x <= b -> norm (f x) < M}.
+Proof.
+  wlog: f / (forall x, filterlim f (locally x) (locally (f x))) => [ Hw Cf | Cf _ ].
+    destruct (C0_extension_le f a b) as [g [Cg Hg]].
+    by apply Cf.
+    destruct (Hw g) as [M HM] => //.
+    exists M ; intros.
+    rewrite -Hg //.
+    by apply HM.
+
+  assert (forall x : R, locally x (fun y : R => Rabs (norm (f y) - norm (f x)) < 1)).
+    intro x.
+    generalize (proj1 (filterlim_locally _ _) (Cf x)) => {Cf} Cf.
+    destruct (norm_compat2 (V := V)) as [M HM].
+    assert (0 < / M).
+      apply Rinv_0_lt_compat ; by apply cond_pos.
+    generalize (filter_imp (F := locally x) _ _ (fun y => HM (f x) (f y) (mkposreal _ H)) (Cf _))
+    => {Cf} /=.
+    apply filter_imp => y Hy.
+    eapply Rle_lt_trans.
+    apply norm_triangle_inv.
+    eapply Rlt_le_trans.
+    by apply Hy.
+    apply Req_le ; field ; apply Rgt_not_eq, M.
+  assert (forall x y : R, Rabs (norm (f y) - norm (f x)) < 1 \/ ~ Rabs (norm (f y) - norm (f x)) < 1).
+    intros x y ; edestruct Rlt_dec.
+    left ; by apply r.
+    by right.
+  set delta := (fun (x : R) => projT1 (locally_ex_dec x _ (H0 x) (H x))).
+  destruct (compactness_value_1d a b delta) as [d Hd].
+  destruct (seq_step_unif_part_ex a b d) as [n Hn].
+  set l := unif_part a b n.
+  set M := (fix g l := match l with | (h :: t)%list => Rmax (norm (f h) + 2) (g t) | _ => 0 end) l.
+  exists M ; intros.
+  apply Rnot_le_lt => H2.
+  apply (Hd x H1) ; case => t.
+  unfold delta.
+  case: locally_ex_dec => e He /= [Ht [Hxt Hde]].
+  contradict H2 ; apply Rlt_not_le.
+  move: (fun (y : R) Hy => He y (norm_compat1 _ _ _ Hy)) => {He} He.
+  apply He in Hxt.
+  rewrite -(Rabs_pos_eq (norm _) (norm_ge_0 _)).
+  replace (norm (f x)) with ((norm (f x) - norm (f t)) + norm (f t))%R by ring.
+  eapply Rle_lt_trans.
+  apply Rabs_triang.
+  eapply Rlt_trans.
+  apply Rplus_lt_compat_r.
+  by apply Hxt.
+  rewrite Rplus_comm ; apply Rlt_minus_r.
+  destruct (unif_part_nat a b n t Ht).
+  - case: s => i Hi.
+    replace (norm (f t)) with ((norm (f t) - norm (f (seq.nth 0 l i))) + norm (f (seq.nth 0 l i)))%R by ring.
+    eapply Rle_lt_trans.
+    apply Rabs_triang.
+    eapply Rlt_le_trans.
+    apply Rplus_lt_compat_r.
+    rewrite -Rabs_Ropp Ropp_minus_distr'.
+    apply He.
+    rewrite -norm_opp opp_minus /norm /minus /= /abs /plus /opp /=.
+    rewrite Rabs_pos_eq.
+    eapply Rlt_trans.
+    apply Rplus_lt_compat_r.
+    by apply Hi.
+    eapply Rlt_le_trans, Hde.
+    eapply Rle_lt_trans, Hn.
+    eapply Rle_trans, nth_le_seq_step.
+    apply Rle_abs.
+    eapply lt_trans, Hi.
+    by apply lt_n_Sn.
+    rewrite -Rminus_le_0 ; apply Hi.
+    rewrite Rplus_comm.
+    apply Rle_minus_r.
+    rewrite Rplus_assoc.
+    rewrite Rabs_pos_eq.
+    2: by apply norm_ge_0.
+    rewrite -/l in Hi.
+    revert M ; elim: (l) (i) (proj2 Hi) => {l i Hi} /= [ | x0 l IH] i Hi.
+    by apply lt_n_O in Hi.
+    apply lt_S_n in Hi.
+    destruct i as [ | i] ; simpl.
+    by apply Rmax_l.
+    eapply Rle_trans, Rmax_r.
+    by apply (IH i).
+  replace (norm (f t)) with ((norm (f t) - norm (f (seq.nth 0 l n))) + norm (f (seq.nth 0 l n)))%R by ring.
+    eapply Rle_lt_trans.
+    apply Rabs_triang.
+    eapply Rlt_le_trans.
+    apply Rplus_lt_compat_r.
+    rewrite -Rabs_Ropp Ropp_minus_distr'.
+    apply He.
+    set tmp := (seq.nth 0 l n).
+    rewrite -norm_opp opp_minus /norm /= /minus /abs /plus /opp /=.
+    simpl.
+    rewrite Rabs_pos_eq.
+    eapply Rle_lt_trans.
+    apply Rplus_le_compat_r.
+    by apply a0.
+    eapply Rlt_le_trans, Hde.
+    eapply Rle_lt_trans, Hn.
+    eapply Rle_trans, nth_le_seq_step.
+    apply Rle_abs.
+    rewrite seq.size_mkseq /= ; by apply lt_n_Sn.
+    rewrite -Rminus_le_0 ; apply a0.
+    rewrite Rplus_comm.
+    apply Rle_minus_r.
+    rewrite Rplus_assoc.
+    rewrite Rabs_pos_eq.
+    2: by apply norm_ge_0.
+    assert (S n < seq.size l)%nat.
+    rewrite seq.size_mkseq ; apply lt_n_Sn.
+    revert M ; elim: (l) (n) H2 => {l n a0 Hn} /= [ | x0 l IH] n Hl.
+    by apply lt_n_O in Hl.
+    apply lt_S_n in Hl.
+    destruct n ; simpl.
+    by apply Rmax_l.
+    eapply Rle_trans, Rmax_r.
+    simpl in IH.
+    by apply IH.
 Qed.
 
 (** *** Order *)

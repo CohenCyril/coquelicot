@@ -4961,15 +4961,14 @@ Proof.
       by apply Hg.
     have H : g m <= g M.
       apply Hm ; intuition.
-    case: (prolongement_C0 f (g m) (g M)) => [ | y Hy | f0 Hf0].
-    by [].
+    case: (C0_extension_le f (g m) (g M)) => [ y Hy | f0 Hf0].
     case: (IVT_gen g m M y).
     move => x ; apply derivable_continuous_pt.
     exists (Derive g x) ; apply Derive_correct.
     by apply Hg.
     rewrite /Rmin /Rmax ; case: Rle_dec => //.
     move => x [Hx <-].
-    apply Hf ; split.
+    apply continuity_pt_filterlim, Hf ; split.
     apply Rle_trans with (2 := proj1 Hx).
     apply Rmin_case ; intuition.
     apply Rle_trans with (1 := proj2 Hx).
@@ -4982,8 +4981,8 @@ Proof.
     by apply Hm.
     by apply HM.
     apply Hw.
-    move => x Hx ; apply Hf0.
-    apply Hf0.
+    move => x Hx ; apply continuity_pt_filterlim, Hf0.
+    move => x ; apply continuity_pt_filterlim, Hf0.
     apply RInt_ext => x Hx.
     apply Hf0 ; split.
     apply Rle_trans with (2 := proj1 Hx).

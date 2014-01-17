@@ -63,6 +63,27 @@ Proof.
   case: n => //=.
 Qed.
 
+(** Various properties *)
+
+Lemma rev_rev {T} (l : seq T) : rev (rev l) = l.
+Proof.
+  elim: l => /= [ | h l IH].
+  by [].
+  by rewrite rev_cons rev_rcons IH.
+Qed.
+Lemma head_rev {T} (x0 : T) (l : seq T) :
+  head x0 (rev l) = last x0 l.
+Proof.
+  elim: l x0 => /= [ | x1 l IH] x0.
+  by [].
+  by rewrite rev_cons head_rcons.
+Qed.
+Lemma last_rev {T} (x0 : T) (l : seq T) :
+  last x0 (rev l) = head x0 l.
+Proof.
+  by rewrite -head_rev rev_rev.
+Qed.
+
 (** sorted *)
 
 Fixpoint sorted {T : Type} (Ord : T -> T -> Prop) (s : seq T) :=
@@ -263,6 +284,48 @@ Proof.
   rewrite -Rmax_assoc.
   apply f_equal.
   by apply IH.
+Qed.
+
+Lemma seq_step_rev (l : seq R) : seq_step (rev l) = seq_step l.
+Proof.
+  rewrite /seq_step.
+  rewrite head_rev behead_rev /=.
+  case: l => [ | x0 l] //=.
+  case: l => [ | x1 l] //=.
+  rewrite rev_cons.
+  case: l => [ | x2 l] //=.
+  by rewrite -Rabs_Ropp Ropp_minus_distr'.
+  rewrite rev_cons pairmap_rcons foldr_rcons.
+  rewrite -Rabs_Ropp Ropp_minus_distr'.
+  generalize (Rabs (x1 - x0)) ; clear.
+  elim: l x1 x2 => [ | x2 l IH] x0 x1 r //=.
+  rewrite -Rabs_Ropp Ropp_minus_distr' !Rmax_assoc.
+  apply f_equal2 => //.
+  by apply Rmax_comm.
+  rewrite rev_cons pairmap_rcons foldr_rcons.
+  rewrite -Rabs_Ropp Ropp_minus_distr' Rmax_assoc IH.
+  by rewrite (Rmax_comm _ r) !Rmax_assoc.
+Qed.
+
+Lemma nth_le_seq_step x0 (l : seq R) (i : nat) : (S i < size l)%nat ->
+  Rabs (nth x0 l (S i) - nth x0 l i) <= seq_step l.
+Proof.
+  elim: i l => [ | i IH] ; case => [ | x1 l] /= Hi.
+  by apply lt_n_O in Hi.
+  apply lt_S_n in Hi.
+  destruct l as [ | x2 l].
+  by apply lt_n_O in Hi.
+  by apply Rmax_l.
+  by apply lt_n_O in Hi.
+  apply lt_S_n in Hi.
+  move: (IH l Hi).
+  destruct l as [ | x2 l] ; simpl.
+  by apply lt_n_O in Hi.
+  simpl in Hi ; apply lt_S_n in Hi.
+  move => {IH} IH.
+  eapply Rle_trans.
+  by apply IH.
+  by apply Rmax_r.
 Qed.
 
 (** * Definitions of SF_seq *)
@@ -1174,6 +1237,77 @@ Proof.
   left ; by exists i.
   right ; rewrite size_mkseq /= in Hi ; intuition.
   by rewrite -minus_n_O in H1.
+Qed.
+
+Lemma head_unif_part x0 (a b : R) (n : nat) :
+  head x0 (unif_part a b n) = a.
+Proof.
+  simpl ; unfold Rdiv ; ring.
+Qed.
+Lemma last_unif_part x0 (a b : R) (n : nat) :
+  last x0 (unif_part a b n) = b.
+Proof.
+  rewrite (last_nth b) size_mkseq.
+  replace (nth b (x0 :: unif_part a b n) (S (S n)))
+    with (nth b (unif_part a b n) (S n)) by auto.
+  rewrite nth_mkseq.
+  rewrite S_INR ; field.
+  by apply Rgt_not_eq, INRp1_pos.
+  by [].
+Qed.
+Lemma seq_step_unif_part (a b : R) (n : nat) :
+  seq_step (unif_part a b n) = Rabs ((b - a) / (INR n + 1)).
+Proof.
+  assert (forall i, (S i < size (unif_part a b n))%nat ->
+    (nth 0 (unif_part a b n) (S i) - nth 0 (unif_part a b n) i = (b - a) / (INR n + 1))%R).
+    rewrite size_mkseq => i Hi.
+    rewrite !nth_mkseq.
+    rewrite S_INR /Rdiv /= ; ring.
+    by apply SSR_leq, lt_le_weak.
+    by apply SSR_leq.
+  move: (eq_refl (size (unif_part a b n))).
+  rewrite {2}size_mkseq.
+  rewrite /seq_step ;
+  elim: {2}(n) (unif_part a b n) H => [ | m IH] l //= ;
+  destruct l as [ | x0 l] => //= ;
+  destruct l as [ | x1 l] => //= ;
+  destruct l as [ | x2 l] => //= ; intros.
+  rewrite (H O).
+  rewrite Rmax_comm /Rmax ; case: Rle_dec => // H1.
+  contradict H1 ; by apply Rabs_pos.
+  by apply lt_n_S, lt_O_Sn.
+  rewrite -(IH (x1::x2::l)) /=.
+  rewrite (H O).
+  rewrite (H 1%nat).
+  rewrite Rmax_assoc.
+  apply f_equal2 => //.
+  rewrite /Rmax ; by case: Rle_dec.
+  by apply lt_n_S, lt_n_S, lt_O_Sn.
+  by apply lt_n_S, lt_O_Sn.
+  now intros ; apply (H (S i)), lt_n_S.
+  by apply eq_add_S.
+Qed.
+
+Lemma seq_step_unif_part_ex (a b : R) (eps : posreal) :
+  {n : nat | seq_step (unif_part a b n) < eps}.
+Proof.
+  destruct (nfloor_ex (Rabs ((b - a) / eps))) as [n Hn].
+    by apply Rabs_pos.
+  exists n.
+  rewrite seq_step_unif_part.
+  rewrite Rabs_div.
+  rewrite (Rabs_pos_eq (INR n + 1)).
+  apply Rlt_div_l.
+  by apply INRp1_pos.
+  rewrite Rmult_comm -Rlt_div_l.
+  rewrite -(Rabs_pos_eq eps).
+  rewrite -Rabs_div.
+  by apply Hn.
+  by apply Rgt_not_eq, eps.
+  by apply Rlt_le, eps.
+  by apply eps.
+  by apply Rlt_le, INRp1_pos.
+  by apply Rgt_not_eq, INRp1_pos.
 Qed.
 
 Definition SF_val_seq {T} (f : R -> T) (a b : R) (n : nat) : SF_seq :=
