@@ -404,14 +404,14 @@ Proof.
     | right _ => (fn n (x+h) - fn n x)/h
   end.
 
-  assert (Ho' : forall x : R, D x -> open (fun h : R => D (x + h))).
-    intros x Dx h Hh.
-    destruct (Ho _ Hh) as [d Hd].
-    exists d => /= y Hy.
-    apply Hd.
-    rewrite /ball /= /AbsRing_ball /= /minus /plus /opp /=.
-    ring_simplify (x + y + - (x + h)).
-    by apply Hy.
+  assert (Ho' : forall x : R, open (fun h : R => D (x + h))).
+    intros x.
+    apply open_compose with (2 := Ho).
+    intros t.
+    apply: (filterlim_compose_2 (F := locally t)).
+    apply filterlim_const.
+    apply filterlim_id.
+    apply: filterlim_plus.
 
   have Crn : forall x, D x -> forall n h, D (x+h) -> is_lim (rn x n) h (rn x n h).
     move => x Hx n h Hh.
@@ -518,7 +518,7 @@ Proof.
 
   move => x Hx.
 
-  case: (CVU_limits_open (rn x) _ (Ho' x Hx) (Hrn x Hx) (Lrn x Hx) 0) => [ | H [H0 H1]].
+  case: (CVU_limits_open (rn x) _ (Ho' x) (Hrn x Hx) (Lrn x Hx) 0) => [ | H [H0 H1]].
   by rewrite Rplus_0_r.
 
   have : ex_derive (fun y : R => real (Lim_seq (fun n : nat => fn n y))) x
