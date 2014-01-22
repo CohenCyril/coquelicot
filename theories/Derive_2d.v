@@ -632,7 +632,7 @@ assert (Hy: y + k - y = k) by ring.
 (* . *)
 destruct (MVT_cor4 (phi k) x (Rabs h)) with (b := x + h) as (u&Hu1&Hu2).
 intros c Hc.
-apply ex_derive_minus.
+apply: ex_derive_minus.
 apply (HD c).
 now apply Rle_lt_trans with (Rabs h).
 now rewrite Hy.
@@ -1293,7 +1293,7 @@ replace (sum_f_R0 (fun m : nat => C (S k) m *
   (sum_f_R0 (fun m : nat => C k m * (u - x) ^ m  * (v - y) ^ (k - m) *
     ((u - x) * partial_derive (S m) (k - m) f (x + z * (u - x)) (y + z * (v - y)) +
      (v - y) * partial_derive m (S (k - m)) f (x + z * (u - x)) (y + z * (v - y)))) k).
-apply is_derive_sum => p Hp.
+apply: is_derive_sum_n => p Hp.
 apply is_derive_ext with (fun u0 => C k p * (u - x) ^ p * (v - y) ^ (k - p) * partial_derive p (k - p) f (x + u0 * (u - x)) (y + u0 * (v - y))).
 intros w.
 simpl ; ring.

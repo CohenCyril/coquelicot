@@ -1610,7 +1610,7 @@ Qed.
 
 End Opp.
 
-Lemma Derive_opp :
+Lemma Derive_opp_fct :
   forall f x,
   Derive (fun x => - f x) x = - Derive f x.
 Proof.
@@ -1625,44 +1625,63 @@ apply (f_equal (fun v => v / _)).
 ring.
 Qed.
 
+Lemma Derive_opp :
+  forall x,
+  Derive (fun x => - x) x = -1.
+Proof.
+intros x.
+by rewrite Derive_opp_fct Derive_id.
+Qed.
+
 (** Addition of functions *)
 
+Section Plus.
+
+Context {K : AbsRing} {V : NormedModule K}.
+
+Lemma is_derive_plus :
+  forall (f g : K -> V) (x : K) (df dg : V),
+  is_derive f x df ->
+  is_derive g x dg ->
+  is_derive (fun x => plus (f x) (g x)) x (plus df dg).
+Proof.
+intros f g x df dg Df Dg.
+eapply filterdiff_ext_lin.
+apply filterdiff_plus_fct ; try eassumption.
+simpl => y.
+by rewrite scal_distr_l.
+Qed.
+
 Lemma ex_derive_plus :
-  forall f g x, ex_derive f x -> ex_derive g x ->
-  ex_derive (fun x => f x + g x) x.
+  forall (f g : K -> V) (x : K),
+  ex_derive f x -> ex_derive g x ->
+  ex_derive (fun x => plus (f x) (g x)) x.
 Proof.
-intros f g x (df,Df) (dg,Dg).
-exists (df + dg).
-apply is_derive_Reals, derivable_pt_lim_plus ;
-  now apply is_derive_Reals.
+intros f g x [df Df] [dg Dg].
+exists (plus df dg).
+now apply is_derive_plus.
 Qed.
 
-Lemma Derive_plus :
-  forall f g x, ex_derive f x -> ex_derive g x ->
-  Derive (fun x => f x + g x) x = Derive f x + Derive g x.
+Lemma is_derive_sum_n :
+  forall (f : nat -> K -> V) (n : nat) (x : K) (d : nat -> V),
+  (forall k, (k <= n)%nat -> is_derive (f k) x (d k)) ->
+  is_derive (fun y => sum_n (fun k => f k y) n) x (sum_n d n).
 Proof.
-intros f g x Df Dg.
-apply is_derive_unique, is_derive_Reals.
-now apply derivable_pt_lim_plus ;
-  apply is_derive_Reals, Derive_correct.
-Qed.
-
-Lemma is_derive_sum (f : nat -> R -> R) (n : nat) (x : R) (l : nat -> R) :
-  (forall k, (k <= n)%nat -> is_derive (f k) x (l k))
-  -> is_derive (fun y => sum_f_R0 (fun k => f k y) n) x (sum_f_R0 l n).
-Proof.
+  intros f n x d.
   elim: n => /= [ | n IH] Hf.
   by apply (Hf O).
-  apply is_derive_Reals, derivable_pt_lim_plus ; apply is_derive_Reals.
+  apply is_derive_plus.
   apply IH => k Hk.
   by apply Hf, le_trans with (1 := Hk), le_n_Sn.
   by apply Hf.
 Qed.
 
-Lemma ex_derive_sum (f : nat -> R -> R) (n : nat) (x : R) :
-  (forall k, (k <= n)%nat -> ex_derive (f k) x)
-  -> ex_derive (fun y => sum_f_R0 (fun k => f k y) n) x.
+Lemma ex_derive_sum_n :
+  forall (f : nat -> K -> V) (n : nat) (x : K),
+  (forall k, (k <= n)%nat -> ex_derive (f k) x) ->
+  ex_derive (fun y => sum_n (fun k => f k y) n) x.
 Proof.
+  intros f n x.
   elim: n => /= [ | n IH] Hf.
   by apply (Hf O).
   apply ex_derive_plus.
@@ -1670,27 +1689,60 @@ Proof.
   by apply Hf, le_trans with (1 := Hk), le_n_Sn.
   by apply Hf.
 Qed.
-Lemma Derive_sum (f : nat -> R -> R) (n : nat) (x : R) :
-  (forall k, (k <= n)%nat -> ex_derive (f k) x)
-  -> Derive (fun y => sum_f_R0 (fun k => f k y) n) x = (sum_f_R0 (fun k => Derive (f k) x) n).
+
+End Plus.
+
+Lemma Derive_plus :
+  forall f g x, ex_derive f x -> ex_derive g x ->
+  Derive (fun x => f x + g x) x = Derive f x + Derive g x.
+Proof.
+intros f g x Df Dg.
+apply is_derive_unique.
+apply: is_derive_plus ;
+  now apply Derive_correct.
+Qed.
+
+Lemma Derive_sum_n (f : nat -> R -> R) (n : nat) (x : R) :
+  (forall k, (k <= n)%nat -> ex_derive (f k) x) ->
+  Derive (fun y => sum_n (fun k => f k y) n) x = sum_n (fun k => Derive (f k) x) n.
 Proof.
   move => Hf.
-  apply is_derive_unique, is_derive_sum.
+  apply is_derive_unique.
+  apply: is_derive_sum_n.
   move => k Hk.
   by apply Derive_correct, Hf.
 Qed.
 
 (** Difference of functions *)
 
-Lemma ex_derive_minus :
-  forall f g x, ex_derive f x -> ex_derive g x ->
-  ex_derive (fun x => f x - g x) x.
+Section Minus.
+
+Context {K : AbsRing} {V : NormedModule K}.
+
+Lemma is_derive_minus :
+  forall (f g : K -> V) (x : K) (df dg : V),
+  is_derive f x df ->
+  is_derive g x dg ->
+  is_derive (fun x => minus (f x) (g x)) x (minus df dg).
 Proof.
-intros f g x (df,Df) (dg,Dg).
-exists (df - dg).
-apply is_derive_Reals, derivable_pt_lim_minus ;
-  now apply is_derive_Reals.
+intros f g x df dg Df Dg.
+eapply filterdiff_ext_lin.
+apply filterdiff_minus_fct ; try eassumption.
+simpl => y.
+by rewrite scal_distr_l scal_opp_r.
 Qed.
+
+Lemma ex_derive_minus :
+  forall (f g : K -> V) (x : K),
+  ex_derive f x -> ex_derive g x ->
+  ex_derive (fun x => minus (f x) (g x)) x.
+Proof.
+intros f g x [df Df] [dg Dg].
+exists (minus df dg).
+now apply is_derive_minus.
+Qed.
+
+End Minus.
 
 Lemma Derive_minus :
   forall f g x, ex_derive f x -> ex_derive g x ->
@@ -1698,8 +1750,8 @@ Lemma Derive_minus :
 Proof.
 intros f g x Df Dg.
 apply is_derive_unique.
-apply is_derive_Reals, derivable_pt_lim_minus ;
-  now apply is_derive_Reals, Derive_correct.
+apply: is_derive_minus ;
+  now apply Derive_correct.
 Qed.
 
 (** ** Multiplicative operators *)
@@ -2820,7 +2872,7 @@ Lemma Derive_n_opp (f : R -> R) (n : nat) (x : R) :
 Proof.
   elim: n x => [ | n IH] x /=.
   by [].
-  rewrite -Derive_opp.
+  rewrite -Derive_opp_fct.
   by apply Derive_ext.
 Qed.
 
@@ -2908,7 +2960,7 @@ Proof.
   apply sym_eq, Derive_n_plus.
   apply filter_imp with (2 := Hf) ; by intuition.
   apply filter_imp with (2 := Hg) ; by intuition.
-  apply ex_derive_plus.
+  apply: ex_derive_plus.
   apply locally_singleton ; apply filter_imp with (2 := Hf) => {Hf} y Hy ;
   by apply (Hy (S n)).
   apply locally_singleton ; apply filter_imp with (2 := Hg) => {Hg} y Hy ;
@@ -3242,7 +3294,7 @@ Proof.
   move: (Derive_n f n) Df => {f} f Df.
   apply ex_derive_comp.
   apply Df.
-  apply ex_derive_plus.
+  apply: ex_derive_plus.
   apply ex_derive_id.
   apply ex_derive_const.
 Qed.

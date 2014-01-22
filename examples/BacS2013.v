@@ -207,7 +207,7 @@ Proof.
   apply (Dfab 2 2 z).
   by apply Rlt_trans with (1 := Rlt_0_1).
   move => z H1z _.
-  rewrite Derive_opp.
+  rewrite Derive_opp_fct.
   apply Ropp_lt_cancel ; rewrite Ropp_0 Ropp_involutive.
   apply sign_lt_0.
   rewrite Signe_df.
