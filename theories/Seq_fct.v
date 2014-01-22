@@ -425,6 +425,7 @@ Proof.
     rewrite /rn ; case: Req_EM_T => // _ ; by apply H.
     move: (Edn n x Hx) => {Edn} Edn.
     apply Derive_correct in Edn.
+    apply is_derive_Reals in Edn.
     case: (Edn eps (cond_pos eps)) => {Edn} delta Edn.
     exists delta => y Hy Hxy.
     rewrite /ball /= /AbsRing_ball /= /minus /plus /opp /= in Hy.
@@ -439,7 +440,7 @@ Proof.
       apply (derivable_pt_plus (fun _ => x) (fun h => h) h).
       exact: derivable_pt_const.
       exact: derivable_pt_id.
-      exists (Derive (fn n) (x + h)) ; by apply Derive_correct, Edn.
+      exists (Derive (fn n) (x + h)) ; by apply is_derive_Reals, Derive_correct, Edn.
       exact: derivable_pt_const.
       exact: derivable_pt_id.
       exact: Hh0.
@@ -484,11 +485,11 @@ Proof.
     apply Rmax_case ; [by apply Hx | by apply Hh].
     split ; apply Rlt_le ; by apply Hy.
     apply derivable_continuous_pt, derivable_pt_minus.
-    exists (Derive (fn n) y) ; apply Derive_correct, Edn, (Hc (Rmin x (x + h)) (Rmax x (x + h))).
+    exists (Derive (fn n) y) ; apply is_derive_Reals, Derive_correct, Edn, (Hc (Rmin x (x + h)) (Rmax x (x + h))).
     apply Rmin_case ; [by apply Hx | by apply Hh].
     apply Rmax_case ; [by apply Hx | by apply Hh].
     by apply Hy.
-    exists (Derive (fn m) y) ; apply Derive_correct, Edn, (Hc (Rmin x (x + h)) (Rmax x (x + h))).
+    exists (Derive (fn m) y) ; apply is_derive_Reals, Derive_correct, Edn, (Hc (Rmin x (x + h)) (Rmax x (x + h))).
     apply Rmin_case ; [by apply Hx | by apply Hh].
     apply Rmax_case ; [by apply Hx | by apply Hh].
     by apply Hy.
@@ -527,7 +528,8 @@ Proof.
 
   split.
   case: H0 => df H0.
-  exists df => e He.
+  exists df.
+  apply is_derive_Reals => e He.
   apply is_lim_spec in H0.
   case: (H0 (mkposreal e He)) => {H0} /= delta H0.
   destruct (Ho x Hx) as [dx Hd].
@@ -1198,5 +1200,5 @@ unfold filtermap.
 move: (fun x : U => HP (h x)) => {HP} HP.
 apply filter_imp with (1 := HP).
 now apply filter_imp with (2 := filter_true).
-now apply @is_RInt_point.
+now apply is_RInt_point.
 Qed.

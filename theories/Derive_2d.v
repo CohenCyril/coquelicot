@@ -155,8 +155,7 @@ Proof.
   specialize (Cx eps').
   move: (locally_2d_and _ _ _ _ Dx Cx) => {Dx Cx}.
   intros (d1,Hd1).
-  specialize (proj1 (filterdiff_Reals _ _ _) Dy); intros Dy'.
-  destruct (proj2 Dy' y (fun P H => H) eps') as (d2,Hd2).
+  destruct (proj2 Dy y (fun P H => H) eps') as (d2,Hd2).
   set (l1 := Derive (fun u : R => f u y) x).
   exists (mkposreal _ (Rmin_stable_in_posreal d1 d2)).
   simpl; intros u v Hu Hv.
@@ -173,8 +172,9 @@ Proof.
   apply Rle_trans with (eps' * Rabs (u - x)).
   apply bounded_variation => t Ht.
   assert (is_derive g1 t (Derive (fun z : R => f z v) t - l1)).
+    apply is_derive_Reals.
     apply derivable_pt_lim_minus with (f2 := fun t => l1 * t).
-    apply Derive_correct.
+    apply is_derive_Reals, Derive_correct.
     apply Hd1.
     apply Rle_lt_trans with (1 := Ht).
     apply Rlt_le_trans with (1:=Hu).
@@ -291,7 +291,7 @@ Lemma differentiable_pt_lim_proj1_0 (f : R -> R) (x y l : R) :
   derivable_pt_lim f x l -> differentiable_pt_lim (fun u v => f u) x y l 0.
 Proof.
   intros Df eps.
-  apply filterdiff_Reals in Df ;
+  apply is_derive_Reals in Df ;
   elim (proj2 Df x (fun P H => H) eps) ; clear Df ; intros delta Df.
   exists delta ; simpl ; intros.
   rewrite Rmult_0_l Rplus_0_r.
@@ -306,7 +306,7 @@ Lemma differentiable_pt_lim_proj1_1 (f : R -> R) (x y l : R) :
   differentiable_pt_lim (fun u v => f u) x y l 0 -> derivable_pt_lim f x l.
 Proof.
   intros Df.
-  apply filterdiff_Reals ; split => [ | z Hz eps].
+  apply is_derive_Reals ; split => [ | z Hz eps].
     by apply @is_linear_scal_l.
   rewrite -(is_filter_lim_locally_unique_R _ _ Hz) => {z Hz}.
   elim (Df eps) ; clear Df ; intros delta Df.
@@ -326,7 +326,7 @@ Lemma differentiable_pt_lim_unique (f : R -> R -> R) (x y : R) (lx ly : R) :
   differentiable_pt_lim f x y lx ly
     -> Derive (fun x => f x y) x = lx /\ Derive (fun y => f x y) y = ly.
 Proof.
-  move => Df ; split ; apply is_derive_unique => e He ;
+  move => Df ; split ; apply is_derive_unique, is_derive_Reals => e He ;
   case: (Df (pos_div_2 (mkposreal e He))) => {Df} delta /= Df ;
   exists delta => h Hh0 Hh.
 
@@ -633,10 +633,10 @@ assert (Hy: y + k - y = k) by ring.
 destruct (MVT_cor4 (phi k) x (Rabs h)) with (b := x + h) as (u&Hu1&Hu2).
 intros c Hc.
 apply ex_derive_minus.
-apply HD.
+apply (HD c).
 now apply Rle_lt_trans with (Rabs h).
 now rewrite Hy.
-apply HD.
+apply (HD c).
 now apply Rle_lt_trans with (Rabs h).
 rewrite /Rminus Rplus_opp_r Rabs_R0.
 apply cond_pos.
@@ -659,10 +659,10 @@ refine (conj Hu2 (conj Hv2 _)).
 rewrite Hu1 /phi Derive_minus.
 rewrite Hv1.
 ring.
-apply HD.
+apply (HD u).
 now apply Rle_lt_trans with (Rabs h).
 now rewrite Hy.
-apply HD.
+apply (HD u).
 now apply Rle_lt_trans with (Rabs h).
 rewrite /Rminus Rplus_opp_r Rabs_R0.
 apply cond_pos.
@@ -682,10 +682,10 @@ Proof.
 intros f x y (eps, HD) HC2 HC1.
 refine (let H1 := Schwarz_aux f x y eps _ in _).
 intros u v Hu Hv.
-split ; now apply HD.
+split ; now apply (HD u v).
 refine (let H2 := Schwarz_aux (fun x y => f y x) y x eps _ in _).
 intros u v Hu Hv.
-split ; now apply HD.
+split ; now apply (HD v u).
 simpl in H1, H2.
 apply Req_lt_aux.
 intros e.
@@ -792,19 +792,11 @@ intros f g x y H (H1&H2&H3&H4&H5).
 split.
 apply (continuity_2d_pt_ext_loc _ _ _ _ H H1).
 split.
-apply ex_filterdiff_Reals.
-apply ex_filterdiff_Reals in H2.
-move: H2 ; apply ex_filterdiff_ext_loc.
+apply: ex_derive_ext_loc H2.
 apply locally_2d_1d_const_y with (1:=H).
-move => z Hz ; rewrite -(is_filter_lim_locally_unique_R _ _ Hz) ;
-by apply locally_2d_1d_const_y, locally_singleton in H.
 split.
-apply ex_filterdiff_Reals.
-apply ex_filterdiff_Reals in H3.
-move: H3 ; apply ex_filterdiff_ext_loc.
+apply: ex_derive_ext_loc H3.
 apply locally_2d_1d_const_x with (1:=H).
-move => z Hz ; rewrite -(is_filter_lim_locally_unique_R _ _ Hz) ;
-by apply locally_2d_1d_const_x, locally_singleton in H.
 split.
 apply IHn with (2:=H4).
 apply locally_2d_impl_strong with (2:=H).
@@ -925,8 +917,7 @@ revert H0; rewrite plus_0_l.
 case_eq (n-n0)%nat.
 intros H1; contradict H; auto with zarith.
 intros n1 H1 H2.
-apply ex_filterdiff_Reals.
-apply ex_filterdiff_ext with (fun z => Derive (fun t => (partial_derive 0 n0 f z) t) y).
+apply ex_derive_ext with (fun z => Derive (fun t => (partial_derive 0 n0 f z) t) y).
 intros y0; unfold partial_derive; simpl.
 reflexivity.
 simpl in H2.
@@ -935,7 +926,6 @@ case_eq n1.
 intros H2; rewrite H2 in H1.
 clear -H H1; contradict H; auto with zarith.
 intros n2 Hn2; rewrite Hn2 in T5.
-apply ex_filterdiff_Reals.
 apply T5.
 (* . *)
 intros p q H f x y Hf.
@@ -946,8 +936,7 @@ exact Hf.
 case_eq (n-(p+q))%nat.
 intros H1; contradict H; auto with zarith.
 intros n1 H1.
-apply ex_filterdiff_Reals.
-apply ex_filterdiff_ext with (fun z => Derive (fun t => (partial_derive p q f t) y) z).
+apply ex_derive_ext with (fun z => Derive (fun t => (partial_derive p q f t) y) z).
 intros x0; unfold partial_derive; simpl.
 reflexivity.
 rewrite H1 in H0; simpl in H0.
@@ -956,7 +945,6 @@ case_eq n1.
 intros H2; rewrite H2 in H1.
 clear -H H1; contradict H; auto with zarith.
 intros n2 Hn2; rewrite Hn2 in T4.
-apply ex_filterdiff_Reals.
 apply T4.
 Qed.
 
@@ -981,8 +969,7 @@ revert H0; rewrite plus_0_l.
 case_eq (n-n0)%nat.
 intros H1; contradict H; auto with zarith.
 intros n1 H1 H2.
-apply ex_filterdiff_Reals.
-apply ex_filterdiff_ext with (fun z => Derive (fun t => (partial_derive 0 n0 f x) t) z).
+apply ex_derive_ext with (fun z => Derive (fun t => (partial_derive 0 n0 f x) t) z).
 intros y0; unfold partial_derive; simpl.
 reflexivity.
 simpl in H2.
@@ -991,7 +978,6 @@ case_eq n1.
 intros H2; rewrite H2 in H1.
 clear -H H1; contradict H; auto with zarith.
 intros n2 Hn2; rewrite Hn2 in T5.
-apply ex_filterdiff_Reals.
 apply T5.
 (* . *)
 intros p q H f x y Hf.
@@ -1002,8 +988,7 @@ exact Hf.
 case_eq (n-(p+q))%nat.
 intros H1; contradict H; auto with zarith.
 intros n1 H1.
-apply ex_filterdiff_Reals.
-apply ex_filterdiff_ext with (fun z => Derive (fun t => (partial_derive p q f t) z) x).
+apply ex_derive_ext with (fun z => Derive (fun t => (partial_derive p q f t) z) x).
 intros x0; unfold partial_derive; simpl.
 reflexivity.
 rewrite H1 in H0; simpl in H0.
@@ -1012,7 +997,6 @@ case_eq n1.
 intros H2; rewrite H2 in H1.
 clear -H H1; contradict H; auto with zarith.
 intros n2 Hn2; rewrite Hn2 in T4.
-apply ex_filterdiff_Reals.
 apply T4.
 Qed.
 
@@ -1296,8 +1280,7 @@ specialize (IHk (le_S _ _ (le_S_n _ _ Hk))).
 rewrite /is_derive_n.
 apply locally_locally in IHk.
 move: IHk ; apply filter_imp => {t Ht} z IHk HH.
-apply filterdiff_Reals.
-apply @filterdiff_ext_locally with (fun t => sum_f_R0 (fun m => C k m *
+apply is_derive_ext_loc with (fun t => sum_f_R0 (fun m => C k m *
   partial_derive m (k - m) f (x + t * (u - x)) (y + t * (v - y)) * (u - x) ^ m * (v - y) ^ (k - m)) k).
   apply locally_locally in HH.
   generalize (filter_and _ _ HH IHk).
@@ -1305,19 +1288,16 @@ apply @filterdiff_ext_locally with (fun t => sum_f_R0 (fun m => C k m *
   specialize (HH Hz).
   apply sym_eq.
   now apply is_derive_n_unique.
-apply filterdiff_Reals.
 replace (sum_f_R0 (fun m : nat => C (S k) m *
     partial_derive m (S k - m) f (x + z * (u - x)) (y + z * (v - y)) * (u - x) ^ m * (v - y) ^ (S k - m)) (S k)) with
   (sum_f_R0 (fun m : nat => C k m * (u - x) ^ m  * (v - y) ^ (k - m) *
     ((u - x) * partial_derive (S m) (k - m) f (x + z * (u - x)) (y + z * (v - y)) +
      (v - y) * partial_derive m (S (k - m)) f (x + z * (u - x)) (y + z * (v - y)))) k).
 apply is_derive_sum => p Hp.
-apply filterdiff_Reals.
-apply filterdiff_ext with (fun u0 => C k p * (u - x) ^ p * (v - y) ^ (k - p) * partial_derive p (k - p) f (x + u0 * (u - x)) (y + u0 * (v - y))).
+apply is_derive_ext with (fun u0 => C k p * (u - x) ^ p * (v - y) ^ (k - p) * partial_derive p (k - p) f (x + u0 * (u - x)) (y + u0 * (v - y))).
 intros w.
 simpl ; ring.
-apply filterdiff_Reals.
-apply derivable_pt_lim_scal.
+apply is_derive_Reals, derivable_pt_lim_scal.
 rewrite (Rmult_comm (u - x)) (Rmult_comm (v - y)).
 apply derivable_pt_lim_comp_2d.
 apply locally_singleton in HH.
@@ -1348,12 +1328,12 @@ apply locally_2d_forall.
 intros u' v' (Y,_).
 apply ex_diff_n_m with (2:=Y).
 omega.
-apply filterdiff_Reals ; eapply filterdiff_ext_lin.
+apply is_derive_Reals ; eapply filterdiff_ext_lin.
 apply @filterdiff_plus_fct ; try apply locally_filter.
 apply filterdiff_const.
 apply @filterdiff_scal_l ; try apply locally_filter.
 simpl => y0 ; apply plus_zero_l.
-apply filterdiff_Reals ; eapply filterdiff_ext_lin.
+apply is_derive_Reals ; eapply filterdiff_ext_lin.
 apply @filterdiff_plus_fct ; try apply locally_filter.
 apply filterdiff_const.
 apply @filterdiff_scal_l ; try apply locally_filter.

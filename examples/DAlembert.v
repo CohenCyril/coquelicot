@@ -35,12 +35,11 @@ Ltac auto_derive_2 :=
       let H := fresh "H" in
       let u := fresh "u" in
       intro H ;
-      apply filterdiff_Reals ;
-      apply (filterdiff_ext d) ;
+      apply (is_derive_ext d) ;
       [ intro u ;
         apply sym_eq, is_derive_unique ;
         apply H
-      | apply filterdiff_Reals ; auto_derive ] ;
+      | auto_derive ] ;
       clear H
     end
   end.
@@ -71,6 +70,7 @@ auto_derive_2.
 repeat split ; apply Du0.
 repeat split ; apply D2u0.
 unfold alpha20, Derive_n, Rminus.
+change eq with (@eq R).
 ring.
 Qed.
 
@@ -83,6 +83,7 @@ auto_derive_2.
 repeat split ; apply Du0.
 repeat split ; apply D2u0.
 unfold alpha02, Derive_n, Rminus, Rdiv.
+change eq with (@eq R).
 ring.
 Qed.
 
@@ -100,7 +101,8 @@ intros x.
 destruct (Du1 x) as (l,Hl).
 apply derivable_continuous_pt.
 unfold derivable_pt, derivable_pt_abs.
-now exists l.
+exists l.
+now apply is_derive_Reals.
 Qed.
 
 
@@ -151,6 +153,7 @@ apply filter_forall.
 apply Cu1.
 repeat split ; apply Du1.
 unfold beta20, Rminus.
+change eq with (@eq R).
 ring.
 Qed.
 
@@ -168,6 +171,7 @@ apply Cu1.
 apply filter_forall.
 apply Cu1.
 unfold beta01, Rminus, Rdiv.
+change eq with (@eq R).
 now field.
 Qed.
 
@@ -186,6 +190,7 @@ apply filter_forall.
 apply Cu1.
 repeat split ; apply Du1.
 unfold beta02, Rminus, Rdiv.
+change eq with (@eq R).
 now field.
 Qed.
 

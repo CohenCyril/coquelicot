@@ -49,6 +49,7 @@ Lemma Dfab (a b : R) : forall x, 0 < x
   -> is_derive (fab a b) x (((b - a) - b * ln x) / x ^ 2).
 Proof.
   move => x Hx.
+  apply is_derive_Reals.
   search_derive.
   unfold fab.
   apply derivable_pt_lim_div.
@@ -201,7 +202,7 @@ Proof.
   apply Ropp_lt_cancel.
   apply (incr_function (fun x => - f x) 1 p_infty).
   move => z H1z _.
-  apply ex_derive_opp.
+  apply: ex_derive_opp_fct.
   exists ((2 - 2 - 2 * ln z) / z ^ 2).
   apply (Dfab 2 2 z).
   by apply Rlt_trans with (1 := Rlt_0_1).
@@ -237,7 +238,7 @@ Proof.
   replace 2 with (f 1).
   apply is_lim_continuity.
   apply derivable_continuous_pt.
-  exists (((2 - 2) - 2 * ln 1) / 1 ^ 2) ; apply Dfab.
+  exists (((2 - 2) - 2 * ln 1) / 1 ^ 2) ; apply is_derive_Reals, Dfab.
   by apply Rlt_0_1.
   rewrite /f /fab ln_1 /= ; field.
   rewrite -{2}(Rabs_pos_eq 1).
@@ -257,7 +258,7 @@ Proof.
   by apply continuity_pt_Rabs.
   rewrite Rabs_pos_eq.
   apply derivable_continuous_pt.
-  exists (((2 - 2) - 2 * ln x) / x ^ 2) ; apply Dfab.
+  exists (((2 - 2) - 2 * ln x) / x ^ 2) ; apply is_derive_Reals, Dfab.
   by [].
   by apply Rlt_le.
   by apply Rlt_0_1.
@@ -281,7 +282,7 @@ Proof.
   apply (is_lim_continuity (fun x => - f x)).
   apply continuity_pt_opp.
   apply derivable_continuous_pt.
-  exists (((2 - 2) - 2 * ln 1) / 1 ^ 2) ; apply Dfab.
+  exists (((2 - 2) - 2 * ln 1) / 1 ^ 2) ; apply is_derive_Reals, Dfab.
   by apply Rlt_0_1.
   rewrite /f /fab ln_1 /= ; field.
   search_lim.
@@ -291,7 +292,7 @@ Proof.
   move => x H0x Hx1.
   apply continuity_pt_opp.
   apply derivable_continuous_pt.
-  exists (((2 - 2) - 2 * ln x) / x ^ 2) ; apply Dfab.
+  exists (((2 - 2) - 2 * ln x) / x ^ 2) ; apply is_derive_Reals, Dfab.
   by apply Rlt_trans with (1 := Rlt_0_1).
   by [].
   split ; apply Rminus_lt_0 ; ring_simplify ; by apply Rlt_0_1.
@@ -312,12 +313,13 @@ Qed.
 Lemma If : forall x, 0 < x -> is_derive (fun y => 2 * ln y + (ln y) ^ 2) x (f x).
 Proof.
   move => y Hy.
+  apply is_derive_Reals.
   search_derive.
   apply derivable_pt_lim_plus.
   apply derivable_pt_lim_scal.
   by apply derivable_pt_lim_ln.
-  apply is_derive_pow.
-  by apply derivable_pt_lim_ln.
+  apply is_derive_Reals, is_derive_pow_fct.
+  by apply is_derive_Reals, derivable_pt_lim_ln.
   rewrite /f /fab /= ; field.
   by apply Rgt_not_eq.
 Qed.
@@ -356,7 +358,7 @@ Proof.
   move => y H0y _.
   by apply sym_eq, is_derive_unique, If.
   apply derivable_continuous_pt.
-  exists (((2 - 2) - 2 * ln x) / x ^ 2) ; apply Dfab.
+  exists (((2 - 2) - 2 * ln x) / x ^ 2) ; apply is_derive_Reals, Dfab.
   apply Rlt_le_trans with (2 := proj1 Hx).
   apply Rmin_case.
   by apply Haux1.

@@ -1907,13 +1907,13 @@ Proof.
     replace (PS_derive a 0 * y ^ 0)
       with (0 + a 1%nat * (1 * 1 + y * 0))
       by (rewrite /PS_derive /= ; ring).
-    apply derivable_pt_lim_plus.
+    apply is_derive_Reals, derivable_pt_lim_plus.
     simpl ; by apply derivable_pt_lim_const.
     apply derivable_pt_lim_scal, derivable_pt_lim_mult.
     by apply derivable_pt_lim_id.
     by apply derivable_pt_lim_const.
-    move => IH ; apply derivable_pt_lim_plus.
-    exact: IH.
+    move => IH ; apply is_derive_Reals, derivable_pt_lim_plus.
+    apply is_derive_Reals, IH.
     rewrite /PS_derive.
     replace (INR (S (S n)) * a (S (S n)) * y ^ S n)
       with (a (S (S n)) * (INR (S (S n)) * y^S n))
@@ -1924,7 +1924,8 @@ Proof.
     ex_derive (fun (y : R) =>
       sum_f_R0 (fun k : nat => a k * y ^ k) n) x).
     case => [ | n] y Hy.
-    exists 0 => /= ; by apply derivable_pt_lim_const.
+    simpl.
+    apply: ex_derive_const.
     exists (sum_f_R0 (fun k : nat => PS_derive a k * y ^ k) (pred (S n))).
     apply (Idn (S n) y).
     by apply lt_O_Sn.
@@ -1985,8 +1986,8 @@ Proof.
     with (real (Lim_seq
          (fun n : nat =>
           Derive (fun y : R => sum_f_R0 (fun k : nat => a k * y ^ k) n) x))).
-  apply filterdiff_Reals.
-  move/filterdiff_Reals: H ; apply filterdiff_ext => t.
+  apply: is_derive_ext H.
+  simpl => t.
   apply (f_equal real), Lim_seq_ext.
   intros n; apply sym_eq, sum_n_sum_f_R0.
   rewrite -Lim_seq_incr_1.
@@ -2066,9 +2067,7 @@ Proof.
   apply Rgt_not_eq.
   by apply INR_fact_lt_0.
   simpl ; rewrite /PS_derive_n /=.
-  apply filterdiff_Reals.
-  eapply filterdiff_ext_lin.
-  apply @filterdiff_ext_locally
+  apply is_derive_ext_loc
     with (PSeries (fun k : nat => INR (fact (k + n)) / INR (fact k) * a (k + n)%nat)).
   case Ha : (CV_radius a) => [cva | | ].
   move: (Hx) ; rewrite Ha ; move/Rminus_lt_0 => Hx0.
@@ -2086,7 +2085,9 @@ Proof.
   apply IH.
   by rewrite Ha /=.
   by rewrite Ha in Hx.
-  apply filterdiff_Reals.
+  evar (l : R).
+  replace (PSeries _ x) with l.
+  rewrite /l {l}.
   apply is_derive_PSeries.
   replace (CV_radius (fun k : nat => INR (fact (k + n)) / INR (fact k) * a (k + n)%nat))
     with (CV_radius a).
@@ -2106,8 +2107,7 @@ Proof.
   rewrite -S_INR ; split ; apply Rgt_not_eq.
   by apply INR_fact_lt_0.
   apply (lt_INR O), lt_O_Sn.
-  move => /= y.
-  apply f_equal.
+  rewrite /l {l}.
   apply PSeries_ext.
   move => k ; rewrite /PS_derive.
   rewrite -plus_n_Sm plus_Sn_m /fact -/fact ?mult_INR ?S_INR.

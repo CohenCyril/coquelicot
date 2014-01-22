@@ -24,17 +24,17 @@ Require Import Rbar Rcomplements Continuity Derive Hierarchy RInt.
 
 (** * Absolute value *)
 
-Lemma derivable_pt_lim_Rabs (x : R) :
+Lemma is_derive_abs (x : R) :
   x <> 0 -> is_derive Rabs x (sign x).
 Proof.
   move => Hx0.
   case: (Rle_lt_dec 0 x) => Hx.
   case: Hx => //= Hx.
   rewrite (proj1 (sign_0_lt x)) => //.
-  by apply Rabs_derive_1.
+  by apply is_derive_Reals, Rabs_derive_1.
   by apply sym_eq in Hx.
   rewrite (proj1 (sign_lt_0 x)) => //.
-  by apply Rabs_derive_2.
+  by apply is_derive_Reals, Rabs_derive_2.
 Qed.
 
 Lemma continuity_pt_Rabs (x : R) :
@@ -108,12 +108,13 @@ Proof.
 intros a b n.
 set f := fun x => pow x (S n) / INR (S n).
 fold (f a) (f b).
-assert (H: forall x, is_derive f x (pow x n)).
+assert (H: forall x : R, is_derive f x (pow x n)).
   intros x.
-  search_derive.
-  apply derivable_pt_lim_scal_r.
-  apply derivable_pt_lim_pow.
-  rewrite /pred.
+  evar (l : R).
+  replace (pow x n) with l.
+  apply is_derive_scal_r_fct.
+  apply is_derive_Reals, derivable_pt_lim_pow.
+  rewrite /l /pred.
   field.
   rewrite S_INR.
   apply Rgt_not_eq, INRp1_pos.
@@ -140,15 +141,15 @@ intros a b.
 apply is_RInt_ext with (Derive exp).
   intros x _.
   apply is_derive_unique.
-  apply derivable_pt_lim_exp.
+  apply is_derive_Reals, derivable_pt_lim_exp.
 apply is_RInt_Derive.
   intros x _.
   exists (exp x).
-  apply derivable_pt_lim_exp.
+  apply is_derive_Reals, derivable_pt_lim_exp.
 intros x _.
 apply continuity_pt_ext with exp.
   intros t.
-  apply sym_eq, is_derive_unique, derivable_pt_lim_exp.
+  apply sym_eq, is_derive_unique, is_derive_Reals, derivable_pt_lim_exp.
 apply derivable_continuous_pt.
 apply derivable_pt_exp.
 Qed.
@@ -355,10 +356,11 @@ Proof.
     move => x Hx.
     apply Rminus_lt_0.
     apply Rlt_le_trans with (1 := Rlt_0_1).
-    have H : forall x, 0 < x -> derivable_pt_lim (fun y => y - ln y) x ((x - 1) / x).
+    have H : forall x, 0 < x -> is_derive (fun y => y - ln y) x ((x - 1) / x).
       move => z Hz.
       evar (l : R).
       replace ((z - 1) / z) with l.
+      apply is_derive_Reals.
       apply derivable_pt_lim_minus.
       apply derivable_pt_lim_id.
       apply derivable_pt_lim_ln.
@@ -373,7 +375,7 @@ Proof.
     by apply Hx.
     move => y Hy.
     apply derivable_continuous_pt.
-    exists ((y-1)/y) ; apply H.
+    exists ((y-1)/y) ; apply is_derive_Reals, H.
     apply Rlt_le_trans with (2 := proj1 Hy).
     apply Rmin_case.
     apply Rlt_0_1.
