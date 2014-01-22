@@ -100,7 +100,7 @@ Proof.
   move: (is_RInt_fct_extend_snd _ _ _ _ Hf1) => /= Hf1_2.
   move: (is_RInt_fct_extend_fst _ _ _ _ Hf2) => /= Hf2_1.
   move: (is_RInt_fct_extend_snd _ _ _ _ Hf2) => /= Hf2_2.
-  now apply @is_RInt_Chasles with b ; apply @is_RInt_fct_extend_pair.
+  now apply @is_RInt_Chasles with b ; apply is_RInt_fct_extend_pair.
 Qed.
 
 (** * Definition 2 *)
@@ -281,8 +281,8 @@ Focus 2.
   move => x _.
   change eq with (@eq C).
   field.
-  replace (z3 - (((1, 0) - p) * z1 + p * z3)) with ((1-p) * (z3 - z1))
-    by (apply injective_projections ; simpl ; ring).
+  change (1, 0)%R with (RtoC 1).
+  replace (z3 - ((1 - p) * z1 + p * z3)) with ((1-p) * (z3 - z1)) by ring.
   apply Cmult_neq_0.
   contradict Hp1.
   apply (f_equal (@fst R R)) in Hp1 ; simpl in Hp1.
@@ -297,7 +297,7 @@ Focus 2.
   replace (plus l1 l2) with k.
   apply is_C_RInt_scal.
 
-  apply @is_RInt_Chasles with p.
+  apply is_RInt_Chasles with p.
   replace 0%R with (/p * 0 + 0)%R in H1 by ring.
   pattern 1%R at 4 in H1.
   replace 1%R with (/p * p + 0)%R in H1 by (by field).
