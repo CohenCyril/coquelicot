@@ -2983,8 +2983,7 @@ Proof.
   apply sym_eq, Derive_n_plus.
   apply filter_imp with (2 := Hfn) ; by intuition.
   apply filter_imp with (2 := Hgn) ; by intuition.
-  apply is_derive_Reals, derivable_pt_lim_plus ;
-    now apply is_derive_Reals.
+  by apply: is_derive_plus.
 Qed.
 
 (** Subtraction of functions *)
@@ -3345,14 +3344,13 @@ apply derivable_pt_lim_const.
 apply derivable_pt_lim_id.
 apply derivable_pt_lim_pow.
 (* *)
-apply is_derive_Reals, derivable_pt_lim_plus.
+apply: is_derive_plus.
 (* . *)
 clear c g.
 rename n into N.
 generalize (le_refl N).
 generalize N at -2.
 intros n Hn.
-apply is_derive_Reals.
 move: Hn.
 induction n.
 (* .. *)
@@ -3412,7 +3410,6 @@ destruct n.
 apply Rgt_not_eq, Rlt_0_1.
 apply Rgt_not_eq, INRp1_pos.
 (* . *)
-apply is_derive_Reals.
 eapply filterdiff_ext_lin.
 apply filterdiff_ext with (fun x0 : R => -c * (y - x0) ^ S n).
 simpl => z ; ring.

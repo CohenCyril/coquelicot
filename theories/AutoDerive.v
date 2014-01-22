@@ -871,7 +871,7 @@ case C1: (is_const e1 n).
 assert (H1 := is_const_correct e1 n C1 l).
 case o ; intros H2.
 rewrite -(Rplus_0_l (interp l a2)).
-apply is_derive_Reals, derivable_pt_lim_plus ; apply is_derive_Reals.
+apply: is_derive_plus.
 apply is_derive_ext with (fun x => interp (set_nth 0 l n 0) e1).
 apply H1.
 apply: is_derive_const.
@@ -892,7 +892,7 @@ case C2: (is_const e2 n) => {C1}.
 assert (H2 := is_const_correct e2 n C2 l).
 case o ; intros H1.
 rewrite -(Rplus_0_r (interp l a1)).
-apply is_derive_Reals, derivable_pt_lim_plus ; apply is_derive_Reals.
+apply: is_derive_plus.
 now apply IHe1.
 apply is_derive_ext with (fun x => interp (set_nth 0 l n 0) e2).
 apply H2.
@@ -913,7 +913,7 @@ case o ; simpl ;
   intros (H1&H2&_) ;
   specialize (IHe1 H1) ;
   specialize (IHe2 H2).
-now apply is_derive_Reals, derivable_pt_lim_plus ; apply is_derive_Reals.
+now apply: is_derive_plus.
 rewrite -(interp_set_nth n _ e1) -(interp_set_nth n _ e2).
 apply is_derive_Reals.
 apply (derivable_pt_lim_mult (fun x => interp (set_nth 0 l n x) e1) (fun x => interp (set_nth 0 l n x) e2)) ;

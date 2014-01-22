@@ -172,17 +172,15 @@ Proof.
   apply Rle_trans with (eps' * Rabs (u - x)).
   apply bounded_variation => t Ht.
   assert (is_derive g1 t (Derive (fun z : R => f z v) t - l1)).
-    apply is_derive_Reals.
-    apply derivable_pt_lim_minus with (f2 := fun t => l1 * t).
-    apply is_derive_Reals, Derive_correct.
-    apply Hd1.
+    apply: is_derive_minus.
+    apply Derive_correct, Hd1.
     apply Rle_lt_trans with (1 := Ht).
     apply Rlt_le_trans with (1:=Hu).
     apply Rmin_l.
     apply Rlt_le_trans with (1:=Hv).
     apply Rmin_l.
     rewrite -{2}(Rmult_1_r l1).
-    apply derivable_pt_lim_scal.
+    apply is_derive_Reals, derivable_pt_lim_scal.
     apply derivable_pt_lim_id.
   split.
   eexists. apply H.

@@ -1907,18 +1907,20 @@ Proof.
     replace (PS_derive a 0 * y ^ 0)
       with (0 + a 1%nat * (1 * 1 + y * 0))
       by (rewrite /PS_derive /= ; ring).
-    apply is_derive_Reals, derivable_pt_lim_plus.
-    simpl ; by apply derivable_pt_lim_const.
-    apply derivable_pt_lim_scal, derivable_pt_lim_mult.
+    apply: is_derive_plus.
+    simpl.
+    apply: is_derive_const.
+    apply is_derive_Reals, derivable_pt_lim_scal, derivable_pt_lim_mult.
     by apply derivable_pt_lim_id.
     by apply derivable_pt_lim_const.
-    move => IH ; apply is_derive_Reals, derivable_pt_lim_plus.
-    apply is_derive_Reals, IH.
+    move => IH.
+    apply: is_derive_plus.
+    apply IH.
     rewrite /PS_derive.
     replace (INR (S (S n)) * a (S (S n)) * y ^ S n)
       with (a (S (S n)) * (INR (S (S n)) * y^S n))
       by ring.
-    by apply derivable_pt_lim_scal, derivable_pt_lim_pow.
+    by apply is_derive_Reals, derivable_pt_lim_scal, derivable_pt_lim_pow.
 
   have Edn : (forall (n : nat) (x : R), D x ->
     ex_derive (fun (y : R) =>
