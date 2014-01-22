@@ -188,13 +188,6 @@ Proof.
   by apply Lim_correct, Hf.
 Qed.
 
-Ltac search_lim := let l := fresh "l" in
-evar (l : Rbar) ;
-match goal with
-  | |- Lim _ _ = ?lu => apply is_lim_unique ; replace lu with l ; [ | unfold l]
-  | |- is_lim _ _ ?lu => replace lu with l ; [ | unfold l]
-end.
-
 (** ** Operations and order *)
 
 (** Extensionality *)

@@ -1326,13 +1326,6 @@ Proof.
   apply f_equal, is_lim_seq_unique, H.
 Qed.
 
-Ltac search_lim_seq := let l := fresh "l" in
-evar (l : Rbar) ;
-match goal with
-  | |- Lim_seq _ = ?lu => apply is_lim_seq_unique ; replace lu with l ; [ | unfold l]
-  | |- is_lim_seq _ ?lu => replace lu with l ; [ | unfold l]
-end.
-
 Lemma ex_finite_lim_seq_correct (u : nat -> R) :
   ex_finite_lim_seq u <-> ex_lim_seq u /\ is_finite (Lim_seq u).
 Proof.

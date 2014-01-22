@@ -199,7 +199,7 @@ Qed.
 
 Lemma is_lim_exp_m : is_lim (fun y => exp y) m_infty 0.
 Proof.
-  search_lim.
+  evar_last.
   apply is_lim_ext with (fun y => /(exp (- y))).
   move => y ; rewrite exp_Ropp ; apply Rinv_involutive.
   apply Rgt_not_eq, exp_pos.
@@ -289,7 +289,7 @@ Qed.
 
 Lemma is_lim_mul_exp_m : is_lim (fun y => y * exp y) m_infty 0.
 Proof.
-  search_lim.
+  evar_last.
   apply is_lim_ext_loc with (fun y => - / (exp (-y) / (- y))).
   exists 0 => y Hy.
   rewrite exp_Ropp.
@@ -301,7 +301,7 @@ Proof.
   apply is_lim_inv.
   apply (is_lim_comp (fun y => exp y / y)) with p_infty.
   by apply is_lim_div_exp_p.
-  search_lim.
+  evar_last.
   apply is_lim_opp.
   apply is_lim_id.
   by [].
@@ -444,7 +444,7 @@ Proof.
   apply sqrt_lt_R0.
   by apply Rlt_trans with (1 := Rlt_0_1).
   apply is_lim_const.
-  search_lim.
+  evar_last.
   apply is_lim_div.
   apply is_lim_const.
   apply is_lim_sqrt_p.

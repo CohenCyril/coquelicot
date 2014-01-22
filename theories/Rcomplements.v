@@ -19,15 +19,24 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 COPYING file for more details.
 *)
 
-Require Import Reals ssreflect.
-Require Import Even Div2.
-Require Import seq ssrbool.
-
 (** This file describes basic missing facts about the standard library
 of reals and a few concerning ssreflect.seq.
 #<br /># It also contains a definition of the [sign] function. *)
 
+(** Tactic for changing the last argument of a property to an evar,
+    in order to apply theorems modulo equality. *)
 
+Ltac evar_last :=
+  match goal with
+  | |- ?f ?x =>
+    let tx := type of x in
+    let tx := eval simpl in tx in
+    refine (@eq_ind tx _ f _ x _)
+  end.
+
+Require Import Reals ssreflect.
+Require Import Even Div2.
+Require Import seq ssrbool.
 
 Open Scope R_scope.
 

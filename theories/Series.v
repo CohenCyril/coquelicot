@@ -83,13 +83,6 @@ Proof.
   by rewrite (is_series_unique a l).
 Qed.
 
-Ltac search_series := let l := fresh "l" in
-evar (l : R) ;
-match goal with
-  | |- Series _ = ?lu => apply is_series_unique ; replace lu with l ; [ | unfold l]
-  | |- is_series _ ?lu => replace lu with l ; [ | unfold l]
-end.
-
 Lemma is_series_equiv (a : nat -> R) (l : R) :
   is_series a l <-> infinite_sum a l.
 Proof.

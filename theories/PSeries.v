@@ -2464,7 +2464,7 @@ Proof.
   apply Rgt_not_eq, INRp1_pos.
   rewrite CV_radius_Int.
   by apply H.
-  search_RInt.
+  evar_last.
   apply is_RInt_Derive.
   move => y Hy.
   apply ex_derive_PSeries.

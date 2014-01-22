@@ -2055,13 +2055,6 @@ Proof.
   apply sym_eq ; by apply is_RInt_unique.
 Qed.
 
-Ltac search_RInt := let l := fresh "l" in
-evar (l : R) ;
-match goal with
-  | |- RInt _ _ _ = ?lu => apply is_RInt_unique ; replace lu with l ; [ | unfold l]
-  | |- is_RInt _ _ _ ?lu => replace lu with l ; [ | unfold l]
-end.
-
 (** ** Usual rewritings *)
 
 Lemma RInt_ext :
@@ -5048,14 +5041,15 @@ Proof.
   by apply ex_RInt_cont.
   by apply Hf.
   move => x Hx.
-  search_derive.
-  unfold l.
+  apply is_derive_unique.
+  evar_last.
   apply (is_derive_RInt (fun y : R => Derive g y * f (g y)) a x).
   by apply H0.
   exists (mkposreal _ Rlt_0_1) => /=.
   by apply H0.
   by apply H.
-  apply sym_eq ; search_derive.
+  apply sym_eq, is_derive_unique.
+  evar_last.
   apply is_derive_Reals, derivable_pt_lim_comp.
   apply is_derive_Reals, Derive_correct.
   by apply Hg.

@@ -1399,15 +1399,6 @@ Proof.
   now apply is_derive_Reals.
 Qed.
 
-(** A tactic to simplify interactive proofs of differentiability *)
-
-Ltac search_derive := let l := fresh "l" in
-evar (l : R) ;
-match goal with
-  | |- Derive _ _ = ?lu => apply is_derive_unique ; replace lu with l ; [ | unfold l]
-  | |- derivable_pt_lim _ _ ?lu => replace lu with l ; [ | unfold l]
-end.
-
 (** Extensionality *)
 
 Section Extensionality.
@@ -1919,7 +1910,8 @@ Lemma Derive_div_fct (f g : R -> R) (x : R) :
     -> Derive (fun y => f y / g y) x = (Derive f x * g x - f x * Derive g x) / (g x) ^ 2.
 Proof.
   move => Hf Hg Hl.
-  search_derive.
+  apply is_derive_unique.
+  evar_last.
   apply is_derive_Reals, derivable_pt_lim_div ;
     try now apply is_derive_Reals, Derive_correct.
   by apply Hl.
