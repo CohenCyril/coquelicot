@@ -20,8 +20,7 @@ COPYING file for more details.
 *)
 
 Require Import Reals ssreflect.
-
-Require Import Rbar Rcomplements Continuity Derive Hierarchy.
+Require Import Rbar Rcomplements Continuity Derive Hierarchy RInt.
 
 (** * Absolute value *)
 
@@ -100,7 +99,59 @@ Proof.
   apply Rmax_l.
 Qed.
 
+(** * Power function *)
+
+Lemma is_RInt_pow :
+  forall a b n,
+  is_RInt (fun x => pow x n) a b (pow b (S n) / INR (S n) - pow a (S n) / INR (S n)).
+Proof.
+intros a b n.
+set f := fun x => pow x (S n) / INR (S n).
+fold (f a) (f b).
+assert (H: forall x, is_derive f x (pow x n)).
+  intros x.
+  search_derive.
+  apply derivable_pt_lim_scal_r.
+  apply derivable_pt_lim_pow.
+  rewrite /pred.
+  field.
+  rewrite S_INR.
+  apply Rgt_not_eq, INRp1_pos.
+apply is_RInt_ext with (Derive f).
+  intros x _.
+  now apply is_derive_unique.
+apply: is_RInt_Derive => x Hx.
+  now eexists.
+apply continuity_pt_ext with (fun x => pow x n).
+  intros t.
+  apply sym_eq.
+  now apply is_derive_unique.
+apply derivable_continuous_pt.
+apply derivable_pt_pow.
+Qed.
+
 (** * Exponential function *)
+
+Lemma is_RInt_exp :
+  forall a b,
+  is_RInt exp a b (exp b - exp a).
+Proof.
+intros a b.
+apply is_RInt_ext with (Derive exp).
+  intros x _.
+  apply is_derive_unique.
+  apply derivable_pt_lim_exp.
+apply is_RInt_Derive.
+  intros x _.
+  exists (exp x).
+  apply derivable_pt_lim_exp.
+intros x _.
+apply continuity_pt_ext with exp.
+  intros t.
+  apply sym_eq, is_derive_unique, derivable_pt_lim_exp.
+apply derivable_continuous_pt.
+apply derivable_pt_exp.
+Qed.
 
 Lemma exp_ge_taylor (x : R) (n : nat) :
   0 <= x -> sum_f_R0 (fun k => x^k / INR (fact k)) n <= exp x.
