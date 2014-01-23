@@ -110,13 +110,15 @@ set f := fun x => pow x (S n) / INR (S n).
 fold (f a) (f b).
 assert (H: forall x : R, is_derive f x (pow x n)).
   intros x.
-  evar (l : R).
-  replace (pow x n) with l.
-  apply is_derive_scal_r_fct.
-  apply is_derive_Reals, derivable_pt_lim_pow.
-  rewrite /l /pred.
+  evar_last.
+  rewrite /f /Rdiv -[Rmult]/(scal (V := R_NormedModule)).
+  apply is_derive_scal_l_fct.
+  apply is_derive_pow_fct, is_derive_id.
+  rewrite /pred.
+  set k := INR (S n).
+  rewrite /scal /= /mult /one /=.
   field.
-  rewrite S_INR.
+  rewrite /k S_INR.
   apply Rgt_not_eq, INRp1_pos.
 apply is_RInt_ext with (Derive f).
   intros x _.

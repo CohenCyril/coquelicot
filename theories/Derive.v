@@ -1784,13 +1784,27 @@ Proof.
   by apply is_derive_inv_fct.
 Qed.
 
+Lemma is_derive_scal_fct :
+  forall f x k df,
+  is_derive f x df ->
+  is_derive (fun x => k * f x) x (k * df).
+Proof.
+intros f x k df Df.
+change Rmult with (scal (V := R_NormedModule)).
+eapply filterdiff_ext_lin.
+apply filterdiff_scal_r_fct with (2 := Df).
+apply Rmult_comm.
+rewrite /scal /= /mult /= => y.
+ring.
+Qed.
+
 Lemma ex_derive_scal_fct :
   forall f k x, ex_derive f x ->
   ex_derive (fun x => k * f x) x.
 Proof.
 intros f k x (df,Df).
 exists (k * df).
-now apply is_derive_Reals, derivable_pt_lim_scal, is_derive_Reals.
+now apply is_derive_scal_fct.
 Qed.
 
 Lemma Derive_scal_fct :
@@ -1819,28 +1833,36 @@ apply (f_equal (fun v => v / _)).
 ring.
 Qed.
 
-Lemma is_derive_scal_r_fct (f : R -> R) (k x l : R) :
+Section Scal_l.
+
+Context {K : AbsRing} {V : NormedModule K}.
+
+Lemma is_derive_scal_l_fct :
+  forall (f : K -> K) (x l : K) (k : V),
   is_derive f x l ->
-  is_derive (fun x => f x * k) x (l*k).
+  is_derive (fun x => scal (f x) k) x (scal l k).
 Proof.
-  move => Hf.
+  intros f x l k Df.
   eapply filterdiff_ext_lin.
   apply @filterdiff_scal_l_fct ; try by apply locally_filter.
-  exact Hf.
+  exact Df.
   simpl => y.
-  apply Rmult_assoc.
+  apply sym_eq, scal_assoc.
 Qed.
 
-Lemma ex_derive_scal_r_fct (f : R -> R) (k x : R) :
+Lemma ex_derive_scal_l_fct :
+  forall (f : K -> K) (x : K) (k : V),
   ex_derive f x ->
-  ex_derive (fun x => f x * k) x.
+  ex_derive (fun x => scal (f x) k) x.
 Proof.
-  case => l Hf.
-  exists (l * k).
-  by apply is_derive_scal_r_fct.
+  intros f x k [df Df].
+  exists (scal df k).
+  by apply is_derive_scal_l_fct.
 Qed.
 
-Lemma Derive_scal_r_fct (f : R -> R) (k x : R) :
+End Scal_l.
+
+Lemma Derive_scal_l_fct (f : R -> R) (k x : R) :
   Derive (fun x => f x * k) x = Derive f x * k.
 Proof.
   rewrite Rmult_comm -Derive_scal_fct.
