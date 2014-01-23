@@ -49,8 +49,8 @@ Lemma Dfab (a b : R) : forall x, 0 < x
   -> is_derive (fab a b) x (((b - a) - b * ln x) / x ^ 2).
 Proof.
   move => x Hx.
-  search_derive.
-  unfold fab.
+  evar_last.
+  apply is_derive_Reals.
   apply derivable_pt_lim_div.
   apply derivable_pt_lim_plus.
   by apply derivable_pt_lim_const.
@@ -160,7 +160,6 @@ Qed.
 
 Lemma Lim_f_p_infty : is_lim f p_infty 0.
 Proof.
-(*  search_lim.*)
   apply is_lim_ext_loc with (fun x => 2 / x + 2 * (ln x / x)).
     exists 0.
     move => y Hy.
@@ -201,12 +200,12 @@ Proof.
   apply Ropp_lt_cancel.
   apply (incr_function (fun x => - f x) 1 p_infty).
   move => z H1z _.
-  apply ex_derive_opp.
+  apply: ex_derive_opp_fct.
   exists ((2 - 2 - 2 * ln z) / z ^ 2).
   apply (Dfab 2 2 z).
   by apply Rlt_trans with (1 := Rlt_0_1).
   move => z H1z _.
-  rewrite Derive_opp.
+  rewrite Derive_opp_fct.
   apply Ropp_lt_cancel ; rewrite Ropp_0 Ropp_involutive.
   apply sign_lt_0.
   rewrite Signe_df.
@@ -237,7 +236,7 @@ Proof.
   replace 2 with (f 1).
   apply is_lim_continuity.
   apply derivable_continuous_pt.
-  exists (((2 - 2) - 2 * ln 1) / 1 ^ 2) ; apply Dfab.
+  exists (((2 - 2) - 2 * ln 1) / 1 ^ 2) ; apply is_derive_Reals, Dfab.
   by apply Rlt_0_1.
   rewrite /f /fab ln_1 /= ; field.
   rewrite -{2}(Rabs_pos_eq 1).
@@ -257,7 +256,7 @@ Proof.
   by apply continuity_pt_Rabs.
   rewrite Rabs_pos_eq.
   apply derivable_continuous_pt.
-  exists (((2 - 2) - 2 * ln x) / x ^ 2) ; apply Dfab.
+  exists (((2 - 2) - 2 * ln x) / x ^ 2) ; apply is_derive_Reals, Dfab.
   by [].
   by apply Rlt_le.
   by apply Rlt_0_1.
@@ -281,17 +280,17 @@ Proof.
   apply (is_lim_continuity (fun x => - f x)).
   apply continuity_pt_opp.
   apply derivable_continuous_pt.
-  exists (((2 - 2) - 2 * ln 1) / 1 ^ 2) ; apply Dfab.
+  exists (((2 - 2) - 2 * ln 1) / 1 ^ 2) ; apply is_derive_Reals, Dfab.
   by apply Rlt_0_1.
   rewrite /f /fab ln_1 /= ; field.
-  search_lim.
+  evar_last.
   apply is_lim_opp.
   by apply Lim_f_p_infty.
   simpl ; by rewrite Ropp_0.
   move => x H0x Hx1.
   apply continuity_pt_opp.
   apply derivable_continuous_pt.
-  exists (((2 - 2) - 2 * ln x) / x ^ 2) ; apply Dfab.
+  exists (((2 - 2) - 2 * ln x) / x ^ 2) ; apply is_derive_Reals, Dfab.
   by apply Rlt_trans with (1 := Rlt_0_1).
   by [].
   split ; apply Rminus_lt_0 ; ring_simplify ; by apply Rlt_0_1.
@@ -308,17 +307,17 @@ Qed.
 
 (** 5.b. *)
 
-
-Lemma If : forall x, 0 < x -> is_derive (fun y => 2 * ln y + (ln y) ^ 2) x (f x).
+Lemma If : forall x, 0 < x -> is_derive (fun y : R => 2 * ln y + (ln y) ^ 2) x (f x).
 Proof.
   move => y Hy.
-  search_derive.
-  apply derivable_pt_lim_plus.
+  evar_last.
+  apply @is_derive_plus.
+  apply is_derive_Reals.
   apply derivable_pt_lim_scal.
   by apply derivable_pt_lim_ln.
-  apply is_derive_pow.
-  by apply derivable_pt_lim_ln.
-  rewrite /f /fab /= ; field.
+  apply is_derive_pow_fct.
+  by apply is_derive_Reals, derivable_pt_lim_ln.
+  rewrite /f /fab /plus /= ; field.
   by apply Rgt_not_eq.
 Qed.
 
@@ -334,10 +333,7 @@ Proof.
   apply Rmin_case.
   by apply Haux1.
   by apply Rlt_0_1.
-  set a := /exp 1.
-  set b := 1.
-  rewrite {4}/b.
-  search_RInt ; rewrite /a /b ; clear a b.
+  evar_last.
   apply is_RInt_Derive.
   move => x Hx.
   exists (f x) ; apply If.
@@ -356,7 +352,7 @@ Proof.
   move => y H0y _.
   by apply sym_eq, is_derive_unique, If.
   apply derivable_continuous_pt.
-  exists (((2 - 2) - 2 * ln x) / x ^ 2) ; apply Dfab.
+  exists (((2 - 2) - 2 * ln x) / x ^ 2) ; apply is_derive_Reals, Dfab.
   apply Rlt_le_trans with (2 := proj1 Hx).
   apply Rmin_case.
   by apply Haux1.

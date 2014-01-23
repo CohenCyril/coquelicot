@@ -2055,13 +2055,6 @@ Proof.
   apply sym_eq ; by apply is_RInt_unique.
 Qed.
 
-Ltac search_RInt := let l := fresh "l" in
-evar (l : R) ;
-match goal with
-  | |- RInt _ _ _ = ?lu => apply is_RInt_unique ; replace lu with l ; [ | unfold l]
-  | |- is_RInt _ _ _ ?lu => replace lu with l ; [ | unfold l]
-end.
-
 (** ** Usual rewritings *)
 
 Lemma RInt_ext :
@@ -4692,14 +4685,14 @@ Qed. *)
 
 (** * Riemann integral and differentiability *)
 
-Lemma derivable_pt_lim_RInt (f : R -> R) (a : R) (x : R) :
+Lemma is_derive_RInt (f : R -> R) (a : R) (x : R) :
   ex_RInt f a x -> (exists eps : posreal, ex_RInt f (x - eps) (x + eps)) ->
-  continuity_pt f x -> derivable_pt_lim (fun x => RInt f a x) x (f x).
+  continuity_pt f x -> is_derive (fun x => RInt f a x) x (f x).
 Proof.
   move => Iax Iloc Cx.
-  apply filterdiff_Reals ; split.
+  split.
   by apply @is_linear_scal_l.
-  intros y Hy eps.
+  simpl => y Hy eps.
   rewrite -(is_filter_lim_locally_unique_R _ _ Hy) => {y Hy}.
   destruct (Cx eps (cond_pos eps)) as (d,(Hd1,Hd2)).
   unfold dist in Hd2; simpl in Hd2; unfold R_dist in Hd2.
@@ -4818,7 +4811,8 @@ assert (forall x, continuity_pt f x).
 intros x.
 destruct (Df x) as (y,Hy).
 apply derivable_continuous_pt.
-now exists y.
+exists y.
+now apply is_derive_Reals.
 (* *)
 destruct (fn_eq_Derive_eq f (fun x => RInt (Derive f) a x) a b).
 apply H.
@@ -4833,14 +4827,14 @@ by apply RInt_correct, ex_RInt_cont.
 intros x Hx; apply Df.
 intros x Hx.
 eexists.
-apply derivable_pt_lim_RInt.
+apply is_derive_RInt.
 by apply ex_RInt_cont.
 exists (mkposreal _ Rlt_0_1).
 by apply ex_RInt_cont.
 apply Cdf.
 intros x Hx.
 apply sym_eq, is_derive_unique.
-apply derivable_pt_lim_RInt.
+apply is_derive_RInt.
 by apply ex_RInt_cont.
 exists (mkposreal _ Rlt_0_1).
 by apply ex_RInt_cont.
@@ -4869,27 +4863,19 @@ Proof.
   by apply Cdf.
 Qed.
 
-Lemma derivable_pt_lim_RInt' :
+Lemma is_derive_RInt' :
   forall f a x,
   ex_RInt f x a -> (exists eps : posreal, ex_RInt f (x - eps) (x + eps)) ->
   continuity_pt f x ->
-  derivable_pt_lim (fun x => RInt f x a) x (- f x).
+  is_derive (fun x => RInt f x a) x (- f x).
 Proof.
 intros f a x Hi Ix Cx.
-apply filterdiff_Reals.
-eapply filterdiff_ext_lin.
-apply (filterdiff_ext (fun u => - RInt f a u)).
-intros t.
+apply is_derive_ext with (fun u => - RInt f a u).
+simpl => t.
 apply RInt_swap.
-apply @filterdiff_opp_fct ; try by apply locally_filter.
-apply filterdiff_Reals.
-apply derivable_pt_lim_RInt ; try easy.
-apply ex_RInt_Reals_1.
-apply RiemannInt_P1.
-now apply ex_RInt_Reals_2.
-move => /= y.
-apply sym_eq.
-apply: scal_opp_r.
+apply: is_derive_opp_fct.
+apply is_derive_RInt ; try easy.
+now apply ex_RInt_swap.
 Qed.
 
 Lemma is_RInt_comp (f g : R -> R) (a b : R) :
@@ -4952,19 +4938,19 @@ Proof.
     case: (continuity_ab_maj g a b (Rlt_le _ _ Hab)) => [ | M HM].
       move => x Hx.
       apply derivable_continuous_pt.
-      exists (Derive g x) ; apply Derive_correct.
+      exists (Derive g x) ; apply is_derive_Reals, Derive_correct.
       by apply Hg.
     case: (continuity_ab_min g a b (Rlt_le _ _ Hab)) => [ | m Hm].
       move => x Hx.
       apply derivable_continuous_pt.
-      exists (Derive g x) ; apply Derive_correct.
+      exists (Derive g x) ; apply is_derive_Reals, Derive_correct.
       by apply Hg.
     have H : g m <= g M.
       apply Hm ; intuition.
     case: (C0_extension_le f (g m) (g M)) => [ y Hy | f0 Hf0].
     case: (IVT_gen g m M y).
     move => x ; apply derivable_continuous_pt.
-    exists (Derive g x) ; apply Derive_correct.
+    exists (Derive g x) ; apply is_derive_Reals, Derive_correct.
     by apply Hg.
     rewrite /Rmin /Rmax ; case: Rle_dec => //.
     move => x [Hx <-].
@@ -4999,7 +4985,7 @@ Proof.
     by apply Hg.
     apply continuity_pt_comp.
     apply derivable_continuous_pt.
-    exists (Derive g x) ; apply Derive_correct.
+    exists (Derive g x) ; apply is_derive_Reals, Derive_correct.
     by apply Hg.
     by apply Hf.
   assert (H0 : forall a b, ex_RInt (fun y : R => Derive g y * f (g y)) a b).
@@ -5019,7 +5005,7 @@ Proof.
   by apply RInt_correct, H0.
   apply (continuity_pt_comp g).
   apply derivable_continuous_pt.
-  exists (Derive g a) ; apply Derive_correct.
+  exists (Derive g a) ; apply is_derive_Reals, Derive_correct.
   by apply Hg.
   apply continuity_pt_filterlim, (continuity_RInt_0 f).
   exists (mkposreal _ Rlt_0_1) => /= y Hy.
@@ -5027,7 +5013,7 @@ Proof.
   by apply Hf.
   apply (continuity_pt_comp g).
   apply derivable_continuous_pt.
-  exists (Derive g b) ; apply Derive_correct.
+  exists (Derive g b) ; apply is_derive_Reals, Derive_correct.
   by apply Hg.
   apply continuity_pt_filterlim, (continuity_RInt f (g a)).
   apply ex_RInt_cont => x Hx.
@@ -5037,39 +5023,37 @@ Proof.
   by apply Hf.
   move => x Hx.
   evar (l : R) ; exists l ; unfold l.
-  apply (derivable_pt_lim_RInt (fun y : R => Derive g y * f (g y)) a x).
+  apply (is_derive_RInt (fun y : R => Derive g y * f (g y)) a x).
   by apply H0.
   exists (mkposreal _ Rlt_0_1) => /=.
   by apply H0.
   by apply H.
   move => x Hx.
-  evar (l : R) ; exists l ; unfold l.
-  apply derivable_pt_lim_comp.
-  apply Derive_correct.
-  by apply Hg.
-  apply (derivable_pt_lim_RInt f (g a) (g x)).
+  apply ex_derive_comp.
+  eexists.
+  apply is_derive_RInt.
   by apply ex_RInt_cont.
   exists (mkposreal _ Rlt_0_1) => /=.
   by apply ex_RInt_cont.
   by apply Hf.
+  apply Hg.
   move => x Hx.
-  search_derive.
-  unfold l.
-  apply (derivable_pt_lim_RInt (fun y : R => Derive g y * f (g y)) a x).
+  apply is_derive_unique.
+  evar_last.
+  apply (is_derive_RInt (fun y : R => Derive g y * f (g y)) a x).
   by apply H0.
   exists (mkposreal _ Rlt_0_1) => /=.
   by apply H0.
   by apply H.
-  apply sym_eq ; search_derive.
-  apply derivable_pt_lim_comp.
-  apply Derive_correct.
-  by apply Hg.
-  apply (derivable_pt_lim_RInt f (g a) (g x)).
+  apply sym_eq, is_derive_unique.
+  apply: is_derive_comp.
+  apply (is_derive_RInt f (g a) (g x)).
   by apply ex_RInt_cont.
   exists (mkposreal _ Rlt_0_1) => /=.
   by apply ex_RInt_cont.
   by apply Hf.
-  by apply Rmult_comm.
+  apply Derive_correct.
+  apply Hg.
   move => x H1.
   rewrite H1 ; intuition.
   apply Rminus_diag_uniq ; ring_simplify.
@@ -5130,20 +5114,19 @@ apply Rlt_le_trans with (1 := Hby).
 exact: Rmin_r.
 Qed.
 
-Lemma derivable_pt_lim_RInt_bound_comp :
+Lemma is_derive_RInt_bound_comp :
   forall f a b da db x,
   ex_RInt f (a x) (b x) ->
   (exists eps : posreal, ex_RInt f (a x - eps) (a x + eps)) ->
   (exists eps : posreal, ex_RInt f (b x - eps) (b x + eps)) ->
   continuity_pt f (a x) ->
   continuity_pt f (b x) ->
-  derivable_pt_lim a x da ->
-  derivable_pt_lim b x db ->
-  derivable_pt_lim (fun x => RInt f (a x) (b x)) x (db * f (b x) - da * f (a x)).
+  is_derive a x da ->
+  is_derive b x db ->
+  is_derive (fun x => RInt f (a x) (b x)) x (db * f (b x) - da * f (a x)).
 Proof.
 intros f a b da db x Hi Ia Ib Ca Cb Da Db.
-apply filterdiff_Reals.
-apply @filterdiff_ext_locally with (fun x0 => plus ((fun y => RInt f y (a x)) (a x0))
+apply is_derive_ext_loc with (fun x0 => plus ((fun y => RInt f y (a x)) (a x0))
   ((fun y => RInt f (a x) y) (b x0))).
 (* *)
 apply RInt_Chasles_bound_comp_loc.
@@ -5155,9 +5138,9 @@ destruct Ib as (d2,H2).
 exists d2.
 by apply filter_forall.
 apply derivable_continuous_pt.
-eexists ; eassumption.
+eexists ; apply is_derive_Reals, Da.
 apply derivable_continuous_pt.
-eexists ; eassumption.
+eexists ; apply is_derive_Reals, Db.
 (* *)
 eapply filterdiff_ext_lin.
 generalize (filterdiff_plus_fct (F := locally x) (fun x0 => (fun y : R => RInt f y (a x)) (a x0))
@@ -5165,14 +5148,12 @@ generalize (filterdiff_plus_fct (F := locally x) (fun x0 => (fun y : R => RInt f
 apply H ; clear H.
 generalize (filterdiff_compose' a (fun y : R => RInt f y (a x)) x) => /= H ;
 apply H ; clear H.
-apply filterdiff_Reals ; exact Da.
-apply filterdiff_Reals.
-apply derivable_pt_lim_RInt' ; trivial.
+exact Da.
+apply is_derive_RInt' ; trivial.
 apply ex_RInt_point.
 generalize (filterdiff_compose' b (RInt f (a x)) x) => /= H ; apply H ; clear H.
-apply filterdiff_Reals ; exact Db.
-apply filterdiff_Reals.
-now apply derivable_pt_lim_RInt.
+exact Db.
+now apply is_derive_RInt.
 simpl => y.
 rewrite /plus /scal /= /mult /=.
 ring.
@@ -5180,12 +5161,12 @@ Qed.
 
 (** * Parametric integrals *)
 
-Lemma derivable_pt_lim_param_aux : forall f a b x,
+Lemma is_derive_RInt_param_aux : forall f a b x,
   locally x (fun x => forall t, Rmin a b <= t <= Rmax a b -> ex_derive (fun u => f u t) x) ->
   (forall t, Rmin a b <= t <= Rmax a b -> continuity_2d_pt (fun u v => Derive (fun z => f z v) u) x t) ->
   locally x (fun y => ex_RInt (fun t => f y t) a b) ->
   ex_RInt (fun t => Derive (fun u => f u t) x) a b ->
-  derivable_pt_lim (fun x => RInt (fun t => f x t) a b) x
+  is_derive (fun x => RInt (fun t => f x t) a b) x
     (RInt (fun t => Derive (fun u => f u t) x) a b).
 Proof.
 intros f a b x.
@@ -5196,24 +5177,18 @@ now apply H.
 intros _ _ _ _.
 rewrite Hab.
 rewrite RInt_point.
-apply filterdiff_Reals.
-eapply filterdiff_ext_lin.
-apply (filterdiff_ext (fun _ => 0)).
-intros t.
+apply is_derive_ext with (fun _ => 0).
+simpl => t.
 apply sym_eq.
 apply RInt_point.
-apply filterdiff_const.
-simpl => y.
-apply sym_eq.
-apply: scal_zero_r.
-intros H1 H2 H3 H4.
-apply filterdiff_Reals.
-eapply filterdiff_ext_lin.
-apply (filterdiff_ext (fun u => - RInt (fun t => f u t) b a)).
-intros t.
+apply: is_derive_const.
+simpl => H1 H2 H3 H4.
+apply is_derive_ext with (fun u => - RInt (fun t => f u t) b a).
+simpl => t.
 apply RInt_swap.
+eapply filterdiff_ext_lin.
 apply @filterdiff_opp_fct ; try by apply locally_filter.
-apply filterdiff_Reals, H.
+apply H.
 exact Hab.
 now rewrite Rmin_comm Rmax_comm.
 now rewrite Rmin_comm Rmax_comm.
@@ -5226,7 +5201,7 @@ by rewrite -scal_opp_r opp_opp.
 rewrite Rmin_left. 2: now apply Rlt_le.
 rewrite Rmax_right. 2: now apply Rlt_le.
 intros Df Cdf If IDf.
-apply filterdiff_Reals ; split => [ | y Hy].
+split => [ | y Hy].
 by apply @is_linear_scal_l.
 rewrite -(is_filter_lim_locally_unique_R _ _ Hy) => {y Hy}.
 refine (let Cdf' := uniform_continuity_2d_1d (fun u v => Derive (fun z => f z u) v) a b x _ in _).
@@ -5317,16 +5292,15 @@ apply Rge_minus.
 now apply Rgt_ge.
 Qed.
 
-
-Lemma derivable_pt_lim_param : forall f a b x,
+Lemma is_derive_RInt_param : forall f a b x,
   locally x (fun x => forall t, Rmin a b <= t <= Rmax a b -> ex_derive (fun u => f u t) x) ->
   (forall t, Rmin a b <= t <= Rmax a b -> continuity_2d_pt (fun u v => Derive (fun z => f z v) u) x t) ->
   locally x (fun y => ex_RInt (fun t => f y t) a b) ->
-  derivable_pt_lim (fun x => RInt (fun t => f x t) a b) x
+  is_derive (fun x => RInt (fun t => f x t) a b) x
     (RInt (fun t => Derive (fun u => f u t) x) a b).
 Proof.
 intros f a b x H1 H2 H3.
-apply derivable_pt_lim_param_aux; try easy.
+apply is_derive_RInt_param_aux; try easy.
 apply ex_RInt_Reals_1.
 clear H1 H3.
 wlog: a b H2 / a < b => H.
@@ -5361,7 +5335,7 @@ apply cond_pos.
 exact Hz.
 Qed.
 
-Lemma derivable_pt_lim_RInt_param_bound_comp_aux1: forall f a x,
+Lemma is_derive_RInt_param_bound_comp_aux1: forall f a x,
   (exists eps:posreal, locally x (fun y => ex_RInt (fun t => f y t) (a x - eps) (a x + eps))) ->
   (exists eps:posreal, locally x
     (fun x0 : R =>
@@ -5396,10 +5370,7 @@ simpl; intros u v Hu Hv.
 rewrite (Derive_ext (fun z : R => RInt (fun t : R => f z t) (a x) (a x)) (fun z => 0)).
 2: intros t; apply RInt_point.
 replace (Derive (fun _ : R => 0) x) with 0%R.
-2: apply sym_eq, is_derive_unique, filterdiff_Reals.
-2: eapply filterdiff_ext_lin.
-2: apply filterdiff_const.
-2: simpl => y ; apply sym_eq ; apply: scal_zero_r.
+2: apply sym_eq, Derive_const.
 rewrite Rminus_0_r.
 replace (Derive (fun z : R => RInt (fun t : R => f z t) v (a x)) u) with
   (RInt (fun z => Derive (fun u => f u z) u) v (a x)).
@@ -5463,7 +5434,7 @@ rewrite Rplus_0_l; apply Rlt_0_1.
 apply Rplus_le_compat_r; apply Rabs_pos.
 (* *)
 apply sym_eq, is_derive_unique.
-apply derivable_pt_lim_param.
+apply is_derive_RInt_param.
 exists (pos_div_2 d4).
 intros y Hy t Ht.
 apply Df.
@@ -5511,13 +5482,11 @@ rewrite /Rminus Rplus_opp_r Rabs_R0.
 left; apply cond_pos.
 Qed.
 
-
-
-Lemma derivable_pt_lim_RInt_param_bound_comp_aux2 :
+Lemma is_derive_RInt_param_bound_comp_aux2 :
   forall f a b x da,
   (locally x (fun y => ex_RInt (fun t => f y t) (a x) b)) ->
   (exists eps:posreal, locally x (fun y => ex_RInt (fun t => f y t) (a x - eps) (a x + eps))) ->
-  derivable_pt_lim a x da ->
+  is_derive a x da ->
   (exists eps:posreal, locally x
     (fun x0 : R =>
        forall t : R,
@@ -5530,24 +5499,23 @@ Lemma derivable_pt_lim_RInt_param_bound_comp_aux2 :
          continuity_2d_pt (fun u v : R => Derive (fun z : R => f z v) u) x' t) x (a x)) ->
    continuity_pt (fun t => f x t) (a x) ->
 
- derivable_pt_lim (fun x => RInt (fun t => f x t) (a x) b) x
+  is_derive (fun x => RInt (fun t => f x t) (a x) b) x
     (RInt (fun t : R => Derive (fun u => f u t) x) (a x) b+(-f x (a x))*da).
 Proof.
 intros f a b x da Hi (d0,Ia) Da Df Cdf1 Cdf2 Cfa.
 rewrite Rplus_comm.
-apply filterdiff_Reals.
-eapply filterdiff_ext_lin.
-apply filterdiff_ext_locally with (fun x0 => plus (RInt (fun t : R => f x0 t) (a x0) (a x)) (RInt (fun t : R => f x0 t) (a x) b)).
+apply is_derive_ext_loc with (fun x0 => plus (RInt (fun t : R => f x0 t) (a x0) (a x)) (RInt (fun t : R => f x0 t) (a x) b)).
 apply RInt_Chasles_bound_comp_l_loc.
 exact Hi.
 now exists d0.
 apply derivable_continuous_pt.
 eexists.
-apply Da.
+apply is_derive_Reals, Da.
+eapply filterdiff_ext_lin.
 apply @filterdiff_plus_fct.
 by apply locally_filter.
 (* *)
-apply filterdiff_Reals.
+apply is_derive_Reals.
 apply derivable_pt_lim_comp_2d with
    (f1 := fun x0 y => RInt (fun t : R => f x0 t) y (a x)).
 apply derivable_differentiable_pt_lim.
@@ -5560,7 +5528,7 @@ exists (mkposreal _ (Rmin_stable_in_posreal
                 (mkposreal _ (Rmin_stable_in_posreal d3
                             (mkposreal _ (Rmin_stable_in_posreal d0 (pos_div_2 d4))))))).
 simpl; intros u v Hu Hv.
-eexists; eapply derivable_pt_lim_param.
+eexists; eapply is_derive_RInt_param.
 exists (pos_div_2 d2).
 intros y Hy t Ht.
 apply Df.
@@ -5623,13 +5591,13 @@ apply Rmin_l.
 rewrite /Rminus Rplus_opp_r Rabs_R0.
 left; apply cond_pos.
 (* . *)
-apply derivable_pt_lim_RInt'.
+apply is_derive_RInt'.
 apply ex_RInt_point.
 apply locally_singleton in Ia.
 now exists d0.
 exact Cfa.
 (* . *)
-apply derivable_pt_lim_RInt_param_bound_comp_aux1; try easy.
+apply is_derive_RInt_param_bound_comp_aux1; try easy.
 exists d0; exact Ia.
 destruct Df as (d,Hd).
 exists d.
@@ -5643,10 +5611,9 @@ apply Rle_trans with (1:=proj2 Ht).
 apply Rmax_l.
 (* . *)
 apply derivable_pt_lim_id.
-exact Da.
+apply is_derive_Reals, Da.
 (* *)
-apply filterdiff_Reals.
-apply derivable_pt_lim_param.
+apply is_derive_RInt_param.
 destruct Df as (d,Df).
 move: Df ; apply filter_imp.
 intros y Hy t Ht; apply Hy.
@@ -5671,11 +5638,11 @@ move => t.
 by rewrite RInt_point.
 Qed.
 
-Lemma derivable_pt_lim_RInt_param_bound_comp_aux3 :
+Lemma is_derive_RInt_param_bound_comp_aux3 :
   forall f a b x db,
   (locally x (fun y => ex_RInt (fun t => f y t) a (b x))) ->
   (exists eps:posreal, locally x (fun y => ex_RInt (fun t => f y t) (b x - eps) (b x + eps))) ->
-  derivable_pt_lim b x db ->
+  is_derive b x db ->
   (exists eps:posreal, locally x
     (fun x0 : R =>
        forall t : R,
@@ -5688,18 +5655,16 @@ Lemma derivable_pt_lim_RInt_param_bound_comp_aux3 :
          continuity_2d_pt (fun u v : R => Derive (fun z : R => f z v) u) x' t) x (b x)) ->
    continuity_pt (fun t => f x t) (b x) ->
 
- derivable_pt_lim (fun x => RInt (fun t => f x t) a (b x)) x
+  is_derive (fun x => RInt (fun t => f x t) a (b x)) x
     (RInt (fun t : R => Derive (fun u => f u t) x) a (b x) +f x (b x)*db).
 Proof.
 intros f a b x db If Ib Db Df Cf1 Cf2 Cfb.
-apply filterdiff_Reals.
-apply filterdiff_ext with (fun x0 => - RInt (fun t : R => f x0 t) (b x0) a).
+apply is_derive_ext with (fun x0 => - RInt (fun t : R => f x0 t) (b x0) a).
 intros t; apply RInt_swap.
-apply filterdiff_Reals.
 replace (RInt (fun t : R => Derive (fun u => f u t) x) a (b x) +f x (b x)*db) with
       (- ((RInt (fun t : R => Derive (fun u : R => f u t) x) (b x) a) + - f x (b x)*db)).
-apply derivable_pt_lim_opp.
-apply derivable_pt_lim_RInt_param_bound_comp_aux2; try easy.
+apply: is_derive_opp_fct.
+apply is_derive_RInt_param_bound_comp_aux2; try easy.
 move: If ; apply filter_imp.
 intros y H.
 now apply ex_RInt_swap.
@@ -5717,13 +5682,13 @@ ring.
 Qed.
 
 
-Lemma derivable_pt_lim_RInt_param_bound_comp :
+Lemma is_derive_RInt_param_bound_comp :
  forall f a b x da db,
   (locally x (fun y => ex_RInt (fun t => f y t) (a x) (b x))) ->
   (exists eps:posreal, locally x (fun y => ex_RInt (fun t => f y t) (a x - eps) (a x + eps))) ->
   (exists eps:posreal, locally x (fun y => ex_RInt (fun t => f y t) (b x - eps) (b x + eps))) ->
-  derivable_pt_lim a x da ->
-  derivable_pt_lim b x db ->
+  is_derive a x da ->
+  is_derive b x db ->
   (exists eps:posreal, locally x
     (fun x0 : R =>
        forall t : R,
@@ -5734,30 +5699,28 @@ Lemma derivable_pt_lim_RInt_param_bound_comp :
          continuity_2d_pt (fun u v : R => Derive (fun z : R => f z v) u) x t) ->
   (locally_2d (fun x' t =>
          continuity_2d_pt (fun u v : R => Derive (fun z : R => f z v) u) x' t) x (a x)) ->
- (locally_2d (fun x' t =>
+  (locally_2d (fun x' t =>
          continuity_2d_pt (fun u v : R => Derive (fun z : R => f z v) u) x' t) x (b x)) ->
    continuity_pt (fun t => f x t) (a x) ->   continuity_pt (fun t => f x t) (b x) ->
 
- derivable_pt_lim (fun x => RInt (fun t => f x t) (a x) (b x)) x
+  is_derive (fun x => RInt (fun t => f x t) (a x) (b x)) x
     (RInt (fun t : R => Derive (fun u => f u t) x) (a x) (b x)+(-f x (a x))*da+(f x (b x))*db).
 Proof.
 intros f a b x da db If Ifa Ifb Da Db Df Cf Cfa Cfb Ca Cb.
-apply filterdiff_Reals.
-eapply filterdiff_ext_lin.
-apply @filterdiff_ext_locally with (fun x0 : R => RInt (fun t : R => f x0 t) (a x0) (a x)
+apply is_derive_ext_loc with (fun x0 : R => RInt (fun t : R => f x0 t) (a x0) (a x)
     + RInt (fun t : R => f x0 t) (a x) (b x0)).
 apply RInt_Chasles_bound_comp_loc ; trivial.
 apply derivable_continuous_pt.
 eexists.
-apply Da.
+apply is_derive_Reals, Da.
 apply derivable_continuous_pt.
 eexists.
-apply Db.
+apply is_derive_Reals, Db.
+eapply filterdiff_ext_lin.
 apply @filterdiff_plus_fct.
 by apply locally_filter.
 (* *)
-apply filterdiff_Reals.
-apply derivable_pt_lim_RInt_param_bound_comp_aux2; try easy.
+apply is_derive_RInt_param_bound_comp_aux2; try easy.
 exists (mkposreal _ Rlt_0_1).
 intros y Hy.
 apply ex_RInt_point.
@@ -5790,8 +5753,7 @@ apply Rle_trans with (2:=Rmax_l _ _).
 right; apply Rmax_left.
 now right.
 (* *)
-apply filterdiff_Reals.
-apply derivable_pt_lim_RInt_param_bound_comp_aux3; try easy.
+apply is_derive_RInt_param_bound_comp_aux3; try easy.
 by apply Db.
 destruct Df as (e,H).
 exists e.

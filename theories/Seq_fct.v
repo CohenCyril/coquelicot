@@ -404,14 +404,14 @@ Proof.
     | right _ => (fn n (x+h) - fn n x)/h
   end.
 
-  assert (Ho' : forall x : R, D x -> open (fun h : R => D (x + h))).
-    intros x Dx h Hh.
-    destruct (Ho _ Hh) as [d Hd].
-    exists d => /= y Hy.
-    apply Hd.
-    rewrite /ball /= /AbsRing_ball /= /minus /plus /opp /=.
-    ring_simplify (x + y + - (x + h)).
-    by apply Hy.
+  assert (Ho' : forall x : R, open (fun h : R => D (x + h))).
+    intros x.
+    apply open_compose with (2 := Ho).
+    intros t.
+    apply: (filterlim_compose_2 (F := locally t)).
+    apply filterlim_const.
+    apply filterlim_id.
+    apply: filterlim_plus.
 
   have Crn : forall x, D x -> forall n h, D (x+h) -> is_lim (rn x n) h (rn x n h).
     move => x Hx n h Hh.
@@ -425,6 +425,7 @@ Proof.
     rewrite /rn ; case: Req_EM_T => // _ ; by apply H.
     move: (Edn n x Hx) => {Edn} Edn.
     apply Derive_correct in Edn.
+    apply is_derive_Reals in Edn.
     case: (Edn eps (cond_pos eps)) => {Edn} delta Edn.
     exists delta => y Hy Hxy.
     rewrite /ball /= /AbsRing_ball /= /minus /plus /opp /= in Hy.
@@ -439,7 +440,7 @@ Proof.
       apply (derivable_pt_plus (fun _ => x) (fun h => h) h).
       exact: derivable_pt_const.
       exact: derivable_pt_id.
-      exists (Derive (fn n) (x + h)) ; by apply Derive_correct, Edn.
+      exists (Derive (fn n) (x + h)) ; by apply is_derive_Reals, Derive_correct, Edn.
       exact: derivable_pt_const.
       exact: derivable_pt_id.
       exact: Hh0.
@@ -476,7 +477,7 @@ Proof.
       with (((fn n (x + h) - fn m (x + h)) - (fn n x - fn m x))/h)
       by (field ; auto).
     case: (MVT_gen (fun x => (fn n x - fn m x)) x (x+h)) => [y Hy | y Hy | z [Hz ->]].
-    apply ex_derive_minus ; apply Edn, (Hc (Rmin x (x + h)) (Rmax x (x + h))).
+    apply: ex_derive_minus ; apply Edn, (Hc (Rmin x (x + h)) (Rmax x (x + h))).
     apply Rmin_case ; [by apply Hx | by apply Hh].
     apply Rmax_case ; [by apply Hx | by apply Hh].
     split ; apply Rlt_le ; by apply Hy.
@@ -484,11 +485,11 @@ Proof.
     apply Rmax_case ; [by apply Hx | by apply Hh].
     split ; apply Rlt_le ; by apply Hy.
     apply derivable_continuous_pt, derivable_pt_minus.
-    exists (Derive (fn n) y) ; apply Derive_correct, Edn, (Hc (Rmin x (x + h)) (Rmax x (x + h))).
+    exists (Derive (fn n) y) ; apply is_derive_Reals, Derive_correct, Edn, (Hc (Rmin x (x + h)) (Rmax x (x + h))).
     apply Rmin_case ; [by apply Hx | by apply Hh].
     apply Rmax_case ; [by apply Hx | by apply Hh].
     by apply Hy.
-    exists (Derive (fn m) y) ; apply Derive_correct, Edn, (Hc (Rmin x (x + h)) (Rmax x (x + h))).
+    exists (Derive (fn m) y) ; apply is_derive_Reals, Derive_correct, Edn, (Hc (Rmin x (x + h)) (Rmax x (x + h))).
     apply Rmin_case ; [by apply Hx | by apply Hh].
     apply Rmax_case ; [by apply Hx | by apply Hh].
     by apply Hy.
@@ -518,7 +519,7 @@ Proof.
 
   move => x Hx.
 
-  case: (CVU_limits_open (rn x) _ (Ho' x Hx) (Hrn x Hx) (Lrn x Hx) 0) => [ | H [H0 H1]].
+  case: (CVU_limits_open (rn x) _ (Ho' x) (Hrn x Hx) (Lrn x Hx) 0) => [ | H [H0 H1]].
   by rewrite Rplus_0_r.
 
   have : ex_derive (fun y : R => real (Lim_seq (fun n : nat => fn n y))) x
@@ -527,7 +528,8 @@ Proof.
 
   split.
   case: H0 => df H0.
-  exists df => e He.
+  exists df.
+  apply is_derive_Reals => e He.
   apply is_lim_spec in H0.
   case: (H0 (mkposreal e He)) => {H0} /= delta H0.
   destruct (Ho x Hx) as [dx Hd].
@@ -1198,5 +1200,5 @@ unfold filtermap.
 move: (fun x : U => HP (h x)) => {HP} HP.
 apply filter_imp with (1 := HP).
 now apply filter_imp with (2 := filter_true).
-now apply @is_RInt_point.
+now apply is_RInt_point.
 Qed.

@@ -20,22 +20,21 @@ COPYING file for more details.
 *)
 
 Require Import Reals ssreflect.
-
-Require Import Rbar Rcomplements Continuity Derive Hierarchy.
+Require Import Rbar Rcomplements Continuity Derive Hierarchy RInt.
 
 (** * Absolute value *)
 
-Lemma derivable_pt_lim_Rabs (x : R) :
+Lemma is_derive_abs (x : R) :
   x <> 0 -> is_derive Rabs x (sign x).
 Proof.
   move => Hx0.
   case: (Rle_lt_dec 0 x) => Hx.
   case: Hx => //= Hx.
   rewrite (proj1 (sign_0_lt x)) => //.
-  by apply Rabs_derive_1.
+  by apply is_derive_Reals, Rabs_derive_1.
   by apply sym_eq in Hx.
   rewrite (proj1 (sign_lt_0 x)) => //.
-  by apply Rabs_derive_2.
+  by apply is_derive_Reals, Rabs_derive_2.
 Qed.
 
 Lemma continuity_pt_Rabs (x : R) :
@@ -100,7 +99,62 @@ Proof.
   apply Rmax_l.
 Qed.
 
+(** * Power function *)
+
+Lemma is_RInt_pow :
+  forall a b n,
+  is_RInt (fun x => pow x n) a b (pow b (S n) / INR (S n) - pow a (S n) / INR (S n)).
+Proof.
+intros a b n.
+set f := fun x => pow x (S n) / INR (S n).
+fold (f a) (f b).
+assert (H: forall x : R, is_derive f x (pow x n)).
+  intros x.
+  evar_last.
+  rewrite /f /Rdiv -[Rmult]/(scal (V := R_NormedModule)).
+  apply is_derive_scal_l_fct.
+  apply is_derive_pow_fct, is_derive_id.
+  rewrite /pred.
+  set k := INR (S n).
+  rewrite /scal /= /mult /one /=.
+  field.
+  rewrite /k S_INR.
+  apply Rgt_not_eq, INRp1_pos.
+apply is_RInt_ext with (Derive f).
+  intros x _.
+  now apply is_derive_unique.
+apply: is_RInt_Derive => x Hx.
+  now eexists.
+apply continuity_pt_ext with (fun x => pow x n).
+  intros t.
+  apply sym_eq.
+  now apply is_derive_unique.
+apply derivable_continuous_pt.
+apply derivable_pt_pow.
+Qed.
+
 (** * Exponential function *)
+
+Lemma is_RInt_exp :
+  forall a b,
+  is_RInt exp a b (exp b - exp a).
+Proof.
+intros a b.
+apply is_RInt_ext with (Derive exp).
+  intros x _.
+  apply is_derive_unique.
+  apply is_derive_Reals, derivable_pt_lim_exp.
+apply is_RInt_Derive.
+  intros x _.
+  exists (exp x).
+  apply is_derive_Reals, derivable_pt_lim_exp.
+intros x _.
+apply continuity_pt_ext with exp.
+  intros t.
+  apply sym_eq, is_derive_unique, is_derive_Reals, derivable_pt_lim_exp.
+apply derivable_continuous_pt.
+apply derivable_pt_exp.
+Qed.
 
 Lemma exp_ge_taylor (x : R) (n : nat) :
   0 <= x -> sum_f_R0 (fun k => x^k / INR (fact k)) n <= exp x.
@@ -147,7 +201,7 @@ Qed.
 
 Lemma is_lim_exp_m : is_lim (fun y => exp y) m_infty 0.
 Proof.
-  search_lim.
+  evar_last.
   apply is_lim_ext with (fun y => /(exp (- y))).
   move => y ; rewrite exp_Ropp ; apply Rinv_involutive.
   apply Rgt_not_eq, exp_pos.
@@ -237,7 +291,7 @@ Qed.
 
 Lemma is_lim_mul_exp_m : is_lim (fun y => y * exp y) m_infty 0.
 Proof.
-  search_lim.
+  evar_last.
   apply is_lim_ext_loc with (fun y => - / (exp (-y) / (- y))).
   exists 0 => y Hy.
   rewrite exp_Ropp.
@@ -249,7 +303,7 @@ Proof.
   apply is_lim_inv.
   apply (is_lim_comp (fun y => exp y / y)) with p_infty.
   by apply is_lim_div_exp_p.
-  search_lim.
+  evar_last.
   apply is_lim_opp.
   apply is_lim_id.
   by [].
@@ -304,10 +358,11 @@ Proof.
     move => x Hx.
     apply Rminus_lt_0.
     apply Rlt_le_trans with (1 := Rlt_0_1).
-    have H : forall x, 0 < x -> derivable_pt_lim (fun y => y - ln y) x ((x - 1) / x).
+    have H : forall x, 0 < x -> is_derive (fun y => y - ln y) x ((x - 1) / x).
       move => z Hz.
       evar (l : R).
       replace ((z - 1) / z) with l.
+      apply is_derive_Reals.
       apply derivable_pt_lim_minus.
       apply derivable_pt_lim_id.
       apply derivable_pt_lim_ln.
@@ -322,7 +377,7 @@ Proof.
     by apply Hx.
     move => y Hy.
     apply derivable_continuous_pt.
-    exists ((y-1)/y) ; apply H.
+    exists ((y-1)/y) ; apply is_derive_Reals, H.
     apply Rlt_le_trans with (2 := proj1 Hy).
     apply Rmin_case.
     apply Rlt_0_1.
@@ -391,7 +446,7 @@ Proof.
   apply sqrt_lt_R0.
   by apply Rlt_trans with (1 := Rlt_0_1).
   apply is_lim_const.
-  search_lim.
+  evar_last.
   apply is_lim_div.
   apply is_lim_const.
   apply is_lim_sqrt_p.

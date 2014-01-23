@@ -1316,7 +1316,7 @@ apply within_filter.
 apply locally_filter.
 Qed.
 
-(** ** Open sets in metric spaces *)
+(** ** Open sets in uniform spaces *)
 
 Section Open.
 
@@ -1379,7 +1379,17 @@ Qed.
 
 End Open.
 
-(** ** Complete metric spaces *)
+Lemma open_compose :
+  forall {T U : UniformSpace} (f : T -> U) (D : U -> Prop),
+  (forall x, filterlim f (locally x) (locally (f x))) ->
+  open D -> open (fun x : T => D (f x)).
+Proof.
+intros T U f D Cf OD x Dfx.
+apply Cf.
+now apply OD.
+Qed.
+
+(** ** Complete uniform spaces *)
 
 Definition cauchy {T : UniformSpace} (F : (T -> Prop) -> Prop) :=
   forall eps : posreal, exists x, F (ball x eps).
