@@ -816,7 +816,7 @@ Proof.
   repeat rewrite -plus_assoc; apply f_equal.
   rewrite plus_comm -plus_assoc; apply f_equal.
   rewrite scal_distr_l; apply plus_comm.
-  now apply filterlim_compose_2 with (3 := filterlim_plus _ _).
+  now apply filterlim_comp_2 with (3 := filterlim_plus _ _).
 Qed.
 
 Lemma ex_pseries_plus (a b : nat -> V) (x : K) :
@@ -964,7 +964,7 @@ Proof.
   by rewrite mult_one_l mult_one_r.
   by rewrite -mult_assoc -IH 2!mult_assoc Hx.
   by [].
-  now apply filterlim_compose with (2 := filterlim_scal _ _).
+  now apply filterlim_comp with (2 := filterlim_scal _ _).
 Qed.
 
 Lemma ex_pseries_scal (c : K) (a : nat -> V) (x : K) :
@@ -1067,14 +1067,14 @@ Proof.
  rewrite -IHn; simpl.
  rewrite scal_distr_l; apply f_equal.
  now rewrite scal_assoc.
- apply filterlim_compose with (f:= fun n => pred n) (G:=eventually)
+ apply filterlim_comp with (f:= fun n => pred n) (G:=eventually)
   (g:=fun n => scal x (sum_n (fun k : nat => scal (pow_n x k) (a k)) n)). 
  apply eventually_subseq'.
  exists 1%nat.
  intros n Hn.
  rewrite -pred_Sn.
  now apply lt_pred_n_n.
- now apply filterlim_compose with (2 := filterlim_scal _ _).
+ now apply filterlim_comp with (2 := filterlim_scal _ _).
 Qed.
 
 Lemma ex_pseries_incr_1 (a : nat -> V) (x : K) :
@@ -1149,7 +1149,7 @@ Proof.
   rewrite scal_assoc (mult_assoc y).
   rewrite Hx.
   now rewrite mult_one_l.
-  apply filterlim_compose with (2 := filterlim_scal _ _).
+  apply filterlim_comp with (2 := filterlim_scal _ _).
   apply filterlim_ext with  (fun n : nat => plus 
     (sum_n (fun k => scal (pow_n x k) (a k)) (S n)) (opp (a 0%nat))).
   intros n; induction n; simpl.
@@ -1160,8 +1160,8 @@ Proof.
   apply sym_eq; rewrite plus_comm plus_assoc.
   apply f_equal2;[idtac|reflexivity].
   now rewrite plus_comm.
-  apply filterlim_compose_2 with (3 := filterlim_plus _ _).
-  apply filterlim_compose with (f:= fun x => S x) (2:=Ha).
+  apply filterlim_comp_2 with (3 := filterlim_plus _ _).
+  apply filterlim_comp with (f:= fun x => S x) (2:=Ha).
   apply eventually_subseq; intros n; omega.
   apply filterlim_const.
 Qed.
@@ -1480,7 +1480,7 @@ Proof.
   move => <- ; simpl ; ring.
   apply (is_lim_seq_plus' _ _ l1 (x*l2)).
 (* a(2k)x^(2k) *)
-  apply filterlim_compose with (2:=H1).
+  apply filterlim_comp with (2:=H1).
   intros P [N HN].
   exists (2*N+1)%nat.
   intros n Hn; apply HN.
@@ -1502,7 +1502,7 @@ Proof.
   exists 1%nat; intros y; case y.
   easy.
   intros n _; reflexivity.
-  apply filterlim_compose with (2:=H2). 
+  apply filterlim_comp with (2:=H2). 
   intros P [N HN].
   exists (2*N+2)%nat.
   intros n Hn; apply HN.

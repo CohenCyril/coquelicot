@@ -111,7 +111,7 @@ Qed.
 
 End LinearFct.
 
-Lemma is_linear_compose {K : AbsRing} {U V W : NormedModule K}
+Lemma is_linear_comp {K : AbsRing} {U V W : NormedModule K}
   (l1 : U -> V) (l2 : V -> W) :
   is_linear l1 -> is_linear l2 -> is_linear (fun x => l2 (l1 x)).
 Proof.
@@ -566,18 +566,18 @@ Qed.
 
 End Diff.
 
-Section Diff_compose.
+Section Diff_comp.
 
 Context {K : AbsRing} {U V W : NormedModule K}.
 
-Lemma filterdiff_compose
+Lemma filterdiff_comp
   {F} {FF : Filter F} f g (lf : U -> V) (lg : V -> W) :
   filterdiff f F lf -> filterdiff g (filtermap f F) lg
   -> filterdiff (fun y => g (f y)) F (fun y => lg (lf y)).
 Proof.
   intros Df Dg.
   split.
-    apply is_linear_compose.
+    apply is_linear_comp.
     by apply Df.
     by apply Dg.
   intros x Hx.
@@ -647,22 +647,22 @@ Proof.
   by apply is_domin_linear.
 Qed.
 
-Lemma ex_filterdiff_compose
+Lemma ex_filterdiff_comp
   {F} {FF : Filter F} (f : U -> V) (g : V -> W) :
   ex_filterdiff f F -> ex_filterdiff g (filtermap f F)
   -> ex_filterdiff (fun y => g (f y)) F.
 Proof.
   intros [lf Df] [lg Dg].
-  eexists ; eapply filterdiff_compose ; eassumption.
+  eexists ; eapply filterdiff_comp ; eassumption.
 Qed.
 
-Lemma filterdiff_compose'
+Lemma filterdiff_comp'
   f g x (lf : U -> V) (lg : V -> W) :
   filterdiff f (locally x) lf -> filterdiff g (locally (f x)) lg
   -> filterdiff (fun y => g (f y)) (locally x) (fun y => lg (lf y)).
 Proof.
   intros.
-  apply filterdiff_compose.
+  apply filterdiff_comp.
   by [].
   apply filterdiff_locally with (f x).
   apply is_filter_lim_filtermap => //.
@@ -671,27 +671,27 @@ Proof.
   by [].
 Qed.
 
-Lemma ex_filterdiff_compose'
+Lemma ex_filterdiff_comp'
   (f : U -> V) (g : V -> W) x :
   ex_filterdiff f (locally x) -> ex_filterdiff g (locally (f x))
   -> ex_filterdiff (fun y => g (f y)) (locally x).
 Proof.
   intros [lf Df] [lg Dg].
   eexists.
-  apply filterdiff_compose' ; eassumption.
+  apply filterdiff_comp' ; eassumption.
 Qed.
 
-End Diff_compose.
+End Diff_comp.
 
-Section Diff_compose2.
+Section Diff_comp2.
 
 Context {K : AbsRing} {T U V : NormedModule K}.
 
-Section Diff_compose2'.
+Section Diff_comp2'.
 
 Context {W : NormedModule K}.
 
-Lemma filterdiff_compose_2
+Lemma filterdiff_comp_2
   {F : (T -> Prop) -> Prop} {FF : Filter F} :
   forall (f : T -> U) (g : T -> V) (h : U -> V -> W) (lf : T -> U) (lg : T -> V)
     (lh : U -> V -> W),
@@ -701,7 +701,7 @@ Lemma filterdiff_compose_2
     filterdiff (fun y : T => h (f y) (g y)) F (fun y : T => lh (lf y) (lg y)).
 Proof.
   intros f g h lf lg lh [Hf Df] [Hg Dg] Dh.
-  apply (filterdiff_compose (fun t => (f t, g t)) _ (fun t => (lf t, lg t)) _) in Dh.
+  apply (filterdiff_comp (fun t => (f t, g t)) _ (fun t => (lf t, lg t)) _) in Dh.
   by [].
   split.
   by apply is_linear_prod.
@@ -726,7 +726,7 @@ Proof.
   apply Rgt_not_eq, Rlt_sqrt2_0.
 Qed.
 
-Lemma ex_filterdiff_compose_2
+Lemma ex_filterdiff_comp_2
   {F : (T -> Prop) -> Prop} {FF : Filter F} :
   forall (f : T -> U) (g : T -> V) (h : U -> V -> W),
     ex_filterdiff f F ->
@@ -736,17 +736,17 @@ Lemma ex_filterdiff_compose_2
 Proof.
   intros f g h [lf Df] [lg Dg] [lh Dh].
   set lh' := fun x y => lh (x,y).
-  eexists ; eapply (filterdiff_compose_2 _ _ _ _ _ lh') ; try eassumption.
+  eexists ; eapply (filterdiff_comp_2 _ _ _ _ _ lh') ; try eassumption.
   eapply filterdiff_ext_lin.
   by apply Dh.
   by case.
 Qed.
 
-End Diff_compose2'.
+End Diff_comp2'.
 
 Context {W : NormedModule K}.
 
-Lemma filterdiff_compose'_2 :
+Lemma filterdiff_comp'_2 :
   forall (f : T -> U) (g : T -> V) (h : U -> V -> W) x (lf : T -> U) (lg : T -> V)
     (lh : U -> V -> W),
     filterdiff f (locally x) lf ->
@@ -755,13 +755,13 @@ Lemma filterdiff_compose'_2 :
     filterdiff (fun y : T => h (f y) (g y)) (locally x) (fun y : T => lh (lf y) (lg y)).
 Proof.
   intros.
-  apply filterdiff_compose_2.
+  apply filterdiff_comp_2.
   by [].
   by [].
   apply filterdiff_locally with (f x, g x).
   apply (is_filter_lim_filtermap _ _ (fun t : T => (f t, g t))) => //.
   apply (filterdiff_cont (fun t : T => (f t, g t))) => //.
-  apply ex_filterdiff_compose_2.
+  apply ex_filterdiff_comp_2.
   by exists lf.
   by exists lg.
   apply ex_filterdiff_linear.
@@ -771,7 +771,7 @@ Proof.
   by [].
 Qed.
 
-Lemma ex_filterdiff_compose'_2 :
+Lemma ex_filterdiff_comp'_2 :
   forall (f : T -> U) (g : T -> V) (h : U -> V -> W) x,
     ex_filterdiff f (locally x) ->
     ex_filterdiff g (locally x) ->
@@ -780,12 +780,12 @@ Lemma ex_filterdiff_compose'_2 :
 Proof.
   intros f g h x [lf Df] [lg Dg] [lh Dh].
   exists (fun x => lh (lf x,lg x)).
-  apply (filterdiff_compose'_2 f g h x lf lg (fun x y => lh (x,y))) ; try eassumption.
+  apply (filterdiff_comp'_2 f g h x lf lg (fun x y => lh (x,y))) ; try eassumption.
   eapply filterdiff_ext_lin ; try eassumption.
   by case.
 Qed.
 
-End Diff_compose2.
+End Diff_comp2.
 
 Section Operations.
 
@@ -861,10 +861,10 @@ Lemma filterdiff_minus (F : (V * V -> Prop) -> Prop) :
   filterdiff (fun u => minus (fst u) (snd u)) F (fun u => minus (fst u) (snd u)).
 Proof.
   split.
-  apply (is_linear_compose (fun u => (fst u, opp (snd u))) (fun u => plus (fst u) (snd u))).
+  apply (is_linear_comp (fun u => (fst u, opp (snd u))) (fun u => plus (fst u) (snd u))).
   apply is_linear_prod.
   by apply is_linear_fst.
-  apply is_linear_compose.
+  apply is_linear_comp.
   by apply is_linear_snd.
   by apply is_linear_opp.
   by apply is_linear_plus.
@@ -896,12 +896,12 @@ Lemma filterdiff_scal : forall {F} {FF : ProperFilter F} (x : K * V),
     (fun t => plus (scal (fst t) (snd x)) (scal (fst x) (snd t))).
 Proof.
   move => F FF [x1 x2] Hx Hcomm ; split.
-  - apply (is_linear_compose (fun t : K * V => (scal (fst t) x2,scal x1 (snd t))) (fun t : V * V => plus (fst t) (snd t))).
+  - apply (is_linear_comp (fun t : K * V => (scal (fst t) x2,scal x1 (snd t))) (fun t : V * V => plus (fst t) (snd t))).
     apply is_linear_prod.
-    apply (is_linear_compose (fun t : K * V => fst t) (fun k : K => scal k x2)).
+    apply (is_linear_comp (fun t : K * V => fst t) (fun k : K => scal k x2)).
     by apply is_linear_fst.
     by apply is_linear_scal_l.
-    apply is_linear_compose.
+    apply is_linear_comp.
     by apply is_linear_snd.
     by apply is_linear_scal_r.
     apply is_linear_plus.
@@ -1057,7 +1057,7 @@ Lemma filterdiff_opp_fct {F} {FF : Filter F} (f lf : U -> V) :
   filterdiff (fun t => opp (f t)) F (fun t => opp (lf t)).
 Proof.
   intro Df.
-  apply filterdiff_compose.
+  apply filterdiff_comp.
   by [].
   by apply filterdiff_opp.
 Qed.
@@ -1075,7 +1075,7 @@ Lemma filterdiff_plus_fct {F} {FF : Filter F} (f g : U -> V) (lf lg : U -> V) :
   filterdiff (fun u => plus (f u) (g u)) F (fun u => plus (lf u) (lg u)).
 Proof.
   intros Df Dg.
-  apply filterdiff_compose_2.
+  apply filterdiff_comp_2.
   by [].
   by [].
   by apply filterdiff_plus.
@@ -1094,7 +1094,7 @@ Lemma filterdiff_minus_fct {F} {FF : Filter F} (f g : U -> V) (lf lg : U -> V) :
   filterdiff (fun u => minus (f u) (g u)) F (fun u => minus (lf u) (lg u)).
 Proof.
   intros Df Dg.
-  apply filterdiff_compose_2.
+  apply filterdiff_comp_2.
   by [].
   by [].
   by apply filterdiff_minus.
@@ -1115,7 +1115,7 @@ Lemma filterdiff_scal_fct x (f : U -> K) (g : U -> V) lf lg :
     (fun t => plus (scal (lf t) (g x)) (scal (f x) (lg t))).
 Proof.
   intros Hcomm Df Dg.
-  apply (filterdiff_compose'_2 f g scal x lf lg (fun k v => plus (scal k (g x)) (scal (f x) v))) => //.
+  apply (filterdiff_comp'_2 f g scal x lf lg (fun k v => plus (scal k (g x)) (scal (f x) v))) => //.
   by apply (filterdiff_scal (f x, g x)).
 Qed.
 Lemma ex_filterdiff_scal_fct x (f : U -> K) (g : U -> V) :
@@ -1133,7 +1133,7 @@ Lemma filterdiff_scal_l_fct : forall {F} {FF : Filter F} (x : V) (f : U -> K) lf
   filterdiff (fun u => scal (f u) x) F (fun u => scal (lf u) x).
 Proof.
   move => F FF x f lf Df.
-  apply (filterdiff_compose f (fun k => scal k x) lf (fun k => scal k x)).
+  apply (filterdiff_comp f (fun k => scal k x) lf (fun k => scal k x)).
   by [].
   apply filterdiff_linear.
   by apply is_linear_scal_l.
@@ -1153,7 +1153,7 @@ Lemma filterdiff_scal_r_fct : forall {F} {FF : Filter F} (k : K) (f lf : U -> V)
   filterdiff (fun x => scal k (f x)) F (fun x => scal k (lf x)).
 Proof.
   move => F FF k f lf Hcomm Df.
-  apply (filterdiff_compose f (fun x => scal k x) lf (fun x => scal k x)).
+  apply (filterdiff_comp f (fun x => scal k x) lf (fun x => scal k x)).
   by [].
   apply filterdiff_linear.
   by apply is_linear_scal_r.
@@ -1581,7 +1581,7 @@ Lemma is_derive_opp_fct :
 Proof.
 intros f x l Df.
 apply filterdiff_ext_lin with (fun t : K => opp (scal t l)).
-apply filterdiff_compose' with (1 := Df).
+apply filterdiff_comp' with (1 := Df).
 apply filterdiff_opp.
 intros y.
 apply sym_eq.
@@ -1986,7 +1986,7 @@ Lemma is_derive_comp :
 Proof.
 intros f g x df dg Df Dg.
 eapply filterdiff_ext_lin.
-apply filterdiff_compose' with (1 := Dg) (2 := Df).
+apply filterdiff_comp' with (1 := Dg) (2 := Df).
 simpl => y.
 apply sym_eq, scal_assoc.
 Qed.
@@ -3342,7 +3342,7 @@ Proof.
   apply sym_eq, Derive_n_comp_trans.
   move: (Derive_n f n) Df => {f} f Df.
   eapply filterdiff_ext_lin.
-  apply @filterdiff_compose'.
+  apply @filterdiff_comp'.
   apply @filterdiff_plus_fct ; try by apply locally_filter.
   by apply filterdiff_id.
   by apply filterdiff_const.
@@ -3421,7 +3421,7 @@ generalize (filterdiff_mult_fct (fun x0 => ((y - x0) ^ S n / INR (fact (S n))))
 apply H ; clear H.
 by apply Rmult_comm.
 apply @filterdiff_scal_l_fct ; try by apply locally_filter.
-generalize (filterdiff_compose' (fun u => y - u) (fun x => pow x (S n))) => /= H ;
+generalize (filterdiff_comp' (fun u => y - u) (fun x => pow x (S n))) => /= H ;
 apply H ; clear H.
 apply @filterdiff_minus_fct ; try apply locally_filter.
 apply filterdiff_const.

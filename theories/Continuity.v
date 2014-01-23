@@ -117,7 +117,7 @@ Lemma is_lim_comp' :
 Proof.
 intros T F FF f g x l Lf Lg Hf.
 revert Lg.
-apply filterlim_compose.
+apply filterlim_comp.
 intros P HP.
 destruct x as [x| |] ; try now apply Lf.
 specialize (Lf _ HP).
@@ -324,7 +324,7 @@ Lemma is_lim_opp (f : R -> R) (x l : Rbar) :
   is_lim f x l -> is_lim (fun y => - f y) x (Rbar_opp l).
 Proof.
 intros Cf.
-eapply filterlim_compose.
+eapply filterlim_comp.
 apply Cf.
 apply filterlim_Rbar_opp.
 Qed.
@@ -350,7 +350,7 @@ Lemma is_lim_plus (f g : R -> R) (x lf lg l : Rbar) :
   is_lim (fun y => f y + g y) x l.
 Proof.
 intros Cf Cg Hp.
-eapply filterlim_compose_2 ; try eassumption.
+eapply filterlim_comp_2 ; try eassumption.
 by apply filterlim_Rbar_plus.
 Qed.
 Lemma is_lim_plus' (f g : R -> R) (x : Rbar) (lf lg : R) :
@@ -438,7 +438,7 @@ Lemma is_lim_inv (f : R -> R) (x l : Rbar) :
   is_lim f x l -> l <> 0 -> is_lim (fun y => / f y) x (Rbar_inv l).
 Proof.
   intros Hf Hl.
-  apply filterlim_compose with (1 := Hf).
+  apply filterlim_comp with (1 := Hf).
   now apply filterlim_Rbar_inv.
 Qed.
 Lemma ex_lim_inv (f : R -> R) (x : Rbar) :
@@ -464,7 +464,7 @@ Lemma is_lim_mult (f g : R -> R) (x lf lg : Rbar) :
   is_lim (fun y => f y * g y) x (Rbar_mult lf lg).
 Proof.
 intros Cf Cg Hp.
-eapply filterlim_compose_2 ; try eassumption.
+eapply filterlim_comp_2 ; try eassumption.
 by apply filterlim_Rbar_mult, Rbar_mult_correct.
 Qed.
 Lemma ex_lim_mult (f g : R -> R) (x : Rbar) :
@@ -1224,7 +1224,7 @@ intros f g x y Cf Cg.
 apply continuity_pt_filterlim in Cf.
 apply continuity_2d_pt_filterlim in Cg.
 apply continuity_2d_pt_filterlim.
-apply: filterlim_compose Cg Cf.
+apply: filterlim_comp Cg Cf.
 Qed.
 
 (** *** Additive operators *)
@@ -1247,7 +1247,7 @@ intros Cf Cg.
 apply continuity_2d_pt_filterlim in Cf.
 apply continuity_2d_pt_filterlim in Cg.
 apply continuity_2d_pt_filterlim.
-eapply filterlim_compose_2.
+eapply filterlim_comp_2.
 apply Cf.
 apply Cg.
 apply: filterlim_plus.
@@ -1274,7 +1274,7 @@ Proof.
 intros Cf Df.
 apply continuity_2d_pt_filterlim in Cf.
 apply continuity_2d_pt_filterlim.
-apply filterlim_compose with (1 := Cf).
+apply filterlim_comp with (1 := Cf).
 apply (filterlim_Rbar_inv (f x y)).
 contradict Df.
 now injection Df.
@@ -1289,7 +1289,7 @@ intros Cf Cg.
 apply continuity_2d_pt_filterlim in Cf.
 apply continuity_2d_pt_filterlim in Cg.
 apply continuity_2d_pt_filterlim.
-eapply filterlim_compose_2.
+eapply filterlim_comp_2.
 apply Cf.
 apply Cg.
 by apply (filterlim_Rbar_mult (f x y) (g x y) (f x y * g x y)).
