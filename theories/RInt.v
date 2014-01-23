@@ -5030,16 +5030,14 @@ Proof.
   by apply H0.
   by apply H.
   move => x Hx.
-  evar (l : R) ; exists l ; unfold l.
-  apply is_derive_Reals, derivable_pt_lim_comp.
-  apply is_derive_Reals, Derive_correct.
-  by apply Hg.
-  apply is_derive_Reals.
-  apply (is_derive_RInt f (g a) (g x)).
+  apply ex_derive_comp.
+  eexists.
+  apply is_derive_RInt.
   by apply ex_RInt_cont.
   exists (mkposreal _ Rlt_0_1) => /=.
   by apply ex_RInt_cont.
   by apply Hf.
+  apply Hg.
   move => x Hx.
   apply is_derive_unique.
   evar_last.
@@ -5049,17 +5047,14 @@ Proof.
   by apply H0.
   by apply H.
   apply sym_eq, is_derive_unique.
-  evar_last.
-  apply is_derive_Reals, derivable_pt_lim_comp.
-  apply is_derive_Reals, Derive_correct.
-  by apply Hg.
-  apply is_derive_Reals.
+  apply: is_derive_comp.
   apply (is_derive_RInt f (g a) (g x)).
   by apply ex_RInt_cont.
   exists (mkposreal _ Rlt_0_1) => /=.
   by apply ex_RInt_cont.
   by apply Hf.
-  by apply Rmult_comm.
+  apply Derive_correct.
+  apply Hg.
   move => x H1.
   rewrite H1 ; intuition.
   apply Rminus_diag_uniq ; ring_simplify.

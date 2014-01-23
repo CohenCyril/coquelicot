@@ -1974,24 +1974,43 @@ Qed.
 
 (** Composition of functions *)
 
-Lemma ex_derive_comp (f g : R -> R) (x : R) :
-  ex_derive f (g x) -> ex_derive g x
-    -> ex_derive (fun x => f (g x)) x.
+Section Comp.
+
+Context {K : AbsRing} {V : NormedModule K}.
+
+Lemma is_derive_comp :
+  forall (f : K -> V) (g : K -> K) (x : K) (df : V) (dg : K),
+  is_derive f (g x) df ->
+  is_derive g x dg ->
+  is_derive (fun x => f (g x)) x (scal dg df).
 Proof.
-intros (df,Df) (dg,Dg).
-exists (df * dg).
-apply is_derive_Reals, derivable_pt_lim_comp ;
-  now apply is_derive_Reals.
+intros f g x df dg Df Dg.
+eapply filterdiff_ext_lin.
+apply filterdiff_compose' with (1 := Dg) (2 := Df).
+simpl => y.
+apply sym_eq, scal_assoc.
 Qed.
+
+Lemma ex_derive_comp :
+  forall (f : K -> V) (g : K -> K) (x : K),
+  ex_derive f (g x) ->
+  ex_derive g x ->
+  ex_derive (fun x => f (g x)) x.
+Proof.
+intros f g x [df Df] [dg Dg].
+exists (scal dg df).
+now apply is_derive_comp.
+Qed.
+
+End Comp.
 
 Lemma Derive_comp (f g : R -> R) (x : R) :
   ex_derive f (g x) -> ex_derive g x
-    -> Derive (fun x => f (g x)) x = Derive f (g x) * Derive g x.
+    -> Derive (fun x => f (g x)) x = Derive g x * Derive f (g x).
 Proof.
 intros Df Dg.
 apply is_derive_unique.
-apply is_derive_Reals, derivable_pt_lim_comp ;
-  now apply is_derive_Reals, Derive_correct.
+apply: is_derive_comp ; now apply Derive_correct.
 Qed.
 
 (** * Mean value theorem *)

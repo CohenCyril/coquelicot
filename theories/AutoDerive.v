@@ -760,17 +760,14 @@ now intros (_&F&_).
 rewrite (nth_map (Cst 0)) //.
 move: (Dle v1 n l).
 case (D (nth (Cst 0) le v1)) => /= [d1 d2] {Dle} Dle [H1 [H2 _]].
-rewrite Rmult_comm.
 specialize (Dle H2).
 apply is_derive_ext with (fun x => apply k f (fun i => if ssrnat.eqn i v1 then interp (set_nth 0 l n x) (nth (Cst 0) le v1) else nth 0 (map (interp l) le) i)).
 intros t.
 now apply sym_eq.
-apply is_derive_Reals.
-apply is_derive_Reals in Dle.
-apply derivable_pt_lim_comp with (f2 := fun x => apply k f (fun i => if ssrnat.eqn i v1 then x else nth 0 (map (interp l) le) i)) (1 := Dle).
+apply: (is_derive_comp (fun x => apply k f (fun i => if ssrnat.eqn i v1 then x else nth 0 (map (interp l) le) i))) Dle.
 rewrite interp_set_nth.
 rewrite -(nth_map (Cst 0) 0) //.
-now apply is_derive_Reals, Derive_correct.
+now apply Derive_correct.
 (* . *)
 intros Hv.
 case (ssrnat.leqP (size le) v1) => Hv1.
@@ -938,17 +935,16 @@ exact H0.
 simpl.
 intros f f' Df H.
 rewrite -(interp_set_nth n l e).
-rewrite Rmult_comm.
-apply is_derive_Reals, derivable_pt_lim_comp.
-now apply is_derive_Reals, IHe.
-now apply is_derive_Reals, Df.
+apply: is_derive_comp.
+apply Df.
+now apply IHe.
 simpl.
 intros f f' df Df (H,(H0,_)).
 rewrite -(interp_set_nth n l e) in H0 |-*.
-rewrite Rmult_comm.
-apply is_derive_Reals, derivable_pt_lim_comp.
-now apply is_derive_Reals, IHe.
-now apply is_derive_Reals, Df.
+apply: is_derive_comp.
+apply Df.
+exact H0.
+now apply IHe.
 
 (* Int *)
 simpl => l n.
@@ -1018,7 +1014,6 @@ case C2: (is_const e2 n).
 (* . *)
 simpl.
 intros (H3&Hi&H1&_).
-rewrite Rmult_comm.
 apply is_derive_ext with (comp (fun x => RInt (fun t => interp (t :: l) e1) (interp (set_nth 0 l n (nth 0 l n)) e2) x) (fun x => interp (set_nth 0 l n x) e3)).
 intros t.
 unfold comp.
@@ -1027,19 +1022,18 @@ apply RInt_ext.
 intros z _.
 rewrite -(interp_set_nth (S n)).
 apply (is_const_correct e1 (S n) C1 (z :: l)).
-apply is_derive_Reals, derivable_pt_lim_comp.
-now apply is_derive_Reals, IHe3.
+apply: is_derive_comp.
 rewrite 2!interp_set_nth.
-apply is_derive_Reals.
 apply is_derive_RInt with (1 := Hi).
 now apply HexI.
 now apply locally_singleton.
+now apply IHe3.
 clear C2.
 case C3: (is_const e3 n).
 (* . *)
 simpl.
 intros (H2&Hi&H1&_).
-rewrite Rmult_comm -Ropp_mult_distr_l_reverse.
+rewrite -Ropp_mult_distr_r_reverse.
 apply is_derive_ext with (fun x => comp (fun x => RInt (fun t => interp (t :: l) e1) x (interp (set_nth 0 l n (nth 0 l n)) e3)) (fun x => interp (set_nth 0 l n x) e2) x).
 intros t.
 unfold comp.
@@ -1048,15 +1042,13 @@ apply RInt_ext.
 intros z _.
 rewrite -(interp_set_nth (S n)).
 apply (is_const_correct e1 (S n) C1 (z :: l)).
-apply is_derive_Reals.
-apply (derivable_pt_lim_comp (fun x0 : R => interp (set_nth 0 l n x0) e2)
-  (fun x0 : R => RInt (fun t : R => interp (t :: l) e1) x0 (interp (set_nth 0 l n (nth 0 l n)) e3))).
-now apply is_derive_Reals, IHe2.
+apply: (is_derive_comp (fun x0 : R => RInt (fun t : R => interp (t :: l) e1) x0 (interp (set_nth 0 l n (nth 0 l n)) e3))
+  (fun x0 : R => interp (set_nth 0 l n x0) e2)).
 rewrite 2!interp_set_nth.
-apply is_derive_Reals.
 apply is_derive_RInt' with (1 := Hi).
 now apply HexI.
 now apply locally_singleton.
+now apply IHe2.
 (* . *)
 clear C3.
 simpl.
