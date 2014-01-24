@@ -79,7 +79,7 @@ Proof.
   by rewrite -(Ropp_minus_distr' b a) sign_opp /= Ropp_mult_distr_l_reverse Rmult_1_l.
   unfold Riemann_fine.
   rewrite Rmin_comm Rmax_comm.
-  apply filterlim_compose with (1 := HIf).
+  apply filterlim_comp with (1 := HIf).
   apply: filterlim_scal.
 Qed.
 
@@ -1389,7 +1389,7 @@ rewrite Riemann_sum_scal.
 rewrite 2!scal_assoc.
 apply (f_equal (fun x => scal x _)).
 apply Rmult_comm.
-apply filterlim_compose with (1 := Hf).
+apply filterlim_comp with (1 := Hf).
 apply: filterlim_scal.
 Qed.
 
@@ -1414,7 +1414,7 @@ intros ptd.
 rewrite Riemann_sum_opp.
 rewrite scal_opp_one.
 apply sym_eq, scal_opp_r.
-apply filterlim_compose with (1 := Hf).
+apply filterlim_comp with (1 := Hf).
 rewrite -(scal_opp_one If).
 apply: filterlim_scal.
 Qed.
@@ -1440,7 +1440,7 @@ apply filterlim_ext with (fun ptd => (plus (scal (sign (b - a)) (Riemann_sum f p
 intros ptd.
 rewrite Riemann_sum_plus.
 apply sym_eq, @scal_distr_l.
-apply filterlim_compose_2 with (1 := Hf) (2 := Hg).
+apply filterlim_comp_2 with (1 := Hf) (2 := Hg).
 apply: filterlim_plus.
 Qed.
 
@@ -1469,8 +1469,8 @@ unfold minus.
 rewrite scal_opp_one.
 rewrite -scal_opp_r.
 apply sym_eq, @scal_distr_l.
-eapply filterlim_compose_2 with (1 := Hf).
-apply filterlim_compose with (1 := Hg).
+eapply filterlim_comp_2 with (1 := Hf).
+apply filterlim_comp with (1 := Hg).
 eapply @filterlim_scal.
 rewrite scal_opp_one.
 apply: filterlim_plus.
@@ -1674,7 +1674,7 @@ Proof.
   apply H.
   rewrite 2!scal_zero_l.
   rewrite norm_zero ; by right.
-  apply filterlim_compose with (locally lf).
+  apply filterlim_comp with (locally lf).
   by apply Hf.
   by apply filterlim_norm.
 Qed.
@@ -5146,12 +5146,12 @@ eapply filterdiff_ext_lin.
 generalize (filterdiff_plus_fct (F := locally x) (fun x0 => (fun y : R => RInt f y (a x)) (a x0))
   (fun x0 => (fun y : R => RInt f (a x) y) (b x0))) => /= H.
 apply H ; clear H.
-generalize (filterdiff_compose' a (fun y : R => RInt f y (a x)) x) => /= H ;
+generalize (filterdiff_comp' a (fun y : R => RInt f y (a x)) x) => /= H ;
 apply H ; clear H.
 exact Da.
 apply is_derive_RInt' ; trivial.
 apply ex_RInt_point.
-generalize (filterdiff_compose' b (RInt f (a x)) x) => /= H ; apply H ; clear H.
+generalize (filterdiff_comp' b (RInt f (a x)) x) => /= H ; apply H ; clear H.
 exact Db.
 now apply is_derive_RInt.
 simpl => y.

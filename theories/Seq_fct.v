@@ -406,9 +406,9 @@ Proof.
 
   assert (Ho' : forall x : R, open (fun h : R => D (x + h))).
     intros x.
-    apply open_compose with (2 := Ho).
+    apply open_comp with (2 := Ho).
     intros t.
-    apply: (filterlim_compose_2 (F := locally t)).
+    apply: (filterlim_comp_2 (F := locally t)).
     apply filterlim_const.
     apply filterlim_id.
     apply: filterlim_plus.
@@ -1095,7 +1095,7 @@ wlog: a b h Hfh / (a <= b) => [Hw | Hab].
   apply filterlim_ext with (fun x => opp (opp (h x))).
   move => x.
   by apply opp_opp.
-  eapply (filterlim_compose _ _ _ (fun x => opp (h x)) opp).
+  eapply (filterlim_comp _ _ _ (fun x => opp (h x)) opp).
   by apply Hfh'.
   now generalize (filterlim_opp If).
   by apply @is_RInt_swap.

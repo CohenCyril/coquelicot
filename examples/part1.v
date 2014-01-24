@@ -789,7 +789,7 @@ Proof.
     apply (prop5_R (fun t : R => (z2 - z1) * f ((1 - t) * z1 + t * z2)) (fun t => g ((1 - t) * z1 + t * z2)) 0 1).
     + intros z Hz.
       eapply filterdiff_ext_lin.
-      apply (filterdiff_compose (fun t : R => (1 - t) * z1 + t * z2) g (fun y : R => scal y (z2 - z1)) (fun t : C => scal t (f ((1 - z) * z1 + z * z2)))).
+      apply (filterdiff_comp (fun t : R => (1 - t) * z1 + t * z2) g (fun y : R => scal y (z2 - z1)) (fun t : C => scal t (f ((1 - z) * z1 + z * z2)))).
       apply filterdiff_ext with (fun t : R => z1 + scal t (z2 - z1)).
       simpl => y.
       rewrite scal_R_Cmult.

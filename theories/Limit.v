@@ -1524,7 +1524,7 @@ Lemma is_lim_seq_subseq (u : nat -> R) (l : Rbar) (phi : nat -> nat) :
   is_lim_seq (fun n => u (phi n)) l.
 Proof.
 intros Hphi.
-now apply filterlim_compose.
+now apply filterlim_comp.
 Qed.
 Lemma ex_lim_seq_subseq (u : nat -> R) (phi : nat -> nat) :
   filterlim phi eventually eventually ->
@@ -2162,7 +2162,7 @@ Proof.
     intros t.
     ring.
     rewrite -(Rbar_opp_involutive z).
-    eapply filterlim_compose.
+    eapply filterlim_comp.
     2: apply filterlim_Rbar_opp.
     assert (Hw' : filterlim (fun z => fst z + snd z) (filter_prod (Rbar_locally (Rbar_opp x)) (Rbar_locally (Rbar_opp y))) (Rbar_locally (Rbar_opp z))).
     apply Hw.
@@ -2249,7 +2249,7 @@ Lemma is_lim_seq_plus (u v : nat -> R) (l1 l2 l : Rbar) :
   is_lim_seq (fun n => u n + v n) l.
 Proof.
 intros Hu Hv Hl.
-eapply filterlim_compose_2 ; try eassumption.
+eapply filterlim_comp_2 ; try eassumption.
 now apply filterlim_Rbar_plus.
 Qed.
 Lemma is_lim_seq_plus' (u v : nat -> R) (l1 l2 : R) :
@@ -2358,9 +2358,9 @@ Proof.
     apply Rplus_opp_r.
     exists 0 => x H.
     field ; by apply Rlt_not_eq.
-    eapply filterlim_compose.
+    eapply filterlim_comp.
     2: apply filterlim_Rbar_opp.
-    eapply filterlim_compose.
+    eapply filterlim_comp.
     apply filterlim_Rbar_opp.
     apply Hw.
     apply Rbar_opp_lt.
@@ -2437,7 +2437,7 @@ Lemma is_lim_seq_inv (u : nat -> R) (l : Rbar) :
   is_lim_seq (fun n => / u n) (Rbar_inv l).
 Proof.
 intros Hu Hl.
-apply filterlim_compose with (1 := Hu).
+apply filterlim_comp with (1 := Hu).
 now apply filterlim_Rbar_inv.
 Qed.
 
@@ -2479,7 +2479,7 @@ Proof.
     intros t.
     ring.
     rewrite -(Rbar_opp_involutive z).
-    eapply filterlim_compose.
+    eapply filterlim_comp.
     2: apply filterlim_Rbar_opp.
     assert (Hw' : filterlim (fun z => fst z * snd z) (filter_prod (Rbar_locally (Rbar_opp x)) (Rbar_locally y)) (Rbar_locally (Rbar_opp z))).
     apply Hw.
@@ -2504,7 +2504,7 @@ Proof.
     intros t.
     ring.
     rewrite -(Rbar_opp_involutive z).
-    eapply filterlim_compose.
+    eapply filterlim_comp.
     2: apply filterlim_Rbar_opp.
     assert (Hw' : filterlim (fun z => fst z * snd z) (filter_prod (Rbar_locally x) (Rbar_locally (Rbar_opp y))) (Rbar_locally (Rbar_opp z))).
     apply Hw.
@@ -2637,7 +2637,7 @@ Lemma is_lim_seq_mult (u v : nat -> R) (l1 l2 l : Rbar) :
   is_lim_seq (fun n => u n * v n) l.
 Proof.
 intros Hu Hv Hp.
-eapply filterlim_compose_2 ; try eassumption.
+eapply filterlim_comp_2 ; try eassumption.
 now apply filterlim_Rbar_mult.
 Qed.
 Lemma is_lim_seq_mult' (u v : nat -> R) (l1 l2 : R) :
@@ -2685,7 +2685,7 @@ Proof.
   apply sym_eq, Rmult_0_l.
   rewrite Rbar_mult_0_l.
   apply filterlim_const.
-  eapply filterlim_compose_2.
+  eapply filterlim_comp_2.
   apply filterlim_const.
   apply filterlim_id.
   eapply (filterlim_Rbar_mult a l).
@@ -2708,7 +2708,7 @@ Lemma is_lim_seq_scal_l (u : nat -> R) (a : R) (lu : Rbar) :
   is_lim_seq (fun n => a * u n) (Rbar_mult a lu).
 Proof.
 intros Hu H.
-apply filterlim_compose with (1 := Hu).
+apply filterlim_comp with (1 := Hu).
 by apply filterlim_Rbar_mult_l.
 Qed.
 
@@ -2888,7 +2888,7 @@ Lemma is_lim_seq_continuous (f : R -> R) (u : nat -> R) (l : R) :
 Proof.
   move => Cf Hu.
   apply continuity_pt_filterlim in Cf.
-  apply filterlim_compose with (1 := Hu).
+  apply filterlim_comp with (1 := Hu).
   exact Cf.
 Qed.
 
@@ -2923,7 +2923,7 @@ Lemma is_lim_seq_abs (u : nat -> R) (l : Rbar) :
   is_lim_seq u l -> is_lim_seq (fun n => Rabs (u n)) (Rbar_abs l).
 Proof.
 intros Hu.
-apply filterlim_compose with (1 := Hu).
+apply filterlim_comp with (1 := Hu).
 apply filterlim_abs.
 Qed.
 Lemma ex_lim_seq_abs (u : nat -> R) :

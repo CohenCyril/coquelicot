@@ -141,7 +141,7 @@ Proof.
 now intros T F P HP.
 Qed.
 
-Lemma filterlim_compose :
+Lemma filterlim_comp :
   forall T U V (f : T -> U) (g : U -> V) F G H,
   filterlim f F G -> filterlim g G H ->
   filterlim (fun x => g (f x)) F H.
@@ -266,7 +266,7 @@ now apply Cf.
 now apply Cg.
 Qed.
 
-Lemma filterlim_compose_2 :
+Lemma filterlim_comp_2 :
   forall {T U V W F G H I} {FF : Filter F},
   forall (f : T -> U) (g : T -> V) (h : U -> V -> W),
   filterlim f F G ->
@@ -276,7 +276,7 @@ Lemma filterlim_compose_2 :
 Proof.
 intros T U V W F G H I FF f g h Cf Cg Ch.
 change (fun x => h (f x) (g x)) with (fun x => h (fst (f x, g x)) (snd (f x, g x))).
-apply: filterlim_compose Ch.
+apply: filterlim_comp Ch.
 now apply filterlim_pair.
 Qed.
 
@@ -1379,7 +1379,7 @@ Qed.
 
 End Open.
 
-Lemma open_compose :
+Lemma open_comp :
   forall {T U : UniformSpace} (f : T -> U) (D : U -> Prop),
   (forall x, filterlim f (locally x) (locally (f x))) ->
   open D -> open (fun x : T => D (f x)).

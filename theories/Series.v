@@ -177,13 +177,13 @@ Proof.
   rewrite <- IHx; simpl.
   rewrite <- plus_assoc, <- (plus_assoc _ _ (a (S (S x)))).
   apply f_equal; apply plus_comm.
-  apply filterlim_compose with (G:=(locally (plus l (a 0%nat)))) (g:=fun x => plus x (opp (a 0%nat))).
+  apply filterlim_comp with (G:=(locally (plus l (a 0%nat)))) (g:=fun x => plus x (opp (a 0%nat))).
   (* . *)
-  apply filterlim_compose with (f:= fun x => S x) (2:=H).
+  apply filterlim_comp with (f:= fun x => S x) (2:=H).
   apply eventually_subseq; intros n; omega.
   (* . *)
   pattern l at 2; replace l with (plus (plus l (a 0%nat)) (opp (a 0%nat))).
-  apply filterlim_compose_2 with (3 := filterlim_plus _ _).
+  apply filterlim_comp_2 with (3 := filterlim_plus _ _).
   apply filterlim_id.
   apply filterlim_const.
   rewrite <- plus_assoc, plus_opp_r.
@@ -218,10 +218,10 @@ Proof.
   intros n Hn; apply sym_eq.
   apply decomp_sum_n; omega.
   replace l with (plus (a 0%nat) (plus l (opp (a 0%nat)))).
-  apply filterlim_compose_2 with (3 := filterlim_plus _ _).
+  apply filterlim_comp_2 with (3 := filterlim_plus _ _).
   apply filterlim_id.
   apply filterlim_const.
-  apply filterlim_compose with (f:= fun x => pred x) (2:=H).
+  apply filterlim_comp with (f:= fun x => pred x) (2:=H).
   intros P (N1,HN1).
   exists (S N1).
   intros n Hn; apply HN1; omega.
@@ -476,7 +476,7 @@ Proof.
   simpl ; easy.
   simpl ; rewrite -IH.
   apply opp_plus.
-  apply filterlim_compose with (1:=Ha).
+  apply filterlim_comp with (1:=Ha).
   apply filterlim_opp.
 Qed.
 
@@ -512,7 +512,7 @@ Proof.
   rewrite -IH; rewrite <- 2!plus_assoc; apply f_equal.
   rewrite 2!plus_assoc; apply f_equal2; try easy.
   apply plus_comm.
-  now apply filterlim_compose_2 with (3 := filterlim_plus _ _).
+  now apply filterlim_comp_2 with (3 := filterlim_plus _ _).
 Qed.
 Lemma ex_series_plus (a b : nat -> V) :
   ex_series a -> ex_series b
@@ -579,7 +579,7 @@ Proof.
   easy.
   rewrite -IH.
   apply: scal_distr_l.
-  now apply filterlim_compose with (2 := filterlim_scal _ _).
+  now apply filterlim_comp with (2 := filterlim_scal _ _).
 Qed.
 Lemma is_series_scal_l : forall (c : K) (a : nat -> V) (l : V),
   is_series a l -> is_series (fun n => scal c (a n)) (scal c l).

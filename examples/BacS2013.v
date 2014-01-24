@@ -142,10 +142,10 @@ Lemma filterlim_f_0 :
   filterlim f (at_right 0) (Rbar_locally m_infty).
 Proof.
   unfold f, fab.
-  eapply (filterlim_compose_2 _ _ Rmult).
-  eapply filterlim_compose_2.
+  eapply (filterlim_comp_2 _ _ Rmult).
+  eapply filterlim_comp_2.
   apply filterlim_const.
-  eapply filterlim_compose_2.
+  eapply filterlim_comp_2.
   apply filterlim_const.
   by apply is_lim_ln_0.
   apply (filterlim_Rbar_mult 2 m_infty m_infty).
@@ -229,7 +229,7 @@ Qed.
 Lemma f_eq_1_0_1 : exists x, 0 < x <= 1 /\ f x = 1.
 Proof.
   case: (IVT_Rbar_incr (fun x => f (Rabs x)) 0 1 m_infty 2 1).
-    eapply filterlim_compose.
+    eapply filterlim_comp.
     apply filterlim_abs_0.
     by apply filterlim_f_0.
   apply is_lim_comp with 1.
