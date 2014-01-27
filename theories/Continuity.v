@@ -101,10 +101,10 @@ Proof.
   apply (H' y).
   now split.
 Qed.
-Lemma is_lim_Reals f x l :
-  limit1_in f (fun y => y <> x) l x <-> is_lim f x l.
+Lemma is_lim_Reals (f : R -> R) (x l : R) :
+  is_lim f x l <-> limit1_in f (fun y => y <> x) l x.
 Proof.
-  split ; [apply is_lim_Reals_1|apply is_lim_Reals_0].
+  split ; [apply is_lim_Reals_0|apply is_lim_Reals_1].
 Qed.
 
 (** Composition *)
