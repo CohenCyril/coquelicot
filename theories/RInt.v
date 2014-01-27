@@ -3389,7 +3389,7 @@ Proof.
 Qed.
 
 
-Lemma ex_RInt_Reals_2 (f : R -> R) (a b : R) :
+Lemma ex_RInt_Reals_0 (f : R -> R) (a b : R) :
   ex_RInt f a b -> Riemann_integrable f a b.
 Proof.
   wlog: a b /(a < b) => [Hw | Hab ] Hex.
@@ -4501,13 +4501,13 @@ Lemma ex_RInt_included1: forall (f : R -> R) a b c, ex_RInt f a b -> a <= c <= b
 Proof.
 intros f a b c H1 H2.
 apply ex_RInt_Reals_1.
-apply RiemannInt_P22 with b;[now apply ex_RInt_Reals_2|exact H2].
+apply RiemannInt_P22 with b;[now apply ex_RInt_Reals_0|exact H2].
 Qed.
 
 Lemma ex_RInt_included2: forall (f : R -> R) a b c, ex_RInt f a b -> a <= c <= b -> ex_RInt f c b.
 intros f a b c H1 H2.
 apply ex_RInt_Reals_1.
-apply RiemannInt_P23 with a;[now apply ex_RInt_Reals_2|exact H2].
+apply RiemannInt_P23 with a;[now apply ex_RInt_Reals_0|exact H2].
 Qed.
 
 Lemma ex_RInt_inside :
@@ -4560,9 +4560,9 @@ Lemma RInt_le: forall f g a b,
 Proof.
 intros f g a b H1 If Ig H2.
 assert (Riemann_integrable f a b).
-now apply ex_RInt_Reals_2.
+now apply ex_RInt_Reals_0.
 assert (Riemann_integrable g a b).
-now apply ex_RInt_Reals_2.
+now apply ex_RInt_Reals_0.
 rewrite (RInt_Reals _ _ _ X)(RInt_Reals _ _ _ X0).
 apply RiemannInt_P19.
 exact H1.
@@ -4591,7 +4591,7 @@ Proof.
 intros f a b If.
 apply ex_RInt_Reals_1.
 apply RiemannInt_P16.
-now apply ex_RInt_Reals_2.
+now apply ex_RInt_Reals_0.
 Qed.
 
 Lemma RInt_abs: forall f a b,
@@ -5245,9 +5245,9 @@ assert (D3: ex_RInt (fun t => f y t - f x t) a b).
 assert (D4: ex_RInt (fun t => (y - x) * Derive (fun u => f u t) x) a b) by now apply @ex_RInt_scal.
 rewrite -RInt_minus //.
 assert (D5: ex_RInt (fun t => f y t - f x t - (y - x) * Derive (fun u => f u t) x) a b) by now apply @ex_RInt_minus.
-rewrite (RInt_Reals _ _ _ (ex_RInt_Reals_2 _ _ _ D5)).
+rewrite (RInt_Reals _ _ _ (ex_RInt_Reals_0 _ _ _ D5)).
 assert (D6: ex_RInt (fun t => Rabs (f y t - f x t - (y - x) * Derive (fun u => f u t) x)) a b) by now apply ex_RInt_norm.
-apply Rle_trans with (1 := RiemannInt_P17 _ (ex_RInt_Reals_2 _ _ _ D6) (Rlt_le _ _ H)).
+apply Rle_trans with (1 := RiemannInt_P17 _ (ex_RInt_Reals_0 _ _ _ D6) (Rlt_le _ _ H)).
 refine (Rle_trans _ _ _ (RiemannInt_P19 _ (RiemannInt_P14 a b (eps / Rabs (b - a) * Rabs (y - x))) (Rlt_le _ _ H) _) _).
 intros u Hu.
 destruct (MVT_cor4 (fun t => f t u) x) with (eps := pos_div_2 d2) (b := y) as (z,Hz).

@@ -83,7 +83,7 @@ Proof.
   by rewrite (is_series_unique a l).
 Qed.
 
-Lemma is_series_equiv (a : nat -> R) (l : R) :
+Lemma is_series_Reals (a : nat -> R) (l : R) :
   is_series a l <-> infinite_sum a l.
 Proof.
   split => H.
@@ -101,7 +101,7 @@ Proof.
   by apply (H n Hn).
 Qed.
 
-Lemma ex_series_equiv_0 (a : nat -> R) :
+Lemma ex_series_Reals_0 (a : nat -> R) :
   ex_series a -> { l:R | Un_cv (fun N:nat => sum_f_R0 a N) l }.
 Proof.
   move => H ;
@@ -120,7 +120,7 @@ Proof.
   by apply is_lim_seq_unique.
 Qed.
 
-Lemma ex_series_equiv_1 (a : nat -> R) :
+Lemma ex_series_Reals_1 (a : nat -> R) :
   { l:R | Un_cv (fun N:nat => sum_f_R0 a N) l } -> ex_series a.
 Proof.
   case => l H.
@@ -252,7 +252,7 @@ Proof.
   by apply lt_O_Sn.
 Qed.
 
-Lemma ex_series_decal_1 (a : nat -> V) :
+Lemma ex_series_incr_1 (a : nat -> V) :
   ex_series a <-> ex_series (fun k => a (S k)%nat).
 Proof.
   split ; move => [la Ha].
@@ -264,7 +264,7 @@ Proof.
   now rewrite <- plus_assoc, plus_opp_r, plus_zero_r.
 Qed.
 
-Lemma ex_series_decal_n (a : nat -> V) (n : nat) :
+Lemma ex_series_incr_n (a : nat -> V) (n : nat) :
   ex_series a <-> ex_series (fun k => a (n + k)%nat).
 Proof.
   case: n => [ | n].
@@ -282,7 +282,7 @@ Qed.
 
 End Properties1.
 
-Lemma Series_decal_1 (a : nat -> R) :
+Lemma Series_incr_1 (a : nat -> R) :
   ex_series a -> Series a = a O + Series (fun k => a (S k)).
 Proof.
   move => Ha.
@@ -292,10 +292,10 @@ Proof.
   rewrite /plus /opp /=.
   ring_simplify (Series (fun k : nat => a (S k)) + a 0%nat +- a 0%nat).
   apply Series_correct.
-  by apply (ex_series_decal_1 a).
+  by apply (ex_series_incr_1 a).
 Qed.
 
-Lemma Series_decal_n (a : nat -> R) (n : nat) :
+Lemma Series_incr_n (a : nat -> R) (n : nat) :
   (0 < n)%nat -> ex_series a
     -> Series a = sum_f_R0 a (pred n)  + Series (fun k => a (n + k)%nat).
 Proof.
@@ -307,10 +307,10 @@ Proof.
   rewrite /plus /opp /= sum_n_sum_f_R0.
   ring_simplify (Series (fun k : nat => a (n+ k)%nat) + sum_f_R0 a (pred n) + - sum_f_R0 a (pred n)).
   apply Series_correct.
-  by apply ex_series_decal_n.
+  by apply ex_series_incr_n.
 Qed.
 
-Lemma Series_decal_1_aux (a : nat -> R) :
+Lemma Series_incr_1_aux (a : nat -> R) :
   a O = 0 -> Series a = Series (fun k => a (S k)).
 Proof.
   move => Ha.
@@ -321,14 +321,14 @@ Proof.
   rewrite Ha ; by apply Rplus_0_l.
   by apply lt_O_Sn.
 Qed.
-Lemma Series_decal_n_aux (a : nat -> R) (n : nat) :
+Lemma Series_incr_n_aux (a : nat -> R) (n : nat) :
    (forall k, (k < n)%nat -> a k = 0)
      -> Series a = Series (fun k => a (n + k)%nat).
 Proof.
   elim: n => [ | n IH] Ha.
   by apply Series_ext => k.
   rewrite IH.
-  rewrite Series_decal_1_aux.
+  rewrite Series_incr_1_aux.
   apply Series_ext => k.
   apply f_equal ; ring.
   intuition.
@@ -341,8 +341,8 @@ Lemma Cauchy_ex_series (a : nat -> R) :
   ex_series a <-> (Cauchy_crit_series a).
 Proof.
   split => Hcv.
-  by apply cv_cauchy_1, ex_series_equiv_0.
-  apply ex_series_equiv_1.
+  by apply cv_cauchy_1, ex_series_Reals_0.
+  apply ex_series_Reals_1.
   apply cv_cauchy_2.
   by apply Hcv.
 Qed.
@@ -401,7 +401,7 @@ Qed.
 
 (** Comparison *)
 
-Lemma Comp_ex_series (a b : nat -> R) :
+Lemma ex_series_le (a b : nat -> R) :
    (forall n : nat, 0 <= a n <= b n) ->
    ex_series b -> ex_series a.
 Proof.
@@ -440,12 +440,12 @@ Proof.
   by apply H.
 Qed.
 
-Lemma Series_compar (a b : nat -> R) :
+Lemma Series_le (a b : nat -> R) :
   (forall n : nat, 0 <= a n <= b n) ->
    ex_series b -> Series a <= Series b.
 Proof.
   move => Hn Hb.
-  have Ha := (Comp_ex_series _ _ Hn Hb).
+  have Ha := (ex_series_le _ _ Hn Hb).
   apply Lim_seq_correct' in Ha.
   apply Lim_seq_correct' in Hb.
   rewrite /Series.
@@ -898,8 +898,8 @@ Proof.
     apply Rabs_lt_between' in H ; case: H => _ H ;
     field_simplify in H ; rewrite Rdiv_1 in H ; by apply Rlt_le.
   case => {H} N H.
-  apply ex_series_decal_n with N.
-  apply Comp_ex_series with (fun n => Rabs (a N) * ((k+1)/2)^n).
+  apply ex_series_incr_n with N.
+  apply ex_series_le with (fun n => Rabs (a N) * ((k+1)/2)^n).
   move => n ; split.
   by apply Rabs_pos.
   rewrite Rmult_comm ; apply Rle_div_l.

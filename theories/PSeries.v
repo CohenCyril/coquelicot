@@ -244,7 +244,7 @@ Lemma CV_disk_le (a : nat -> R) (r1 r2 : R) :
   Rabs r1 <= Rabs r2 -> CV_disk a r2 -> CV_disk a r1.
 Proof.
   move => H.
-  apply Comp_ex_series => n ; split.
+  apply ex_series_le => n ; split.
   rewrite Rabs_mult ; apply Rmult_le_pos ; by apply Rabs_pos.
   rewrite ?Rabs_mult ; apply Rmult_le_compat_l.
   by apply Rabs_pos.
@@ -308,7 +308,7 @@ Proof.
   apply Rgt_not_eq, Rle_lt_trans with (2 := Hy), Rabs_pos.
   contradict H.
   by rewrite H Rabs_R0.
-  apply Comp_ex_series with (2:=H) => n.
+  apply ex_series_le with (2:=H) => n.
   split.
   by apply Rabs_pos.
   replace (Rabs (a n * y ^ n)) with (Rabs (a n * r ^ n) * l^n).
@@ -716,7 +716,7 @@ Proof.
     rewrite /CV_radius /Lub_Rbar_ne ; by case: ex_lub_Rbar_ne.
   have H2 : forall (y : R), 0 < y < r -> (CV_disk a y).
     move => y Hy.
-    apply Comp_ex_series with An.
+    apply ex_series_le with An.
     move => n ; split.
     by apply Rabs_pos.
     apply H0 ; rewrite /Boule Rabs_pos_eq Rminus_0_r.
@@ -848,7 +848,7 @@ Lemma CV_disk_plus (a b : nat -> R) (x : R) :
 Proof.
   move => Ha Hb.
   move: (ex_series_plus _ _ Ha Hb).
-  apply Comp_ex_series => n ; split.
+  apply ex_series_le => n ; split.
   by apply Rabs_pos.
   rewrite Rmult_plus_distr_r.
   by apply Rabs_triang.

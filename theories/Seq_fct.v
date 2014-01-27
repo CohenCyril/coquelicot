@@ -856,7 +856,7 @@ Lemma CVN_CVU_r (fn : nat -> R -> R) (r : posreal) :
 Proof.
   case => An [l [H H0]] x Hx.
   assert (H1 : ex_series An).
-    apply ex_series_equiv_1.
+    apply ex_series_Reals_1.
     exists l => e He.
     case: (H e He) => {H} N H.
     exists N => n Hn.
@@ -876,7 +876,7 @@ Proof.
   have H2 : is_lim_seq (fun n => Series (fun k => An (n + k)%nat)) 0.
     apply is_lim_seq_incr_1.
     apply is_lim_seq_ext with (fun n => Series An - sum_f_R0 An n).
-    move => n ; rewrite (Series_decal_n An (S n)) /=.
+    move => n ; rewrite (Series_incr_n An (S n)) /=.
     ring.
     by apply lt_O_Sn.
     by apply H1.
@@ -899,7 +899,7 @@ Proof.
 
   assert (H3 : forall y, Boule 0 r y -> ex_series (fun n => Rabs (fn n y))).
   move => y Hy.
-  move: H1 ; apply Comp_ex_series.
+  move: H1 ; apply ex_series_le.
   move => n ; split.
   by apply Rabs_pos.
   by apply H0.
@@ -920,7 +920,7 @@ Proof.
 
   apply Rle_lt_trans with (2 := H2 (S n) (le_trans _ _ _ (le_n_Sn _) (le_n_S _ _ Hn))).
   rewrite Rminus_0_r /SP.
-  rewrite (Series_decal_n (fun k : nat => fn k y) (S n)) /=.
+  rewrite (Series_incr_n (fun k : nat => fn k y) (S n)) /=.
   ring_simplify (sum_f_R0 (fun k : nat => fn k y) n +
     Series (fun k : nat => fn (S (n + k)) y) -
     sum_f_R0 (fun k : nat => fn k y) n).
@@ -930,15 +930,15 @@ Proof.
   apply Series_Rabs.
   apply ex_series_ext with (fun n0 : nat => Rabs (fn (S (n) + n0)%nat y)).
     move => n0 ; by rewrite plus_Sn_m.
-  apply (ex_series_decal_n (fun n => Rabs (fn n y))).
+  apply (ex_series_incr_n (fun n => Rabs (fn n y))).
   by apply H3.
-  apply Series_compar.
+  apply Series_le.
   move => k ; split.
   by apply Rabs_pos.
   by apply H0.
   apply ex_series_ext with (fun k : nat => An (S n + k)%nat).
   move => k ; by rewrite plus_Sn_m.
-  by apply ex_series_decal_n.
+  by apply ex_series_incr_n.
   by apply lt_O_Sn.
   apply ex_series_Rabs.
   by apply H3.
