@@ -1601,6 +1601,28 @@ Proof.
   split ; apply Ropp_le_contravar ; apply H.
 Qed.
 
+Lemma ex_RInt_inside {V : CompleteNormedModule R_AbsRing} :
+  forall (f : R -> V) (a b x e : R),
+  ex_RInt f (x-e) (x+e) -> Rabs (a-x) <= e -> Rabs (b-x) <= e ->
+  ex_RInt f a b.
+Proof.
+intros f a b x e Hf Ha Hb.
+wlog: a b Ha Hb / (a <= b) => [Hw | Hab].
+case (Rle_or_lt a b); intros H.
+now apply Hw.
+apply ex_RInt_swap.
+apply Hw; try easy.
+now left.
+apply (ex_RInt_Chasles_1 f a b) with (x+e).
+split.
+exact Hab.
+assert (x-e <= b <= x+e) by now apply Rabs_le_between'.
+apply H.
+apply ex_RInt_Chasles_2 with (x-e).
+now apply Rabs_le_between'.
+exact Hf.
+Qed.
+
 (** ** Norm *)
 
 Lemma RInt_ge_0 (f : R -> R) (a b : R) (l : R) :
@@ -4497,41 +4519,6 @@ Qed.
 
 (** ** Theorems proved using standard library *)
 
-Lemma ex_RInt_included1: forall (f : R -> R) a b c, ex_RInt f a b -> a <= c <= b -> ex_RInt f a c.
-Proof.
-intros f a b c H1 H2.
-apply ex_RInt_Reals_1.
-apply RiemannInt_P22 with b;[now apply ex_RInt_Reals_2|exact H2].
-Qed.
-
-Lemma ex_RInt_included2: forall (f : R -> R) a b c, ex_RInt f a b -> a <= c <= b -> ex_RInt f c b.
-intros f a b c H1 H2.
-apply ex_RInt_Reals_1.
-apply RiemannInt_P23 with a;[now apply ex_RInt_Reals_2|exact H2].
-Qed.
-
-Lemma ex_RInt_inside :
-  forall (f : R -> R) a b x e,
-  ex_RInt f (x-e) (x+e) -> Rabs (a-x) <= e -> Rabs (b-x) <= e ->
-  ex_RInt f a b.
-Proof.
-intros f a b x e Hf Ha Hb.
-wlog: a b Ha Hb / (a <= b) => [Hw | Hab].
-case (Rle_or_lt a b); intros H.
-now apply Hw.
-apply ex_RInt_swap.
-apply Hw; try easy.
-now left.
-apply ex_RInt_included1 with (x+e).
-apply ex_RInt_included2 with (x-e).
-exact Hf.
-now apply Rabs_le_between'.
-split.
-exact Hab.
-assert (x-e <= b <= x+e) by now apply Rabs_le_between'.
-apply H.
-Qed.
-
 Lemma ex_RInt_cont: forall f a b, (forall x, Rmin a b <= x <= Rmax a b -> continuity_pt f x)
   -> ex_RInt f a b.
 Proof.
@@ -4705,22 +4692,21 @@ Proof.
   apply Rabs_le_between'.
   left; apply Rlt_le_trans with (1:=Hy); apply Rmin_l.
   case (Rle_or_lt x y); intros M.
-  apply ex_RInt_included1 with (x+e).
-  apply ex_RInt_included2 with (x-e).
-  exact He.
-  split; apply Rplus_le_reg_r with (-x); ring_simplify.
-  apply Rplus_le_reg_r with e; ring_simplify.
-  left; apply cond_pos.
-  left; apply cond_pos.
+  apply (ex_RInt_Chasles_1 f x y) with (x+e).
   split;[exact M|apply H].
-  apply ex_RInt_swap.
-  apply ex_RInt_included1 with (x+e).
-  apply ex_RInt_included2 with (x-e).
-  exact He.
-  exact H.
-  split;[left; exact M|idtac].
-  apply Rplus_le_reg_r with (-x); ring_simplify.
+  apply ex_RInt_Chasles_2 with (x-e).
+  apply Rabs_le_between'.
+  rewrite Rminus_eq_0 Rabs_R0.
   left; apply cond_pos.
+  exact He.
+  apply ex_RInt_swap.
+  apply (ex_RInt_Chasles_1 f y x) with (x+e).
+  split;[left; exact M|idtac].
+  apply Rminus_le_0 ; ring_simplify.
+  left; apply cond_pos.
+  apply ex_RInt_Chasles_2 with (x-e).
+  exact H.
+  exact He.
   assert (ex_RInt f a y).
   now apply ex_RInt_Chasles with x.
   (* *)
@@ -5466,7 +5452,7 @@ apply Rle_trans with (1:=Rmin_l _ _).
 apply Rmin_r.
 exists (pos_div_2 d2).
 intros y Hy.
-apply ex_RInt_inside with (a x) d1.
+apply (ex_RInt_inside (f y)) with (a x) d1.
 apply Ia.
 rewrite (double_var d2).
 apply ball_triangle with u.
@@ -5575,7 +5561,7 @@ apply Rle_trans with (1:=Rmin_r _ _).
 apply Rmin_l.
 exists (pos_div_2 d4).
 intros y Hy.
-apply ex_RInt_inside with (a x) d0.
+apply (ex_RInt_inside (f y)) with (a x) d0.
 apply Ia.
 rewrite (double_var d4).
 apply ball_triangle with u.

@@ -735,16 +735,16 @@ Proof.
   destruct (C0_extension_right (fun x => f (- x)) la (-b) (-a)) as [g Hg].
   by apply Ropp_lt_contravar.
   intros.
-  eapply filterlim_compose.
+  eapply filterlim_comp.
   apply (filterlim_opp c).
   apply H0.
   split ; apply Ropp_lt_cancel ; rewrite Ropp_involutive ; by apply H2.
-  eapply filterlim_compose.
+  eapply filterlim_comp.
   apply filterlim_Ropp_left.
   by rewrite Ropp_involutive.
   exists (fun x => g (- x)) ; split.
   intros c Hc.
-  eapply filterlim_compose.
+  eapply filterlim_comp.
   apply (filterlim_opp c).
   by apply Hg, Ropp_lt_contravar.
   split.
