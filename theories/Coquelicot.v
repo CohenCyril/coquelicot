@@ -43,7 +43,7 @@ library, we provide correspondence theorems between the two libraries.
 
 
 In the following definitions, K will designate either a [Ring] or an [AbsRing],
-while U and V will designate either some [ModuleSpace], [NormedModule], or
+while U and V will designate a [ModuleSpace], a [NormedModule], or a
 [CompleteNormedModule].
 
 
@@ -88,9 +88,10 @@ if it is a neighborhood of any of its points (in terms of [locally]).
 * Limits and continuity
 
 
-Limits and continuity are expressed by filters using the generic construction
-[filterlim f K L] with f a function, K a filter describing a limit point of the
-domain of f, and L a filter describing a limit point of the range of f.
+Limits and continuity are expressed with filters using predicate [filterlim :
+(S -> T) -> ((S -> Prop) -> Prop) -> ((T -> Prop) -> Prop)]. Property
+[filterlim f K L] means that function f, at the limit point described by filter
+K tends to the limit point described by filter L.
 
 
 Examples:
@@ -156,48 +157,68 @@ the arithmetic operators is given by lemmas such as [ex_lim_seq_mult] and
 [Lim_inv].
 
 
-* Functions and predicates
-
-Total functions:
-- [Derive : (R -> R) -> R -> R]
-- [RInt : (R -> R) -> R -> R -> R]
-- [Series : (nat -> R) -> R]
-- [PSeries : (nat -> R) -> R -> R]
-- [CV_radius : (nat -> R) -> Rbar]
+* Derivability and differentiability
 
 
-The corresponding predicates are:
-- [is_derive : (R -> R) -> R -> R -> Prop]
-- and so on, except for [CV_radius].
+The predicate of differentiability is [filterdiff : (U -> V) -> ((U -> Prop) ->
+Prop) -> (U -> V) -> Prop]. Property [filterdiff f K l] means that, at the
+limit point described by K, the differential of function f is the linear
+function l. Linearity is described by the predicate [is_linear].
 
 
-There are also predicates in case the actual value does not matter:
-- [ex_derive : (R -> R) -> R -> Prop]
-- and so on.
+While [filterdiff_ext] states that two functions extensionally equal have the
+same differential, [filterdiff_ext_lin] states that the differential can be
+replaced by any linear function that is extensionally equal.
 
 
-** Example
+When the domain space of the function is an [AbsRing] rather than just a
+[NormedModule] and the filter is [locally], the following specialized predicates
+can be used instead:
+- [is_derive : (K -> V) -> K -> V -> Prop].
+- [ex_derive : (K -> V) -> K -> V -> Prop].
 
-[Derive f x] is a real number. If function f is derivable at point x, then
-this number is equal to the derivative of f at point x. Otherwise it is an
-arbitrary real number. The differentiability of f at x is given by the
-predicate [ex_derive f x]. Predicate [is_derive f x l] encompasses both
-properties: it is equivalent to [ex_derive f x /\ Derive f x = l].
 
-Theorems [is_derive_unique] and [Derive_correct] provide relations between
-these predicates. Theorems [ex_derive_Reals_0], [ex_derive_Reals_1], and
-[Derive_Reals], relate these definitions to those of Coq's standard library.
+For real-valued functions, the following total function gives the value of the
+derivative, if it exists: [Derive : (R -> R) -> R -> R]. The specification of
+this function is given by lemma [Derive_correct]. The compatibility of the
+predicates with [derivable_pt_lim] from the standard library is given by
+[is_derive_Reals].
+
+
+Tactic [auto_derive] can be used to automatically solve goals about [is_derive],
+[ex_derive], [derivable_pt_lim], and [derivable_pt].
+
+
+* Riemann integrals
+
+
+The main predicate is [is_RInt : (R -> V) -> R -> R -> V]. [is_RInt f a b l]
+means that the Riemann sums of function f between a and b converge and their
+limit is equal to l. This is a specialization of [filterlim] for a function
+built using [Riemann_sum] and the [Riemann_fine] filter.
+
+
+As before, there are a predicate and a total function related to it:
+- [ex_RInt : (R -> V) -> R -> R -> Prop].
+- [RInt : (R -> R) -> R -> R -> R].
 
 
 * Naming conventions
 
 
-- Correspondence theorems with the standard library contain [_Reals] in their name.
-- Extensionality theorems contain [_ext] in their name.
-  If the equality only needs to be local, they also contain [_loc].
-- Uniqueness theorems contain [_unique] in their name.
-- Theorems about asymptotic behaviors are suffixed by [_p] or [_m]
+- Theorems about a given predicate start with its name, generally followed
+  by the name of the object it is applied to, e.g. [is_RInt_plus], or a property
+  of the object, e.g. [filterdiff_linear].
+- Correspondence theorems with the standard library end with [_Reals].
+- Extensionality theorems end with [_ext]. If the equality only needs to
+  be local, they end with [_ext_loc] instead.
+- Uniqueness theorems end with [_unique].
+- Theorems about asymptotic behaviors at plus, resp. minus, infinity end with
+  [_p], resp. [_m].
   if they are at infinite points.
+- Theorems about constant functions, resp. identity, end with [_const], resp.
+  [_id].
+
 *)
 
 Require Export AutoDerive Compactness Complex Continuity Derive.
