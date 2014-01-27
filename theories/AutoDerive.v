@@ -923,13 +923,13 @@ destruct (D e n) as (a,b).
 case o.
 simpl.
 intros H.
-apply: is_derive_opp_fct.
+apply: is_derive_opp.
 now apply IHe.
 simpl.
 intros (H,(H0,_)).
 rewrite -{2}(Rmult_1_r (interp l e)).
 rewrite -(interp_set_nth n l e) in H0 |-*.
-apply is_derive_inv_fct.
+apply is_derive_inv.
 now apply IHe.
 exact H0.
 simpl.

@@ -112,8 +112,8 @@ assert (H: forall x : R, is_derive f x (pow x n)).
   intros x.
   evar_last.
   rewrite /f /Rdiv -[Rmult]/(scal (V := R_NormedModule)).
-  apply is_derive_scal_l_fct.
-  apply is_derive_pow_fct, is_derive_id.
+  apply is_derive_scal_l.
+  apply is_derive_pow, is_derive_id.
   rewrite /pred.
   set k := INR (S n).
   rewrite /scal /= /mult /one /=.

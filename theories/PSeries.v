@@ -1905,14 +1905,14 @@ Proof.
     by apply lt_irrefl in Hn.
     elim: n => [ | n] ; simpl pred ; rewrite /sum_f_R0 -/sum_f_R0.
     replace (PS_derive a 0 * y ^ 0)
-      with (0 + a 1%nat * (1 * 1 + y * 0))
+      with (0 + a 1%nat * (1 * 1))
       by (rewrite /PS_derive /= ; ring).
     apply: is_derive_plus.
     simpl.
     apply: is_derive_const.
-    apply is_derive_Reals, derivable_pt_lim_scal, derivable_pt_lim_mult.
-    by apply derivable_pt_lim_id.
-    by apply derivable_pt_lim_const.
+    apply is_derive_scal.
+    apply: is_derive_scal_l.
+    apply: is_derive_id.
     move => IH.
     apply: is_derive_plus.
     apply IH.

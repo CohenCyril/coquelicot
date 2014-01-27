@@ -4859,7 +4859,7 @@ intros f a x Hi Ix Cx.
 apply is_derive_ext with (fun u => - RInt f a u).
 simpl => t.
 apply RInt_swap.
-apply: is_derive_opp_fct.
+apply: is_derive_opp.
 apply is_derive_RInt ; try easy.
 now apply ex_RInt_swap.
 Qed.
@@ -5649,7 +5649,7 @@ apply is_derive_ext with (fun x0 => - RInt (fun t : R => f x0 t) (b x0) a).
 intros t; apply RInt_swap.
 replace (RInt (fun t : R => Derive (fun u => f u t) x) a (b x) +f x (b x)*db) with
       (- ((RInt (fun t : R => Derive (fun u : R => f u t) x) (b x) a) + - f x (b x)*db)).
-apply: is_derive_opp_fct.
+apply: is_derive_opp.
 apply is_derive_RInt_param_bound_comp_aux2; try easy.
 move: If ; apply filter_imp.
 intros y H.

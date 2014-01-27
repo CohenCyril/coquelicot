@@ -133,7 +133,7 @@ real-valued sequences and functions:
 The unicity of the limits is given by lemmas [is_lim_seq_unique] and
 [is_lim_unique]. The compatibility with the arithmetic operators is given
 by lemmas such as [is_lim_seq_plus] and [is_lim_seq_plus']. They are
-derived from the generic lemmas [filterlim_plus] and [filterlim_compose].
+derived from the generic lemmas [filterlim_plus] and [filterlim_comp_2].
 
 
 Lemmas [is_lim_seq_spec] and [is_lim_sprec] gives the traditional epsilon-delta

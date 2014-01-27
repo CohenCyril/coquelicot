@@ -50,17 +50,14 @@ Lemma Dfab (a b : R) : forall x, 0 < x
 Proof.
   move => x Hx.
   evar_last.
-  apply is_derive_Reals.
-  apply derivable_pt_lim_div.
-  apply derivable_pt_lim_plus.
-  by apply derivable_pt_lim_const.
-  apply derivable_pt_lim_scal.
-  apply derivable_pt_lim_ln.
-  by apply Hx.
-  by apply derivable_pt_lim_id.
+  apply is_derive_div.
+  apply @is_derive_plus.
+  apply is_derive_const.
+  apply is_derive_scal.
+  now apply is_derive_Reals, derivable_pt_lim_ln.
+  apply is_derive_id.
   by apply Rgt_not_eq.
-  simpl.
-  unfold Rsqr.
+  rewrite /Rdiv /plus /zero /one /=.
   field.
   by apply Rgt_not_eq.
 Qed.
@@ -200,12 +197,12 @@ Proof.
   apply Ropp_lt_cancel.
   apply (incr_function (fun x => - f x) 1 p_infty).
   move => z H1z _.
-  apply: ex_derive_opp_fct.
+  apply: ex_derive_opp.
   exists ((2 - 2 - 2 * ln z) / z ^ 2).
   apply (Dfab 2 2 z).
   by apply Rlt_trans with (1 := Rlt_0_1).
   move => z H1z _.
-  rewrite Derive_opp_fct.
+  rewrite Derive_opp.
   apply Ropp_lt_cancel ; rewrite Ropp_0 Ropp_involutive.
   apply sign_lt_0.
   rewrite Signe_df.
@@ -315,7 +312,7 @@ Proof.
   apply is_derive_Reals.
   apply derivable_pt_lim_scal.
   by apply derivable_pt_lim_ln.
-  apply is_derive_pow_fct.
+  apply is_derive_pow.
   by apply is_derive_Reals, derivable_pt_lim_ln.
   rewrite /f /fab /plus /= ; field.
   by apply Rgt_not_eq.
