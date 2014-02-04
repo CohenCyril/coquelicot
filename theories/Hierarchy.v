@@ -22,7 +22,7 @@ COPYING file for more details.
 Require Import Reals ssreflect.
 Require Import Rcomplements Rbar.
 
-(* This files describes first filters:
+(* This file describes first filters:
  
  - [Filter]: they are sets of sets of reals. They can be seen for example as the way we will converge towards a point x (from above, by a ball, and so on).
 #<br /># Many of the later definitions are filters, therefore many basic lemmas are only those about filters. It includes [filter_forall] and [filter_const].
@@ -3196,8 +3196,8 @@ Proof.
   exact (is_filter_lim_locally_unique x y H).
 Qed.
 
-Notation at_left x := (within (fun u : R => Rlt u x) (locally (x)%R)).
-Notation at_right x := (within (fun u : R => Rlt x u) (locally (x)%R)).
+Definition at_left x := within (fun u : R => Rlt u x) (locally x).
+Definition at_right x := within (fun u : R => Rlt x u) (locally x).
 
 (** Continuity of norm *)
 
