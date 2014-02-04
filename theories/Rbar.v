@@ -24,8 +24,8 @@ Require Import ssreflect.
 Require Import Rcomplements.
 
 (** This file contains the definition and properties of the set
- [R] # &#8746; {+ &infin;} &#8746; {- &infin;} # denoted by [Rbar]. We have defined: 
-  - coercions from [R] to [Rbar] and vice versa ([Finite] gives [R0] at infinity points) 
+ [R] # &#8746; {+ &infin;} &#8746; {- &infin;} # denoted by [Rbar]. We have defined:
+  - coercions from [R] to [Rbar] and vice versa ([Finite] gives [R0] at infinity points)
   - an order [Rbar_lt] and [Rbar_le]
   - total operations: [Rbar_opp], [Rbar_plus], [Rbar_minus], [Rbar_inv], [Rbar_min] and [Rbar_abs]
   - lemmas about the decidability of the order andproperties of the operations (such as [Rbar_plus_comm] or [Rbar_plus_lt_compat])

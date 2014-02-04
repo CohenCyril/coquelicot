@@ -977,7 +977,7 @@ Proof.
   move: H => {Hhl} Hhl.
 
   case: (@filter_and _ _ FF _ _ Hhl Hfg) => {Hhl Hfg} /= ; intros.
-  
+
   move: (fun x => proj1 (@filterlim_locally _ _ F2 FF2 (f x) (h x)) (Hfh x) (pos_div_2 (pos_div_2 eps))) => {Hfh} /= Hfh.
   case: (HF1 Q f0) => x Hx.
   move: (@filter_and _ _ FF2 _ _ (Hfh x) g0) => {Hfh}.
@@ -1012,7 +1012,7 @@ Proof.
     exists d => y Hy.
     apply: Hp.
     by apply Hy.
-    
+
   move: H => {Hfg} Hfg.
   move: (Hf Hfg (pos_div_2 eps)) => {Hf Hfg} /= Hf.
 
@@ -1034,7 +1034,7 @@ Proof.
   apply ball_triangle with (f v y).
   by apply Hf.
   now apply ball_sym.
-  
+
   move => l Hl.
   by exists l.
 Qed.
@@ -1077,7 +1077,7 @@ Qed.
 Require Import RInt SF_seq.
 
 Lemma filterlim_RInt {U} {V : CompleteNormedModule R_AbsRing} :
-  forall (f : U -> R -> V) (a b : R) F (FF : ProperFilter F) 
+  forall (f : U -> R -> V) (a b : R) F (FF : ProperFilter F)
     g h,
   (forall x, is_RInt (f x) a b (h x))
   -> (filterlim f F (locally g))

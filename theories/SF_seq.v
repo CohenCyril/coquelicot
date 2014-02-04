@@ -1605,7 +1605,7 @@ Section Riemann_sum_Normed.
 
 Context {V : NormedModule R_AbsRing}.
 
-Lemma Riemann_sum_Chasles_0 
+Lemma Riemann_sum_Chasles_0
   (f : R -> V) (M : R) (x : R) ptd :
   forall (eps : posreal),
   (forall x, SF_h ptd <= x <= last (SF_h ptd) (SF_lx ptd) -> norm (f x) < M) ->
@@ -1751,7 +1751,7 @@ Proof.
       by split.
 Qed.
 
-Lemma Riemann_sum_norm (f : R -> V) (g : R -> R) ptd : 
+Lemma Riemann_sum_norm (f : R -> V) (g : R -> R) ptd :
   pointed_subdiv ptd ->
   (forall t, SF_h ptd <= t <= last (SF_h ptd) (SF_lx ptd) -> norm (f t) <= g t)
   -> norm (Riemann_sum f ptd) <= Riemann_sum g ptd.
@@ -1789,7 +1789,7 @@ End Riemann_sum_Normed.
 
 Lemma Riemann_sum_pair {U : ModuleSpace R_Ring} {V : ModuleSpace R_Ring}
   (f : R -> U * V) ptd :
-  Riemann_sum f ptd = 
+  Riemann_sum f ptd =
     (Riemann_sum (fun t => fst (f t)) ptd, Riemann_sum (fun t => snd (f t)) ptd).
 Proof.
   apply SF_cons_ind with (s := ptd) => {ptd} [x0 | h0 ptd IH].

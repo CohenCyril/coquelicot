@@ -59,7 +59,7 @@ Proof.
   intros x n m.
   rewrite -2!pow_n_plus.
   by apply f_equal, Plus.plus_comm.
-Qed. 
+Qed.
 
 Lemma abs_pow_n :
   forall (x : K) n,
@@ -120,7 +120,7 @@ Proof.
   intros n ; rewrite pow_n_pow /= ; apply Rmult_comm.
 Qed.
 
-Lemma PSeries_eq (a : nat -> R) (x : R) : 
+Lemma PSeries_eq (a : nat -> R) (x : R) :
   PSeries a x = Series (fun k => scal (pow_n x k) (a k)).
 Proof.
   apply Series_ext.
@@ -161,7 +161,7 @@ Proof.
   case: (H eps (cond_pos eps)) => {H} N H.
   exists N => n Hn.
   rewrite (sum_n_ext _ (fun n0 : nat => a n0 * x ^ n0)).
-  rewrite sum_n_sum_f_R0.  
+  rewrite sum_n_sum_f_R0.
   by apply H.
   intros; now rewrite Rmult_comm pow_n_pow.
 Qed.
@@ -806,7 +806,7 @@ Lemma is_pseries_plus (a b : nat -> V) (x :K) (la lb : V) :
   is_pseries a x la -> is_pseries b x lb
     -> is_pseries (PS_plus a b) x (plus la lb).
 Proof.
-  move => Ha Hb. 
+  move => Ha Hb.
   apply filterlim_ext with (f:=
     (fun n => plus (sum_n (fun k => scal (pow_n x k) (a k)) n) (sum_n (fun k => scal (pow_n x k) (b k)) n))).
   elim => [ | n IH].
@@ -1068,7 +1068,7 @@ Proof.
  rewrite scal_distr_l; apply f_equal.
  now rewrite scal_assoc.
  apply filterlim_comp with (f:= fun n => pred n) (G:=eventually)
-  (g:=fun n => scal x (sum_n (fun k : nat => scal (pow_n x k) (a k)) n)). 
+  (g:=fun n => scal x (sum_n (fun k : nat => scal (pow_n x k) (a k)) n)).
  apply eventually_subseq'.
  exists 1%nat.
  intros n Hn.
@@ -1138,7 +1138,7 @@ Lemma is_pseries_decr_1 (a : nat -> V) (x y : K) (l : V) :
     -> is_pseries (PS_decr_1 a) x (scal y (plus l (opp (a O)))).
 Proof.
   move => Hx Ha.
-  apply filterlim_ext with  (fun n : nat => scal y 
+  apply filterlim_ext with  (fun n : nat => scal y
     (sum_n (fun k => scal (pow_n x (S k)) (a (S k))) n)).
   intros n; induction n; unfold PS_decr_1; simpl.
   rewrite mult_one_r scal_one scal_assoc.
@@ -1150,7 +1150,7 @@ Proof.
   rewrite Hx.
   now rewrite mult_one_l.
   apply filterlim_comp with (2 := filterlim_scal _ _).
-  apply filterlim_ext with  (fun n : nat => plus 
+  apply filterlim_ext with  (fun n : nat => plus
     (sum_n (fun k => scal (pow_n x k) (a k)) (S n)) (opp (a 0%nat))).
   intros n; induction n; simpl.
   rewrite mult_one_r scal_one.
@@ -1167,7 +1167,7 @@ Proof.
 Qed.
 
 Lemma ex_pseries_decr_1 (a : nat -> V) (x : K) :
- (x = zero \/ exists y, mult y x = one) -> 
+ (x = zero \/ exists y, mult y x = one) ->
  ex_pseries a x -> ex_pseries (PS_decr_1 a) x.
 Proof.
  case => [H | [y Hx]] [l Ha].
@@ -1497,12 +1497,12 @@ Proof.
 (* a(2k+1)x^(2k+1) *)
   apply (is_lim_seq_scal_l _ x l2) => //.
   apply filterlim_ext_loc with
-    (fun n => sum_n (fun k : nat => a (2 * k + 1)%nat * (x ^ 2) ^ k) 
+    (fun n => sum_n (fun k : nat => a (2 * k + 1)%nat * (x ^ 2) ^ k)
       (div2 (pred n))).
   exists 1%nat; intros y; case y.
   easy.
   intros n _; reflexivity.
-  apply filterlim_comp with (2:=H2). 
+  apply filterlim_comp with (2:=H2).
   intros P [N HN].
   exists (2*N+2)%nat.
   intros n Hn; apply HN.
@@ -2250,7 +2250,7 @@ Proof.
    apply is_series_ext with (2:=Hw).
    intros n; rewrite Derive_n_comp_opp; simpl.
    rewrite /scal /= /mult /=.
-   apply trans_eq with ((pow_n (- x) n * (-1) ^ n) * 
+   apply trans_eq with ((pow_n (- x) n * (-1) ^ n) *
      (Derive_n f n (- 0) / INR (fact n)));[unfold Rdiv; ring|idtac].
    rewrite Ropp_0.
    apply f_equal2; try reflexivity.

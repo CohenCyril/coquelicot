@@ -70,7 +70,7 @@ Proof.
   unfold is_RInt.
   intros f a b If HIf.
   rewrite -scal_opp_one /=.
-  apply filterlim_ext with 
+  apply filterlim_ext with
     (fun ptd => scal (opp (one : R)) (scal (sign (a - b)) (Riemann_sum f ptd))).
   intros x.
   rewrite scal_assoc.
@@ -672,7 +672,7 @@ Proof.
   by apply is_RInt_comp_opp.
 Qed.
 
-Lemma is_RInt_comp_lin 
+Lemma is_RInt_comp_lin
   (f : R -> V) (u v a b : R) (l : V) :
   is_RInt f (u * a + v) (u * b + v) l
     -> is_RInt (fun y => scal u (f (u * y + v))) a b l.
@@ -689,7 +689,7 @@ Proof.
   rewrite Riemann_sum_const scal_assoc /=.
   rewrite scal_zero_r.
   by apply H.
-  
+
   wlog: u a b / (u > 0) => [Hw | Hu _].
     case: (Rlt_le_dec 0 u) => Hu.
     by apply Hw.
@@ -863,7 +863,7 @@ Proof.
   replace v
     with (plus (minus (Riemann_sum f ptd)
      (plus (Riemann_sum f (SF_cut_down ptd b))
-        (Riemann_sum f (SF_cut_up ptd b)))) 
+        (Riemann_sum f (SF_cut_up ptd b))))
   (minus
      (plus (Riemann_sum f (SF_cut_down ptd b))
         (Riemann_sum f (SF_cut_up ptd b))) (plus l1 l2))).
@@ -918,7 +918,7 @@ Proof.
         (Riemann_sum f (SF_cut_up ptd b))) (plus l1 l2))
     with (plus (minus (scal (sign (b - a)) (Riemann_sum f (SF_cut_down ptd b))) l1)
            (minus (scal (sign (c - b)) (Riemann_sum f (SF_cut_up ptd b))) l2)).
-  apply @norm_triangle.   
+  apply @norm_triangle.
   replace (sign (b - a)) with (one : R).
   replace (sign (c - b)) with (one : R).
   rewrite 2!scal_one /minus opp_plus -2!plus_assoc.
@@ -1292,7 +1292,7 @@ Proof.
     case: H2 => ptd [Hstep Hptd].
     specialize (CIf ptd Hstep Hptd).
   rewrite -norm_opp.
-  replace (opp (If x)) with 
+  replace (opp (If x)) with
     (minus (minus (scal (sign (x - a)) (Riemann_sum f ptd)) (If x)) (scal (sign (x - a)) (Riemann_sum f ptd))).
   2: rewrite /minus plus_comm plus_assoc plus_opp_l.
   2: by apply plus_zero_l.
@@ -1496,7 +1496,7 @@ Proof.
   intros [Hab Hbc] If.
   case: Hab => [Hab | <- ].
   2: by apply ex_RInt_point.
-  
+
   assert (H1 := filterlim_locally_cauchy (F := (Riemann_fine a b)) (fun ptd : SF_seq => scal (sign (b - a)) (Riemann_sum f ptd))).
   apply H1 ; clear H1.
   intros eps.
@@ -1507,7 +1507,7 @@ Proof.
 
   assert (H1 := proj2 (filterlim_locally_cauchy (F := (Riemann_fine a c)) (fun ptd : SF_seq => scal (sign (c - a)) (Riemann_sum f ptd)))).
   destruct (H1 If (mkposreal _ He)) as [P [[alpha HP] H2]] ; clear If H1 ; rename H2 into If.
-  destruct (filter_ex (F := Riemann_fine b c) (fun y => seq_step (SF_lx y) < alpha 
+  destruct (filter_ex (F := Riemann_fine b c) (fun y => seq_step (SF_lx y) < alpha
     /\ pointed_subdiv y /\
      SF_h y = Rmin b c /\ seq.last (SF_h y) (SF_lx y) = Rmax b c)) as [y' Hy'].
     by exists alpha.
@@ -1534,7 +1534,7 @@ Proof.
   rewrite /Rmax ; case: Rle_dec (Rlt_le _ _ Hab) => // _ _.
   case: Rle_dec (Rlt_le _ _ (Rlt_le_trans _ _ _ Hab Hbc)) => //.
   by apply H0.
-  
+
   intros.
   specialize (If _ _ (proj1 H) (proj1 H0)).
   replace (sign (b - a)) with 1.
@@ -1554,7 +1554,7 @@ Proof.
     forall y' : SF_seq,
     minus (Riemann_sum f v) (Riemann_sum f u) =
     minus (Riemann_sum f (SF_cat v y')) (Riemann_sum f (SF_cat u y')))) => [v0 | v0 v IH u Huv y].
-  apply (SF_cons_ind (fun u => 
+  apply (SF_cons_ind (fun u =>
     last (SF_h (SF_nil v0)) (SF_lx (SF_nil v0)) = last (SF_h u) (SF_lx u) ->
     forall y' : SF_seq,
     minus (Riemann_sum f (SF_nil v0)) (Riemann_sum f u) =
@@ -1726,7 +1726,7 @@ Proof.
   apply SF_cons_ind with (s := y) => {y} [x0 | [x1 y0] y IH].
   by rewrite /Riemann_sum /=.
   by rewrite ?Riemann_sum_cons /= IH.
-Qed.  
+Qed.
 
 Lemma is_RInt_fct_extend_snd
   (f : R -> U * V) (a b : R) (l : U * V) :
@@ -1749,8 +1749,8 @@ Qed.
 
 Lemma is_RInt_fct_extend_pair
   (f : R -> U * V) (a b : R) lu lv :
-  is_RInt (fun t => fst (f t)) a b lu -> 
-  is_RInt (fun t => snd (f t)) a b lv 
+  is_RInt (fun t => fst (f t)) a b lu ->
+  is_RInt (fun t => snd (f t)) a b lv
     -> is_RInt f a b (lu,lv).
 Proof.
   move => H1 H2.
@@ -1774,7 +1774,7 @@ Proof.
   intros [l Hl].
   exists (fst l).
   by apply is_RInt_fct_extend_fst.
-Qed.  
+Qed.
 
 Lemma ex_RInt_fct_extend_snd
   (f : R -> U * V) (a b : R) :
@@ -1787,8 +1787,8 @@ Qed.
 
 Lemma ex_RInt_fct_extend_pair
   (f : R -> U * V) (a b : R) :
-  ex_RInt (fun t => fst (f t)) a b -> 
-  ex_RInt (fun t => snd (f t)) a b 
+  ex_RInt (fun t => fst (f t)) a b ->
+  ex_RInt (fun t => snd (f t)) a b
     -> ex_RInt f a b.
 Proof.
   move => [l1 H1] [l2 H2].
@@ -2872,7 +2872,7 @@ Proof.
   rewrite !seq_cut_up_head'.
   move: Hx1 ; apply SF_cons_dec with (s := s) => {s Hptd} /= [x1 | [x1 y1] s] //= Hx1.
   case: (Rle_dec (SF_h s) _) => //= Hx2.
-  
+
 (* * seq_step (SF_lx ptd_l) < alpha1 *)
   apply Rlt_le_trans with (2 := Rmin_l alpha1 alpha2).
   apply Rlt_le_trans with (2 := Rmin_l _ alpha3).
@@ -4541,7 +4541,7 @@ Qed.
 
 Lemma RInt_le: forall f g a b,
     a <= b ->
-   ex_RInt f a b ->  ex_RInt g a b -> 
+   ex_RInt f a b ->  ex_RInt g a b ->
    (forall x,  a <= x <= b -> f x <= g x) ->
    RInt f a b <= RInt g a b.
 Proof.
@@ -4653,7 +4653,7 @@ assert (forall y, Rabs (y - b) < eps -> ex_RInt f b y).
   by apply Rlt_le, eps.
   apply ex_RInt_included1 with (1 := Ifb).
   apply Rabs_le_between'.
-  by apply Rlt_le, Hy. 
+  by apply Rlt_le, Hy.
 
 apply continuity_pt_ext_loc with (fun x => RInt f a b + RInt f b x).
   exists eps => /= y Hy.

@@ -95,7 +95,7 @@ Proof.
   apply sym_eq, is_C_RInt_unique.
   apply C_RInt_correct in Hf1.
   apply C_RInt_correct in Hf2.
-  
+
   move: (is_RInt_fct_extend_fst _ _ _ _ Hf1) => /= Hf1_1.
   move: (is_RInt_fct_extend_snd _ _ _ _ Hf1) => /= Hf1_2.
   move: (is_RInt_fct_extend_fst _ _ _ _ Hf2) => /= Hf2_1.
@@ -184,7 +184,7 @@ Proof.
   move => /= ->.
   apply f_equal2.
   apply injective_projections ; simpl ; ring.
-  rewrite (C_RInt_ext (fun t : R => opp 
+  rewrite (C_RInt_ext (fun t : R => opp
     ((-1) * (f ((1 - (-1 * t + 1)%R) * z2 + (-1 * t + 1)%R * z1)%C)))).
   rewrite C_RInt_opp.
   rewrite C_RInt_swap.
@@ -212,7 +212,7 @@ Lemma is_C_RInt_segm_Chasles (f : C -> C) (z1 z2 z3 : C) l1 l2 :
 Proof.
   rewrite /is_C_RInt_segm ;
   case => p -> H1 H2.
-  
+
   case: (Req_dec p 0) => Hp0.
   rewrite Hp0 in H1 H2 => {p Hp0}.
   apply (is_RInt_ext _ (fun t : R => (z3 - z1) * f ((1 - t) * z1 + t * z3))) in H2.
@@ -307,9 +307,9 @@ Focus 2.
   replace ((1 - (/ p * x + 0)%R) * z1 + (/ p * x + 0)%R * ((1 - p) * z1 + p * z3))
     with ((1 - x) * z1 + x * z3).
   rewrite scal_opp_one opp_opp scal_R_Cmult.
-  apply injective_projections ; simpl ; by field. 
   apply injective_projections ; simpl ; by field.
-  
+  apply injective_projections ; simpl ; by field.
+
   clear H1.
   replace 0%R with ((/(1-p)) * p + -/(1-p)*p)%R in H2 by ring.
   pattern 1%R at 6 in H2.
@@ -589,7 +589,7 @@ Proof.
       (Riemann_sum f (SF_cut_up ptd x))) (Riemann_sum f ptd)) < eps}).
     intro.
     admit.
-  
+
   clear Cf'.
 
   wlog: a b H / (a < b) => [Hw | Hab].
@@ -614,7 +614,7 @@ Proof.
     simpl ; field ; apply Rgt_not_eq, M.
     by apply Cf.
   clear Cf ; rename H0 into Cf.
-  
+
   assert (forall z (eps : posreal) x, norm (minus (f x) (f z)) < eps \/ ~ norm (minus (f x) (f z)) < eps).
     intros.
     case: (Rlt_dec (norm (minus (f x) (f z))) eps).
@@ -733,7 +733,7 @@ Proof.
     apply H1.
     simpl ; intros.
     by apply H2.
-  
+
   set (F2 := fun (P : R -> Prop) => exists Q, F Q /\ forall z : C, Q z -> P (snd z)).
   destruct (complete_cauchy F2) as [y Hy].
   repeat split.
@@ -756,7 +756,7 @@ Proof.
     apply H1.
     simpl ; intros.
     by apply H2.
-  
+
   exists (x,y) => eps.
   destruct (Hx eps) as [Qx [HQx HPx]].
   destruct (Hy eps) as [Qy [HQy HPy]].
@@ -843,11 +843,11 @@ Proof.
     (fun ptd : SF_seq => scal (sign (b - a)) (Riemann_sum f ptd)))
     Hf (pos_div_2 eps)) as [P [[dP FP] HP]].
   simpl in HP.
-  
+
   cut (exists P0 : SF_seq -> Prop, Riemann_fine a b P0 /\
     (forall u v : SF_seq, SF_lx u = SF_lx v ->
     P0 u -> P0 v ->
-    Rabs (Riemann_sum (fun x : R => norm (f x)) v 
+    Rabs (Riemann_sum (fun x : R => norm (f x)) v
       - Riemann_sum (fun x : R => norm (f x)) u) < eps)).
   case => P0 [RP0 HP0].
   exists P0 ; split.
@@ -909,7 +909,7 @@ Proof.
     apply Rminus_lt_0 ; ring_simplify ; by apply is_pos_div_2.
     exists (mkposreal _ (Rmin_stable_in_posreal d1 d2)) ; simpl ; intros.
     case: (Rle_lt_dec x0 (Rmax a (x - d1 / 2))) => H7.
-    
+
     apply Hd2 ; intuition.
   destruct (completeness P) as [c Hc].
   - by exists b.

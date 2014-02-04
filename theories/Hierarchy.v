@@ -23,7 +23,7 @@ Require Import Reals ssreflect.
 Require Import Rcomplements Rbar.
 
 (* This file describes first filters:
- 
+
  - [Filter]: they are sets of sets of reals. They can be seen for example as the way we will converge towards a point x (from above, by a ball, and so on).
 #<br /># Many of the later definitions are filters, therefore many basic lemmas are only those about filters. It includes [filter_forall] and [filter_const].
 
@@ -37,14 +37,14 @@ This file then describes a hierarchy of type classes for groups, rings, and so o
  - [Ring] for noncommutative rings
 
 
- 
+
 *)
 
 Open Scope R_scope.
 
 (** * Filters *)
 
-(** ** Definitions *) 
+(** ** Definitions *)
 
 Class Filter {T : Type} (F : (T -> Prop) -> Prop) := {
   filter_true : F (fun _ => True) ;
@@ -564,7 +564,7 @@ Proof.
   easy.
   rewrite IHN.
   apply sym_eq, plus_assoc.
-Qed.  
+Qed.
 
 Lemma sum_n_plus :
   forall (u v : nat -> G) (n : nat),
@@ -1523,7 +1523,7 @@ Lemma complete_cauchy_fct :
     {f : T -> U | forall eps : posreal, F (ball f eps)}.
 Proof.
   move => F FF HFc.
-  
+
   set Fr := fun (t : T) (P : U -> Prop) => F (fun g => P (g t)).
   have FFr : forall t, ProperFilter (Fr t).
     case: FF => HF FF t.

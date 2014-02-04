@@ -24,11 +24,11 @@ Require Import RIneq Rcomplements.
 (** This file describes and proves [Markov]'s principle: if you have a
  decidable property P on [nat], then you either have a proof that P
  does never hold or you have constructed a witness on which P
- holds. 
+ holds.
 #<br /># Several variants are given. Additional lemmas are given in
  case you have the excluded middle. *)
 
- 
+
 Open Scope R_scope.
 
 (** * Markov's principle *)

@@ -315,13 +315,13 @@ Qed.
 Lemma Bessel1_uniqueness (a : nat -> R) (n : nat) : Rbar_lt 0 (CV_radius a) ->
   (forall x : R, Rbar_lt (Rabs x) (CV_radius a) ->
   x^2 * Derive_n (PSeries a) 2 x + x * Derive (PSeries a) x + (x^2 - (INR n)^2) * PSeries a x = 0)
-  -> 
+  ->
   (a 0%nat = 0 \/ n = O) /\
   (a 1%nat = 0 \/ n = 1%nat) /\
   (forall k, (INR (S (S k)) ^ 2 - INR n ^ 2) * a (S (S k)) + a k = 0).
 Proof.
   move => Ha H.
-  cut (forall k, 
+  cut (forall k,
     (PS_plus (PS_plus (PS_incr_n (PS_derive_n 2 a) 2)
       (PS_incr_1 (PS_derive a))) (PS_plus (PS_incr_n a 2) (PS_scal (- INR n ^ 2) a))) k = 0).
   intros Haux.
@@ -394,5 +394,5 @@ Proof.
   rewrite -Derive_PSeries.
   rewrite -Rmult_plus_distr_r.
   apply H.
-  
+
 Admitted.

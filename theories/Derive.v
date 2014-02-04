@@ -139,7 +139,7 @@ Context {K : AbsRing} {V : NormedModule K}.
 Lemma is_linear_id : is_linear (fun (x : V) => x).
 Proof.
   repeat split.
-  - exists 1 ; split. 
+  - exists 1 ; split.
     by apply Rle_0_1.
     move => x ; rewrite Rmult_1_l.
     by apply Rle_refl.
@@ -154,7 +154,7 @@ Proof.
   - move => k x.
     apply sym_eq.
     apply: scal_opp_r.
-  - exists 1 ; split. 
+  - exists 1 ; split.
     by apply Rle_0_1.
     move => x ; rewrite norm_opp Rmult_1_l.
     by apply Rle_refl.
@@ -604,7 +604,7 @@ Proof.
   rewrite plus_assoc.
   rewrite plus_opp_l plus_zero_l.
   by apply linear_opp.
-  
+
   apply domin_plus.
   intros eps.
   destruct (linear_norm _ Hf) as [mf [Hmf Hnf]].
@@ -642,7 +642,7 @@ Proof.
   by apply Rlt_0_1.
   exact Hmf.
   rewrite Rmult_comm ; by apply Df.
-  
+
   specialize (Df x Hx).
   by apply is_domin_linear.
 Qed.
@@ -796,7 +796,7 @@ Lemma filterdiff_id (F : (V -> Prop) -> Prop) :
 Proof.
   split.
   by apply is_linear_id.
-  
+
   move => x Hx eps.
   apply Hx ; exists eps => y /= Hy.
   rewrite /minus plus_opp_r norm_zero.
@@ -889,7 +889,7 @@ Proof.
   by apply filterdiff_minus.
 Qed.
 
-Lemma filterdiff_scal : forall {F} {FF : ProperFilter F} (x : K * V), 
+Lemma filterdiff_scal : forall {F} {FF : ProperFilter F} (x : K * V),
   is_filter_lim F x ->
   (forall (n m : K), mult n m = mult m n) ->
   filterdiff (fun t : K * V => scal (fst t) (snd t)) F
@@ -982,7 +982,7 @@ Proof.
     by apply norm_ge_0.
 Qed.
 
-Lemma ex_filterdiff_scal : forall {F} {FF : ProperFilter F} (x : K * V), 
+Lemma ex_filterdiff_scal : forall {F} {FF : ProperFilter F} (x : K * V),
   is_filter_lim F x ->
   (forall (n m : K), mult n m = mult m n) ->
   ex_filterdiff (fun t : K * V => scal (fst t) (snd t)) F.
@@ -991,7 +991,7 @@ Proof.
   by apply (filterdiff_scal x).
 Qed.
 
-Lemma filterdiff_scal_l : forall {F} {FF : Filter F} (x : V), 
+Lemma filterdiff_scal_l : forall {F} {FF : Filter F} (x : V),
   filterdiff (fun k : K => scal k x) F (fun k => scal k x).
 Proof.
   move => F FF x.
@@ -999,14 +999,14 @@ Proof.
   by apply is_linear_scal_l.
 Qed.
 
-Lemma ex_filterdiff_scal_l : forall {F} {FF : Filter F} (x : V), 
+Lemma ex_filterdiff_scal_l : forall {F} {FF : Filter F} (x : V),
   ex_filterdiff (fun k : K => scal k x) F.
 Proof.
   eexists.
   by apply (filterdiff_scal_l x).
 Qed.
 
-Lemma filterdiff_scal_r : forall {F} {FF : Filter F} (k : K), 
+Lemma filterdiff_scal_r : forall {F} {FF : Filter F} (k : K),
   (forall (n m : K), mult n m = mult m n) ->
   filterdiff (fun x : V => scal k x) F (fun x => scal k x).
 Proof.
@@ -1015,7 +1015,7 @@ Proof.
   by apply is_linear_scal_r.
 Qed.
 
-Lemma ex_filterdiff_scal_r : forall {F} {FF : Filter F} (k : K), 
+Lemma ex_filterdiff_scal_r : forall {F} {FF : Filter F} (k : K),
   (forall (n m : K), mult n m = mult m n) ->
   ex_filterdiff (fun x : V => scal k x) F.
 Proof.
@@ -1026,7 +1026,7 @@ Qed.
 End Operations.
 
 Lemma filterdiff_mult {K : AbsRing} :
- forall {F} {FF : ProperFilter F} (x : K * K), 
+ forall {F} {FF : ProperFilter F} (x : K * K),
   is_filter_lim F x ->
   (forall (n m : K), mult n m = mult m n) ->
   filterdiff (fun t : K * K => mult (fst t) (snd t)) F
@@ -1037,7 +1037,7 @@ Proof.
 Qed.
 
 Lemma ex_filterdiff_mult {K : AbsRing} :
- forall {F} {FF : ProperFilter F} (x : K * K), 
+ forall {F} {FF : ProperFilter F} (x : K * K),
   is_filter_lim F x ->
   (forall (n m : K), mult n m = mult m n) ->
   ex_filterdiff (fun t : K * K => mult (fst t) (snd t)) F.
@@ -1070,7 +1070,7 @@ Proof.
   apply filterdiff_opp_fct ; eassumption.
 Qed.
 
-Lemma filterdiff_plus_fct {F} {FF : Filter F} (f g : U -> V) (lf lg : U -> V) : 
+Lemma filterdiff_plus_fct {F} {FF : Filter F} (f g : U -> V) (lf lg : U -> V) :
   filterdiff f F lf -> filterdiff g F lg ->
   filterdiff (fun u => plus (f u) (g u)) F (fun u => plus (lf u) (lg u)).
 Proof.
@@ -1080,7 +1080,7 @@ Proof.
   by [].
   by apply filterdiff_plus.
 Qed.
-Lemma ex_filterdiff_plus_fct {F} {FF : Filter F} (f g : U -> V) : 
+Lemma ex_filterdiff_plus_fct {F} {FF : Filter F} (f g : U -> V) :
   ex_filterdiff f F -> ex_filterdiff g F ->
   ex_filterdiff (fun u => plus (f u) (g u)) F.
 Proof.
@@ -1089,7 +1089,7 @@ Proof.
   apply filterdiff_plus_fct ; eassumption.
 Qed.
 
-Lemma filterdiff_minus_fct {F} {FF : Filter F} (f g : U -> V) (lf lg : U -> V) : 
+Lemma filterdiff_minus_fct {F} {FF : Filter F} (f g : U -> V) (lf lg : U -> V) :
   filterdiff f F lf -> filterdiff g F lg ->
   filterdiff (fun u => minus (f u) (g u)) F (fun u => minus (lf u) (lg u)).
 Proof.
@@ -1099,7 +1099,7 @@ Proof.
   by [].
   by apply filterdiff_minus.
 Qed.
-Lemma ex_filterdiff_minus_fct {F} {FF : Filter F} (f g : U -> V) : 
+Lemma ex_filterdiff_minus_fct {F} {FF : Filter F} (f g : U -> V) :
   ex_filterdiff f F -> ex_filterdiff g F ->
   ex_filterdiff (fun u => minus (f u) (g u)) F.
 Proof.
@@ -1147,7 +1147,7 @@ Proof.
   apply (filterdiff_scal_l_fct x) ; eassumption.
 Qed.
 
-Lemma filterdiff_scal_r_fct : forall {F} {FF : Filter F} (k : K) (f lf : U -> V), 
+Lemma filterdiff_scal_r_fct : forall {F} {FF : Filter F} (k : K) (f lf : U -> V),
   (forall (n m : K), mult n m = mult m n) ->
   filterdiff f F lf ->
   filterdiff (fun x => scal k (f x)) F (fun x => scal k (lf x)).
@@ -1158,7 +1158,7 @@ Proof.
   apply filterdiff_linear.
   by apply is_linear_scal_r.
 Qed.
-Lemma ex_filterdiff_scal_r_fct : forall {F} {FF : Filter F} (k : K) (f : U -> V), 
+Lemma ex_filterdiff_scal_r_fct : forall {F} {FF : Filter F} (k : K) (f : U -> V),
   (forall (n m : K), mult n m = mult m n) ->
   ex_filterdiff f F ->
   ex_filterdiff (fun x => scal k (f x)) F.
@@ -1174,7 +1174,7 @@ Lemma filterdiff_mult_fct {K : AbsRing} {U : NormedModule K}
   (f g : U -> K) x (lf lg : U -> K) :
   (forall (n m : K), mult n m = mult m n) ->
   filterdiff f (locally x) lf -> filterdiff g (locally x) lg
-  -> filterdiff (fun t => mult (f t) (g t)) (locally x) 
+  -> filterdiff (fun t => mult (f t) (g t)) (locally x)
     (fun t => plus (mult (lf t) (g x)) (mult (f x) (lg t))).
 Proof.
   intros.
@@ -1268,7 +1268,7 @@ Proof.
     exists delta => h Hh0 Hh.
     apply Rle_lt_trans with (e / 2).
     simpl in Hd.
-    replace ((f (x + h) - f x) / h - l) with 
+    replace ((f (x + h) - f x) / h - l) with
       ((f (x + h) + - f x + - ((x + h + - x) * l)) / (x + h + - x)).
     2: by field.
     rewrite Rabs_div.
@@ -2823,7 +2823,7 @@ Proof.
   apply Rlt_le_trans with (1 := Hz) => /= ; by apply Rmin_r.
   by apply le_trans with (1 := Hk), le_n_Sn.
   apply Hf with (k := (S n)).
-  by apply ball_center. 
+  by apply ball_center.
   by apply le_refl.
   apply Hg with (k := S n).
   by apply ball_center.

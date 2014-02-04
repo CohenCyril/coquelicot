@@ -26,12 +26,12 @@ Require Import Rbar Rcomplements Markov.
 bounds, especially in [Rbar].
 - There are links between our bounds on [Rbar] and those of the
 standard library on [R]: for example Lemma [Rbar_ub_R_ub] between our
-[Rbar_is_upper_bound] and the standard library [is_upper_bound].  
+[Rbar_is_upper_bound] and the standard library [is_upper_bound].
 - From [Markov]'s principle, we deduce the construction of a lub (and
 of a glb) in [Rbar] from any non-empty set of reals: see Lemma
 [ex_lub_Rbar_ne].  *)
 
- 
+
 
 Open Scope R_scope.
 

@@ -656,7 +656,7 @@ Lemma C0_extension_right {T : UniformSpace} (f : R -> T) lb (a b : R) :
      /\ (forall c : R, c < b -> g c = f c) /\ g b = lb}.
 Proof.
   intros Hab ; intros.
-  
+
   set g := fun x => match Rlt_dec x b with
                     | left _ => f x
                     | right _ => lb
@@ -803,7 +803,7 @@ Lemma C0_extension_le {T : UniformSpace} (f : R -> T) (a b : R) :
 Proof.
   intros.
   case: (Rlt_le_dec a b) => Hab.
-  
+
   destruct (C0_extension_lt f (f a) (f b) a b Hab) as [g [Cg [Gab [Ga Gb]]]].
   intros c Hc.
   apply H ; split ; apply Rlt_le, Hc.
@@ -831,7 +831,7 @@ Proof.
 Qed.
 
 Lemma continue_bounded {K : AbsRing} {V : NormedModule K}
-  (f : R -> V) a b : 
+  (f : R -> V) a b :
   (forall x, a <= x <= b -> filterlim f (locally x) (locally (f x)))
   -> {M : R | forall x, a <= x <= b -> norm (f x) < M}.
 Proof.

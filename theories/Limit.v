@@ -412,7 +412,7 @@ Proof.
   by apply Rlt_le.
   apply Hu.
   by exists n.
-  
+
   suff : Rbar_le l (Rbar_div_pos al (mkposreal a Ha)).
   case: (al) => [al' | | ] ; case: (l) => [l' | | ] /= ; try (by case) ;
     try (case: Rle_dec (Rlt_le _ _ Ha) => //= Ha' _ ;
@@ -430,9 +430,9 @@ Proof.
   apply Rle_div_r => //.
   apply Hau.
   by exists n.
-  
+
 (* a = 0 *)
-  rewrite -Ha. 
+  rewrite -Ha.
   transitivity (Sup_seq (fun _ => 0)).
   apply Sup_seq_ext.
   move => n ; case: (u n) => [un | | ] /=.
@@ -441,13 +441,13 @@ Proof.
   case: Rle_lt_or_eq_dec (Rle_not_lt _ _ H) => //= H _.
   case: Rle_dec (Rle_refl 0) => //= H _.
   case: Rle_lt_or_eq_dec (Rle_not_lt _ _ H) => //= H _.
-  
+
   transitivity 0.
   apply is_sup_seq_unique.
   move => eps ; split => /=.
   move => _ ; ring_simplify ; by apply eps.
   exists 0%nat ; apply Rminus_lt_0 ; ring_simplify ; by apply eps.
-  
+
   case: (Sup_seq u) => [l | | ] /=.
   apply f_equal ; ring.
   case: Rle_dec (Rle_refl 0) => //= H _.

@@ -225,7 +225,7 @@ Proof.
   intros P (N1,HN1).
   exists (S N1).
   intros n Hn; apply HN1; omega.
-  rewrite plus_comm; rewrite <- plus_assoc. 
+  rewrite plus_comm; rewrite <- plus_assoc.
   rewrite (plus_comm _ (a 0%nat)); rewrite plus_opp_r.
   apply plus_zero_r.
 Qed.
@@ -922,9 +922,9 @@ Proof.
   apply @ex_series_scal_l.
   set k0 := ((k + 1) / 2).
   exists (/(1-k0) * (1-k0*0)).
-  apply filterlim_ext with (fun N => / (1 - k0) * (1 - k0 ^ S N)). 
+  apply filterlim_ext with (fun N => / (1 - k0) * (1 - k0 ^ S N)).
   move => n ; rewrite sum_n_sum_f_R0; rewrite tech3.
-  by apply Rmult_comm. 
+  by apply Rmult_comm.
   apply Rlt_not_eq.
   replace 1 with ((1+1)/2) by field ; rewrite /k0.
   apply Rmult_lt_compat_r ; by intuition.
@@ -1021,7 +1021,7 @@ Proof.
   by apply is_lim_seq_const.
   apply (is_lim_seq_incr_1 (fun n => q^n)).
   by apply is_lim_seq_geom.
-  simpl; ring.  
+  simpl; ring.
 Qed.
 Lemma ex_series_geom (q : R) :
   Rabs q < 1 -> ex_series  (fun n => q ^ n).

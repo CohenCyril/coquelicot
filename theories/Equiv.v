@@ -282,7 +282,7 @@ Proof.
   apply Rmult_le_pos.
   by apply Rlt_le, eps.
   by apply norm_ge_0.
-  
+
   destruct (abs_ge_0 c) => //.
   clear Hc ; rename H0 into Hc.
   move => eps /=.
@@ -536,7 +536,7 @@ Context {T1 T2 : Type} {Ku Kv : AbsRing}
   (G : (T2 -> Prop) -> Prop) {FG : Filter G}.
 
 Lemma domin_comp (f : T2 -> U) (g : T2 -> V) (l : T1 -> T2) :
-  filterlim l F G -> is_domin G f g 
+  filterlim l F G -> is_domin G f g
     -> is_domin F (fun t => f (l t)) (fun t => g (l t)).
 Proof.
   intros Hl Hg eps.
