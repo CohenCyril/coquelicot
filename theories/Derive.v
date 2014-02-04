@@ -1198,52 +1198,6 @@ Section Derive.
 
 Context {K : AbsRing} {V : NormedModule K}.
 
-Definition filterderive (f : K -> V) F (l : V) :=
-  forall x, is_filter_lim F x ->
-  is_domin F (fun y : K => minus y x) (fun y => minus (minus (f y) (f x)) (scal (minus y x) l)).
-
-Definition ex_filterderive (f : K -> V) F :=
-  exists l, filterderive f F l.
-
-Lemma filterdiff_derive {F} {FF : Filter F} (f : K -> V) (l : V) :
-  filterdiff f F (fun y => scal y l) <-> filterderive f F l.
-Proof.
-  split.
-  - case => Hl Df x Hx.
-    by apply Df.
-  - move => Df ; split => [ | x Hx].
-    by apply is_linear_scal_l.
-    by apply Df.
-Qed.
-
-Lemma filterderive_diff {F} {FF : Filter F} (f : K -> V) (l : K -> V) :
-    (is_linear l /\ filterderive f F (l one)) <-> filterdiff f F l.
-Proof.
-  split ; case => Hl Df ; split => // x Hx.
-  - apply domin_rw_r with (2 := Df x Hx).
-    apply equiv_ext_loc.
-    apply filter_imp with (2 := filter_true) => y /= _.
-    apply f_equal.
-    rewrite -linear_scal //=.
-    apply f_equal, mult_one_r.
-  - apply domin_rw_r with (2 := Df x Hx).
-    apply equiv_ext_loc.
-    apply filter_imp with (2 := filter_true) => y /= _.
-    apply f_equal.
-    rewrite -linear_scal //=.
-    apply f_equal, sym_eq, mult_one_r.
-Qed.
-
-Lemma ex_filterdiff_derive {F} {FF : Filter F} (f : K -> V) :
-  ex_filterdiff f F <-> ex_filterderive f F.
-Proof.
-  split ; intros [l Hf] ; eexists.
-  apply filterderive_diff.
-  exact Hf.
-  apply filterdiff_derive.
-  exact Hf.
-Qed.
-
 Definition is_derive (f : K -> V) (x : K) (l : V) :=
   filterdiff f (locally x) (fun y => scal y l).
 
@@ -1328,23 +1282,6 @@ Proof.
     by apply Rlt_0_2.
     by [].
 Qed.
-
-(*
-Lemma ex_filterdiff_Reals (f : R -> R) (x : R) :
-  ex_derive f x <-> ex_filterdiff f (locally x).
-Proof.
-  split ; intros [l Hf].
-  eexists.
-  apply filterdiff_Reals.
-  by apply Hf.
-  exists (l one).
-  apply filterdiff_Reals.
-  apply filterdiff_ext_lin with (1 := Hf).
-  move => y.
-  rewrite -(linear_scal l (proj1 Hf) y one).
-  apply f_equal, sym_eq, Rmult_1_r.
-Qed.
-*)
 
 (** Derive is correct *)
 
@@ -2665,58 +2602,6 @@ Proof.
   repeat case: Rbar_le_dec => // ; intros.
   by apply continuity_pt_const.
 Qed.
-
-(** Alternate definition of differentiability *)
-
-(*Definition derivable_pt_lim_aux (f : R -> R) (x l : R) :=
-  forall eps : posreal,
-  locally x (fun y => Rabs (f y - f x - l * (y-x)) <= eps * Rabs (y-x)).
-
-Lemma equiv_deriv_pt_lim_0 : forall f x l,
-  derivable_pt_lim f x l -> derivable_pt_lim_aux f x l.
-Proof.
-  intros f x l.
-  case/filterderive_Reals => /= HF H eps.
-  destruct (H eps) as [d Hd].
-  exists d.
-Qed.
-
-Lemma equiv_deriv_pt_lim_1 : forall f x l,
-  derivable_pt_lim_aux f x l -> derivable_pt_lim f x l.
-Proof.
-  intros f x l Df.
-  intros eps Heps.
-  assert (He : 0 < eps/2).
-    apply Rdiv_lt_0_compat.
-    apply Heps.
-    apply Rlt_R0_R2.
-    set (eps2 := mkposreal _ He).
-  elim (Df eps2) ; clear Df ; intros delta Df.
-  exists delta ; intros.
-  assert (x+h+ -x = h).
-    ring.
-  assert (((f (x + h) - f x) / h - l) = (f(x+h) - f x - l * ((x+h)-x))/((x+h)-x)).
-    field.
-    rewrite /Rminus H1 ;
-    apply H.
-    rewrite H2 ; clear H2.
-  apply (Rle_lt_trans _ eps2).
-  rewrite Rabs_div.
-  apply (Rle_div_l _ _ (Rabs (x + h - x))).
-  apply Rabs_pos_lt.
-  rewrite /Rminus H1 ;
-    apply H.
-  apply (Df (x+h)).
-  simpl.
-  rewrite H1 ;
-    apply H0.
-    rewrite /Rminus H1 ; apply H.
-  rewrite (double_var eps).
-  rewrite <- (Rplus_0_r eps2).
-  unfold eps2 ; simpl.
-  apply Rplus_lt_compat_l.
-  apply He.
-Qed. *)
 
 (** * Iterated differential *)
 
