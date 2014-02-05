@@ -20,6 +20,7 @@ COPYING file for more details.
 *)
 
 Require Import Reals ssreflect.
+Require Import bigop.
 Require Import Rcomplements Rbar.
 
 (* This file describes first filters:
@@ -528,6 +529,44 @@ Fixpoint sum_n (a:nat -> G) (N : nat) {struct N} : G :=
    | 0%nat => a 0%nat
    | S i => plus (sum_n a i)  (a (S i))
   end.
+
+(* sum_n_m *)
+Definition sum_n_m (a:nat -> G) (n m : nat) : G :=
+  \big[plus/zero]_ (n <= i < S m) (a i).
+
+Lemma sum_n_m_sum_n (a:nat -> G) (n m : nat) : 
+  (n<m)%nat -> sum_n_m a (S n) m = minus (sum_n a m) (sum_n a n).
+Proof.
+  elim: n m => [|m IH].
+  case => [H | m _].
+  by apply lt_n_O in H.
+  elim: m => /= [ | m IH].
+  (*by rewrite plus_comm /minus -plus_assoc plus_opp_r.
+  rewrite plus_comm.
+  rewrite /minus in IH |- *.
+  rewrite -plus_assoc -IH /sum_n_m /=.*)
+(* clear IH + induction *)
+
+
+
+(*
+
+  Search foldr.
+
+  by apply lt_n_O in H. 
+  elim:m => [|n IH] /=.
+  by rewrite plus_comm /minus -plus_assoc plus_opp_r.
+  rewrite /minus.
+  rewrite -(plus_comm (opp _)).
+  rewrite plus_assoc.
+  rewrite (plus_comm (opp _)).
+  rewrite -/(minus _ _) -IH.
+  unfold sum_n_m;simpl. 
+  
+
+case => [|n] Hn /=.*)
+   
+Admitted. (** Admitted. *)
 
 Lemma sum_n_ext_aux :
   forall (a b : nat -> G) N,

@@ -43,6 +43,12 @@ Definition is_series (a : nat -> V) (l : V) :=
 Definition ex_series (a : nat -> V) :=
    exists l : V, is_series a l.
 
+Definition Cauchy_series (a : nat -> V) :=
+  forall eps : posreal, 
+    exists N : nat, forall n m : nat,
+      (N <= n)%nat -> (N <= m)%nat ->
+      norm (sum_n_m a n m) < eps.
+
 End Definitions.
 
 Definition Series (a : nat -> R) : R :=
@@ -132,6 +138,20 @@ Proof.
   rewrite sum_n_sum_f_R0.
   by apply (H n Hn).
 Qed.
+
+(** Cauchy *)
+
+(* utiliser norm_compat1 et norm_compat2 pour passer de ball à norm *)
+
+Lemma ex_Cauchy_series {K : AbsRing} {V : NormedModule K}
+  (a : nat -> V) :
+  ex_series a -> Cauchy_series a.
+Admitted. (** Admitted. *)
+
+Lemma Cauchy_ex_series {K : AbsRing} {V : CompleteNormedModule K}
+  (a : nat -> V) :
+  Cauchy_series a -> ex_series a.
+Admitted. (** Admitted. *)
 
 Section Properties1.
 
@@ -337,7 +357,8 @@ Qed.
 
 (** * Convergence theorems *)
 
-Lemma Cauchy_ex_series (a : nat -> R) :
+(* A supprimer / convertir *)
+Lemma Cauchy_ex_series_Reals (a : nat -> R) :
   ex_series a <-> (Cauchy_crit_series a).
 Proof.
   split => Hcv.
@@ -353,24 +374,24 @@ Proof.
   intros Hs.
   apply is_lim_seq_spec.
   intros eps.
-  apply Cauchy_ex_series in Hs.
-  case: (Hs eps (cond_pos eps)) => {Hs} N Hs.
+  apply ex_Cauchy_series in Hs.
+  case: (Hs eps) => {Hs} N Hs.
   exists (S N) ; case => [ | n] Hn.
   by apply le_Sn_0 in Hn.
   apply le_S_n in Hn.
   replace (a (S n) - 0)
-    with (sum_f_R0 a (S n) - sum_f_R0 a n)
-    by (simpl ; ring).
+    with (sum_n_m a (S n) (S n)).
   apply Hs ; by intuition.
-Qed.
+  
+Admitted. (** Admitted. *)
 
 Lemma ex_series_Rabs (a : nat -> R) :
   ex_series (fun n => Rabs (a n)) -> ex_series a.
 Proof.
   move => H.
-  apply Cauchy_ex_series.
+  apply Cauchy_ex_series_Reals.
   apply cauchy_abs.
-  by apply Cauchy_ex_series.
+  by apply Cauchy_ex_series_Reals.
 Qed.
 
 Lemma Series_Rabs (a : nat -> R) :
@@ -406,8 +427,8 @@ Lemma ex_series_le (a b : nat -> R) :
    ex_series b -> ex_series a.
 Proof.
   move => H Hb.
-  apply Cauchy_ex_series.
-  apply Cauchy_ex_series in Hb.
+  apply Cauchy_ex_series_Reals.
+  apply Cauchy_ex_series_Reals in Hb.
   move => e He.
   case (Hb e He) => {Hb} N Hb.
   exists N => n m Hn Hm.
