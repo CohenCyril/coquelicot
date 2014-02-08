@@ -21,7 +21,7 @@ COPYING file for more details.
 
 Require Import Reals ssreflect.
 Require Import bigop.
-Require Import Rcomplements Rbar.
+Require Import Rcomplements Rbar Markov.
 
 (* This file describes first filters:
 
@@ -3238,6 +3238,41 @@ Qed.
 Definition at_left x := within (fun u : R => Rlt u x) (locally x).
 Definition at_right x := within (fun u : R => Rlt x u) (locally x).
 
+Global Instance at_right_proper_filter : forall (x : R),
+  ProperFilter (at_right x).
+Proof.
+  constructor.
+  intros P [d Hd].
+  exists (x + d / 2).
+  apply Hd.
+  apply @norm_compat1 ; rewrite /norm /minus /plus /opp /= /abs /=.
+  ring_simplify (x + d / 2 + - x).
+  rewrite Rabs_pos_eq.
+  apply Rlt_div_l.
+  by apply Rlt_0_2.
+  apply Rminus_lt_0 ; ring_simplify ; by apply d.
+  apply Rlt_le, is_pos_div_2.
+  apply Rminus_lt_0 ; ring_simplify ; by apply is_pos_div_2.
+  apply within_filter, locally_filter.
+Qed.
+Global Instance at_left_proper_filter : forall (x : R),
+  ProperFilter (at_left x).
+Proof.
+  constructor.
+  intros P [d Hd].
+  exists (x - d / 2).
+  apply Hd.
+  apply @norm_compat1 ; rewrite /norm /minus /plus /opp /= /abs /=.
+  ring_simplify (x - d / 2 + - x).
+  rewrite Rabs_Ropp Rabs_pos_eq.
+  apply Rlt_div_l.
+  by apply Rlt_0_2.
+  apply Rminus_lt_0 ; ring_simplify ; by apply d.
+  apply Rlt_le, is_pos_div_2.
+  apply Rminus_lt_0 ; ring_simplify ; by apply is_pos_div_2.
+  apply within_filter, locally_filter.
+Qed.
+
 (** Continuity of norm *)
 
 Lemma filterlim_norm {K : AbsRing} {V : NormedModule K} :
@@ -3249,6 +3284,78 @@ Proof.
   exists eps ; move => /= y Hy.
   apply Rle_lt_trans with (2 := Hy).
   apply norm_triangle_inv.
+Qed.
+
+Lemma filterlim_bounded {K : AbsRing} {V : NormedModule K} (a : nat -> V) :
+  (exists x, filterlim a eventually (locally x))
+ -> {M : R | forall n, norm (a n) <= M}.
+Proof.
+  intros Ha.
+  assert (exists x : R, filterlim (fun n => norm (a n)) eventually (locally x)).
+    destruct Ha as [l Hl].
+    exists (norm l).
+    eapply filterlim_comp.
+    by apply Hl.
+    by apply filterlim_norm.
+  clear Ha.
+
+  case: (Markov (fun M => forall n : nat, norm (a n) <= INR M)).
+    intros M.
+    case: (Markov.Markov (fun n => INR M < norm (a n))).
+      intros n ; by apply Rlt_dec.
+    case => n Hn.
+    right ; contradict Hn.
+    by apply Rle_not_lt.
+    move => Hn.
+    left => n.
+    by apply Rnot_lt_le.
+  case => M HM.
+  by exists (INR M).
+  intros HM.
+  assert False.
+  case: H => l Hl.
+  assert (H := proj1 (filterlim_locally (F := eventually) _ l) Hl (mkposreal _ Rlt_0_1)).
+  clear Hl ; simpl in H ; rewrite /ball /= /AbsRing_ball in H.
+  destruct H as [N HN].
+  destruct (nfloor_ex (seq.foldr Rmax (1 + norm l) (seq.map (fun n => norm (a n)) (seq.iota 0 N)))) as [m Hm].
+  have : (0 <= (1 + norm l)).
+    apply Rplus_le_le_0_compat.
+    by apply Rle_0_1.
+    by apply norm_ge_0.
+  elim: (seq.iota 0 N) (1 + norm l) => /= [ | h t IH] h0 Hh0.
+  by [].
+  apply Rmax_case.
+  by apply norm_ge_0.
+  by apply IH.
+  apply (HM (S m)) => n.
+  rewrite S_INR.
+  apply Rlt_le.
+  eapply Rle_lt_trans, Hm.
+  clear Hm HM.
+  elim: N a n HN => /=[ |N IH] a n HN.
+  rewrite Rplus_comm.
+  apply Rlt_le, Rabs_lt_between'.
+  eapply Rle_lt_trans, HN.
+  rewrite /abs /=.
+  eapply Rle_trans, (norm_triangle_inv (norm (a n)) l).
+  apply Req_le, f_equal, f_equal2 => //.
+  apply sym_eq, Rabs_pos_eq, norm_ge_0.
+  by apply le_O_n.
+  case: n => [ | n].
+  apply Rmax_l.
+  eapply Rle_trans, Rmax_r.
+  eapply Rle_trans.
+  apply (IH (fun n => a (S n))).
+  intros k Hk.
+  apply HN.
+  by apply le_n_S.
+  clear.
+  apply Req_le.
+  elim: N 0%nat => /=[ |N IH] n0.
+  by [].
+  apply f_equal.
+  apply IH.
+  by [].
 Qed.
 
 (** Some open sets of [R] *)

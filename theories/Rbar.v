@@ -903,3 +903,10 @@ Proof.
   case: x => [x | | ] ; case: y => [y | | ] /= ; try by intuition.
   by apply Rabs_lt_between.
 Qed.
+
+Lemma Rbar_abs_opp (x : Rbar) :
+  Rbar_abs (Rbar_opp x) = Rbar_abs x.
+Proof.
+  case: x => [x | | ] //=.
+  by rewrite Rabs_Ropp.
+Qed.
