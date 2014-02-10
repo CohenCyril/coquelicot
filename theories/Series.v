@@ -422,43 +422,37 @@ Qed.
 
 (** Comparison *)
 
-Lemma ex_series_le (a b : nat -> R) :
-   (forall n : nat, 0 <= a n <= b n) ->
+Lemma ex_series_le {K : AbsRing} {V : CompleteNormedModule K}
+  (a : nat -> V) (b : nat -> R) :
+   (forall n : nat, norm (a n) <= b n) ->
    ex_series b -> ex_series a.
 Proof.
   move => H Hb.
-  apply Cauchy_ex_series_Reals.
-  apply Cauchy_ex_series_Reals in Hb.
-  move => e He.
-  case (Hb e He) => {Hb} N Hb.
+  apply ex_Cauchy_series in Hb.
+  apply Cauchy_ex_series.
+  move => e.
+  case (Hb e) => {Hb} N Hb.
   exists N => n m Hn Hm.
-  wlog: n m Hn Hm /(n > m)%nat => [Hw | Hnm].
-  case: (le_lt_dec n m) => Hnm.
-  apply le_lt_eq_dec in Hnm ; case: Hnm => Hnm.
-  rewrite /R_dist -Ropp_minus_distr' Rabs_Ropp ; by apply Hw.
-  by rewrite Hnm /R_dist Rminus_eq_0 Rabs_R0.
-  by apply Hw.
-  move: (Hb n m Hn Hm).
-  rewrite /R_dist (tech2 a m n Hnm) (tech2 b m n Hnm) ;
-    ring_simplify (sum_f_R0 a m
-    + sum_f_R0 (fun i : nat => a (S m + i)%nat) (n - S m)
-    - sum_f_R0 a m) ;
-    ring_simplify (sum_f_R0 b m
-    + sum_f_R0 (fun i : nat => b (S m + i)%nat) (n - S m)
-    - sum_f_R0 b m).
-  apply Rle_lt_trans.
-  apply Rle_trans with (2 := Rle_abs _).
-  rewrite Rabs_pos_eq.
-  elim: (n - S m)%nat => /= [ | k IH].
-  by apply H.
-  apply Rplus_le_compat.
-  exact: IH.
-  by apply H.
-  elim: (n - S m)%nat => /= [ | k IH].
-  by apply H.
-  apply Rplus_le_le_0_compat.
-  exact: IH.
-  by apply H.
+  eapply Rle_lt_trans, (Hb _ _ Hn Hm) => //.
+  eapply Rle_trans.
+  apply norm_sum_n_m.
+  replace (@norm R_AbsRing R_NormedModule (@sum_n_m R_NormedModule b n m))
+    with (sum_n_m b n m).
+  by apply sum_n_m_le.
+  assert (forall n, 0 <= b n).
+    intros k.
+    eapply Rle_trans, H.
+    by apply norm_ge_0.
+  clear -H0.
+  apply sym_eq, Rabs_pos_eq.
+  elim: n m b H0 => /= [ | n IH] m b Hb.
+  elim: m => /= [ | m IH].
+  by apply Hb.
+  by apply Rplus_le_le_0_compat.
+  case: m => /= [ | m].
+  by apply Rle_refl.
+  apply IH => k.
+  by apply Hb.
 Qed.
 
 Lemma Series_le (a b : nat -> R) :
@@ -466,16 +460,18 @@ Lemma Series_le (a b : nat -> R) :
    ex_series b -> Series a <= Series b.
 Proof.
   move => Hn Hb.
-  have Ha := (ex_series_le _ _ Hn Hb).
+  have Ha := (ex_series_le a b).
   apply Lim_seq_correct' in Ha.
   apply Lim_seq_correct' in Hb.
-  rewrite /Series.
   move: Ha Hb ; apply is_lim_seq_le.
   elim => [ | n IH] /=.
   by apply Hn.
   apply Rplus_le_compat.
   by apply IH.
   by apply Hn.
+  intros n.
+  rewrite /norm /= /abs /= Rabs_pos_eq ; by apply Hn.
+  by apply Hb.
 Qed.
 
 
@@ -920,9 +916,9 @@ Proof.
     field_simplify in H ; rewrite Rdiv_1 in H ; by apply Rlt_le.
   case => {H} N H.
   apply ex_series_incr_n with N.
-  apply ex_series_le with (fun n => Rabs (a N) * ((k+1)/2)^n).
-  move => n ; split.
-  by apply Rabs_pos.
+  apply @ex_series_le with (fun n => Rabs (a N) * ((k+1)/2)^n).
+  move => n.
+  rewrite /norm /= /abs /= Rabs_Rabsolu.
   rewrite Rmult_comm ; apply Rle_div_l.
   by apply Rabs_pos_lt.
   rewrite -Rabs_div.
@@ -1019,6 +1015,87 @@ Proof.
     by apply is_lim_seq_const.
     by apply Ha0.
   by [].
+Qed.
+
+Lemma partial_summation_R (a b : nat -> R) :
+  (exists M, forall n, norm (sum_n b n) <= M)
+  -> filterlim a eventually (locally 0)
+  -> ex_series (fun n => norm (minus (a (S n)) (a n)))
+  -> ex_series (fun n => scal (a n) (b n)).
+Proof.
+  set B := fun n => sum_n b n.
+  intros Hb Ha0 Ha.
+  eexists.
+  unfold is_series.
+  replace (@locally R_NormedModule)
+    with (fun x => Rbar_locally (Finite x)) by auto.
+  apply is_lim_seq_ext with (fun N =>
+    plus (scal (a N) (B N))
+    (match N with | O => zero | S N => sum_n (fun n => scal (minus (a n) (a (S n))) (B n)) N end)).
+  case => /= [ | N].
+    rewrite /B /= ; by apply plus_zero_r.
+  elim: N => /= [ | N IH].
+    rewrite /B /= !scal_distr_r !scal_distr_l -!plus_assoc scal_opp_l.
+    rewrite plus_comm -!plus_assoc plus_comm.
+    apply f_equal2 => //.
+    rewrite plus_opp_l.
+    by apply plus_zero_r.
+  rewrite -IH ; clear IH.
+  rewrite /B /= !scal_distr_r !scal_distr_l -!plus_assoc !scal_opp_l.
+  rewrite plus_comm.
+  repeat (rewrite -!plus_assoc (plus_comm (opp (scal (a (S (S N))) (sum_n b N))))).
+  rewrite -plus_assoc plus_opp_r plus_zero_r.
+  rewrite plus_comm.
+  repeat (rewrite -!plus_assoc (plus_comm (opp (scal (a (S (S N))) (b (S N)))))).
+  rewrite plus_opp_r plus_zero_r.
+  rewrite plus_comm -!plus_assoc.
+  rewrite plus_comm -!plus_assoc.
+  apply f_equal, f_equal.
+  by apply plus_comm.
+  apply is_lim_seq_plus'.
+  instantiate (1 := 0).
+  apply filterlim_locally => eps.
+  destruct Hb as [M Hb].
+  eapply filter_imp.
+  intros n Hn.
+  apply @norm_compat1.
+  rewrite /minus opp_zero plus_zero_r.
+  eapply Rle_lt_trans.
+  apply @norm_scal.
+  eapply Rle_lt_trans.
+  apply Rmult_le_compat_l.
+  by apply abs_ge_0.
+  eapply Rle_trans.
+  by apply Hb.
+  apply (Rmax_r 1).
+  apply Rlt_div_r.
+  eapply Rlt_le_trans, Rmax_l.
+  by apply Rlt_0_1.
+  apply Hn.
+  assert (0 < eps / Rmax 1 M).
+  apply Rdiv_lt_0_compat.
+  by apply eps.
+  eapply Rlt_le_trans, Rmax_l.
+  by apply Rlt_0_1.
+  destruct (proj1 (filterlim_locally _ _) Ha0 (mkposreal _ H)) as [N HN].
+  exists N => n Hn.
+  eapply Rle_lt_trans, HN, Hn.
+  rewrite /minus opp_zero plus_zero_r.
+  by apply Rle_refl.
+  apply is_lim_seq_incr_1.
+  apply (Lim_seq_correct' (fun n : nat =>
+    sum_n (fun n0 : nat => scal (minus (a n0) (a (S n0))) (B n0)) n)).
+  case: Hb => M Hb.
+  eapply @ex_series_le.
+  intros n.
+  eapply Rle_trans.
+  apply @norm_scal.
+  apply Rmult_le_compat_l.
+  by apply abs_ge_0.
+  by apply Hb.
+  apply ex_series_scal_r.
+  move: Ha ; apply ex_series_ext => n.
+  by rewrite -norm_opp /minus opp_plus opp_opp plus_comm.
 Qed.
 
 (** * Geometric series *)

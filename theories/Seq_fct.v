@@ -899,9 +899,9 @@ Proof.
 
   assert (H3 : forall y, Boule 0 r y -> ex_series (fun n => Rabs (fn n y))).
   move => y Hy.
-  move: H1 ; apply ex_series_le.
-  move => n ; split.
-  by apply Rabs_pos.
+  move: H1 ; apply @ex_series_le.
+  move => n.
+  rewrite /norm /= /abs /= Rabs_Rabsolu.
   by apply H0.
 
   apply Rminus_lt_0 in Hx.

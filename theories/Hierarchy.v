@@ -530,44 +530,6 @@ Fixpoint sum_n (a:nat -> G) (N : nat) {struct N} : G :=
    | S i => plus (sum_n a i)  (a (S i))
   end.
 
-(* sum_n_m *)
-Definition sum_n_m (a:nat -> G) (n m : nat) : G :=
-  \big[plus/zero]_ (n <= i < S m) (a i).
-
-Lemma sum_n_m_sum_n (a:nat -> G) (n m : nat) : 
-  (n<m)%nat -> sum_n_m a (S n) m = minus (sum_n a m) (sum_n a n).
-Proof.
-  elim: n m => [|m IH].
-  case => [H | m _].
-  by apply lt_n_O in H.
-  elim: m => /= [ | m IH].
-  (*by rewrite plus_comm /minus -plus_assoc plus_opp_r.
-  rewrite plus_comm.
-  rewrite /minus in IH |- *.
-  rewrite -plus_assoc -IH /sum_n_m /=.*)
-(* clear IH + induction *)
-
-
-
-(*
-
-  Search foldr.
-
-  by apply lt_n_O in H. 
-  elim:m => [|n IH] /=.
-  by rewrite plus_comm /minus -plus_assoc plus_opp_r.
-  rewrite /minus.
-  rewrite -(plus_comm (opp _)).
-  rewrite plus_assoc.
-  rewrite (plus_comm (opp _)).
-  rewrite -/(minus _ _) -IH.
-  unfold sum_n_m;simpl. 
-  
-
-case => [|n] Hn /=.*)
-   
-Admitted. (** Admitted. *)
-
 Lemma sum_n_ext_aux :
   forall (a b : nat -> G) N,
   (forall n, (n < S N)%nat -> a n = b n) ->
@@ -630,6 +592,72 @@ Proof.
   by [].
   rewrite IHm ; clear IHm.
   by rewrite -sum_n_plus.
+Qed.
+
+(** sum_n_m *)
+
+Fixpoint sum_n_m (a:nat -> G) (n m : nat) : G :=
+  match n, m with
+  | S _, O => zero
+  | S n, S m => sum_n_m (fun k => a (S k)) n m
+  | O , _ => sum_n a m
+  end.
+
+Lemma sum_n_m_zero (a : nat -> G) (n m : nat) : (m < n)%nat
+  -> sum_n_m a n m = zero.
+Proof.
+  elim: n m a => /= [ | n IH] m a Hnm.
+  by apply lt_n_O in Hnm.
+  case: m Hnm => /= [ | m] Hnm.
+  by [].
+  by apply IH, lt_S_n.
+Qed.
+Lemma sum_n_m_sum_n (a:nat -> G) (n m : nat) : 
+  (n <= m)%nat -> sum_n_m a (S n) m = minus (sum_n a m) (sum_n a n).
+Proof.
+  elim: n m a => /= [ | n IH] ;
+  case => /= [ | m] a Hnm.
+  by rewrite /minus plus_opp_r.
+  clear Hnm.
+  elim: m a => /= [ | m IH] a.
+  by rewrite plus_comm /minus -plus_assoc plus_opp_r plus_zero_r.
+  rewrite IH /minus -!plus_assoc.
+  apply f_equal, f_equal, plus_comm.
+  by apply le_Sn_O in Hnm.
+  rewrite (IH m (fun n => a (S n))) /= ; try by apply le_S_n.
+  clear.
+  elim: n m => /= [ | n IH].
+  elim => /= [ | m IH].
+  by rewrite /minus !plus_opp_r.
+  rewrite plus_comm /minus -!plus_assoc -/(minus _ _) IH.
+  rewrite /minus. 
+  rewrite -!plus_assoc plus_comm -!plus_assoc.
+  apply f_equal, f_equal, plus_comm.
+  intros m.
+  rewrite /minus opp_plus plus_assoc -!/(minus _ _) IH.
+  by rewrite /minus !opp_plus -!plus_assoc.
+Qed.
+
+Lemma sum_n_m_ext_aux (a b : nat -> G) (n m : nat) :
+  (forall k, (n <= k <= m)%nat -> a k = b k) ->
+  sum_n_m a n m = sum_n_m b n m.
+Proof.
+  elim: n m a b => /= [ | n IH] m a b Heq.
+  apply sum_n_ext_aux => k Hk.
+  apply Heq ; split.
+  by apply le_O_n.
+  by apply lt_n_Sm_le, Hk.
+  case: m Heq => /= [ | m] Heq.
+  by [].
+  apply IH => k Hk.
+  apply Heq ; split ; apply le_n_S, Hk.
+Qed.
+Lemma sum_n_m_ext (a b : nat -> G) n m :
+  (forall n, a n = b n) ->
+  sum_n_m a n m = sum_n_m b n m.
+Proof.
+  intros H.
+  by apply sum_n_m_ext_aux => k Hk.
 Qed.
 
 End AbelianGroup1.
@@ -3235,6 +3263,13 @@ Proof.
   exact (is_filter_lim_locally_unique x y H).
 Qed.
 
+Lemma ball_uniqueness_R (x y : R) :
+  (forall eps : posreal, ball x eps y) -> x = y.
+Proof.
+  rewrite /ball /= /AbsRing_ball.
+  now intros Hx ; apply sym_eq, Req_lt_aux.
+Qed.
+
 Definition at_left x := within (fun u : R => Rlt u x) (locally x).
 Definition at_right x := within (fun u : R => Rlt x u) (locally x).
 
@@ -3271,6 +3306,48 @@ Proof.
   apply Rlt_le, is_pos_div_2.
   apply Rminus_lt_0 ; ring_simplify ; by apply is_pos_div_2.
   apply within_filter, locally_filter.
+Qed.
+
+(** *)
+
+Lemma norm_sum_n {K : AbsRing} {V : NormedModule K} (a : nat -> V) (n : nat) :
+  norm (sum_n a n) <= sum_n (fun n => norm (a n)) n.
+Proof.
+  elim: n => /= [ | n IH].
+  by apply Rle_refl.
+  eapply Rle_trans.
+  apply norm_triangle.
+  by apply Rplus_le_compat_r.
+Qed.
+Lemma norm_sum_n_m {K : AbsRing} {V : NormedModule K} (a : nat -> V) (n m : nat) :
+  norm (sum_n_m a n m) <= sum_n_m (fun n => norm (a n)) n m.
+Proof.
+  elim: n m a => /= [ | n IH] m a.
+  by apply norm_sum_n.
+  case: m => /= [ | m].
+  rewrite norm_zero ; by apply Rle_refl.
+  by apply IH.
+Qed.
+
+Lemma sum_n_le (a b : nat -> R) (n : nat) :
+  (forall k, a k <= b k)
+  -> sum_n a n <= sum_n b n.
+Proof.
+  elim: n => /= [ | n IH] H.
+  by apply H.
+  apply Rplus_le_compat.
+  by apply IH.
+  by apply H.
+Qed.
+Lemma sum_n_m_le (a b : nat -> R) (n m : nat) :
+  (forall k, a k <= b k)
+  -> sum_n_m a n m <= sum_n_m b n m.
+Proof.
+  elim: n m a b => /= [ | n IH] m a b H.
+  by apply sum_n_le.
+  case: m => /= [ | m].
+  by apply Rle_refl.
+  by apply IH.
 Qed.
 
 (** Continuity of norm *)

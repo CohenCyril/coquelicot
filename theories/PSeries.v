@@ -128,6 +128,20 @@ Proof.
   apply Rmult_comm.
 Qed.
 
+Lemma PSeries_1 (a : nat -> R) :
+  PSeries a 1 = Series a.
+Proof.
+  apply Series_ext => n.
+  by rewrite pow1 Rmult_1_r.
+Qed.
+Lemma ex_pseries_1 (a : nat -> R) :
+  ex_pseries a 1 <-> ex_series a.
+Proof.
+  assert (forall n : nat, scal (pow_n 1 n) (a n) = a n).
+    now intros n ; rewrite pow_n_pow pow1 scal_one.
+  split ; apply ex_series_ext => n ; by rewrite H.
+Qed.
+
 Lemma is_pseries_unique (a : nat -> R) (x l : R) :
   is_pseries a x l -> PSeries a x = l.
 Proof.
@@ -244,8 +258,8 @@ Lemma CV_disk_le (a : nat -> R) (r1 r2 : R) :
   Rabs r1 <= Rabs r2 -> CV_disk a r2 -> CV_disk a r1.
 Proof.
   move => H.
-  apply ex_series_le => n ; split.
-  rewrite Rabs_mult ; apply Rmult_le_pos ; by apply Rabs_pos.
+  apply @ex_series_le => n.
+  rewrite /norm /= /abs /= Rabs_Rabsolu.
   rewrite ?Rabs_mult ; apply Rmult_le_compat_l.
   by apply Rabs_pos.
   rewrite -?RPow_abs ; apply pow_incr ; split.
@@ -308,9 +322,8 @@ Proof.
   apply Rgt_not_eq, Rle_lt_trans with (2 := Hy), Rabs_pos.
   contradict H.
   by rewrite H Rabs_R0.
-  apply ex_series_le with (2:=H) => n.
-  split.
-  by apply Rabs_pos.
+  apply @ex_series_le with (2:=H) => n.
+  rewrite /norm /= /abs /= Rabs_Rabsolu.
   replace (Rabs (a n * y ^ n)) with (Rabs (a n * r ^ n) * l^n).
   apply Rmult_le_compat_r.
   apply pow_le ; by apply Rabs_pos.
@@ -716,9 +729,8 @@ Proof.
     rewrite /CV_radius /Lub_Rbar_ne ; by case: ex_lub_Rbar_ne.
   have H2 : forall (y : R), 0 < y < r -> (CV_disk a y).
     move => y Hy.
-    apply ex_series_le with An.
-    move => n ; split.
-    by apply Rabs_pos.
+    apply @ex_series_le with An.
+    move => n ; rewrite /norm /= /abs /= Rabs_Rabsolu.
     apply H0 ; rewrite /Boule Rabs_pos_eq Rminus_0_r.
     by apply Hy.
     by apply Rlt_le, Hy.
@@ -848,8 +860,7 @@ Lemma CV_disk_plus (a b : nat -> R) (x : R) :
 Proof.
   move => Ha Hb.
   move: (ex_series_plus _ _ Ha Hb).
-  apply ex_series_le => n ; split.
-  by apply Rabs_pos.
+  apply @ex_series_le => n ; rewrite /norm /= /abs /= Rabs_Rabsolu.
   rewrite Rmult_plus_distr_r.
   by apply Rabs_triang.
 Qed.
@@ -1872,9 +1883,8 @@ Proof.
   apply Rlt_le, Hx1.
   eapply Rle_trans.
   apply Series_Rabs.
-  eapply ex_series_le.
-  intros n ; split.
-  apply Rabs_pos.
+  eapply @ex_series_le.
+  intros n ; rewrite /norm /= /abs /= Rabs_Rabsolu.
   rewrite Rabs_mult.
   rewrite -RPow_abs.
   apply Rmult_le_compat_r.
