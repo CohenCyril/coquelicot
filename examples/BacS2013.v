@@ -151,7 +151,7 @@ Proof.
   case: Rle_lt_or_eq_dec (Rlt_not_eq _ _ Rlt_0_2) => //.
   apply (filterlim_Rbar_plus 2 _ m_infty).
   by [].
-  by apply is_lim_Rinv_0.
+  by apply is_lim_Rinv_0_right.
   by apply (filterlim_Rbar_mult m_infty p_infty).
 Qed.
 

@@ -88,7 +88,6 @@ Lemma is_derive_Bessel1 (n : nat) (x : R) :
 Proof.
   rewrite /Bessel1.
   auto_derive.
-  repeat split.
   apply ex_derive_PSeries.
   by rewrite CV_Bessel1.
   rewrite Derive_PSeries.
@@ -114,7 +113,7 @@ Proof.
   by rewrite CV_radius_derive CV_Bessel1.
   apply ex_derive_PSeries.
   by rewrite CV_Bessel1.
-  rewrite ?Derive_PSeries.
+  rewrite !Derive_PSeries.
   case: n => [ | n] ; rewrite ?S_INR /Rdiv /= ;
   simpl ; field.
   by rewrite CV_Bessel1.
@@ -179,14 +178,16 @@ Proof.
   apply Rbar_lt_le_trans with (2 := CV_radius_plus _ _).
   rewrite /Rbar_min ; case: Rbar_le_dec => _.
   by rewrite CV_radius_incr_1 ?CV_radius_derive CV_Bessel1.
-  apply Rbar_lt_le_trans with (2 := CV_radius_scal _ _).
+  rewrite CV_radius_scal.
   by rewrite CV_radius_derive CV_Bessel1.
+  now rewrite -S_INR ; apply not_0_INR, sym_not_eq, O_S.
   by apply ex_Bessel1.
   apply ex_pseries_R, ex_series_Rabs, CV_disk_inside.
   by rewrite CV_radius_incr_1 ?CV_radius_derive CV_Bessel1.
   apply ex_pseries_R, ex_series_Rabs, CV_disk_inside.
-  apply Rbar_lt_le_trans with (2 := CV_radius_scal _ _).
+  rewrite CV_radius_scal.
   by rewrite CV_radius_derive CV_Bessel1.
+  now rewrite -S_INR ; apply not_0_INR, sym_not_eq, O_S.
 Qed.
 
 Lemma Bessel1_equality_1 (n : nat) (x : R) : x <> 0
@@ -217,7 +218,6 @@ Proof.
   exact: INR_fact_neq_0.
   by apply not_0_INR, not_eq_sym, O_S.
 (* * cas S n *)
-  replace (S n + 1)%nat with (S(S n)) by ring.
   replace (-2 * y ^ 2 * y ^ n * PSeries (PS_derive (Bessel1_seq (S n))) (y ^ 2) / 2)
     with (y^2 * y^n * (((-1)* PSeries (PS_derive (Bessel1_seq (S n))) (y ^ 2))))
     by (unfold y ; field => //).
@@ -312,9 +312,9 @@ Qed.
 
 (** * Unicity *)
 
-Lemma Bessel1_uniqueness (a : nat -> R) (n : nat) : Rbar_lt 0 (CV_radius a) ->
-  (forall x : R, Rbar_lt (Rabs x) (CV_radius a) ->
-  x^2 * Derive_n (PSeries a) 2 x + x * Derive (PSeries a) x + (x^2 - (INR n)^2) * PSeries a x = 0)
+Lemma Bessel1_uniqueness (a : nat -> R) (n : nat) : 
+  Rbar_lt 0 (CV_radius a) ->
+  (forall x : R, Rbar_lt (Rabs x) (CV_radius a) -> x^2 * Derive_n (PSeries a) 2 x + x * Derive (PSeries a) x + (x^2 - (INR n)^2) * PSeries a x = 0)
   ->
   (a 0%nat = 0 \/ n = O) /\
   (a 1%nat = 0 \/ n = 1%nat) /\
@@ -360,7 +360,7 @@ Proof.
   by apply pos_INR.
   by left.
   ring.
-
+(* n >= 2 *)
   move => k ; rewrite ?S_INR /= ;
   move: (Haux k) ;
   rewrite /PS_plus /= /PS_incr_1 /PS_derive_n /PS_scal /PS_derive -?S_INR.
@@ -386,13 +386,60 @@ Proof.
   apply Rbar_lt_le_trans with (2 := CV_radius_plus _ _).
   rewrite /Rbar_min ; case: Rbar_le_dec => _.
   by rewrite /PS_incr_n ?CV_radius_incr_1.
-  by apply Rbar_lt_le_trans with (2 := CV_radius_scal _ _).
+  destruct n.
+  rewrite -(CV_radius_ext (fun _ => 0)) ?CV_radius_const_0.
+  by [].
+  intros n ; rewrite /PS_scal /= /scal /= /mult /= ; ring.
+  rewrite CV_radius_scal ?Ha //.
+  apply Ropp_neq_0_compat, pow_nonzero, not_0_INR, sym_not_eq, O_S.
   by rewrite CV_radius_const_0.
-  move => x Hx.
+  assert (0 < Rbar_min 1 (CV_radius a)).
+    destruct (CV_radius a) as [ca | | ] ; try by auto.
+    unfold Rbar_min ; case: Rbar_le_dec => // _.
+    by apply Rlt_0_1.
+    unfold Rbar_min ; case: Rbar_le_dec => // _.
+    by apply Rlt_0_1.
+  exists (mkposreal _ H0) => x Hx.
+  assert (Rbar_lt (Rabs x) (CV_radius a)).
+    destruct (CV_radius a) as [ca | | ] ; try by auto.
+    simpl.
+    eapply Rlt_le_trans.
+    rewrite -(Rminus_0_r x).
+    by apply Hx.
+    simpl.
+    unfold Rbar_min ; case: Rbar_le_dec => // H1.
+    by apply Req_le.
+
   rewrite PSeries_const_0 ?PSeries_plus.
   rewrite ?PSeries_incr_n PSeries_incr_1 PSeries_scal -Derive_n_PSeries.
   rewrite -Derive_PSeries.
   rewrite -Rmult_plus_distr_r.
   apply H.
-
-Admitted.
+  
+  by apply H1.
+  by apply H1.
+  by apply H1.
+  apply ex_pseries_incr_n, CV_radius_inside, H1.
+  apply ex_pseries_scal, CV_radius_inside.
+  by apply Rmult_comm.
+  by apply H1.
+  apply ex_pseries_incr_n. 
+  apply CV_radius_inside.
+  rewrite CV_radius_derive_n.
+  by apply H1.
+  apply ex_pseries_incr_1, ex_pseries_derive.
+  by apply H1.
+  apply ex_pseries_plus.
+  apply ex_pseries_incr_n. 
+  apply CV_radius_inside.
+  by rewrite CV_radius_derive_n ; apply H1.
+  apply ex_pseries_incr_1, ex_pseries_derive.
+  by apply H1.
+  apply ex_pseries_plus.
+  apply ex_pseries_incr_n. 
+  apply CV_radius_inside.
+  by apply H1.
+  apply ex_pseries_scal.
+  by apply Rmult_comm.
+  apply CV_radius_inside ; by apply H1.
+Qed.

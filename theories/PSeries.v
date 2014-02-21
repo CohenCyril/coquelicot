@@ -2344,17 +2344,24 @@ Proof.
   by apply is_derive_PSeries.
 Qed.
 
+Lemma is_pseries_derive (a : nat -> R) x :
+  Rbar_lt (Rabs x) (CV_radius a) 
+    -> is_pseries (PS_derive a) x (Derive (PSeries a) x).
+Proof.
+  intros Hx.
+  assert (Ha := is_derive_PSeries _ _ Hx).
+  apply is_derive_unique in Ha.
+  rewrite Ha.
+  apply PSeries_correct.
+  by apply CV_radius_inside ; rewrite CV_radius_derive.
+Qed.
 Lemma ex_pseries_derive (a : nat -> R) (x : R) :
   Rbar_lt (Finite (Rabs x)) (CV_radius a)
     -> ex_pseries (PS_derive a) x.
 Proof.
   move => Hx.
-  apply ex_series_Rabs; simpl.
-  apply ex_series_ext with (fun n : nat => Rabs (PS_derive a n * x ^ n)).
-  intros n; apply f_equal; rewrite pow_n_pow.
-  apply Rmult_comm.
-  apply CV_disk_inside.
-  by rewrite CV_radius_derive.
+  eexists.
+  by apply is_pseries_derive.
 Qed.
 
 Definition PS_derive_n (n : nat) (a : nat -> R) :=
@@ -2431,6 +2438,7 @@ Proof.
   exists (PSeries (PS_derive_n (S n) a) x).
   by apply (is_derive_n_PSeries (S n)).
 Qed.
+
 Lemma Derive_n_PSeries (n : nat) (a : nat -> R) (x : R) :
   Rbar_lt (Finite (Rabs x)) (CV_radius a)
     -> Derive_n (PSeries a) n x = PSeries (PS_derive_n n a) x.
@@ -2454,18 +2462,6 @@ Proof.
   move => k ; rewrite /PS_derive_n /PS_derive.
   rewrite -plus_n_Sm /fact -/fact mult_INR ; field.
   by apply INR_fact_neq_0.
-Qed.
-
-Lemma is_pseries_derive (a : nat -> R) x :
-  Rbar_lt (Rabs x) (CV_radius a) 
-    -> is_pseries (PS_derive a) x (Derive (PSeries a) x).
-Proof.
-  intros Hx.
-  assert (Ha := is_derive_PSeries _ _ Hx).
-  apply is_derive_unique in Ha.
-  rewrite Ha.
-  apply PSeries_correct.
-  by apply ex_pseries_derive.
 Qed.
 
 (** Coefficients *)
@@ -2505,24 +2501,13 @@ Qed.
 
 Lemma PSeries_ext_recip (a b : nat -> R) (n : nat) :
   Rbar_lt (Finite 0) (CV_radius a) -> Rbar_lt (Finite 0) (CV_radius b)
-  -> (forall x, Rbar_lt (Finite (Rabs x)) (CV_radius a) -> PSeries a x = PSeries b x)
+  -> locally 0 (fun x => PSeries a x = PSeries b x)
     -> a n = b n.
 Proof.
   move => Ha Hb Hab.
   have H : a n * (INR (fact n)) = b n * (INR (fact n)).
-  rewrite -?Derive_n_coef.
-  case: (Rbar_eq_dec (CV_radius a) p_infty) => H.
-  apply Derive_n_ext => x.
-  apply Hab ; by rewrite H.
-  apply Derive_n_ext_loc.
-  have Hc : 0 < real (CV_radius a).
-    case: (CV_radius a) Ha H => /= [c | | ] Ha H ; by [].
-  exists (mkposreal _ Hc) => /= x Hx.
-  apply Hab.
-  case: (CV_radius a) Hx Ha => /= [c | | ] Hx Ha //.
-  by rewrite /ball /= /AbsRing_ball /= /minus /plus /opp /= -/(Rminus _ _) Rminus_0_r in Hx.
-  exact: Hb.
-  exact: Ha.
+  rewrite -?Derive_n_coef => //.
+  by apply Derive_n_ext_loc.
   replace (a n) with ((a n * INR (fact n)) / (INR (fact n))).
   rewrite H ; field ; exact: INR_fact_neq_0.
   field ; exact: INR_fact_neq_0.
