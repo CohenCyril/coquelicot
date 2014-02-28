@@ -229,6 +229,22 @@ constructor.
   now apply P3.
 Qed.
 
+Global Instance filter_prod_proper {T1 T2 : Type}
+  {F : (T1 -> Prop) -> Prop} {G : (T2 -> Prop) -> Prop}
+  {FF : ProperFilter F} {FG : ProperFilter G} :
+  ProperFilter (filter_prod F G).
+Proof.
+  split.
+  intros P [Q1 Q2 H1 H2 HP].
+  case: (filter_ex _ H1) => x1 Hx1.
+  case: (filter_ex _ H2) => x2 Hx2.
+  exists (x1,x2).
+  by apply HP.
+  apply filter_prod_filter.
+  apply FF.
+  apply FG.
+Qed.
+
 Lemma filterlim_fst :
   forall {T U F G} {FG : Filter G},
   filterlim (@fst T U) (filter_prod F G) F.
@@ -1379,6 +1395,34 @@ intros T x.
 apply within_filter.
 apply locally_filter.
 Qed.
+
+(** Pointed filter *)
+
+Section at_point.
+
+Context {T : UniformSpace}.
+
+Definition at_point (a : T) (P : T -> Prop) : Prop :=
+  forall y, (forall eps : posreal, ball a eps y) -> P y.
+Global Instance at_point_filter (a : T) : 
+  ProperFilter (at_point a).
+Proof.
+  split.
+  - move => P Pa.
+    exists a.
+    apply Pa => eps.
+    by apply ball_center.
+  - split.
+  + by [].
+  + move => P Q Pa Qa.
+    split.
+    by apply Pa.
+    by apply Qa.
+  + move => P Q PQ Ha y Hy.
+    by apply PQ, Ha.
+Qed.
+
+End at_point.
 
 (** ** Open sets in uniform spaces *)
 
@@ -3268,6 +3312,16 @@ Lemma ball_uniqueness_R (x y : R) :
 Proof.
   rewrite /ball /= /AbsRing_ball.
   now intros Hx ; apply sym_eq, Req_lt_aux.
+Qed.
+
+Lemma at_point_R (a : R) P :
+  at_point a P <-> P a.
+Proof.
+  split => H.
+  - by apply H, ball_center.
+  - intros y Hy.
+    apply ball_uniqueness_R in Hy.
+    by rewrite -Hy.
 Qed.
 
 Definition at_left x := within (fun u : R => Rlt u x) (locally x).
