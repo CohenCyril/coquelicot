@@ -101,6 +101,20 @@ Definition ex_Rbar_plus (x y : Rbar) : Prop :=
   match Rbar_plus' x y with Some _ => True | None => False end.
 Arguments ex_Rbar_plus !x !y /.
 
+Lemma is_Rbar_plus_unique (x y z : Rbar) :
+  is_Rbar_plus x y z -> Rbar_plus x y = z.
+Proof.
+  unfold is_Rbar_plus, ex_Rbar_plus, Rbar_plus.
+  case: Rbar_plus' => // a Ha.
+  by inversion Ha.
+Qed.
+Lemma Rbar_plus_correct (x y : Rbar) :
+  ex_Rbar_plus x y -> is_Rbar_plus x y (Rbar_plus x y).
+Proof.
+  unfold is_Rbar_plus, ex_Rbar_plus, Rbar_plus.
+  by case: Rbar_plus'.
+Qed.
+
 Definition Rbar_minus (x y : Rbar) := Rbar_plus x (Rbar_opp y).
 Arguments Rbar_minus !x !y /.
 Definition is_Rbar_minus (x y z : Rbar) : Prop :=
@@ -178,6 +192,45 @@ Definition Rbar_mult_pos (x : Rbar) (y : posreal) :=
     | Finite x => Finite (x*y)
     | _ => x
   end.
+
+Lemma is_Rbar_mult_unique (x y z : Rbar) :
+  is_Rbar_mult x y z -> Rbar_mult x y = z.
+Proof.
+  unfold is_Rbar_mult ;
+  case: x => [x | | ] ;
+  case: y => [y | | ] ;
+  case: z => [z | | ] //= H ;
+  inversion H => // ;
+  case: Rle_dec H => // H0 ;
+  case: Rle_lt_or_eq_dec => //.
+Qed.
+Lemma Rbar_mult_correct (x y : Rbar) :
+  ex_Rbar_mult x y -> is_Rbar_mult x y (Rbar_mult x y).
+Proof.
+  case: x => [x | | ] ;
+  case: y => [y | | ] //= H ;
+  apply sym_not_eq in H ;
+  unfold is_Rbar_mult ; simpl ;
+  case: Rle_dec => // H0 ;
+  case: Rle_lt_or_eq_dec => //.
+Qed.
+Lemma Rbar_mult_correct' (x y z : Rbar) :
+  is_Rbar_mult x y z -> ex_Rbar_mult x y.
+Proof.
+  unfold is_Rbar_mult ;
+  case: x => [x | | ] ;
+  case: y => [y | | ] //= ;
+  case: Rle_dec => //= H ; try (case: Rle_lt_or_eq_dec => //=) ; intros.
+  by apply Rgt_not_eq.
+  by apply Rlt_not_eq, Rnot_le_lt.
+  by apply Rgt_not_eq.
+  by apply Rlt_not_eq, Rnot_le_lt.
+  by apply Rgt_not_eq.
+  by apply Rlt_not_eq, Rnot_le_lt.
+  by apply Rgt_not_eq.
+  by apply Rlt_not_eq, Rnot_le_lt.
+Qed.
+
 
 Definition Rbar_div (x y : Rbar) : Rbar :=
   Rbar_mult x (Rbar_inv y).
@@ -438,13 +491,6 @@ Proof.
 now intros [x| |] [y| |].
 Qed.
 
-Lemma Rbar_plus_correct (x y : Rbar) :
-  ex_Rbar_plus x y -> is_Rbar_plus x y (Rbar_plus x y).
-Proof.
-  unfold is_Rbar_plus, ex_Rbar_plus, Rbar_plus.
-  by case: Rbar_plus'.
-Qed.
-
 Lemma Rbar_plus_0_r (x : Rbar) : Rbar_plus x (Finite 0) = x.
 Proof.
   case: x => //= ; intuition.
@@ -614,33 +660,6 @@ Proof.
   case: x => [x | | ] ;
   case: y => [y | | ] //= Hx ;
   by apply Ropp_neq_0_compat.
-Qed.
-
-Lemma Rbar_mult_correct (x y : Rbar) :
-  ex_Rbar_mult x y -> is_Rbar_mult x y (Rbar_mult x y).
-Proof.
-  case: x => [x | | ] ;
-  case: y => [y | | ] //= H ;
-  apply sym_not_eq in H ;
-  unfold is_Rbar_mult ; simpl ;
-  case: Rle_dec => // H0 ;
-  case: Rle_lt_or_eq_dec => //.
-Qed.
-Lemma Rbar_mult_correct' (x y z : Rbar) :
-  is_Rbar_mult x y z -> ex_Rbar_mult x y.
-Proof.
-  unfold is_Rbar_mult ;
-  case: x => [x | | ] ;
-  case: y => [y | | ] //= ;
-  case: Rle_dec => //= H ; try (case: Rle_lt_or_eq_dec => //=) ; intros.
-  by apply Rgt_not_eq.
-  by apply Rlt_not_eq, Rnot_le_lt.
-  by apply Rgt_not_eq.
-  by apply Rlt_not_eq, Rnot_le_lt.
-  by apply Rgt_not_eq.
-  by apply Rlt_not_eq, Rnot_le_lt.
-  by apply Rgt_not_eq.
-  by apply Rlt_not_eq, Rnot_le_lt.
 Qed.
 
 Lemma is_Rbar_mult_sym (x y z : Rbar) :
@@ -887,6 +906,13 @@ Lemma Rbar_min_l (x y : Rbar) : Rbar_le (Rbar_min x y) x.
 Proof.
   rewrite Rbar_min_comm.
   by apply Rbar_min_r.
+Qed.
+
+Lemma Rbar_min_case (x y : Rbar) (P : Rbar -> Prop) :
+  P x -> P y -> P (Rbar_min x y).
+Proof.
+  rewrite /Rbar_min.
+  by case: Rbar_le_dec.
 Qed.
 
 (** * Rbar_abs *)

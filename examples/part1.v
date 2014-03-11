@@ -1,6 +1,41 @@
 Require Import Reals ssreflect.
 Require Import Coquelicot.
 
+(** Exponential *)
+
+Section INK.
+
+Context {K : Ring}.
+
+Fixpoint INK (n : nat) : K :=
+  match n with
+  | O => zero
+  | S n => plus one (INK n)
+  end.
+Definition IZK (n : Z) : K :=
+  match n with
+  | 0%Z => zero
+  | Z.pos n => INK (Pos.to_nat n)
+  | Z.neg n => opp (INK (Pos.to_nat n))
+  end.
+
+End INK.
+
+(* Search UniformSpace AbsRing.
+
+Lemma ex_exp {K : AbsRing} {CK : @CompleteSpace.mixin_of (AbsRing_UniformSpace K)}
+  (a : nat -> K) (x : K) :
+  (forall k, mult (a k) (INK (fact k)) = one) ->
+  ex_pseries a x.
+Proof.
+  intros Hfact.
+  unfold ex_pseries, ex_series, is_series.
+  assert (H := proj1 (filterlim_locally_cauchy (F := eventually) (sum_n (fun k : nat => scal (pow_n x k) (a k))))) ;
+  destruct H as [l Hl].
+  intros eps.
+  rewrite /ball /=.
+Qed.*)
+
 Open Local Scope C_scope.
 
 (** * New in Coquelicot *)
@@ -559,105 +594,196 @@ Proof.
     by apply Rminus_le_0 in H1.
 Qed.
 
+Definition continuous {U V : UniformSpace} (f : U -> V) (x : U) :=
+  filterlim f (locally x) (locally (f x)).
 
+Section UnifCont.
+
+Context {V : UniformSpace}.
+
+
+Lemma unifcont_1d (f : R -> V) a b :
+  (forall x, a <= x <= b -> continuous f x) ->
+  forall eps : posreal, {delta : posreal | forall x y, 
+    a <= x <= b -> a <= y <= b -> ball x delta y -> ~~ ball (f x) eps (f y)}.
+Proof.
+  intros Cf eps.
+  wlog: f Cf / (forall z : R, continuous f z) => [ Hw | {Cf} Cf ].
+    destruct (C0_extension_le f a b) as [g [Cg Hg]].
+    by apply Cf.
+    destruct (Hw g) as [d Hd].
+    intros x Hx ; apply Cg.
+    apply Cg.
+    exists d => x y Hx Hy Hxy.
+    rewrite -!Hg //.
+    by apply Hd.
+
+  assert (forall (x : R), {delta : posreal | forall y : R,
+    ball x delta y -> ~~ ball (f x) (pos_div_2 eps) (f y)}).
+    move: (pos_div_2 eps) => {eps} eps x.
+    assert (exists d : R, forall y : R, ball x d y -> ball (f x) eps (f y)).
+      case: (proj1 (filterlim_locally _ _) (Cf x) eps) => d Hd.
+      exists d.
+      by apply Hd.
+    assert (Rbar_lt 0 (Lub_Rbar_ne _ H)).
+      case: (Lub_Rbar_ne_correct _ H).
+      move: (Lub_Rbar_ne _ _) => {H} l H1 H2.
+      case: (proj1 (filterlim_locally _ _) (Cf x) eps) => d Hd.
+      eapply Rbar_lt_le_trans, H1.
+      by apply d.
+      by apply Hd.
+    assert (0 < Rbar_min 1 (Lub_Rbar_ne _ H)).
+      move: H0 ; case: (Lub_Rbar_ne _ _) => [l | | ] //= H0.
+      apply Rbar_min_case => //.
+      by apply Rlt_0_1.
+      unfold Rbar_min ; case: Rbar_le_dec => //= _.
+      by apply Rlt_0_1.
+    set d := mkposreal _ H1.
+    exists d.
+    unfold d ; clear d ; simpl.
+    case: (Lub_Rbar_ne_correct _ H).
+    move: (Lub_Rbar_ne _ _) H0 => {H H1} l H0 H1 H2 y Hy.
+    contradict Hy.
+    apply Rle_not_lt.
+    apply (Rbar_le_trans (Finite _) l (Finite _)).
+    case: (l) H0 => [r | | ] //= H0.
+    rewrite Rbar_finite_min /=.
+    apply Rmin_r.
+    apply H2 => d /= Hd.
+    apply Rnot_lt_le ; contradict Hy.
+    by apply Hd.
+  destruct (compactness_value_1d a b (fun x => pos_div_2 (projT1 (H x)))) as [d Hd].
+  exists d => x y Hx Hy Hxy Hf.
+  apply (Hd x Hx).
+  case => {Hd} t [Ht].
+  case: H => /= delta Hdelta [Htx Hdt].
+  apply (Hdelta x).
+    eapply ball_le, Htx.
+    rewrite {2}(double_var delta).
+    apply Rminus_le_0 ; ring_simplify.
+    apply Rlt_le, is_pos_div_2.
+  intro Hftx.
+  apply (Hdelta y).
+    rewrite (double_var delta).
+    apply ball_triangle with x.
+    apply Htx.
+    by eapply ball_le, Hxy.
+  contradict Hf.
+  rewrite (double_var eps).
+  eapply ball_triangle, Hf.
+  by apply ball_sym.
+Qed.
+
+End UnifCont.
 
 Section Prop5_RInt.
 
 Context {V : CompleteNormedModule R_AbsRing}.
 
+
+Require Import seq.
+
+Lemma Riemann_sum_simpl (P : V -> Prop) f :
+  (P zero) -> (forall a b, P a -> P b -> P (plus a b)) ->
+  (forall a b x, P (Riemann_sum f (SF_cons (a,x) (SF_nil b))))
+  -> (forall ptd, P (Riemann_sum f ptd)).
+Proof.
+  intros.
+  apply SF_cons_ind with (s := ptd) => {ptd} [x0 | x0 ptd IH].
+  rewrite Riemann_sum_zero => //.
+  rewrite Riemann_sum_cons.
+  apply H0 => //.
+  move: (H1 (fst x0) (SF_h ptd) (snd x0)).
+  by rewrite /Riemann_sum /= plus_zero_r.
+Qed.
+
+Lemma unif_part_S a b n :
+  unif_part a b (S n) = a :: unif_part ((a * INR (S n) + b) / INR (S (S n))) b n.
+Proof.
+  apply eq_from_nth with 0.
+  by rewrite /= !size_map !size_iota.
+  case => [ | i] Hi.
+  rewrite /= /Rdiv ; ring.
+  replace (nth 0 (a :: unif_part ((a * INR (S n) + b) / INR (S (S n))) b n) (S i))
+    with (nth 0 (unif_part ((a * INR (S n) + b) / INR (S (S n))) b n) i) by auto.
+  rewrite /unif_part size_mkseq in Hi.
+  rewrite /unif_part !nth_mkseq ; try by intuition.
+  rewrite !S_INR ; field.
+  rewrite -!S_INR ; split ; apply sym_not_eq, (not_INR 0), O_S.
+Qed.
+
 Lemma cont_ex_RInt (f : R -> V) (a b : R) :
   (forall z, Rmin a b <= z <= Rmax a b -> filterlim f (locally z) (locally (f z)))
   -> ex_RInt f a b.
 Proof.
-  wlog: f / (forall z : R, filterlim f (locally z) (locally (f z))) => [ Hw Cf | Cf Cf' ].
-    destruct (prolongement_C0 f (Rmin a b) (Rmax a b)) as [g [Cg Hg]].
+  wlog: f / (forall z : R, filterlim f (locally z) (locally (f z))) => [ Hw Cf | Cf _ ].
+    destruct (C0_extension_le f (Rmin a b) (Rmax a b)) as [g [Cg Hg]].
     by apply Cf.
-    eapply ex_RInt_ext.
-    by apply Hg.
-    apply Hw.
-    by [].
-    move => x _.
-    by [].
+    apply ex_RInt_ext with g.
+    intros x Hx ; apply Hg ; split ; apply Rlt_le ; apply Hx.
+    by apply Hw.
 
-  assert (forall eps : posreal, {d : posreal | forall (ptd : SF_seq) (x : R),
-    SF_h ptd <= x <= seq.last (SF_h ptd) (SF_lx ptd) ->
-    SF_h ptd = Rmin a b ->
-    seq.last (SF_h ptd) (SF_lx ptd) = Rmax a b ->
-    pointed_subdiv ptd ->
-    seq_step (SF_lx ptd) < d ->
-    norm (minus (plus (Riemann_sum f (SF_cut_down ptd x))
-      (Riemann_sum f (SF_cut_up ptd x))) (Riemann_sum f ptd)) < eps}).
-    intro.
-    admit.
-
-  clear Cf'.
-
-  wlog: a b H / (a < b) => [Hw | Hab].
+  wlog: a b / (a < b) => [Hw | Hab].
     case: (Rle_lt_dec a b) => Hab.
     case: Hab => Hab.
     by apply Hw.
     rewrite Hab ; by apply ex_RInt_point.
     apply ex_RInt_swap.
-    apply Hw => //.
-    by rewrite Rmin_comm Rmax_comm.
+    by apply Hw.
 
-  generalize (fun z => proj1 (filterlim_locally _ _) (Cf z)) => {Cf} Cf.
-  assert (forall (z : R) (eps : posreal),
-    locally z (fun x : R => norm (minus (f x) (f z)) < eps)).
-    intros.
-    destruct (norm_compat2 (V := V)) as [M HM].
-    assert (0 < eps / M).
-      apply Rdiv_lt_0_compat ; apply cond_pos.
-    apply filter_imp with (fun x => ball (f z) {| pos := eps / M; cond_pos := H0 |} (f x)) ; intros.
-    replace (pos eps) with (M * (mkposreal _ H0))%R.
-    by apply HM.
-    simpl ; field ; apply Rgt_not_eq, M.
-    by apply Cf.
-  clear Cf ; rename H0 into Cf.
+  assert (H := unifcont_1d f a b (fun x Hx => Cf x)).
 
-  assert (forall z (eps : posreal) x, norm (minus (f x) (f z)) < eps \/ ~ norm (minus (f x) (f z)) < eps).
-    intros.
-    case: (Rlt_dec (norm (minus (f x) (f z))) eps).
-    by left.
-    by right.
+  Search unif_part.
 
+  set n := fun eps => projT1 (seq_step_unif_part_ex a b (projT1 (H eps))).
+  set (f_eps := fun eps x => SF_val_fun (z := f a) f a b (n eps) x).
+  set F := fun (P : posreal -> Prop) => exists eps : posreal, forall x : posreal,
+    x < eps -> P x.
+  set If_eps := fun eps => Riemann_sum f (SF_seq_f2 (fun x y => ((x+y)/2)%R) (unif_part a b (n eps)) 0).
 
-  assert (H1 := fun b => filterlim_locally_cauchy (F := (Riemann_fine a b)) (fun ptd : SF_seq => scal (sign (b - a)) (Riemann_sum f ptd))).
-  apply H1 ; clear H1.
-  intros.
-
-  set (delta := fun z => projT1 (locally_ex_dec _ _ (H0 _ _) (Cf z (pos_div_2 eps)))).
-  destruct (compactness_value_1d a b delta) as [alpha Halpha].
-
-(*  exists (fun y : SF_seq =>
-    seq_step (SF_lx y) < pos_div_2 alpha /\
-    pointed_subdiv y /\
-    SF_h y = Rmin a b /\ seq.last (SF_h y) (SF_lx y) = Rmax a b) ; split.
-  exists (pos_div_2 alpha) ; intuition.
-  rewrite /Rmin /Rmax ; case: Rle_dec (Rlt_le _ _ Hab) => // _ _ ; intros.
-  apply: norm_compat1.
-  replace (sign (b - a)) with 1.
-  rewrite !scal_one.
-  destruct H1 as [Hus [Hup [Hu0 Hul]]].
-  rewrite -Hu0 in H Hab Halpha H2 => {a Hu0}.
-  rewrite -Hul in H Hab Halpha H2 => {b Hul}.
-  destruct H2 as [Hvs [Hvp [Hv0 Hl]]].
-
-  revert delta Halpha.
-  move: Hus Hup v Hvs Hvp Hv0 Hl H eps {Hab}.
-  apply SF_cons_ind with (s := u)
-    => {u} [u0 | u0 u IH] Hus Hup v Hvs Hvp Hv0 Hl H eps delta Halpha.
-  - rewrite !Riemann_sum_zero => //.
-    rewrite minus_zero_r.
-    rewrite norm_zero.
-    by apply eps.
-    by apply ptd_sort.
-    by rewrite Hl Hv0.
-  - rewrite Riemann_sum_cons.
-    rewrite (double_var eps).
-    eapply Rle_lt_trans.
-    2: apply Rplus_lt_compat.
-    3: apply IH with (eps := pos_div_2 eps).*)
+  destruct (fun FF => filterlim_RInt f_eps a b F FF f If_eps) as [If HI].
+  - assert (forall P, F P <-> at_right 0 (fun x => 0 < x /\ forall Hx, P (mkposreal x Hx))).
+      split ; intros [e He].
+      exists e => y Hy H0 ; split => //.
+      move => {H0} H0.
+      apply He.
+      eapply Rle_lt_trans, Hy.
+      rewrite minus_zero_r.
+      by apply Req_le, sym_eq, Rabs_pos_eq, Rlt_le.
+      exists e ; intros [ y H0] Hy.
+      apply He.
+      apply Rabs_lt_between.
+      rewrite minus_zero_r ; split.
+      eapply Rlt_trans, H0.
+      rewrite -Ropp_0 ; apply Ropp_lt_contravar, e.
+      by apply Hy.
+      by apply H0.
+    case: (at_right_proper_filter 0) => H1 H2.
+    split.
+    + intros P HP.
+      apply H0 in HP.
+      destruct (H1 _ HP) as [x [Hx Px]].
+      by exists (mkposreal x Hx).
+      destruct H2 ; split.
+    + by exists (mkposreal _ Rlt_0_1).
+    + intros.
+      apply H0.
+      eapply filter_imp.
+      2: apply filter_and ; apply H0.
+      2: apply H2.
+      2: apply H3.
+      intuition ; apply H4.
+    + intros.
+      apply H0.
+      eapply filter_imp.
+      2: apply H0 ; apply H3.
+      intuition.
+      by apply H4.
+      by apply H2, H4.
+  intros eps.
+  admit.
+  admit.
+  now exists If.
 Admitted.
 
 Lemma prop5_R_aux (f g : R -> V) (a b : R) :

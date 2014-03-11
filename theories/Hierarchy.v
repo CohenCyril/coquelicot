@@ -489,6 +489,12 @@ rewrite opp_zero.
 apply plus_zero_r.
 Qed.
 
+Lemma minus_eq_zero (x : G) :
+  minus x x = zero.
+Proof.
+  apply plus_opp_r.
+Qed.
+
 Lemma plus_reg_l :
   forall r x y : G,
   plus r x = plus r y -> x = y.
@@ -2129,6 +2135,29 @@ Proof.
 intros x eps.
 apply locally_le_locally_norm.
 apply locally_norm_ball_norm.
+Qed.
+
+Lemma ball_norm_triangle (x y z : V) (e1 e2 : R) :
+  ball_norm x e1 y -> ball_norm y e2 z -> ball_norm x (e1 + e2) z.
+Proof.
+  intros H1 H2.
+  eapply Rle_lt_trans, Rplus_lt_compat.
+  2: by apply H1.
+  2: by apply H2.
+  rewrite Rplus_comm.
+  eapply Rle_trans, norm_triangle.
+  apply Req_le, f_equal.
+  rewrite /minus -!plus_assoc.
+  apply f_equal.
+  by rewrite plus_assoc plus_opp_l plus_zero_l.
+Qed.
+
+Lemma ball_norm_center (x : V) (e : posreal) :
+  ball_norm x e x.
+Proof.
+  eapply Rle_lt_trans, e.
+  rewrite minus_eq_zero norm_zero.
+  by apply Req_le.
 Qed.
 
 End NormedModule1.

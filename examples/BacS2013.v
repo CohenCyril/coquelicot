@@ -326,7 +326,7 @@ Proof.
   apply is_RInt_ext with (Derive (fun y => 2 * ln y + (ln y) ^ 2)).
   move => y Hy.
   apply is_derive_unique, If.
-  apply Rlt_le_trans with (2 := proj1 Hy).
+  apply Rlt_trans with (2 := proj1 Hy).
   apply Rmin_case.
   by apply Haux1.
   by apply Rlt_0_1.

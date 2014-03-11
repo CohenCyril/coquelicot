@@ -2005,20 +2005,17 @@ Definition SF_cut_down' (sf : @SF_seq R) (x : R) x0 :=
 Definition SF_cut_up' (sf : @SF_seq R) (x : R) x0 :=
   let s := seq_cut_up' ((SF_h sf,x0) :: (SF_t sf)) x x0 in
   mkSF_seq (fst (head (SF_h sf,x0) s)) (behead s).
-
-Lemma SF_Chasles f (s : SF_seq) x x0 :
-  (SF_h s <= x <= fst (last (SF_h s,SF_h s) (SF_t s))) ->
+Lemma SF_Chasles {V : ModuleSpace R_AbsRing} (f : R -> V) (s : SF_seq) x x0 :
+  (SF_h s <= x <= last (SF_h s) (unzip1 (SF_t s))) ->
   Riemann_sum f s =
-  (Riemann_sum f (SF_cut_down' s x x0))
-  + (Riemann_sum f (SF_cut_up' s x x0)).
+  plus (Riemann_sum f (SF_cut_down' s x x0)) (Riemann_sum f (SF_cut_up' s x x0)).
 Proof.
   rename x0 into z0.
   apply SF_cons_ind with (s := s) => {s} /= [ x0 | [x0 y0] s IH] /= Hx.
   rewrite (Rle_antisym _ _ (proj1 Hx) (proj2 Hx)).
   move: (Rle_refl x).
   rewrite /SF_cut_down' /SF_cut_up' /= ; case: Rle_dec => //= _ _.
-  rewrite /Riemann_sum /= /zero /plus /scal /= /mult /= ; ring.
-  rewrite -!(last_map (@fst R R)) /= -!unzip1_fst in IH, Hx.
+  by rewrite /Riemann_sum /= Rminus_eq_0 scal_zero_l !plus_zero_l.
   move: (fun Hx1 => IH (conj Hx1 (proj2 Hx))) => {IH}.
   rewrite /SF_cut_down' /SF_cut_up' /= ;
   case: (Rle_dec x0 _) (proj1 Hx) => //= Hx0 _.
@@ -2027,19 +2024,22 @@ Proof.
   rewrite (Riemann_sum_cons _ (x0,y0))
     (Riemann_sum_cons _ (x0,y0) (mkSF_seq (SF_h s) (seq_cut_down' (SF_t s) x y0)))
     IH /= => {IH}.
-  rewrite Rplus_assoc ; apply f_equal.
+  rewrite -!plus_assoc ; apply f_equal.
   assert (forall x0 y0, fst (head (x0, z0) (seq_cut_up' (SF_t s) x y0)) = x).
     elim: (SF_t s) => [ | x2 t IH] x1 y1 //=.
     by case: Rle_dec.
   rewrite ?H.
   move: (proj2 Hx) Hx1 => {Hx} ;
   apply SF_cons_dec with (s := s) => {s H} /= [x1 | [x1 y1] s] //= Hx Hx1.
-  rewrite /Riemann_sum /= /plus /scal /zero /= /mult /= (Rle_antisym _ _ Hx Hx1) ; ring.
-  by case: Rle_dec.
-  clear IH.
+  by rewrite /Riemann_sum /= (Rle_antisym _ _ Hx Hx1) Rminus_eq_0 !scal_zero_l !plus_zero_l.
+  case: Rle_dec => //.
   rewrite Riemann_sum_cons (Riemann_sum_cons _ (x,y0) s) {2}/Riemann_sum /=.
-  rewrite /plus /scal /zero /= /mult /=.
-  ring.
+  clear IH.
+  rewrite plus_zero_r !plus_assoc.
+  apply f_equal2 => //.
+  rewrite -scal_distr_r.
+  apply f_equal2 => //.
+  rewrite /plus /= ; ring.
 Qed.
 
 Lemma seq_cut_up_head' (s : seq (R*R)) x x0 z :

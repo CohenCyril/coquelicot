@@ -2765,7 +2765,7 @@ Proof.
   field.
   apply Rgt_not_eq, INRp1_pos.
   rewrite CV_radius_Int.
-  by apply H.
+  by apply H ; split ; apply Rlt_le ; apply Hy.
   evar_last.
   apply is_RInt_Derive.
   move => y Hy.
