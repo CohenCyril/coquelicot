@@ -20,7 +20,6 @@ COPYING file for more details.
 *)
 
 Require Import Reals ssreflect.
-Require Import bigop.
 Require Import Rcomplements Rbar Markov.
 
 (* This file describes first filters:
