@@ -641,6 +641,23 @@ Proof.
   rewrite Rbar_mult_comm ; by apply Rbar_mult_0_l.
 Qed.
 
+Lemma Rbar_mult_eq_0 (y x : Rbar) :
+  Rbar_mult x y = 0 -> x = 0 \/ y = 0.
+Proof.
+  case: x => [x | | ] //= ;
+  case: y => [y | | ] //= ;
+  (try case: Rle_dec => //= H) ;
+  (try case: Rle_lt_or_eq_dec => //=) ;
+  (try (left ; by apply f_equal)) ;
+  (try (right ; by apply f_equal)).
+  intros H.
+  apply (f_equal real) in H.
+  simpl in H.
+  apply Rmult_integral in H ; case: H => ->.
+  by left.
+  by right.
+Qed.
+
 Lemma ex_Rbar_mult_sym (x y : Rbar) :
   ex_Rbar_mult x y -> ex_Rbar_mult y x.
 Proof.

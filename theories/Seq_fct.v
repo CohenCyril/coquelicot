@@ -1117,7 +1117,7 @@ assert (Hn : 0 <= ((b - a) / eP)).
     apply Rlt_le, Hab.
     apply cond_pos.
   set n := (nfloor _ Hn).
-  exists (SF_seq.SF_seq_f2 (fun x y => x) (SF_seq.unif_part (Rmin a b) (Rmax a b) n) 0).
+  exists (SF_seq.SF_seq_f2 (fun x y => x) (SF_seq.unif_part (Rmin a b) (Rmax a b) n)).
   destruct (Riemann_fine_unif_part (fun x y => x) a b n).
   intros u v Huv.
   split.
