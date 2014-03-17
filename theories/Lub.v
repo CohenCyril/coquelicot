@@ -239,7 +239,7 @@ Proof.
   case: (Rbar_ub_dec (fun x => is_finite x /\ E x)).
   by case.
   case => l Hl ; left ; exists l ; by apply Rbar_ub_R_ub.
-  move => H ; right => l Hl ; apply: H ; apply Rbar_ub_R_ub, Hl.
+  move => H ; right => l Hl ; eapply H ; apply Rbar_ub_R_ub, Hl.
 Qed.
 Lemma l_bound_dec (E : R -> Prop) :
   {l : R | is_lower_bound E l} +
@@ -248,7 +248,7 @@ Proof.
   case: (Rbar_lb_dec (fun x => is_finite x /\ E x)).
   by case.
   case => M Hub ; left ; exists M ; by apply Rbar_lb_R_lb.
-  move => H ; right => l Hl ; apply: H ; apply Rbar_lb_R_lb, Hl.
+  move => H ; right => l Hl ; eapply H ; apply Rbar_lb_R_lb, Hl.
 Qed.
 
 

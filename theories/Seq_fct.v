@@ -408,7 +408,7 @@ Proof.
     intros x.
     apply open_comp with (2 := Ho).
     intros t.
-    apply: (filterlim_comp_2 (F := locally t)).
+    eapply (filterlim_comp_2 (F := locally t)).
     apply filterlim_const.
     apply filterlim_id.
     apply: filterlim_plus.
