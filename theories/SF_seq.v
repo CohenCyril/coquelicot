@@ -84,6 +84,13 @@ Proof.
   by rewrite -head_rev rev_rev.
 Qed.
 
+Lemma last_unzip1 {S T} x0 y0 (s : seq (S * T)) :
+  last x0 (unzip1 s) = fst (last (x0,y0) s).
+Proof.
+  case: s => [ | h s] //= .
+  elim: s h => [ | h0 s IH] h //=.
+Qed.
+
 (** sorted *)
 
 Fixpoint sorted {T : Type} (Ord : T -> T -> Prop) (s : seq T) :=
@@ -598,6 +605,13 @@ Definition SF_last y0 (s : SF_seq) : (R*T) :=
 Definition SF_belast (s : SF_seq) : SF_seq :=
   mkSF_seq (SF_h s) (Rcomplements.belast (SF_t s)).
 
+Lemma SF_last_lx x0 (s : SF_seq) :
+  fst (SF_last x0 s) = last 0 (SF_lx s).
+Proof.
+  rewrite /SF_last /=.
+  apply sym_eq ; by apply last_unzip1.
+Qed.
+
 (** ** SF_sorted *)
 
 Definition SF_sorted (Ord : R -> R -> Prop) (s : SF_seq) :=
@@ -663,6 +677,12 @@ Proof.
   split.
   by apply Hs.
   now apply IH.
+Qed.
+
+Lemma SF_size_map (f : T -> T0) s :
+  SF_size (SF_map f s) = SF_size s.
+Proof.
+  by rewrite -!SF_size_ly SF_map_ly size_map.
 Qed.
 
 End SF_map.
@@ -1188,6 +1208,24 @@ Proof.
   rewrite SF_map_cons IH ; intuition.
 Qed.
 
+Lemma ptd_f2 (f : R -> R -> R) s :
+  sorted Rle s -> (forall x y, x <= y -> x <= f x y <= y)
+  -> pointed_subdiv (SF_seq_f2 f s).
+Proof.
+  intros Hs Hf.
+  elim: s Hs => [ _ | h s].
+  intros i Hi.
+  by apply lt_n_O in Hi.
+  case: s => [ | h' s] IH Hs.
+  intros i Hi.
+  by apply lt_n_O in Hi.
+  case => [ | i] Hi.
+  apply Hf, Hs.
+  apply IH.
+  apply Hs.
+  by apply lt_S_n.
+Qed.
+
 (** ** SF_fun *)
 
 Definition SF_fun_f1 {T : Type} (f1 : R -> T) (P : seq R) x : T :=
@@ -1319,6 +1357,21 @@ Proof.
   by apply eps.
   by apply Rlt_le, INRp1_pos.
   by apply Rgt_not_eq, INRp1_pos.
+Qed.
+
+Lemma unif_part_S a b n :
+  unif_part a b (S n) = a :: unif_part ((a * INR (S n) + b) / INR (S (S n))) b n.
+Proof.
+  apply eq_from_nth with 0.
+  by rewrite /= !size_map !size_iota.
+  case => [ | i] Hi.
+  rewrite /= /Rdiv ; ring.
+  replace (nth 0 (a :: unif_part ((a * INR (S n) + b) / INR (S (S n))) b n) (S i))
+    with (nth 0 (unif_part ((a * INR (S n) + b) / INR (S (S n))) b n) i) by auto.
+  rewrite /unif_part size_mkseq in Hi.
+  rewrite /unif_part !nth_mkseq ; try by intuition.
+  rewrite !S_INR ; field.
+  rewrite -!S_INR ; split ; apply sym_not_eq, (not_INR 0), O_S.
 Qed.
 
 Definition SF_val_seq {T} (f : R -> T) (a b : R) (n : nat) : SF_seq :=

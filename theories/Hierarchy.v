@@ -543,6 +543,14 @@ Proof.
   by apply plus_comm.
 Qed.
 
+Lemma minus_trans (r x y : G) :
+  minus x y = plus (minus x r) (minus r y).
+Proof.
+  rewrite /minus -!plus_assoc.
+  apply f_equal.
+  by rewrite plus_assoc plus_opp_l plus_zero_l.
+Qed.
+
 (** Sum *)
 
 Fixpoint sum_n (a:nat -> G) (N : nat) {struct N} : G :=

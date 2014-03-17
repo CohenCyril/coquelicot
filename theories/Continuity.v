@@ -1599,3 +1599,114 @@ apply Cf.
 apply Cg.
 by apply (filterlim_Rbar_mult (f x y) (g x y) (f x y * g x y)).
 Qed.
+
+(** * Continuity in Uniform Spaces *)
+
+Definition continuous {U V : UniformSpace} (f : U -> V) (x : U) :=
+  filterlim f (locally x) (locally (f x)).
+
+Section UnifCont.
+
+Context {V : UniformSpace}.
+
+Lemma unifcont_1d (f : R -> V) a b :
+  (forall x, a <= x <= b -> continuous f x) ->
+  forall eps : posreal, {delta : posreal | forall x y, 
+    a <= x <= b -> a <= y <= b -> ball x delta y -> ~~ ball (f x) eps (f y)}.
+Proof.
+  intros Cf eps.
+  wlog: f Cf / (forall z : R, continuous f z) => [ Hw | {Cf} Cf ].
+    destruct (C0_extension_le f a b) as [g [Cg Hg]].
+    by apply Cf.
+    destruct (Hw g) as [d Hd].
+    intros x Hx ; apply Cg.
+    apply Cg.
+    exists d => x y Hx Hy Hxy.
+    rewrite -!Hg //.
+    by apply Hd.
+
+  assert (forall (x : R), {delta : posreal | forall y : R,
+    ball x delta y -> ~~ ball (f x) (pos_div_2 eps) (f y)}).
+    move: (pos_div_2 eps) => {eps} eps x.
+    assert (exists d : R, forall y : R, ball x d y -> ball (f x) eps (f y)).
+      case: (proj1 (filterlim_locally _ _) (Cf x) eps) => d Hd.
+      exists d.
+      by apply Hd.
+    assert (Rbar_lt 0 (Lub.Lub_Rbar_ne _ H)).
+      case: (Lub.Lub_Rbar_ne_correct _ H).
+      move: (Lub.Lub_Rbar_ne _ _) => {H} l H1 H2.
+      case: (proj1 (filterlim_locally _ _) (Cf x) eps) => d Hd.
+      eapply Rbar_lt_le_trans, H1.
+      by apply d.
+      by apply Hd.
+    assert (0 < Rbar_min 1 (Lub.Lub_Rbar_ne _ H)).
+      move: H0 ; case: (Lub.Lub_Rbar_ne _ _) => [l | | ] //= H0.
+      apply Rbar_min_case => //.
+      by apply Rlt_0_1.
+      unfold Rbar_min ; case: Rbar_le_dec => //= _.
+      by apply Rlt_0_1.
+    set d := mkposreal _ H1.
+    exists d.
+    unfold d ; clear d ; simpl.
+    case: (Lub.Lub_Rbar_ne_correct _ H).
+    move: (Lub.Lub_Rbar_ne _ _) H0 => {H H1} l H0 H1 H2 y Hy.
+    contradict Hy.
+    apply Rle_not_lt.
+    apply (Rbar_le_trans (Finite _) l (Finite _)).
+    case: (l) H0 => [r | | ] //= H0.
+    rewrite Rbar_finite_min /=.
+    apply Rmin_r.
+    apply H2 => d /= Hd.
+    apply Rnot_lt_le ; contradict Hy.
+    by apply Hd.
+  destruct (compactness_value_1d a b (fun x => pos_div_2 (projT1 (H x)))) as [d Hd].
+  exists d => x y Hx Hy Hxy Hf.
+  apply (Hd x Hx).
+  case => {Hd} t [Ht].
+  case: H => /= delta Hdelta [Htx Hdt].
+  apply (Hdelta x).
+    eapply ball_le, Htx.
+    rewrite {2}(double_var delta).
+    apply Rminus_le_0 ; ring_simplify.
+    apply Rlt_le, is_pos_div_2.
+  intro Hftx.
+  apply (Hdelta y).
+    rewrite (double_var delta).
+    apply ball_triangle with x.
+    apply Htx.
+    by eapply ball_le, Hxy.
+  contradict Hf.
+  rewrite (double_var eps).
+  eapply ball_triangle, Hf.
+  by apply ball_sym.
+Qed.
+
+End UnifCont.
+
+Section UnifCont_N.
+
+Context {K : AbsRing} {V : NormedModule K}.
+
+Lemma unifcont_normed_1d (f : R -> V) a b :
+  (forall x, a <= x <= b -> continuous f x) ->
+  forall eps : posreal, {delta : posreal | forall x y, 
+    a <= x <= b -> a <= y <= b -> ball x delta y -> ball_norm (f x) eps (f y)}.
+Proof.
+  intros.
+  destruct (norm_compat2 (V := V)) as [M HM].
+  assert (0 < eps / M).
+    apply Rdiv_lt_0_compat ; apply cond_pos.
+  destruct (unifcont_1d f a b H (mkposreal _ H0)) as [d Hd].
+  exists d => x y Hx Hy Hxy.
+  specialize (Hd x y Hx Hy Hxy).
+  apply Rnot_le_lt.
+  contradict Hd ; contradict Hd.
+  apply Rlt_not_le.
+  evar_last.
+  apply HM, Hd.
+  simpl ; field.
+  by apply Rgt_not_eq, M.
+Qed.
+
+End UnifCont_N.
+

@@ -22,7 +22,7 @@ COPYING file for more details.
 Require Import Reals Div2 ConstructiveEpsilon.
 Require Import ssreflect ssrbool eqtype seq.
 Require Import Markov Rcomplements Rbar Lub Limit Derive SF_seq.
-Require Import Continuity Derive_2d Hierarchy.
+Require Import Continuity Derive_2d Hierarchy Seq_fct.
 
 (** * Definition of Riemann intagral *)
 
@@ -1374,192 +1374,6 @@ Proof.
   by apply is_RInt_Chasles with b.
 Qed.
 
-(** ** Continuity *)
-
-Lemma continuity_RInt_0 :
-  forall (f : R -> V) (a : R) If,
-    locally a (fun x => is_RInt f a x (If x))
-    -> filterlim If (locally a) (locally (If a)).
-Proof.
-  move => f a If [d1 /= CIf].
-  assert (forall eps : posreal, norm (If a) < eps).
-    move => eps.
-    generalize (fun Hy => proj1 (filterlim_locally_ball_norm _ _) (CIf a Hy) eps)
-      => /= {CIf} CIf.
-      assert (Rabs (a + - a) < d1).
-        rewrite -/(Rminus _ _) Rminus_eq_0 Rabs_R0.
-        by apply d1.
-      destruct (CIf H) as [d CIf'].
-      assert (exists y : SF_seq,
-        seq_step (SF_lx y) < d /\
-        pointed_subdiv y /\
-        SF_h y = Rmin a a /\ seq.last (SF_h y) (SF_lx y) = Rmax a a).
-        apply filter_ex.
-        exists d => y Hy Hy'.
-        now split.
-      case: H0 => {CIf H} ptd [Hstep Hptd].
-      specialize (CIf' ptd Hstep Hptd).
-      rewrite Rminus_eq_0 sign_0 in CIf'.
-      rewrite -norm_opp.
-      replace (opp (If a)) with (minus (scal 0 (Riemann_sum f ptd)) (If a)).
-      by apply CIf'.
-      replace (scal 0 (Riemann_sum f ptd) : V) with (zero : V).
-      by rewrite /minus plus_zero_l.
-      apply sym_eq ; apply: scal_zero_l.
-  apply filterlim_locally_ball_norm.
-  cut (forall eps : posreal, locally a (fun x : R => norm (If x) < eps)).
-    move => H0 eps.
-    specialize (H (pos_div_2 eps)).
-    specialize (H0 (pos_div_2 eps)).
-    destruct H0 as [d Hd].
-    exists d => /= y Hy.
-    apply Rle_lt_trans with (norm (If y) + norm (If a))%R.
-    rewrite -(norm_opp (If a)).
-    apply @norm_triangle.
-    rewrite (double_var eps).
-    apply Rplus_lt_compat.
-    now apply Hd.
-    by apply H.
-  clear H.
-  move => eps.
-  destruct (ex_RInt_ub f (a - d1 / 2) (a + d1 / 2)) as [Mf HMf].
-    apply ex_RInt_Chasles with a.
-    apply ex_RInt_swap ; eexists ; apply CIf.
-    rewrite /ball /= /AbsRing_ball /= /abs /minus /plus /opp /=.
-    field_simplify (a - d1 / 2 + - a)%R.
-    rewrite Rabs_left.
-    apply Rminus_lt_0 ; field_simplify ; rewrite Rdiv_1.
-    by apply is_pos_div_2.
-    apply Ropp_lt_cancel ; field_simplify ; rewrite Rdiv_1.
-    by apply is_pos_div_2.
-    eexists ; apply CIf.
-    rewrite /ball /= /AbsRing_ball /= /abs /minus /plus /opp /=.
-    field_simplify (a + d1 / 2 + - a)%R.
-    rewrite Rabs_pos_eq.
-    apply Rminus_lt_0 ; field_simplify ; rewrite Rdiv_1.
-    by apply is_pos_div_2.
-    apply Rlt_le ; field_simplify ; rewrite Rdiv_1.
-    by apply is_pos_div_2.
-  assert ((a - d1 / 2) <= (a + d1 / 2)).
-    apply Rminus_le_0.
-    replace (a + d1 / 2 - (a - d1 / 2))%R with (d1 : R) by field.
-    by apply Rlt_le, d1.
-  move: HMf ; rewrite /Rmin /Rmax ; case: Rle_dec => // _ HMf.
-  assert (0 <= Mf).
-    eapply Rle_trans.
-    2: apply (HMf (a - d1 / 2)%R) ; split => // ; by apply Rle_refl.
-    by apply norm_ge_0.
-  generalize (fun y Hy => proj1 (filterlim_locally_ball_norm _ _) (CIf y Hy) (pos_div_2 eps))
-    => /= {CIf} CIf.
-  assert (0 < Rmin (d1 / 2) (eps / (2 * (Mf + 1)))).
-    apply Rmin_case.
-    by apply is_pos_div_2.
-    apply Rdiv_lt_0_compat.
-    by apply eps.
-    apply Rmult_lt_0_compat.
-    by apply Rlt_0_2.
-    apply Rplus_le_lt_0_compat.
-    by [].
-    by apply Rlt_0_1.
-  set (d2 := mkposreal _ H1).
-  exists d2 => x /= Hx.
-  specialize (CIf x).
-  destruct CIf as [d' CIf].
-  apply Rlt_trans with (1 := Hx).
-  apply Rle_lt_trans with (1 := Rmin_l _ _).
-  apply Rminus_lt_0 ; field_simplify ; rewrite Rdiv_1 ; by apply is_pos_div_2.
-  assert (exists y0, seq_step (SF_lx y0) < d' /\
-      pointed_subdiv y0 /\
-      SF_h y0 = Rmin a x /\ seq.last (SF_h y0) (SF_lx y0) = Rmax a x).
-    apply filter_ex.
-    exists d' => y Hy Hy'.
-    now split.
-    case: H2 => ptd [Hstep Hptd].
-    specialize (CIf ptd Hstep Hptd).
-  rewrite -norm_opp.
-  replace (opp (If x)) with
-    (minus (minus (scal (sign (x - a)) (Riemann_sum f ptd)) (If x)) (scal (sign (x - a)) (Riemann_sum f ptd))).
-  2: rewrite /minus plus_comm plus_assoc plus_opp_l.
-  2: by apply plus_zero_l.
-  apply Rle_lt_trans with (norm (minus (scal (sign (x - a)) (Riemann_sum f ptd)) (If x))
-    + norm (opp (scal (sign (x - a)) (Riemann_sum f ptd))))%R.
-  rewrite /minus ; by apply @norm_triangle.
-  rewrite norm_opp (double_var eps).
-  apply Rplus_lt_le_compat.
-  by [].
-  apply Rle_trans with (norm (Riemann_sum f ptd)).
-  rewrite /sign ; case: Rle_dec => H2.
-  case: Rle_lt_or_eq_dec => H3.
-  rewrite scal_one ; by right.
-  rewrite scal_zero_l norm_zero.
-  by apply norm_ge_0.
-  rewrite scal_opp_l scal_one norm_opp ; by right.
-  apply Rle_trans with (Riemann_sum (fun _ => Mf) ptd).
-  apply Riemann_sum_norm.
-  apply Hptd.
-  move => t.
-  rewrite (proj2 (proj2 Hptd)) (proj1 (proj2 Hptd)) => Ht.
-  apply HMf ; split ; eapply Rle_trans ; try apply Ht.
-  apply Rmin_case.
-  apply Rlt_le, Rminus_lt_0 ; field_simplify ; rewrite Rdiv_1 ; by apply is_pos_div_2.
-  apply Rlt_le, Rabs_lt_between'.
-  apply Rlt_le_trans with (1 := Hx).
-  by apply Rmin_l.
-  apply Rmax_case.
-  apply Rlt_le, Rminus_lt_0 ; field_simplify ; rewrite Rdiv_1 ; by apply is_pos_div_2.
-  apply Rlt_le, Rabs_lt_between'.
-  apply Rlt_le_trans with (1 := Hx).
-  by apply Rmin_l.
-  rewrite Riemann_sum_const.
-  rewrite (proj2 (proj2 Hptd)) (proj1 (proj2 Hptd)) /=.
-  apply Rle_trans with (Rabs (x + - a) * Mf)%R.
-  apply Rmult_le_compat_r.
-  by [].
-  rewrite /Rmin /Rmax ; case: Rle_dec => _.
-  apply Rle_abs.
-  rewrite -Ropp_minus_distr.
-  apply Rabs_maj2.
-  apply Rle_trans with (Rabs (x + - a) * (Mf + 1))%R.
-  apply Rmult_le_compat_l.
-  by apply Rabs_pos.
-  apply Rminus_le_0 ; ring_simplify ; by apply Rle_0_1.
-  apply Rle_div_r.
-  apply Rlt_le_trans with (1 := Rlt_0_1).
-  apply Rminus_le_0 ; by ring_simplify.
-  apply Rlt_le, Rlt_le_trans with (1 := Hx).
-  apply Rle_trans with (1 := Rmin_r _ _).
-  apply Req_le ; field.
-  apply Rgt_not_eq, Rlt_le_trans with (1 := Rlt_0_1).
-  apply Rminus_le_0 ; by ring_simplify.
-Qed.
-Lemma continuity_RInt :
-  forall (f : R -> V) (a b : R) If,
-  ex_RInt f a b ->
-    locally b (fun x => is_RInt f a x (If x))
-    -> filterlim If (locally b) (locally (If b)).
-Proof.
-  move => f a b If [Ifa Hab] CIf.
-  set (If' := fun x => plus (opp Ifa) (If x)).
-  assert (filterlim If' (locally b) (locally (If' b))).
-    apply (continuity_RInt_0 f).
-    case: CIf => d CIf.
-    exists d => y Hy.
-    apply is_RInt_Chasles with a.
-    by apply is_RInt_swap.
-    by apply CIf.
-  apply filterlim_locally_ball_norm => eps.
-  unfold ball_norm.
-  destruct (proj1 (filterlim_locally_ball_norm _ _) H eps) as [d Hd].
-  simpl in Hd.
-  exists d => y /= Hy.
-  replace (minus (If y) (If b)) with (minus (If' y) (If' b)).
-  by apply Hd.
-  rewrite /If' /minus opp_plus opp_opp.
-  rewrite (plus_comm (opp Ifa)) -plus_assoc.
-  apply f_equal.
-  by rewrite plus_assoc plus_opp_l plus_zero_l.
-Qed.
-
 (** ** Operations *)
 
 Lemma is_RInt_scal :
@@ -1869,6 +1683,686 @@ Proof.
 Qed.
 
 End StepFun.
+
+(** ** Continuity *)
+
+Lemma filterlim_RInt {U} {V : CompleteNormedModule R_AbsRing} :
+  forall (f : U -> R -> V) (a b : R) F (FF : ProperFilter F)
+    g h,
+  (forall x, is_RInt (f x) a b (h x))
+  -> (filterlim f F (locally g))
+  -> exists If, filterlim h F (locally If) /\ is_RInt g a b If.
+Proof.
+intros f a b F FF g h Hfh Hfg.
+wlog: a b h Hfh / (a <= b) => [Hw | Hab].
+  case: (Rle_lt_dec a b) => Hab.
+  by apply Hw.
+  destruct (Hw b a (fun x => opp (h x))) as [If [Hfh' Hfg']].
+  intro x.
+  by apply @is_RInt_swap.
+  by apply Rlt_le.
+  exists (opp If) ; split.
+  apply filterlim_ext with (fun x => opp (opp (h x))).
+  move => x.
+  by apply opp_opp.
+  eapply (filterlim_comp _ _ _ (fun x => opp (h x)) opp).
+  by apply Hfh'.
+  now generalize (filterlim_opp If).
+  by apply @is_RInt_swap.
+
+case: Hab => Hab.
+
+destruct (fun FF2 HF2 => filterlim_switch_dom
+  (fun (x : U) ptd => scal (sign (b - a)) (Riemann_sum (f x) ptd))
+  F (locally_dist (fun ptd : SF_seq.SF_seq => SF_seq.seq_step (SF_seq.SF_lx ptd)))
+  (fun ptd : SF_seq.SF_seq => SF_seq.pointed_subdiv ptd /\
+    SF_seq.SF_h ptd = Rmin a b /\
+    seq.last (SF_seq.SF_h ptd) (SF_seq.SF_lx ptd) = Rmax a b) FF FF2 HF2
+  (fun ptd => scal (sign (b - a)) (Riemann_sum g ptd)) h) as [If [Hh Hg]].
+by apply locally_dist_filter.
+intros P [eP HP].
+assert (Hn : 0 <= ((b - a) / eP)).
+    apply Rdiv_le_0_compat.
+    apply -> Rminus_le_0.
+    apply Rlt_le, Hab.
+    apply cond_pos.
+  set n := (nfloor _ Hn).
+  exists (SF_seq.SF_seq_f2 (fun x y => x) (SF_seq.unif_part (Rmin a b) (Rmax a b) n)).
+  destruct (Riemann_fine_unif_part (fun x y => x) a b n).
+  intros u v Huv.
+  split.
+  apply Rle_refl.
+  exact Huv.
+  now apply Rlt_le, Hab.
+  rewrite /Rmin /Rmax ; case: Rle_dec (Rlt_le _ _ Hab)  => // _ _.
+  split.
+  apply H0.
+  apply HP.
+  apply Rle_lt_trans with (1 := H).
+  apply Rlt_div_l.
+  apply INRp1_pos.
+  unfold n, nfloor.
+  destruct nfloor_ex as [n' Hn'].
+  simpl.
+  rewrite Rmult_comm.
+  apply Rlt_div_l.
+  apply cond_pos.
+  apply Hn'.
+  rewrite /Rmin /Rmax ; case: Rle_dec (Rlt_le _ _ Hab)  => // _ _.
+2: by apply Hfh.
+
+destruct (@norm_compat2 _ V) as [M HM].
+intros P [eps HP].
+have He: 0 < (eps / (b - a)) / (2 * M).
+  apply Rdiv_lt_0_compat.
+  apply Rdiv_lt_0_compat.
+  by apply eps.
+  by rewrite -Rminus_lt_0.
+  apply Rmult_lt_0_compat.
+  by apply Rlt_0_2.
+  apply cond_pos.
+generalize (Hfg _ (locally_ball g (mkposreal _ He))) => {Hfg Hfh}.
+unfold filtermap ;
+apply filter_imp => x Hx.
+apply HP.
+case => t [Ht [Ha Hb]] /=.
+rewrite (proj1 (sign_0_lt _)).
+rewrite 2!scal_one.
+apply: norm_compat1.
+generalize (Riemann_sum_minus (f x) g t) => <-.
+refine (_ (Riemann_sum_norm (fun x0 : R => minus (f x x0) (g x0)) (fun _ => M * ((eps / (b - a)) / (2 * M))) t Ht _)).
+move => H ; apply Rle_lt_trans with (1 := H).
+rewrite Riemann_sum_const.
+rewrite Hb Ha.
+rewrite /scal /= /mult /=.
+replace ((b - a) * (M * ((eps / (b - a)) / (2 * M)))) with (eps / 2).
+rewrite {2}(double_var eps) -{1}(Rplus_0_l (eps / 2)).
+apply Rplus_lt_compat_r.
+apply Rdiv_lt_0_compat.
+by apply eps.
+by apply Rlt_0_2.
+field.
+split.
+apply Rgt_not_eq.
+apply Rlt_gt.
+by rewrite -Rminus_lt_0.
+apply Rgt_not_eq.
+apply cond_pos.
+intros t0 Ht0.
+apply Rlt_le.
+apply (HM _ _ (mkposreal _ He)).
+apply Hx.
+by rewrite -Rminus_lt_0.
+exists If ; split.
+by apply Hh.
+by apply Hg.
+
+exists zero.
+rewrite -Hab in Hfh |- * => {b Hab}.
+split.
+assert (forall (eps : posreal) t, ball (@zero V) eps (h t)).
+  intros eps t.
+  specialize (Hfh t).
+  apply filterlim_locally_unique with (2 := Hfh).
+  apply @is_RInt_point.
+intros P [eP HP].
+unfold filtermap.
+move: (fun x : U => HP (h x)) => {HP} HP.
+apply filter_imp with (1 := HP).
+now apply filter_imp with (2 := filter_true).
+now apply is_RInt_point.
+Qed.
+
+Section Continuity.
+
+Context {V : NormedModule R_AbsRing}.
+
+Lemma continuity_RInt_0 :
+  forall (f : R -> V) (a : R) If,
+    locally a (fun x => is_RInt f a x (If x))
+    -> filterlim If (locally a) (locally (If a)).
+Proof.
+  move => f a If [d1 /= CIf].
+  assert (forall eps : posreal, norm (If a) < eps).
+    move => eps.
+    generalize (fun Hy => proj1 (filterlim_locally_ball_norm _ _) (CIf a Hy) eps)
+      => /= {CIf} CIf.
+      assert (Rabs (a + - a) < d1).
+        rewrite -/(Rminus _ _) Rminus_eq_0 Rabs_R0.
+        by apply d1.
+      destruct (CIf H) as [d CIf'].
+      assert (exists y : SF_seq,
+        seq_step (SF_lx y) < d /\
+        pointed_subdiv y /\
+        SF_h y = Rmin a a /\ seq.last (SF_h y) (SF_lx y) = Rmax a a).
+        apply filter_ex.
+        exists d => y Hy Hy'.
+        now split.
+      case: H0 => {CIf H} ptd [Hstep Hptd].
+      specialize (CIf' ptd Hstep Hptd).
+      rewrite Rminus_eq_0 sign_0 in CIf'.
+      rewrite -norm_opp.
+      replace (opp (If a)) with (minus (scal 0 (Riemann_sum f ptd)) (If a)).
+      by apply CIf'.
+      replace (scal 0 (Riemann_sum f ptd) : V) with (zero : V).
+      by rewrite /minus plus_zero_l.
+      apply sym_eq ; apply: scal_zero_l.
+  apply filterlim_locally_ball_norm.
+  cut (forall eps : posreal, locally a (fun x : R => norm (If x) < eps)).
+    move => H0 eps.
+    specialize (H (pos_div_2 eps)).
+    specialize (H0 (pos_div_2 eps)).
+    destruct H0 as [d Hd].
+    exists d => /= y Hy.
+    apply Rle_lt_trans with (norm (If y) + norm (If a))%R.
+    rewrite -(norm_opp (If a)).
+    apply @norm_triangle.
+    rewrite (double_var eps).
+    apply Rplus_lt_compat.
+    now apply Hd.
+    by apply H.
+  clear H.
+  move => eps.
+  destruct (ex_RInt_ub f (a - d1 / 2) (a + d1 / 2)) as [Mf HMf].
+    apply ex_RInt_Chasles with a.
+    apply ex_RInt_swap ; eexists ; apply CIf.
+    rewrite /ball /= /AbsRing_ball /= /abs /minus /plus /opp /=.
+    field_simplify (a - d1 / 2 + - a)%R.
+    rewrite Rabs_left.
+    apply Rminus_lt_0 ; field_simplify ; rewrite Rdiv_1.
+    by apply is_pos_div_2.
+    apply Ropp_lt_cancel ; field_simplify ; rewrite Rdiv_1.
+    by apply is_pos_div_2.
+    eexists ; apply CIf.
+    rewrite /ball /= /AbsRing_ball /= /abs /minus /plus /opp /=.
+    field_simplify (a + d1 / 2 + - a)%R.
+    rewrite Rabs_pos_eq.
+    apply Rminus_lt_0 ; field_simplify ; rewrite Rdiv_1.
+    by apply is_pos_div_2.
+    apply Rlt_le ; field_simplify ; rewrite Rdiv_1.
+    by apply is_pos_div_2.
+  assert ((a - d1 / 2) <= (a + d1 / 2)).
+    apply Rminus_le_0.
+    replace (a + d1 / 2 - (a - d1 / 2))%R with (d1 : R) by field.
+    by apply Rlt_le, d1.
+  move: HMf ; rewrite /Rmin /Rmax ; case: Rle_dec => // _ HMf.
+  assert (0 <= Mf).
+    eapply Rle_trans.
+    2: apply (HMf (a - d1 / 2)%R) ; split => // ; by apply Rle_refl.
+    by apply norm_ge_0.
+  generalize (fun y Hy => proj1 (filterlim_locally_ball_norm _ _) (CIf y Hy) (pos_div_2 eps))
+    => /= {CIf} CIf.
+  assert (0 < Rmin (d1 / 2) (eps / (2 * (Mf + 1)))).
+    apply Rmin_case.
+    by apply is_pos_div_2.
+    apply Rdiv_lt_0_compat.
+    by apply eps.
+    apply Rmult_lt_0_compat.
+    by apply Rlt_0_2.
+    apply Rplus_le_lt_0_compat.
+    by [].
+    by apply Rlt_0_1.
+  set (d2 := mkposreal _ H1).
+  exists d2 => x /= Hx.
+  specialize (CIf x).
+  destruct CIf as [d' CIf].
+  apply Rlt_trans with (1 := Hx).
+  apply Rle_lt_trans with (1 := Rmin_l _ _).
+  apply Rminus_lt_0 ; field_simplify ; rewrite Rdiv_1 ; by apply is_pos_div_2.
+  assert (exists y0, seq_step (SF_lx y0) < d' /\
+      pointed_subdiv y0 /\
+      SF_h y0 = Rmin a x /\ seq.last (SF_h y0) (SF_lx y0) = Rmax a x).
+    apply filter_ex.
+    exists d' => y Hy Hy'.
+    now split.
+    case: H2 => ptd [Hstep Hptd].
+    specialize (CIf ptd Hstep Hptd).
+  rewrite -norm_opp.
+  replace (opp (If x)) with
+    (minus (minus (scal (sign (x - a)) (Riemann_sum f ptd)) (If x)) (scal (sign (x - a)) (Riemann_sum f ptd))).
+  2: rewrite /minus plus_comm plus_assoc plus_opp_l.
+  2: by apply plus_zero_l.
+  apply Rle_lt_trans with (norm (minus (scal (sign (x - a)) (Riemann_sum f ptd)) (If x))
+    + norm (opp (scal (sign (x - a)) (Riemann_sum f ptd))))%R.
+  rewrite /minus ; by apply @norm_triangle.
+  rewrite norm_opp (double_var eps).
+  apply Rplus_lt_le_compat.
+  by [].
+  apply Rle_trans with (norm (Riemann_sum f ptd)).
+  rewrite /sign ; case: Rle_dec => H2.
+  case: Rle_lt_or_eq_dec => H3.
+  rewrite scal_one ; by right.
+  rewrite scal_zero_l norm_zero.
+  by apply norm_ge_0.
+  rewrite scal_opp_l scal_one norm_opp ; by right.
+  apply Rle_trans with (Riemann_sum (fun _ => Mf) ptd).
+  apply Riemann_sum_norm.
+  apply Hptd.
+  move => t.
+  rewrite (proj2 (proj2 Hptd)) (proj1 (proj2 Hptd)) => Ht.
+  apply HMf ; split ; eapply Rle_trans ; try apply Ht.
+  apply Rmin_case.
+  apply Rlt_le, Rminus_lt_0 ; field_simplify ; rewrite Rdiv_1 ; by apply is_pos_div_2.
+  apply Rlt_le, Rabs_lt_between'.
+  apply Rlt_le_trans with (1 := Hx).
+  by apply Rmin_l.
+  apply Rmax_case.
+  apply Rlt_le, Rminus_lt_0 ; field_simplify ; rewrite Rdiv_1 ; by apply is_pos_div_2.
+  apply Rlt_le, Rabs_lt_between'.
+  apply Rlt_le_trans with (1 := Hx).
+  by apply Rmin_l.
+  rewrite Riemann_sum_const.
+  rewrite (proj2 (proj2 Hptd)) (proj1 (proj2 Hptd)) /=.
+  apply Rle_trans with (Rabs (x + - a) * Mf)%R.
+  apply Rmult_le_compat_r.
+  by [].
+  rewrite /Rmin /Rmax ; case: Rle_dec => _.
+  apply Rle_abs.
+  rewrite -Ropp_minus_distr.
+  apply Rabs_maj2.
+  apply Rle_trans with (Rabs (x + - a) * (Mf + 1))%R.
+  apply Rmult_le_compat_l.
+  by apply Rabs_pos.
+  apply Rminus_le_0 ; ring_simplify ; by apply Rle_0_1.
+  apply Rle_div_r.
+  apply Rlt_le_trans with (1 := Rlt_0_1).
+  apply Rminus_le_0 ; by ring_simplify.
+  apply Rlt_le, Rlt_le_trans with (1 := Hx).
+  apply Rle_trans with (1 := Rmin_r _ _).
+  apply Req_le ; field.
+  apply Rgt_not_eq, Rlt_le_trans with (1 := Rlt_0_1).
+  apply Rminus_le_0 ; by ring_simplify.
+Qed.
+Lemma continuity_RInt :
+  forall (f : R -> V) (a b : R) If,
+  ex_RInt f a b ->
+    locally b (fun x => is_RInt f a x (If x))
+    -> filterlim If (locally b) (locally (If b)).
+Proof.
+  move => f a b If [Ifa Hab] CIf.
+  set (If' := fun x => plus (opp Ifa) (If x)).
+  assert (filterlim If' (locally b) (locally (If' b))).
+    apply (continuity_RInt_0 f).
+    case: CIf => d CIf.
+    exists d => y Hy.
+    apply is_RInt_Chasles with a.
+    by apply is_RInt_swap.
+    by apply CIf.
+  apply filterlim_locally_ball_norm => eps.
+  unfold ball_norm.
+  destruct (proj1 (filterlim_locally_ball_norm _ _) H eps) as [d Hd].
+  simpl in Hd.
+  exists d => y /= Hy.
+  replace (minus (If y) (If b)) with (minus (If' y) (If' b)).
+  by apply Hd.
+  rewrite /If' /minus opp_plus opp_opp.
+  rewrite (plus_comm (opp Ifa)) -plus_assoc.
+  apply f_equal.
+  by rewrite plus_assoc plus_opp_l plus_zero_l.
+Qed.
+
+End Continuity.
+
+Lemma cont_ex_RInt {V : CompleteNormedModule R_AbsRing} (f : R -> V) (a b : R) :
+  (forall z, Rmin a b <= z <= Rmax a b -> continuous f z)
+  -> ex_RInt f a b.
+Proof.
+  wlog: f / (forall z : R, continuous f z) => [ Hw Cf | Cf _ ].
+    destruct (C0_extension_le f (Rmin a b) (Rmax a b)) as [g [Cg Hg]].
+    by apply Cf.
+    apply ex_RInt_ext with g.
+    intros x Hx ; apply Hg ; split ; apply Rlt_le ; apply Hx.
+    apply Hw => // z _ ; by apply Cg.
+
+  wlog: a b / (a < b) => [Hw | Hab].
+    case: (Rle_lt_dec a b) => Hab.
+    case: Hab => Hab.
+    by apply Hw.
+    rewrite Hab ; by apply ex_RInt_point.
+    apply ex_RInt_swap.
+    by apply Hw.
+
+  assert (H := unifcont_normed_1d f a b (fun x Hx => Cf x)).
+
+  set n := fun eps => projT1 (seq_step_unif_part_ex a b (projT1 (H eps))).
+  set s := fun eps => (SF_seq_f2 (fun x y => ((x+y)/2)%R) (unif_part a b (n eps))).
+  set (f_eps := fun eps => fun x => match (Rle_dec a x) with
+    | left _ => match (Rle_dec x b) with
+       | left _ => SF_fun (SF_map f (s eps)) zero x
+       | right _ => f x
+       end
+     | right _ => f x
+     end).
+  set F := fun (P : posreal -> Prop) => exists eps : posreal, forall x : posreal,
+    x < eps -> P x.
+  set If_eps := fun eps => Riemann_sum f (s eps).
+  
+  assert (FF : ProperFilter F).
+  - assert (forall P, F P <-> at_right 0 (fun x => 0 < x /\ forall Hx, P (mkposreal x Hx))).
+      split ; intros [e He].
+      exists e => y Hy H0 ; split => //.
+      move => {H0} H0.
+      apply He.
+      eapply Rle_lt_trans, Hy.
+      rewrite minus_zero_r.
+      by apply Req_le, sym_eq, Rabs_pos_eq, Rlt_le.
+      exists e ; intros [ y H0] Hy.
+      apply He.
+      apply Rabs_lt_between.
+      rewrite minus_zero_r ; split.
+      eapply Rlt_trans, H0.
+      rewrite -Ropp_0 ; apply Ropp_lt_contravar, e.
+      by apply Hy.
+      by apply H0.
+    case: (at_right_proper_filter 0) => H1 H2.
+    split.
+    + intros P HP.
+      apply H0 in HP.
+      destruct (H1 _ HP) as [x [Hx Px]].
+      by exists (mkposreal x Hx).
+      destruct H2 ; split.
+    + by exists (mkposreal _ Rlt_0_1).
+    + intros.
+      apply H0.
+      eapply filter_imp.
+      2: apply filter_and ; apply H0.
+      2: apply H2.
+      2: apply H3.
+      intuition ; apply H4.
+    + intros.
+      apply H0.
+      eapply filter_imp.
+      2: apply H0 ; apply H3.
+      intuition.
+      by apply H4.
+      by apply H2, H4.
+  assert (Ha : forall eps, a = (SF_h (s eps))).
+    intros eps ; simpl.
+    rewrite /Rdiv ; ring.
+  assert (Hb : forall eps, b = (last (SF_h (s eps)) (unzip1 (SF_t (s eps))))).
+    intros eps.
+    rewrite -(last_unif_part 0 a b (n eps)) ; simpl.
+    apply f_equal.
+    elim: {2 4}(n eps) (a + 1 * (b - a) / (INR (n eps) + 1))%R (2%nat) => [ | m IH] //= x0 k.
+    by rewrite -IH.
+  destruct (filterlim_RInt f_eps a b F FF f If_eps) as [If HI].
+  - intros eps.
+    rewrite (Ha eps) (Hb eps).
+    eapply is_RInt_ext.
+    2: apply (is_RInt_SF f (s eps)).
+    rewrite -Hb -Ha.
+    rewrite /Rmin /Rmax ; case: Rle_dec (Rlt_le _ _ Hab) => // _ _ x [Hax Hxb].
+    rewrite /f_eps.
+    case: Rle_dec (Rlt_le _ _ Hax) => // _ _.
+    case: Rle_dec (Rlt_le _ _ Hxb) => // _ _.
+    rewrite /s /SF_sorted SF_lx_f2.
+    by apply unif_part_sort, Rlt_le.
+    by apply lt_O_Sn.
+  - apply (filterlim_locally f_eps) => /= eps.
+    rewrite /ball /= /fct_ball.
+    exists eps => e He t.
+    eapply ball_le.
+    apply Rlt_le, He.
+    apply (norm_compat1 (f t) (f_eps e t) e).
+    rewrite /f_eps.
+    case: Rle_dec => Hat.
+    case: Rle_dec => Hta.
+    rewrite SF_fun_incr.
+    rewrite SF_map_lx SF_lx_f2.
+    by apply unif_part_sort, Rlt_le.
+    by apply lt_O_Sn.
+    rewrite SF_map_lx SF_lx_f2.
+    rewrite last_unif_part head_unif_part.
+    by split.
+    by apply lt_O_Sn.
+    intros Hsort Ht.
+    case: sorted_dec.
+    + rewrite SF_map_lx SF_lx_f2.
+      intros Hi ; set i := projT1 Hi.
+      rewrite SF_map_ly (nth_map 0).
+      apply (projT2 (H e)).
+      by split.
+      split ; eapply Rle_trans.
+      2: apply ptd_f2.
+      rewrite SF_lx_f2 {1}(Ha e).
+      apply sorted_head.
+      apply unif_part_sort.
+      by apply Rlt_le.
+      eapply lt_trans, (projT2 Hi).
+      eapply lt_trans ; apply lt_n_Sn.
+      by apply lt_O_Sn.
+      by apply unif_part_sort, Rlt_le.
+      intros x y Hxy.
+      pattern y at 3 ;
+      replace y with ((y+y)/2)%R by field.
+      pattern x at 1 ;
+      replace x with ((x+x)/2)%R by field.
+      split ; apply Rmult_le_compat_r ; intuition.
+      rewrite SF_size_f2.
+      move: (proj2 (projT2 Hi)).
+      unfold i.
+      case: (size (unif_part a b (n e))) (projT1 Hi) => [ | m] /= k Hk.
+      by apply lt_n_O in Hk.
+      apply lt_S_n.
+      eapply lt_trans, Hk.
+      by apply lt_n_Sn.
+      apply ptd_f2.
+      by apply unif_part_sort, Rlt_le.
+      intros x y Hxy.
+      pattern y at 3 ;
+      replace y with ((y+y)/2)%R by field.
+      pattern x at 1 ;
+      replace x with ((x+x)/2)%R by field.
+      split ; apply Rmult_le_compat_r ; intuition.
+      rewrite SF_size_f2.
+      move: (proj2 (projT2 Hi)).
+      unfold i ;
+      case: (size (unif_part a b (n e))) (projT1 Hi) => [ | m] /= k Hk.
+      by apply lt_n_O in Hk.
+      apply lt_S_n.
+      eapply lt_trans, Hk.
+      by apply lt_n_Sn.
+      rewrite SF_lx_f2 ; try by apply lt_O_Sn.
+      rewrite {2}(Hb e).
+      eapply Rle_trans, (sorted_last _ i).
+      apply Req_le.
+      unfold s ; simpl.
+      unfold i ;
+      elim: {1 3 6}(n e) (2%nat) (a + 1 * (b - a) / (INR (n e) + 1))%R (projT1 Hi) (proj2 (projT2 Hi)) => [ | m IH] // k x0 j Hj.
+      simpl in Hj ;
+      by apply lt_S_n, lt_S_n, lt_n_O in Hj.
+      case: j Hj => [ | j] Hj //=.
+      rewrite -IH //.
+      apply lt_S_n.
+      rewrite size_mkseq.
+      by rewrite size_mkseq in Hj.
+      move: (unif_part_sort a b (n e) (Rlt_le _ _ Hab)).
+      unfold s.
+      elim: (unif_part a b (n e)) => [ | h] //=.
+      case => [ | h0 l] IH // [Hh Hl].
+      move: (IH Hl) => /=.
+      case: l Hl {IH} => //= ;
+      split => // ; by apply Hl.
+      rewrite size_mkseq in Hi, i |- *.
+      apply lt_S_n.
+      eapply lt_le_trans.
+      eapply lt_trans, (projT2 Hi).
+      by apply lt_n_Sn.
+      rewrite /s.
+      elim: (n e) (a) (b) => [ | m IH] // a' b'.
+      apply le_n_S ; rewrite unif_part_S ; by apply IH.
+      apply Rle_lt_trans with (norm (minus (nth 0 (unif_part a b (n e)) (S i))
+      (nth 0 (unif_part a b (n e)) i))).
+      change norm with Rabs.
+      apply Rabs_le_between ; rewrite Rabs_pos_eq.
+      change minus with Rminus ; rewrite Ropp_minus_distr'.
+      split ; apply Rplus_le_compat, Ropp_le_contravar.
+      rewrite SF_ly_f2 nth_behead (nth_pairmap 0).
+      pattern (nth 0 (unif_part a b (n e)) i) at 1.
+      replace (nth 0 (unif_part a b (n e)) i)
+      with ((nth 0 (unif_part a b (n e)) i +
+      nth 0 (unif_part a b (n e)) i) / 2)%R
+      by field.
+      apply Rmult_le_compat_r ; try by intuition.
+      apply Rplus_le_compat_l.
+      simpl ; apply (sorted_nth Rle (unif_part a b (n e))).
+      by apply unif_part_sort, Rlt_le.
+      move: (proj2 (projT2 Hi)).
+      unfold i ;
+      case: (size (unif_part a b (n e))) (projT1 Hi) => [ | m] j /= Hm.
+      by apply lt_n_O in Hm.
+      apply lt_S_n.
+      eapply lt_trans, Hm.
+      by apply lt_n_Sn.
+      rewrite SSR_leq.
+      apply lt_le_weak, (projT2 Hi).
+      by apply Rlt_le, (projT2 Hi).
+      rewrite SF_ly_f2 nth_behead (nth_pairmap 0).
+      pattern (nth 0 (unif_part a b (n e)) (S i)) at 2.
+      replace (nth 0 (unif_part a b (n e)) (S i))
+      with ((nth 0 (unif_part a b (n e)) (S i) +
+      nth 0 (unif_part a b (n e)) (S i)) / 2)%R
+      by field.
+      apply Rmult_le_compat_r ; try by intuition.
+      apply Rplus_le_compat_r.
+      simpl ; apply (sorted_nth Rle (unif_part a b (n e))).
+      by apply unif_part_sort, Rlt_le.
+      move: (proj2 (projT2 Hi)).
+      unfold i ;
+      case: (size (unif_part a b (n e))) (projT1 Hi) => [ | m] j /= Hm.
+      by apply lt_n_O in Hm.
+      apply lt_S_n.
+      eapply lt_trans, Hm.
+      by apply lt_n_Sn.
+      rewrite SSR_leq.
+      apply lt_le_weak, (projT2 Hi).
+      by apply (projT2 Hi).
+      apply -> Rminus_le_0.
+      apply (sorted_nth Rle (unif_part a b (n e))).
+      by apply unif_part_sort, Rlt_le.
+      move: (proj2 (projT2 Hi)).
+      unfold i ;
+      case: (size (unif_part a b (n e))) (projT1 Hi) => [ | m] j /= Hm.
+      by apply lt_n_O in Hm.
+      apply lt_S_n.
+      eapply lt_trans, Hm.
+      by apply lt_n_Sn.
+      eapply Rle_lt_trans.
+      apply nth_le_seq_step.
+      eapply lt_trans, (projT2 Hi).
+      by apply lt_n_S.
+      apply (projT2 (seq_step_unif_part_ex a b (projT1 (H e)))).
+      rewrite SSR_leq.
+      rewrite SF_size_ly.
+      apply le_S_n ; rewrite -SF_size_lx.
+      rewrite SF_lx_f2.
+      by apply lt_le_weak, (projT2 Hi).
+      by apply lt_O_Sn.
+      by apply lt_O_Sn.
+    + intros Hi.
+      move: Hsort Ht Hi.
+      rewrite SF_map_lx SF_size_map SF_size_lx.
+      rewrite SF_lx_f2.
+      rewrite -SF_size_ly SF_ly_f2 size_behead size_pairmap size_mkseq.
+      simpl (S (Peano.pred (S (S (n e)))) - 2)%nat.
+      simpl (S (Peano.pred (S (S (n e)))) - 1)%nat.
+      simpl (Peano.pred (S (S (n e))) - 1)%nat.
+      rewrite -minus_n_O.
+      intros Hsort Ht Hi.
+      rewrite SF_map_ly (nth_map 0).
+      apply (projT2 (H e)).
+      by split.
+      split ; eapply Rle_trans.
+      2: apply ptd_f2.
+      rewrite SF_lx_f2 {1}(Ha e).
+      apply sorted_head.
+      apply unif_part_sort.
+      by apply Rlt_le.
+      rewrite size_mkseq.
+      eapply lt_trans ; apply lt_n_Sn.
+      by apply lt_O_Sn.
+      by apply unif_part_sort, Rlt_le.
+      intros x y Hxy.
+      pattern y at 3 ;
+      replace y with ((y+y)/2)%R by field.
+      pattern x at 1 ;
+      replace x with ((x+x)/2)%R by field.
+      split ; apply Rmult_le_compat_r ; intuition.
+      rewrite SF_size_f2.
+      rewrite size_mkseq.
+      by apply lt_n_Sn.
+      apply ptd_f2.
+      by apply unif_part_sort, Rlt_le.
+      intros x y Hxy.
+      pattern y at 3 ;
+      replace y with ((y+y)/2)%R by field.
+      pattern x at 1 ;
+      replace x with ((x+x)/2)%R by field.
+      split ; apply Rmult_le_compat_r ; intuition.
+      rewrite SF_size_f2.
+      rewrite size_mkseq.
+      by apply lt_n_Sn.
+      rewrite SF_lx_f2 ; try by apply lt_O_Sn.
+      rewrite {2}(Hb e).
+      apply Req_le.
+      rewrite (last_unzip1 _ 0).
+      fold (SF_last 0 (s e)).
+      rewrite SF_last_lx SF_lx_f2.
+      by rewrite (last_nth 0) size_mkseq.
+      apply lt_O_Sn.
+      apply Rle_lt_trans with (norm (minus (nth 0 (unif_part a b (n e)) (S (n e)))
+      (nth 0 (unif_part a b (n e)) (n e)))).
+      change norm with Rabs.
+      apply Rabs_le_between ; rewrite Rabs_pos_eq.
+      change minus with Rminus ; rewrite Ropp_minus_distr'.
+      split ; apply Rplus_le_compat, Ropp_le_contravar.
+      rewrite SF_ly_f2 nth_behead (nth_pairmap 0).
+      pattern (nth 0 (unif_part a b (n e)) (n e)) at 1.
+      replace (nth 0 (unif_part a b (n e)) (n e))
+      with ((nth 0 (unif_part a b (n e)) (n e) +
+      nth 0 (unif_part a b (n e)) (n e)) / 2)%R
+      by field.
+      apply Rmult_le_compat_r ; try by intuition.
+      apply Rplus_le_compat_l.
+      simpl ; apply (sorted_nth Rle (unif_part a b (n e))).
+      by apply unif_part_sort, Rlt_le.
+      rewrite size_mkseq ; by apply lt_n_Sn.
+      rewrite SSR_leq.
+      rewrite size_mkseq ; by apply le_refl.
+      by apply Hi.
+      rewrite SF_ly_f2 nth_behead (nth_pairmap 0).
+      pattern (nth 0 (unif_part a b (n e)) (S (n e))) at 2.
+      replace (nth 0 (unif_part a b (n e)) (S (n e)))
+      with ((nth 0 (unif_part a b (n e)) (S (n e)) +
+      nth 0 (unif_part a b (n e)) (S (n e))) / 2)%R
+      by field.
+      apply Rmult_le_compat_r ; try by intuition.
+      apply Rplus_le_compat_r.
+      simpl ; apply (sorted_nth Rle (unif_part a b (n e))).
+      by apply unif_part_sort, Rlt_le.
+      rewrite size_mkseq ; by apply lt_n_Sn.
+      rewrite SSR_leq.
+      rewrite size_mkseq ; by apply le_refl.
+      by apply Hi.
+      apply -> Rminus_le_0.
+      apply (sorted_nth Rle (unif_part a b (n e))).
+      by apply unif_part_sort, Rlt_le.
+      rewrite size_mkseq ; by apply lt_n_Sn.
+      eapply Rle_lt_trans.
+      apply nth_le_seq_step.
+      rewrite size_mkseq ; by apply lt_n_Sn.
+      apply (projT2 (seq_step_unif_part_ex a b (projT1 (H e)))).
+      rewrite SSR_leq.
+      rewrite SF_size_ly.
+      apply le_S_n ; rewrite -SF_size_lx.
+      rewrite SF_lx_f2.
+      rewrite size_mkseq ; by apply le_refl.
+      by apply lt_O_Sn.
+      by apply lt_O_Sn.
+    rewrite minus_eq_zero norm_zero ; by apply e.
+    rewrite minus_eq_zero norm_zero ; by apply e.
+  now exists If.
+Qed.
 
 (** ** Norm *)
 
