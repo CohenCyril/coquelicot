@@ -27,7 +27,7 @@ Require Import Continuity Derive Derive_2d RInt Seq_fct Series Hierarchy.
 
 Section pow_n.
 
-Context {K : AbsRing}.
+Context {K : Ring}.
 
 Fixpoint pow_n (x : K) (N : nat) {struct N} : K :=
   match N with
@@ -61,7 +61,9 @@ Proof.
   by apply f_equal, Plus.plus_comm.
 Qed.
 
-Lemma abs_pow_n :
+End pow_n.
+
+Lemma abs_pow_n {K : AbsRing} :
   forall (x : K) n,
   abs (pow_n x n) <= (abs x)^n.
 Proof.
@@ -72,8 +74,6 @@ apply: Rle_trans (abs_mult _ _) _.
 apply Rmult_le_compat_l with (2 := IHn).
 apply abs_ge_0.
 Qed.
-
-End pow_n.
 
 Lemma pow_n_pow :
   forall (x : R) k, pow_n x k = x^k.
@@ -1799,9 +1799,9 @@ Proof.
     replace (@locally R_NormedModule (l / (1 - x)))
       with (Rbar_locally (Rbar_mult (l - ((Rbar_mult x 0) * 0)) (/ (1 - x)))).
     apply (Limit.is_lim_seq_ext
-      (fun n => (sum_n (fun k : nat => scal (pow_n x k) (a k)) n
-                     - scal (pow_n x (S n)) (Sa n)) / (1 - x))
-       (sum_n (fun k : nat => scal (pow_n x k) (Sa k)))).
+      (fun n => (sum_n (fun k : nat => scal (pow_n (K := R_AbsRing) x k) (a k)) n
+                     - scal (pow_n (K := R_AbsRing) x (S n)) (Sa n)) / (1 - x))
+       (sum_n (fun k : nat => scal (pow_n (K := R_AbsRing) x k) (Sa k)))).
        intros n ; rewrite H.
        field.
        apply Rgt_not_eq ; apply -> Rminus_lt_0.
@@ -2552,7 +2552,7 @@ Proof.
    apply is_series_ext with (2:=Hw).
    intros n; rewrite Derive_n_comp_opp; simpl.
    rewrite /scal /= /mult /=.
-   apply trans_eq with ((pow_n (- x) n * (-1) ^ n) *
+   apply trans_eq with ((pow_n (K := R_AbsRing) (- x) n * (-1) ^ n) *
      (Derive_n f n (- 0) / INR (fact n)));[unfold Rdiv; ring|idtac].
    rewrite Ropp_0.
    apply f_equal2; try reflexivity.
