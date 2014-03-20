@@ -1,4 +1,7 @@
-Version 2.0:
+Version 2.0.1:
+- fixed compilation with ssreflect 1.5
+
+Version 2.0.0:
 - removed "is_derive" as a notation for "derivable_pt_lim"
 - renamed some compatibility theorems from "_equiv" to "_Reals"
 - introduced a hierarchy of number structures and topological spaces
@@ -6,11 +9,11 @@ Version 2.0:
 - generalized "is_RInt", "is_derive", "is_domin", etc, from reals to arbitrary
   left-modules
 
-Version 1.1:
+Version 1.1.0:
 - expressed "locally", "Rbar_locally', etc, as filters
 - defined limits using "filterlim" and modified predicates such as "is_lim"
   accordingly
 - simplified definitions of Rbar operators
 
-Version 1.0:
+Version 1.0.0:
 - initial release
