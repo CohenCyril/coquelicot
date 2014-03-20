@@ -831,92 +831,55 @@ Qed.
 
 (** * Rbar_min *)
 
-Definition Rbar_min (x y : Rbar) :=
-  match (Rbar_le_dec x y) with
-    | left _ => x
-    | right _ => y
+Definition Rbar_min (x y : Rbar) : Rbar :=
+  match x, y with
+  | z, p_infty | p_infty, z => z
+  | _ , m_infty | m_infty, _ => m_infty
+  | Finite x, Finite y => Rmin x y
   end.
-
-Lemma Rbar_finite_min (x y : R) :
-  Rbar_min x y = Rmin x y.
-Proof.
-  rewrite /Rbar_min /Rmin.
-  case: Rbar_le_dec ; case: Rle_dec => // Hf Hi.
-Qed.
 
 Lemma Rbar_lt_locally (a b : Rbar) (x : R) :
   Rbar_lt a x -> Rbar_lt x b ->
   exists delta : posreal,
     forall y, Rabs (y - x) < delta -> Rbar_lt a y /\ Rbar_lt y b.
 Proof.
-  move => Hax Hxb.
-  case Hd_val : (Rbar_min (Rbar_minus x a) (Rbar_minus b x)) => [d | | ] //.
-(* d \in R *)
-  have Hd : 0 < d.
-    replace d with (real d) by auto.
-    rewrite -Hd_val.
-    case: a b Hax Hxb Hd_val => [a | | ] ;
-    case => [b | | ] //= Hax Hxb ;
-    rewrite /Rbar_min ; case: Rbar_le_dec => //= H Hd_val.
-    by apply (Rminus_lt_0 a).
-    by apply (Rminus_lt_0 x).
-    by apply (Rminus_lt_0 a).
-    by apply (Rminus_lt_0 x).
-  exists (mkposreal _ Hd) => y Hy ; simpl in Hy.
-  case: a b Hax Hxb Hd_val => [a | | ] ;
-  case => [b | | ] //= Hax Hxb Hd_val ; split => //.
+  case: a => [ a /= Ha | | _ ] //= ; (try apply Rminus_lt_0 in Ha) ;
+  case: b => [ b Hb | _ | ] //= ; (try apply Rminus_lt_0 in Hb).
+  assert (0 < Rmin (x - a) (b - x)).
+    by apply Rmin_case.
+  exists (mkposreal _ H) => y /= Hy ; split.
   apply Rplus_lt_reg_r with (-x).
   replace (a+-x) with (-(x-a)) by ring.
   apply (Rabs_lt_between (y - x)).
   apply Rlt_le_trans with (1 := Hy).
-  change (Rbar_le d (x - a)).
-  rewrite -Hd_val /Rbar_min ; case: Rbar_le_dec => // H.
-  by right.
-  by apply Rbar_lt_le, Rbar_not_le_lt.
+  by apply Rmin_l.
   apply Rplus_lt_reg_r with (-x).
-  rewrite ?(Rplus_comm (-x)).
   apply (Rabs_lt_between (y - x)).
   apply Rlt_le_trans with (1 := Hy).
-  change (Rbar_le d (b - x)).
-  rewrite -Hd_val /Rbar_min ; case: Rbar_le_dec => // H.
-  by right.
+  by apply Rmin_r.
+  exists (mkposreal _ Ha) => y /= Hy ; split => //.
   apply Rplus_lt_reg_r with (-x).
   replace (a+-x) with (-(x-a)) by ring.
-  apply (Rabs_lt_between (y - x)).
-  apply Rlt_le_trans with (1 := Hy).
-  change (Rbar_le d (x - a)).
-  rewrite -Hd_val /Rbar_min ; case: Rbar_le_dec => // H.
-  by right.
+  by apply (Rabs_lt_between (y - x)).
+  exists (mkposreal _ Hb) => y /= Hy ; split => //.
   apply Rplus_lt_reg_r with (-x).
-  rewrite ?(Rplus_comm (-x)).
-  apply (Rabs_lt_between (y - x)).
-  apply Rlt_le_trans with (1 := Hy).
-  change (Rbar_le d (b - x)).
-  rewrite -Hd_val /Rbar_min ; case: Rbar_le_dec => // H.
-  by right.
-(* d = p_infty *)
-  exists (mkposreal _ Rlt_0_1) => y Hy ; simpl in Hy.
-  case: a b Hax Hxb Hd_val => [a | | ] ;
-  case => [b | | ] //= Hax Hxb ;
-  rewrite /Rbar_min ; case: Rbar_le_dec => //.
-(* d = m_infty *)
-  case: a b Hax Hxb Hd_val => [a | | ] ;
-  case => [b | | ] //= Hax Hxb ;
-  rewrite /Rbar_min ; case: Rbar_le_dec => //.
+  by apply (Rabs_lt_between (y - x)).
+  exists (mkposreal _ Rlt_0_1) ; by split.
 Qed.
 
 Lemma Rbar_min_comm (x y : Rbar) : Rbar_min x y = Rbar_min y x.
 Proof.
-  rewrite /Rbar_min ; repeat case: Rbar_le_dec ; move => //= H H0.
-  by apply Rbar_le_antisym.
-  contradict H0.
-  by apply Rbar_lt_le, Rbar_not_le_lt.
+  case: x => [x | | ] //= ;
+  case: y => [y | | ] //=.
+  by rewrite Rmin_comm.
 Qed.
 
 Lemma Rbar_min_r (x y : Rbar) : Rbar_le (Rbar_min x y) y.
 Proof.
-  rewrite /Rbar_min ; case: Rbar_le_dec => H //.
-  apply Rbar_le_refl.
+  case: x => [x | | ] //= ;
+  case: y => [y | | ] //=.
+  by apply Rmin_r.
+  by apply Rle_refl.
 Qed.
 
 Lemma Rbar_min_l (x y : Rbar) : Rbar_le (Rbar_min x y) x.
@@ -925,11 +888,21 @@ Proof.
   by apply Rbar_min_r.
 Qed.
 
-Lemma Rbar_min_case (x y : Rbar) (P : Rbar -> Prop) :
+Lemma Rbar_min_case (x y : Rbar) (P : Rbar -> Type) :
   P x -> P y -> P (Rbar_min x y).
 Proof.
-  rewrite /Rbar_min.
-  by case: Rbar_le_dec.
+  case: x => [x | | ] //= ;
+  case: y => [y | | ] //=.
+  by apply Rmin_case.
+Qed.
+Lemma Rbar_min_case_strong (r1 r2 : Rbar) (P : Rbar -> Type) :
+  (Rbar_le r1 r2 -> P r1) -> (Rbar_le r2 r1 -> P r2)
+    -> P (Rbar_min r1 r2).
+Proof.
+  case: r1 => [x | | ] //= ;
+  case: r2 => [y | | ] //= Hx Hy ;
+  (try by apply Hx) ; (try by apply Hy).
+  by apply Rmin_case_strong.
 Qed.
 
 (** * Rbar_abs *)

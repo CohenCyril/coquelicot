@@ -179,7 +179,7 @@ Proof.
 
   apply CV_radius_inside.
   apply Rbar_lt_le_trans with (2 := CV_radius_plus _ _).
-  rewrite /Rbar_min ; case: Rbar_le_dec => _.
+  apply Rbar_min_case.
   by rewrite CV_radius_incr_1 ?CV_radius_derive CV_Bessel1.
   rewrite CV_radius_scal.
   by rewrite CV_radius_derive CV_Bessel1.
@@ -379,15 +379,15 @@ Proof.
   move => k.
   apply (PSeries_ext_recip _ (fun _ => 0)).
   apply Rbar_lt_le_trans with (2 := CV_radius_plus _ _).
-  rewrite /Rbar_min ; case: Rbar_le_dec => _.
+  apply Rbar_min_case.
   apply Rbar_lt_le_trans with (2 := CV_radius_plus _ _).
-  rewrite /Rbar_min ; case: Rbar_le_dec => _.
+  apply Rbar_min_case.
   rewrite /PS_incr_n ?CV_radius_incr_1.
   by rewrite CV_radius_derive_n.
   rewrite CV_radius_incr_1.
   by rewrite CV_radius_derive.
   apply Rbar_lt_le_trans with (2 := CV_radius_plus _ _).
-  rewrite /Rbar_min ; case: Rbar_le_dec => _.
+  apply Rbar_min_case.
   by rewrite /PS_incr_n ?CV_radius_incr_1.
   destruct n.
   rewrite -(CV_radius_ext (fun _ => 0)) ?CV_radius_const_0.
@@ -398,9 +398,9 @@ Proof.
   by rewrite CV_radius_const_0.
   assert (0 < Rbar_min 1 (CV_radius a)).
     destruct (CV_radius a) as [ca | | ] ; try by auto.
-    unfold Rbar_min ; case: Rbar_le_dec => // _.
+    apply Rbar_min_case => //.
     by apply Rlt_0_1.
-    unfold Rbar_min ; case: Rbar_le_dec => // _.
+    apply Rbar_min_case_strong => // _.
     by apply Rlt_0_1.
   exists (mkposreal _ H0) => x Hx.
   assert (Rbar_lt (Rabs x) (CV_radius a)).
@@ -410,7 +410,7 @@ Proof.
     rewrite -(Rminus_0_r x).
     by apply Hx.
     simpl.
-    unfold Rbar_min ; case: Rbar_le_dec => // H1.
+    apply Rmin_case_strong => // H1.
     by apply Req_le.
 
   rewrite PSeries_const_0 ?PSeries_plus.

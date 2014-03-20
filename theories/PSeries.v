@@ -867,86 +867,83 @@ Qed.
 Lemma CV_radius_plus (a b : nat -> R) :
   Rbar_le (Rbar_min (CV_radius a) (CV_radius b)) (CV_radius (PS_plus a b)).
 Proof.
-  have Ha0 := CV_radius_ge_0 a.
-  have Hb0 := CV_radius_ge_0 b.
-  have Hab0 := CV_radius_ge_0 (PS_plus a b).
-  have Hmin_0 : Rbar_le (Finite 0) (Rbar_min (CV_radius a) (CV_radius b)).
-    rewrite /Rbar_min ; by case: Rbar_le_dec => H.
+  wlog: a b / (Rbar_le (CV_radius a) (CV_radius b)) => [ Hw | Hle ].
+    case: (Rbar_le_lt_dec (CV_radius a) (CV_radius b)) => Hle.
+    by apply Hw.
+    rewrite Rbar_min_comm.
+    rewrite (CV_radius_ext (PS_plus a b) (PS_plus b a)).
+    by apply Hw, Rbar_lt_le.
+    now intros n ; apply Rplus_comm.
+  
+  replace (Rbar_min (CV_radius a) (CV_radius b)) with (CV_radius a).
+  
   apply is_lub_Rbar_subset
     with (CV_disk (PS_plus a b))
     (fun x => (CV_disk a x) /\ (CV_disk b x)).
   move => x [Ha Hb] ; by apply CV_disk_plus.
-  rewrite /CV_radius /Lub_Rbar_ne ; by case: ex_lub_Rbar_ne.
-  rewrite /Rbar_min ; case: Rbar_le_dec => Hle ;
-    [case: (Rbar_le_lt_or_eq_dec _ _ Hle) => {Hle} Hle | ].
-
-  apply is_lub_Rbar_eqset with (CV_disk a).
-  move => x ; split => Hx.
-  by apply Hx.
-  split.
-  by apply Hx.
-  apply CV_disk_inside.
-  apply Rbar_le_lt_trans with (2 := Hle).
-  apply Rbar_not_lt_le => H1.
-  apply (CV_disk_outside _ _ H1).
-  by apply ex_series_lim_0, ex_series_Rabs.
   rewrite /CV_radius /Lub_Rbar_ne ; by case: ex_lub_Rbar_ne.
 
   have Ha : is_lub_Rbar (fun x : R => CV_disk a x) (CV_radius a).
     rewrite /CV_radius /Lub_Rbar_ne ; by case: ex_lub_Rbar_ne.
   have Hb : is_lub_Rbar (fun x : R => CV_disk b x) (CV_radius b).
     rewrite /CV_radius /Lub_Rbar_ne ; by case: ex_lub_Rbar_ne.
-  rewrite -Hle in Hb.
-  split => [x Hx | l Hl].
-  case: Hx => Hx0 Hx1.
-  by apply Ha.
-  move: (proj2 Ha l) => {Ha} Ha.
-  move: (proj2 Hb l) => {Hb} Hb.
-  have H1 : Rbar_le (Finite 0) l.
-    apply Hl ; split ; by apply CV_disk_0.
-  case: l Hl Ha Hb H1 => [l | | ] Hl Ha Hb H1.
-  apply Rbar_not_lt_le => H0.
-  case: {1 2 3 5 6}(CV_radius a) H0 Hl Ha Hb (eq_refl (CV_radius a)) Ha0 => /= [c | | ] H0 Hl Ha Hb Heq Ha0.
-  case: (Hl ((l+c)/2)).
-  split ; apply CV_disk_inside ; rewrite -?Hle ?Heq /=.
-  have H : 0 <= ((l + c) / 2).
-    apply Rmult_le_pos ; intuition.
-    by apply Rplus_le_le_0_compat.
-  rewrite (Rabs_pos_eq _ H).
-  pattern c at 2 ; replace c with ((c+c)/2) by field.
-  apply Rmult_lt_compat_r ; by intuition.
-  have H : 0 <= ((l + c) / 2).
-    apply Rmult_le_pos ; intuition.
-    by apply Rplus_le_le_0_compat.
-  rewrite (Rabs_pos_eq _ H).
-  pattern c at 2 ; replace c with ((c+c)/2) by field.
-  apply Rmult_lt_compat_r ; by intuition.
-  apply Rle_not_lt, Rlt_le.
-  pattern l at 1 ; replace l with ((l+l)/2) by field.
-  apply Rmult_lt_compat_r ; by intuition.
-  apply Rgt_not_eq.
-  pattern l at 2 ; replace l with ((l+l)/2) by field.
-  apply Rmult_lt_compat_r ; by intuition.
-  case: (Hl (l+1)).
-  split ; apply CV_disk_inside ; by rewrite -?Hle ?Heq.
-  apply Rle_not_lt, Rlt_le, Rlt_plus_1.
-  apply Rgt_not_eq, Rlt_plus_1.
-  by case: Ha0.
-  by apply Rbar_not_lt_le => /=.
-  by case: H1.
-
-  apply Rbar_not_le_lt in Hle.
-  apply is_lub_Rbar_eqset with (CV_disk b).
-  move => x ; split => Hx.
-  by apply Hx.
+  
   split.
-  apply CV_disk_inside.
-  apply Rbar_le_lt_trans with (2 := Hle).
-  apply Rbar_not_lt_le => H1.
-  apply (CV_disk_outside _ _ H1).
-  by apply ex_series_lim_0, ex_series_Rabs.
-  by apply Hx.
-  rewrite /CV_radius /Lub_Rbar_ne ; by case: ex_lub_Rbar_ne.
+  intros y [Hay Hby].
+  by apply Ha.
+
+  case: (Rbar_le_lt_or_eq_dec _ _ (CV_radius_ge_0 a)) => Ha0.
+  intros c Hc.
+  assert (Rbar_le 0 c).
+    apply Hc.
+    split ; by apply CV_disk_0.
+  case: c Hc H => [c | | ] //= Hc H.
+  2: by case: (CV_radius a).
+  apply Rbar_not_lt_le => Hac.
+  move: (Rbar_lt_le_trans _ _ _ Hac Hle) => Hbc.
+  
+  eapply Rbar_le_not_lt.
+  apply (Hc ((c + Rbar_min (c + 1) (CV_radius a)) / 2)).
+  
+  assert (Rbar_lt (Rabs ((c + Rbar_min (c + 1) (CV_radius a)) / 2)) (CV_radius a)).
+    case: (CV_radius a) Hac => //= l Hl.
+    rewrite Rabs_pos_eq.
+    apply Rlt_div_l.
+    by apply Rlt_0_2.
+    replace (l * 2) with (l+l) by ring.
+    apply Rplus_lt_le_compat => //.
+    by apply Rmin_r.
+    apply Rdiv_le_0_compat.
+    apply Rplus_le_le_0_compat => //.
+    apply Rmin_case.
+    apply Rplus_le_le_0_compat => //.
+    by apply Rle_0_1.
+    now eapply Rle_trans, Rlt_le, Hl.
+    by apply Rlt_0_2.
+  split ; apply CV_disk_inside.
+  by [].
+  now eapply Rbar_lt_le_trans, Hle.
+  case: (CV_radius a) Hac => [l | | ] //= Hl.
+  apply Rmin_case.
+  apply Rlt_div_r.
+  by apply Rlt_0_2.
+  apply Rminus_lt_0 ; simpl ; ring_simplify.
+  by apply Rlt_0_1.
+  apply Rlt_div_r.
+  by apply Rlt_0_2.
+  apply Rminus_lt_0 ; simpl ; ring_simplify.
+  by rewrite Rplus_comm -Rminus_lt_0.
+  apply Rlt_div_r.
+  by apply Rlt_0_2.
+  apply Rminus_lt_0 ; simpl ; ring_simplify.
+  by apply Rlt_0_1.
+
+  rewrite -Ha0 in Ha Hle |- *.
+  intros c Hc.
+  apply Hc ; split ; by apply CV_disk_0.
+
+  apply Rbar_min_case_strong => //.
+  by apply Rbar_le_antisym.
 Qed.
 
 (** Scalar multiplication *)
@@ -1089,7 +1086,7 @@ Proof.
  now rewrite scal_assoc.
  apply filterlim_comp with (f:= fun n => pred n) (G:=eventually)
   (g:=fun n => scal x (sum_n (fun k : nat => scal (pow_n x k) (a k)) n)).
- apply eventually_subseq'.
+ apply eventually_subseq_loc.
  exists 1%nat.
  intros n Hn.
  rewrite -pred_Sn.

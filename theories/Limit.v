@@ -1465,24 +1465,7 @@ Qed.
 
 (** Subsequences *)
 
-Lemma eventually_subseq :
-  forall phi,
-  (forall n, (phi n < phi (S n))%nat) ->
-  filterlim phi eventually eventually.
-Proof.
-intros phi Hphi P [N HP].
-exists N.
-intros n Hn.
-apply HP.
-apply le_trans with (1 := Hn).
-clear -Hphi.
-induction n as [|n IH].
-apply le_O_n.
-apply lt_le_S.
-now apply le_lt_trans with (1 := IH).
-Qed.
-
-Lemma eventually_subseq' :
+Lemma eventually_subseq_loc :
   forall phi,
   eventually (fun n => (phi n < phi (S n))%nat) ->
   filterlim phi eventually eventually.
@@ -1516,6 +1499,15 @@ apply le_refl.
 exact H0.
 rewrite Arith.Plus.plus_comm.
 now apply sym_eq, le_plus_minus_r.
+Qed.
+Lemma eventually_subseq :
+  forall phi,
+  (forall n, (phi n < phi (S n))%nat) ->
+  filterlim phi eventually eventually.
+Proof.
+intros phi Hphi.
+apply eventually_subseq_loc.
+by apply filter_forall.
 Qed.
 
 Lemma is_lim_seq_subseq (u : nat -> R) (l : Rbar) (phi : nat -> nat) :
@@ -2894,17 +2886,13 @@ Qed.
 
 (** Absolute value *)
 
-Lemma filterlim_abs :
+Lemma filterlim_Rabs :
   forall l : Rbar,
   filterlim Rabs (Rbar_locally l) (Rbar_locally (Rbar_abs l)).
 Proof.
   case => [l| |] /=.
 
-  intros P [eps HP].
-  exists eps => x Hx.
-  apply HP.
-  apply Rle_lt_trans with (2 := Hx).
-  apply Rabs_triang_inv2.
+  apply @filterlim_norm.
 
   intros P [N HP].
   exists N => x Hx.
@@ -2924,7 +2912,7 @@ Lemma is_lim_seq_abs (u : nat -> R) (l : Rbar) :
 Proof.
 intros Hu.
 apply filterlim_comp with (1 := Hu).
-apply filterlim_abs.
+apply filterlim_Rabs.
 Qed.
 Lemma ex_lim_seq_abs (u : nat -> R) :
   ex_lim_seq u -> ex_lim_seq (fun n => Rabs (u n)).

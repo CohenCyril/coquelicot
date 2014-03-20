@@ -1641,9 +1641,8 @@ Proof.
       by apply Hd.
     assert (0 < Rbar_min 1 (Lub.Lub_Rbar_ne _ H)).
       move: H0 ; case: (Lub.Lub_Rbar_ne _ _) => [l | | ] //= H0.
-      apply Rbar_min_case => //.
+      apply Rmin_case => //.
       by apply Rlt_0_1.
-      unfold Rbar_min ; case: Rbar_le_dec => //= _.
       by apply Rlt_0_1.
     set d := mkposreal _ H1.
     exists d.
@@ -1654,7 +1653,6 @@ Proof.
     apply Rle_not_lt.
     apply (Rbar_le_trans (Finite _) l (Finite _)).
     case: (l) H0 => [r | | ] //= H0.
-    rewrite Rbar_finite_min /=.
     apply Rmin_r.
     apply H2 => d /= Hd.
     apply Rnot_lt_le ; contradict Hy.
