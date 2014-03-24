@@ -69,6 +69,7 @@ deps.dot: $(addprefix theories/,$(FILES))
 
 EXAMPLES = \
 	BacS2013.v \
+	BacS2013_bonus.v \
 	Bessel.v \
 	DAlembert.v
 

@@ -23,66 +23,6 @@ Require Import Reals Even Div2 ssreflect.
 Require Import Rcomplements Rbar Limit Lub.
 Require Import Continuity Derive Derive_2d RInt Seq_fct Series Hierarchy.
 
-(** pow *)
-
-Section pow_n.
-
-Context {K : Ring}.
-
-Fixpoint pow_n (x : K) (N : nat) {struct N} : K :=
-  match N with
-   | 0%nat => one
-   | S i => mult x (pow_n x i)
-  end.
-
-Lemma pow_n_plus :
-  forall (x : K) (n m : nat), pow_n x (n+m) = mult (pow_n x n) (pow_n x m).
-Proof.
-  intros x.
-  elim => /= [ | n IH] m.
-  by rewrite mult_one_l.
-  by rewrite IH mult_assoc.
-Qed.
-
-Lemma pow_n_comm_1 :
-  forall (x : K) (n : nat), mult (pow_n x n) x = mult x (pow_n x n).
-Proof.
-  intros x n.
-  elim: n => /= [ | n IH].
-  by rewrite mult_one_l mult_one_r.
-  by rewrite -(mult_assoc _ (pow_n x n)) IH.
-Qed.
-
-Lemma pow_n_comm :
-  forall (x : K) n m, mult (pow_n x n) (pow_n x m) = mult (pow_n x m) (pow_n x n).
-Proof.
-  intros x n m.
-  rewrite -2!pow_n_plus.
-  by apply f_equal, Plus.plus_comm.
-Qed.
-
-End pow_n.
-
-Lemma abs_pow_n {K : AbsRing} :
-  forall (x : K) n,
-  abs (pow_n x n) <= (abs x)^n.
-Proof.
-induction n.
-apply Req_le, abs_one.
-simpl.
-apply: Rle_trans (abs_mult _ _) _.
-apply Rmult_le_compat_l with (2 := IHn).
-apply abs_ge_0.
-Qed.
-
-Lemma pow_n_pow :
-  forall (x : R) k, pow_n x k = x^k.
-Proof.
-intros x; induction k; simpl.
-easy.
-now rewrite IHk.
-Qed.
-
 (** * Definition *)
 
 Section Definitions.

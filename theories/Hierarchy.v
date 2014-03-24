@@ -861,6 +861,40 @@ Proof.
   by apply mult_distr_l.
 Qed.
 
+(** pow_n *)
+
+Fixpoint pow_n (x : K) (N : nat) {struct N} : K :=
+  match N with
+   | 0%nat => one
+   | S i => mult x (pow_n x i)
+  end.
+
+Lemma pow_n_plus :
+  forall (x : K) (n m : nat), pow_n x (n+m) = mult (pow_n x n) (pow_n x m).
+Proof.
+  intros x.
+  elim => /= [ | n IH] m.
+  by rewrite mult_one_l.
+  by rewrite IH mult_assoc.
+Qed.
+
+Lemma pow_n_comm_1 :
+  forall (x : K) (n : nat), mult (pow_n x n) x = mult x (pow_n x n).
+Proof.
+  intros x n.
+  elim: n => /= [ | n IH].
+  by rewrite mult_one_l mult_one_r.
+  by rewrite -(mult_assoc _ (pow_n x n)) IH.
+Qed.
+
+Lemma pow_n_comm :
+  forall (x : K) n m, mult (pow_n x n) (pow_n x m) = mult (pow_n x m) (pow_n x n).
+Proof.
+  intros x n m.
+  rewrite -2!pow_n_plus.
+  by apply f_equal, Plus.plus_comm.
+Qed.
+
 End Ring1.
 
 (** ** Rings with absolute value *)
@@ -987,6 +1021,18 @@ Proof.
   apply Rle_trans with (1 := abs_triangle _ _).
   rewrite abs_opp.
   apply Req_le ; ring.
+Qed.
+
+Lemma abs_pow_n :
+  forall (x : K) n,
+  abs (pow_n x n) <= (abs x)^n.
+Proof.
+induction n.
+apply Req_le, abs_one.
+simpl.
+apply: Rle_trans (abs_mult _ _) _.
+apply Rmult_le_compat_l with (2 := IHn).
+apply abs_ge_0.
 Qed.
 
 End AbsRing1.
@@ -3440,6 +3486,14 @@ Proof.
   by apply IH.
 Qed.
 
+Lemma pow_n_pow :
+  forall (x : R) k, pow_n x k = x^k.
+Proof.
+intros x; induction k; simpl.
+easy.
+now rewrite IHk.
+Qed.
+
 (** Continuity of norm *)
 
 Lemma filterlim_norm {K : AbsRing} {V : NormedModule K} :
@@ -3451,6 +3505,20 @@ Proof.
   exists eps ; move => /= y Hy.
   apply Rle_lt_trans with (2 := Hy).
   apply norm_triangle_inv.
+Qed.
+
+Lemma filterlim_norm_zero {U} {K : AbsRing} {V : NormedModule K}
+  {F : (U -> Prop) -> Prop} {FF : Filter F} (f : U -> V) :
+  filterlim (fun x => norm (f x)) F (locally 0)
+  -> filterlim f F (locally (zero (G := V))).
+Proof.
+  intros Hf.
+  apply filterlim_locally_ball_norm => eps.
+  generalize (proj1 (filterlim_locally_ball_norm _ _) Hf eps) ;
+  unfold ball_norm ; simpl.
+  apply filter_imp => /= x.
+  rewrite !minus_zero_r {1}/norm /= /abs /= Rabs_pos_eq //.
+  by apply norm_ge_0.
 Qed.
 
 Lemma filterlim_bounded {K : AbsRing} {V : NormedModule K} (a : nat -> V) :
