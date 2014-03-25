@@ -362,14 +362,14 @@ Lemma Q2a : forall n, u n <= INR n + 3.
 Proof.
   elim => [ | n IH] ; rewrite ?S_INR /=.
   apply Rminus_le_0 ; ring_simplify ; apply Rle_0_1.
-  apply Rle_trans with (2 / 3 * (INR n + 3) + 1 / 3 * INR n + 1).
-  repeat apply Rplus_le_compat_r.
+  eapply Rle_trans.
+  apply Rplus_le_compat_r.
+  apply Rplus_le_compat_r.
   apply Rmult_le_compat_l.
-  apply Rlt_le ; pos_rat.
+  lra.
   by apply IH.
   apply Rminus_le_0 ; field_simplify.
-  rewrite Rdiv_1.
-  apply Rlt_le ; pos_rat.
+  lra.
 Qed.
 
 (** 2.b. *)
@@ -387,9 +387,7 @@ Proof.
   apply Rminus_le_0.
   rewrite Q2b.
   apply Rmult_le_pos.
-  apply Rdiv_le_0_compat.
-  apply Rle_0_1.
-  repeat apply Rplus_lt_0_compat ; apply Rlt_0_1.
+  lra.
   apply (Rminus_le_0 (u n)).
   by apply Q2a.
 Qed.

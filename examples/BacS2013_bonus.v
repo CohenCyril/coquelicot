@@ -34,7 +34,7 @@ Proof.
   by [].
 Qed.
 
-(** 3. Matrices de changement de base *)
+(** 3. Diagonalisation *)
 
 Definition P : matrix 2 2 :=
   [[1,-1], [5,1]].
@@ -42,32 +42,29 @@ Definition Q : matrix 2 2 :=
   [[1,1],[-5,1]].
 
 Goal mult P Q = [[6,0],[0,6]].
-rewrite /mult /= /Mmult /Mone /=.
 apply (coeff_mat_ext_aux 0 0) => i j Hi Hj.
 rewrite coeff_mat_bij => //.
-unfold coeff_mat, plus, mult ; simpl.
+rewrite /coeff_mat /= /mult /plus /=.
 (destruct i as [ | i] ; destruct j as [ | j] ; rewrite /zero /= ; try ring) ;
 (try (destruct i as [ | i]) ; try (destruct j as [ | j]) ; rewrite /zero /= ; try ring).
 Qed.
 
 Goal mult Q P = [[6,0],[0,6]].
-rewrite /mult /= /Mmult /Mone /=.
 apply (coeff_mat_ext_aux 0 0) => i j Hi Hj.
 rewrite coeff_mat_bij => //.
-unfold coeff_mat, plus, mult ; simpl.
+rewrite /coeff_mat /= /mult /plus /=.
 (destruct i as [ | i] ; destruct j as [ | j] ; rewrite /zero /= ; try ring) ;
 (try (destruct i as [ | i]) ; try (destruct j as [ | j]) ; rewrite /zero /= ; try ring).
 Qed.
 
-Definition Q' : matrix 2 2 :=
+Definition P' : matrix 2 2 :=
   [[1 / 6,1 / 6],[-5 / 6,1 / 6]].
 
-Lemma Q3a : mult P Q' = Mone /\ mult Q' P = Mone.
+Lemma Q3a : mult P P' = Mone /\ mult P' P = Mone.
 Proof.
   split ;
   apply mk_matrix_ext => i j Hi Hj /= ;
   rewrite /plus /mult /= /coeff_mat /= ;
-
   destruct i as [ | i] ; destruct j as [ | j] ; rewrite /= /one /zero /= ; try field ;
   (try (destruct i as [ | i]) ; try (destruct j as [ | j]) ; rewrite /= /zero /one /= ; try field) ;
   by apply lt_S_n, lt_S_n, lt_n_O in Hi.
@@ -75,16 +72,16 @@ Qed.
 
 Definition D : matrix 2 2 := [[1,0],[0,94 / 100]].
 
-Lemma Q3b : mult Q' (mult A P) = D.
+Lemma Q3b : mult P' (mult A P) = D.
 Proof.
   apply (coeff_mat_ext_aux 0 0) => i j Hi Hj.
-  rewrite coeff_mat_bij => // ;  
-  repeat rewrite /= /coeff_mat /= /plus /mult /= ;
+  rewrite coeff_mat_bij => //= ;  
+  repeat rewrite /coeff_mat /= /plus /mult /= ;
   (destruct i as [ | i] ; destruct j as [ | j] ; rewrite /zero /one /=) ;
   (try (destruct i as [ | i]) ; try (destruct j as [ | j]) ; rewrite /zero /one /= ; try field).
 Qed.
 
-Lemma Q3c : forall n, pow_n A n = mult P (mult (pow_n D n) Q').
+Lemma Q3c : forall n, pow_n A n = mult P (mult (pow_n D n) P').
 Proof.
   elim => /= [ | n IH].
   rewrite mult_one_l.
@@ -102,14 +99,12 @@ Proof.
     elim: n => [ | n IH] /=.
     by rewrite scal_one.
     by rewrite -scal_assoc -IH.
-  assert (pow_n D n = [[1,0],
-                       [0,(94 / 100)^n]]).
+  assert (pow_n D n = [[1,0], [0,(94 / 100)^n]]).
     elim: (n) => [ | m IH] //=.
     rewrite IH.
-    rewrite /mult /= /Mmult /Mone /=.
     apply (coeff_mat_ext_aux 0 0) => i j Hi Hj.
-    rewrite coeff_mat_bij => //.
-    unfold coeff_mat, plus, mult ; simpl.
+    rewrite coeff_mat_bij => //=.
+    rewrite /plus /mult /= /coeff_mat /=.
     (destruct i as [ | i] ; destruct j as [ | j] ; rewrite /zero /one /=) ;
     (try (destruct i as [ | i]) ; try (destruct j as [ | j]) ; rewrite /zero /one /= ; try field).
   rewrite Q3c H0 in H.
@@ -133,9 +128,9 @@ Proof.
   apply is_lim_seq_const.
   apply is_lim_seq_geom.
   rewrite Rabs_pos_eq ; lra.
-  apply (f_equal (fun x => Some (Finite x))), Rmult_0_r.
-  apply (f_equal (fun x => Some (Finite x))), Rplus_0_r.
-  apply (f_equal (fun x => Some (Finite x))), Rmult_1_r.
+  by [].
+  by [].
+  by [].
   apply is_lim_seq_const.
   by [].
   eapply is_lim_seq_mult.
@@ -145,11 +140,11 @@ Proof.
   apply is_lim_seq_const.
   apply is_lim_seq_geom.
   rewrite Rabs_pos_eq ; lra.
-  apply (f_equal (fun x => Some (Finite x))), Rminus_0_r.
-  apply (f_equal (fun x => Some (Finite x))), Rmult_1_r.
+  by [].
+  by [].
   apply is_lim_seq_const.
   by [].
-  apply (f_equal (fun x => Some (Finite x))).
+  apply (f_equal (fun x => Some (Finite x))) ;
   simpl ; field.
 Qed.
 
@@ -162,6 +157,6 @@ Proof.
   eapply is_lim_seq_minus.
   apply is_lim_seq_const.
   by apply lim_v.
-  apply (f_equal (fun x => Some (Finite x))).
+  apply (f_equal (fun x => Some (Finite x))) ;
   simpl ; field.
 Qed.
