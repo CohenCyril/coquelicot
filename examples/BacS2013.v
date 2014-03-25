@@ -94,43 +94,21 @@ Definition f (x : R) : R := fab 2 2 x.
 Lemma Signe_df : forall x, 0 < x -> sign (Derive f x) = sign (- ln x).
 Proof.
   move => x Hx.
-  replace (Derive f x) with (-2 * ln x / x ^ 2).
-  rewrite /sign.
-  case: (Rle_dec 0 (- ln x)) => Hln.
-  have Hf : 0 <= -2 * ln x / x ^ 2.
-    apply Rdiv_le_0_compat.
-    rewrite Ropp_mult_distr_l_reverse -Ropp_mult_distr_r_reverse.
-    apply Rmult_le_pos.
-    by apply Rlt_le, Rlt_0_2.
-    by apply Hln.
-    by apply pow_lt.
-  case: Rle_dec => // {Hf} Hf.
-  case: (Rle_lt_or_eq_dec 0 (- ln x) Hln) => {Hln} Hln.
-  have : 0 <> (-2 * ln x / x ^ 2).
-    apply Rlt_not_eq.
-    apply Rdiv_lt_0_compat.
-    rewrite Ropp_mult_distr_l_reverse -Ropp_mult_distr_r_reverse.
-    apply Rmult_lt_0_compat.
-    by apply Rlt_0_2.
-    by apply Hln.
-    by apply pow_lt.
-  by case: Rle_lt_or_eq_dec.
-  move: Hf ;
-  rewrite Ropp_mult_distr_l_reverse -Ropp_mult_distr_r_reverse -Hln.
-  rewrite /Rdiv Rmult_0_r Rmult_0_l => Hf.
-  by case: Rle_lt_or_eq_dec (Rlt_irrefl 0).
-  have : ~ 0 <= (-2 * ln x / x ^ 2).
-    contradict Hln.
-    replace (-ln x) with ((x^2 / 2) * (-2 * ln x / x ^ 2))
-      by (simpl ; field ; by apply Rgt_not_eq).
-    apply Rmult_le_pos.
-    apply Rdiv_le_0_compat.
-    by apply Rlt_le, pow_lt.
-    by apply Rlt_0_2.
-    by apply Hln.
-  by case: Rle_dec.
   rewrite (is_derive_unique f x _ (Dfab 2 2 x Hx)).
-  simpl ; field ; by apply Rgt_not_eq.
+  apply sign_carac.
+  case: (Req_dec x 1) => Hx1 ; [right | left].
+  rewrite Hx1 ln_1 ; simpl ; split ; rewrite /Rdiv ; ring.
+  rewrite /Rdiv ; ring_simplify.
+  apply Rdiv_lt_0_compat.
+  apply Rmult_lt_0_compat.
+  by apply Rlt_0_2.
+  apply pow2_gt_0.
+  contradict Hx1.
+  rewrite -ln_1 in Hx1.
+  apply ln_inv => //.
+  by apply Rlt_0_1.
+  apply pow2_gt_0.
+  by apply Rgt_not_eq.
 Qed.
 
 (** 2.b. *)

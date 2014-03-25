@@ -3,6 +3,8 @@ Require Import Hierarchy PSeries Rbar Limit.
 
 Open Scope R_scope.
 
+Notation "[ x1 , .. , xn ]" := (pair x1 .. (pair xn tt) .. ).
+
 (** * Bac 2013 - Exercice 4 spécialité *)
 
 (** 1. Exprimer v (S n) et c (S n) en fonction de v n et c n *)
@@ -21,12 +23,11 @@ with c (n : nat) : R :=
 (** 2. Définition de la matrice A *)
 
 Definition A : matrix 2 2 :=
-  ((95/100,(1/100,tt)),
-   (5/100,(99/100,tt),tt)).
+  [[95/100, 1/100 ] ,
+    [ 5/100, 99/100]].
 
 Definition X (n : nat) : matrix 2 1 :=
-  ((v n,tt),
-   (c n,tt,tt)).
+  [[v n],[c n]].
 
 Lemma Q2 : forall n, X (S n) = scal A (X n).
 Proof.
@@ -36,28 +37,22 @@ Qed.
 (** 3. Matrices de changement de base *)
 
 Definition P : matrix 2 2 :=
-  ((1,(-1,tt)),
-   (5,(1,tt),tt)).
+  [[1,-1], [5,1]].
 Definition Q : matrix 2 2 :=
-  ((1,(1,tt)),
-   (-5,(1,tt),tt)).
+  [[1,1],[-5,1]].
 
-Goal mult P Q = ((6,(0,tt)),
-                 (0,(6,tt),tt)).
+Goal mult P Q = [[6,0],[0,6]].
 rewrite /mult /= /Mmult /Mone /=.
-apply (coeff_mat_ext_aux 0 0).
-intros i j Hi Hj.
+apply (coeff_mat_ext_aux 0 0) => i j Hi Hj.
 rewrite coeff_mat_bij => //.
 unfold coeff_mat, plus, mult ; simpl.
 (destruct i as [ | i] ; destruct j as [ | j] ; rewrite /zero /= ; try ring) ;
 (try (destruct i as [ | i]) ; try (destruct j as [ | j]) ; rewrite /zero /= ; try ring).
 Qed.
 
-Goal mult Q P = ((6,(0,tt)),
-                 (0,(6,tt),tt)).
+Goal mult Q P = [[6,0],[0,6]].
 rewrite /mult /= /Mmult /Mone /=.
-apply (coeff_mat_ext_aux 0 0).
-intros i j Hi Hj.
+apply (coeff_mat_ext_aux 0 0) => i j Hi Hj.
 rewrite coeff_mat_bij => //.
 unfold coeff_mat, plus, mult ; simpl.
 (destruct i as [ | i] ; destruct j as [ | j] ; rewrite /zero /= ; try ring) ;
@@ -65,38 +60,26 @@ unfold coeff_mat, plus, mult ; simpl.
 Qed.
 
 Definition Q' : matrix 2 2 :=
-  ((1 / 6,(1 / 6,tt)),
-   (-5 / 6,(1 / 6,tt),tt)).
+  [[1 / 6,1 / 6],[-5 / 6,1 / 6]].
 
 Lemma Q3a : mult P Q' = Mone /\ mult Q' P = Mone.
 Proof.
-  rewrite /mult /= /Mmult /Mone /=.
   split ;
-  apply (coeff_mat_ext_aux 0 0).
+  apply mk_matrix_ext => i j Hi Hj /= ;
+  rewrite /plus /mult /= /coeff_mat /= ;
 
-  intros i j Hi Hj.
-  rewrite coeff_mat_bij => //.
-  unfold coeff_mat, plus, mult ; simpl.
-  (destruct i as [ | i] ; destruct j as [ | j] ; rewrite /zero /one /= ; try field) ;
-  (try (destruct i as [ | i]) ; try (destruct j as [ | j]) ; rewrite /zero /one /= ; try field).
-  
-  intros i j Hi Hj.
-  rewrite coeff_mat_bij => //.
-  unfold coeff_mat, plus, mult ; simpl.
-  (destruct i as [ | i] ; destruct j as [ | j] ; rewrite /zero /one /= ; try field) ;
-  (try (destruct i as [ | i]) ; try (destruct j as [ | j]) ; rewrite /zero /one /= ; try field).
+  destruct i as [ | i] ; destruct j as [ | j] ; rewrite /= /one /zero /= ; try field ;
+  (try (destruct i as [ | i]) ; try (destruct j as [ | j]) ; rewrite /= /zero /one /= ; try field) ;
+  by apply lt_S_n, lt_S_n, lt_n_O in Hi.
 Qed.
 
-Definition D : matrix 2 2 := ((1,(0,tt)),
-                              (0,(94 / 100,tt),tt)).
+Definition D : matrix 2 2 := [[1,0],[0,94 / 100]].
 
 Lemma Q3b : mult Q' (mult A P) = D.
 Proof.
-  rewrite /mult /= /Mmult /Mone /=.
-  apply (coeff_mat_ext_aux 0 0).
-  intros i j Hi Hj.
-  rewrite coeff_mat_bij => //.
-  unfold coeff_mat, plus, mult ; simpl.
+  apply (coeff_mat_ext_aux 0 0) => i j Hi Hj.
+  rewrite coeff_mat_bij => // ;  
+  repeat rewrite /= /coeff_mat /= /plus /mult /= ;
   (destruct i as [ | i] ; destruct j as [ | j] ; rewrite /zero /one /=) ;
   (try (destruct i as [ | i]) ; try (destruct j as [ | j]) ; rewrite /zero /one /= ; try field).
 Qed.
@@ -119,13 +102,12 @@ Proof.
     elim: n => [ | n IH] /=.
     by rewrite scal_one.
     by rewrite -scal_assoc -IH.
-  assert (pow_n D n = ((1,(0,tt)),
-                       (0,((94 / 100)^n,tt),tt))).
+  assert (pow_n D n = [[1,0],
+                       [0,(94 / 100)^n]]).
     elim: (n) => [ | m IH] //=.
     rewrite IH.
     rewrite /mult /= /Mmult /Mone /=.
-    apply (coeff_mat_ext_aux 0 0).
-    intros i j Hi Hj.
+    apply (coeff_mat_ext_aux 0 0) => i j Hi Hj.
     rewrite coeff_mat_bij => //.
     unfold coeff_mat, plus, mult ; simpl.
     (destruct i as [ | i] ; destruct j as [ | j] ; rewrite /zero /one /=) ;
@@ -171,16 +153,12 @@ Proof.
   simpl ; field.
 Qed.
 
-Lemma Q4_c : forall n, c n = 250000 - v n.
-Proof.
-  elim => [ | n /= ->] /= ; field.
-Qed.
-
-
 Lemma lim_c : is_lim_seq c (208333 + 1 / 3).
 Proof.
+  assert (forall n, c n = 250000 - v n).
+    elim => [ | n /= ->] /= ; field.
   eapply is_lim_seq_ext.
-  intros n ; apply sym_eq, Q4_c.
+  intros n ; apply sym_eq, H.
   eapply is_lim_seq_minus.
   apply is_lim_seq_const.
   by apply lim_v.

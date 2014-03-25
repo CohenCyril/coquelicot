@@ -347,6 +347,17 @@ Proof.
   intros ; rewrite Rmult_comm ; apply Rmult_le_0_r ; auto.
 Qed.
 
+Lemma pow2_gt_0 (x : R) : x <> 0 -> 0 < x ^ 2.
+Proof.
+  destruct (pow2_ge_0 x) => // Hx.
+  contradict Hx.
+  apply sym_eq, Rmult_integral in H ;
+  case: H => // H.
+  apply Rmult_integral in H ;
+  case: H => // H.
+  contradict H ; apply Rgt_not_eq, Rlt_0_1.
+Qed.
+
 (** * Rminus *)
 (** Rewritings *)
 
