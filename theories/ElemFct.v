@@ -115,6 +115,13 @@ Proof.
   by apply Hx.
   apply Rmax_l.
 Qed.
+Lemma filterdiff_sqrt (x : R) :
+  0 < x -> filterdiff sqrt (locally x) (fun y => scal y (/ (2 * sqrt x))).
+Proof.
+  intros Hx.
+  apply is_derive_Reals.
+  by apply derivable_pt_lim_sqrt.
+Qed.
 
 (** * Power function *)
 
