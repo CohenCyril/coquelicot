@@ -1492,6 +1492,18 @@ Context {T : UniformSpace}.
 Definition open (D : T -> Prop) :=
   forall x, D x -> locally x D.
 
+Lemma locally_open :
+  forall (D E : T -> Prop),
+  open D ->
+  (forall x : T, D x -> E x) ->
+  forall x : T, D x ->
+  locally x E.
+Proof.
+intros D E OD H x Dx.
+apply filter_imp with (1 := H).
+now apply OD.
+Qed.
+
 Lemma open_ext :
   forall D E : T -> Prop,
   (forall x, D x <-> E x) ->
