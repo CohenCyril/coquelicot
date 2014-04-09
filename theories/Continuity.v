@@ -1602,8 +1602,82 @@ Qed.
 
 (** * Continuity in Uniform Spaces *)
 
-Definition continuous {U V : UniformSpace} (f : U -> V) (x : U) :=
+(** ** Continuity *)
+
+Section Continuity.
+
+Context {T U : UniformSpace}.
+
+Definition continuous_on (D : T -> Prop) (f : T -> U) :=
+  forall x, D x -> filterlim f (within D (locally x)) (locally (f x)).
+
+Definition continuous (f : T -> U) (x : T) :=
   filterlim f (locally x) (locally (f x)).
+
+Lemma continuous_continuous_on :
+  forall (D : T -> Prop) (f : T -> U) (x : T),
+  locally x D ->
+  continuous_on D f ->
+  continuous f x.
+Proof.
+intros D f x Dx CD P Pfx.
+assert (Dx' := locally_singleton _ _ Dx).
+generalize (filter_and _ _ Dx (CD x Dx' P Pfx)).
+unfold filtermap, within.
+apply filter_imp.
+intros t [H1 H2].
+now apply H2.
+Qed.
+
+Lemma continuous_on_subset :
+  forall (D E : T -> Prop) (f : T -> U),
+  (forall x, E x -> D x) ->
+  continuous_on D f ->
+  continuous_on E f.
+Proof.
+intros D E f H CD x Ex P Pfx.
+generalize (CD x (H x Ex) P Pfx).
+unfold filtermap, within.
+apply filter_imp.
+intros t H' Et.
+now apply H', H.
+Qed.
+
+Lemma continuous_on_forall :
+  forall (D : T -> Prop) (f : T -> U),
+  (forall x, D x -> continuous f x) ->
+  continuous_on D f.
+Proof.
+intros D f H x Dx P Pfx.
+generalize (H x Dx P Pfx).
+unfold filtermap, within.
+now apply filter_imp.
+Qed.
+
+Lemma continuous_ext :
+  forall (f g : T -> U) (x : T),
+  (forall x, f x = g x) ->
+  continuous f x ->
+  continuous g x.
+Proof.
+intros f g x H Cf.
+apply filterlim_ext with (1 := H).
+now rewrite <- H.
+Qed.
+
+Lemma continuous_on_ext :
+  forall (D : T -> Prop) (f g : T -> U),
+  (forall x, D x -> f x = g x) ->
+  continuous_on D f ->
+  continuous_on D g.
+Proof.
+intros D f g H Cf x Dx.
+apply filterlim_within_ext with (1 := H).
+rewrite <- H with (1 := Dx).
+now apply Cf.
+Qed.
+
+End Continuity.
 
 Section UnifCont.
 
