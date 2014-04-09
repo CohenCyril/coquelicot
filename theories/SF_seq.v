@@ -1828,19 +1828,22 @@ Proof.
   by apply @norm_triangle.
   apply Rplus_le_compat.
   eapply Rle_trans. apply @norm_scal.
-  rewrite /abs /= Rabs_right.
+  refine (_ (Hs O _)).
+  simpl.
+  intros [H1 H2].
+  rewrite /abs /= Rabs_pos_eq.
   apply Rmult_le_compat_l.
-  apply -> Rminus_le_0 ; apply Rle_trans with y0 ;
-  apply (Hs O) ; rewrite SF_size_cons ; exact: lt_O_Sn.
-  apply H ; split.
-  apply (Hs O) ; rewrite SF_size_cons ; exact: lt_O_Sn.
-  apply Rle_trans with (SF_h s).
-  apply (Hs O) ; rewrite SF_size_cons ; exact: lt_O_Sn.
+  apply -> Rminus_le_0.
+  now apply Rle_trans with y0.
+  apply H.
+  apply (conj H1).
+  apply Rle_trans with (1 := H2).
   apply (sorted_last (SF_lx s) O) with (x0 := 0).
   by apply (ptd_sort _ Hs).
   exact: lt_O_Sn.
-  apply Rle_ge ; apply -> Rminus_le_0 ; apply Rle_trans with y0 ;
-  apply (Hs O) ; rewrite SF_size_cons ; exact: lt_O_Sn.
+  apply -> Rminus_le_0.
+  now apply Rle_trans with y0.
+  exact: lt_O_Sn.
   apply IH.
   by apply ptd_cons with (h := (x0,y0)).
   move => t Ht ; apply H ; split.
@@ -1849,6 +1852,35 @@ Proof.
 Qed.
 
 End Riemann_sum_Normed.
+
+Lemma Riemann_sum_le (f : R -> R) (g : R -> R) ptd :
+  pointed_subdiv ptd ->
+  (forall t, SF_h ptd <= t <= last (SF_h ptd) (SF_lx ptd) -> f t <= g t) ->
+  Riemann_sum f ptd <= Riemann_sum g ptd.
+Proof.
+  apply SF_cons_ind with (s := ptd) => {ptd} /= [x0 | [x0 y0] s IH] /= Hs H.
+  apply Rle_refl.
+  rewrite !Riemann_sum_cons /=.
+  apply Rplus_le_compat.
+  refine (_ (Hs O _)).
+  simpl.
+  intros [H1 H2].
+  apply Rmult_le_compat_l.
+  apply -> Rminus_le_0.
+  now apply Rle_trans with y0.
+  apply H.
+  apply (conj H1).
+  apply Rle_trans with (1 := H2).
+  apply (sorted_last (SF_lx s) O) with (x0 := 0).
+  by apply (ptd_sort _ Hs).
+  exact: lt_O_Sn.
+  exact: lt_O_Sn.
+  apply IH.
+  by apply ptd_cons with (h := (x0,y0)).
+  move => t Ht ; apply H ; split.
+  by apply Rle_trans with (2 := proj1 Ht), (ptd_sort _ Hs).
+  by apply Ht.
+Qed.
 
 (** Structures *)
 

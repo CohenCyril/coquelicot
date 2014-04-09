@@ -5271,33 +5271,44 @@ intros x Hx.
 apply continuity_pt_filterlim.
 now apply H.
 Qed.
-Qed.
 
-(** ** Theorems proved using standard library *)
-
-Lemma RInt_le: forall f g a b,
-    a <= b ->
-   ex_RInt f a b ->  ex_RInt g a b ->
-   (forall x,  a <= x <= b -> f x <= g x) ->
-   RInt f a b <= RInt g a b.
+Lemma RInt_le :
+  forall (f g : R -> R) a b,
+  a <= b ->
+  ex_RInt f a b -> ex_RInt g a b ->
+  (forall x, a <= x <= b -> f x <= g x) ->
+  RInt f a b <= RInt g a b.
 Proof.
-intros f g a b H1 If Ig H2.
-assert (Riemann_integrable f a b).
-now apply ex_RInt_Reals_0.
-assert (Riemann_integrable g a b).
-now apply ex_RInt_Reals_0.
-rewrite (RInt_Reals _ _ _ X)(RInt_Reals _ _ _ X0).
-apply RiemannInt_P19.
-exact H1.
-intros; apply H2.
-split; left; apply H.
+intros f g a b Hab If Ig H.
+case: (Hab) => [Hab'|->].
+2: rewrite 2!RInt_point ; apply Rle_refl.
+assert (HI: forall h : R -> R, ex_RInt h a b -> filterlim (Riemann_sum h) (Riemann_fine a b) (locally (RInt h a b))).
+  clear -Hab'.
+  intros h Ih.
+  apply RInt_correct in Ih.
+  apply filterlim_ext with (2 := Ih).
+  intros s.
+  rewrite (proj1 (sign_0_lt _)).
+  apply Rmult_1_l.
+  now apply -> Rminus_lt_0.
+change (Rbar_le (RInt f a b) (RInt g a b)).
+apply (filterlim_le (F := Riemann_fine a b)) with (Riemann_sum f) (Riemann_sum g).
+- exists (mkposreal _ Rlt_0_1).
+  intros s _ [H1 [H2 H3]].
+  apply Riemann_sum_le with (1 := H1).
+  rewrite H3 H2 {H2 H3}.
+  rewrite -> Rmin_left with (1 := Hab).
+  rewrite -> Rmax_right with (1 := Hab).
+  exact H.
+- now apply HI.
+- now apply HI.
 Qed.
 
 Lemma is_RInt_le: forall f g a b If Ig,
   a <= b ->
-   is_RInt f a b If ->  is_RInt g a b Ig ->
-   (forall x,  a <= x <= b -> f x <= g x) ->
-   If <= Ig.
+  is_RInt f a b If -> is_RInt g a b Ig ->
+  (forall x, a <= x <= b -> f x <= g x) ->
+  If <= Ig.
 Proof.
 intros f g a b If Ig Hab Hf Hg Heq.
 rewrite -(is_RInt_unique _ _ _ _ Hf).
@@ -5306,6 +5317,8 @@ apply RInt_le => //.
 by exists If.
 by exists Ig.
 Qed.
+
+(** ** Theorems proved using standard library *)
 
 Lemma ex_RInt_norm :
   forall (f : R -> R) a b, ex_RInt f a b ->
