@@ -2366,52 +2366,6 @@ Qed.
 
 (** ** Norm *)
 
-Lemma RInt_ge_0 (f : R -> R) (a b : R) (l : R) :
-  a <= b -> (forall x, a <= x <= b -> 0 <= f x)
-    -> is_RInt f a b l
-    -> 0 <= l.
-Proof.
-  intros Hab Hf HIf.
-  apply Ropp_le_cancel ; rewrite Ropp_0.
-  apply Rnot_lt_le => He.
-  generalize (proj1 (filterlim_locally _ _) HIf (mkposreal _ He)) ;
-  case => {HIf} /= [d HIf].
-  assert (exists y, seq_step (SF_lx y) < d /\
-    pointed_subdiv y /\
-    SF_h y = Rmin a b /\ last (SF_h y) (unzip1 (SF_t y)) = Rmax a b).
-    apply filter_ex.
-    exists d => y Hy Hy'.
-    now split.
-  case: H => y [Hy Hy'].
-  specialize (HIf y Hy Hy') => {Hy}.
-  rewrite /ball /= /AbsRing_ball /= in HIf.
-  apply Rabs_lt_between in HIf.
-  case: HIf => _.
-  apply Rle_not_lt.
-  apply Rminus_le_0.
-  rewrite /minus /plus /opp /=.
-  ring_simplify.
-  apply Rminus_le_0 in Hab.
-  rewrite /sign ; case: Rle_dec => // {Hab} Hab.
-  case: Rle_lt_or_eq_dec => /= Ha'.
-  rewrite scal_one.
-  eapply Rle_trans.
-  2: apply (Riemann_sum_norm (V := R_CompleteNormedModule)).
-  apply norm_ge_0.
-  by apply Hy'.
-  move => t /= Ht.
-  rewrite /norm /= /abs /=.
-  rewrite Rabs_pos_eq.
-  by apply Rle_refl.
-  apply Hf.
-  move: Ht.
-  rewrite (proj2 (proj2 Hy')) (proj1 (proj2 Hy')).
-  apply Rminus_le_0 in Hab.
-  rewrite /Rmin /Rmax ; by case: Rle_dec.
-  rewrite scal_zero_l.
-  by apply Rle_refl.
-Qed.
-
 Section norm_RInt.
 
 Context {V : NormedModule R_AbsRing}.
@@ -5363,6 +5317,19 @@ rewrite -(is_RInt_unique _ _ _ _ Hg).
 apply RInt_le => //.
 by exists If.
 by exists Ig.
+Qed.
+
+Lemma RInt_ge_0 :
+  forall (f : R -> R) (a b : R) (l : R),
+  a <= b ->
+  (forall x, a <= x <= b -> 0 <= f x) ->
+  is_RInt f a b l ->
+  0 <= l.
+Proof.
+intros f a b l Hab H If.
+apply is_RInt_le with (4 := H) ; try easy.
+rewrite <- (Rmult_0_r (b - a)) at 1.
+apply: is_RInt_const.
 Qed.
 
 (** ** Theorems proved using standard library *)
