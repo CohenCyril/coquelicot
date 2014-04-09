@@ -2412,13 +2412,19 @@ Proof.
   by apply Rle_refl.
 Qed.
 
-Lemma RInt_norm {V : NormedModule R_AbsRing}
-  (f : R -> V) (g : R -> R) (a b : R) (lf : V) (lg : R) :
-  a <= b -> (forall x, a <= x <= b -> norm (f x) <= g x)
-  -> is_RInt f a b lf -> is_RInt g a b lg
-    -> norm lf <= lg.
+Section norm_RInt.
+
+Context {V : NormedModule R_AbsRing}.
+
+Lemma norm_RInt_le :
+  forall (f : R -> V) (g : R -> R) (a b : R) (lf : V) (lg : R),
+  a <= b ->
+  (forall x, a <= x <= b -> norm (f x) <= g x) ->
+  is_RInt f a b lf ->
+  is_RInt g a b lg ->
+  norm lf <= lg.
 Proof.
-  intros Hab H Hf Hg.
+  intros f g a b lf lg Hab H Hf Hg.
   change (Rbar_le (norm lf) lg).
   apply filterlim_le
     with (fun ptd : SF_seq => norm (scal (sign (b - a)) (Riemann_sum f ptd)))
@@ -2441,6 +2447,46 @@ Proof.
   by apply Hf.
   by apply filterlim_norm.
 Qed.
+
+Lemma norm_RInt_le_const :
+  forall (f : R -> V) (a b : R) (lf : V) (M : R),
+  a <= b ->
+  (forall x, a <= x <= b -> norm (f x) <= M) ->
+  is_RInt f a b lf ->
+  norm lf <= (b - a) * M.
+Proof.
+intros f a b lf M Hab H Hf.
+apply norm_RInt_le with (1 := Hab) (2 := H) (3 := Hf).
+apply: is_RInt_const.
+Qed.
+
+Lemma norm_RInt_le_const_abs :
+  forall (f : R -> V) (a b : R) (lf : V) (M : R),
+  (forall x, Rmin a b <= x <= Rmax a b -> norm (f x) <= M) ->
+  is_RInt f a b lf ->
+  norm lf <= Rabs (b - a) * M.
+Proof.
+intros f a b lf M H Hf.
+unfold Rabs.
+case Rcase_abs => Hab.
+apply Rminus_lt in Hab.
+rewrite Ropp_minus_distr.
+apply is_RInt_swap in Hf.
+rewrite <- norm_opp.
+apply norm_RInt_le_const with (3 := Hf).
+now apply Rlt_le.
+intros x Hx.
+apply H.
+now rewrite -> Rmin_right, Rmax_left by now apply Rlt_le.
+apply Rminus_ge in Hab.
+apply Rge_le in Hab.
+apply norm_RInt_le_const with (1 := Hab) (3 := Hf).
+intros x Hx.
+apply H.
+now rewrite -> Rmin_left, Rmax_right.
+Qed.
+
+End norm_RInt.
 
 (** * Specific Normed Modules *)
 
@@ -5304,7 +5350,8 @@ apply (filterlim_le (F := Riemann_fine a b)) with (Riemann_sum f) (Riemann_sum g
 - now apply HI.
 Qed.
 
-Lemma is_RInt_le: forall f g a b If Ig,
+Lemma is_RInt_le :
+  forall (f g : R -> R) a b (If Ig : R),
   a <= b ->
   is_RInt f a b If -> is_RInt g a b Ig ->
   (forall x, a <= x <= b -> f x <= g x) ->
@@ -5330,60 +5377,39 @@ apply RiemannInt_P16.
 now apply ex_RInt_Reals_0.
 Qed.
 
-Lemma RInt_abs: forall f a b,
+Lemma abs_RInt_le :
+  forall (f : R -> R) a b,
   a <= b -> ex_RInt f a b ->
   Rabs (RInt f a b) <= RInt (fun t => Rabs (f t)) a b.
 Proof.
 intros f a b H1 If.
-replace (Rabs _) with (norm (RInt f a b)) by (unfold norm ; by simpl).
-apply: (RInt_norm f (fun t : R => norm (f t)) a b).
-by [].
+apply: (norm_RInt_le f (fun t : R => norm (f t)) a b).
+exact H1.
 move => x _ ; by apply Rle_refl.
 by apply RInt_correct.
 by apply RInt_correct, ex_RInt_norm.
 Qed.
 
-Lemma RInt_le_const: forall f a b M,
+Lemma abs_RInt_le_const :
+  forall (f : R -> R) a b M,
+  a <= b -> ex_RInt f a b ->
+  (forall t, a <= t <= b -> Rabs (f t) <= M) ->
+  Rabs (RInt f a b) <= (b - a) * M.
+Proof.
+intros f a b M Hab If H.
+apply: (norm_RInt_le_const f) => //.
+now apply RInt_correct.
+Qed.
+
+Lemma abs_RInt_le_const_abs :
+  forall (f : R -> R) a b M,
   ex_RInt f a b ->
   (forall t, Rmin a b <= t <= Rmax a b -> Rabs (f t) <= M) ->
-  Rabs (RInt f a b) <= Rabs (b-a) * M.
+  Rabs (RInt f a b) <= Rabs (b - a) * M.
+Proof.
 intros f a b M If H.
-wlog: a b H If / (a <= b) => [Hw | Hab] .
-(* *)
-case (Rle_or_lt a b); intros Hab.
-now apply Hw.
-rewrite <- RInt_swap.
-replace (b-a) with (-(a-b)) by ring.
-rewrite 2! Rabs_Ropp.
-apply Hw.
-intros t Ht; apply H.
-rewrite Rmin_comm Rmax_comm.
-exact Ht.
-apply ex_RInt_swap.
-exact If.
-now left.
-(* *)
-rewrite (Rabs_right (b-a)).
-rewrite <- RInt_const.
-apply Rle_trans with (1:=RInt_abs _ _ _ Hab If).
-apply RInt_le.
-exact Hab.
-now apply ex_RInt_norm.
-apply ex_RInt_Reals_1.
-apply continuity_implies_RiemannInt.
-exact Hab.
-intros x Hx eps Heps.
-exists 1; split.
-apply Rlt_0_1.
-intros.
-unfold dist; simpl; unfold R_dist; simpl.
-rewrite /Rminus Rplus_opp_r Rabs_R0.
-exact Heps.
-intros x Hx; apply H.
-rewrite (Rmin_left _ _ Hab).
-now rewrite Rmax_right.
-apply Rle_ge, Rplus_le_reg_l with a.
-now ring_simplify.
+apply: (norm_RInt_le_const_abs f) => //.
+now apply RInt_correct.
 Qed.
 
 (** * Riemann integral and continuity *)
@@ -5463,7 +5489,7 @@ Proof.
   replace (RInt f a y + - RInt f a x + - ((y + - x) * f x)) with
     (RInt (fun z => f z - f x) x y).
   rewrite Rmult_comm.
-  apply RInt_le_const.
+  apply abs_RInt_le_const_abs.
   apply: ex_RInt_minus.
   exact H.
   apply ex_RInt_const.
@@ -5489,7 +5515,6 @@ Proof.
   exact H.
   apply ex_RInt_const.
 Qed.
-
 
 Lemma RInt_Derive (f : R -> R) (a b : R):
   (forall x, Rmin a b <= x <= Rmax a b -> ex_derive f x) ->
@@ -6113,7 +6138,7 @@ replace (Derive (fun z : R => RInt (fun t : R => f z t) v (a x)) u) with
 (* *)
 apply Rle_lt_trans with (Rabs (a x -v) *
    (Rabs (Derive (fun z : R => f z (a x)) x) +1)).
-apply RInt_le_const.
+apply: abs_RInt_le_const_abs.
 apply ex_RInt_cont.
 intros y Hy eps Heps.
 assert (Y1:(Rabs (u - x) < d5)).
