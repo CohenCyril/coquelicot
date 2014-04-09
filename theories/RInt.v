@@ -2003,7 +2003,7 @@ Qed.
 
 End Continuity.
 
-Lemma cont_ex_RInt {V : CompleteNormedModule R_AbsRing} (f : R -> V) (a b : R) :
+Lemma ex_RInt_continuous {V : CompleteNormedModule R_AbsRing} (f : R -> V) (a b : R) :
   (forall z, Rmin a b <= z <= Rmax a b -> continuous f z)
   -> ex_RInt f a b.
 Proof.
@@ -5260,27 +5260,20 @@ Proof.
   exact: ex_RInt_Reals_aux_1.
 Qed.
 
-(** ** Theorems proved using standard library *)
-
-Lemma ex_RInt_cont: forall f a b, (forall x, Rmin a b <= x <= Rmax a b -> continuity_pt f x)
-  -> ex_RInt f a b.
+Lemma ex_RInt_cont :
+  forall f a b,
+  (forall x, Rmin a b <= x <= Rmax a b -> continuity_pt f x) ->
+  ex_RInt f a b.
 Proof.
 intros f a b H.
-wlog: a b H / (a <= b) => [Hw | Hab].
-case (Rle_or_lt a b); intros H'.
-now apply Hw.
-apply ex_RInt_swap.
-apply Hw; try easy.
-intros x; rewrite Rmin_comm Rmax_comm.
-apply H.
-now left.
-apply ex_RInt_Reals_1.
-apply continuity_implies_RiemannInt.
-exact Hab.
-intros; apply H.
-rewrite Rmin_left; try exact Hab.
-now rewrite Rmax_right.
+apply: ex_RInt_continuous.
+intros x Hx.
+apply continuity_pt_filterlim.
+now apply H.
 Qed.
+Qed.
+
+(** ** Theorems proved using standard library *)
 
 Lemma RInt_le: forall f g a b,
     a <= b ->
