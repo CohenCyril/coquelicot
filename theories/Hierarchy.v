@@ -1616,6 +1616,85 @@ apply Cf.
 now apply OD.
 Qed.
 
+(** ** Closed sets in uniform spaces *)
+
+Section Closed.
+
+Context {T : UniformSpace}.
+
+Definition closed (D : T -> Prop) :=
+  open (fun x : T => not (D x)).
+
+Lemma closed_ext :
+  forall D E : T -> Prop,
+  (forall x, D x <-> E x) ->
+  closed D -> closed E.
+Proof.
+intros D E H.
+apply open_ext.
+intros x.
+specialize (H x).
+intuition.
+Qed.
+
+Lemma closed_and :
+  forall D E : T -> Prop,
+  closed D -> closed E ->
+  closed (fun x => D x /\ E x).
+Proof.
+intros D E CD CE x Hx.
+apply locally_not.
+intros He.
+generalize (open_or _ _ CD CE).
+intros H.
+revert Hx.
+cut (not (not (D x) \/ not (E x))).
+now (clear ; intuition).
+intros Hx.
+destruct (H x Hx) as [eps H'].
+apply (He eps).
+intros y Hy Hy'.
+specialize (H' y Hy).
+clear -H' Hy' ; intuition.
+Qed.
+
+Lemma closed_or :
+  forall D E : T -> Prop,
+  closed D -> closed E ->
+  closed (fun x => D x \/ E x).
+Proof.
+intros D E CD CE.
+generalize (open_and _ _ CD CE).
+apply open_ext.
+clear ; intuition.
+Qed.
+
+Lemma closed_true :
+  closed (fun x : T => True).
+Proof.
+intros x Hx.
+now contradict Hx.
+Qed.
+
+Lemma closed_false :
+  closed (fun x : T => False).
+Proof.
+intros x _.
+now exists (mkposreal _ Rlt_0_1).
+Qed.
+
+End Closed.
+
+Lemma closed_comp :
+  forall {T U : UniformSpace} (f : T -> U) (D : U -> Prop),
+  (forall x, filterlim f (locally x) (locally (f x))) ->
+  closed D -> closed (fun x : T => D (f x)).
+Proof.
+intros T U f D Cf CD x Dfx.
+apply Cf with (P := fun x => not (D x)).
+now apply CD.
+Qed.
+
 (** ** Complete uniform spaces *)
 
 Definition cauchy {T : UniformSpace} (F : (T -> Prop) -> Prop) :=
