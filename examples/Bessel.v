@@ -646,8 +646,8 @@ Proof.
   reflexivity.
   exists 0 ; apply filterlim_ext with (fun _ => 0).
   elim => /= [ | k IH].
-  by [].
-  by rewrite plus_zero_r.
+  by rewrite sum_O.
+  by rewrite sum_Sn plus_zero_r.
   by apply filterlim_const.
   by apply pow_nonzero, Rgt_not_eq, Rlt_0_2.
   by apply Rgt_not_eq, Rlt_0_2.

@@ -890,8 +890,8 @@ Proof.
     rewrite /Series ;
     apply (is_lim_seq_ext (sum_n (fun k => An k))).
     elim => /= [ | n IH].
-    by [].
-    by rewrite IH.
+    by rewrite sum_O.
+    by rewrite sum_Sn IH.
     apply is_lim_seq_ext with (sum_n An).
     move => n ; by rewrite sum_n_sum_f_R0.
     apply Lim_seq_correct', H1.

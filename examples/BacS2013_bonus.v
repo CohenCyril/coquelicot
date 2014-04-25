@@ -31,7 +31,16 @@ Definition X (n : nat) : matrix 2 1 :=
 
 Lemma Q2 : forall n, X (S n) = scal A (X n).
 Proof.
-  by [].
+  intros n.
+  rewrite /scal /= /Mmult.
+  apply (coeff_mat_ext 0).
+  case ; [ | case => //].
+  case ; [ | case => //] ;
+  rewrite coeff_mat_bij /= ; (try omega) ;
+  rewrite sum_Sn sum_O /plus /mult //=.
+  case ; [ | case => //] ;
+  rewrite coeff_mat_bij /= ; (try omega) ;
+  rewrite sum_Sn sum_O /plus /mult //=.
 Qed.
 
 (** 3. Diagonalisation *)
@@ -46,7 +55,8 @@ apply (coeff_mat_ext_aux 0 0) => i j Hi Hj.
 rewrite coeff_mat_bij => //.
 rewrite /coeff_mat /= /mult /plus /=.
 (destruct i as [ | i] ; destruct j as [ | j] ; rewrite /zero /= ; try ring) ;
-(try (destruct i as [ | i]) ; try (destruct j as [ | j]) ; rewrite /zero /= ; try ring).
+(try (destruct i as [ | i]) ; try (destruct j as [ | j]) ; rewrite /zero /= ; try ring) ;
+rewrite sum_Sn sum_O /= /plus /= ; ring.
 Qed.
 
 Goal mult Q P = [[6,0],[0,6]].
@@ -54,7 +64,8 @@ apply (coeff_mat_ext_aux 0 0) => i j Hi Hj.
 rewrite coeff_mat_bij => //.
 rewrite /coeff_mat /= /mult /plus /=.
 (destruct i as [ | i] ; destruct j as [ | j] ; rewrite /zero /= ; try ring) ;
-(try (destruct i as [ | i]) ; try (destruct j as [ | j]) ; rewrite /zero /= ; try ring).
+(try (destruct i as [ | i]) ; try (destruct j as [ | j]) ; rewrite /zero /= ; try ring) ;
+rewrite sum_Sn sum_O /= /plus /= ; ring.
 Qed.
 
 Definition P' : matrix 2 2 :=
@@ -62,12 +73,19 @@ Definition P' : matrix 2 2 :=
 
 Lemma Q3a : mult P P' = Mone /\ mult P' P = Mone.
 Proof.
-  split ;
-  apply mk_matrix_ext => i j Hi Hj /= ;
-  rewrite /plus /mult /= /coeff_mat /= ;
-  destruct i as [ | i] ; destruct j as [ | j] ; rewrite /= /one /zero /= ; try field ;
-  (try (destruct i as [ | i]) ; try (destruct j as [ | j]) ; rewrite /= /zero /one /= ; try field) ;
-  by apply lt_S_n, lt_S_n, lt_n_O in Hi.
+  split.
+  apply (coeff_mat_ext_aux 0 0) => i j Hi Hj.
+  rewrite coeff_mat_bij => //.
+  rewrite /coeff_mat /= /mult /plus /=.
+  (destruct i as [ | i] ; destruct j as [ | j] ; rewrite /zero /= ; try field) ;
+  (try (destruct i as [ | i]) ; try (destruct j as [ | j]) ; rewrite /zero /one /= ; try field) ;
+  rewrite sum_Sn sum_O /= /plus /= ; field.
+  apply (coeff_mat_ext_aux 0 0) => i j Hi Hj.
+  rewrite coeff_mat_bij => //.
+  rewrite /coeff_mat /= /mult /plus /=.
+  (destruct i as [ | i] ; destruct j as [ | j] ; rewrite /zero /= ; try field) ;
+  (try (destruct i as [ | i]) ; try (destruct j as [ | j]) ; rewrite /zero /one /= ; try field) ;
+  rewrite sum_Sn sum_O /= /plus /= ; field.
 Qed.
 
 Definition D : matrix 2 2 := [[1,0],[0,94 / 100]].
@@ -75,10 +93,12 @@ Definition D : matrix 2 2 := [[1,0],[0,94 / 100]].
 Lemma Q3b : mult P' (mult A P) = D.
 Proof.
   apply (coeff_mat_ext_aux 0 0) => i j Hi Hj.
-  rewrite coeff_mat_bij => //= ;  
-  repeat rewrite /coeff_mat /= /plus /mult /= ;
-  (destruct i as [ | i] ; destruct j as [ | j] ; rewrite /zero /one /=) ;
-  (try (destruct i as [ | i]) ; try (destruct j as [ | j]) ; rewrite /zero /one /= ; try field).
+  rewrite coeff_mat_bij => //.
+  rewrite /coeff_mat /= /mult /plus /=.
+  (destruct i as [ | i] ; destruct j as [ | j] ; rewrite /zero /= ; try field) ;
+  (try (destruct i as [ | i]) ; try (destruct j as [ | j]) ; rewrite /zero /one /= ; try field) ;
+  rewrite sum_Sn sum_O /= /plus /= ; (try field) ;
+  rewrite !sum_Sn !sum_O /= /plus /coeff_mat /= ; field.
 Qed.
 
 Lemma Q3c : forall n, pow_n A n = mult P (mult (pow_n D n) P').
@@ -98,7 +118,8 @@ Proof.
   assert (X n = scal (pow_n A n) (X 0)).
     elim: n => [ | n IH] /=.
     by rewrite scal_one.
-    by rewrite -scal_assoc -IH.
+    rewrite -scal_assoc -IH.
+    by apply Q2.
   assert (pow_n D n = [[1,0], [0,(94 / 100)^n]]).
     elim: (n) => [ | m IH] //=.
     rewrite IH.
@@ -106,12 +127,13 @@ Proof.
     rewrite coeff_mat_bij => //=.
     rewrite /plus /mult /= /coeff_mat /=.
     (destruct i as [ | i] ; destruct j as [ | j] ; rewrite /zero /one /=) ;
-    (try (destruct i as [ | i]) ; try (destruct j as [ | j]) ; rewrite /zero /one /= ; try field).
+    (try (destruct i as [ | i]) ; try (destruct j as [ | j]) ; rewrite /zero /one /= ; try field) ;
+    rewrite sum_Sn sum_O /= /plus /= ; field.
   rewrite Q3c H0 in H.
   apply (proj1 (coeff_mat_ext 0 _ _)) with (i := O) (j := O) in H.
   rewrite {1}/coeff_mat /= in H.
   rewrite H ; repeat (rewrite !/coeff_mat /=).
-  rewrite /plus /mult /= ; field.
+  rewrite !sum_Sn !sum_O /= /plus /mult /= ; field.
 Qed.
 
 Lemma lim_v : is_lim_seq v (41666 + 2 / 3).

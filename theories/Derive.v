@@ -1570,7 +1570,12 @@ Lemma is_derive_sum_n :
 Proof.
   intros f n x d.
   elim: n => /= [ | n IH] Hf.
-  by apply (Hf O).
+  rewrite sum_O.
+  eapply is_derive_ext, (Hf O) => //.
+  intros t ; by rewrite sum_O.
+  eapply is_derive_ext.
+  intros t ; apply sym_eq, sum_Sn.
+  rewrite sum_Sn.
   apply is_derive_plus.
   apply IH => k Hk.
   by apply Hf, le_trans with (1 := Hk), le_n_Sn.
@@ -1584,7 +1589,11 @@ Lemma ex_derive_sum_n :
 Proof.
   intros f n x.
   elim: n => /= [ | n IH] Hf.
+  eapply ex_derive_ext.
+  intros t ; by rewrite sum_O.
   by apply (Hf O).
+  eapply ex_derive_ext.
+  intros t ; by rewrite sum_Sn.
   apply ex_derive_plus.
   apply IH => k Hk.
   by apply Hf, le_trans with (1 := Hk), le_n_Sn.

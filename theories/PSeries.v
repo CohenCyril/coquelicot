@@ -167,8 +167,8 @@ Lemma is_pseries_0 (a : nat -> V) :
 Proof.
   apply filterlim_ext with (fun _ => a O).
   elim => [ | n IH] /=.
-  now rewrite scal_one.
-  rewrite -IH.
+  now rewrite sum_O scal_one.
+  rewrite sum_Sn -IH /=.
   rewrite mult_zero_l.
   now rewrite scal_zero_l plus_zero_r.
   apply filterlim_const.
@@ -221,8 +221,8 @@ Proof.
   exists (Rabs (a O)).
   apply (is_lim_seq_ext (fun _ => Rabs (a O)) _ (Rabs (a O))).
   elim => /= [ | n IH].
-  by rewrite Rmult_1_r.
-  by rewrite Rmult_0_l Rmult_0_r Rabs_R0 /plus /= Rplus_0_r.
+  by rewrite sum_O Rmult_1_r.
+  by rewrite sum_Sn /= Rmult_0_l Rmult_0_r Rabs_R0 /plus /= Rplus_0_r.
   by apply is_lim_seq_const.
 Qed.
 
@@ -482,8 +482,8 @@ Proof.
   exists (Rabs (a O)).
   apply (is_lim_seq_ext (fun _ => Rabs (a O)) _ (Rabs (a 0%nat))).
   elim => /= [ | n IH].
-  by rewrite Rmult_1_r.
-  by rewrite Rmult_0_l Rmult_0_r Rabs_R0 /plus /= Rplus_0_r.
+  by rewrite sum_O Rmult_1_r.
+  by rewrite sum_Sn /= Rmult_0_l Rmult_0_r Rabs_R0 /plus /= Rplus_0_r.
   apply is_lim_seq_const.
 
   apply ex_series_DAlembert with (Rabs x * l).
@@ -565,8 +565,8 @@ Proof.
   exists (Rabs (a O)).
   apply (is_lim_seq_ext (fun _ => Rabs (a O)) _ (Rabs (a 0%nat))).
     elim => [ | n IH] /=.
-    by rewrite Rmult_1_r.
-    by rewrite Rmult_0_l Rmult_0_r Rabs_R0 /plus /= Rplus_0_r.
+    by rewrite sum_O Rmult_1_r.
+    by rewrite sum_Sn /= Rmult_0_l Rmult_0_r Rabs_R0 /plus /= Rplus_0_r.
     by apply is_lim_seq_const.
   pattern (/l) at 3 ;
   replace (/ l) with ((/l + / l) / 2) by (field ; by apply Rgt_not_eq).
@@ -577,8 +577,8 @@ Proof.
   exists (Rabs (a O)).
   apply (is_lim_seq_ext (fun _ => Rabs (a O)) _ (Rabs (a 0%nat))).
     elim => [ | n IH] /=.
-    by rewrite Rmult_1_r.
-    by rewrite Rmult_0_l Rmult_0_r Rabs_R0 /plus /= Rplus_0_r.
+    by rewrite sum_O Rmult_1_r.
+    by rewrite sum_Sn /= Rmult_0_l Rmult_0_r Rabs_R0 /plus /= Rplus_0_r.
     by apply is_lim_seq_const.
 Qed.
 
@@ -600,8 +600,8 @@ Proof.
       exists (Rabs (a O)).
       apply (is_lim_seq_ext (fun _ => Rabs (a O)) _ (Rabs (a 0%nat))).
       elim => [ | k IH] /=.
-      by rewrite Rmult_1_r.
-      by rewrite Rmult_0_l Rmult_0_r Rabs_R0 /plus /= Rplus_0_r.
+      by rewrite sum_O Rmult_1_r.
+      by rewrite sum_Sn /= Rmult_0_l Rmult_0_r Rabs_R0 /plus /= Rplus_0_r.
       by apply is_lim_seq_const.
 
     apply ex_series_DAlembert with 0.
@@ -620,8 +620,8 @@ Proof.
   exists (Rabs (a O)).
   apply (is_lim_seq_ext (fun _ => Rabs (a O)) _ (Rabs (a 0%nat))).
   elim => [ | k IH] /=.
-  by rewrite Rmult_1_r.
-  by rewrite Rmult_0_l Rmult_0_r Rabs_R0 /plus /= Rplus_0_r.
+  by rewrite sum_O Rmult_1_r.
+  by rewrite sum_Sn /= Rmult_0_l Rmult_0_r Rabs_R0 /plus /= Rplus_0_r.
   by apply is_lim_seq_const.
 Qed.
 
@@ -684,11 +684,11 @@ Proof.
     rewrite sum_n_sum_f_R0; by apply H.
     rewrite /v {v}.
     elim: n {Hn} => /= [ | n IH].
-    apply Rabs_pos_eq.
+    rewrite !sum_O ; apply Rabs_pos_eq.
     apply Rle_trans with (Rabs (a O * 0 ^ O)).
     by apply Rabs_pos.
     apply H0 ; rewrite /Boule Rminus_0_r Rabs_R0 ; by apply r.
-    rewrite IH Rabs_pos_eq.
+    rewrite !sum_Sn IH Rabs_pos_eq.
     by [].
     apply Rle_trans with (Rabs (a (S n) * 0 ^ (S n))).
     by apply Rabs_pos.
@@ -762,9 +762,11 @@ Proof.
   apply filterlim_ext with (f:=
     (fun n => plus (sum_n (fun k => scal (pow_n x k) (a k)) n) (sum_n (fun k => scal (pow_n x k) (b k)) n))).
   elim => [ | n IH].
-  simpl ; rewrite /PS_plus.
+  simpl ; rewrite /PS_plus !sum_O.
   now repeat rewrite scal_one.
-  simpl ; rewrite -IH /PS_plus.
+  simpl ; rewrite !sum_Sn -IH /PS_plus.
+  generalize (sum_n (fun k : nat => scal (pow_n x k) (a k)) n) => a' ;
+  generalize (sum_n (fun k : nat => scal (pow_n x k) (b k)) n) => b'.
   repeat rewrite -plus_assoc; apply f_equal.
   rewrite plus_comm -plus_assoc; apply f_equal.
   rewrite scal_distr_l; apply plus_comm.
@@ -901,8 +903,9 @@ Proof.
   apply (filterlim_ext (fun n => scal c (sum_n (fun k => scal (pow_n x k) (a k)) n))).
   elim => [ | n IH].
   simpl ; rewrite /PS_scal.
+  rewrite !sum_O.
   now repeat rewrite scal_one.
-  simpl ; rewrite -IH /PS_scal.
+  simpl ; rewrite !sum_Sn -IH /PS_scal.
   rewrite scal_distr_l; apply f_equal.
   rewrite 2! scal_assoc.
   apply f_equal2.
@@ -1016,13 +1019,13 @@ Proof.
   exists 1%nat; intros n; case n.
   intros Hn; contradict Hn ; apply lt_n_O.
   clear n; intros n _ ;induction n.
-  simpl; now rewrite mult_one_r 2!scal_one plus_zero_l.
+  now rewrite /= !sum_Sn !sum_O /= mult_one_r 2!scal_one plus_zero_l.
   apply trans_eq with (plus
    (sum_n (fun k : nat => scal (pow_n x k) (PS_incr_1 a k)) (S n))
       (scal (pow_n x (S (S n))) (PS_incr_1 a (S (S n))))).
- 2: reflexivity.
+ 2: rewrite /= !sum_Sn ; reflexivity.
  rewrite -IHn; simpl.
- rewrite scal_distr_l; apply f_equal.
+ rewrite !sum_Sn scal_distr_l; apply f_equal.
  now rewrite scal_assoc.
  apply filterlim_comp with (f:= fun n => pred n) (G:=eventually)
   (g:=fun n => scal x (sum_n (fun k : nat => scal (pow_n x k) (a k)) n)).
@@ -1098,10 +1101,10 @@ Proof.
   apply filterlim_ext with  (fun n : nat => scal y
     (sum_n (fun k => scal (pow_n x (S k)) (a (S k))) n)).
   intros n; induction n; unfold PS_decr_1; simpl.
-  rewrite mult_one_r scal_one scal_assoc.
+  rewrite !sum_O mult_one_r scal_one scal_assoc.
   rewrite Hx; try assumption.
   apply @scal_one.
-  rewrite -IHn.
+  rewrite !sum_Sn -IHn.
   rewrite scal_distr_l; apply f_equal.
   rewrite scal_assoc (mult_assoc y).
   rewrite Hx.
@@ -1110,13 +1113,13 @@ Proof.
   apply filterlim_ext with  (fun n : nat => plus
     (sum_n (fun k => scal (pow_n x k) (a k)) (S n)) (opp (a 0%nat))).
   intros n; induction n; simpl.
-  rewrite mult_one_r scal_one.
+  rewrite sum_Sn !sum_O /= mult_one_r scal_one.
   rewrite plus_comm plus_assoc.
   now rewrite plus_opp_l plus_zero_l.
-  rewrite -IHn.
+  rewrite !sum_Sn -IHn.
   apply sym_eq; rewrite plus_comm plus_assoc.
   apply f_equal2;[idtac|reflexivity].
-  now rewrite plus_comm.
+  now rewrite !sum_Sn plus_comm.
   apply filterlim_comp_2 with (3 := filterlim_plus _ _).
   apply filterlim_comp with (f:= fun x => S x) (2:=Ha).
   apply eventually_subseq; intros n; omega.
@@ -1144,10 +1147,11 @@ Proof.
   by apply lt_irrefl in Hn.
   clear Hn ; simpl ; rewrite -minus_n_O /PS_decr_n /=.
   elim: n => /= [ | n IH].
-  rewrite scal_one mult_one_r.
+  rewrite sum_O scal_one mult_one_r.
   now apply is_pseries_decr_1.
   set (ln := (scal (mult y (pow_n y n))
           (plus l (opp (sum_n (fun k : nat => scal (pow_n x k) (a k)) n))))) in IH.
+  rewrite !sum_Sn /=.
   replace (scal (mult y (mult y (pow_n y n)))
      (plus l
         (opp
@@ -1203,12 +1207,12 @@ Proof.
   rewrite -(Lim_seq_incr_1 (sum_n (fun k : nat => PS_incr_1 a k * x ^ k))) /=.
   apply f_equal, Lim_seq_ext.
   case.
-  rewrite /plus /= /zero /=.
+  rewrite sum_Sn !sum_O /= /plus /zero /=.
   ring.
   elim => /= [ | n IH].
-  rewrite /plus /zero /=.
+  rewrite !sum_Sn !sum_O /= /plus /zero /=.
   ring.
-  rewrite IH /plus /=.
+  rewrite sum_Sn IH !sum_Sn /= /plus /=.
   ring.
 Qed.
 
@@ -1364,8 +1368,8 @@ Proof.
   rewrite pow_n_pow pow_add.
   ring.
   apply (is_series_mult (fun l => a l * x ^ l) (fun l => b l * x ^ l)).
-  now apply is_pseries_R.
-  now apply is_pseries_R.
+  now apply (is_pseries_R a x la).
+  now apply (is_pseries_R b x lb).
   by apply CV_disk_inside.
   by apply CV_disk_inside.
 Qed.
@@ -1399,7 +1403,7 @@ Proof.
     x * match n with | O => 0
     | S n => (sum_n (fun k : nat => a (2 * k + 1)%nat * (x ^ 2) ^ k) (div2 n)) end).
   case => [ | n].
-  simpl ; ring.
+  rewrite /= !sum_O /= ; ring.
   case: (even_odd_dec n) => Hn.
 (* even n *)
   rewrite 3!sum_n_sum_f_R0.
@@ -1492,7 +1496,9 @@ Proof.
   apply (f_equal real).
   rewrite -{2}(Lim_seq_const 0) /=.
   apply Lim_seq_ext.
-  elim => /= [ | n ->] ; rewrite /plus /= ; ring.
+  elim => /= [ | n IH].
+  rewrite sum_O ; ring.
+  rewrite sum_Sn /= /plus /= IH ; ring.
 Qed.
 
 Lemma CV_radius_const_0 : CV_radius (fun _ => 0) = p_infty.
@@ -1720,10 +1726,10 @@ Proof.
   set Sa := sum_n a.
   assert (forall n x, sum_n (fun k => scal (pow_n x k) (a k)) n = (1 - x) * sum_n (fun k => scal (pow_n x k) (Sa k)) n + scal (pow_n x (S n)) (Sa n)).
     elim => /= [ | n IH] x.
-    rewrite /Sa scal_one mult_one_r /=.
+    rewrite /Sa !sum_O scal_one mult_one_r /=.
     rewrite /scal /= /mult /= ; ring.
-    rewrite IH ; clear IH.
-    rewrite /Sa /= -/(Sa n).
+    rewrite !sum_Sn IH ; clear IH.
+    rewrite /Sa /= !sum_Sn -/(Sa n).
     rewrite /plus /scal /= /mult /=.
     ring.
   assert (forall x, Rabs x < 1 -> is_pseries Sa x (PSeries a x / (1 - x))).
@@ -2412,8 +2418,8 @@ Proof.
   rewrite /= /PSeries /Series -(Lim_seq_ext (fun _ => a O)).
   by rewrite Lim_seq_const.
   elim => /= [ | n IH].
-  ring.
-  rewrite -IH /plus /= ; ring.
+  rewrite sum_O ; ring.
+  rewrite sum_Sn -IH /plus /= ; ring.
   simpl Derive_n.
   replace (Derive (Derive_n (PSeries a) n) 0)
     with (Derive_n (PSeries (PS_derive a)) n 0).

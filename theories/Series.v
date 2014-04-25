@@ -23,14 +23,6 @@ Require Import Reals ssreflect.
 Require Import Rcomplements.
 Require Import Limit Rbar Hierarchy.
 
-
-Lemma sum_n_sum_f_R0: forall a N, sum_n a N = sum_f_R0 a N.
-Proof.
-  intros a; induction N; simpl.
-  easy.
-  now rewrite IHN.
-Qed.
-
 (** * Definitions *)
 
 Section Definitions.
@@ -165,7 +157,7 @@ Lemma is_series_ext (a b : nat -> V) (l : V) :
 Proof.
   move => Heq.
   apply filterlim_ext.
-  intros x; now apply sum_n_ext.
+  intros x; now apply sum_n_m_ext.
 Qed.
 Lemma ex_series_ext (a b : nat -> V) :
   (forall n, a n = b n) -> ex_series a
@@ -180,7 +172,7 @@ Proof.
   move => Heq.
   apply (f_equal real).
   apply Lim_seq_ext.
-  intros n; now apply sum_n_ext.
+  intros n; now apply sum_n_m_ext.
 Qed.
 
 (** Index offset *)
@@ -192,9 +184,9 @@ Proof.
   intros H.
   apply filterlim_ext with (fun k => plus (sum_n a (S k)) (opp (a 0%nat))).
   induction x; simpl.
-  rewrite (plus_comm _ (a 1%nat)); rewrite <- plus_assoc.
+  rewrite sum_Sn !sum_O (plus_comm _ (a 1%nat)); rewrite <- plus_assoc.
   now rewrite plus_opp_r plus_zero_r.
-  rewrite <- IHx; simpl.
+  rewrite !sum_Sn -IHx -!sum_Sn sum_Sn; simpl.
   rewrite <- plus_assoc, <- (plus_assoc _ _ (a (S (S x)))).
   apply f_equal; apply plus_comm.
   apply filterlim_comp with (G:=(locally (plus l (a 0%nat)))) (g:=fun x => plus x (opp (a 0%nat))).
@@ -218,6 +210,7 @@ Proof.
   by apply lt_irrefl in Hn.
   clear Hn.
   elim: n l Ha => [ | n IH] l Ha.
+  rewrite sum_O in Ha.
   by apply is_series_incr_1.
   apply is_series_ext with (fun k : nat => a (S (n + S k))).
   move => k ; apply f_equal ; ring.
@@ -226,7 +219,7 @@ Proof.
   apply IH.
   replace (plus (plus l (a (S n))) (sum_n a n)) with (plus l (sum_n a (S n))).
   assumption.
-  rewrite <- plus_assoc; apply f_equal; simpl; apply plus_comm.
+  rewrite <- plus_assoc, sum_Sn; apply f_equal; simpl; apply plus_comm.
 Qed.
 
 Lemma is_series_decr_1 (a : nat -> V) (l : V) :
@@ -236,7 +229,11 @@ Proof.
   apply filterlim_ext_loc with (fun v => plus (a 0%nat) (sum_n (fun k : nat => a (S k)) (pred v))).
   exists 1%nat.
   intros n Hn; apply sym_eq.
-  apply decomp_sum_n; omega.
+  rewrite /sum_n sum_Sn_m.
+  apply f_equal.
+  rewrite sum_n_m_S.
+  apply f_equal ; omega.
+  by apply le_O_n.
   replace l with (plus (a 0%nat) (plus l (opp (a 0%nat)))).
   apply filterlim_comp_2 with (3 := filterlim_plus _ _).
   apply filterlim_id.
@@ -259,17 +256,18 @@ Proof.
   by apply lt_irrefl in Hn.
   clear Hn.
   elim: n a l Ha => [ | n IH] a l Ha.
+  rewrite sum_O in Ha.
   by apply is_series_decr_1.
   apply is_series_decr_1.
   apply IH.
   replace (plus (plus l (opp (a 0%nat))) (opp (sum_n (fun k : nat => a (S k)) n)))
     with (plus l (opp (sum_n a (S n)))).
   by apply Ha.
-  rewrite decomp_sum_n /=.
+  rewrite /sum_n sum_n_m_S sum_Sn_m /=.
   rewrite <- plus_assoc.
   apply f_equal.
   now rewrite opp_plus.
-  by apply lt_O_Sn.
+  by apply le_O_n.
 Qed.
 
 Lemma ex_series_incr_1 (a : nat -> V) :
@@ -337,9 +335,9 @@ Proof.
   rewrite /Series.
   rewrite -Lim_seq_incr_1.
   apply f_equal, Lim_seq_ext => n.
-  rewrite decomp_sum_n /=.
+  rewrite /sum_n sum_n_m_S sum_Sn_m.
   rewrite Ha ; by apply Rplus_0_l.
-  by apply lt_O_Sn.
+  by apply le_O_n.
 Qed.
 Lemma Series_incr_n_aux (a : nat -> R) (n : nat) :
    (forall k, (k < n)%nat -> a k = 0)
@@ -412,7 +410,9 @@ Proof.
   eapply is_lim_seq_le with (2:=Ha).
   2: apply Hra.
   elim => [ | n IH] /=.
+  rewrite !sum_O.
   by apply Rle_refl.
+  rewrite !sum_Sn.
   apply Rle_trans with (1 := Rabs_triang _ _).
   apply Rplus_le_compat_r.
   by apply IH.
@@ -447,10 +447,14 @@ Proof.
   apply sym_eq, Rabs_pos_eq.
   elim: n m b H0 => /= [ | n IH] m b Hb.
   elim: m => /= [ | m IH].
+  rewrite sum_n_n.
   by apply Hb.
+  rewrite sum_n_Sm.
   by apply Rplus_le_le_0_compat.
+  by apply le_O_n.
   case: m => /= [ | m].
   by apply Rle_refl.
+  rewrite -sum_n_m_S.
   apply IH => k.
   by apply Hb.
 Qed.
@@ -465,7 +469,9 @@ Proof.
   apply Lim_seq_correct' in Hb.
   move: Ha Hb ; apply is_lim_seq_le.
   elim => [ | n IH] /=.
+  rewrite !sum_O.
   by apply Hn.
+  rewrite !sum_Sn.
   apply Rplus_le_compat.
   by apply IH.
   by apply Hn.
@@ -490,8 +496,8 @@ Proof.
   move => Ha.
    apply filterlim_ext with (fun n => opp (sum_n a n)).
   elim => [ | n IH].
-  simpl ; easy.
-  simpl ; rewrite -IH.
+  rewrite !sum_O ; easy.
+  rewrite !sum_Sn -IH.
   apply opp_plus.
   apply filterlim_comp with (1:=Ha).
   apply filterlim_opp.
@@ -513,8 +519,8 @@ Proof.
   rewrite Lim_seq_opp.
   by rewrite Rbar_opp_real.
   elim => [ | n IH].
-  simpl ; ring.
-  rewrite /= IH /plus /=.
+  rewrite !sum_O ; ring.
+  rewrite !sum_Sn IH /plus /=.
   ring.
 Qed.
 
@@ -525,8 +531,8 @@ Proof.
   move => Ha Hb.
   apply filterlim_ext with (fun n => plus (sum_n a n) (sum_n b n)).
   elim => [ | n IH]; simpl.
-  easy.
-  rewrite -IH; rewrite <- 2!plus_assoc; apply f_equal.
+  by rewrite !sum_O.
+  rewrite !sum_Sn -IH; rewrite <- 2!plus_assoc; apply f_equal.
   rewrite 2!plus_assoc; apply f_equal2; try easy.
   apply plus_comm.
   now apply filterlim_comp_2 with (3 := filterlim_plus _ _).
@@ -593,8 +599,8 @@ Proof.
   move => Ha.
   apply filterlim_ext with (fun n => scal c (sum_n a n)).
   elim => [ | n IH]; simpl.
-  easy.
-  rewrite -IH.
+  by rewrite !sum_O.
+  rewrite !sum_Sn -IH.
   apply: scal_distr_l.
   now apply filterlim_comp with (2 := filterlim_scal _ _).
 Qed.
@@ -637,8 +643,8 @@ Proof.
   rewrite H0 -(Lim_seq_scal_l _ c).
   apply f_equal, Lim_seq_ext.
   elim => [ | n IH].
-  simpl ; ring.
-  rewrite /= IH /plus /=.
+  rewrite !sum_O ; ring.
+  rewrite !sum_Sn IH /plus /=.
   ring.
 Qed.
 
@@ -1033,25 +1039,25 @@ Proof.
     plus (scal (a N) (B N))
     (match N with | O => zero | S N => sum_n (fun n => scal (minus (a n) (a (S n))) (B n)) N end)).
   case => /= [ | N].
-    rewrite /B /= ; by apply plus_zero_r.
+    rewrite /B /= !sum_O ; by apply plus_zero_r.
+  rewrite sum_Sn plus_comm.
   elim: N => /= [ | N IH].
-    rewrite /B /= !scal_distr_r !scal_distr_l -!plus_assoc scal_opp_l.
-    rewrite plus_comm -!plus_assoc plus_comm.
-    apply f_equal2 => //.
+    rewrite /B /= !sum_Sn !sum_O /minus !scal_distr_r !scal_distr_l !scal_opp_l.
+    rewrite -!plus_assoc.
+    apply f_equal.
+    rewrite plus_comm -!plus_assoc.
+    rewrite plus_comm -!plus_assoc.
     rewrite plus_opp_l.
     by apply plus_zero_r.
-  rewrite -IH ; clear IH.
-  rewrite /B /= !scal_distr_r !scal_distr_l -!plus_assoc !scal_opp_l.
-  rewrite plus_comm.
-  repeat (rewrite -!plus_assoc (plus_comm (opp (scal (a (S (S N))) (sum_n b N))))).
-  rewrite -plus_assoc plus_opp_r plus_zero_r.
-  rewrite plus_comm.
-  repeat (rewrite -!plus_assoc (plus_comm (opp (scal (a (S (S N))) (b (S N)))))).
-  rewrite plus_opp_r plus_zero_r.
-  rewrite plus_comm -!plus_assoc.
-  rewrite plus_comm -!plus_assoc.
-  apply f_equal, f_equal.
-  by apply plus_comm.
+  rewrite !sum_Sn -IH ; clear IH.
+  rewrite /B /= /minus !sum_Sn.
+  generalize (sum_n (fun n : nat => scal (plus (a n) (opp (a (S n)))) (sum_n b n)) N) => /= c.
+  generalize (sum_n b N) => b'.
+  rewrite !scal_distr_r !scal_distr_l -!plus_assoc !scal_opp_l.
+  repeat apply f_equal.
+  repeat rewrite (plus_comm (scal (a (S (S N))) b')) -!plus_assoc.
+  rewrite plus_comm -!plus_assoc plus_opp_r plus_zero_r.
+  by rewrite plus_assoc plus_opp_l plus_zero_l.
   apply is_lim_seq_plus'.
   instantiate (1 := 0).
   apply filterlim_locally => eps.

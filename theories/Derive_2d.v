@@ -1278,17 +1278,18 @@ specialize (IHk (le_S _ _ (le_S_n _ _ Hk))).
 rewrite /is_derive_n.
 apply locally_locally in IHk.
 move: IHk ; apply filter_imp => {t Ht} z IHk HH.
-apply is_derive_ext_loc with (fun t => sum_f_R0 (fun m => C k m *
+apply is_derive_ext_loc with (fun t => sum_n (fun m => C k m *
   partial_derive m (k - m) f (x + t * (u - x)) (y + t * (v - y)) * (u - x) ^ m * (v - y) ^ (k - m)) k).
   apply locally_locally in HH.
   generalize (filter_and _ _ HH IHk).
   apply filter_imp => {z HH IHk} z [Hz HH].
   specialize (HH Hz).
   apply sym_eq.
+  rewrite sum_n_sum_f_R0.
   now apply is_derive_n_unique.
 replace (sum_f_R0 (fun m : nat => C (S k) m *
     partial_derive m (S k - m) f (x + z * (u - x)) (y + z * (v - y)) * (u - x) ^ m * (v - y) ^ (S k - m)) (S k)) with
-  (sum_f_R0 (fun m : nat => C k m * (u - x) ^ m  * (v - y) ^ (k - m) *
+  (sum_n (fun m : nat => C k m * (u - x) ^ m  * (v - y) ^ (k - m) *
     ((u - x) * partial_derive (S m) (k - m) f (x + z * (u - x)) (y + z * (v - y)) +
      (v - y) * partial_derive m (S (k - m)) f (x + z * (u - x)) (y + z * (v - y)))) k).
 apply: is_derive_sum_n => p Hp.
@@ -1336,13 +1337,13 @@ apply @filterdiff_plus_fct ; try apply locally_filter.
 apply filterdiff_const.
 apply @filterdiff_scal_l ; try apply locally_filter.
 simpl => y0 ; apply plus_zero_l.
-rewrite -(sum_eq (fun m =>
+rewrite sum_n_sum_f_R0 -(sum_eq (fun m =>
   C k m * (u - x) ^ (S m) * (v - y) ^ (k - m) * partial_derive (S m) (k - m) f (x + z * (u - x)) (y + z * (v - y)) +
   C k m * (u - x) ^ m * (v - y) ^ (S (k - m)) * partial_derive m (S (k - m)) f (x + z * (u - x)) (y + z * (v - y)))).
 2: intros ; simpl ; ring.
 case k; clear Hk IHk k.
 unfold C; simpl.
-field.
+simpl ; field.
 intros k.
 apply sym_eq.
 rewrite (decomp_sum _ (S (S k))).
@@ -1394,7 +1395,7 @@ replace (sum_f_R0
    C (S k) (1 + i) * (u - x) ^ (1 + i) * (v - y) ^ S (S k - (1 + i)) *
    partial_derive (1 + i) (S (S k - (1 + i))) f (x + z * (u - x))
      (y + z * (v - y))) (S k - 1)).
-ring.
+simpl ; ring.
 replace (S k - 1)%nat with k. 2: now apply plus_minus.
 apply sum_eq.
 intros i Hi.

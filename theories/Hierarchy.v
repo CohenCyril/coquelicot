@@ -20,7 +20,7 @@ COPYING file for more details.
 *)
 
 Require Import Reals ssreflect.
-Require Import Rcomplements Rbar Markov.
+Require Import Rcomplements Rbar Markov Iter.
 
 (* This file describes first filters:
 
@@ -551,9 +551,179 @@ Proof.
   by rewrite plus_assoc plus_opp_l plus_zero_l.
 Qed.
 
+End AbelianGroup1.
+
 (** Sum *)
 
-Fixpoint sum_n (a:nat -> G) (N : nat) {struct N} : G :=
+Section Sums.
+
+Context {G : AbelianGroup}.
+
+Definition sum_n_m (a : nat -> G) n m :=
+  iter_nat plus zero a n m.
+Definition sum_n (a : nat -> G) n :=
+  sum_n_m a O n.
+
+Lemma sum_n_m_Chasles (a : nat -> G) (n m k : nat) :
+  (n <= m <= k)%nat -> sum_n_m a n k = plus (sum_n_m a n m) (sum_n_m a (S m) k).
+Proof.
+  intros Hnmk.
+  apply iter_nat_Chasles.
+  by apply plus_zero_l.
+  by apply plus_assoc.
+  by [].
+Qed.
+
+Lemma sum_n_n (a : nat -> G) (n : nat) :
+  sum_n_m a n n = a n.
+Proof.
+  apply iter_nat_point.
+  by apply plus_zero_r.
+Qed.
+Lemma sum_O (a : nat -> G) : sum_n a 0 = a O.
+Proof.
+  by apply sum_n_n.
+Qed.
+Lemma sum_n_Sm (a : nat -> G) (n m : nat) :
+  (n <= m)%nat -> sum_n_m a n (S m) = plus (sum_n_m a n m) (a (S m)).
+Proof.
+  intros Hnmk.
+  rewrite (sum_n_m_Chasles _ _ m).
+  by rewrite sum_n_n.
+  split.
+  by [].
+  by apply le_n_Sn.
+Qed.
+Lemma sum_Sn_m (a : nat -> G) (n m : nat) :
+  (n <= m)%nat -> sum_n_m a n m = plus (a n) (sum_n_m a (S n) m).
+Proof.
+  intros Hnmk.
+  rewrite (sum_n_m_Chasles _ _ n).
+  by rewrite sum_n_n.
+  split.
+  by apply le_refl.
+  by [].
+Qed.
+Lemma sum_n_m_S (a : nat -> G) (n m : nat) :
+  sum_n_m (fun n => a (S n)) n m = sum_n_m a (S n) (S m).
+Proof.
+  apply iter_nat_S.
+Qed.
+
+Lemma sum_Sn (a : nat -> G) (n : nat) :
+  sum_n a (S n) = plus (sum_n a n) (a (S n)).
+Proof.
+  apply sum_n_Sm.
+  by apply le_O_n.
+Qed.
+
+Lemma sum_n_m_zero (a : nat -> G) (n m : nat) :
+  (m < n)%nat -> sum_n_m a n m = zero.
+Proof.
+  intros Hnm.
+  rewrite /sum_n_m.
+  elim: n m a Hnm => [ | n IH] m a Hnm.
+  by apply lt_n_O in Hnm.
+  case: m Hnm => [|m] Hnm //.
+  rewrite -iter_nat_S.
+  apply IH.
+  by apply lt_S_n.
+Qed.
+
+
+Lemma sum_n_m_ext_loc (a b : nat -> G) (n m : nat) :
+  (forall k, (n <= k <= m)%nat -> a k = b k) ->
+  sum_n_m a n m = sum_n_m b n m.
+Proof.
+  intros.
+  by apply iter_nat_ext_loc.
+Qed.
+Lemma sum_n_m_ext (a b : nat -> G) n m :
+  (forall n, a n = b n) ->
+  sum_n_m a n m = sum_n_m b n m.
+Proof.
+  intros H.
+  by apply sum_n_m_ext_loc.
+Qed.
+
+Lemma sum_n_ext_loc :
+  forall (a b : nat -> G) N,
+  (forall n, (n <= N)%nat -> a n = b n) ->
+  sum_n a N = sum_n b N.
+Proof.
+  intros a b N H.
+  apply sum_n_m_ext_loc => k [ _ Hk].
+  by apply H.
+Qed.
+Lemma sum_n_ext :
+  forall (a b : nat -> G) N,
+  (forall n, a n = b n) ->
+  sum_n a N = sum_n b N.
+Proof.
+  intros a b N H.
+  by apply sum_n_ext_loc.
+Qed.
+
+Lemma sum_n_m_plus :
+  forall (u v : nat -> G) (n m : nat),
+  sum_n_m (fun k => plus (u k) (v k)) n m = plus (sum_n_m u n m) (sum_n_m v n m).
+Proof.
+  intros u v n m.
+  case: (le_dec n m) => Hnm.
+  elim: m n u v Hnm => [ | m IH] ;
+  case => [ | n] u v Hnm.
+  by rewrite !sum_n_n.
+  by apply le_Sn_O in Hnm.
+  rewrite !sum_n_Sm ; try by apply le_O_n.
+  rewrite IH.
+  rewrite -2!plus_assoc.
+  apply f_equal.
+  rewrite plus_comm -plus_assoc.
+  apply f_equal, plus_comm.
+  by apply le_O_n.
+  rewrite /sum_n_m -!iter_nat_S -!/(sum_n_m _ n m).
+  apply IH.
+  by apply le_S_n.
+  apply not_le in Hnm.
+  rewrite !sum_n_m_zero //.
+  by rewrite plus_zero_l.
+Qed.
+
+Lemma sum_n_switch :
+  forall (u : nat -> nat -> G) (m n : nat),
+  sum_n (fun i => sum_n (u i) n) m = sum_n (fun j => sum_n (fun i => u i j) m) n.
+Proof.
+  intros u.
+  rewrite /sum_n.
+  induction m ; simpl ; intros n.
+  rewrite sum_n_n.
+  apply iter_nat_ext_loc => k Hk.
+  rewrite sum_n_n.
+  by [].
+  rewrite !sum_n_Sm.
+  rewrite IHm ; clear IHm.
+  rewrite -sum_n_m_plus.
+  apply sum_n_m_ext_loc => k Hk.
+  rewrite sum_n_Sm //.
+  by apply le_O_n.
+  by apply le_O_n.
+Qed.
+
+Lemma sum_n_m_sum_n (a:nat -> G) (n m : nat) : 
+  (n <= m)%nat -> sum_n_m a (S n) m = minus (sum_n a m) (sum_n a n).
+Proof.
+  intros Hnm.
+  apply plus_reg_l with (sum_n a n).
+  rewrite (plus_comm _ (minus _ _)) /minus -plus_assoc plus_opp_l plus_zero_r.
+  rewrite /sum_n /sum_n_m.
+  apply sym_eq, sum_n_m_Chasles.
+  split => //.
+  by apply le_O_n.
+Qed.
+
+End Sums.
+
+(* Fixpoint sum_n (a:nat -> G) (N : nat) {struct N} : G :=
   match N with
    | 0%nat => a 0%nat
    | S i => plus (sum_n a i)  (a (S i))
@@ -687,9 +857,7 @@ Lemma sum_n_m_ext (a b : nat -> G) n m :
 Proof.
   intros H.
   by apply sum_n_m_ext_aux => k Hk.
-Qed.
-
-End AbelianGroup1.
+Qed. *)
 
 (** ** Noncommutative rings *)
 
@@ -837,7 +1005,52 @@ Proof.
   by rewrite mult_one_l.
 Qed.
 
-Lemma sum_n_mult_r :
+Lemma sum_n_m_mult_r :
+ forall (a : K) (u : nat -> K) (n m : nat),
+  sum_n_m (fun k => mult (u k) a) n m = mult (sum_n_m u n m) a.
+Proof.
+  intros a u n m.
+  case: (le_dec n m) => Hnm.
+  elim: m n u Hnm => [ | m IH] n u Hnm.
+  apply le_n_O_eq in Hnm.
+  by rewrite -Hnm !sum_n_n.
+  destruct n.
+  rewrite !sum_n_Sm ; try by apply le_O_n.
+  rewrite IH.
+  by apply sym_eq, mult_distr_r.
+  by apply le_O_n.
+  rewrite -!sum_n_m_S.
+  apply IH.
+  by apply le_S_n.
+  apply not_le in Hnm.
+  rewrite !sum_n_m_zero //.
+  by rewrite mult_zero_l.
+Qed.
+
+Lemma sum_n_m_mult_l :
+ forall (a : K) (u : nat -> K) (n m : nat),
+  sum_n_m (fun k => mult a (u k)) n m = mult a (sum_n_m u n m).
+Proof.
+  intros a u n m.
+  case: (le_dec n m) => Hnm.
+  elim: m n u Hnm => [ | m IH] n u Hnm.
+  apply le_n_O_eq in Hnm.
+  by rewrite -Hnm !sum_n_n.
+  destruct n.
+  rewrite !sum_n_Sm ; try by apply le_O_n.
+  rewrite IH.
+  by apply sym_eq, mult_distr_l.
+  by apply le_O_n.
+  rewrite -!sum_n_m_S.
+  apply IH.
+  by apply le_S_n.
+  apply not_le in Hnm.
+  rewrite !sum_n_m_zero //.
+  by rewrite mult_zero_r.
+Qed.
+
+
+(* Lemma sum_n_mult_r :
  forall (a : K) (u : nat -> K) (n : nat),
   sum_n (fun k => mult (u k) a) n = mult (sum_n u n) a.
 Proof.
@@ -859,7 +1072,7 @@ Proof.
   rewrite IHn.
   apply eq_sym.
   by apply mult_distr_l.
-Qed.
+Qed. *)
 
 (** pow_n *)
 
@@ -1900,7 +2113,29 @@ rewrite scal_opp_l.
 now rewrite scal_one.
 Qed.
 
-Lemma sum_n_scal_l :
+Lemma sum_n_m_scal_l :
+  forall (a : K) (u : nat -> V) (n m : nat),
+  sum_n_m (fun k => scal a (u k)) n m = scal a (sum_n_m u n m).
+Proof.
+  intros a u n m.
+  case: (le_dec n m) => Hnm.
+  elim: m n u Hnm => [ | m IH] n u Hnm.
+  apply le_n_O_eq in Hnm.
+  by rewrite -Hnm !sum_n_n.
+  destruct n.
+  rewrite !sum_n_Sm ; try by apply le_O_n.
+  rewrite IH.
+  by apply sym_eq, scal_distr_l.
+  by apply le_O_n.
+  rewrite -!sum_n_m_S.
+  apply IH.
+  by apply le_S_n.
+  apply not_le in Hnm.
+  rewrite !sum_n_m_zero //.
+  by rewrite scal_zero_r.
+Qed.
+
+(* Lemma sum_n_scal_l :
   forall (a : K) (u : nat -> V) (n : nat),
   sum_n (fun k => scal a (u k)) n = scal a (sum_n u n).
 Proof.
@@ -1910,7 +2145,7 @@ Proof.
   rewrite IHn.
   apply eq_sym.
   by apply scal_distr_l.
-Qed.
+Qed. *)
 
 End ModuleSpace1.
 
@@ -3050,32 +3285,35 @@ Proof.
     destruct m ; simpl.
     unfold coeff_mat ; simpl.
     by rewrite 2!mult_zero_l.
-    apply sum_n_ext_aux ; simpl => m' Hm'.
+    apply sum_n_m_ext_loc ; simpl => m' [ _ Hm'].
     apply f_equal.
-    by rewrite coeff_mat_bij.
+    rewrite coeff_mat_bij //.
+    by apply le_lt_n_Sm, Hm'.
   - transitivity (sum_n (fun l0 : nat => sum_n
       (fun l1 : nat => mult (coeff_mat zero A n' l0) (mult (coeff_mat zero B l0 l1) (coeff_mat zero C l1 l'))) (pred k)) (pred m)).
     destruct m ; simpl.
+    rewrite /sum_n !sum_n_n.
     unfold coeff_mat ; simpl.
     rewrite mult_zero_l.
-    rewrite sum_n_mult_l.
+    rewrite sum_n_m_mult_l.
     by rewrite mult_zero_l.
-    apply sum_n_ext_aux ; simpl => m' Hm'.
-    apply sym_eq, sum_n_mult_l.
+    apply sum_n_m_ext_loc ; simpl => m' [_ Hm'].
+    apply sym_eq, sum_n_m_mult_l.
   rewrite sum_n_switch.
   destruct k ; simpl.
   unfold coeff_mat ; simpl.
   rewrite mult_zero_l.
-  rewrite sum_n_mult_r.
+  rewrite /sum_n sum_n_m_mult_r.
   by rewrite mult_zero_r.
-  apply sum_n_ext_aux => k' Hk'.
+  apply sum_n_m_ext_loc => k' [_ Hk'].
   transitivity (mult (sum_n (fun l1 : nat => mult (coeff_mat zero A n' l1) (coeff_mat zero B l1 k')) (pred m))
     (coeff_mat zero C k' l')).
-  rewrite -sum_n_mult_r.
-  apply sum_n_ext_aux => m' Hm'.
+  rewrite -sum_n_m_mult_r.
+  apply sum_n_m_ext_loc => m' [_ Hm'].
   apply mult_assoc.
   apply f_equal2.
-  now unfold Mmult ; rewrite coeff_mat_bij.
+  unfold Mmult ; rewrite coeff_mat_bij //.
+  by apply le_lt_n_Sm.
   by [].
 Qed.
 
@@ -3091,13 +3329,16 @@ Proof.
   unfold Mone ; simpl.
   transitivity (sum_n (fun k : nat => mult (A i k)
     (Mone_seq k j)) n).
-  apply sum_n_ext_aux => /= k Hk.
-  now rewrite coeff_mat_bij.
+  apply sum_n_m_ext_loc => /= k [_ Hk].
+  rewrite coeff_mat_bij //.
+  by apply le_lt_n_Sm.
   - elim: n Hj => [ | n IH] Hj ; rewrite /sum_n -/sum_n.
     apply lt_n_Sm_le, le_n_0_eq in Hj.
     rewrite -Hj => {j Hj} /=.
+    rewrite sum_n_n.
     by apply mult_one_r.
   - apply le_lt_eq_dec in Hj ; case: Hj => Hj.
+    rewrite sum_n_Sm.
     replace (Mone_seq (S n) j : T) with (zero : T).
     rewrite mult_zero_r plus_zero_r.
     apply lt_n_Sm_le in Hj.
@@ -3108,30 +3349,36 @@ Proof.
     case => [ | j] //= Hj.
     by apply lt_S_n, lt_n_O in Hj.
     by apply IH, lt_S_n.
+    by apply le_O_n.
   - apply eq_add_S in Hj.
     rewrite Hj => /= {j Hj IH}.
+    rewrite sum_n_Sm /=.
     replace (Mone_seq n n : T) with (one : T).
     rewrite mult_one_r.
     apply plus_reg_r with (opp (A i (S n))).
     rewrite -plus_assoc plus_opp_r plus_zero_r.
   - elim: n (S n) (lt_n_Sn n) => {m Hi} [ | n IH] m Hm ;
-    rewrite /sum_n -/sum_n.
     destruct m.
     by apply lt_n_O in Hm.
+    rewrite sum_n_n.
     by apply mult_zero_r.
-    replace (Mone_seq (S n) m : T) with (zero : T).
+    by apply lt_n_O in Hm.
+    rewrite sum_n_Sm /=.
+    replace (Mone_seq n m : T) with (zero : T).
     rewrite mult_zero_r plus_zero_r.
     apply IH.
     by apply lt_trans with (1 := lt_n_Sn _).
     clear -Hm ; destruct m.
-    by [].
+    by apply lt_S_n, lt_n_O in Hm.
     apply lt_S_n in Hm.
     elim: n m Hm => [ | n IH] ;
     case => [ | m] Hm //=.
-    by apply lt_n_O in Hm.
+    by apply lt_S_n, lt_n_O in Hm.
     apply IH.
     by apply lt_S_n.
+    by apply le_O_n.
     by elim: n.
+    by apply le_O_n.
 Qed.
 
 Lemma Mmult_one_l {m n} :
@@ -3146,13 +3393,15 @@ Proof.
   unfold Mone ; simpl.
   transitivity (sum_n (fun k : nat => mult
     (Mone_seq i k) (A k j)) m).
-  apply sum_n_ext_aux => /= k Hk.
-  now rewrite coeff_mat_bij.
-  - elim: m Hi => [ | m IH] Hi ; rewrite /sum_n -/sum_n.
+  apply sum_n_m_ext_loc => /= k [_ Hk].
+  rewrite coeff_mat_bij // ; by apply le_lt_n_Sm.
+  - elim: m Hi => [ | m IH] Hi ; rewrite /sum_n.
     apply lt_n_Sm_le, le_n_0_eq in Hi.
+    rewrite sum_n_n.
     rewrite -Hi => {i Hi} /=.
     by apply mult_one_l.
   - apply le_lt_eq_dec in Hi ; case: Hi => Hi.
+    rewrite sum_n_Sm.
     replace (Mone_seq i (S m) : T) with (zero : T).
     rewrite mult_zero_l plus_zero_r.
     apply lt_n_Sm_le in Hi.
@@ -3163,15 +3412,20 @@ Proof.
     case => [ | i] //= Hi.
     by apply lt_n_O in Hi.
     by apply IH, lt_S_n.
+    by apply le_O_n.
   - apply eq_add_S in Hi.
-    rewrite Hi => /= {i Hi IH}.
+    rewrite sum_n_Sm.
+    rewrite Hi => {i Hi IH}.
+    simpl Mone_seq at 2.
     replace (Mone_seq m m : T) with (one : T).
     rewrite mult_one_l.
     apply plus_reg_r with (opp (A (S m) j)).
     rewrite -plus_assoc plus_opp_r plus_zero_r.
-  - elim: m {2 3}(m) (le_refl m) => {n Hj} [ | n IH] m Hm ;
-    rewrite /sum_n -/sum_n.
+  - elim: m {2 3}(m) (le_refl m) => {n Hj} [ | n IH] m Hm.
+    rewrite sum_n_n /=.
     by apply mult_zero_l.
+    rewrite sum_n_Sm.
+    simpl Mone_seq at 2.
     replace (Mone_seq m n : T) with (zero : T).
     rewrite mult_zero_l plus_zero_r.
     apply IH.
@@ -3184,7 +3438,9 @@ Proof.
     by apply le_Sn_O in Hm.
     apply IH.
     by apply le_S_n.
+    by apply le_O_n.
     by elim: m.
+    by apply le_O_n.
 Qed.
 
 Lemma Mmult_distr_r {m n k} :
@@ -3195,13 +3451,14 @@ Proof.
   unfold Mmult, plus ; simpl ; unfold Mplus.
   apply mk_matrix_ext => i j Hi Hj.
   rewrite ?coeff_mat_bij => //=.
-  rewrite -sum_n_plus.
+  rewrite -sum_n_m_plus.
   destruct n ; simpl.
   unfold coeff_mat ; simpl.
   by rewrite ?mult_zero_l plus_zero_l.
-  apply sum_n_ext_aux => l Hl.
+  apply sum_n_m_ext_loc => l [_ Hl].
   rewrite ?coeff_mat_bij => //=.
   by apply mult_distr_r.
+  by apply le_lt_n_Sm.
 Qed.
 
 Lemma Mmult_distr_l {m n k} :
@@ -3212,13 +3469,14 @@ Proof.
   unfold Mmult, plus ; simpl ; unfold Mplus.
   apply mk_matrix_ext => i j Hi Hj.
   rewrite ?coeff_mat_bij => //=.
-  rewrite -sum_n_plus.
+  rewrite -sum_n_m_plus.
   destruct n ; simpl.
   unfold coeff_mat ; simpl.
   by rewrite ?mult_zero_l plus_zero_l.
-  apply sum_n_ext_aux => l Hl.
+  apply sum_n_m_ext_loc => l [_ Hl].
   rewrite ?coeff_mat_bij => //=.
   by apply mult_distr_l.
+  by apply le_lt_n_Sm.
 Qed.
 
 Definition matrix_Ring_mixin {n} :=
@@ -3458,44 +3716,55 @@ Qed.
 
 (** *)
 
-Lemma norm_sum_n {K : AbsRing} {V : NormedModule K} (a : nat -> V) (n : nat) :
-  norm (sum_n a n) <= sum_n (fun n => norm (a n)) n.
+Lemma sum_n_sum_f_R0: forall a N, sum_n a N = sum_f_R0 a N.
 Proof.
-  elim: n => /= [ | n IH].
-  by apply Rle_refl.
-  eapply Rle_trans.
-  apply norm_triangle.
-  by apply Rplus_le_compat_r.
+  intros a; induction N; simpl.
+  apply sum_n_n.
+  by rewrite sum_Sn IHN.
 Qed.
+
+
 Lemma norm_sum_n_m {K : AbsRing} {V : NormedModule K} (a : nat -> V) (n m : nat) :
   norm (sum_n_m a n m) <= sum_n_m (fun n => norm (a n)) n m.
 Proof.
-  elim: n m a => /= [ | n IH] m a.
-  by apply norm_sum_n.
-  case: m => /= [ | m].
-  rewrite norm_zero ; by apply Rle_refl.
-  by apply IH.
+  case: (le_dec n m) => Hnm.
+  elim: m n a Hnm => /= [ | m IH] n a Hnm.
+  apply le_n_O_eq in Hnm.
+  rewrite -Hnm !sum_n_n.
+  by apply Rle_refl.
+  destruct n.
+  rewrite /sum_n !sum_n_Sm ; try by apply le_O_n.
+  eapply Rle_trans.
+  apply norm_triangle.
+  apply Rplus_le_compat_r, IH, le_O_n.
+  rewrite -!sum_n_m_S.
+  apply IH.
+  by apply le_S_n.
+  apply not_le in Hnm.
+  rewrite !sum_n_m_zero // norm_zero.
+  by apply Rle_refl.
 Qed.
 
-Lemma sum_n_le (a b : nat -> R) (n : nat) :
-  (forall k, a k <= b k)
-  -> sum_n a n <= sum_n b n.
-Proof.
-  elim: n => /= [ | n IH] H.
-  by apply H.
-  apply Rplus_le_compat.
-  by apply IH.
-  by apply H.
-Qed.
 Lemma sum_n_m_le (a b : nat -> R) (n m : nat) :
   (forall k, a k <= b k)
   -> sum_n_m a n m <= sum_n_m b n m.
 Proof.
-  elim: n m a b => /= [ | n IH] m a b H.
-  by apply sum_n_le.
-  case: m => /= [ | m].
+  intros H.
+  case: (le_dec n m) => Hnm.
+  elim: m n a b Hnm H => /= [ | m IH] n a b Hnm H.
+  apply le_n_O_eq in Hnm ; rewrite -Hnm.
+  rewrite !sum_n_n ; by apply H.
+  destruct n.
+  rewrite !sum_n_Sm ; try by apply le_O_n.
+  apply Rplus_le_compat.
+  apply IH => // ; by apply le_O_n.
+  by apply H.
+  rewrite -!sum_n_m_S.
+  apply IH => //.
+  by apply le_S_n.
+  apply not_le in Hnm.
+  rewrite !sum_n_m_zero //.
   by apply Rle_refl.
-  by apply IH.
 Qed.
 
 Lemma pow_n_pow :
