@@ -70,7 +70,6 @@ auto_derive_2.
 repeat split ; apply Du0.
 repeat split ; apply D2u0.
 unfold alpha20, Derive_n, Rminus.
-change eq with (@eq R).
 ring.
 Qed.
 
@@ -83,7 +82,6 @@ auto_derive_2.
 repeat split ; apply Du0.
 repeat split ; apply D2u0.
 unfold alpha02, Derive_n, Rminus, Rdiv.
-change eq with (@eq R).
 ring.
 Qed.
 
@@ -153,7 +151,6 @@ apply filter_forall.
 apply Cu1.
 repeat split ; apply Du1.
 unfold beta20, Rminus.
-change eq with (@eq R).
 ring.
 Qed.
 
@@ -171,7 +168,6 @@ apply Cu1.
 apply filter_forall.
 apply Cu1.
 unfold beta01, Rminus, Rdiv.
-change eq with (@eq R).
 now field.
 Qed.
 
@@ -190,7 +186,6 @@ apply filter_forall.
 apply Cu1.
 repeat split ; apply Du1.
 unfold beta02, Rminus, Rdiv.
-change eq with (@eq R).
 now field.
 Qed.
 
