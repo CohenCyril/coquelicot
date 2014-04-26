@@ -21,7 +21,7 @@ COPYING file for more details.
 
 Require Import Reals Rbar.
 Require Import ssreflect.
-Require Import Limit.
+Require Import Limit Iter.
 Require Import Hierarchy Continuity Equiv.
 Require Import Rcomplements.
 Open Scope R_scope.
@@ -320,7 +320,7 @@ Definition filterdiff (f : U -> V) F (l : U -> V) :=
 Definition ex_filterdiff (f : U -> V) F :=
   exists (l : U -> V), filterdiff f F l.
 
-Lemma filterdiff_cont {F} {FF : Filter F} (f : U -> V) :
+Lemma filterdiff_continuous_aux {F} {FF : Filter F} (f : U -> V) :
   ex_filterdiff f F -> forall x, is_filter_lim F x -> filterlim f F (locally (f x)).
 Proof.
   intros [l [Hl Df]] x Hx.
@@ -364,6 +364,12 @@ Proof.
   apply Rplus_le_lt_0_compat.
   by apply Hm.
   by apply Rlt_0_1.
+Qed.
+Lemma filterdiff_continuous (f : U -> V) x :
+  ex_filterdiff f (locally x) -> continuous f x.
+Proof.
+  intros.
+  by apply filterdiff_continuous_aux.
 Qed.
 
 Lemma filterdiff_locally {F} {FF : ProperFilter F} (f : U -> V) x l :
@@ -582,7 +588,7 @@ Proof.
     by apply Dg.
   intros x Hx.
   assert (Cf : filterlim f F (locally (f x))).
-    apply filterdiff_cont with (2 := Hx).
+    apply filterdiff_continuous_aux with (2 := Hx).
     eexists ; by apply Df.
   assert (is_domin (filtermap f F) (fun y : V => minus y (f x))
     (fun y : V => minus (minus (g y) (g (f x))) (lg (minus y (f x))))).
@@ -666,7 +672,7 @@ Proof.
   by [].
   apply filterdiff_locally with (f x).
   apply is_filter_lim_filtermap => //.
-  apply filterdiff_cont => //.
+  apply filterdiff_continuous => //.
   eexists ; by apply H.
   by [].
 Qed.
@@ -760,7 +766,7 @@ Proof.
   by [].
   apply filterdiff_locally with (f x, g x).
   apply (is_filter_lim_filtermap _ _ (fun t : T => (f t, g t))) => //.
-  apply (filterdiff_cont (fun t : T => (f t, g t))) => //.
+  apply (filterdiff_continuous (fun t : T => (f t, g t))) => //.
   apply ex_filterdiff_comp_2.
   by exists lf.
   by exists lg.
@@ -1088,6 +1094,23 @@ Proof.
   eexists.
   apply filterdiff_plus_fct ; eassumption.
 Qed.
+Lemma filterdiff_iter_plus_fct {I} {F} {FF : Filter F} 
+  (l : list I) (f : I -> U -> V) df (x : U) :
+  (forall (j : I), List.In j l -> filterdiff (f j) F (df j)) ->
+  filterdiff (fun y => iter plus zero l (fun j => f j y)) F
+    (fun x => iter plus zero l (fun j => df j x)).
+Proof.
+  intros Hf.
+  induction l ; simpl in * |- *.
+  apply filterdiff_const.
+  apply filterdiff_plus_fct.
+  apply Hf.
+  by left.
+  apply IHl ; intros.
+  apply Hf.
+  by right.
+Qed.
+
 
 Lemma filterdiff_minus_fct {F} {FF : Filter F} (f g : U -> V) (lf lg : U -> V) :
   filterdiff f F lf -> filterdiff g F lg ->
@@ -1224,6 +1247,14 @@ split ; case => d Df.
   apply f_equal.
   rewrite -linear_scal //=.
   apply f_equal, sym_eq, mult_one_r.
+Qed.
+
+Lemma ex_derive_continuous (f : K -> V) (x : K) :
+  ex_derive f x -> continuous f x.
+Proof.
+  intros.
+  apply @filterdiff_continuous.
+  by apply ex_derive_filterdiff.
 Qed.
 
 End Derive.
@@ -2757,6 +2788,29 @@ Proof.
     by (replace (n + 1)%nat with (S n) by ring).
 Qed.
 
+(** Constant function *)
+
+Lemma is_derive_n_const n a : forall x, is_derive_n (fun _ => a) (S n) x 0.
+Proof.
+  elim: n => /= [ | n IH] x.
+  by apply @is_derive_const.
+  eapply is_derive_ext.
+  intros t ; apply sym_equal, is_derive_unique, IH.
+  by apply @is_derive_const.
+Qed.
+Lemma ex_derive_n_const a n x: ex_derive_n (fun _  => a) n x.
+Proof.
+  case: n => //= ; case => //= [ | n].
+  apply ex_derive_const.
+  eapply ex_derive_ext.
+  intros t ; apply sym_equal, is_derive_unique, is_derive_n_const.
+  by apply ex_derive_const.
+Qed.
+Lemma Derive_n_const n a  : forall x, Derive_n (fun _ => a) (S n) x = 0.
+Proof.
+  intros x ; apply is_derive_n_unique, is_derive_n_const.
+Qed.
+
 (** ** Operations *)
 (** *** Additive operators *)
 (** Opposite *)
@@ -2878,6 +2932,127 @@ Proof.
   apply filter_imp with (2 := Hfn) ; by intuition.
   apply filter_imp with (2 := Hgn) ; by intuition.
   by apply: is_derive_plus.
+Qed.
+
+Lemma is_derive_n_iter_plus {I : Type} (l : list I) (f : I -> R -> R) (n: nat) (x : R) :
+  locally x (fun y => forall (j : I) (k : nat), List.In j l -> (k <= n)%nat -> ex_derive_n (f j) k y) -> 
+  is_derive_n (fun y => iter Rplus 0 l (fun j => f j y)) n x
+    (iter Rplus 0 l (fun j => Derive_n (f j) n x)).
+Proof.
+  intros H.
+  elim: n {-2}n x (le_refl n) H => [ | n IH] m x Hn Hx.
+  now replace m with O by intuition.
+  apply le_lt_eq_dec in Hn ; case: Hn => Hn.
+  apply IH => //.
+  by apply lt_n_Sm_le.
+  rewrite Hn in Hx |- * => {m Hn} /=.
+  eapply is_derive_ext_loc.
+  eapply filter_imp.
+  intros y Hy.
+  apply sym_equal, is_derive_n_unique.
+  apply IH.
+  by apply le_refl.
+  apply Hy.
+  apply locally_locally.
+  move: Hx ; apply filter_imp.
+  move => y Hy j k Hj Hk.
+  apply Hy => //.
+  now eapply le_trans, le_n_Sn.
+  eapply filterdiff_ext_lin.
+  apply @filterdiff_iter_plus_fct => //.
+  apply locally_filter.
+  intros.
+  apply Derive_correct.
+  apply ((locally_singleton _ _ Hx) j (S n) H (le_refl _)).
+  simpl => y.
+  clear ; elim: l => /= [ | h l IH].
+  by rewrite scal_zero_r.
+  by rewrite IH scal_distr_l.
+Qed.
+
+Lemma ex_derive_n_iter_plus {I : Type} (l : list I) (f : I -> R -> R) (n: nat) (x : R) :
+  locally x (fun y => forall (j : I) (k : nat), List.In j l -> (k <= n)%nat -> ex_derive_n (f j) k y) -> 
+  ex_derive_n (fun y => iter Rplus 0 l (fun j => f j y)) n x.
+Proof.
+  case: n => //= n H.
+  eexists.
+  by apply (is_derive_n_iter_plus l f (S n)).
+Qed.
+
+Lemma Derive_n_iter_plus {I : Type} (l : list I) (f : I -> R -> R) (n: nat) (x : R) :
+  locally x (fun y => forall (j : I) (k : nat), List.In j l -> (k <= n)%nat -> ex_derive_n (f j) k y) -> 
+  Derive_n (fun y => iter Rplus 0 l (fun j => f j y)) n x = 
+    iter Rplus 0 l (fun j => Derive_n (f j) n x).
+Proof.
+  intros H.
+  apply is_derive_n_unique.
+  by apply is_derive_n_iter_plus.
+Qed.
+
+Lemma is_derive_n_sum_n_m n m (f : nat -> R -> R) (k: nat) (x : R) :
+  locally x (fun t => forall l j , (n <= l <= m)%nat ->(j <= k)%nat -> ex_derive_n (f l) j t) -> 
+  is_derive_n (fun y => sum_n_m (fun j => f j y) n m) k x 
+    (sum_n_m (fun j => Derive_n (f j) k x) n m).
+Proof.
+  intros.
+  apply is_derive_n_iter_plus.
+  move: H ; apply filter_imp ; intros.
+  apply H => //.
+  by apply In_iota.
+Qed.
+Lemma ex_derive_n_sum_n_m n m (f : nat -> R -> R) (k: nat) (x : R) :
+  locally x (fun t => forall l j , (n <= l <= m)%nat ->(j <= k)%nat -> ex_derive_n (f l) j t) -> 
+  ex_derive_n (fun y => sum_n_m (fun j => f j y) n m) k x.
+Proof.
+  intros.
+  apply ex_derive_n_iter_plus.
+  move: H ; apply filter_imp ; intros.
+  apply H => //.
+  by apply In_iota.
+Qed.
+Lemma Derive_n_sum_n_m n m (f : nat -> R -> R) (k: nat) (x : R) :
+  locally x (fun t => forall l j , (n <= l <= m)%nat ->(j <= k)%nat -> ex_derive_n (f l) j t) -> 
+  Derive_n (fun y => sum_n_m (fun j => f j y) n m) k x
+    = sum_n_m (fun j => Derive_n (f j) k x) n m.
+Proof.
+  intros.
+  apply Derive_n_iter_plus.
+  move: H ; apply filter_imp ; intros.
+  apply H => //.
+  by apply In_iota.
+Qed.
+
+Lemma is_derive_n_sum_n n (f : nat -> R -> R) (k: nat) (x : R) :
+  locally x (fun t => forall l j , (l <= n)%nat ->(j <= k)%nat -> ex_derive_n (f l) j t) -> 
+  is_derive_n (fun y => sum_n (fun j => f j y) n) k x 
+    (sum_n (fun j => Derive_n (f j) k x) n).
+Proof.
+  intros.
+  apply is_derive_n_sum_n_m.
+  move: H ; apply filter_imp ; intros.
+  apply H => //.
+  by apply H0.
+Qed.
+Lemma ex_derive_n_sum_n n (f : nat -> R -> R) (k: nat) (x : R) :
+  locally x (fun t => forall l j , (l <= n)%nat ->(j <= k)%nat -> ex_derive_n (f l) j t) -> 
+  ex_derive_n (fun y => sum_n (fun j => f j y) n) k x.
+Proof.
+  intros.
+  apply ex_derive_n_sum_n_m.
+  move: H ; apply filter_imp ; intros.
+  apply H => //.
+  by apply H0.
+Qed.
+Lemma Derive_n_sum_n n (f : nat -> R -> R) (k: nat) (x : R) :
+  locally x (fun t => forall l j , (l <= n)%nat ->(j <= k)%nat -> ex_derive_n (f l) j t) -> 
+  Derive_n (fun y => sum_n (fun j => f j y) n) k x =
+    (sum_n (fun j => Derive_n (f j) k x) n).
+Proof.
+  intros.
+  apply Derive_n_sum_n_m.
+  move: H ; apply filter_imp ; intros.
+  apply H => //.
+  by apply H0.
 Qed.
 
 (** Subtraction of functions *)

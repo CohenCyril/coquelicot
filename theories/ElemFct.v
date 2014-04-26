@@ -125,6 +125,79 @@ Qed.
 
 (** * Power function *)
 
+Lemma is_derive_n_pow_smalli: forall i p x, (i <= p)%nat ->   
+  is_derive_n (fun x : R => x ^ p) i x 
+    (INR (fact p) / INR (fact (p - i)%nat) * x ^ (p - i)%nat).
+Proof.
+  elim => /= [ | i IH] p x Hip.
+  rewrite -minus_n_O ; field.
+  by apply INR_fact_neq_0.
+  eapply is_derive_ext.
+  intros t.
+  apply sym_equal, is_derive_n_unique, IH.
+  eapply le_trans, Hip ; by apply le_n_Sn.
+  evar_last.
+  apply is_derive_scal, is_derive_pow, is_derive_id.
+  rewrite NPeano.Nat.sub_succ_r.
+  change one with 1.
+  rewrite {1 2} (S_pred (p - i) O) /fact -/fact ?mult_INR.
+  field.
+  split.
+  apply INR_fact_neq_0.
+  apply not_0_INR, sym_not_eq, O_S.
+  by apply lt_minus_O_lt.
+Qed.
+Lemma Derive_n_pow_smalli: forall i p x, (i <= p)%nat ->   
+  Derive_n (fun x : R => x ^ p) i x 
+    = INR (fact p) / INR (fact (p - i)%nat) * x ^ (p - i)%nat.
+Proof.
+  intros.
+  now apply is_derive_n_unique, is_derive_n_pow_smalli.
+Qed.
+Lemma is_derive_n_pow_bigi: forall i p x,  (p < i) %nat -> 
+                         is_derive_n (fun x : R => x ^ p) i x 0.
+Proof.
+  elim => /=  [ | i IH] p x Hip.
+  by apply lt_n_O in Hip.
+  apply lt_n_Sm_le, le_lt_eq_dec in Hip.
+  case: Hip => [Hip | ->] ;
+  eapply is_derive_ext.
+  intros t ; by apply sym_equal, is_derive_n_unique, IH.
+  apply @is_derive_const.
+  intros t ; rewrite Derive_n_pow_smalli.
+  by rewrite minus_diag /=.
+  by apply le_refl.
+  by apply @is_derive_const.
+Qed.
+Lemma Derive_n_pow_bigi: forall i p x,  (p < i) %nat -> 
+                         Derive_n (fun x : R => x ^ p) i x = 0.
+Proof.
+  intros.
+  now apply is_derive_n_unique, is_derive_n_pow_bigi.
+Qed.
+
+Lemma Derive_n_pow i p x:
+  Derive_n (fun x : R => x ^ p) i x = 
+    match (le_dec i p) with
+    | left _ => INR (fact p) / INR (fact (p -i)%nat) * x ^ (p - i)%nat 
+    | right _ => 0
+    end.
+Proof.
+case: le_dec => H.
+by apply Derive_n_pow_smalli.
+by apply Derive_n_pow_bigi, not_le.
+Qed.
+
+Lemma ex_derive_n_pow i p x: ex_derive_n (fun x : R => x ^ p) i x.
+Proof.
+  case: i => //= i.
+  exists (Derive_n (fun x : R => x ^ p) (S i) x).
+  rewrite Derive_n_pow.
+  case: le_dec => Hip.
+  by apply (is_derive_n_pow_smalli (S i)).
+  apply (is_derive_n_pow_bigi (S i)) ; omega.
+Qed.
+
 Lemma is_RInt_pow :
   forall a b n,
   is_RInt (fun x => pow x n) a b (pow b (S n) / INR (S n) - pow a (S n) / INR (S n)).

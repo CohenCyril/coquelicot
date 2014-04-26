@@ -1049,30 +1049,19 @@ Proof.
   by rewrite mult_zero_r.
 Qed.
 
-
-(* Lemma sum_n_mult_r :
+Lemma sum_n_mult_r :
  forall (a : K) (u : nat -> K) (n : nat),
   sum_n (fun k => mult (u k) a) n = mult (sum_n u n) a.
 Proof.
-  intros a u n.
-  induction n ; simpl.
-  by [].
-  rewrite IHn.
-  apply eq_sym.
-  by apply mult_distr_r.
+  intros ; by apply sum_n_m_mult_r.
 Qed.
 
 Lemma sum_n_mult_l :
  forall (a : K) (u : nat -> K) (n : nat),
   sum_n (fun k => mult a (u k)) n = mult a (sum_n u n).
 Proof.
-  intros a u n.
-  induction n ; simpl.
-  by [].
-  rewrite IHn.
-  apply eq_sym.
-  by apply mult_distr_l.
-Qed. *)
+  intros ; by apply sum_n_m_mult_l.
+Qed.
 
 (** pow_n *)
 
@@ -3723,6 +3712,17 @@ Proof.
   by rewrite sum_Sn IHN.
 Qed.
 
+Lemma sum_n_m_const (n m : nat) (a : R) :
+  sum_n_m (fun _ => a) n m = INR (S m - n) * a.
+Proof.
+  rewrite /sum_n_m /iter_nat (iter_const _ a).
+  by rewrite -{2}(seq.size_iota n (S m - n)).
+Qed.
+Lemma sum_n_const (n : nat) (a : R) :
+  sum_n (fun _ => a) n = INR (S n) * a.
+Proof.
+  by rewrite /sum_n sum_n_m_const -minus_n_O.
+Qed.
 
 Lemma norm_sum_n_m {K : AbsRing} {V : NormedModule K} (a : nat -> V) (n m : nat) :
   norm (sum_n_m a n m) <= sum_n_m (fun n => norm (a n)) n m.

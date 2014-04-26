@@ -1679,6 +1679,41 @@ Qed.
 
 End Continuity.
 
+Section Continuity_op.
+
+Lemma continuous_opp {U : UniformSpace} {V : AbsRing} (f : U -> V) (x : U) :
+  continuous f x -> 
+  continuous (fun x : U => opp (f x)) x.
+Proof.
+  intros.
+  eapply filterlim_comp.
+  by apply H.
+  apply (filterlim_opp (f x)).
+Qed.
+
+Lemma continuous_plus {U : UniformSpace} {V : AbsRing} (f g : U -> V) (x : U) :
+  continuous f x -> continuous g x ->
+  continuous (fun x : U => plus (f x) (g x)) x.
+Proof.
+  intros.
+  eapply filterlim_comp_2.
+  by apply H.
+  by apply H0.
+  apply (filterlim_plus (f x) (g x)).
+Qed.
+
+Lemma continuous_minus {U : UniformSpace} {V : AbsRing} (f g : U -> V) (x : U) :
+  continuous f x -> continuous g x ->
+  continuous (fun x : U => minus (f x) (g x)) x.
+Proof.
+  intros.
+  apply continuous_plus.
+  apply H.
+  by apply continuous_opp.
+Qed.
+
+End Continuity_op.
+
 Section UnifCont.
 
 Context {V : UniformSpace}.

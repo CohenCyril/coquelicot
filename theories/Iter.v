@@ -59,6 +59,13 @@ Qed.
 
 End Iter.
 
+Lemma iter_const {I} (l : list I) (a : R) :
+  iter Rplus 0 l (fun _ => a) = INR (length l) * a.
+Proof.
+  elim: l => /= [ | h l ->].
+  by rewrite /= Rmult_0_l.
+  case: (length l) => [ | n] ; simpl ; ring.
+Qed.
 
 Lemma In_mem {T : eqType} (x : T) l :
   reflect (In x l) (in_mem x (mem l)).
