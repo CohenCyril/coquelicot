@@ -1805,8 +1805,7 @@ Ltac auto_derive :=
     auto_derive_fun f ;
     let H := fresh "H" in
     intro H ;
-    specialize (H v) ;
-    refine (eq_ind _ (is_derive _ _) (H _) _ _) ;
+    refine (@eq_ind R _ (is_derive f v) (H v _) l _) ;
     clear H
   | |- ex_derive ?f ?v =>
     eexists ;

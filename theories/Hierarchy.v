@@ -1512,38 +1512,46 @@ Proof.
   now exists eps.
 Qed.
 
-Lemma locally_ex_dec :
+Lemma locally_not' :
   forall (x : T) (P : T -> Prop),
-  (forall x, P x \/ ~P x) ->
-  locally x P ->
-  {d : posreal | forall y, ball x d y -> P y}.
+  not (forall eps : posreal, not (forall y, ball x eps y -> not (P y))) ->
+  {d : posreal | forall y, ball x d y -> not (P y)}.
 Proof.
-intros x P P_dec H.
-set (Q := fun z => z <= 1 /\ forall y, ball x z y -> P y).
-assert (He : exists e : posreal, Q e).
-  destruct H as [eps Heps].
-  exists (mkposreal _ (Rmin_stable_in_posreal eps (mkposreal _ Rlt_0_1))).
-  split.
-  apply Rmin_r.
-  intros y Hy.
-  apply Heps.
-  apply ball_le with (2 := Hy).
-  apply Rmin_l.
+intros x P H.
+set (Q := fun z => z <= 1 /\ forall y, ball x z y -> not (P y)).
 destruct (completeness Q) as [d [H1 H2]].
 - exists 1.
   now intros y [Hy _].
-- destruct He as [eps Heps].
-  now exists eps.
+- exists 0.
+  split.
+  apply Rle_0_1.
+  intros y Hy Py.
+  apply H.
+  intros eps He.
+  apply He with (2 := Py).
+  apply ball_le with (2 := Hy).
+  apply Rlt_le, eps.
 assert (Zd : 0 < d).
-  destruct He as [eps Heps].
-  apply Rlt_le_trans with (1 := cond_pos eps).
-  now apply H1.
+  apply Rnot_le_lt.
+  intros Hd.
+  apply H.
+  intros eps He.
+  apply (Rlt_irrefl (Rmin 1 eps)).
+  apply Rle_lt_trans with d.
+  apply H1.
+  split.
+  apply Rmin_l.
+  intros y By.
+  apply He.
+  apply ball_le with (2 := By).
+  apply Rmin_r.
+  apply Rle_lt_trans with (1 := Hd).
+  apply Rmin_case.
+  apply Rlt_0_1.
+  apply cond_pos.
 exists (mkposreal _ (is_pos_div_2 (mkposreal _ Zd))).
-simpl Rdiv.
-intros y Hy.
-destruct (P_dec y) as [HP|HP].
-exact HP.
-exfalso.
+simpl.
+intros y Hy HP.
 apply (Rlt_not_le _ _ (Rlt_eps2_eps _ Zd)).
 apply H2.
 intros z Hz.
@@ -1552,6 +1560,47 @@ contradict HP.
 apply Hz.
 apply ball_le with (2 := Hy).
 now apply Rlt_le.
+Qed.
+
+Lemma locally_not :
+  forall (x : T) (P : T -> Prop),
+  not (forall eps : posreal, not (forall y, ball x eps y -> not (P y))) ->
+  locally x (fun y => not (P y)).
+Proof.
+intros x P H.
+destruct (locally_not' x P H) as [eps He].
+now exists eps.
+Qed.
+
+Lemma locally_ex_not :
+  forall (x : T) (P : T -> Prop),
+  locally x (fun y => not (P y)) ->
+  {d : posreal | forall y, ball x d y -> not (P y)}.
+Proof.
+intros x P H.
+apply locally_not'.
+destruct H as [eps He].
+intros H.
+now apply (H eps).
+Qed.
+
+Lemma locally_ex_dec :
+  forall (x : T) (P : T -> Prop),
+  (forall x, P x \/ ~P x) ->
+  locally x P ->
+  {d : posreal | forall y, ball x d y -> P y}.
+Proof.
+intros x P P_dec H.
+destruct (locally_ex_not x (fun y => not (P y))) as [d Hd].
+apply: filter_imp H.
+intros y Py HP.
+now apply HP.
+exists d.
+intros y Hy.
+destruct (P_dec y) as [HP|HP].
+exact HP.
+exfalso.
+now apply (Hd y).
 Qed.
 
 Definition is_filter_lim (F : (T -> Prop) -> Prop) (x : T) :=
@@ -1642,7 +1691,6 @@ Proof.
   apply Cf in HP.
   now apply Fx.
 Qed.
-
 
 (** locally' *)
 
@@ -1768,6 +1816,85 @@ Proof.
 intros T U f D Cf OD x Dfx.
 apply Cf.
 now apply OD.
+Qed.
+
+(** ** Closed sets in uniform spaces *)
+
+Section Closed.
+
+Context {T : UniformSpace}.
+
+Definition closed (D : T -> Prop) :=
+  open (fun x : T => not (D x)).
+
+Lemma closed_ext :
+  forall D E : T -> Prop,
+  (forall x, D x <-> E x) ->
+  closed D -> closed E.
+Proof.
+intros D E H.
+apply open_ext.
+intros x.
+specialize (H x).
+intuition.
+Qed.
+
+Lemma closed_and :
+  forall D E : T -> Prop,
+  closed D -> closed E ->
+  closed (fun x => D x /\ E x).
+Proof.
+intros D E CD CE x Hx.
+apply locally_not.
+intros He.
+generalize (open_or _ _ CD CE).
+intros H.
+revert Hx.
+cut (not (not (D x) \/ not (E x))).
+now (clear ; intuition).
+intros Hx.
+destruct (H x Hx) as [eps H'].
+apply (He eps).
+intros y Hy Hy'.
+specialize (H' y Hy).
+clear -H' Hy' ; intuition.
+Qed.
+
+Lemma closed_or :
+  forall D E : T -> Prop,
+  closed D -> closed E ->
+  closed (fun x => D x \/ E x).
+Proof.
+intros D E CD CE.
+generalize (open_and _ _ CD CE).
+apply open_ext.
+clear ; intuition.
+Qed.
+
+Lemma closed_true :
+  closed (fun x : T => True).
+Proof.
+intros x Hx.
+now contradict Hx.
+Qed.
+
+Lemma closed_false :
+  closed (fun x : T => False).
+Proof.
+intros x _.
+now exists (mkposreal _ Rlt_0_1).
+Qed.
+
+End Closed.
+
+Lemma closed_comp :
+  forall {T U : UniformSpace} (f : T -> U) (D : U -> Prop),
+  (forall x, filterlim f (locally x) (locally (f x))) ->
+  closed D -> closed (fun x : T => D (f x)).
+Proof.
+intros T U f D Cf CD x Dfx.
+apply Cf with (P := fun x => not (D x)).
+now apply CD.
 Qed.
 
 (** ** Complete uniform spaces *)

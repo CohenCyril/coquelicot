@@ -118,7 +118,7 @@ Proof.
   by rewrite CV_Bessel1.
   rewrite !Derive_PSeries.
   case: n => [ | n] ; rewrite ?S_INR /Rdiv /= ;
-  simpl ; field.
+  field.
   by rewrite CV_Bessel1.
   by rewrite CV_radius_derive CV_Bessel1.
 Qed.
