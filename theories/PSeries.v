@@ -2716,7 +2716,7 @@ Proof.
   rewrite CV_radius_Int.
   by apply H.
   move => y Hy.
-  apply continuity_pt_ext_loc with (PSeries a).
+  apply continuous_ext_loc with (PSeries a).
 
   apply locally_interval with (Rbar_opp (CV_radius a)) (CV_radius a).
   apply Rbar_opp_lt ; rewrite Rbar_opp_involutive.
@@ -2731,7 +2731,7 @@ Proof.
   apply Rgt_not_eq, INRp1_pos.
   rewrite CV_radius_Int.
   apply (Rbar_abs_lt_between z) ; by split.
-  apply PSeries_continuity.
+  apply continuity_pt_filterlim, PSeries_continuity.
   by apply H.
 
   rewrite PSeries_0 /(PS_Int _ 0) ; by rewrite Rminus_0_r.

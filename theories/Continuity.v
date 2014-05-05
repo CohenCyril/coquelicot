@@ -1654,6 +1654,15 @@ unfold filtermap, within.
 now apply filter_imp.
 Qed.
 
+Lemma continuous_ext_loc (f g : T -> U) (x : T) :
+  locally x (fun y : T => g y = f y)
+  -> continuous g x -> continuous f x.
+Proof.
+  intros.
+  eapply filterlim_ext_loc.
+  by apply H.
+  by rewrite -(locally_singleton _ _ H).
+Qed.
 Lemma continuous_ext :
   forall (f g : T -> U) (x : T),
   (forall x, f x = g x) ->
@@ -1679,9 +1688,66 @@ Qed.
 
 End Continuity.
 
+Lemma continuous_comp {U V W : UniformSpace} (f : U -> V) (g : V -> W) (x : U) :
+  continuous f x -> continuous g (f x)
+  -> continuous (fun x => g (f x)) x.
+Proof.
+  by apply filterlim_comp.
+Qed.
+Lemma continuous_comp_2 {U V W X : UniformSpace}
+  (f : U -> V) (g : U -> W) (h : V -> W -> X) (x : U) :
+  continuous f x -> continuous g x
+  -> continuous (fun (x : V * W) => h (fst x) (snd x)) (f x,g x)
+  -> continuous (fun x => h (f x) (g x)) x.
+Proof.
+  intros Cf Cg Ch.
+  eapply filterlim_comp_2.
+  by apply Cf.
+  by apply Cg.
+  apply filterlim_locally => eps.
+  case: (proj1 (filterlim_locally _ _) Ch eps) => /= del Hdel.
+  rewrite {1}/ball /= /prod_ball /= in Hdel.
+  exists (fun y => ball (f x) (pos del) y) (fun y => ball (g x) (pos del) y).
+  apply locally_ball.
+  apply locally_ball.
+  move => y z /= Hy Hz.
+  apply (Hdel (y,z)).
+  by split.
+Qed.
+
+Lemma is_lim_comp_continuous (f g : R -> R) (x : Rbar) (l : R) :
+  is_lim f x l -> continuous g l
+    -> is_lim (fun x => g (f x)) x (g l).
+Proof.
+  intros Hf Hg.
+  apply filterlim_locally => eps.
+  destruct (proj1 (filterlim_locally _ _) Hg eps) as [e He] ; clear Hg.
+  eapply filter_imp.
+  intros y Hy.
+  apply He, Hy.
+  by apply Hf, locally_ball.
+Qed.
+
+Lemma continuous_fst {U V : UniformSpace} (x : U) (y : V) :
+  continuous (fst (B:=V)) (x, y).
+Proof.
+  intros P [d Hd].
+  exists d => z [/= Hz1 Hz2].
+  by apply Hd => /=.
+Qed.
+Lemma continuous_snd {U V : UniformSpace} (x : U) (y : V) :
+  continuous (snd (B:=V)) (x, y).
+Proof.
+  intros P [d Hd].
+  exists d => z [/= Hz1 Hz2].
+  by apply Hd => /=.
+Qed.
+
 Section Continuity_op.
 
-Lemma continuous_opp {U : UniformSpace} {V : AbsRing} (f : U -> V) (x : U) :
+Context {U : UniformSpace} {V : AbsRing}.
+
+Lemma continuous_opp (f : U -> V) (x : U) :
   continuous f x -> 
   continuous (fun x : U => opp (f x)) x.
 Proof.
@@ -1691,7 +1757,7 @@ Proof.
   apply (filterlim_opp (f x)).
 Qed.
 
-Lemma continuous_plus {U : UniformSpace} {V : AbsRing} (f g : U -> V) (x : U) :
+Lemma continuous_plus (f g : U -> V) (x : U) :
   continuous f x -> continuous g x ->
   continuous (fun x : U => plus (f x) (g x)) x.
 Proof.
@@ -1702,7 +1768,7 @@ Proof.
   apply (filterlim_plus (f x) (g x)).
 Qed.
 
-Lemma continuous_minus {U : UniformSpace} {V : AbsRing} (f g : U -> V) (x : U) :
+Lemma continuous_minus (f g : U -> V) (x : U) :
   continuous f x -> continuous g x ->
   continuous (fun x : U => minus (f x) (g x)) x.
 Proof.

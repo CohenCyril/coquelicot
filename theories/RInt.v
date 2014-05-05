@@ -5956,18 +5956,19 @@ Qed.
 
 Lemma is_RInt_Derive (f : R -> R) (a b : R) :
   (forall x, Rmin a b  <= x <= Rmax a b  -> ex_derive f x) ->
-  (forall x, Rmin a b  <= x <= Rmax a b  -> continuity_pt (Derive f) x) ->
+  (forall x, Rmin a b  <= x <= Rmax a b  -> continuous (Derive f) x) ->
   is_RInt (Derive f) a b (f b - f a).
 Proof.
   move => Df Cdf.
-  rewrite -(RInt_Derive _ _ _ Df Cdf).
+  rewrite -RInt_Derive.
   cut (ex_RInt (Derive f) a b).
     case => l H.
     by rewrite (is_RInt_unique _ _ _ _ H).
   apply @ex_RInt_continuous.
   move => x Hx.
-  apply continuity_pt_filterlim.
   by apply Cdf.
+  by [].
+  intros ; by apply continuity_pt_filterlim, Cdf.
 Qed.
 
 Lemma is_derive_RInt' :

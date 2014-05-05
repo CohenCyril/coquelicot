@@ -491,6 +491,13 @@ Proof.
 now intros [x| |] [y| |].
 Qed.
 
+Lemma ex_Rbar_plus_opp (x y : Rbar) :
+  ex_Rbar_plus x y -> ex_Rbar_plus (Rbar_opp x) (Rbar_opp y).
+Proof.
+  case: x => [x | | ] ;
+  case: y => [y | | ] => //.
+Qed.
+
 Lemma Rbar_plus_0_r (x : Rbar) : Rbar_plus x (Finite 0) = x.
 Proof.
   case: x => //= ; intuition.
@@ -534,7 +541,37 @@ Proof.
   case: y => [y | | ] //= ; apply f_equal ; ring.
 Qed.
 
+(** *** Rbar_minus *)
+
+Lemma Rbar_minus_eq_0 (x : Rbar) : Rbar_minus x x = 0.
+Proof.
+  case: x => //= x ; by apply f_equal, Rcomplements.Rminus_eq_0.
+Qed.
+Lemma Rbar_opp_minus (x y : Rbar) :
+  Rbar_opp (Rbar_minus x y) = Rbar_minus y x.
+Proof.
+  case: x => [x | | ] ;
+  case: y => [y | | ] //=.
+  by rewrite Ropp_minus_distr'.
+  by rewrite Ropp_0.
+  by rewrite Ropp_0.
+Qed.
+
 (** ** Multiplicative *)
+
+(** *** Rbar_inv *)
+
+Lemma Rbar_inv_opp (x : Rbar) :
+  x <> 0 -> Rbar_inv (Rbar_opp x) = Rbar_opp (Rbar_inv x).
+Proof.
+  case: x => [x | | ] /= Hx.
+  rewrite Ropp_inv_permute => //.
+  contradict Hx.
+  by rewrite Hx.
+  by rewrite Ropp_0.
+  by rewrite Ropp_0.
+Qed.
+
 (** *** Rbar_mult *)
 
 Lemma Rbar_mult'_comm (x y : Rbar) :
@@ -926,3 +963,19 @@ Proof.
   case: x => [x | | ] //=.
   by rewrite Rabs_Ropp.
 Qed.
+
+Lemma Rbar_abs_pos (x : Rbar) :
+  Rbar_le 0 x -> Rbar_abs x = x.
+Proof.
+  case: x => [x | | ] //= Hx.
+  by apply f_equal, Rabs_pos_eq.
+Qed.
+Lemma Rbar_abs_neg (x : Rbar) :
+  Rbar_le x 0 -> Rbar_abs x = Rbar_opp x.
+Proof.
+  case: x => [x | | ] //= Hx.
+  rewrite -Rabs_Ropp.
+  apply f_equal, Rabs_pos_eq.
+  now rewrite -Ropp_0 ; apply Ropp_le_contravar.
+Qed.
+

@@ -9,6 +9,7 @@ FILES = \
 	Equiv.v \
 	ElemFct.v \
 	Hierarchy.v \
+	Iter.v \
 	Limit.v \
 	Lub.v \
 	Markov.v \

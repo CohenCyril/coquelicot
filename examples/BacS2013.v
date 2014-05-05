@@ -129,7 +129,7 @@ Proof.
   case: Rle_lt_or_eq_dec (Rlt_not_eq _ _ Rlt_0_2) => //.
   apply (filterlim_Rbar_plus 2 _ m_infty).
   by [].
-  by apply is_lim_Rinv_0_right.
+  by apply filterlim_Rinv_0_right.
   by apply (filterlim_Rbar_mult m_infty p_infty).
 Qed.
 
@@ -205,7 +205,7 @@ Lemma f_eq_1_0_1 : exists x, 0 < x <= 1 /\ f x = 1.
 Proof.
   case: (IVT_Rbar_incr (fun x => f (Rabs x)) 0 1 m_infty 2 1).
     eapply filterlim_comp.
-    apply filterlim_abs_0.
+    apply filterlim_Rabs_0.
     by apply filterlim_f_0.
   apply is_lim_comp with 1.
   replace 2 with (f 1).
@@ -216,7 +216,7 @@ Proof.
   rewrite /f /fab ln_1 /= ; field.
   rewrite -{2}(Rabs_pos_eq 1).
   apply (is_lim_continuity Rabs 1).
-  by apply continuity_pt_Rabs.
+  by apply continuity_pt_filterlim, continuous_Rabs.
   by apply Rle_0_1.
   exists (mkposreal _ Rlt_0_1) => /= x H0x Hx.
   rewrite /ball /= /AbsRing_ball /= in H0x.
@@ -228,7 +228,7 @@ Proof.
   by apply Rlt_le, H0x.
   move => x H0x Hx1.
   apply (continuity_pt_comp Rabs).
-  by apply continuity_pt_Rabs.
+  by apply continuity_pt_filterlim, continuous_Rabs.
   rewrite Rabs_pos_eq.
   apply derivable_continuous_pt.
   exists (((2 - 2) - 2 * ln x) / x ^ 2) ; apply is_derive_Reals, Dfab.
@@ -317,7 +317,7 @@ Proof.
   by apply Haux1.
   by apply Rlt_0_1.
   move => x Hx.
-  apply continuity_pt_ext_loc with f.
+  apply continuity_pt_filterlim, continuity_pt_ext_loc with f.
   apply Hierarchy.locally_interval with 0 p_infty.
   apply Rlt_le_trans with (2 := proj1 Hx).
   apply Rmin_case.

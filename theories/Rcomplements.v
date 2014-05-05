@@ -202,6 +202,14 @@ rewrite H2.
 apply Rle_refl.
 Qed.
 
+Lemma Rinv_lt_cancel (x y : R) :
+  0 < y -> / y < / x -> x < y.
+Proof.
+  intro Hy ; move/Rlt_not_le => Hxy.
+  apply Rnot_le_lt ; contradict Hxy.
+  by apply Rinv_le_contravar.
+Qed.
+
 (** * Rdiv *)
 (** Rewritings *)
 

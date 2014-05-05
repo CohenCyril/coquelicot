@@ -1646,7 +1646,7 @@ Defined.
 Global Instance UnaryDiff_Rabs : UnaryDiff' Rabs.
 Proof.
   exists (fun x => sign x) (fun x => x <> 0).
-  move => x Hx0 ; by apply is_derive_abs.
+  move => x Hx0 ; by apply filterdiff_Rabs.
 Defined.
 Global Instance UnaryDiff_Rsqr : UnaryDiff Rsqr.
 Proof.
