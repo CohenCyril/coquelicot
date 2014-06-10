@@ -1247,8 +1247,7 @@ Record mixin_of (M : Type) := Mixin {
   ball : M -> R -> M -> Prop ;
   ax1 : forall x (e : posreal), ball x e x ;
   ax2 : forall x y e, ball x e y -> ball y e x ;
-  ax3 : forall x y z e1 e2, ball x e1 y -> ball y e2 z -> ball x (e1 + e2) z ;
-  ax4 : forall x e1 e2, e1 <= e2 -> forall y, ball x e1 y -> ball x e2 y
+  ax3 : forall x y z e1 e2, ball x e1 y -> ball y e2 z -> ball x (e1 + e2) z
 }.
 
 Notation class_of := mixin_of (only parsing).
@@ -1303,7 +1302,16 @@ Lemma ball_le :
   forall (x : M) (e1 e2 : R), e1 <= e2 ->
   forall (y : M), ball x e1 y -> ball x e2 y.
 Proof.
-apply UniformSpace.ax4.
+intros x e1 e2 H y H1.
+destruct H.
+assert (e2 - e1 > 0).
+by apply Rgt_minus.
+assert (ball y {| pos := (e2-e1); cond_pos := (H0) |} y).
+apply ball_center.
+replace e2 with (e1 + (e2 - e1)).
+apply ball_triangle with y ; assumption.
+by apply Rplus_minus.
+by rewrite <- H.
 Qed.
 
 End UniformSpace1.
@@ -1351,16 +1359,9 @@ rewrite <- plus_assoc.
 now rewrite plus_opp_l plus_zero_r.
 Qed.
 
-Lemma AbsRing_ball_le :
-  forall (x : K) (e1 e2 : R), e1 <= e2 ->
-  forall y : K, AbsRing_ball x e1 y -> AbsRing_ball x e2 y.
-Proof.
-  intros x e1 e2 He y H.
-  apply: Rlt_le_trans H He.
-Qed.
 
 Definition AbsRing_UniformSpace_mixin :=
-  UniformSpace.Mixin _ _ AbsRing_ball_center AbsRing_ball_sym AbsRing_ball_triangle AbsRing_ball_le.
+  UniformSpace.Mixin _ _ AbsRing_ball_center AbsRing_ball_sym AbsRing_ball_triangle.
 
 Canonical AbsRing_UniformSpace :=
   UniformSpace.Pack K AbsRing_UniformSpace_mixin K.
@@ -1400,16 +1401,9 @@ Proof.
   now apply ball_triangle with (y t).
 Qed.
 
-Lemma fct_ball_le :
-  forall (x : T -> U) (e1 e2 : R), e1 <= e2 ->
-  forall y : T -> U, fct_ball x e1 y -> fct_ball x e2 y.
-Proof.
-  intros x e1 e2 He y H t.
-  now apply ball_le with e1.
-Qed.
 
 Definition fct_UniformSpace_mixin :=
-  UniformSpace.Mixin _ _ fct_ball_center fct_ball_sym fct_ball_triangle fct_ball_le.
+  UniformSpace.Mixin _ _ fct_ball_center fct_ball_sym fct_ball_triangle.
 
 Canonical fct_UniformSpace :=
   UniformSpace.Pack (T -> U) fct_UniformSpace_mixin (T -> U).
@@ -2854,18 +2848,11 @@ intros x y z e1 e2 [H1 H2] [H3 H4].
 split ; eapply ball_triangle ; eassumption.
 Qed.
 
-Lemma prod_ball_le :
-  forall (x : U * V) (e1 e2 : R), e1 <= e2 ->
-  forall y : U * V, prod_ball x e1 y -> prod_ball x e2 y.
-Proof.
-intros x e1 e2 H y [H1 H2].
-split ; now apply ball_le with (1 := H).
-Qed.
 
 End prod_UniformSpace.
 
 Definition prod_UniformSpace_mixin (U V : UniformSpace) :=
-  UniformSpace.Mixin (U * V) _ prod_ball_center prod_ball_sym prod_ball_triangle prod_ball_le.
+  UniformSpace.Mixin (U * V) _ prod_ball_center prod_ball_sym prod_ball_triangle.
 
 Canonical prod_UniformSpace (U V : UniformSpace) :=
   UniformSpace.Pack (U * V) (prod_UniformSpace_mixin U V) (U * V).
