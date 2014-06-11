@@ -380,8 +380,8 @@ Proof.
   replace (a (S n) - 0)
     with (sum_n_m a (S n) (S n)).
   apply Hs ; by intuition.
-  
-Admitted. (** Admitted. *)
+  by rewrite sum_n_n Rminus_0_r.
+Qed.
 
 Lemma ex_series_Rabs (a : nat -> R) :
   ex_series (fun n => Rabs (a n)) -> ex_series a.

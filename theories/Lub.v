@@ -145,46 +145,26 @@ Proof.
     rewrite Hx ; apply pos_INR.
     apply Hx.
   set (g n := projT1 (completeness _ (Hub n) (Hne n))).
-  cut ({N : nat | forall n, (g n <= INR N)} + {(forall N, exists n, (INR N < g n))}).
-  intro H ; destruct H as[(N, H) | H].
-  left ; exists (INR N) ; intros x Hx ; destruct x as [x | | ] ; intuition.
+  destruct (Markov_cor3 g) as [[M HM] | HM].
+  left ; exists M ; intros x Hx ; destruct x as [x | | ] ; intuition.
   case (Rlt_le_dec 0 x) ; intro Hx0.
-  apply Rle_trans with (2 := H (S (nfloor1 _ Hx0))) ; clear H ;
+  apply Rle_trans with (2 := HM (S (nfloor1 _ Hx0))) ; clear HM ;
   unfold nfloor1 ; case (nfloor1_ex _ _) ; simpl ; intros n Hn ;
   unfold g ; case (completeness _ _ _) ; intros l (Hl, Hl') ; apply Hl ;
   right ; intuition ; rewrite S_INR ; apply H0.
-  apply Rle_trans with (1 := Hx0), pos_INR.
+  apply Rle_trans with (1 := Hx0).
+  eapply Rle_trans, (HM O).
+  unfold g ; case (completeness _ _ _) ; intros l (Hl, Hl') ; apply Hl.
+  by left.
   easy.
-  right ; intro M ; case (Rlt_le_dec 0 M) ; intro Hm0.
-  case (H (S (nfloor1 M Hm0))) ; clear H ; intros n Hn.
+  right ; intro M.
+  case (HM (Rmax 0 M)) ; clear HM ; intros n Hn.
   contradict Hn.
-  unfold nfloor1 ; case (nfloor1_ex _ _) ; intros m Hm ; simpl projT1.
-  rewrite S_INR ; apply Rle_not_lt, Rle_trans with (2 := proj2 Hm).
   unfold g ; case (completeness _ _ _) ; simpl ; intros x (Hx, Hx').
-  apply Hx' ; intros x0 Hx0 ; case Hx0 ; clear Hx0 ; intros Hx0.
-  rewrite Hx0 ; apply Rlt_le, Hm0.
+  apply Rle_not_lt, Hx' ; intros x0 Hx0 ; case Hx0 ; clear Hx0 ; intros Hx0.
+  rewrite Hx0 ; by apply Rmax_l.
+  eapply Rle_trans, Rmax_r.
   apply (Hn (Finite x0)), Hx0.
-  case (H O) ; clear H ; intros n Hn ; contradict Hn.
-  unfold g ; case (completeness _ _ _) ; simpl ; intros m (Hm, Hm').
-  apply Rle_not_lt, Hm' ; intros x Hx ; case Hx ; clear Hx ; intro Hx.
-  apply Req_le, Hx.
-  apply Rle_trans with (2 := Hm0), (Hn (Finite x)), Hx.
-  cut ({n : nat | forall n0 : nat, g n0 <= INR n} +
-  {(forall n : nat, ~ (forall n0 : nat, g n0 <= INR n))}).
-  intro H ; destruct H as [(N, H)|H].
-  left ; exists N ; auto.
-  right ; intro N ; generalize (H N) ; clear H ; intro H.
-  apply Markov_cor1.
-  intro n ; apply Rlt_dec.
-  contradict H ; intro n ; apply Rnot_lt_le, H.
-  apply (Markov (fun N => forall n : nat, g n <= INR N)).
-  intro N.
-  cut ({n : nat | INR N < g n} + {(forall n : nat, ~ INR N < g n)}).
-  intro H ; destruct H as [(n, H)|H].
-  right ; contradict H ; apply Rle_not_lt, H.
-  left ; intro n ; apply Rnot_lt_le, H.
-  apply (Markov (fun n => INR N < g n)).
-  intro n ; apply Rlt_dec.
 Qed.
 
 Lemma Rbar_lb_dec (E : Rbar -> Prop) (Hm : ~ E m_infty) :
@@ -537,54 +517,185 @@ Qed.
 
 (** Existence *)
 
-Lemma ex_lub_Rbar_ne (E : R -> Prop) (Hex : exists x, E x) :
+Lemma ex_lub_Rbar (E : R -> Prop) :
   {l : Rbar | is_lub_Rbar E l}.
 Proof.
-  case: (Rbar_ex_lub_ne (fun x => is_finite x /\ E x)) => [ | | l Hl].
-  right ; case => //.
-  case: Hex => x Hx ; by exists x.
-  exists l ; by apply is_lub_Rbar_correct.
+  rename E into F.
+
+  set (E (m n : nat) (x : R) :=
+    x = - INR m \/ (F x /\ x <= INR n)).
+  assert (E_b : forall m n, bound (E m n)).
+    intros m n.
+    exists (INR n) => x ; case => [-> | [_ Hx]] //.
+    eapply Rle_trans, pos_INR.
+    apply Rminus_le_0 ; ring_simplify ; by apply pos_INR.
+  assert (E_ex : forall m n, exists x : R, E m n x).
+    intros m n ; exists (- INR m) ; by left.
+  set (u m n := projT1 (completeness (E m n) (E_b m n) (E_ex m n))).
+
+  destruct (Markov (fun m => forall M : R, exists n : nat, M < u m n)) as [[m Hm] | Hm].
+    intros m.
+    destruct (Markov_cor3 (fun n => u m n)) as [[M HM] | HM].
+    right => H.
+    case: (H M) => n.
+    by apply Rle_not_lt.
+    by left.
+(* sup = p_infty *)
+  exists p_infty ; split.
+  + by [].
+  + destruct b as [b | | ] => //= Hb.
+    - case: (Hm (Rmax (- INR m) b)) => n.
+      apply Rle_not_lt.
+      rewrite /u ; case: completeness => l Hl /=.
+      apply Hl => x Hx.
+      case: Hx => [ -> | [Hx _]].
+      by apply Rmax_l.
+      eapply Rle_trans, Rmax_r.
+      by apply Hb.
+      unfold is_ub_Rbar in Hb.
+    - case: (Hm (- INR m)) => n.
+      apply Rle_not_lt.
+      rewrite /u ; case: completeness => l Hl /=.
+      apply Hl => x Hx.
+      case: Hx => [ -> | [Hx _]].
+      by apply Rle_refl.
+      by specialize (Hb _ Hx).
+
+  assert (F_b : bound F).
+    specialize (Hm O).
+    destruct (Markov_cor3 (u O)) as [[M HM] | HM] => //.
+    exists M => x Hx.
+    destruct (nfloor_ex (Rmax 0 x)) as [n Hn].
+    by apply Rmax_l.
+    rewrite -S_INR in Hn.
+    eapply Rle_trans, (HM (S n)).
+    rewrite /u ; case: completeness => l Hl /=.
+    apply Hl ; right.
+    split => //.
+    eapply Rlt_le, Rle_lt_trans, Hn.
+    by apply Rmax_r.
+    clear -F_b.
+
+  set (E (m : nat) (x : R) := x = - INR m \/ F x).
+  assert (E_b : forall m, bound (E m)).
+    intros m.
+    case: F_b => l Hl.
+    exists (Rmax l (- INR m)) => x ; case => [ -> | Hx].
+    by apply Rmax_r.
+    eapply Rle_trans, Rmax_l.
+    by apply Hl.
+  assert (E_ex : forall m, exists x : R, E m x).
+    intros m ; exists (- INR m) ; by left.
+  set (u m := - projT1 (completeness (E m) (E_b m) (E_ex m))).
+
+  destruct (Markov_cor3 u) as [[M HM] | HM] ; last first.
+(* sup = m_infty *)
+  exists m_infty ; split => // x Fx.
+  case: (HM (-x)) => n Hn.
+  contradict Hn ; apply Rle_not_lt, Ropp_le_contravar.
+  case: completeness => l Hl /=.
+  apply Hl.
+  by right.
+(* sup = Finite l *)
+  destruct (Markov (fun n => - u n <> - INR n)) as [ [n Hn] | Hn].
+    intros n.
+    case: (Req_EM_T (- u n) (- INR n)) => H.
+    by right.
+    by left.
+  exists (- u n).
+  move: Hn ; rewrite /u ; case: completeness => l Hl /= H ;
+  rewrite Ropp_involutive in H |- *.
+  split.
+  intros x Hx.
+  apply Hl ; by right.
+  assert (- INR n < l).
+  case: Hl => Hl _.
+  case: (Hl (-INR n)) => //=.
+  by left.
+  intros H0 ; contradict H.
+  by rewrite -H0.
+  case => [b | | ] //= Hb.
+  + apply Hl => x Hx.
+    case: Hx => Hx ; first last.
+    by apply Hb.
+    rewrite Hx.
+    apply Rnot_lt_le ; contradict H0.
+    apply Rle_not_lt.
+    apply Hl => y Hy.
+    case: Hy => Hy.
+    rewrite Hy ; apply Rle_refl.
+    eapply Rle_trans, Rlt_le, H0.
+    by apply Hb.
+  + contradict H.
+    apply Rle_antisym ; apply Hl.
+    intros x Hx.
+    case: Hx => [-> | Hx] //.
+    by apply Rle_refl.
+    by apply Hb in Hx.
+    by left.
+  assert (forall n, u n = INR n).
+  intros n.
+  rewrite -(Ropp_involutive (u n)) -(Ropp_involutive (INR n)).
+  apply f_equal.
+  specialize (Hn n).
+  case: (Req_dec (- u n) (- INR n)) => // H.
+  clear Hn.
+  destruct (nfloor_ex (Rmax 0 M)) as [n Hn].
+  by apply Rmax_l.
+  specialize (HM (S n)).
+  contradict HM.
+  apply Rlt_not_le.
+  rewrite H S_INR.
+  eapply Rle_lt_trans, Hn.
+  by apply Rmax_r.
 Qed.
-Lemma ex_glb_Rbar_ne (E : R -> Prop) (Hex : exists x, E x) :
+Lemma ex_glb_Rbar (E : R -> Prop) :
   {l : Rbar | is_glb_Rbar E l}.
 Proof.
-  case: (Rbar_ex_glb_ne (fun x => is_finite x /\ E x)) => [ | | l Hl].
-  right ; by case.
-  case: Hex => x Hx ; by exists x.
-  exists l ; by apply is_glb_Rbar_correct.
+  case: (ex_lub_Rbar (fun x => E (- x))) => l Hl.
+  exists (Rbar_opp l).
+  split => x Hx ;
+  apply Rbar_opp_le ;
+  rewrite Rbar_opp_involutive ;
+  apply Hl.
+  by rewrite Ropp_involutive.
+  intros y Hy.
+  now apply Rbar_opp_le ;
+  rewrite Rbar_opp_involutive ;
+  apply Hx.
 Qed.
 
 (** Functions *)
 
-Definition Lub_Rbar_ne (E : R -> Prop) (Hex : exists x, E x) := projT1 (ex_lub_Rbar_ne E Hex).
-Definition Glb_Rbar_ne (E : R -> Prop) (Hex : exists x, E x) := projT1 (ex_glb_Rbar_ne E Hex).
+Definition Lub_Rbar (E : R -> Prop) := projT1 (ex_lub_Rbar E).
+Definition Glb_Rbar (E : R -> Prop) := projT1 (ex_glb_Rbar E).
 
-Lemma is_lub_Rbar_ne_unique (E : R -> Prop) (pr : exists x : R, E x) (l : Rbar) :
-  is_lub_Rbar E l -> Lub_Rbar_ne E pr = l.
+Lemma is_lub_Rbar_unique (E : R -> Prop) (l : Rbar) :
+  is_lub_Rbar E l -> Lub_Rbar E = l.
 Proof.
-  move => Hl ; rewrite /Lub_Rbar_ne ; case: ex_lub_Rbar_ne => l' /= Hl'.
+  move => Hl ; rewrite /Lub_Rbar ; case: ex_lub_Rbar => l' /= Hl'.
   apply Rbar_le_antisym.
   by apply Hl', Hl.
   by apply Hl, Hl'.
 Qed.
-Lemma is_glb_Rbar_ne_unique (E : R -> Prop) (pr : exists x : R, E x) (l : Rbar) :
-  is_glb_Rbar E l -> Glb_Rbar_ne E pr = l.
+Lemma is_glb_Rbar_unique (E : R -> Prop) (l : Rbar) :
+  is_glb_Rbar E l -> Glb_Rbar E = l.
 Proof.
-  move => Hl ; rewrite /Glb_Rbar_ne ; case: ex_glb_Rbar_ne => l' /= Hl'.
+  move => Hl ; rewrite /Glb_Rbar ; case: ex_glb_Rbar => l' /= Hl'.
   apply Rbar_le_antisym.
   by apply Hl, Hl'.
   by apply Hl', Hl.
 Qed.
 
-Lemma Lub_Rbar_ne_correct (E : R -> Prop) (pr : exists x : R, E x) :
-  is_lub_Rbar E (Lub_Rbar_ne E pr).
+Lemma Lub_Rbar_correct (E : R -> Prop) :
+  is_lub_Rbar E (Lub_Rbar E).
 Proof.
-  rewrite /Lub_Rbar_ne ; by case: ex_lub_Rbar_ne => l /= Hl.
+  rewrite /Lub_Rbar ; by case: ex_lub_Rbar => l /= Hl.
 Qed.
-Lemma Glb_Rbar_ne_correct (E : R -> Prop) (pr : exists x : R, E x) :
-  is_glb_Rbar E (Glb_Rbar_ne E pr).
+Lemma Glb_Rbar_correct (E : R -> Prop) :
+  is_glb_Rbar E (Glb_Rbar E).
 Proof.
-  rewrite /Glb_Rbar_ne ; by case: ex_glb_Rbar_ne => l /= Hl.
+  rewrite /Glb_Rbar ; by case: ex_glb_Rbar => l /= Hl.
 Qed.
 
 (** Order *)
@@ -619,64 +730,36 @@ Proof.
   move => b Hb ; apply: lub1 ; apply (is_lb_Rbar_subset E2) ; [apply H | apply Hb].
 Qed.
 
-Lemma Lub_Rbar_ne_eqset (E1 E2 : R -> Prop) pr1 pr2 :
-  (forall x, E1 x <-> E2 x) -> Lub_Rbar_ne E1 pr1 = Lub_Rbar_ne E2 pr2.
+Lemma Lub_Rbar_eqset (E1 E2 : R -> Prop) :
+  (forall x, E1 x <-> E2 x) -> Lub_Rbar E1 = Lub_Rbar E2.
 Proof.
-  move => H ; rewrite {2}/Lub_Rbar_ne ;
-  case: ex_lub_Rbar_ne => {pr2} l /= Hl.
-  apply is_lub_Rbar_ne_unique.
+  move => H ; rewrite {2}/Lub_Rbar ;
+  case: ex_lub_Rbar => l /= Hl.
+  apply is_lub_Rbar_unique.
   move: Hl ; by apply is_lub_Rbar_eqset.
 Qed.
-Lemma Glb_Rbar_ne_eqset (E1 E2 : R -> Prop) pr1 pr2 :
-  (forall x, E1 x <-> E2 x) -> Glb_Rbar_ne E1 pr1 = Glb_Rbar_ne E2 pr2.
+Lemma Glb_Rbar_eqset (E1 E2 : R -> Prop) :
+  (forall x, E1 x <-> E2 x) -> Glb_Rbar E1 = Glb_Rbar E2.
 Proof.
-  move => H ; rewrite {2}/Glb_Rbar_ne ;
-  case: (ex_glb_Rbar_ne E2 pr2) => {pr2} l2 H2 /=.
-  apply is_glb_Rbar_ne_unique.
+  move => H ; rewrite {2}/Glb_Rbar ;
+  case: (ex_glb_Rbar E2) => l2 H2 /=.
+  apply is_glb_Rbar_unique.
   move: H2 ; by apply is_glb_Rbar_eqset.
 Qed.
 
-Lemma Lub_Rbar_ne_pr :
-  forall E (pr1 pr2 : exists x, E x),
-  Lub_Rbar_ne E pr1 = Lub_Rbar_ne E pr2.
-Proof.
-intros E pr1 pr2.
-by apply Lub_Rbar_ne_eqset.
-Qed.
-Lemma Glb_Rbar_ne_pr :
-  forall E (pr1 pr2 : exists x, E x),
-  Glb_Rbar_ne E pr1 = Glb_Rbar_ne E pr2.
-Proof.
-intros E pr1 pr2.
-by apply Glb_Rbar_ne_eqset.
-Qed.
-
-
 (** * Emptiness is decidable *)
 
-Lemma not_empty_0 (E : R -> Prop) :
-  let F := fun x => x = 0 \/ E x in exists x, F x.
-Proof.
-  intros ; exists 0 ; left ; reflexivity.
-Qed.
-
-Lemma not_empty_1 (E : R -> Prop) :
-  let F := fun x => x = 1 \/ E x in exists x, F x.
-Proof.
-  intros ; exists 1 ; left ; reflexivity.
-Qed.
-
 Definition Empty (E : R -> Prop) :=
-  Lub_Rbar_ne _ (not_empty_0 E) = Glb_Rbar_ne _ (not_empty_0 E)
-  /\ Lub_Rbar_ne _ (not_empty_1 E) = Glb_Rbar_ne _ (not_empty_1 E).
+  Lub_Rbar (fun x => x = 0 \/ E x) = Glb_Rbar (fun x => x = 0 \/ E x)
+  /\ Lub_Rbar (fun x => x = 1 \/ E x) = Glb_Rbar (fun x => x = 1 \/ E x).
 
 Lemma Empty_correct_1 (E : R -> Prop) :
   Empty E -> forall x, ~ E x.
 Proof.
   case => E0 E1 x Ex.
-  rewrite /Lub_Rbar_ne /Glb_Rbar_ne in E0 ;
-  case : (ex_lub_Rbar_ne (fun x : R => x = 0 \/ E x) (not_empty_0 E)) E0 => /= s0 Hs0 ;
-  case : (ex_glb_Rbar_ne (fun x : R => x = 0 \/ E x) (not_empty_0 E)) => i0 Hi0 /= E0.
+  rewrite /Lub_Rbar /Glb_Rbar in E0 ;
+  case : (ex_lub_Rbar (fun x : R => x = 0 \/ E x)) E0 => /= s0 Hs0 ;
+  case : (ex_glb_Rbar (fun x : R => x = 0 \/ E x)) => i0 Hi0 /= E0.
   have : (x = 0) ; last move => {s0 Hs0 i0 Hi0 E0}.
   apply Rle_antisym.
   apply (Rbar_le_trans x s0 0).
@@ -685,9 +768,9 @@ Proof.
   apply (Rbar_le_trans 0 s0 x).
   apply Hs0 ; by left.
   rewrite E0 ; apply Hi0 ; by right.
-  rewrite /Lub_Rbar_ne /Glb_Rbar_ne in E1 ;
-  case : (ex_lub_Rbar_ne (fun x : R => x = 1 \/ E x) (not_empty_1 E)) E1 => /= s1 Hs1 ;
-  case : (ex_glb_Rbar_ne (fun x : R => x = 1 \/ E x) (not_empty_1 E)) => i1 Hi1 /= E1.
+  rewrite /Lub_Rbar /Glb_Rbar in E1 ;
+  case : (ex_lub_Rbar (fun x : R => x = 1 \/ E x)) E1 => /= s1 Hs1 ;
+  case : (ex_glb_Rbar (fun x : R => x = 1 \/ E x)) => i1 Hi1 /= E1.
   have : (x = 1) ; last move => {s1 Hs1 i1 Hi1 E1}.
   apply Rle_antisym.
   apply (Rbar_le_trans x s1 1).
@@ -703,11 +786,11 @@ Lemma Empty_correct_2 (E : R -> Prop) :
   (forall x, ~ E x) -> Empty E.
 Proof.
   move => H ; split ;
-  rewrite /Glb_Rbar_ne /Lub_Rbar_ne ;
-  [ case : (ex_lub_Rbar_ne (fun x : R => x = 0 \/ E x) (not_empty_0 E)) => s0 Hs0 ;
-  case : (ex_glb_Rbar_ne (fun x : R => x = 0 \/ E x) (not_empty_0 E)) => i0 Hi0 /=
-  | case : (ex_lub_Rbar_ne (fun x : R => x = 1 \/ E x) (not_empty_1 E)) => s1 Hs1 ;
-  case : (ex_glb_Rbar_ne (fun x : R => x = 1 \/ E x) (not_empty_1 E)) => i1 Hi1 /=].
+  rewrite /Glb_Rbar /Lub_Rbar ;
+  [ case : (ex_lub_Rbar (fun x : R => x = 0 \/ E x)) => s0 Hs0 ;
+  case : (ex_glb_Rbar (fun x : R => x = 0 \/ E x)) => i0 Hi0 /=
+  | case : (ex_lub_Rbar (fun x : R => x = 1 \/ E x)) => s1 Hs1 ;
+  case : (ex_glb_Rbar (fun x : R => x = 1 \/ E x)) => i1 Hi1 /=].
   have : (i0 = Finite 0) ; last move => -> ;
   apply: Rbar_le_antisym.
   apply Hi0 ; by left.
@@ -733,9 +816,9 @@ Qed.
 Lemma Empty_dec (E : R -> Prop) :
   {~Empty E}+{Empty E}.
 Proof.
-  case: (Rbar_eq_dec (Lub_Rbar_ne _ (not_empty_0 E)) (Glb_Rbar_ne _ (not_empty_0 E))) => H0 ;
+  case: (Rbar_eq_dec (Lub_Rbar (fun x => x = 0 \/ E x)) (Glb_Rbar (fun x => x = 0 \/ E x))) => H0 ;
     [ | left].
-  case: (Rbar_eq_dec (Lub_Rbar_ne _ (not_empty_1 E)) (Glb_Rbar_ne _ (not_empty_1 E))) => H1 ;
+  case: (Rbar_eq_dec (Lub_Rbar (fun x => x = 1 \/ E x)) (Glb_Rbar (fun x => x = 1 \/ E x))) => H1 ;
     [by right | left].
   contradict H1 ; apply H1.
   contradict H0 ; apply H0.
@@ -752,71 +835,14 @@ Proof.
   by apply: Empty_correct_1.
 Qed.
 
-(** * Other definitions for lub and glb *)
-
-Lemma Lub_Rbar_ex (E : R -> Prop) (pr : Decidable.decidable (exists x, E x)) :
-  {l : Rbar | is_lub_Rbar E l}.
-Proof.
-  intros.
-  destruct (not_Empty_dec _ pr).
-  destruct (ex_lub_Rbar_ne _ e) as (l,lub).
-  exists l ; apply lub.
-  exists m_infty ; split.
-  intros x Ex ; contradict Ex ; apply n.
-  now intros ; destruct b.
-Qed.
-
-Definition Lub_Rbar (E : R -> Prop) (pr : Decidable.decidable (exists x, E x)) :=
-  projT1 (Lub_Rbar_ex E pr).
-
-Lemma Lub_Rbar_eq_seq (E1 E2 : R -> Prop) pr1 pr2 :
-  (forall x, E1 x <-> E2 x) -> Lub_Rbar E1 pr1 = Lub_Rbar E2 pr2.
-Proof.
-  move => H ; rewrite /Lub_Rbar ;
-  case: (Lub_Rbar_ex E1 pr1) => {pr1} l1 H1 ;
-  case: (Lub_Rbar_ex E2 pr2) => {pr2} l2 H2 /=.
-  apply Rbar_le_antisym ;
-  [ apply (is_lub_Rbar_subset E2 E1)
-  | apply (is_lub_Rbar_subset E1 E2)] => //= x ; by apply H.
-Qed.
-
-Lemma Glb_Rbar_ex (E : R -> Prop) (pr : Decidable.decidable (exists x, E x)) :
-  {l : Rbar | is_glb_Rbar E l}.
-Proof.
-  intros.
-  destruct (not_Empty_dec _ pr).
-  destruct (ex_glb_Rbar_ne _ e) as (l,lub).
-  exists l ; apply lub.
-  exists p_infty ; split.
-  intros x Ex ; contradict Ex ; apply n.
-  now intros ; destruct b.
-Qed.
-
-Definition Glb_Rbar (E : R -> Prop) (pr : Decidable.decidable (exists x, E x)) :=
-  projT1 (Glb_Rbar_ex E pr).
-
-Lemma Glb_Rbar_eq_seq (E1 E2 : R -> Prop) pr1 pr2 :
-  (forall x, E1 x <-> E2 x) -> Glb_Rbar E1 pr1 = Glb_Rbar E2 pr2.
-Proof.
-  move => H ; rewrite /Glb_Rbar ;
-  case: (Glb_Rbar_ex E1 pr1) => {pr1} l1 H1 ;
-  case: (Glb_Rbar_ex E2 pr2) => {pr2} l2 H2 /=.
-  apply Rbar_le_antisym ;
-  [ apply (is_glb_Rbar_subset E1 E2)
-  | apply (is_glb_Rbar_subset E2 E1)] => //= x ; by apply H.
-Qed.
-
 Lemma uniqueness_dec P : (exists ! x : R, P x) -> {x : R | P x}.
 Proof.
   move => H.
-  have H' : exists x, P x.
-    case: H => x Hx.
-    exists x ; by apply Hx.
-  exists (Lub_Rbar_ne _ H').
+  exists (Lub_Rbar P).
   case: H => x Hx.
-  replace (real (Lub_Rbar_ne P H')) with (real (Finite x)).
+  replace (real (Lub_Rbar P)) with (real (Finite x)).
   by apply Hx.
-  apply f_equal, sym_eq, is_lub_Rbar_ne_unique.
+  apply f_equal, sym_eq, is_lub_Rbar_unique.
   split.
   move => y Hy.
   right ; by apply sym_eq, Hx.

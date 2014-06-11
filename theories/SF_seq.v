@@ -2386,12 +2386,12 @@ Qed.
 
 Definition Sup_fct (f : R -> R) (a b : R) : Rbar :=
   match Req_EM_T a b with
-    | right Hab => Lub_Rbar_ne _ (ex_Im_fct f a b Hab)
+    | right Hab => Lub_Rbar (fun y => exists x, y = f x /\ Rmin a b < x < Rmax a b)
     | left _ => Finite 0
   end.
 Definition Inf_fct (f : R -> R) (a b : R) : Rbar :=
   match Req_EM_T a b with
-    | right Hab => Glb_Rbar_ne _ (ex_Im_fct f a b Hab)
+    | right Hab => Glb_Rbar (fun y => exists x, y = f x /\ Rmin a b < x < Rmax a b)
     | left _ => Finite 0
   end.
 
@@ -2404,7 +2404,7 @@ Proof.
   by [].
   by apply sym_equal in Hab.
   by apply sym_equal in Hba.
-  apply Lub_Rbar_ne_eqset => x ;
+  apply Lub_Rbar_eqset => x ;
   by rewrite Rmin_comm Rmax_comm.
 Qed.
 Lemma Inf_fct_bound (f : R -> R) (a b : R) :
@@ -2416,7 +2416,7 @@ Proof.
   by [].
   by apply sym_equal in Hab.
   by apply sym_equal in Hba.
-  apply Glb_Rbar_ne_eqset => x ;
+  apply Glb_Rbar_eqset => x ;
   by rewrite Rmin_comm Rmax_comm.
 Qed.
 
@@ -2430,8 +2430,8 @@ Proof.
   rewrite /Rmin /Rmax ;
   case: Rle_dec (Req_le _ _ Hab) => //= _ _ Hx.
   contradict Hx ; by apply Rle_not_lt, Req_le.
-  rewrite /Lub_Rbar_ne ;
-  case: ex_lub_Rbar_ne => l lub ;
+  rewrite /Lub_Rbar ;
+  case: ex_lub_Rbar => l lub ;
   apply lub ; exists x ; split ; by [].
 Qed.
 Lemma Inf_fct_le (f : R -> R) (a b : R) (x : R) : (Rmin a b < x < Rmax a b) ->
@@ -2443,8 +2443,8 @@ Proof.
   rewrite /Rmin /Rmax ;
   case: Rle_dec (Req_le _ _ Hab) => //= _ _ Hx.
   contradict Hx ; by apply Rle_not_lt, Req_le.
-  rewrite /Glb_Rbar_ne ;
-  case: ex_glb_Rbar_ne => l lub ;
+  rewrite /Glb_Rbar ;
+  case: ex_glb_Rbar => l lub ;
   apply lub ; exists x ; split ; by [].
 Qed.
 
@@ -2454,8 +2454,8 @@ Lemma Sup_fct_maj (f : R -> R) (a b : R) (M : R) :
 Proof.
   rewrite /Sup_fct ; case: Req_EM_T => Hab Hf.
   by [].
-  rewrite /Lub_Rbar_ne ;
-  case: ex_lub_Rbar_ne ; case => [l | | ] [lub ub] /=.
+  rewrite /Lub_Rbar ;
+  case: ex_lub_Rbar ; case => [l | | ] [lub ub] /=.
   by [].
   case: (ub (Finite M)) => //.
   move => _ [x [-> Hx]].
@@ -2483,8 +2483,8 @@ Lemma Inf_fct_min (f : R -> R) (a b : R) (m : R) :
 Proof.
   rewrite /Inf_fct ; case: Req_EM_T => Hab Hf.
   by [].
-  rewrite /Glb_Rbar_ne ;
-  case: ex_glb_Rbar_ne ; case => [l | | ] [lub ub] /=.
+  rewrite /Glb_Rbar ;
+  case: ex_glb_Rbar ; case => [l | | ] [lub ub] /=.
   by [].
   case: (lub (f((a+b)/2))) => //.
   exists ((a + b) / 2) ; split.

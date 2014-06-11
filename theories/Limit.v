@@ -224,31 +224,28 @@ Qed.
 
 Lemma ex_sup_seq (u : nat -> Rbar) : {l : Rbar | is_sup_seq u l}.
 Proof.
+  case (Markov (fun n => p_infty = u n)) as [[np Hnp] | Hnp].
+    intro n0 ; destruct (u n0) as [r | | ].
+    now right.
+    left ; auto.
+    now right.
+  exists p_infty => M.
+  exists np ; by rewrite -Hnp.
   case (Markov (fun n => exists x, Finite x = u n)).
   intro n ; destruct (u n) as [x | | ].
   left ; exists x ; auto.
   right ; now intros (x,Hx).
   right ; now intros (x,Hx).
   intro H ; case (Rbar_ex_lub_ne (fun x => exists n, x = u n)).
-  case (Markov (fun n => p_infty = u n)).
-  intro n0 ; destruct (u n0) as [r | | ].
-  now right.
-  left ; auto.
-  now right.
-  intros (n0,Hn0) ; left ; exists n0 ; auto.
-  intros H0 ; right ; intros (n0, Hn0) ; generalize Hn0 ; apply H0.
+  right ; intros (n0, Hn0) ; generalize Hn0 ; apply Hnp.
   destruct H as (n, (x, Hnx)).
   exists x ; exists n ; auto.
   intros l Hl ; exists l ; apply Rbar_is_lub_sup_seq ; auto.
   intro H.
-  case (Markov (fun n => p_infty = u n)).
-  intros n ; apply Rbar_eq_dec.
-  intros (n, Hn) ; exists p_infty ; intro M ; exists n ; rewrite <-Hn ; simpl ; auto.
-  intro H0 ; exists m_infty.
-  assert (H1 : forall n, u n = m_infty).
-  intro n ; generalize (H n) (H0 n) ; case (u n) ; intuition ;
-  contradict H1 ; exists r ; auto.
-  intros M n ; rewrite H1 ; simpl ; auto.
+  exists m_infty => M n.
+  case: (u n) (Hnp n) (H n) => [un | | ] //= Hnp' H'.
+  contradict H'.
+  by exists un.
 Qed.
 
 Lemma ex_inf_seq (u : nat -> Rbar) : {l : Rbar | is_inf_seq u l}.

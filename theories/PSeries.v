@@ -227,21 +227,21 @@ Proof.
 Qed.
 
 Definition CV_radius (a : nat -> R) : Rbar :=
-  Lub_Rbar_ne (CV_disk a) (ex_intro _ 0 (CV_disk_0 _)).
+  Lub_Rbar (CV_disk a).
 
 Lemma CV_radius_ge_0 (a : nat -> R) :
   Rbar_le (Finite 0) (CV_radius a).
 Proof.
-  rewrite /CV_radius /Lub_Rbar_ne ;
-  case: ex_lub_Rbar_ne => /= l Hl.
+  rewrite /CV_radius /Lub_Rbar ;
+  case: ex_lub_Rbar => /= l Hl.
   apply Hl, CV_disk_0.
 Qed.
 
 Lemma CV_radius_bounded (a : nat -> R) :
   is_lub_Rbar (fun r => exists M, forall n, Rabs (a n * r ^ n) <= M) (CV_radius a).
 Proof.
-  rewrite /CV_radius /Lub_Rbar_ne ;
-  case: ex_lub_Rbar_ne => cv /= [ub lub].
+  rewrite /CV_radius /Lub_Rbar ;
+  case: ex_lub_Rbar => cv /= [ub lub].
   split.
 
   move => r /= [M Hr].
@@ -364,8 +364,8 @@ Proof.
   assert (H : ~ ~ ex_series (fun n => Rabs (a n * x ^ n))).
     contradict Ha.
     apply Rbar_le_not_lt.
-    rewrite /CV_radius /Lub_Rbar_ne ;
-    case: ex_lub_Rbar_ne => l /= [ub lub].
+    rewrite /CV_radius /Lub_Rbar ;
+    case: ex_lub_Rbar => l /= [ub lub].
     apply: lub => r Hr.
     apply Rnot_lt_le ; contradict Ha.
     move: Hr.
@@ -420,9 +420,9 @@ Lemma CV_radius_ext (a b : nat -> R) :
   (forall n, a n = b n) -> CV_radius a = CV_radius b.
 Proof.
   move => Heq.
-  rewrite /CV_radius /Lub_Rbar_ne.
-  case: ex_lub_Rbar_ne => la [ub_a lub_a] ;
-  case: ex_lub_Rbar_ne => lb [ub_b lub_b] /=.
+  rewrite /CV_radius /Lub_Rbar.
+  case: ex_lub_Rbar => la [ub_a lub_a] ;
+  case: ex_lub_Rbar => lb [ub_b lub_b] /=.
   apply Rbar_le_antisym.
   apply lub_a => x Hx.
   apply ub_b ; move: Hx.
@@ -512,8 +512,8 @@ Lemma CV_radius_finite_DAlembert (a : nat -> R) (l : R) :
 Proof.
   move => Ha Hl Hda.
   apply Rbar_le_antisym.
-  rewrite /CV_radius /Lub_Rbar_ne ;
-  case: ex_lub_Rbar_ne => /= cv [ub lub].
+  rewrite /CV_radius /Lub_Rbar ;
+  case: ex_lub_Rbar => /= cv [ub lub].
   apply lub => x Hax.
   case: (Rle_lt_dec x 0) => Hx.
   apply Rlt_le, Rle_lt_trans with 0.
@@ -543,8 +543,8 @@ Proof.
 
   apply Rbar_not_lt_le.
   move : (CV_disk_outside a).
-  rewrite /CV_radius /Lub_Rbar_ne ;
-  case: ex_lub_Rbar_ne ;
+  rewrite /CV_radius /Lub_Rbar ;
+  case: ex_lub_Rbar ;
   case => [cv | | ] /= [ub lub] Hnot_ex H ; try by auto.
   suff H0 : cv < ((cv+/l)/2) < /l.
   absurd (ex_series (fun n => Rabs (a n * ((cv+/l)/2)^n))).
@@ -588,8 +588,8 @@ Lemma CV_radius_infinite_DAlembert (a : nat -> R) :
   CV_radius a = p_infty.
 Proof.
   move => Ha Hda.
-  rewrite /CV_radius /Lub_Rbar_ne ;
-  case: ex_lub_Rbar_ne ; case => [cv | | ] //= [ub lub] ;
+  rewrite /CV_radius /Lub_Rbar ;
+  case: ex_lub_Rbar ; case => [cv | | ] //= [ub lub] ;
   have : False => //.
   have H : CV_disk a (cv + 1).
     have H : 0 < cv + 1.
@@ -666,7 +666,7 @@ Lemma CV_radius_Reals_1 (a : nat -> R) (r : posreal) :
 Proof.
   case => An [l [H H0]].
   have H1 : is_lub_Rbar (CV_disk a) (CV_radius a).
-    rewrite /CV_radius /Lub_Rbar_ne ; by case: ex_lub_Rbar_ne.
+    rewrite /CV_radius /Lub_Rbar ; by case: ex_lub_Rbar.
   have H2 : forall (y : R), 0 < y < r -> (CV_disk a y).
     move => y Hy.
     apply @ex_series_le with An.
@@ -823,12 +823,12 @@ Proof.
     with (CV_disk (PS_plus a b))
     (fun x => (CV_disk a x) /\ (CV_disk b x)).
   move => x [Ha Hb] ; by apply CV_disk_plus.
-  rewrite /CV_radius /Lub_Rbar_ne ; by case: ex_lub_Rbar_ne.
+  rewrite /CV_radius /Lub_Rbar ; by case: ex_lub_Rbar.
 
   have Ha : is_lub_Rbar (fun x : R => CV_disk a x) (CV_radius a).
-    rewrite /CV_radius /Lub_Rbar_ne ; by case: ex_lub_Rbar_ne.
+    rewrite /CV_radius /Lub_Rbar ; by case: ex_lub_Rbar.
   have Hb : is_lub_Rbar (fun x : R => CV_disk b x) (CV_radius b).
-    rewrite /CV_radius /Lub_Rbar_ne ; by case: ex_lub_Rbar_ne.
+    rewrite /CV_radius /Lub_Rbar ; by case: ex_lub_Rbar.
   
   split.
   intros y [Hay Hby].
@@ -952,9 +952,9 @@ Qed.
 Lemma CV_radius_scal (c : R) (a : nat -> R) : c <> 0 ->
   (CV_radius (PS_scal c a)) = (CV_radius a).
 Proof.
-  rewrite /CV_radius /Lub_Rbar_ne ;
-  case: ex_lub_Rbar_ne => la [ub_a lub_a] ;
-  case: ex_lub_Rbar_ne => lc [ub_c lub_c] /= Hc.
+  rewrite /CV_radius /Lub_Rbar ;
+  case: ex_lub_Rbar => la [ub_a lub_a] ;
+  case: ex_lub_Rbar => lc [ub_c lub_c] /= Hc.
   apply Rbar_le_antisym.
   apply lub_a => x Hx.
   apply ub_c.
@@ -1652,9 +1652,9 @@ Proof.
     replace (PSeries a cv) with (PSeries (fun n : nat => a n * cv ^ n) 1).
     apply (Hw 1 (fun n : nat => a n * cv ^ n)) ; clear Hw.
     apply Rbar_le_antisym.
-    move: Hcv ; rewrite /CV_radius /Lub.Lub_Rbar_ne /CV_disk.
-    case: Lub.ex_lub_Rbar_ne => l /= Hl Hl1 ;
-    case: Lub.ex_lub_Rbar_ne => l' /= Hl'.
+    move: Hcv ; rewrite /CV_radius /Lub.Lub_Rbar /CV_disk.
+    case: Lub.ex_lub_Rbar => l /= Hl Hl1 ;
+    case: Lub.ex_lub_Rbar => l' /= Hl'.
     rewrite Hl1 in Hl => {l Hl1}.
     apply Hl'.
     intros x Hx.

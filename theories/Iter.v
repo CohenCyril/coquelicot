@@ -176,5 +176,3 @@ Qed.
 
 End Iter_nat.
 
-(** * sums *)
-

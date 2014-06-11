@@ -4360,10 +4360,9 @@ have Hfin : forall i, (S i < size (unif_part a b n))%nat ->
     by apply INRp1_pos.
     by apply Rgt_not_eq, INRp1_pos.
   move: (Rlt_not_eq _ _ H) ; case: Req_EM_T => // H0 _.
-  move: (ex_Im_fct _ _ _ _) ;
   rewrite /Rmin /Rmax ;
-  case: Rle_dec (Rlt_le _ _ H) => // _ _ H1.
-  rewrite /Lub_Rbar_ne ; case: ex_lub_Rbar_ne ; case => [l | | ] [ub lub] /=.
+  case: Rle_dec (Rlt_le _ _ H) => // _ _.
+  rewrite /Lub_Rbar ; case: ex_lub_Rbar ; case => [l | | ] [ub lub] /=.
   by [].
   case: (lub (Finite (Rmax (M - m') (-(-M - M'))))) => //.
   move => _ [x [-> Hx]].
@@ -4396,8 +4395,20 @@ have Hfin : forall i, (S i < size (unif_part a b n))%nat ->
   apply Rmult_le_compat_r.
   by apply Rlt_le, Rgt_minus.
   apply le_INR ; by intuition.
-  case : H1 => y Hy.
-  by case: (ub y Hy).
+  move: (a + INR i * (b - a) / (INR n + 1)) (a + INR (S i) * (b - a) / (INR n + 1)) ub H.
+  clear => a0 b0 ub H.
+  specialize (ub (Rabs (f ((a0 + b0) / 2) - phi ((a0 + b0) / 2)))) ; simpl in ub.
+  assert (exists x : R,
+    Rabs (f ((a0 + b0) / 2) - phi ((a0 + b0) / 2)) = Rabs (f x - phi x) /\
+    a0 < x < b0).
+  eexists ; split => //.
+  pattern b0 at 3 ;
+  replace b0 with ((b0 + b0) / 2) by field ;
+  pattern a0 at 1 ;
+  replace a0 with ((a0 + a0) / 2) by field.
+  split ; apply Rmult_lt_compat_r ; intuition.
+  by [].
+  
   apply SSR_leq ; by intuition.
   apply SSR_leq ; by intuition.
 
@@ -4449,7 +4460,7 @@ have Hfin' : forall t, is_finite (SF_sup_fun (fun t : R => Rabs (f t - phi t)) a
   case: Rlt_dec => // _.
   elim: sx x0 x1 Hsort Ht_a Ht_b Hi => [ | x2 sx IH] x0 x1 Hsort /= Ht_a Ht_b Hi.
   case: Rle_dec => // _.
-  rewrite /Sup_fct /Lub_Rbar_ne.
+  rewrite /Sup_fct /Lub_Rbar.
   have H : x0 < x1.
     apply Rlt_trans with t.
     apply Rnot_lt_le in Ht_a ; case: Ht_a => Ht_a.
@@ -4462,7 +4473,7 @@ have Hfin' : forall t, is_finite (SF_sup_fun (fun t : R => Rabs (f t - phi t)) a
     by apply lt_n_Sn.
   move: (Rlt_not_eq _ _ H) ;
   case: Req_EM_T => // H0 _.
-  case: ex_lub_Rbar_ne => l lub /=.
+  case: ex_lub_Rbar => l lub /=.
   apply lub ; exists t ; split.
   by [].
   rewrite /Rmin /Rmax ; case: Rle_dec (proj1 Hsort) => // _ _ ;
@@ -4476,7 +4487,7 @@ have Hfin' : forall t, is_finite (SF_sup_fun (fun t : R => Rabs (f t - phi t)) a
   contradict Ht_b ; apply (Hi 1%nat).
   by apply lt_n_Sn.
   case: Rlt_dec => Hx1.
-   rewrite /Sup_fct /Lub_Rbar_ne.
+   rewrite /Sup_fct /Lub_Rbar.
   have H : x0 < x1.
     apply Rlt_trans with t.
     apply Rnot_lt_le in Ht_a ; case: Ht_a => Ht_a.
@@ -4486,7 +4497,7 @@ have Hfin' : forall t, is_finite (SF_sup_fun (fun t : R => Rabs (f t - phi t)) a
     by apply Hx1.
   move: (Rlt_not_eq _ _ H) ;
   case: Req_EM_T => // H0 _.
-  case: ex_lub_Rbar_ne => l lub /=.
+  case: ex_lub_Rbar => l lub /=.
   apply lub ; exists t ; split.
   by [].
   rewrite /Rmin /Rmax ; case: Rle_dec (proj1 Hsort) => // _ _ ;
@@ -4915,10 +4926,10 @@ have Hfin' : forall t, is_finite (SF_sup_fun (fun t : R => Rabs (f t - phi t)) a
   by apply Rge_refl.
   apply Rle_ge, Rplus_le_le_0_compat.
   apply Rmult_le_pos.
-  rewrite /Sup_fct /Lub_Rbar_ne.
+  rewrite /Sup_fct /Lub_Rbar.
   case: Req_EM_T => Hx0.
   by apply Rle_refl.
-  case: ex_lub_Rbar_ne ;
+  case: ex_lub_Rbar ;
   case => [l | | ] [ub lub] /=.
   apply Rle_trans with (Rabs (f ((x0+x1)/2) - phi ((x0+x1)/2))).
   apply Rabs_pos.
@@ -5044,7 +5055,7 @@ have Hfin' : forall t, is_finite (SF_sup_fun (fun t : R => Rabs (f t - phi t)) a
   rewrite /Sup_fct /=.
   move: (Rlt_not_eq _ _ (proj1 Hlt)).
   case: Req_EM_T => // Hx1 _.
-  rewrite /Lub_Rbar_ne ; case: ex_lub_Rbar_ne ;
+  rewrite /Lub_Rbar ; case: ex_lub_Rbar ;
     case => [l | | ] [ub lub] ; simpl.
     split.
     move => _ [t [Ht ->]].

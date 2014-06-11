@@ -1803,27 +1803,23 @@ Proof.
   assert (forall (x : R), {delta : posreal | forall y : R,
     ball x delta y -> ~~ ball (f x) (pos_div_2 eps) (f y)}).
     move: (pos_div_2 eps) => {eps} eps x.
-    assert (exists d : R, forall y : R, ball x d y -> ball (f x) eps (f y)).
-      case: (proj1 (filterlim_locally _ _) (Cf x) eps) => d Hd.
-      exists d.
-      by apply Hd.
-    assert (Rbar_lt 0 (Lub.Lub_Rbar_ne _ H)).
-      case: (Lub.Lub_Rbar_ne_correct _ H).
-      move: (Lub.Lub_Rbar_ne _ _) => {H} l H1 H2.
+    assert (Rbar_lt 0 (Lub.Lub_Rbar (fun d => forall y : R, ball x d y -> ball (f x) eps (f y)))).
+      case: (Lub.Lub_Rbar_correct (fun d => forall y : R, ball x d y -> ball (f x) eps (f y))).
+      move: (Lub.Lub_Rbar _) => l H1 H2.
       case: (proj1 (filterlim_locally _ _) (Cf x) eps) => d Hd.
       eapply Rbar_lt_le_trans, H1.
       by apply d.
       by apply Hd.
-    assert (0 < Rbar_min 1 (Lub.Lub_Rbar_ne _ H)).
-      move: H0 ; case: (Lub.Lub_Rbar_ne _ _) => [l | | ] //= H0.
+    assert (0 < Rbar_min 1 (Lub.Lub_Rbar (fun d => forall y : R, ball x d y -> ball (f x) eps (f y)))).
+      move: H ; case: (Lub.Lub_Rbar (fun d => forall y : R, ball x d y -> ball (f x) eps (f y))) => [l | | ] //= H0.
       apply Rmin_case => //.
       by apply Rlt_0_1.
       by apply Rlt_0_1.
-    set d := mkposreal _ H1.
+    set d := mkposreal _ H0.
     exists d.
     unfold d ; clear d ; simpl.
-    case: (Lub.Lub_Rbar_ne_correct _ H).
-    move: (Lub.Lub_Rbar_ne _ _) H0 => {H H1} l H0 H1 H2 y Hy.
+    case: (Lub.Lub_Rbar_correct (fun d => forall y : R, ball x d y -> ball (f x) eps (f y))).
+    move: (Lub.Lub_Rbar (fun d => forall y : R, ball x d y -> ball (f x) eps (f y))) H => {H0} l H0 H1 H2 y Hy.
     contradict Hy.
     apply Rle_not_lt.
     apply (Rbar_le_trans (Finite _) l (Finite _)).

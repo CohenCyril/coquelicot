@@ -200,6 +200,33 @@ Proof.
   contradict H1 ; apply H0.
 Qed.
 
+Lemma Markov_cor3 : forall (u : nat -> R),
+  {M : R | forall n, u n <= M} + {(forall M : R, exists n, M < u n)}.
+Proof.
+  intros u.
+  destruct (Markov (fun M => forall n, u n <= (INR M))) as [ [M MHM] | HM ].
+  intros M.
+  destruct (Markov (fun n => INR M < u n)) as [[n Hn] | Hn].
+  intros n.
+  apply Rlt_dec.
+  right ; contradict Hn.
+  by apply Rle_not_lt.
+  left ; intro n.
+  by apply Rnot_lt_le.
+  left ; by exists (INR M).
+  right ; intros M.
+  destruct (nfloor_ex (Rbasic_fun.Rmax 0 M)) as [m Hm].
+  by apply Rbasic_fun.Rmax_l.
+  specialize (HM (S m)).
+  apply Markov_cor1.
+  intros n ; by apply Rlt_dec.
+  contradict HM ; intros n.
+  rewrite S_INR.
+  eapply Rle_trans, Rlt_le, Hm.
+  eapply Rle_trans, Rbasic_fun.Rmax_r.
+  by apply Rnot_lt_le.
+Qed.  
+
 (** * Excluded-middle and decidability *)
 
 Lemma EM_dec :
