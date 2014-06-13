@@ -231,21 +231,9 @@ Proof.
     now right.
   exists p_infty => M.
   exists np ; by rewrite -Hnp.
-  case (Markov (fun n => exists x, Finite x = u n)).
-  intro n ; destruct (u n) as [x | | ].
-  left ; exists x ; auto.
-  right ; now intros (x,Hx).
-  right ; now intros (x,Hx).
-  intro H ; case (Rbar_ex_lub_ne (fun x => exists n, x = u n)).
+  case (Rbar_ex_lub (fun x => exists n, x = u n)).
   right ; intros (n0, Hn0) ; generalize Hn0 ; apply Hnp.
-  destruct H as (n, (x, Hnx)).
-  exists x ; exists n ; auto.
   intros l Hl ; exists l ; apply Rbar_is_lub_sup_seq ; auto.
-  intro H.
-  exists m_infty => M n.
-  case: (u n) (Hnp n) (H n) => [un | | ] //= Hnp' H'.
-  contradict H'.
-  by exists un.
 Qed.
 
 Lemma ex_inf_seq (u : nat -> Rbar) : {l : Rbar | is_inf_seq u l}.
@@ -346,22 +334,22 @@ Proof.
   by apply (is_inf_seq_unique u), is_inf_seq_ext with v.
 Qed.
 
-Lemma Rbar_sup_eq_lub (u : nat -> Rbar) Hp Hex :
-  Sup_seq u = Rbar_lub_ne (fun x => exists n, x = u n) Hp Hex.
+Lemma Rbar_sup_eq_lub (u : nat -> Rbar) Hp :
+  Sup_seq u = Rbar_lub (fun x => exists n, x = u n) Hp.
 Proof.
   rewrite /Sup_seq ; case: (ex_sup_seq _) => /= s Hs.
-  rewrite /Rbar_lub_ne ; case: (Rbar_ex_lub_ne _ _ _) => /= l Hl.
-  apply (Rbar_is_lub_unique
+  rewrite /Rbar_lub ; case: (Rbar_ex_lub _ _) => /= l Hl.
+  apply (Rbar_is_lub_eq
     (fun x : Rbar => exists n : nat, x = u n)
     (fun x : Rbar => exists n : nat, x = u n)) => // ;
   by apply is_sup_seq_lub.
 Qed.
-Lemma Inf_eq_glb (u : nat -> Rbar) Hm Hex :
-  Inf_seq u = Rbar_glb_ne (fun x => exists n, x = u n) Hm Hex.
+Lemma Inf_eq_glb (u : nat -> Rbar) Hm :
+  Inf_seq u = Rbar_glb (fun x => exists n, x = u n) Hm.
 Proof.
   rewrite /Inf_seq ; case: (ex_inf_seq _) => /= s Hs.
-  rewrite /Rbar_glb_ne ; case: (Rbar_ex_glb_ne _ _ _) => /= l Hl.
-  apply (Rbar_is_glb_unique
+  rewrite /Rbar_glb ; case: (Rbar_ex_glb _ _) => /= l Hl.
+  apply (Rbar_is_glb_eq
     (fun x : Rbar => exists n : nat, x = u n)
     (fun x : Rbar => exists n : nat, x = u n)) => // ;
   by apply is_inf_seq_glb.
@@ -383,7 +371,7 @@ Proof.
   repeat (case: ex_inf_seq ; intros) => /=.
   apply is_inf_seq_glb in p.
   apply is_inf_seq_glb in p0.
-  move: p p0 ; apply Rbar_is_glb_unique.
+  move: p p0 ; apply Rbar_is_glb_eq.
   move => x1 ; split ; case => n -> ; exists n ; by rewrite Rbar_opp_involutive.
 Qed.
 
