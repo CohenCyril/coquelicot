@@ -178,6 +178,96 @@ Proof.
   now destruct (H n).
 Qed.
 
+Lemma Markov_min : forall P : nat -> Prop, (forall n, {P n}+{~ P n}) ->
+  {n : nat | P n /\ forall i, (i < n)%nat -> ~ P i } + {forall n, ~ P n}.
+Proof.
+intros P HP.
+assert (forall n, {(forall i : nat, (i < n)%nat -> ~ P i)} + {~ (forall i : nat, (i < n)%nat -> ~ P i)}) as H.
+intro n.
+induction n as [|n IHn].
+left.
+intros i Hi Hi2.
+now apply (lt_n_0 i).
+destruct IHn as [IHn1 | IHn2].
+destruct (HP n) as [Hn1 | Hn2].
+right.
+intro H.
+specialize (H n).
+apply H.
+apply lt_n_Sn.
+assumption.
+left.
+intros i Hi.
+case (eq_nat_dec i n) => Hi2.
+now rewrite Hi2.
+assert (i < n)%nat as Hi3.
+apply not_ge.
+intro Hi3.
+unfold ge in Hi3.
+unfold lt in Hi.
+apply Hi2.
+apply le_S_n in Hi.
+now apply le_antisym.
+now apply IHn1.
+right.
+intro H.
+apply IHn2.
+intros i Hi ; apply H.
+now apply lt_S.
+assert (forall n, {P n /\ (forall i : nat, (i < n)%nat -> ~ P i)} +
+    {~ (P n /\ (forall i : nat, (i < n)%nat -> ~ P i))}) as H2.
+intro n.
+destruct (HP n) as [Hn1 | Hn1].
+destruct (H n) as [Hn2 | Hn2].
+left.
+now split.
+right.
+intro H0 ; destruct H0 as (H0, H1) ; contradiction.
+right ; intro H0 ; destruct H0 as (H0, H1) ; contradiction.
+clear HP.
+assert ({n : nat | P n /\ (forall i : nat, (i < n)%nat -> ~ P i)} +
+          { (forall n : nat, ~ (P n /\ (forall i : nat, (i < n)%nat -> ~ P i)))}) as H1.
+now apply Markov.
+clear H2.
+destruct H1 as [H1|H1].
+now left.
+right.
+assert (forall n : nat, forall j, (j <= n)%nat -> ~ P j) as H2.
+intro n.
+induction n as [|n IHn].
+intros j Hj.
+replace j with 0%nat.
+specialize (H1 0%nat).
+intro H0 ; apply H1.
+split.
+apply H0.
+intros i Hi Hi2.
+now apply (lt_n_0 i).
+apply le_antisym.
+apply le_0_n.
+assumption.
+intros j Hj.
+case (eq_nat_dec j (S n)) => Hcase.
+intro Hj2.
+apply (H1 (S n)).
+split.
+now rewrite <- Hcase.
+intros i Hi.
+apply IHn.
+apply le_S_n.
+apply Hi.
+apply IHn.
+apply not_gt.
+intro Hj2.
+unfold gt in Hj2.
+unfold lt in Hj2.
+absurd (j = S n).
+assumption.
+now apply le_antisym.
+intro n ; apply (H2 n).
+apply le_refl.
+Qed.
+
 (** ** Corollaries *)
 
 Lemma Markov_cor1 : forall P : nat -> Prop, (forall n, {P n}+{~P n}) ->
