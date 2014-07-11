@@ -52,10 +52,26 @@ Class Filter {T : Type} (F : (T -> Prop) -> Prop) := {
   filter_imp : forall P Q : T -> Prop, (forall x, P x -> Q x) -> F P -> F Q
 }.
 
+Class ProperFilter' {T : Type} (F : (T -> Prop) -> Prop) := {
+  filter_not_empty : not (F (fun _ => False)) ;
+  filter_filter' :> Filter F
+}.
+
 Class ProperFilter {T : Type} (F : (T -> Prop) -> Prop) := {
   filter_ex : forall P, F P -> exists x, P x ;
   filter_filter :> Filter F
 }.
+
+Global Instance Proper_StrongProper :
+  forall {T : Type} (F : (T -> Prop) -> Prop),
+  ProperFilter F -> ProperFilter' F.
+Proof.
+intros T F [H1 H2].
+constructor.
+intros H.
+now destruct (H1 _ H) as [x Hx].
+exact H2.
+Qed.
 
 Lemma filter_forall :
   forall {T : Type} {F} {FF: @Filter T F} (P : T -> Prop),
@@ -113,6 +129,18 @@ constructor.
   intros x Hx.
   now apply H.
   exact HP.
+Qed.
+
+Global Instance filtermap_proper_filter' :
+  forall T U (f : T -> U) (F : (T -> Prop) -> Prop),
+  ProperFilter' F -> ProperFilter' (filtermap f F).
+Proof.
+intros T U f F FF.
+unfold filtermap.
+split.
+- apply filter_not_empty.
+- apply filtermap_filter.
+  apply filter_filter'.
 Qed.
 
 Global Instance filtermap_proper_filter :
@@ -226,6 +254,27 @@ constructor.
   intros x y Hx Hy.
   apply HI.
   now apply P3.
+Qed.
+
+Global Instance filter_prod_proper' {T1 T2 : Type}
+  {F : (T1 -> Prop) -> Prop} {G : (T2 -> Prop) -> Prop}
+  {FF : ProperFilter' F} {FG : ProperFilter' G} :
+  ProperFilter' (filter_prod F G).
+Proof.
+  split.
+  unfold not.
+  apply filter_prod_ind.
+  intros Q R HQ HR HQR.
+  apply filter_not_empty.
+  apply filter_imp with (2 := HR).
+  intros y Hy.
+  apply FF.
+  apply filter_imp with (2 := HQ).
+  intros x Hx.
+  now apply (HQR x y).
+  apply filter_prod_filter.
+  apply FF.
+  apply FG.
 Qed.
 
 Global Instance filter_prod_proper {T1 T2 : Type}
@@ -362,6 +411,25 @@ constructor ; unfold subset_filter.
   apply filter_imp.
   intros x H' H0.
   now apply H.
+Qed.
+
+Lemma subset_filter_proper' :
+  forall {T F} {FF : Filter F} (dom : T -> Prop),
+  (forall P, F P -> ~ ~ exists x, dom x /\ P x) ->
+  ProperFilter' (subset_filter F dom).
+Proof.
+intros T F FF dom.
+constructor.
+2: now apply subset_filter_filter.
+intro H1.
+unfold subset_filter in H1.
+specialize (H (fun x : T => dom x -> False)).
+apply H in H1.
+apply H1.
+clear H ; clear H1.
+intro H2.
+destruct H2 as (x, Hx).
+destruct Hx as (Hx1, Hx2) ; now apply Hx2.
 Qed.
 
 Lemma subset_filter_proper :
@@ -2570,6 +2638,31 @@ Proof.
   by apply Req_le.
 Qed.
 
+Lemma ball_norm_dec : forall (x y : V) (eps : posreal),
+  {ball_norm x eps y} + {~ ball_norm x eps y}.
+Proof.
+  intros x y eps.
+  apply Rlt_dec.
+Qed.
+
+Lemma ball_norm_sym :
+  forall (x y : V) (eps : posreal), ball_norm x eps y -> ball_norm y eps x.
+Proof.
+  intros x y eps Hxy.
+  unfold ball_norm.
+  rewrite <- norm_opp.
+  rewrite opp_minus.
+  apply Hxy.
+Qed.
+
+Lemma ball_norm_le :
+  forall (x : V) (e1 e2 : posreal), e1 <= e2 ->
+  forall y, ball_norm x e1 y -> ball_norm x e2 y.
+Proof.
+  intros x e1 e2 He y H1.
+  now apply Rlt_le_trans with e1.
+Qed.
+
 End NormedModule1.
 
 (** Normed vector spaces have some continuous functions *)
@@ -2759,6 +2852,46 @@ End Exports.
 End CompleteNormedModule.
 
 Export CompleteNormedModule.Exports.
+
+Section CompleteNormedModule1.
+
+Context {T : Type} {K : AbsRing} {V : CompleteNormedModule K}.
+
+Lemma filterlim_locally_unique_normed :
+  forall {F} {FF : ProperFilter' F} (f : T -> V) l l',
+  filterlim f F (locally l) -> filterlim f F (locally l') ->
+  forall eps : posreal, ball l eps l'.
+Proof.
+intros F FF f l l' Hl Hl' eps.
+apply: norm_compat1.
+assert (locally l (ball_norm l (pos_div_2 eps))).
+  by apply : locally_ball_norm.
+specialize (Hl (ball_norm l (pos_div_2 eps)) H).
+assert (locally l' (ball_norm l' (pos_div_2 eps))).
+  by apply : locally_ball_norm.
+specialize (Hl' (ball_norm l' (pos_div_2 eps)) H0).
+unfold filtermap in Hl, Hl'.
+generalize (filter_and _ _ Hl Hl') => {H H0} H.
+assert (~ ~ ball_norm l eps l') as Hnn.
+intro Hepsll'.
+apply FF.
+apply filter_imp with (fun x : T => ball_norm l (pos_div_2 eps) (f x) /\ ball_norm l' (pos_div_2 eps) (f x)).
+intros x Hx.
+apply Hepsll'.
+rewrite (double_var eps).
+change (eps / 2) with (pos (pos_div_2 eps)).
+apply ball_norm_triangle with (f x).
+by apply Hx.
+unfold ball_norm.
+by apply ball_norm_sym, (proj2 Hx).
+assumption.
+destruct (ball_norm_dec l l' eps).
+apply b.
+elim Hnn.
+apply n.
+Qed.
+
+End CompleteNormedModule1.
 
 (** * Extended Types *)
 

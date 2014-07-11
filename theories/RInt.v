@@ -2380,9 +2380,9 @@ Lemma norm_RInt_le :
 Proof.
   intros f g a b lf lg Hab H Hf Hg.
   change (Rbar_le (norm lf) lg).
-  apply filterlim_le
-    with (fun ptd : SF_seq => norm (scal (sign (b - a)) (Riemann_sum f ptd)))
-      (fun ptd : SF_seq => scal (sign (b - a)) (Riemann_sum g ptd)).
+  apply (filterlim_le (F := Riemann_fine a b)) with
+    (fun ptd : SF_seq => norm (scal (sign (b - a)) (Riemann_sum f ptd)))
+    (fun ptd : SF_seq => scal (sign (b - a)) (Riemann_sum g ptd)).
   3: apply Hg.
   exists (mkposreal _ Rlt_0_1) => ptd _ [Hptd [Hh Hl]].
   apply Rminus_le_0 in Hab.

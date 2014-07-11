@@ -1711,7 +1711,7 @@ Qed.
 (** *** Order *)
 
 Lemma filterlim_le :
-  forall {T F} {FF : ProperFilter F} (f g : T -> R) (lf lg : Rbar),
+  forall {T F} {FF : ProperFilter' F} (f g : T -> R) (lf lg : Rbar),
   F (fun x => f x <= g x) ->
   filterlim f F (Rbar_locally lf) ->
   filterlim g F (Rbar_locally lg) ->
@@ -1720,7 +1720,7 @@ Proof.
 intros T F FF f g lf lg H Hf Hg.
 apply Rbar_not_lt_le.
 intros Hl.
-apply filter_const.
+apply filter_not_empty.
 destruct lf as [lf| |] ; destruct lg as [lg| |] ; try easy.
 - assert (Hl' : 0 < (lf - lg) / 2).
     apply Rdiv_lt_0_compat.
