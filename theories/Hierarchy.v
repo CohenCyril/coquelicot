@@ -1967,7 +1967,8 @@ Definition cauchy {T : UniformSpace} (F : (T -> Prop) -> Prop) :=
 Module CompleteSpace.
 
 Record mixin_of (T : UniformSpace) := Mixin {
-  ax1 : forall F, ProperFilter F -> cauchy F -> {x : T | forall eps : posreal, F (ball x eps)}
+  lim : ((T -> Prop) -> Prop) -> T ;
+  ax1 : forall F, ProperFilter F -> cauchy F -> forall eps : posreal, F (ball (lim F) eps)
 }.
 
 Section ClassDef.
@@ -2011,11 +2012,15 @@ Section CompleteSpace1.
 
 Context {T : CompleteSpace}.
 
+Definition lim : ((T -> Prop) -> Prop) -> T := CompleteSpace.lim _ (CompleteSpace.class T).
+
 Lemma complete_cauchy :
-  forall F, ProperFilter F -> cauchy F -> {x : T | forall eps : posreal, F (ball x eps)}.
+  forall F : (T -> Prop) -> Prop,
+  ProperFilter F -> cauchy F ->
+  forall eps : posreal,
+  F (ball (lim F) eps).
 Proof.
 apply CompleteSpace.ax1.
-apply CompleteSpace.mixin. (* ??? *)
 Qed.
 
 End CompleteSpace1.
@@ -2058,9 +2063,12 @@ Proof.
 intros F FF f.
 split.
 - intros H.
-  destruct (complete_cauchy (filtermap f F)) as [y Hy].
+  exists (lim (filtermap f F)).
+  intros P [eps HP].
+  refine (_ (complete_cauchy (filtermap f F) _ _ eps)).
   + now apply filtermap_proper_filter.
-  + intros eps.
+  + clear eps P HP.
+    intros eps.
     destruct (H eps) as [P [FP H']].
     destruct (filter_ex _ FP) as [x Hx].
     exists (f x).
@@ -2069,13 +2077,6 @@ split.
     apply filter_imp.
     intros x' Hx'.
     now apply H'.
-  + exists y.
-    intros P [eps HP].
-    refine (_ (Hy eps)).
-    unfold filtermap.
-    apply filter_imp.
-    intros x Hx.
-    now apply HP.
 - intros [y Hy] eps.
   exists (fun x => ball y (pos_div_2 eps) (f x)).
   split.
@@ -2089,11 +2090,14 @@ split.
   exact Hv.
 Qed.
 
+Definition lim_fct (F : ((T -> U) -> Prop) -> Prop) (t : T) :=
+  lim (fun P => F (fun g => P (g t))).
+
 Lemma complete_cauchy_fct :
   forall (F : ((T -> U) -> Prop) -> Prop),
   ProperFilter F ->
-    (forall eps : posreal, exists f : T -> U, F (ball f eps)) ->
-    {f : T -> U | forall eps : posreal, F (ball f eps)}.
+  (forall eps : posreal, exists f : T -> U, F (ball f eps)) ->
+  forall eps : posreal, F (ball (lim_fct F) eps).
 Proof.
   move => F FF HFc.
 
@@ -2117,16 +2121,13 @@ Proof.
     exists (f t).
     move: Hf ; apply FF => g.
     by [].
-  assert (Hex : forall t, {x | forall eps : posreal, Fr t (ball x eps)}).
+  assert (forall t (eps : posreal), (Fr t) (fun x => ball (lim_fct F t) eps x)).
     move => t.
-    by apply complete_cauchy.
-  set f := fun t => projT1 (Hex t) ; exists f.
+    apply complete_cauchy.
+    apply FFr.
+    exact (HFrc t).
 
   move => eps.
-
-  assert (forall t (eps : posreal), (Fr t) (fun x => ball (f t) eps x)).
-    move => t.
-    apply (projT2 (Hex t)).
 
   generalize (proj1 cauchy_distance HFc) => {HFc} HFc.
 
@@ -2145,7 +2146,7 @@ Proof.
 Qed.
 
 Definition fct_CompleteSpace_mixin :=
-  CompleteSpace.Mixin _ complete_cauchy_fct.
+  CompleteSpace.Mixin _ lim_fct complete_cauchy_fct.
 
 Canonical fct_CompleteSpace :=
   CompleteSpace.Pack (T -> U) (CompleteSpace.Class _ _ fct_CompleteSpace_mixin) (T -> U).
@@ -3876,15 +3877,14 @@ Lemma R_complete :
   forall F : (R -> Prop) -> Prop,
   ProperFilter F ->
   (forall eps : posreal, exists x : R, F (ball x eps)) ->
-  {x : R | forall eps : posreal, F (ball x eps)}.
+  forall eps : posreal, F (ball (R_complete_lim F) eps).
 Proof.
-intros F FF HF.
-exists (R_complete_lim F).
-now apply (R_complete_ax1 F _).
+intros F FF.
+exact: R_complete_ax1.
 Qed.
 
 Definition R_CompleteSpace_mixin :=
-  CompleteSpace.Mixin _ R_complete.
+  CompleteSpace.Mixin _ R_complete_lim R_complete.
 
 Canonical R_CompleteSpace :=
   CompleteSpace.Pack R (CompleteSpace.Class _ _ R_CompleteSpace_mixin) R.
