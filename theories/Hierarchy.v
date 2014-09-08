@@ -20,7 +20,7 @@ COPYING file for more details.
 *)
 
 Require Import Reals ssreflect.
-Require Import Rcomplements Rbar Markov Iter.
+Require Import Rcomplements Rbar Markov Iter Lub.
 
 (* This file describes first filters:
 
@@ -3794,41 +3794,26 @@ Definition R_UniformSpace_mixin :=
 Canonical R_UniformSpace :=
   UniformSpace.Pack R R_UniformSpace_mixin R.
 
-Lemma R_complete :
+Definition R_complete_lim (F : (R -> Prop) -> Prop) :=
+  Lub_Rbar (fun x : R => F (ball x (mkposreal _ Rlt_0_1))) - 1.
+
+Lemma R_complete_ax1 :
   forall F : (R -> Prop) -> Prop,
-  ProperFilter F ->
+  ProperFilter' F ->
   (forall eps : posreal, exists x : R, F (ball x eps)) ->
-  {x : R | forall eps :posreal, F (ball x eps)}.
+  forall eps : posreal, F (ball (R_complete_lim F) eps).
 Proof.
-intros F FF HF.
-set (E := fun x : R => F (ball x (mkposreal _ Rlt_0_1))).
-destruct (completeness E) as [x [Hx1 Hx2]].
-  destruct (HF (mkposreal _ Rlt_0_1)) as [y Fy].
-  exists (y + 2).
-  intros x Fx.
-  apply filter_const.
-  generalize (filter_and _ _ Fy Fx).
-  apply filter_imp.
-  intros z [Hz1 Hz2].
-  apply Rplus_le_reg_r with (-y).
-  replace (y + 2 + -y) with 2 by ring.
-  apply Rabs_le_between.
-  apply Rlt_le.
-  generalize (ball_triangle y z x 1 1) => /= H.
-  apply H.
-  apply Hz1.
-  apply ball_sym in Hz2.
-  apply Hz2.
-  destruct (HF (mkposreal _ Rlt_0_1)) as [y Fy].
-  now exists y.
-exists (x - 1).
-intros eps.
+intros F FF HF eps.
+unfold R_complete_lim.
+generalize (Lub_Rbar_correct (fun x : R => F (ball x (mkposreal _ Rlt_0_1)))).
+generalize (Lub_Rbar (fun x : R => F (ball x (mkposreal _ Rlt_0_1)))).
+intros [x| |] [Hx1 Hx2].
+-
 set (eps' := pos_div_2 (mkposreal _ (Rmin_case _ _ _ Rlt_R0_R2 (cond_pos eps)))).
 destruct (HF eps') as [z Hz].
 assert (H1 : z - Rmin 2 eps / 2 + 1 <= x).
   apply Hx1.
   revert Hz.
-  unfold E.
   apply filter_imp.
   unfold ball ; simpl ; intros u Bu.
   apply (Rabs_lt_between' u z) in Bu.
@@ -3838,9 +3823,10 @@ assert (H1 : z - Rmin 2 eps / 2 + 1 <= x).
   assert (H := Rmin_l 2 eps).
   split ; Fourier.fourier.
 assert (H2 : x <= z + Rmin 2 eps / 2 + 1).
-  apply Hx2.
+  apply (Hx2 (Finite _)).
   intros v Hv.
-  apply filter_const.
+  apply Rbar_not_lt_le => Hlt.
+  apply filter_not_empty.
   generalize (filter_and _ _ Hz Hv).
   apply filter_imp.
   unfold ball ; simpl ; intros w [Hw1 Hw2].
@@ -3848,8 +3834,8 @@ assert (H2 : x <= z + Rmin 2 eps / 2 + 1).
   destruct Hw1 as [_ Hw1].
   apply (Rabs_lt_between' w v) in Hw2.
   destruct Hw2 as [Hw2 _].
-  clear -Hw1 Hw2.
-  simpl in Hw1, Hw2.
+  clear -Hw1 Hw2 Hlt.
+  simpl in Hw1, Hw2, Hlt.
   Fourier.fourier.
 revert Hz.
 apply filter_imp.
@@ -3861,6 +3847,40 @@ assert (H4 := Rmin_r 2 eps).
 clear -H1 H2 Hu H3 H4.
 destruct Hu.
 split ; Fourier.fourier.
+-
+  destruct (HF (mkposreal _ Rlt_0_1)) as [y Fy].
+  elim (Hx2 (y + 2)).
+  intros x Fx.
+  apply Rbar_not_lt_le => Hlt.
+  apply filter_not_empty.
+  generalize (filter_and _ _ Fy Fx).
+  apply filter_imp.
+  intros z [Hz1 Hz2].
+  revert Hlt.
+  apply Rbar_le_not_lt.
+  apply Rplus_le_reg_r with (-y).
+  replace (y + 2 + -y) with 2 by ring.
+  apply Rabs_le_between.
+  apply Rlt_le.
+  generalize (ball_triangle y z x 1 1) => /= H.
+  apply H.
+  apply Hz1.
+  apply ball_sym in Hz2.
+  apply Hz2.
+-
+  destruct (HF (mkposreal _ Rlt_0_1)) as [y Fy].
+  elim (Hx1 y Fy).
+Qed.
+
+Lemma R_complete :
+  forall F : (R -> Prop) -> Prop,
+  ProperFilter F ->
+  (forall eps : posreal, exists x : R, F (ball x eps)) ->
+  {x : R | forall eps : posreal, F (ball x eps)}.
+Proof.
+intros F FF HF.
+exists (R_complete_lim F).
+now apply (R_complete_ax1 F _).
 Qed.
 
 Definition R_CompleteSpace_mixin :=
