@@ -2576,7 +2576,7 @@ rewrite SF_lx_f2.
 by apply unif_part_sort, Rle_refl.
 by apply lt_O_Sn.
 rewrite SF_lx_f2 /=.
-elim: (iota 2 n) {2}(1) ; simpl ; intros.
+elim: (seq.iota 2 n) {2}(1) ; simpl ; intros.
 unfold Rdiv ; ring.
 by apply H.
 by apply lt_O_Sn.

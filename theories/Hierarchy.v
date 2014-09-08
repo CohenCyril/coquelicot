@@ -2023,6 +2023,39 @@ Proof.
 apply CompleteSpace.ax1.
 Qed.
 
+Definition iota (P : T -> Prop) := lim (fun A => (forall x, P x -> A x)).
+
+Lemma iota_correct :
+  forall P : T -> Prop,
+  (forall x y, P x -> P y -> forall eps : posreal, ball x eps y) ->
+  forall x, P x -> forall eps : posreal, ball (iota P) eps x.
+Proof.
+intros P HP x Hx eps.
+set (F := fun A : T -> Prop => forall t : T, P t -> A t).
+assert (forall eps : posreal, F (ball (lim F) eps)) as HF.
+apply complete_cauchy.
+constructor.
+intros Q FQ.
+exists x.
+now apply FQ.
+constructor.
+now intro x0.
+intros A B HA HB x0 Hx0.
+split.
+now apply HA.
+now apply HB.
+intros A B HAB HA x0 Hx0.
+apply HAB ; now apply HA.
+intro e.
+exists x.
+intros y Hy.
+now apply HP.
+assert (F (ball (lim F) eps)) as Heps.
+apply HF.
+clear HF.
+now apply Heps.
+Qed.
+
 End CompleteSpace1.
 
 Lemma cauchy_distance :
