@@ -363,15 +363,15 @@ generalize (is_filter_lim_unique _ _ Fx Fz) => Hxz.
 assert (norm (minus x z) = 0)%R.
   apply Req_lt_aux => e.
   rewrite Rminus_0_r Rabs_pos_eq.
-  destruct (norm_compat2 (V := U)) as [M HM].
-  move: (fun eps => HM _ _ _ (ball_sym _ _ _ (Hxz eps))) => {HM Hxz} HM.
+  move: (fun eps => norm_compat2 _ _ _ (ball_sym _ _ _ (Hxz eps))) => {Hxz} HM.
+  set (M := @norm_factor _ U).
   replace (pos e) with (M * (e/M))%R.
   generalize (fun H => HM (mkposreal (e/M) H)) => {HM} /= HM.
   apply HM.
   apply Rdiv_lt_0_compat.
   by apply e.
-  by apply M.
-  field ; apply Rgt_not_eq, M.
+  exact norm_factor_gt_0.
+  field ; apply Rgt_not_eq, norm_factor_gt_0.
   by apply norm_ge_0.
 eapply is_domin_le.
 2: apply Fx.
@@ -891,19 +891,19 @@ Proof.
   - move => y Hy.
     generalize (is_filter_lim_unique _ _ Hx Hy) => {Hy} Hy eps.
     apply Hx ; clear Hx.
-    destruct (norm_compat2 (V := V)) as [M HM].
+    set (M := @norm_factor _ V).
     assert (0 < Rmin (eps / 2) (eps / 2 / M)).
       apply Rmin_case.
       by apply is_pos_div_2.
       apply Rdiv_lt_0_compat.
       by apply is_pos_div_2.
-      by apply M.
+      exact norm_factor_gt_0.
     set eps' := mkposreal _ H.
 
     exists eps' => z Hz.
-    move: (conj (proj1 Hz) (HM _ _ _ (proj2 Hz))) => {Hz} Hz.
+    move: (conj (proj1 Hz) (norm_compat2 _ _ _ (proj2 Hz))) => {Hz} Hz.
     specialize (Hy eps').
-    move: (conj (proj1 Hy) (HM _ _ _ (proj2 Hy))) => {Hy} Hy.
+    move: (conj (proj1 Hy) (norm_compat2 _ _ _ (proj2 Hy))) => {Hy} Hy.
     destruct y as [y1 y2].
     destruct z as [z1 z2].
     simpl in Hy, Hz ; simpl fst in Hy, Hz |- * ; simpl snd in Hy, Hz |- *.
@@ -945,12 +945,13 @@ Proof.
     by apply abs_ge_0.
     eapply Rle_trans.
     by apply Rlt_le, Hz.
+    fold M.
     eapply Rle_trans.
     apply Rmult_le_compat_l.
-    by apply Rlt_le, M.
+    by apply Rlt_le, norm_factor_gt_0.
     apply Rmin_r.
     apply Req_le ; field.
-    by apply Rgt_not_eq, M.
+    by apply Rgt_not_eq, norm_factor_gt_0.
     by apply norm_ge_0.
     eapply Rle_trans.
     by apply Rlt_le, Hy.

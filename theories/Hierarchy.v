@@ -2441,10 +2441,11 @@ Module NormedModule.
 
 Record mixin_of (K : AbsRing) (V : NormedModuleAux K) := Mixin {
   norm : V -> R ;
+  norm_factor : R ;
   ax1 : forall (x y : V), norm (plus x y) <= norm x + norm y ;
   ax2 : forall (l : K) (x : V), norm (scal l x) <= abs l * norm x ;
   ax3 : forall (x y : V) (eps : R), norm (minus y x) < eps -> ball x eps y ;
-  ax4 : { M : posreal | forall (x y : V) (eps : posreal), ball x eps y -> norm (minus y x) < M * eps }
+  ax4 : forall (x y : V) (eps : posreal), ball x eps y -> norm (minus y x) < norm_factor * eps
 }.
 
 Section ClassDef.
@@ -2501,6 +2502,8 @@ Context {K : AbsRing} {V : NormedModule K}.
 
 Definition norm : V -> R := NormedModule.norm K _ (NormedModule.class K V).
 
+Definition norm_factor : R := NormedModule.norm_factor K _ (NormedModule.class K V).
+
 Lemma norm_triangle :
   forall x y : V,
   norm (plus x y) <= norm x + norm y.
@@ -2523,7 +2526,7 @@ apply NormedModule.ax3.
 Qed.
 
 Lemma norm_compat2 :
-  { M : posreal | forall (x y : V) (eps : posreal), ball x eps y -> norm (minus y x) < M * eps }.
+  forall (x y : V) (eps : posreal), ball x eps y -> norm (minus y x) < norm_factor * eps.
 Proof.
 apply: NormedModule.ax4.
 Qed.
@@ -2540,6 +2543,16 @@ apply Rle_antisym.
   rewrite Rplus_0_l.
   rewrite -{1}[zero]plus_zero_r.
   exact (norm_triangle zero zero).
+Qed.
+
+Lemma norm_factor_gt_0 :
+  0 < norm_factor.
+Proof.
+rewrite <- (Rmult_1_r norm_factor).
+rewrite <- norm_zero.
+rewrite <- (plus_opp_r zero).
+apply (norm_compat2 _ _ (mkposreal _ Rlt_0_1)).
+apply ball_center.
 Qed.
 
 Lemma norm_opp :
@@ -2595,22 +2608,21 @@ Definition locally_norm (x : V) (P : V -> Prop) :=
 Lemma locally_le_locally_norm :
   forall x, filter_le (locally x) (locally_norm x).
 Proof.
-destruct norm_compat2 as [M HM].
 intros x P [eps H].
-assert (He : 0 < / M * eps).
+assert (He : 0 < / norm_factor * eps).
   apply Rmult_lt_0_compat.
   apply Rinv_0_lt_compat.
-  apply cond_pos.
+  apply norm_factor_gt_0.
   apply cond_pos.
 exists (mkposreal _ He).
 intros y By.
 apply H.
 unfold ball_norm.
-rewrite -(Rmult_1_l eps) -(Rinv_r M).
+rewrite -(Rmult_1_l eps) -(Rinv_r norm_factor).
 rewrite Rmult_assoc.
-now apply (HM x y (mkposreal _ He)).
+apply norm_compat2 with (1 := By).
 apply Rgt_not_eq.
-apply cond_pos.
+apply norm_factor_gt_0.
 Qed.
 
 Lemma locally_norm_le_locally :
@@ -2809,16 +2821,15 @@ Canonical AbsRing_NormedModuleAux :=
   NormedModuleAux.Pack K K (NormedModuleAux.Class _ _ (ModuleSpace.class _ (AbsRing_ModuleSpace K)) (UniformSpace.class (AbsRing_UniformSpace K))) K.
 
 Lemma AbsRing_norm_compat2 :
-  {M : posreal | forall (x y : AbsRing_NormedModuleAux) (eps : posreal),
-  ball x eps y -> abs (minus y x) < M * eps}.
+  forall (x y : AbsRing_NormedModuleAux) (eps : posreal),
+  ball x eps y -> abs (minus y x) < 1 * eps.
 Proof.
-  exists (mkposreal _ Rlt_0_1).
   intros x y eps H.
   now rewrite Rmult_1_l.
 Qed.
 
 Definition AbsRing_NormedModule_mixin :=
-  NormedModule.Mixin K _ abs abs_triangle abs_mult (fun x y e H => H) AbsRing_norm_compat2.
+  NormedModule.Mixin K _ abs 1 abs_triangle abs_mult (fun x y e H => H) AbsRing_norm_compat2.
 
 Canonical AbsRing_NormedModule :=
   NormedModule.Pack K _ (NormedModule.Class _ _ _ AbsRing_NormedModule_mixin) K.
@@ -3096,14 +3107,15 @@ Section prod_NormedModule.
 
 Context {K : AbsRing} {U V : NormedModule K}.
 
+Definition prod_norm (x : U * V) :=
+  sqrt (norm (fst x) ^ 2 + norm (snd x) ^ 2).
+
 Lemma prod_norm_triangle :
   forall x y : U * V,
-  sqrt (norm (fst (plus x y)) ^ 2 + norm (snd (plus x y)) ^ 2) <=
-    sqrt (norm (fst x) ^ 2 + norm (snd x) ^ 2) + sqrt (norm (fst y) ^ 2 + norm (snd y) ^ 2).
+  prod_norm (plus x y) <= prod_norm x + prod_norm y.
 Proof.
 intros [xu xv] [yu yv].
-simpl.
-rewrite !Rmult_1_r.
+rewrite /prod_norm /= !Rmult_1_r.
 apply Rle_trans with (sqrt (Rsqr (norm xu + norm yu) + Rsqr (norm xv + norm yv))).
 - apply sqrt_le_1_alt.
   apply Rplus_le_compat.
@@ -3149,12 +3161,10 @@ Qed.
 
 Lemma prod_norm_scal :
   forall (l : K) (x : U * V),
-  sqrt (norm (fst (scal l x)) ^ 2 + norm (snd (scal l x)) ^ 2) <=
-    abs l * sqrt (norm (fst x) ^ 2 + norm (snd x) ^ 2).
+  prod_norm (scal l x) <= abs l * prod_norm x.
 Proof.
 intros l [xu xv].
-simpl.
-rewrite -(sqrt_Rsqr (abs l)).
+rewrite /prod_norm /= -(sqrt_Rsqr (abs l)).
 2: apply abs_ge_0.
 rewrite !Rmult_1_r.
 rewrite -sqrt_mult.
@@ -3180,7 +3190,7 @@ Qed.
 
 Lemma prod_norm_compat1 :
   forall (x y : U * V) (eps : R),
-  sqrt (norm (fst (minus y x)) ^ 2 + norm (snd (minus y x)) ^ 2) < eps -> ball x eps y.
+  prod_norm (minus y x) < eps -> ball x eps y.
 Proof.
 intros [xu xv] [yu yv] eps H.
 generalize (Rle_lt_trans _ _ _ (proj1 (sqrt_plus_sqr _ _)) H).
@@ -3193,18 +3203,14 @@ apply Rmax_l.
 apply Rmax_r.
 Qed.
 
+Definition prod_norm_factor :=
+  sqrt 2 * Rmax (@norm_factor K U) (@norm_factor K V).
+
 Lemma prod_norm_compat2 :
-  { M : posreal | forall (x y : U * V) (eps : posreal),
-    ball x eps y -> sqrt (norm (fst (minus y x)) ^ 2 + norm (snd (minus y x)) ^ 2) < M * eps }.
+  forall (x y : U * V) (eps : posreal),
+  ball x eps y ->
+  prod_norm (minus y x) < prod_norm_factor * eps.
 Proof.
-destruct (@norm_compat2 K U) as [Mu Hu].
-destruct (@norm_compat2 K V) as [Mv Hv].
-assert (H : 0 < sqrt 2 * Rmax Mu Mv).
-  apply Rmult_lt_0_compat.
-  apply sqrt_lt_R0.
-  apply Rlt_0_2.
-  apply Rmax_case ; apply cond_pos.
-exists (mkposreal _ H).
 intros [xu xv] [yu yv] eps [Bu Bv].
 apply Rle_lt_trans with (1 := proj2 (sqrt_plus_sqr _ _)).
 simpl.
@@ -3216,9 +3222,9 @@ rewrite -> !Rabs_pos_eq by apply norm_ge_0.
 rewrite Rmax_mult.
 apply Rmax_case.
 apply Rlt_le_trans with (2 := Rmax_l _ _).
-now apply Hu.
+now apply norm_compat2.
 apply Rlt_le_trans with (2 := Rmax_r _ _).
-now apply Hv.
+now apply norm_compat2.
 apply Rlt_le.
 apply cond_pos.
 Qed.
@@ -3226,7 +3232,7 @@ Qed.
 End prod_NormedModule.
 
 Definition prod_NormedModule_mixin (K : AbsRing) (U V : NormedModule K) :=
-  NormedModule.Mixin K _ _ (@prod_norm_triangle K U V)
+  NormedModule.Mixin K _ (@prod_norm K U V) prod_norm_factor prod_norm_triangle
   prod_norm_scal prod_norm_compat1 prod_norm_compat2.
 
 Canonical prod_NormedModule (K : AbsRing) (U V : NormedModule K) :=

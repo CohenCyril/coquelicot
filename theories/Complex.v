@@ -405,18 +405,19 @@ Proof.
 Qed.
 
 Lemma C_NormedModule_mixin_compat2 :
-  {M : posreal | forall (x y : C_NormedModuleAux) (eps : posreal),
-  ball x eps y -> Cmod (minus y x) < M * eps}.
+  forall (x y : C_NormedModuleAux) (eps : posreal),
+  ball x eps y -> Cmod (minus y x) < sqrt 2 * eps.
 Proof.
-  destruct (@prod_norm_compat2 _ R_NormedModule R_NormedModule) as [M H].
-  exists M.
-  intros x y eps.
+  intros x y eps H.
   rewrite Cmod_norm.
-  apply H.
+  replace (sqrt 2) with (sqrt 2 * Rmax 1 1)%R.
+  apply: prod_norm_compat2 H.
+  rewrite -> Rmax_left by apply Rle_refl.
+  apply Rmult_1_r.
 Qed.
 
 Definition C_NormedModule_mixin :=
-  NormedModule.Mixin _ C_NormedModuleAux _ Cmod_triangle (fun x y => Req_le _ _ (Cmod_mult x y))
+  NormedModule.Mixin _ C_NormedModuleAux _ _ Cmod_triangle (fun x y => Req_le _ _ (Cmod_mult x y))
     C_NormedModule_mixin_compat1 C_NormedModule_mixin_compat2.
 
 Canonical C_NormedModule :=

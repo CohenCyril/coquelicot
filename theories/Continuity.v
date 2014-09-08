@@ -1854,9 +1854,10 @@ Lemma unifcont_normed_1d (f : R -> V) a b :
     a <= x <= b -> a <= y <= b -> ball x delta y -> ball_norm (f x) eps (f y)}.
 Proof.
   intros.
-  destruct (norm_compat2 (V := V)) as [M HM].
-  assert (0 < eps / M).
-    apply Rdiv_lt_0_compat ; apply cond_pos.
+  assert (0 < eps / (@norm_factor _ V)).
+    apply Rdiv_lt_0_compat.
+    apply cond_pos.
+    exact norm_factor_gt_0.
   destruct (unifcont_1d f a b H (mkposreal _ H0)) as [d Hd].
   exists d => x y Hx Hy Hxy.
   specialize (Hd x y Hx Hy Hxy).
@@ -1864,10 +1865,9 @@ Proof.
   contradict Hd ; contradict Hd.
   apply Rlt_not_le.
   evar_last.
-  apply HM, Hd.
+  apply norm_compat2, Hd.
   simpl ; field.
-  by apply Rgt_not_eq, M.
+  apply Rgt_not_eq, norm_factor_gt_0.
 Qed.
 
 End UnifCont_N.
-

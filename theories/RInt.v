@@ -24,7 +24,7 @@ Require Import ssreflect ssrbool eqtype seq.
 Require Import Markov Rcomplements Rbar Lub Limit Derive SF_seq.
 Require Import Continuity Derive_2d Hierarchy Seq_fct.
 
-(** * Definition of Riemann intagral *)
+(** * Definition of Riemann integral *)
 
 Section is_RInt.
 
@@ -1500,9 +1500,11 @@ Proof.
   apply H1 ; clear H1.
   intros eps.
 
-  destruct (norm_compat2 (V := V)) as [M Hb].
+  set (M := @norm_factor _ V).
   assert (He : 0 < eps / M).
-    apply Rdiv_lt_0_compat ; apply cond_pos.
+    apply Rdiv_lt_0_compat.
+    apply cond_pos.
+    apply norm_factor_gt_0.
 
   assert (H1 := proj2 (filterlim_locally_cauchy (F := (Riemann_fine a c)) (fun ptd : SF_seq => scal (sign (c - a)) (Riemann_sum f ptd)))).
   destruct (H1 If (mkposreal _ He)) as [P [[alpha HP] H2]] ; clear If H1 ; rename H2 into If.
@@ -1539,10 +1541,9 @@ Proof.
   replace (sign (b - a)) with 1.
   replace (sign (c - a)) with 1 in If.
   apply: norm_compat1.
-  apply Hb in If.
   eapply Rlt_le_trans.
   eapply Rle_lt_trans.
-  2: apply If.
+  2: apply norm_compat2 with (1 := If).
   apply Req_le, f_equal.
   rewrite !scal_one.
   case: H => _ ; case: H0 => _ ; clear ; intros.
@@ -1574,8 +1575,9 @@ Proof.
   rewrite -SF_cons_cat !Riemann_sum_cons.
   rewrite /minus -!plus_assoc.
   by rewrite -!/(minus _ _) -IH.
+  fold M.
   apply Req_le ; simpl ; field.
-  by apply Rgt_not_eq, M.
+  by apply Rgt_not_eq, norm_factor_gt_0.
   apply sym_eq, sign_0_lt.
   apply -> Rminus_lt_0.
   eapply Rlt_le_trans ; eassumption.
@@ -1751,7 +1753,7 @@ assert (Hn : 0 <= ((b - a) / eP)).
   rewrite /Rmin /Rmax ; case: Rle_dec (Rlt_le _ _ Hab)  => // _ _.
 2: by apply Hfh.
 
-destruct (@norm_compat2 _ V) as [M HM].
+set (M := @norm_factor _ V).
 intros P [eps HP].
 have He: 0 < (eps / (b - a)) / (2 * M).
   apply Rdiv_lt_0_compat.
@@ -1760,7 +1762,7 @@ have He: 0 < (eps / (b - a)) / (2 * M).
   by rewrite -Rminus_lt_0.
   apply Rmult_lt_0_compat.
   by apply Rlt_0_2.
-  apply cond_pos.
+  apply norm_factor_gt_0.
 generalize (Hfg _ (locally_ball g (mkposreal _ He))) => {Hfg Hfh}.
 unfold filtermap ;
 apply filter_imp => x Hx.
@@ -1787,11 +1789,10 @@ apply Rgt_not_eq.
 apply Rlt_gt.
 by rewrite -Rminus_lt_0.
 apply Rgt_not_eq.
-apply cond_pos.
+apply norm_factor_gt_0.
 intros t0 Ht0.
 apply Rlt_le.
-apply (HM _ _ (mkposreal _ He)).
-apply Hx.
+apply (norm_compat2 _ _ (mkposreal _ He) (Hx t0)).
 by rewrite -Rminus_lt_0.
 exists If ; split.
 by apply Hh.
