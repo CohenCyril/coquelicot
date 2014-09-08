@@ -35,7 +35,7 @@ Context {K : AbsRing} {U V : NormedModule K}.
 Record is_linear (l : U -> V) := {
   linear_plus : forall (x y : U), l (plus x y) = plus (l x) (l y) ;
   linear_scal : forall (k : K) (x : U), l (scal k x) = scal k (l x) ;
-  linear_norm : exists M : R, 0 <= M /\ (forall x : U, norm (l x) <= M * norm x) }.
+  linear_norm : exists M : R, 0 < M /\ (forall x : U, norm (l x) <= M * norm x) }.
 
 Lemma linear_zero (l : U -> V) : is_linear l ->
   l zero = zero.
@@ -61,41 +61,24 @@ Lemma linear_cont (l : U -> V) (x : U) :
   is_linear l -> filterlim l (locally x) (locally (l x)).
 Proof.
   intros Hl.
-  apply filterlim_locally => eps /=.
-  apply filter_imp with (1 := (fun y => norm_compat1 (l x) (l y) eps)).
-  destruct (norm_compat2 (V := U)) as [M' Hm].
+  apply filterlim_locally_ball_norm => eps.
+  apply locally_le_locally_norm.
   case: (linear_norm _ Hl) => M Hn.
-  assert (0 < eps / (M * M' + 1)).
+  assert (0 < eps / M).
     apply Rdiv_lt_0_compat.
-    by apply eps.
-    apply Rplus_le_lt_0_compat.
-    apply Rmult_le_pos.
-    by apply Hn.
-    by apply Rlt_le, M'.
-    by apply Rlt_0_1.
+    apply cond_pos.
+    apply Hn.
   exists (mkposreal _ H) => y Hy.
-  specialize (Hm x y _ Hy) ; clear Hy.
-  rewrite /minus -linear_opp // -linear_plus //.
+  rewrite /ball_norm /minus -linear_opp // -linear_plus //.
   eapply Rle_lt_trans.
   by apply Hn.
-  eapply Rle_lt_trans.
-  apply Rmult_le_compat_l.
-  by apply Hn.
-  apply Rlt_le, Hm.
+  evar_last.
+  apply Rmult_lt_compat_l with (2 := Hy).
+  apply Hn.
   simpl.
-  rewrite -Rmult_assoc.
-  apply Rlt_le_trans with ((M * M' + 1) * (eps / (M * M' + 1))).
-  apply Rmult_lt_compat_r.
-  by [].
-  apply Rminus_lt_0 ; ring_simplify ; apply Rlt_0_1.
-  apply Req_le ; field.
-  apply Rgt_not_eq, Rplus_le_lt_0_compat.
-  apply Rmult_le_pos.
-  by apply Hn.
-  by apply Rlt_le, M'.
-  by apply Rlt_0_1.
+  field.
+  apply Rgt_not_eq, Hn.
 Qed.
-
 
 (** zero in a linear function *)
 Lemma is_linear_zero : is_linear (fun _ => zero).
@@ -103,10 +86,10 @@ Proof.
   repeat split.
   - move => _ _ ; by rewrite plus_zero_l.
   - move => k _ ; by rewrite scal_zero_r.
-  - exists 0 ; split.
-    by apply Rle_refl.
-    move => x ; rewrite Rmult_0_l norm_zero.
-    by apply Rle_refl.
+  - exists 1 ; split.
+    exact Rlt_0_1.
+    move => x ; rewrite Rmult_1_l norm_zero.
+    apply norm_ge_0.
 Qed.
 
 End LinearFct.
@@ -124,11 +107,14 @@ Proof.
   - destruct (linear_norm _ Hl1) as [M1 Hn1].
     destruct (linear_norm _ Hl2) as [M2 Hn2].
     exists (M2 * M1) ; split.
-    now apply Rmult_le_pos.
+    now apply Rmult_lt_0_compat.
     move => x.
     eapply Rle_trans.
     by apply Hn2.
-    now rewrite Rmult_assoc ; apply Rmult_le_compat_l.
+    rewrite Rmult_assoc.
+    apply Rmult_le_compat_l.
+    now apply Rlt_le.
+    apply Hn1.
 Qed.
 
 Section Op_LinearFct.
@@ -140,7 +126,7 @@ Lemma is_linear_id : is_linear (fun (x : V) => x).
 Proof.
   repeat split.
   - exists 1 ; split.
-    by apply Rle_0_1.
+    exact Rlt_0_1.
     move => x ; rewrite Rmult_1_l.
     by apply Rle_refl.
 Qed.
@@ -155,7 +141,7 @@ Proof.
     apply sym_eq.
     apply: scal_opp_r.
   - exists 1 ; split.
-    by apply Rle_0_1.
+    exact Rlt_0_1.
     move => x ; rewrite norm_opp Rmult_1_l.
     by apply Rle_refl.
 Qed.
@@ -171,7 +157,7 @@ Proof.
   - move => k x.
     now rewrite scal_distr_l.
   - exists 2 ; split.
-    now apply Rlt_le, Rlt_0_2.
+    exact Rlt_0_2.
     move => x /= ; eapply Rle_trans.
     by apply @norm_triangle.
     rewrite Rmult_plus_distr_r Rmult_1_l ; apply Rplus_le_compat.
@@ -190,10 +176,15 @@ Proof.
   split.
   - move => u v ; by apply @scal_distr_r.
   - move => u v /= ; apply sym_eq, @scal_assoc.
-  - exists (norm x) ; split.
-    by apply norm_ge_0.
+  - exists (norm x + 1) ; split.
+    apply Rplus_le_lt_0_compat.
+    apply norm_ge_0.
+    exact Rlt_0_1.
     move => k /=.
-    now rewrite Rmult_comm ; apply @norm_scal.
+    rewrite Rmult_plus_distr_r Rmult_1_l -(Rplus_0_r (norm (scal k x))).
+    apply Rplus_le_compat.
+    now rewrite Rmult_comm ; apply norm_scal.
+    apply norm_ge_0.
 Qed.
 
 (** [fun x => scal k x] is a linear function if [mult] is commutative *)
@@ -205,10 +196,15 @@ Proof.
   - move => u v ; by apply @scal_distr_l.
   - move => u v /= ; apply sym_eq ; rewrite !@scal_assoc.
     by rewrite H.
-  - exists (abs k) ; split.
-    by apply @abs_ge_0.
+  - exists (abs k + 1) ; split.
+    apply Rplus_le_lt_0_compat.
+    apply abs_ge_0.
+    exact Rlt_0_1.
     move => x /=.
-    now apply @norm_scal.
+    rewrite Rmult_plus_distr_r Rmult_1_l -(Rplus_0_r (norm (scal k x))).
+    apply Rplus_le_compat.
+    apply norm_scal.
+    apply norm_ge_0.
 Qed.
 
 End Op_LinearFct.
@@ -230,8 +226,8 @@ Proof.
   - destruct (linear_norm l1 H1) as [M1 [HM1 Hn1]].
     destruct (linear_norm l2 H2) as [M2 [HM2 Hn2]].
     exists (sqrt 2 * Rmax M1 M2)%R ; split.
-    apply Rmult_le_pos.
-    apply sqrt_pos.
+    apply Rmult_lt_0_compat.
+    apply sqrt_lt_R0, Rlt_0_2.
     by apply Rmax_case.
     intros x.
     eapply Rle_trans.
@@ -253,7 +249,7 @@ Proof.
   - intros [x1 x2] [y1 y2] ; by simpl.
   - intros k [x1 x2] ; by simpl.
   - exists 1 ; split.
-    by apply Rle_0_1.
+    exact Rlt_0_1.
     intros [x1 x2] ; simpl fst ; rewrite Rmult_1_l.
     eapply Rle_trans.
     2: by apply norm_prod.
@@ -267,7 +263,7 @@ Proof.
   - intros [x1 x2] [y1 y2] ; by simpl.
   - intros k [x1 x2] ; by simpl.
   - exists 1 ; split.
-    by apply Rle_0_1.
+    exact Rlt_0_1.
     intros [x1 x2] ; simpl snd ; rewrite Rmult_1_l.
     eapply Rle_trans.
     2: by apply norm_prod.
@@ -282,27 +278,18 @@ Lemma is_domin_linear {F : (T -> Prop) -> Prop} {FF : Filter F} (f : T -> W) (g 
   is_linear l -> is_domin F f g -> is_domin F f (fun t => l (g t)).
 Proof.
   intros [_ _ [M [Hm Hn]]] H eps.
-  assert (He : 0 < eps / (1 + M)).
-    apply Rdiv_lt_0_compat.
-    by apply eps.
-    apply Rplus_lt_le_0_compat.
-    by apply Rlt_0_1.
-    by apply Hm.
+  assert (He : 0 < eps / M).
+    apply Rdiv_lt_0_compat with (2 := Hm).
+    apply cond_pos.
   specialize (H (mkposreal _ He)).
   move: H ;
   apply filter_imp => /= x Hx.
   apply Rle_trans with (1 := Hn _).
-  apply Rle_trans with ((1 + M) * norm (g x)).
-  apply Rmult_le_compat_r.
-  by apply norm_ge_0.
-  rewrite -{1}(Rplus_0_l M).
-  apply Rplus_le_compat_r.
-  apply Rle_0_1.
-  rewrite Rmult_comm ; apply Rle_div_r.
-  apply Rplus_lt_le_0_compat.
-  by apply Rlt_0_1.
-  by apply Hm.
-  by rewrite /Rdiv Rmult_assoc (Rmult_comm (norm _)) -Rmult_assoc.
+  evar_last.
+  apply Rmult_le_compat_l with (2 := Hx).
+  now apply Rlt_le.
+  field.
+  now apply Rgt_not_eq.
 Qed.
 
 End Linear_domin.
@@ -325,8 +312,7 @@ Lemma filterdiff_continuous_aux {F} {FF : Filter F} (f : U -> V) :
 Proof.
   intros [l [Hl Df]] x Hx.
   specialize (Df x Hx).
-  apply filterlim_locally => //= eps.
-  apply filter_imp with (1 := fun y => norm_compat1 (f x) (f y) eps).
+  apply filterlim_locally_ball_norm => eps.
   specialize (Df (mkposreal _ Rlt_0_1)) ; simpl in Df.
   destruct (linear_norm _ Hl) as [M Hm].
   assert (F (fun y => norm (minus (f y) (f x)) <= (M + 1) * norm (minus y x))).
@@ -339,32 +325,23 @@ Proof.
     apply Rle_minus_r ; ring_simplify.
     by apply Hm.
   move: H => {Df} Df.
-  destruct (norm_compat2 (V := U)) as [M' Hm'].
-  assert (0 < eps / ((M+1) * M')).
-    apply Rdiv_lt_0_compat.
-    by apply eps.
-    apply Rmult_lt_0_compat.
+  assert (Hm': 0 < M + 1).
     apply Rplus_le_lt_0_compat.
-    by apply Hm.
-    by apply Rlt_0_1.
-    by apply M'.
-  specialize (Hx _ (locally_ball x (mkposreal _ H))).
-  apply filter_imp with (1 := fun y => Hm' x y _) in Hx => {Hm'}.
+    apply Rlt_le, Hm.
+    exact Rlt_0_1.
+  assert (0 < eps / (M+1)).
+    apply Rdiv_lt_0_compat with (2 := Hm').
+    apply cond_pos.
+  specialize (Hx _ (locally_ball_norm x (mkposreal _ H))).
   generalize (filter_and _ _ Hx Df) => /=.
-  apply filter_imp => y [Hy Hy'].
+  apply filter_imp => y [Hy Hy'] {Hx Df}.
   apply Rle_lt_trans with (1 := Hy').
-  eapply Rlt_le_trans.
-  apply Rmult_lt_compat_l.
-  apply Rplus_le_lt_0_compat.
-  by apply Hm.
-  by apply Rlt_0_1.
-  by apply Hy.
-  apply Req_le ; field ; split ; apply Rgt_not_eq.
-  by apply M'.
-  apply Rplus_le_lt_0_compat.
-  by apply Hm.
-  by apply Rlt_0_1.
+  evar_last.
+  now apply Rmult_lt_compat_l with (2 := Hy).
+  field.
+  now apply Rgt_not_eq.
 Qed.
+
 Lemma filterdiff_continuous (f : U -> V) x :
   ex_filterdiff f (locally x) -> continuous f x.
 Proof.
@@ -630,9 +607,9 @@ Proof.
   clear Df ; rename H into Df.
   assert (He : 0 < eps / (1 + mf)).
     apply Rdiv_lt_0_compat.
-    by apply eps.
-    apply Rplus_lt_le_0_compat.
-    by apply Rlt_0_1.
+    apply cond_pos.
+    apply Rplus_lt_0_compat.
+    exact Rlt_0_1.
     exact Hmf.
   specialize (Dg (mkposreal _ He)).
   unfold filtermap in Dg.
@@ -644,8 +621,8 @@ Proof.
   apply Rmult_le_compat_l.
   apply Rlt_le, eps.
   rewrite Rmult_comm ; apply Rle_div_l.
-  apply Rplus_lt_le_0_compat.
-  by apply Rlt_0_1.
+  apply Rplus_lt_0_compat.
+  exact Rlt_0_1.
   exact Hmf.
   rewrite Rmult_comm ; by apply Df.
 
