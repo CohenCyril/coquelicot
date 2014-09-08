@@ -845,18 +845,10 @@ Proof.
 
   assert (forall x : R, locally x (fun y : R => Rabs (norm (f y) - norm (f x)) < 1)).
     intro x.
-    generalize (proj1 (filterlim_locally _ _) (Cf x)) => {Cf} Cf.
-    destruct (norm_compat2 (V := V)) as [M HM].
-    assert (0 < / M).
-      apply Rinv_0_lt_compat ; by apply cond_pos.
-    generalize (filter_imp (F := locally x) _ _ (fun y => HM (f x) (f y) (mkposreal _ H)) (Cf _))
-    => {Cf} /=.
-    apply filter_imp => y Hy.
-    eapply Rle_lt_trans.
+    generalize (proj1 (filterlim_locally_ball_norm _ _) (Cf x)) => {Cf} Cf.
+    apply: filter_imp (Cf (mkposreal _ Rlt_0_1)) => y Hy.
+    apply Rle_lt_trans with (2 := Hy).
     apply norm_triangle_inv.
-    eapply Rlt_le_trans.
-    by apply Hy.
-    apply Req_le ; field ; apply Rgt_not_eq, M.
   assert (forall x y : R, Rabs (norm (f y) - norm (f x)) < 1 \/ ~ Rabs (norm (f y) - norm (f x)) < 1).
     intros x y ; edestruct Rlt_dec.
     left ; by apply r.
