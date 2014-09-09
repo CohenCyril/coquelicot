@@ -772,3 +772,54 @@ intros a b c ; exists (scal (b-a) c) ; apply is_KHInt_const.
 Qed.
 
 End is_KHInt.
+
+Section KHInt.
+
+Context {V : CompleteNormedModule R_AbsRing}.
+
+Definition KHInt (f : R -> V) (a b : R) :=
+  iota (is_KHInt f a b).
+
+Lemma KHInt_correct :
+  forall (f : R -> V) (a b : R),
+  ex_KHInt f a b -> is_KHInt f a b (KHInt f a b).
+Proof.
+intros f a b [v Hv].
+unfold KHInt.
+apply iota_correct.
+exists v.
+split.
+exact Hv.
+intros w Hw.
+apply filterlim_locally_unique with (1 := Hv) (2 := Hw).
+Qed.
+
+Lemma is_KHInt_unique :
+  forall (f : R -> V) (a b : R) (l : V),
+  is_KHInt f a b l -> KHInt f a b = l.
+Proof.
+intros f a b l H.
+apply filterlim_locally_unique with (2 := H).
+apply KHInt_correct.
+now exists l.
+Qed.
+
+Lemma KHInt_point :
+  forall (f : R -> V) (a : R),
+  KHInt f a a = zero.
+Proof.
+intros f a.
+apply is_KHInt_unique.
+apply: is_KHInt_point.
+Qed.
+
+Lemma KHInt_const :
+  forall (a b : R) (v : V),
+  KHInt (fun _ => v) a b = scal (b - a) v.
+Proof.
+intros a b v.
+apply is_KHInt_unique.
+apply: is_KHInt_const.
+Qed.
+
+End KHInt.
