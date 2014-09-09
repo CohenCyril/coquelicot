@@ -1175,8 +1175,9 @@ Record mixin_of (K : Ring) := Mixin {
   abs : K -> R ;
   ax1 : abs zero = 0 ;
   ax2 : abs (opp one) = 1 ;
-  ax3 : forall x y, abs (plus x y) <= abs x + abs y ;
-  ax4 : forall x y, abs (mult x y) <= abs x * abs y
+  ax3 : forall x y : K, abs (plus x y) <= abs x + abs y ;
+  ax4 : forall x y : K, abs (mult x y) <= abs x * abs y ;
+  ax5 : forall x : K, abs x = 0 -> x = zero
 }.
 
 Section ClassDef.
@@ -1251,6 +1252,13 @@ Lemma abs_mult :
   abs (mult x y) <= abs x * abs y.
 Proof.
 apply AbsRing.ax4.
+Qed.
+
+Lemma abs_eq_zero :
+  forall x : K,
+  abs x = 0 -> x = zero.
+Proof.
+apply AbsRing.ax5.
 Qed.
 
 Lemma abs_opp :
@@ -2445,7 +2453,8 @@ Record mixin_of (K : AbsRing) (V : NormedModuleAux K) := Mixin {
   ax1 : forall (x y : V), norm (plus x y) <= norm x + norm y ;
   ax2 : forall (l : K) (x : V), norm (scal l x) <= abs l * norm x ;
   ax3 : forall (x y : V) (eps : R), norm (minus y x) < eps -> ball x eps y ;
-  ax4 : forall (x y : V) (eps : posreal), ball x eps y -> norm (minus y x) < norm_factor * eps
+  ax4 : forall (x y : V) (eps : posreal), ball x eps y -> norm (minus y x) < norm_factor * eps ;
+  ax5 : forall x : V, norm x = 0 -> x = zero
 }.
 
 Section ClassDef.
@@ -2529,6 +2538,12 @@ Lemma norm_compat2 :
   forall (x y : V) (eps : posreal), ball x eps y -> norm (minus y x) < norm_factor * eps.
 Proof.
 apply: NormedModule.ax4.
+Qed.
+
+Lemma norm_eq_zero :
+  forall x : V, norm x = 0 -> x = zero.
+Proof.
+apply NormedModule.ax5.
 Qed.
 
 Lemma norm_zero :
@@ -2829,7 +2844,7 @@ Proof.
 Qed.
 
 Definition AbsRing_NormedModule_mixin :=
-  NormedModule.Mixin K _ abs 1 abs_triangle abs_mult (fun x y e H => H) AbsRing_norm_compat2.
+  NormedModule.Mixin K _ abs 1 abs_triangle abs_mult (fun x y e H => H) AbsRing_norm_compat2 abs_eq_zero.
 
 Canonical AbsRing_NormedModule :=
   NormedModule.Pack K _ (NormedModule.Class _ _ _ AbsRing_NormedModule_mixin) K.
@@ -3229,11 +3244,27 @@ apply Rlt_le.
 apply cond_pos.
 Qed.
 
+Lemma prod_norm_eq_zero :
+  forall x : U * V,
+  prod_norm x = 0 -> x = zero.
+Proof.
+intros [xu xv] H.
+apply sqrt_eq_0 in H.
+rewrite !(pow_Rsqr _ 1) !pow_1 in H.
+apply Rplus_sqr_eq_0 in H.
+destruct H as [H1 H2].
+apply norm_eq_zero in H1.
+apply norm_eq_zero in H2.
+simpl in H1, H2.
+now rewrite H1 H2.
+apply Rplus_le_le_0_compat ; apply pow2_ge_0.
+Qed.
+
 End prod_NormedModule.
 
 Definition prod_NormedModule_mixin (K : AbsRing) (U V : NormedModule K) :=
   NormedModule.Mixin K _ (@prod_norm K U V) prod_norm_factor prod_norm_triangle
-  prod_norm_scal prod_norm_compat1 prod_norm_compat2.
+  prod_norm_scal prod_norm_compat1 prod_norm_compat2 prod_norm_eq_zero.
 
 Canonical prod_NormedModule (K : AbsRing) (U V : NormedModule K) :=
   NormedModule.Pack K (U * V) (NormedModule.Class K (U * V) _ (prod_NormedModule_mixin K U V)) (U * V).
@@ -3823,7 +3854,7 @@ Proof.
 Qed.
 
 Definition R_AbsRing_mixin :=
-  AbsRing.Mixin _ _ Rabs_R0 Rabs_m1 Rabs_triang (fun x y => Req_le _ _ (Rabs_mult x y)).
+  AbsRing.Mixin _ _ Rabs_R0 Rabs_m1 Rabs_triang (fun x y => Req_le _ _ (Rabs_mult x y)) Rabs_eq_0.
 
 Canonical R_AbsRing :=
   AbsRing.Pack R (AbsRing.Class _ _ R_AbsRing_mixin) R.

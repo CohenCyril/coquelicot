@@ -261,12 +261,6 @@ rewrite Cmod_opp.
 apply Cmod_1.
 Qed.
 
-Definition C_AbsRing_mixin :=
-  AbsRing.Mixin _ _ Cmod_0 Cmod_m1 Cmod_triangle (fun x y => Req_le _ _ (Cmod_mult x y)).
-
-Canonical C_AbsRing :=
-  AbsRing.Pack C (AbsRing.Class _ _ C_AbsRing_mixin) C.
-
 Lemma Cmod_eq_0 :
   forall x, Cmod x = 0 -> x = 0.
 Proof.
@@ -279,6 +273,12 @@ now apply injective_projections.
 apply Rplus_le_le_0_compat ; apply Rle_0_sqr.
 apply Rle_refl.
 Qed.
+
+Definition C_AbsRing_mixin :=
+  AbsRing.Mixin _ _ Cmod_0 Cmod_m1 Cmod_triangle (fun x y => Req_le _ _ (Cmod_mult x y)) Cmod_eq_0.
+
+Canonical C_AbsRing :=
+  AbsRing.Pack C (AbsRing.Class _ _ C_AbsRing_mixin) C.
 
 Lemma Cmod_ge_0 :
   forall x, 0 <= Cmod x.
@@ -418,7 +418,7 @@ Qed.
 
 Definition C_NormedModule_mixin :=
   NormedModule.Mixin _ C_NormedModuleAux _ _ Cmod_triangle (fun x y => Req_le _ _ (Cmod_mult x y))
-    C_NormedModule_mixin_compat1 C_NormedModule_mixin_compat2.
+    C_NormedModule_mixin_compat1 C_NormedModule_mixin_compat2 Cmod_eq_0.
 
 Canonical C_NormedModule :=
   NormedModule.Pack C_AbsRing C (NormedModule.Class _ _ _ C_NormedModule_mixin) C.
