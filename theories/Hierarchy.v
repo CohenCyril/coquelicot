@@ -2033,7 +2033,7 @@ Qed.
 
 Definition iota (P : T -> Prop) := lim (fun A => (forall x, P x -> A x)).
 
-Lemma iota_correct :
+Lemma iota_correct_weak :
   forall P : T -> Prop,
   (forall x y, P x -> P y -> forall eps : posreal, ball x eps y) ->
   forall x, P x -> forall eps : posreal, ball (iota P) eps x.
@@ -2615,6 +2615,28 @@ Proof.
   by rewrite /minus plus_comm -plus_assoc plus_opp_l plus_zero_r.
 Qed.
 
+Lemma ball_eq :
+  forall x y : V,
+  (forall eps : posreal, ball x eps y) -> x = y.
+Proof.
+intros x y H.
+apply plus_reg_r with (opp x).
+rewrite plus_opp_r.
+apply eq_sym, norm_eq_zero.
+apply Rle_antisym.
+2: apply norm_ge_0.
+apply prop_eps.
+intros eps He.
+assert (He' : 0 < eps / norm_factor).
+  apply Rdiv_lt_0_compat with (1 := He).
+  apply norm_factor_gt_0.
+specialize (H (mkposreal _ He')).
+replace eps with (norm_factor * (eps / norm_factor)).
+apply norm_compat2 with (1 := H).
+field.
+apply Rgt_not_eq, norm_factor_gt_0.
+Qed.
+
 Definition ball_norm (x : V) (eps : R) (y : V) := norm (minus y x) < eps.
 
 Definition locally_norm (x : V) (P : V -> Prop) :=
@@ -2722,6 +2744,21 @@ Lemma ball_norm_le :
 Proof.
   intros x e1 e2 He y H1.
   now apply Rlt_le_trans with e1.
+Qed.
+
+Lemma ball_norm_eq :
+  forall x y : V,
+  (forall eps : posreal, ball_norm x eps y) -> x = y.
+Proof.
+intros x y H.
+apply plus_reg_r with (opp x).
+rewrite plus_opp_r.
+apply eq_sym, norm_eq_zero.
+apply Rle_antisym.
+2: apply norm_ge_0.
+apply prop_eps.
+intros eps He.
+exact (H (mkposreal eps He)).
 Qed.
 
 End NormedModule1.
@@ -2916,6 +2953,25 @@ Export CompleteNormedModule.Exports.
 Section CompleteNormedModule1.
 
 Context {T : Type} {K : AbsRing} {V : CompleteNormedModule K}.
+
+Lemma iota_correct :
+  forall P : V -> Prop,
+  (exists! x : V, P x) ->
+  P (iota P).
+Proof.
+intros P [x [Px HP]].
+replace (iota P) with x.
+exact Px.
+apply eq_sym, ball_eq.
+intros eps.
+apply: iota_correct_weak Px eps.
+intros u v Pu Pv eps.
+replace v with u.
+apply ball_center.
+apply eq_trans with x.
+now apply eq_sym, HP.
+now apply HP.
+Qed.
 
 Lemma filterlim_locally_unique_normed :
   forall {F} {FF : ProperFilter' F} (f : T -> V) l l',
