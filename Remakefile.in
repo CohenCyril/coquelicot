@@ -10,6 +10,7 @@ FILES = \
 	ElemFct.v \
 	Hierarchy.v \
 	Iter.v \
+	KHInt.v \
 	Limit.v \
 	Lub.v \
 	Markov.v \
