@@ -1686,7 +1686,7 @@ apply L.
 now apply Fx.
 Qed.
 
-Lemma is_filter_lim_unique {F} {FF : ProperFilter F} (x y : T) :
+Lemma is_filter_lim_close {F} {FF : ProperFilter F} (x y : T) :
   is_filter_lim F x -> is_filter_lim F y -> forall eps : posreal, ball x eps y.
 Proof.
   intros Hx Hy eps.
@@ -1700,10 +1700,10 @@ Proof.
   apply ball_sym, Hz.
 Qed.
 
-Lemma is_filter_lim_locally_unique (x y : T) :
+Lemma is_filter_lim_locally_close (x y : T) :
   is_filter_lim (locally x) y -> forall eps : posreal, ball x eps y.
 Proof.
-  by apply is_filter_lim_unique.
+  by apply is_filter_lim_close.
 Qed.
 
 End Locally.
@@ -1728,9 +1728,10 @@ split.
   apply He.
 Qed.
 
-Lemma filterlim_locally_unique: forall {F} {FF: ProperFilter F}
-  (f:T -> U) l l', filterlim f F (locally l) ->  filterlim f F (locally l') ->
-    (forall eps : posreal, ball l eps l').
+Lemma filterlim_locally_close:
+  forall {F} {FF: ProperFilter F} (f : T -> U) l l',
+  filterlim f F (locally l) ->  filterlim f F (locally l') ->
+  forall eps : posreal, ball l eps l'.
 Proof.
 intros F FF f l l' Hl Hl' eps.
 assert (locally l (ball l (pos_div_2 eps))).
@@ -2761,7 +2762,57 @@ intros eps He.
 exact (H (mkposreal eps He)).
 Qed.
 
+Lemma is_filter_lim_unique :
+  forall {F} {FF : ProperFilter' F} (x y : V),
+  is_filter_lim F x -> is_filter_lim F y -> x = y.
+Proof.
+intros F FF x y Hx Hy.
+apply ball_norm_eq => eps.
+assert (Hx': F (ball_norm x (pos_div_2 eps))).
+  apply Hx.
+  apply locally_ball_norm.
+assert (Hy': F (ball_norm y (pos_div_2 eps))).
+  apply Hy.
+  apply locally_ball_norm.
+apply Rnot_le_lt.
+intros H.
+apply (@filter_not_empty V F FF).
+apply: filter_imp (filter_and _ _ Hx' Hy').
+clear -H.
+intros z [Bx By].
+revert H.
+apply Rlt_not_le.
+rewrite (double_var eps).
+change (eps / 2) with (pos (pos_div_2 eps)).
+apply ball_norm_triangle with (1 := Bx).
+now apply ball_norm_sym.
+Qed.
+
+Lemma is_filter_lim_locally_unique :
+  forall (x y : V),
+  is_filter_lim (locally x) y -> x = y.
+Proof.
+intros x y H.
+apply ball_eq.
+now apply is_filter_lim_locally_close.
+Qed.
+
 End NormedModule1.
+
+Section NormedModule2.
+
+Context {T : Type} {K : AbsRing} {V : NormedModule K}.
+
+Lemma filterlim_locally_unique :
+  forall {F} {FF : ProperFilter' F} (f : T -> V) (x y : V),
+  filterlim f F (locally x) -> filterlim f F (locally y) ->
+  x = y.
+Proof.
+intros F FF f x y.
+apply is_filter_lim_unique.
+Qed.
+
+End NormedModule2.
 
 (** Normed vector spaces have some continuous functions *)
 
@@ -2971,40 +3022,6 @@ apply ball_center.
 apply eq_trans with x.
 now apply eq_sym, HP.
 now apply HP.
-Qed.
-
-Lemma filterlim_locally_unique_normed :
-  forall {F} {FF : ProperFilter' F} (f : T -> V) l l',
-  filterlim f F (locally l) -> filterlim f F (locally l') ->
-  forall eps : posreal, ball l eps l'.
-Proof.
-intros F FF f l l' Hl Hl' eps.
-apply: norm_compat1.
-assert (locally l (ball_norm l (pos_div_2 eps))).
-  by apply : locally_ball_norm.
-specialize (Hl (ball_norm l (pos_div_2 eps)) H).
-assert (locally l' (ball_norm l' (pos_div_2 eps))).
-  by apply : locally_ball_norm.
-specialize (Hl' (ball_norm l' (pos_div_2 eps)) H0).
-unfold filtermap in Hl, Hl'.
-generalize (filter_and _ _ Hl Hl') => {H H0} H.
-assert (~ ~ ball_norm l eps l') as Hnn.
-intro Hepsll'.
-apply FF.
-apply filter_imp with (fun x : T => ball_norm l (pos_div_2 eps) (f x) /\ ball_norm l' (pos_div_2 eps) (f x)).
-intros x Hx.
-apply Hepsll'.
-rewrite (double_var eps).
-change (eps / 2) with (pos (pos_div_2 eps)).
-apply ball_norm_triangle with (f x).
-by apply Hx.
-unfold ball_norm.
-by apply ball_norm_sym, (proj2 Hx).
-assumption.
-destruct (ball_norm_dec l l' eps).
-apply b.
-elim Hnn.
-apply n.
 Qed.
 
 End CompleteNormedModule1.
@@ -4032,31 +4049,6 @@ Canonical R_NormedModule :=
 
 Canonical R_CompleteNormedModule :=
   CompleteNormedModule.Pack _ R (CompleteNormedModule.Class R_AbsRing _ (NormedModule.class _ R_NormedModule) R_CompleteSpace_mixin) R.
-
-Lemma is_filter_lim_locally_unique_R (x y : R) :
-  is_filter_lim (locally x) y -> x = y.
-Proof.
-  intros H.
-  apply sym_eq, Req_lt_aux.
-  exact (is_filter_lim_locally_unique x y H).
-Qed.
-
-Lemma ball_uniqueness_R (x y : R) :
-  (forall eps : posreal, ball x eps y) -> x = y.
-Proof.
-  rewrite /ball /= /AbsRing_ball.
-  now intros Hx ; apply sym_eq, Req_lt_aux.
-Qed.
-
-Lemma at_point_R (a : R) P :
-  at_point a P <-> P a.
-Proof.
-  split => H.
-  - by apply H, ball_center.
-  - intros y Hy.
-    apply ball_uniqueness_R in Hy.
-    by rewrite -Hy.
-Qed.
 
 Definition at_left x := within (fun u : R => Rlt u x) (locally x).
 Definition at_right x := within (fun u : R => Rlt x u) (locally x).

@@ -32,6 +32,7 @@ Context {V : NormedModule R_AbsRing}.
 
 Definition is_RInt (f : R -> V) (a b : R) (If : V) :=
   filterlim (fun ptd => scal (sign (b-a)) (Riemann_sum f ptd)) (Riemann_fine a b) (locally If).
+
 Definition ex_RInt (f : R -> V) (a b : R) :=
   exists If : V, is_RInt f a b If.
 
@@ -863,17 +864,14 @@ Lemma is_RInt_comp_lin
     -> is_RInt (fun y => scal u (f (u * y + v))) a b l.
 Proof.
   case: (Req_dec u 0) => [-> {u} If | ].
-  assert (If' := is_RInt_point f v).
-  rewrite ?Rmult_0_l Rplus_0_l in If.
-  assert (H := filterlim_locally_unique _ _ _ If If') => {If If'}.
+  evar_last.
   apply is_RInt_ext with (fun _ => zero).
-  move => x _ ; apply sym_eq ;
-  by rewrite -(scal_zero_l (f (0 * x + v))) /=.
-  apply filterlim_locally ; simpl => eps.
-  apply filter_imp with (2 := filter_true) => x Hx.
-  rewrite Riemann_sum_const scal_assoc /=.
+  move => x _ ; apply sym_eq ; apply: scal_zero_l.
+  apply is_RInt_const.
+  apply filterlim_locally_unique with (2 := If).
+  rewrite !Rmult_0_l Rplus_0_l.
   rewrite scal_zero_r.
-  by apply H.
+  apply is_RInt_point.
 
   wlog: u a b / (u > 0) => [Hw | Hu _].
     case: (Rlt_le_dec 0 u) => Hu.
@@ -899,12 +897,10 @@ Proof.
     apply Hw.
     by [].
     by apply is_RInt_swap.
-    assert (If' := is_RInt_point f (u * a + v)).
-    assert (H := filterlim_locally_unique _ _ _ If If') => {If If'}.
-    apply filterlim_locally => eps.
-    apply filter_imp with (2 := filter_true) => x _.
-    rewrite Rminus_eq_0 sign_0 scal_zero_l.
-    by apply H.
+    evar_last.
+    apply is_RInt_point.
+    apply filterlim_locally_unique with (2 := If).
+    apply is_RInt_point.
   intros If.
   apply filterlim_locally.
   generalize (proj1 (filterlim_locally _ l) If).
@@ -1801,17 +1797,12 @@ by apply Hg.
 exists zero.
 rewrite -Hab in Hfh |- * => {b Hab}.
 split.
-assert (forall (eps : posreal) t, ball (@zero V) eps (h t)).
-  intros eps t.
-  specialize (Hfh t).
-  apply filterlim_locally_unique with (2 := Hfh).
-  apply @is_RInt_point.
-intros P [eP HP].
-unfold filtermap.
-move: (fun x : U => HP (h x)) => {HP} HP.
-apply filter_imp with (1 := HP).
-now apply filter_imp with (2 := filter_true).
-now apply is_RInt_point.
+apply filterlim_ext with (fun _ => zero).
+intros x.
+apply filterlim_locally_unique with (2 := Hfh x).
+apply is_RInt_point.
+apply filterlim_const.
+apply is_RInt_point.
 Qed.
 
 Section Continuity.
@@ -5806,7 +5797,7 @@ Proof.
   split.
   by apply @is_linear_scal_l.
   simpl => y Hy eps.
-  rewrite -(is_filter_lim_locally_unique_R _ _ Hy) => {y Hy}.
+  rewrite -(is_filter_lim_locally_unique _ _ Hy) => {y Hy}.
   destruct (Cx eps (cond_pos eps)) as (d,(Hd1,Hd2)).
   unfold dist in Hd2; simpl in Hd2; unfold R_dist in Hd2.
   destruct Iloc as (e,He).
@@ -6328,7 +6319,7 @@ rewrite Rmax_right. 2: now apply Rlt_le.
 intros Df Cdf If IDf.
 split => [ | y Hy].
 by apply @is_linear_scal_l.
-rewrite -(is_filter_lim_locally_unique_R _ _ Hy) => {y Hy}.
+rewrite -(is_filter_lim_locally_unique _ _ Hy) => {y Hy}.
 refine (let Cdf' := uniform_continuity_2d_1d (fun u v => Derive (fun z => f z u) v) a b x _ in _).
 intros t Ht eps.
 specialize (Cdf t Ht eps).

@@ -306,7 +306,7 @@ Proof.
   intros Df.
   apply is_derive_Reals ; split => [ | z Hz eps].
     by apply @is_linear_scal_l.
-  rewrite -(is_filter_lim_locally_unique_R _ _ Hz) => {z Hz}.
+  rewrite -(is_filter_lim_locally_unique _ _ Hz) => {z Hz}.
   elim (Df eps) ; clear Df ; intros delta Df.
   exists delta ; simpl in Df ; simpl ; intros.
   rewrite /minus /plus /opp /scal /= /mult /=.

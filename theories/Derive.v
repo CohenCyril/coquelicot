@@ -359,65 +359,11 @@ split.
 exact Hl.
 intros z Fz.
 specialize (Df _ (fun P H => H)).
-generalize (is_filter_lim_unique _ _ Fx Fz) => Hxz.
-assert (norm (minus x z) = 0)%R.
-  apply Req_lt_aux => e.
-  rewrite Rminus_0_r Rabs_pos_eq.
-  move: (fun eps => norm_compat2 _ _ _ (ball_sym _ _ _ (Hxz eps))) => {Hxz} HM.
-  set (M := @norm_factor _ U).
-  replace (pos e) with (M * (e/M))%R.
-  generalize (fun H => HM (mkposreal (e/M) H)) => {HM} /= HM.
-  apply HM.
-  apply Rdiv_lt_0_compat.
-  by apply e.
-  exact norm_factor_gt_0.
-  field ; apply Rgt_not_eq, norm_factor_gt_0.
-  by apply norm_ge_0.
-eapply is_domin_le.
-2: apply Fx.
-apply domin_rw_l with (fun y : U => minus y x).
-move => eps /=.
-apply filter_forall => y.
-replace (minus (minus y z) (minus y x)) with (minus x z).
-rewrite H.
-apply Rmult_le_pos.
-by apply Rlt_le, eps.
-by apply norm_ge_0.
-rewrite /minus opp_plus opp_opp.
-rewrite (plus_comm y) -plus_assoc plus_comm.
-apply f_equal.
-by rewrite plus_assoc plus_opp_r plus_zero_l.
-eapply domin_rw_r.
-2: by apply Df.
-move => eps /=.
-apply filter_forall => y.
-eapply Rle_trans.
-2: apply Rmult_le_pos.
-apply Req_le.
-apply Req_le_aux => e.
-rewrite Rminus_0_r Rabs_pos_eq.
-destruct (Df e) as [d Hd].
-move: (Hd _ (Hxz _)) => {Hd} Hd.
-eapply Rle_trans.
-eapply Rle_trans.
-2: apply Hd.
-apply Req_le.
-rewrite -norm_opp opp_minus.
-apply f_equal.
-rewrite /minus !(linear_plus l Hl) !(linear_opp l _ Hl) !opp_plus !opp_opp -!plus_assoc.
-rewrite (plus_comm (f y)) !(plus_comm (f z)) -!plus_assoc.
-apply f_equal.
-rewrite (plus_comm (opp (l y))) !(plus_comm (opp (l z))) -!plus_assoc.
-apply f_equal.
-rewrite (plus_comm (opp (f y))) (plus_comm (l y)) -!plus_assoc (plus_assoc (opp (l y))) plus_opp_l plus_zero_l.
-apply f_equal.
-by rewrite plus_comm -plus_assoc plus_opp_l plus_zero_r.
-rewrite -norm_opp opp_minus H Rmult_0_r.
-by apply Rlt_le, e.
-by apply norm_ge_0.
-by apply Rlt_le, eps.
-by apply norm_ge_0.
+generalize (is_filter_lim_unique _ _ Fx Fz).
+intros ->.
+now apply is_domin_le with (2 := Fz).
 Qed.
+
 Lemma ex_filterdiff_locally {F} {FF : ProperFilter F} (f : U -> V) x :
   is_filter_lim F x ->
   ex_filterdiff f (locally x) ->
@@ -481,8 +427,11 @@ Proof.
   move => y Hy.
   destruct H as [d Hd].
   apply Hd.
+  replace y with x.
+  apply ball_center.
   by apply is_filter_lim_locally_unique.
 Qed.
+
 Lemma ex_filterdiff_ext_locally (f g : U -> V) x :
   locally x (fun y => f y = g y)
   -> ex_filterdiff f (locally x) -> ex_filterdiff g (locally x).
@@ -872,7 +821,11 @@ Proof.
   by apply filterdiff_minus.
 Qed.
 
-Lemma filterdiff_scal : forall {F} {FF : ProperFilter F} (x : K * V),
+Local Ltac plus_grab e :=
+  repeat rewrite (plus_assoc _ e) -(plus_comm e) -(plus_assoc e).
+
+Lemma filterdiff_scal :
+  forall {F : (K * V -> Prop) -> Prop} {FF : ProperFilter F} (x : K * V),
   is_filter_lim F x ->
   (forall (n m : K), mult n m = mult m n) ->
   filterdiff (fun t : K * V => scal (fst t) (snd t)) F
@@ -888,82 +841,37 @@ Proof.
     by apply is_linear_snd.
     by apply is_linear_scal_r.
     apply is_linear_plus.
-  - move => y Hy.
-    generalize (is_filter_lim_unique _ _ Hx Hy) => {Hy} Hy eps.
+  - move => y Hy eps.
+    replace y with (x1,x2).
+    2: now apply is_filter_lim_unique with (1 := Hx).
+    clear y Hy.
     apply Hx ; clear Hx.
-    set (M := @norm_factor _ V).
-    assert (0 < Rmin (eps / 2) (eps / 2 / M)).
-      apply Rmin_case.
-      by apply is_pos_div_2.
-      apply Rdiv_lt_0_compat.
-      by apply is_pos_div_2.
-      exact norm_factor_gt_0.
-    set eps' := mkposreal _ H.
-
-    exists eps' => z Hz.
-    move: (conj (proj1 Hz) (norm_compat2 _ _ _ (proj2 Hz))) => {Hz} Hz.
-    specialize (Hy eps').
-    move: (conj (proj1 Hy) (norm_compat2 _ _ _ (proj2 Hy))) => {Hy} Hy.
-    destruct y as [y1 y2].
-    destruct z as [z1 z2].
-    simpl in Hy, Hz ; simpl fst in Hy, Hz |- * ; simpl snd in Hy, Hz |- *.
-    rewrite -!/(minus _ _).
-    eapply Rle_trans.
-    2: apply Rmult_le_compat_l.
-    2: apply Rlt_le, eps.
-    2: apply sqrt_plus_sqr.
+    apply: locally_le_locally_norm.
+    exists eps.
+    intros [y1 y2] H.
     simpl.
-    rewrite !Rabs_pos_eq ; try by apply abs_ge_0.
-    replace (pos eps)%R with ((eps / 2) * 2)%R by field.
-    rewrite Rmult_assoc.
-    eapply Rle_trans.
-    2: apply Rmult_le_compat_l.
-    2: apply Rlt_le, is_pos_div_2.
-    2: by apply Rplus_le_Rmax.
-
-    set v := minus (scal _ _) _.
-    replace v with (plus (scal (minus z1 y1) z2) (scal y1 (minus z2 y2))).
-    Focus 2.
-      rewrite /v /minus scal_distr_r scal_distr_l -!plus_assoc.
-      apply f_equal.
-      rewrite scal_opp_r.
-      apply (plus_reg_r (scal y1 y2)) ;
-      rewrite plus_assoc -plus_assoc.
-      rewrite plus_opp_l plus_zero_r.
-      rewrite scal_opp_l.
-      by apply plus_opp_l.
-      clear v.
-      set v := minus (plus _ _) _.
-    replace v with (plus (scal (minus z1 y1) (minus z2 x2)) (scal (minus y1 x1) (minus z2 y2))).
-    eapply Rle_trans.
-    apply norm_triangle.
-    eapply Rle_trans.
-    apply Rplus_le_compat ; simpl ; apply norm_scal.
-    rewrite Rmult_plus_distr_l.
-    rewrite Rmult_comm.
-    apply Rplus_le_compat ; apply Rmult_le_compat_r.
-    by apply abs_ge_0.
-    eapply Rle_trans.
-    by apply Rlt_le, Hz.
-    fold M.
-    eapply Rle_trans.
-    apply Rmult_le_compat_l.
-    by apply Rlt_le, norm_factor_gt_0.
-    apply Rmin_r.
-    apply Req_le ; field.
-    by apply Rgt_not_eq, norm_factor_gt_0.
-    by apply norm_ge_0.
-    eapply Rle_trans.
-    by apply Rlt_le, Hy.
-    apply Rmin_l.
+    set v := minus (minus _ _) _.
+    replace v with (scal (minus y1 x1) (minus y2 x2)).
+    apply Rle_trans with (1 := norm_scal _ _).
+    generalize (proj1 (sqrt_plus_sqr (abs (minus y1 x1)) (norm (minus y2 x2)))).
+    rewrite -> Rabs_pos_eq by apply abs_ge_0.
+    rewrite -> Rabs_pos_eq by apply norm_ge_0.
+    intros H'.
+    apply Rmult_le_compat.
+    apply abs_ge_0.
+    apply norm_ge_0.
+    apply Rlt_le, Rle_lt_trans with (2 := H).
+    apply Rle_trans with (2 := H').
+    apply Rmax_l.
+    apply Rle_trans with (2 := H').
+    apply Rmax_r.
     rewrite /v /minus !scal_distr_l !scal_distr_r !opp_plus !scal_opp_r !scal_opp_l !opp_opp -!plus_assoc.
-    apply f_equal, f_equal.
-    rewrite plus_comm -!plus_assoc plus_comm -!plus_assoc.
     apply f_equal.
-    rewrite plus_comm -!plus_assoc.
+    plus_grab (opp (scal x1 y2)).
     apply f_equal.
-    by rewrite plus_comm -!plus_assoc.
-    by apply norm_ge_0.
+    plus_grab (opp (scal y1 x2)).
+    apply f_equal.
+    by rewrite plus_assoc plus_opp_l plus_zero_l.
 Qed.
 
 Lemma ex_filterdiff_scal : forall {F} {FF : ProperFilter F} (x : K * V),
@@ -1249,7 +1157,7 @@ Proof.
   + split.
     apply @is_linear_scal_l.
     simpl => y Hy eps.
-    rewrite -(is_filter_lim_locally_unique_R _ _ Hy) ; clear y Hy.
+    rewrite -(is_filter_lim_locally_unique _ _ Hy) ; clear y Hy.
     case: (Hf eps (cond_pos _)) => {Hf} d Hf.
     exists d => y /= Hy.
     case: (Req_dec y x) => Hxy.

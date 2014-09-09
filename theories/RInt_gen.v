@@ -31,18 +31,18 @@ Proof.
     apply (fun H => proj1 (filterlim_locally _ _) H (pos_div_2 eps)) in Hl.
     case: Hl => P' Q' P'a Q'b Hl.
     apply Hl.
-    by apply at_point_R, P'a.
-    by apply at_point_R, Q'b.
+    apply P'a => ? ; apply ball_center.
+    apply Q'b => ? ; apply ball_center.
     by apply Hx.
     apply Hif.
-    by apply at_point_R, Pa.
-    by apply at_point_R, Qb.
+    apply Pa => ? ; apply ball_center.
+    apply Qb => ? ; apply ball_center.
     by apply (locally_ball _ (pos_div_2 eps)).
   - intros Hl.
     exists (fun _ => l) ; split.
     exists (fun x => x = a) (fun x => x = b).
-    by apply at_point_R.
-    by apply at_point_R.
+    intros x H. now apply eq_sym, ball_eq.
+    intros x H. now apply eq_sym, ball_eq.
     by move => x y -> ->.
     by apply filterlim_const.
 Qed.
@@ -117,9 +117,9 @@ Proof.
   move => /= a c P1a Q2c.
   apply is_RInt_Chasles with b.
   apply Hf1 => //.
-  apply at_point_R, HQ1.
+  apply HQ1 => ? ; apply ball_center.
   apply Hf2 => //.
-  apply at_point_R, HP2.
+  apply HP2 => ? ; apply ball_center.
   eapply filterlim_comp_2, filterlim_plus.
   eapply filterlim_comp , Hl1.
   clear -FFa FFc.
@@ -131,7 +131,7 @@ Proof.
   intros a c Q0a _ ; simpl.
   apply HP.
   by apply Q0a.
-  apply at_point_R, P1b.
+  apply P1b => ? ; apply ball_center.
   eapply filterlim_comp , Hl2.
   clear -FFa FFc.
   intros P [P0 P1 P0a P1b HP].
@@ -141,7 +141,7 @@ Proof.
   exact: P1b.
   intros a c _ Q0c ; simpl.
   apply HP.
-  apply at_point_R, P0a.
+  apply P0a => ? ; apply ball_center.
   by apply Q0c.
 Qed.
 
@@ -316,7 +316,7 @@ Proof.
   exists (fun x => 0 < x) (fun y => y = x).
   by exists (mkposreal _ Hx).
   intros y Hy.
-  apply ball_uniqueness_R => eps ; by apply ball_sym.
+  now apply eq_sym, ball_eq.
   move => /= a _ Ha -> y Hy.
   apply is_derive_unique, H.
   eapply Rlt_trans, Hy.
@@ -324,7 +324,7 @@ Proof.
   exists (fun x => 0 < x) (fun y => y = x).
   by exists (mkposreal _ Hx).
   intros y Hy.
-  apply ball_uniqueness_R => eps ; by apply ball_sym.
+  now apply eq_sym, ball_eq.
   move => /= a _ Ha -> y Hy.
   eexists ; apply H.
   eapply Rlt_le_trans, Hy.
@@ -332,7 +332,7 @@ Proof.
   exists (fun x => 0 < x) (fun y => y = x).
   by exists (mkposreal _ Hx).
   intros y Hy.
-  apply ball_uniqueness_R => eps ; by apply ball_sym.
+  now apply eq_sym, ball_eq.
   move => /= a _ Ha -> y Hy.
   eapply continuous_ext_loc.
   apply locally_interval with 0 p_infty.
