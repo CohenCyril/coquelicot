@@ -394,25 +394,17 @@ replace (nth 0 (rcons (SF_ly s') (snd (b' + e, b'))) i) with (nth 0 (SF_ly s') i
 replace (nth 0 (rcons (SF_lx s') (fst (b' + e, b'))) (S i)) with (nth 0 (SF_lx s') (S i)).
 now apply (HH1 i).
 rewrite nth_rcons.
-case Hcase : ssrnat.leq.
-easy.
-move /ssrnat.leP :Hcase => Hcase.
-rewrite SF_size_lx in Hcase.
-apply le_n_S in Hi2 ; contradiction.
+rewrite SF_size_lx.
+rewrite ssrnat.ltnS.
+by move /ssrnat.ltP :Hi2 => ->.
 rewrite nth_rcons.
-case Hcase : ssrnat.leq.
-easy.
-move /ssrnat.leP :Hcase => Hcase.
-rewrite SF_size_ly in Hcase.
-contradiction.
+rewrite SF_size_ly.
+by move /ssrnat.ltP :Hi2 => ->.
 rewrite nth_rcons.
-case Hcase : ssrnat.leq.
-easy.
-move /ssrnat.leP :Hcase => Hcase.
-rewrite SF_size_lx in Hcase.
-apply le_n_S in Hi2 ; contradiction.
+rewrite SF_size_lx.
+by move /ssrnat.ltP :Hi => ->.
 intro Hi2.
-replace i with (SF_size s').
+rewrite Hi2.
 replace (nth 0 (rcons (SF_lx s') (fst (b' + e, b'))) (SF_size s')) with b'.
 replace (nth 0 (rcons (SF_ly s') (snd (b' + e, b'))) (SF_size s')) with (nth 0 (rcons (SF_ly s') (snd (b' + e, b'))) (Peano.pred (size (rcons (SF_ly s') (snd (b' + e, b')))))).
 replace (nth 0 (rcons (SF_lx s') (fst (b' + e, b'))) (S (SF_size s'))) with (nth 0 (rcons (SF_lx s') (fst (b' + e, b'))) (Peano.pred (size (rcons (SF_lx s') (fst (b' + e, b')))))).
@@ -423,27 +415,20 @@ rewrite last_rcons.
 simpl.
 split.
 apply Rle_refl.
-apply Rplus_le_reg_l with (- b').
-rewrite Rplus_opp_l.
-rewrite <- Rplus_assoc.
-rewrite Rplus_opp_l ; rewrite Rplus_0_l.
+rewrite <- (Rplus_0_r b') at 1.
+apply Rplus_le_compat_l.
 now apply Rlt_le.
 rewrite size_rcons ; rewrite SF_size_lx ; simpl ; easy.
 rewrite size_rcons ; rewrite SF_size_ly ; simpl ; easy.
 rewrite nth_rcons.
-case Hcase : ssrnat.leq.
+rewrite SF_size_lx.
+rewrite ssrnat.leqnn.
 unfold s'.
 rewrite SF_lx_rcons ; rewrite SF_size_rcons.
-replace (S (SF_size s)) with (Peano.pred (size (rcons (SF_lx s) (fst (b', b'))))).
-rewrite nth_last.
-rewrite last_rcons.
-easy.
-rewrite size_rcons ; rewrite SF_size_lx ; simpl ; easy.
-move /ssrnat.leP :Hcase => Hcase.
-rewrite SF_size_lx in Hcase.
-absurd (S (SF_size s') <= S (SF_size s'))%nat.
-assumption.
-apply le_refl.
+rewrite -SF_size_lx.
+rewrite nth_rcons.
+rewrite ssrnat.ltnn.
+by rewrite eqtype.eq_refl.
 split.
 intro i.
 rewrite SF_size_rcons.
@@ -463,26 +448,17 @@ replace (ith_step (SF_rcons s (b', b')) i) with (ith_step s i).
 replace (nth 0 (SF_ly (SF_rcons s (b', b'))) i) with (nth 0 (SF_ly s) i).
 now apply (H4 i).
 rewrite SF_ly_rcons ; rewrite nth_rcons.
-case Hcase : ssrnat.leq.
-easy.
-move /ssrnat.leP :Hcase => Hcase.
-rewrite SF_size_ly in Hcase.
-contradiction.
+rewrite SF_size_ly.
+by move /ssrnat.ltP :Hi3 => ->.
 unfold ith_step.
 rewrite SF_lx_rcons.
-rewrite nth_rcons ; case Hcase : ssrnat.leq ; rewrite nth_rcons.
-case Hcase2 : ssrnat.leq.
-easy.
-move /ssrnat.leP :Hcase2 => Hcase2.
-rewrite SF_size_lx in Hcase2.
-absurd (S i <= S (SF_size s))%nat.
-assumption.
-apply le_n_S.
-now apply lt_le_weak.
-move /ssrnat.leP :Hcase => Hcase.
-rewrite SF_size_lx in Hcase.
-apply le_n_S in Hi3.
-contradiction.
+rewrite 2!nth_rcons.
+rewrite SF_size_lx.
+rewrite ssrnat.ltnS.
+move /ssrnat.ltP :(Hi3) => ->.
+rewrite ssrnat.ltnS.
+apply lt_le_weak in Hi3.
+by move /ssrnat.leP :Hi3 => ->.
 intro Hi3.
 rewrite Hi3.
 unfold ith_step.
@@ -490,16 +466,9 @@ rewrite SF_lx_rcons.
 replace (nth 0 (rcons (SF_lx s) (fst (b', b'))) (S (SF_size s))) with b'.
 replace (nth 0 (rcons (SF_lx s) (fst (b', b'))) (SF_size s)) with y.
 replace (nth 0 (SF_ly (SF_rcons s (b', b'))) (SF_size s)) with b'.
-apply RIneq.Rplus_lt_reg_r with y.
-rewrite Rplus_comm.
-rewrite Rplus_assoc.
-rewrite Rplus_opp_l.
-rewrite Rplus_0_r.
-apply RIneq.Rplus_lt_reg_r with (- delta b').
-rewrite Rplus_comm.
-replace (- delta b' + (y + delta b')) with y.
-apply H1.
-rewrite Rplus_comm ; rewrite Rplus_assoc ; rewrite Rplus_opp_r ; rewrite Rplus_0_r ; easy.
+apply Rplus_lt_reg_l with (y - delta b').
+replace (y - delta b' + (b' - y)) with (b' - delta b') by ring.
+now replace (y - delta b' + delta b') with y by ring.
 rewrite SF_ly_rcons.
 replace (SF_size s) with (Peano.pred (size (rcons (SF_ly s) (snd (b', b'))))).
 rewrite nth_last.
@@ -509,22 +478,14 @@ rewrite size_rcons.
 simpl.
 apply SF_size_ly.
 rewrite nth_rcons.
-case Hcase : ssrnat.leq.
-replace (SF_size s) with (Peano.pred (size (SF_lx s))).
-rewrite nth_last.
 rewrite <- H0.
-case Hs : (SF_lx s).
-assert (size (SF_lx s) =S (SF_size s)) as Hss.
-apply SF_size_lx.
-rewrite Hs in Hss.
-unfold size in Hss.
-apply O_S in Hss ; destruct Hss.
-rewrite last_cons ; rewrite last_cons ; easy.
-rewrite SF_size_lx ; simpl ; easy.
-move /ssrnat.leP :Hcase => Hcase.
-absurd (S (SF_size s) <= size (SF_lx s))%nat.
-assumption.
-rewrite SF_size_lx ; easy.
+rewrite <- nth_last.
+rewrite SF_size_lx.
+rewrite ssrnat.leqnn.
+simpl.
+apply set_nth_default.
+rewrite SF_size_lx.
+apply ssrnat.leqnn.
 replace (S (SF_size s)) with (Peano.pred (size (rcons (SF_lx s) (fst (b', b'))))).
 rewrite nth_last.
 rewrite last_rcons.
@@ -538,67 +499,36 @@ case (le_lt_eq_dec i (SF_size s)).
 unfold s' in Hi2 ; rewrite SF_size_rcons in Hi2 ; apply le_S_n ; apply Hi2.
 intro Hi3.
 rewrite nth_rcons ; rewrite nth_rcons ; rewrite nth_rcons.
-case Hcase : ssrnat.leq.
-case Hcase2 : ssrnat.leq.
-easy.
-move /ssrnat.leP :Hcase2 => Hcase2.
-absurd (S i <= size (rcons (SF_ly s) (snd (b', b'))))%nat.
-assumption.
-rewrite size_rcons ; rewrite SF_size_ly.
-apply le_n_S.
-now apply lt_le_weak.
-move /ssrnat.leP :Hcase => Hcase.
-rewrite SF_size_ly in Hcase.
-contradiction.
+rewrite SF_size_ly.
+move /ssrnat.ltP :(Hi3) => ->.
+rewrite size_rcons.
+rewrite ssrnat.ltnS.
+rewrite SF_size_ly.
+apply lt_le_weak in Hi3.
+by move /ssrnat.leP :Hi3 => ->.
 intro Hi3 ; rewrite Hi3.
 replace (nth 0 (rcons (SF_ly s) (snd (b', b'))) (SF_size s)) with b'.
 rewrite nth_rcons.
-case Hcase : ssrnat.leq.
+rewrite size_rcons.
+rewrite SF_size_ly.
+rewrite ssrnat.leqnn.
 replace (SF_size s) with (Peano.pred (size (rcons (SF_ly s) (snd (b', b'))))).
 rewrite nth_last.
 rewrite last_rcons ; easy.
 rewrite size_rcons ; rewrite SF_size_ly ; simpl ; easy.
-move /ssrnat.leP :Hcase => Hcase.
-absurd (S (SF_size s) <= size (rcons (SF_ly s) (snd (b', b'))))%nat.
-assumption.
-rewrite size_rcons ; rewrite SF_size_ly ; simpl ; easy.
 rewrite nth_rcons.
-case Hcase : ssrnat.leq.
-move /ssrnat.leP :Hcase => Hcase.
-rewrite SF_size_ly in Hcase.
-apply le_Sn_n in Hcase ; destruct Hcase.
-case Hcase2 : eqtype.eq_op.
-easy.
-rewrite SF_size_ly in Hcase2.
-rewrite <- ssrnat.eqnE in Hcase2.
-assert (forall n, ssrnat.eqn n n = true) as Hnn.
-intro n.
-induction n as [|n Hn].
-simpl ; easy.
-simpl ; apply Hn.
-rewrite Hnn in Hcase2.
-apply negbT in Hcase2.
-unfold negb in Hcase2.
-apply notF in Hcase2.
-destruct Hcase2.
+rewrite SF_size_ly.
+rewrite ssrnat.ltnn.
+by rewrite eqtype.eq_refl.
 unfold ith_step.
 rewrite SF_lx_rcons.
 rewrite nth_rcons ; rewrite nth_rcons.
-case Hcase : ssrnat.leq.
-case Hcase2 : ssrnat.leq.
-easy.
-move /ssrnat.leP :Hcase2 => Hcase2.
-rewrite SF_size_lx in Hcase2.
-absurd (S i <= S (SF_size s'))%nat.
-assumption.
-apply lt_le_weak.
-apply lt_n_S.
-assumption.
-move /ssrnat.leP :Hcase => Hcase.
-absurd (S (S i) <= size (SF_lx s'))%nat.
-assumption.
 rewrite SF_size_lx.
-now apply le_n_S.
+rewrite ssrnat.ltnS.
+move /ssrnat.ltP :(Hi2) => ->.
+rewrite ssrnat.ltnS.
+apply lt_le_weak in Hi2.
+by move /ssrnat.leP :Hi2 => ->.
 intro Hi2 ; rewrite Hi2.
 unfold ith_step.
 rewrite SF_lx_rcons.
@@ -619,7 +549,8 @@ rewrite last_rcons.
 easy.
 rewrite size_rcons ; rewrite SF_size_ly ; simpl ; easy.
 rewrite nth_rcons.
-case Hcase : ssrnat.leq.
+rewrite SF_size_lx.
+rewrite ssrnat.leqnn.
 replace (SF_size s') with (Peano.pred (size (SF_lx s'))).
 rewrite nth_last.
 destruct HH as (HH, HH') ; rewrite <- HH'.
@@ -630,11 +561,6 @@ rewrite Hcase2 in Hss.
 apply O_S in Hss ; destruct Hss.
 rewrite last_cons ; rewrite last_cons ; easy.
 rewrite SF_size_lx ; simpl ; easy.
-move /ssrnat.leP :Hcase => Hcase.
-absurd (S (SF_size s') <= size (SF_lx s'))%nat.
-assumption.
-rewrite SF_size_lx.
-apply le_refl.
 replace (S (SF_size s')) with (Peano.pred (size (rcons (SF_lx s') (fst (b' + e, b'))))).
 rewrite nth_last ; rewrite last_rcons ; easy.
 rewrite size_rcons ; rewrite SF_size_lx ; simpl ; easy.
@@ -645,11 +571,8 @@ apply H5.
 easy.
 apply H in H42.
 assert (b' < b' + e) as H43.
-replace b' with (b' + 0).
-rewrite Rplus_assoc.
-apply Rplus_lt_compat_l.
-now rewrite Rplus_0_l.
-apply Rplus_0_r.
+rewrite <- (Rplus_0_r b') at 1.
+now apply Rplus_lt_compat_l.
 apply Rle_not_lt in H42.
 contradiction.
 apply Hb'3.
