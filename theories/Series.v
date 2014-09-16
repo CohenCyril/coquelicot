@@ -143,7 +143,29 @@ Admitted. (** Admitted. *)
 Lemma Cauchy_ex_series {K : AbsRing} {V : CompleteNormedModule K}
   (a : nat -> V) :
   Cauchy_series a -> ex_series a.
-Admitted. (** Admitted. *)
+Proof.
+  intros H.
+  apply (filterlim_locally_cauchy (U := V)).
+  intros eps.
+  case: (H eps) => N HN.
+  exists (fun n => (N <= n)%nat).
+  split.
+  by exists N.
+  intros n m Hn Hm.
+  apply (norm_compat1 (V := V)).
+  case: (le_dec n m) => Hnm.
+  rewrite -sum_n_m_sum_n.
+  apply HN.
+  by eapply le_trans, le_n_Sn.
+  by [].
+  by [].
+  rewrite -norm_opp opp_minus.
+  rewrite -sum_n_m_sum_n.
+  apply HN.
+  by eapply le_trans, le_n_Sn.
+  by [].
+  by apply lt_le_weak, not_le.
+Qed.
 
 Section Properties1.
 
