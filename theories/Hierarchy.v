@@ -1881,11 +1881,12 @@ End Open.
 
 Lemma open_comp :
   forall {T U : UniformSpace} (f : T -> U) (D : U -> Prop),
-  (forall x, filterlim f (locally x) (locally (f x))) ->
+  (forall x, D (f x) -> filterlim f (locally x) (locally (f x))) ->
   open D -> open (fun x : T => D (f x)).
 Proof.
 intros T U f D Cf OD x Dfx.
 apply Cf.
+exact Dfx.
 now apply OD.
 Qed.
 

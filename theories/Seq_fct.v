@@ -407,7 +407,7 @@ Proof.
   assert (Ho' : forall x : R, open (fun h : R => D (x + h))).
     intros x.
     apply open_comp with (2 := Ho).
-    intros t.
+    intros t _.
     eapply (filterlim_comp_2 (F := locally t)).
     apply filterlim_const.
     apply filterlim_id.
