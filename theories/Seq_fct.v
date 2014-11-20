@@ -1055,14 +1055,14 @@ Qed.
 
 Lemma filterlim_switch_dom {T1 T2} {U : CompleteSpace}
   (f : T1 -> T2 -> U) F1 F2 (dom : T2 -> Prop) (FF1 : ProperFilter F1) (FF2 : Filter F2) (HF2 : forall P, F2 P -> exists x, dom x /\ P x) g h :
-  (filterlim (fun x (y : {z : T2 | dom z}) => f x (projT1 y)) F1 (locally (T := fct_UniformSpace _ _) (fun y : {z : T2 | dom z} => g (projT1 y))))
+  (filterlim (fun x (y : {z : T2 | dom z}) => f x (proj1_sig y)) F1 (locally (T := fct_UniformSpace _ _) (fun y : {z : T2 | dom z} => g (proj1_sig y))))
   -> (forall x, filterlim (f x) (within dom F2) (locally (h x)))
   -> (exists l : U, filterlim h F1 (locally l) /\ filterlim g (within dom F2) (locally l)).
 Proof.
 set (T2' := { y : T2 | dom y }).
-set (f' := fun x (y : T2') => f x (projT1 y)).
-set (F2' := fun P : T2' -> Prop => F2 (fun x => forall (H:dom x), P (existT _ x H))).
-set (g' := fun y : T2' => g (projT1 y)).
+set (f' := fun x (y : T2') => f x (proj1_sig y)).
+set (F2' := fun P : T2' -> Prop => F2 (fun x => forall (H:dom x), P (exist _ x H))).
+set (g' := fun y : T2' => g (proj1_sig y)).
 intros Hfg Hfh.
 refine (filterlim_switch f' F1 F2' FF1 _ g' h _ _).
 now apply subset_filter_proper.

@@ -19,7 +19,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 COPYING file for more details.
 *)
 
-Require Import Reals.
+Require Import Reals Omega.
 Require Import ssreflect.
 Require Import Rcomplements Hierarchy Continuity Derive.
 

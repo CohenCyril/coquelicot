@@ -212,7 +212,7 @@ case Hs : (SF_lx s).
 assert (size (SF_lx s) = 0%nat) as Hss.
 rewrite Hs ; simpl ; easy.
 rewrite SF_size_lx in Hss.
-apply NPeano.Nat.neq_succ_0 in Hss ; destruct Hss.
+apply PeanoNat.Nat.neq_succ_0 in Hss ; destruct Hss.
 rewrite last_cons ; rewrite last_cons ; easy.
 rewrite H0.
 destruct H as (H, H').
@@ -306,12 +306,12 @@ replace (nth 0 (rcons (SF_lx s) (fst (b', b'))) (S (SF_size s))) with (last 0 (r
 replace (nth 0 (rcons (SF_lx s) (fst (b', b'))) (SF_size s)) with y.
 replace (nth 0 (rcons (SF_ly s) (snd (b', b'))) (SF_size s)) with (last 0 (rcons (SF_ly s) (snd (b', b')))).
 rewrite last_rcons ; rewrite last_rcons ; simpl.
-apply RIneq.Rplus_lt_reg_r with y.
+apply RIneq.Rplus_lt_reg_l with y.
 rewrite Rplus_comm.
 rewrite Rplus_assoc.
 rewrite Rplus_opp_l.
 rewrite Rplus_0_r.
-apply RIneq.Rplus_lt_reg_r with (- delta b').
+apply RIneq.Rplus_lt_reg_l with (- delta b').
 rewrite Rplus_comm.
 replace (- delta b' + (y + delta b')) with y.
 assumption.

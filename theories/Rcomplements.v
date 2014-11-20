@@ -31,7 +31,10 @@ Ltac evar_last :=
   | |- ?f ?x =>
     let tx := type of x in
     let tx := eval simpl in tx in
-    refine (@eq_ind tx _ f _ x _)
+    let tmp := fresh "tmp" in
+    evar (tmp : tx) ;
+    refine (@eq_ind tx tmp f _ x _) ;
+    unfold tmp ; clear tmp
   end.
 
 Require Import Reals ssreflect.
@@ -55,7 +58,7 @@ Proof.
   assert (Rw : x = (x-1) + 1) ; [ring | rewrite {1}Rw ; clear Rw].
   apply Rplus_lt_compat_r, (proj1 (archimed _)).
 Qed.
-Definition floor x := projT1 (floor_ex x).
+Definition floor x := proj1_sig (floor_ex x).
 
 Lemma floor1_ex : forall x : R, {n : Z | IZR n < x <= IZR n + 1}.
 Proof.
@@ -69,7 +72,7 @@ Proof.
   apply IZR_lt, Zlt_pred.
   rewrite <- (succ_IZR), <-Zsucc_pred ; apply Rle_refl.
 Qed.
-Definition floor1 x := projT1 (floor1_ex x).
+Definition floor1 x := proj1_sig (floor1_ex x).
 
 (** Interger part in nat *)
 
@@ -94,7 +97,7 @@ Proof.
   apply Zlt_not_le.
   apply Zlt_neg_0.
 Qed.
-Definition nfloor x pr := projT1 (nfloor_ex x pr).
+Definition nfloor x pr := proj1_sig (nfloor_ex x pr).
 
 Lemma nfloor1_ex : forall x : R, 0 < x -> {n : nat | INR n < x <= INR n + 1}.
 Proof.
@@ -111,7 +114,7 @@ Proof.
   apply lt_INR, lt_n_Sn.
   rewrite <- (S_INR) ; apply Rle_refl.
 Qed.
-Definition nfloor1 x pr := projT1 (nfloor1_ex x pr).
+Definition nfloor1 x pr := proj1_sig (nfloor1_ex x pr).
 
 (** More theorems about INR *)
 
@@ -520,7 +523,7 @@ Proof.
   move => H.
   rewrite /sum_f -minus_Sn_m // /sum_f_R0 -/sum_f_R0.
   rewrite plus_Sn_m.
-  by rewrite NPeano.Nat.sub_add.
+  by rewrite PeanoNat.Nat.sub_add.
 Qed.
 Lemma sum_f_u_Sk (u : nat -> R) (n m : nat) :
   (n <= m)%nat -> sum_f (S n) (S m) u = sum_f n m (fun k => u (S k)).
@@ -557,9 +560,9 @@ Proof.
   case: H => [ H | -> {n} ] //.
   rewrite -IH => //.
   rewrite /sum_f ; simpl.
-  rewrite NPeano.Nat.sub_succ_r.
+  rewrite PeanoNat.Nat.sub_succ_r.
   apply lt_minus_O_lt in H.
-  rewrite -{3}(NPeano.Nat.sub_add n m) ; try by intuition.
+  rewrite -{3}(PeanoNat.Nat.sub_add n m) ; try by intuition.
   case: (m-n)%nat H => {IH} [ | k] //= H.
   by apply lt_n_O in H.
   apply (f_equal (fun y => y + _)).
@@ -604,7 +607,7 @@ Proof.
   elim: {1 3 4}(m - n)%nat (le_refl (m-n)%nat) => [ | k IH] // Hk ;
   rewrite /sum_f_R0 -/sum_f_R0.
   apply f_equal.
-  rewrite plus_0_l NPeano.Nat.sub_add ; intuition.
+  rewrite plus_0_l PeanoNat.Nat.sub_add ; intuition.
   rewrite IH ; try by intuition.
   by rewrite minus_diag plus_0_l.
 
@@ -613,7 +616,7 @@ Proof.
   rewrite minus_diag.
   rewrite /sum_f_R0 -/sum_f_R0.
   replace (1+m)%nat with (S m) by ring.
-  rewrite plus_0_l minus_diag NPeano.Nat.sub_add ; intuition.
+  rewrite plus_0_l minus_diag PeanoNat.Nat.sub_add ; intuition.
 Qed.
 
 Lemma sum_f_chasles (u : nat -> R) (n m k : nat) :
@@ -746,21 +749,6 @@ apply Rlt_not_le, Rlt_trans with y ; apply Rnot_le_lt ; auto.
 Qed.
 
 (** Order *)
-
-Lemma Rplus_lt_reg_l :
-  forall x y z, x + y < x + z -> y < z.
-Proof.
-intros x y z.
-apply Rplus_lt_reg_r.
-Qed.
-
-Lemma Rplus_lt_reg_r :
-  forall x y z, y + x < z + x -> y < z.
-Proof.
-intros x y z H.
-apply Rplus_lt_reg_r with x.
-now rewrite 2!(Rplus_comm x).
-Qed.
 
 Lemma Rmax_le_compat : forall a b c d, a <= b -> c <= d -> Rmax a c <= Rmax b d.
 Proof.
@@ -1370,7 +1358,7 @@ Proof.
 Qed.
 
 Lemma interval_finite_subdiv_between (a b : R) (eps : posreal) (Hab : a <= b) :
-  let l := projT1 (interval_finite_subdiv a b eps Hab) in
+  let l := proj1_sig (interval_finite_subdiv a b eps Hab) in
   forall i, (i < size l)%nat -> a <= nth 0 l i <= b.
 Proof.
   case: interval_finite_subdiv => l Hl /= i Hi.

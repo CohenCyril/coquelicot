@@ -563,7 +563,8 @@ intros T F FF f g [l| |] Hfg Hf P [eps HP] ;
   apply Rplus_le_lt_0_compat.
   apply Rabs_pos.
   apply Rlt_0_1.
-  assert (Hl: Rbar_locally l (fun y : R => Rabs (y - l) < eps/2 /\ Rabs y <= Rabs l + 1)).
+  pose ineqs (y : R) := Rabs (y - l) < eps/2 /\ Rabs y <= Rabs l + 1.
+  assert (Hl: Rbar_locally l ineqs).
   assert (H: 0 < Rmin (eps / 2) 1).
   apply Rmin_case.
   apply is_pos_div_2.
@@ -579,7 +580,8 @@ intros T F FF f g [l| |] Hfg Hf P [eps HP] ;
   apply Rlt_le.
   apply Rlt_le_trans with (1 := Hx).
   apply Rmin_r.
-  generalize (filter_and _ _ (Hfg (mkposreal _ He)) (Hf _ Hl)).
+  (* Post-8.4 fix: make second argument explicit. *)
+  generalize (filter_and  _  (fun (x : T) =>  ineqs (f x))  (Hfg (mkposreal _ He))  (Hf _ Hl)).
   apply filter_imp.
   simpl.
   intros x [H1 [H2 H3]].
@@ -598,9 +600,11 @@ intros T F FF f g [l| |] Hfg Hf P [eps HP] ;
   apply Rplus_le_lt_0_compat.
   apply Rabs_pos.
   apply Rlt_0_1.
-- assert (Hl: Rbar_locally' p_infty (fun y : R => Rmax 0 (2 * eps) < y)).
+- pose ineq (y : R) := Rmax 0 (2 * eps) < y.
+  assert (Hl: Rbar_locally' p_infty ineq).
   now exists (Rmax 0 (2 * eps)).
-  generalize (filter_and _ _ (Hfg (mkposreal _ pos_half_prf)) (Hf _ Hl)).
+  (* Post-8.4 fix: make second argument explicit. *)
+  generalize (filter_and _ (fun (x : T) => ineq (f x)) (Hfg (mkposreal _ pos_half_prf)) (Hf _ Hl)).
   apply filter_imp.
   simpl.
   intros x [H1 H2].
@@ -618,9 +622,11 @@ intros T F FF f g [l| |] Hfg Hf P [eps HP] ;
   apply Rlt_le.
   apply Rle_lt_trans with (2 := H2).
   apply Rmax_l.
-- assert (Hl: Rbar_locally' m_infty (fun y : R => y < Rmin 0 (2 * eps))).
+- pose ineq (y : R) := y < Rmin 0 (2 * eps).
+  assert (Hl: Rbar_locally' m_infty ineq).
   now exists (Rmin 0 (2 * eps)).
-  generalize (filter_and _ _ (Hfg (mkposreal _ pos_half_prf)) (Hf _ Hl)).
+  (* Post-8.4 fix: make second argument explicit. *)
+  generalize (filter_and _ (fun (x : T) => ineq (f x)) (Hfg (mkposreal _ pos_half_prf)) (Hf _ Hl)).
   apply filter_imp.
   simpl.
   intros x [H1 H2].

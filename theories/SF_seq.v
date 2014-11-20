@@ -149,7 +149,7 @@ Proof.
   by apply le_Sn_O in Hi0.
   by rewrite minus_diag.
   apply sym_eq, le_antisym.
-  apply NPeano.Nat.le_pred_le_succ.
+  apply PeanoNat.Nat.le_pred_le_succ.
   apply not_le in Hi1.
   by apply lt_n_Sm_le.
   replace i with (Peano.pred (S i)) by auto.
@@ -820,13 +820,14 @@ Proof.
   rewrite -Rminus_le_0 ; by apply Rlt_le.
   by apply Rmax_r.
 Qed.
+
 Lemma SF_cut_down_pointed s x :
   SF_h s <= x -> pointed_subdiv s
   -> pointed_subdiv (SF_cut_down s x).
 Proof.
   unfold SF_cut_down ; simpl.
   case: Rle_dec => //= _.
-  apply SF_cons_ind with (s := s) => {s} [ x0 | [x1 y1] s IH] /= Hx0 H.
+  apply SF_cons_ind with (s := s) => {s} [x0 | [x1 y1] s IH] /= Hx0 H.
   move => i /= Hi.
   unfold SF_size in Hi ; simpl in Hi.
   apply lt_n_Sm_le, le_n_O_eq in Hi.
@@ -837,7 +838,8 @@ Proof.
   move: (H O (lt_O_Sn _)) => /= H0.
   apply ptd_cons in H.
   move: (IH Hx1 H) => {IH} IH.
-  destruct i ; simpl => /= Hi.
+  rewrite /pointed_subdiv => i.
+  destruct i => /= Hi.
   by apply H0.
   apply (IH i).
   apply lt_S_n, Hi.
@@ -851,6 +853,7 @@ Proof.
   by [].
   by apply Rmin_r.
 Qed.
+
 Lemma SF_cut_up_pointed s x :
   SF_h s <= x ->
   pointed_subdiv s
@@ -989,7 +992,7 @@ Definition SF_fun (s : SF_seq) (y0 : T) (x : R) :=
 Lemma SF_fun_incr (s : SF_seq) (y0 : T) (x : R) Hs Hx :
   SF_fun s y0 x =
   match (sorted_dec (SF_lx s) 0 x Hs Hx) with
-    | inleft H => nth y0 (SF_ly s) (projT1 H)
+    | inleft H => nth y0 (SF_ly s) (proj1_sig H)
     | inright _ =>  nth y0 (SF_ly s) (SF_size s -1)%nat
   end.
 Proof.
@@ -2273,7 +2276,7 @@ Qed.
 Lemma SF_val_fun_rw (f : R -> R) (a b : R) (n : nat) (x : R) (Hx : a <= x <= b) :
   SF_val_fun f a b n x =
     match (unif_part_nat a b n x Hx) with
-      | inleft H => f (a + (INR (projT1 H) + /2) * (b-a) / (INR n + 1))
+      | inleft H => f (a + (INR (proj1_sig H) + /2) * (b-a) / (INR n + 1))
       | inright _ => f (a + (INR n + /2) * (b-a) / (INR n + 1))
     end.
 Proof.
@@ -2581,15 +2584,15 @@ Qed.
 Lemma SF_sup_fun_rw (f : R -> R) (a b : R) (n : nat) (x : R) (Hx : a <= x <= b) :
   SF_sup_fun f a b n x =
     match (unif_part_nat a b n x Hx) with
-      | inleft H => Sup_fct f (nth 0 (unif_part a b n) (projT1 H))
-          (nth 0 (unif_part a b n) (S (projT1 H)))
+      | inleft H => Sup_fct f (nth 0 (unif_part a b n) (proj1_sig H))
+          (nth 0 (unif_part a b n) (S (proj1_sig H)))
       | inright _ => Sup_fct f (nth 0 (unif_part a b n) (n))
           (nth 0 (unif_part a b n) (S n))
     end.
 Proof.
   have Hab : (a <= b) ; [by apply Rle_trans with (1 := proj1 Hx), Hx | ].
   rewrite /SF_sup_fun /SF_sup_seq ; case: Rle_dec => // _.
-  case: unif_part_nat => {Hx} [ [ i [Hx Hi] ] | Hx] ; simpl projT1.
+  case: unif_part_nat => {Hx} [ [ i [Hx Hi] ] | Hx] ; simpl proj1_sig.
 (* i < n *)
   case: (unif_part a b n) (unif_part_sort a b n Hab) i Hi x Hx => {a b Hab n} [| h s] Hs /= i Hi.
     by apply lt_n_O in Hi.
@@ -2637,15 +2640,15 @@ Qed.
 Lemma SF_inf_fun_rw (f : R -> R) (a b : R) (n : nat) (x : R) (Hx : a <= x <= b) :
   SF_inf_fun f a b n x =
     match (unif_part_nat a b n x Hx) with
-      | inleft H => Inf_fct f (nth 0 (unif_part a b n) (projT1 H))
-          (nth 0 (unif_part a b n) (S (projT1 H)))
+      | inleft H => Inf_fct f (nth 0 (unif_part a b n) (proj1_sig H))
+          (nth 0 (unif_part a b n) (S (proj1_sig H)))
       | inright _ => Inf_fct f (nth 0 (unif_part a b n) (n))
           (nth 0 (unif_part a b n) (S n))
     end.
 Proof.
   have Hab : (a <= b) ; [by apply Rle_trans with (1 := proj1 Hx), Hx | ].
   rewrite /SF_inf_fun /SF_inf_seq ; case: Rle_dec => // _.
-  case: unif_part_nat => {Hx} [ [ i [Hx Hi] ] | Hx] ; simpl projT1.
+  case: unif_part_nat => {Hx} [ [ i [Hx Hi] ] | Hx] ; simpl proj1_sig.
 (* i < n *)
   case: (unif_part a b n) (unif_part_sort a b n Hab) i Hi x Hx => {a b Hab n} [| h s] Hs /= i Hi.
     by apply lt_n_O in Hi.

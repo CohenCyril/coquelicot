@@ -1,6 +1,6 @@
 Require Import Reals ssreflect.
 Require Import Rcomplements.
-Require Import List.
+Require Import List Omega.
 Require Import seq ssrbool eqtype.
 
 Section Iter.
@@ -169,7 +169,7 @@ Lemma iter_nat_S a n m :
 Proof.
   rewrite /iter_nat iter_comp.
   apply (f_equal (fun l => iter _ _ l _)).
-  rewrite NPeano.Nat.sub_succ.
+  rewrite PeanoNat.Nat.sub_succ.
   elim: (S m - n)%nat {1 3}(n) => {n m} [ | n IH] m //=.
   by rewrite IH.
 Qed.

@@ -69,7 +69,7 @@ Proof.
     by apply Hx.
   assert (F_ex : forall n, (exists x : R, F n x)).
     intros ; exists 0 ; by left.
-  set (u (n : nat) := projT1 (completeness (F n) (F_b n) (F_ex n))).
+  set (u (n : nat) := proj1_sig (completeness (F n) (F_b n) (F_ex n))).
   destruct (Markov_cor3 u) as [ [M HM] | HM].
   + left ; exists M => x Hx.
     destruct (nfloor_ex (Rmax 0 x)) as [n Hn].
@@ -180,7 +180,7 @@ rename E into F.
     by apply Hl.
   assert (E_ex : forall m, exists x : R, E m x).
     intros m ; exists (- INR m) ; by left.
-  set (u m := projT1 (completeness (E m) (E_b m) (E_ex m))).
+  set (u m := proj1_sig (completeness (E m) (E_b m) (E_ex m))).
   
   destruct (Markov (fun n => u n <> - INR n)) as [ [n Hn] | Hn].
     intros n.
@@ -245,8 +245,8 @@ Qed.
 
 (** Functions *)
 
-Definition Lub_Rbar (E : R -> Prop) := projT1 (ex_lub_Rbar E).
-Definition Glb_Rbar (E : R -> Prop) := projT1 (ex_glb_Rbar E).
+Definition Lub_Rbar (E : R -> Prop) := proj1_sig (ex_lub_Rbar E).
+Definition Glb_Rbar (E : R -> Prop) := proj1_sig (ex_glb_Rbar E).
 
 Lemma is_lub_Rbar_unique (E : R -> Prop) (l : Rbar) :
   is_lub_Rbar E l -> Lub_Rbar E = l.
@@ -544,9 +544,9 @@ Qed.
 (** Functions *)
 
 Definition Rbar_lub (E : Rbar -> Prop) (Hp : {E p_infty} + {~ E p_infty})
-  := projT1 (Rbar_ex_lub E Hp).
+  := proj1_sig (Rbar_ex_lub E Hp).
 Definition Rbar_glb (E : Rbar -> Prop) (Hp : {E m_infty} + {~ E m_infty})
-  := projT1 (Rbar_ex_glb E Hp).
+  := proj1_sig (Rbar_ex_glb E Hp).
 
 Lemma Rbar_opp_glb_lub (E : Rbar -> Prop) Hp Hm :
   Rbar_glb (fun x => E (Rbar_opp x)) Hm = Rbar_opp (Rbar_lub E Hp).

@@ -19,7 +19,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 COPYING file for more details.
 *)
 
-Require Import Reals ssreflect.
+Require Import Reals Omega ssreflect.
 Require Import Rcomplements.
 Require Import Limit Rbar Hierarchy.
 
@@ -726,7 +726,7 @@ Proof.
     apply Rplus_le_compat.
     apply IH ; intuition.
     rewrite -?sum_f_rw_0.
-    rewrite NPeano.Nat.sub_succ_l ; try by intuition.
+    rewrite PeanoNat.Nat.sub_succ_l ; try by intuition.
     replace (pred (S (n - S m))) with (n - S m)%nat by auto.
     rewrite plus_Sn_m -?plus_n_Sm.
     replace (sum_f 0 (S (S (S (m + n))))

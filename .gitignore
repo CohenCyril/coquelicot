@@ -10,5 +10,7 @@ remake
 remake.exe
 deps.dot
 html
+*.aux
 *.vo
 *.glob
+.coq-native

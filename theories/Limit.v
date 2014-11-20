@@ -224,7 +224,7 @@ Qed.
 
 Lemma ex_sup_seq (u : nat -> Rbar) : {l : Rbar | is_sup_seq u l}.
 Proof.
-  case (Markov (fun n => p_infty = u n)) as [[np Hnp] | Hnp].
+  case (Markov (fun n => p_infty = u n)) => [/= |  [np Hnp] | Hnp].
     intro n0 ; destruct (u n0) as [r | | ].
     now right.
     left ; auto.
@@ -244,9 +244,9 @@ Qed.
 
 (** Notations *)
 
-Definition Sup_seq (u : nat -> Rbar) := projT1 (ex_sup_seq u).
+Definition Sup_seq (u : nat -> Rbar) := proj1_sig (ex_sup_seq u).
 
-Definition Inf_seq (u : nat -> Rbar) := projT1 (ex_inf_seq u).
+Definition Inf_seq (u : nat -> Rbar) := proj1_sig (ex_inf_seq u).
 
 Lemma is_sup_seq_unique (u : nat -> Rbar) (l : Rbar) :
   is_sup_seq u l -> Sup_seq u = l.
@@ -383,7 +383,7 @@ Proof.
   rewrite /Sup_seq.
   case: ex_sup_seq => al Hau.
   case: ex_sup_seq => l Hu.
-  simpl projT1.
+  simpl proj1_sig.
   apply Rbar_le_antisym.
 
   apply is_sup_seq_lub in Hau.
@@ -528,7 +528,7 @@ Qed.
 Lemma Sup_seq_minor_lt (u : nat -> Rbar) (M : R) :
   Rbar_lt M (Sup_seq u) <-> exists n, Rbar_lt M (u n).
 Proof.
-  rewrite /Sup_seq ; case: ex_sup_seq => l Hl ; simpl projT1 ; split => H.
+  rewrite /Sup_seq ; case: ex_sup_seq => l Hl ; simpl proj1_sig ; split => H.
   case: l Hl H => [l | | ] Hl H.
   apply Rminus_lt_0 in H.
   case: (proj2 (Hl (mkposreal _ H))) ; simpl pos => {Hl} n Hl.
@@ -551,7 +551,7 @@ Proof.
   apply Sup_seq_minor_lt.
   by exists n.
   rewrite H.
-  rewrite /Sup_seq ; case: ex_sup_seq => l Hl ; simpl projT1.
+  rewrite /Sup_seq ; case: ex_sup_seq => l Hl ; simpl proj1_sig.
   by apply is_sup_seq_major.
 Qed.
 
@@ -696,9 +696,9 @@ Proof.
   apply Sup_seq_minor_lt.
   case: (proj1 (Hl eps) N) => {Hl} n Hl.
   exists (n - N)%nat.
-  rewrite NPeano.Nat.sub_add ; intuition.
+  rewrite PeanoNat.Nat.sub_add ; intuition.
   case: (proj2 (Hl (pos_div_2 eps))) => /= {Hl} N Hl.
-  exists N ; rewrite /Sup_seq ; case: ex_sup_seq => un Hun ; simpl projT1.
+  exists N ; rewrite /Sup_seq ; case: ex_sup_seq => un Hun ; simpl proj1_sig.
   case: un Hun => [un | | ] /= Hun.
   case: (proj2 (Hun (pos_div_2 eps))) => {Hun} /= n Hun.
   apply Rlt_minus_l in Hun.
@@ -721,13 +721,13 @@ Proof.
   contradict Hl.
   apply Rbar_le_not_lt.
   apply Sup_seq_minor_le with (n - N)%nat.
-  by rewrite NPeano.Nat.sub_add.
+  by rewrite PeanoNat.Nat.sub_add.
 (* l = p_infty *)
   move => M N.
   case: (Hl M N) => {Hl} n Hl.
   apply Sup_seq_minor_lt.
   exists (n - N)%nat.
-  rewrite NPeano.Nat.sub_add ; intuition.
+  rewrite PeanoNat.Nat.sub_add ; intuition.
   move => M N.
   move: (Hl M N) => {Hl} Hl.
   apply Sup_seq_minor_lt in Hl.
@@ -736,7 +736,7 @@ Proof.
 (* l = m_infty *)
   move => M.
   case: (Hl (M-1)) => {Hl} N Hl.
-  exists N ; rewrite /Sup_seq ; case: ex_sup_seq => un Hun ; simpl projT1.
+  exists N ; rewrite /Sup_seq ; case: ex_sup_seq => un Hun ; simpl proj1_sig.
   case: un Hun => [un | | ] /= Hun.
   case: (proj2 (Hun (mkposreal _ Rlt_0_1))) => {Hun} /= n Hun.
   apply Rlt_minus_l in Hun.
@@ -753,7 +753,7 @@ Proof.
   contradict Hl.
   apply Rbar_le_not_lt.
   apply Sup_seq_minor_le with (n - N)%nat.
-  by rewrite NPeano.Nat.sub_add.
+  by rewrite PeanoNat.Nat.sub_add.
 Qed.
 Lemma is_LimInf_supInf_seq (u : nat -> R) (l : Rbar) :
   is_LimInf_seq u l <-> is_sup_seq (fun m => Inf_seq (fun n => u (n + m)%nat)) l.
@@ -837,9 +837,9 @@ Qed.
 (** Functions *)
 
 Definition LimSup_seq (u : nat -> R) :=
-  projT1 (ex_LimSup_seq u).
+  proj1_sig (ex_LimSup_seq u).
 Definition LimInf_seq (u : nat -> R) :=
-  projT1 (ex_LimInf_seq u).
+  proj1_sig (ex_LimInf_seq u).
 
 (** Uniqueness *)
 
@@ -1815,7 +1815,8 @@ intros P [M HM].
 assert (H' : Rbar_locally p_infty (fun y => M < y)).
   now exists M.
 unfold filtermap.
-generalize (filter_and _ _ H (Hf _ H')).
+(* Post-8.4 fix: make second argument explicit. *)
+generalize (filter_and (fun x : T => f x <= g x) _ H (Hf (fun y : R => M < y) H')).
 apply filter_imp.
 intros x [H1 H2].
 apply HM.
@@ -1830,10 +1831,12 @@ Lemma filterlim_le_m_infty :
 Proof.
 intros T F FF f g H Hf.
 intros P [M HM].
-assert (H' : Rbar_locally m_infty (fun y => y < M)).
+pose ineq (y : R) := y < M.
+assert (H' : Rbar_locally m_infty ineq).
   now exists M.
 unfold filtermap.
-generalize (filter_and _ _ H (Hf _ H')).
+(* Post-8.4 fix: make second argument explicit. *)
+generalize (filter_and _ (fun x : T => ineq (f x)) H (Hf ineq H')).
 apply filter_imp.
 intros x [H1 H2].
 apply HM.
@@ -2724,7 +2727,7 @@ Proof.
     move => n ; ring.
   rewrite /Lim_seq.
   rewrite {2}/LimSup_seq ; case: ex_LimSup_seq => ls Hs ;
-  rewrite {2}/LimInf_seq ; case: ex_LimInf_seq => li Hi ; simpl projT1.
+  rewrite {2}/LimInf_seq ; case: ex_LimInf_seq => li Hi ; simpl proj1_sig.
   apply (is_LimSup_seq_scal_pos a) in Hs => //.
   apply (is_LimInf_seq_scal_pos a) in Hi => //.
   rewrite (is_LimSup_seq_unique _ _ Hs).
