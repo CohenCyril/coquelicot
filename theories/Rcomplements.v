@@ -294,6 +294,30 @@ Qed.
 
 (** Order *)
 
+Lemma Rplus_lt_reg_l (x y z : R) : x + y < x + z -> y < z.
+Proof.
+first [
+  (* 8.4 *)
+  exact: Rplus_lt_reg_r
+|
+  (* 8.5 *)
+  exact: Rplus_lt_reg_l
+].
+Qed.
+
+Lemma Rplus_lt_reg_r (x y z : R) : y + x < z + x -> y < z.
+Proof.
+first [
+  (* 8.4 *)
+  intro H ;
+  apply Rplus_lt_reg_r with x ;
+  now rewrite 2!(Rplus_comm x)
+|
+  (* 8.5 *)
+  exact: Rplus_lt_reg_r
+].
+Qed.
+
 Lemma Rle_div_l : forall a b c, c > 0 -> (a / c <= b <-> a <= b * c).
 Proof.
   split ; intros.

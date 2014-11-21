@@ -6328,7 +6328,7 @@ destruct Cdf as (d,Cdf).
 exists d.
 intros v u Hv Hu.
 now apply Cdf.
-intros eps. clearbody Cdf'. clear Cdf.
+intros eps. (* 8.4/8.5 compatibility: *) try clearbody Cdf'. clear Cdf.
 assert (H': 0 < eps / Rabs (b - a)).
 apply Rmult_lt_0_compat.
 apply cond_pos.

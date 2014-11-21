@@ -306,12 +306,12 @@ replace (nth 0 (rcons (SF_lx s) (fst (b', b'))) (S (SF_size s))) with (last 0 (r
 replace (nth 0 (rcons (SF_lx s) (fst (b', b'))) (SF_size s)) with y.
 replace (nth 0 (rcons (SF_ly s) (snd (b', b'))) (SF_size s)) with (last 0 (rcons (SF_ly s) (snd (b', b')))).
 rewrite last_rcons ; rewrite last_rcons ; simpl.
-apply RIneq.Rplus_lt_reg_l with y.
+apply Rplus_lt_reg_l with y.
 rewrite Rplus_comm.
 rewrite Rplus_assoc.
 rewrite Rplus_opp_l.
 rewrite Rplus_0_r.
-apply RIneq.Rplus_lt_reg_l with (- delta b').
+apply Rplus_lt_reg_l with (- delta b').
 rewrite Rplus_comm.
 replace (- delta b' + (y + delta b')) with y.
 assumption.
