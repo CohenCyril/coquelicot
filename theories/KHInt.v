@@ -212,7 +212,7 @@ case Hs : (SF_lx s).
 assert (size (SF_lx s) = 0%nat) as Hss.
 rewrite Hs ; simpl ; easy.
 rewrite SF_size_lx in Hss.
-apply PeanoNat.Nat.neq_succ_0 in Hss ; destruct Hss.
+apply MyNat.neq_succ_0 in Hss ; destruct Hss.
 rewrite last_cons ; rewrite last_cons ; easy.
 rewrite H0.
 destruct H as (H, H').

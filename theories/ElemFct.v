@@ -379,7 +379,7 @@ Proof.
   eapply le_trans, Hip ; by apply le_n_Sn.
   evar_last.
   apply is_derive_scal, is_derive_pow, is_derive_id.
-  rewrite PeanoNat.Nat.sub_succ_r.
+  rewrite MyNat.sub_succ_r.
   change one with 1.
   rewrite {1 2} (S_pred (p - i) O) /fact -/fact ?mult_INR.
   field.

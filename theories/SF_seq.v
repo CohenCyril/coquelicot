@@ -149,7 +149,7 @@ Proof.
   by apply le_Sn_O in Hi0.
   by rewrite minus_diag.
   apply sym_eq, le_antisym.
-  apply PeanoNat.Nat.le_pred_le_succ.
+  apply MyNat.le_pred_le_succ.
   apply not_le in Hi1.
   by apply lt_n_Sm_le.
   replace i with (Peano.pred (S i)) by auto.

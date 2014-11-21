@@ -726,7 +726,7 @@ Proof.
     apply Rplus_le_compat.
     apply IH ; intuition.
     rewrite -?sum_f_rw_0.
-    rewrite PeanoNat.Nat.sub_succ_l ; try by intuition.
+    rewrite MyNat.sub_succ_l ; try by intuition.
     replace (pred (S (n - S m))) with (n - S m)%nat by auto.
     rewrite plus_Sn_m -?plus_n_Sm.
     replace (sum_f 0 (S (S (S (m + n))))

@@ -696,7 +696,7 @@ Proof.
   apply Sup_seq_minor_lt.
   case: (proj1 (Hl eps) N) => {Hl} n Hl.
   exists (n - N)%nat.
-  rewrite PeanoNat.Nat.sub_add ; intuition.
+  rewrite MyNat.sub_add ; intuition.
   case: (proj2 (Hl (pos_div_2 eps))) => /= {Hl} N Hl.
   exists N ; rewrite /Sup_seq ; case: ex_sup_seq => un Hun ; simpl proj1_sig.
   case: un Hun => [un | | ] /= Hun.
@@ -721,13 +721,13 @@ Proof.
   contradict Hl.
   apply Rbar_le_not_lt.
   apply Sup_seq_minor_le with (n - N)%nat.
-  by rewrite PeanoNat.Nat.sub_add.
+  by rewrite MyNat.sub_add.
 (* l = p_infty *)
   move => M N.
   case: (Hl M N) => {Hl} n Hl.
   apply Sup_seq_minor_lt.
   exists (n - N)%nat.
-  rewrite PeanoNat.Nat.sub_add ; intuition.
+  rewrite MyNat.sub_add ; intuition.
   move => M N.
   move: (Hl M N) => {Hl} Hl.
   apply Sup_seq_minor_lt in Hl.
@@ -753,7 +753,7 @@ Proof.
   contradict Hl.
   apply Rbar_le_not_lt.
   apply Sup_seq_minor_le with (n - N)%nat.
-  by rewrite PeanoNat.Nat.sub_add.
+  by rewrite MyNat.sub_add.
 Qed.
 Lemma is_LimInf_supInf_seq (u : nat -> R) (l : Rbar) :
   is_LimInf_seq u l <-> is_sup_seq (fun m => Inf_seq (fun n => u (n + m)%nat)) l.

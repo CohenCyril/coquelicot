@@ -1364,7 +1364,7 @@ Proof.
   move => n.
   rewrite /PS_mult /scal /= /mult /= scal_sum.
   apply sum_eq => i Hi.
-  rewrite -{4}(PeanoNat.Nat.sub_add _ _ Hi).
+  rewrite -{4}(MyNat.sub_add _ _ Hi).
   rewrite pow_n_pow pow_add.
   ring.
   apply (is_series_mult (fun l => a l * x ^ l) (fun l => b l * x ^ l)).
