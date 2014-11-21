@@ -487,7 +487,7 @@ Proof.
     ring.
     eapply lt_trans, Hk.
     eapply lt_trans ; apply lt_n_Sn.
-    by apply NPeano.Nat.lt_neq.
+    by apply MyNat.lt_neq.
   repeat split.
   by [].
   elim => [ | p IH].

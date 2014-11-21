@@ -50,6 +50,13 @@ Proof.  done.  Qed.
 Lemma sub_succ_l (n m : nat) : n <= m -> S m - n = S (m - n).
 Proof.  move=> h.  by rewrite minus_Sn_m.  Qed.
 
+Lemma lt_neq (n m : nat) : n < m -> n <> m.
+Proof.
+move=> h h'.
+apply: lt_irrefl => //.
+by move: h' h => ->.
+Qed.
+
 Lemma minus_0_le (n m : nat) : n <= m -> n - m = 0.
 Proof.
 case: (eq_nat_dec n m) => [-> _ | h h'].

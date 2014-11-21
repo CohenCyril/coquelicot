@@ -1,4 +1,4 @@
-Require Import Reals ssreflect Psatz.
+Require Import Reals ssreflect Psatz Omega.
 Require Import Hierarchy PSeries Rbar Limit.
 
 Open Scope R_scope.
