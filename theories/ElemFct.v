@@ -19,7 +19,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 COPYING file for more details.
 *)
 
-Require Import Reals ssreflect.
+Require Import Reals Omega ssreflect.
 Require Import Rbar Rcomplements Continuity Derive Hierarchy RInt PSeries.
 
 (** * Absolute value *)
@@ -76,16 +76,16 @@ Lemma filterlim_Rabs (x : Rbar) :
   filterlim Rabs (Rbar_locally' x) (Rbar_locally (Rbar_abs x)).
 Proof.
   destruct x as [x | | ] => //=.
-  
-  apply filterlim_filter_le_1, continuous_Rabs.
+
+  eapply filterlim_filter_le_1, continuous_Rabs.
   intros P [d HP] ; exists d => y Hy _.
   by apply HP.
-  
+
   eapply filterlim_ext_loc.
   exists 0 => y Hy.
   rewrite Rabs_pos_eq // ; by apply Rlt_le.
   apply is_lim_id.
-  
+
   eapply filterlim_ext_loc.
   exists 0 => y Hy.
   rewrite -Rabs_Ropp Rabs_pos_eq // -Ropp_0 ;
@@ -366,8 +366,8 @@ Proof.
   by rewrite nat_to_ring_O !mult_zero_l.
 Qed.
 
-Lemma is_derive_n_pow_smalli: forall i p x, (i <= p)%nat ->   
-  is_derive_n (fun x : R => x ^ p) i x 
+Lemma is_derive_n_pow_smalli: forall i p x, (i <= p)%nat ->
+  is_derive_n (fun x : R => x ^ p) i x
     (INR (fact p) / INR (fact (p - i)%nat) * x ^ (p - i)%nat).
 Proof.
   elim => /= [ | i IH] p x Hip.
@@ -379,7 +379,7 @@ Proof.
   eapply le_trans, Hip ; by apply le_n_Sn.
   evar_last.
   apply is_derive_scal, is_derive_pow, is_derive_id.
-  rewrite NPeano.Nat.sub_succ_r.
+  rewrite MyNat.sub_succ_r.
   change one with 1.
   rewrite {1 2} (S_pred (p - i) O) /fact -/fact ?mult_INR.
   field.
@@ -388,14 +388,14 @@ Proof.
   apply not_0_INR, sym_not_eq, O_S.
   by apply lt_minus_O_lt.
 Qed.
-Lemma Derive_n_pow_smalli: forall i p x, (i <= p)%nat ->   
-  Derive_n (fun x : R => x ^ p) i x 
+Lemma Derive_n_pow_smalli: forall i p x, (i <= p)%nat ->
+  Derive_n (fun x : R => x ^ p) i x
     = INR (fact p) / INR (fact (p - i)%nat) * x ^ (p - i)%nat.
 Proof.
   intros.
   now apply is_derive_n_unique, is_derive_n_pow_smalli.
 Qed.
-Lemma is_derive_n_pow_bigi: forall i p x,  (p < i) %nat -> 
+Lemma is_derive_n_pow_bigi: forall i p x,  (p < i) %nat ->
                          is_derive_n (fun x : R => x ^ p) i x 0.
 Proof.
   elim => /=  [ | i IH] p x Hip.
@@ -410,7 +410,7 @@ Proof.
   by apply le_refl.
   by apply @is_derive_const.
 Qed.
-Lemma Derive_n_pow_bigi: forall i p x,  (p < i) %nat -> 
+Lemma Derive_n_pow_bigi: forall i p x,  (p < i) %nat ->
                          Derive_n (fun x : R => x ^ p) i x = 0.
 Proof.
   intros.
@@ -418,9 +418,9 @@ Proof.
 Qed.
 
 Lemma Derive_n_pow i p x:
-  Derive_n (fun x : R => x ^ p) i x = 
+  Derive_n (fun x : R => x ^ p) i x =
     match (le_dec i p) with
-    | left _ => INR (fact p) / INR (fact (p -i)%nat) * x ^ (p - i)%nat 
+    | left _ => INR (fact p) / INR (fact (p -i)%nat) * x ^ (p - i)%nat
     | right _ => 0
     end.
 Proof.
@@ -901,7 +901,7 @@ Proof.
   case: Hx0 => Hx0.
   rewrite atan_eq_ps_atan ; try by split.
   rewrite /ps_atan.
-  case: in_int => H.
+  case: Ratan.in_int => H.
   case: ps_atan_exists_1 => ps Hps.
   apply sym_eq.
   rewrite -Series.Series_scal_l.

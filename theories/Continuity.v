@@ -853,7 +853,7 @@ Proof.
     intros x y ; edestruct Rlt_dec.
     left ; by apply r.
     by right.
-  set delta := (fun (x : R) => projT1 (locally_ex_dec x _ (H0 x) (H x))).
+  set delta := (fun (x : R) => proj1_sig (locally_ex_dec x _ (H0 x) (H x))).
   destruct (compactness_value_1d a b delta) as [d Hd].
   destruct (seq_step_unif_part_ex a b d) as [n Hn].
   set l := unif_part a b n.
@@ -1275,7 +1275,7 @@ set (P x y u v := Rabs (f u v - f x y) < pos_div_2 eps).
 refine (_ (fun x y Hx Hy => locally_2d_ex_dec (P x y) x y _ (Cf x y Hx Hy _))).
 intros delta1.
 set (delta2 x y := match Rle_dec a x, Rle_dec x b, Rle_dec c y, Rle_dec y d with
-  left Ha, left Hb, left Hc, left Hd => pos_div_2 (projT1 (delta1 x y (conj Ha Hb) (conj Hc Hd))) |
+  left Ha, left Hb, left Hc, left Hd => pos_div_2 (proj1_sig (delta1 x y (conj Ha Hb) (conj Hc Hd))) |
   _, _, _, _ => mkposreal _ Rlt_0_1 end).
 destruct (compactness_value_2d a b c d delta2) as (delta,Hdelta).
 exists (pos_div_2 delta) => x y u v Hx Hy Hu Hv Hux Hvy.
@@ -1341,7 +1341,7 @@ set (P x y u v := Rabs (f u v - f x y) < pos_div_2 eps).
 refine (_ (fun x Hx => locally_2d_ex_dec (P x c) x c _ (Cf x Hx _))).
 intros delta1.
 set (delta2 x := match Rle_dec a x, Rle_dec x b with
-  left Ha, left Hb => pos_div_2 (projT1 (delta1 x (conj Ha Hb))) |
+  left Ha, left Hb => pos_div_2 (proj1_sig (delta1 x (conj Ha Hb))) |
   _, _ => mkposreal _ Rlt_0_1 end).
 destruct (compactness_value_1d a b delta2) as (delta,Hdelta).
 exists (pos_div_2 delta) => x y u v Hx Hy Hu Hv Hux.
@@ -1740,7 +1740,7 @@ Section Continuity_op.
 Context {U : UniformSpace} {V : AbsRing}.
 
 Lemma continuous_opp (f : U -> V) (x : U) :
-  continuous f x -> 
+  continuous f x ->
   continuous (fun x : U => opp (f x)) x.
 Proof.
   intros.
@@ -1778,7 +1778,7 @@ Context {V : UniformSpace}.
 
 Lemma unifcont_1d (f : R -> V) a b :
   (forall x, a <= x <= b -> continuous f x) ->
-  forall eps : posreal, {delta : posreal | forall x y, 
+  forall eps : posreal, {delta : posreal | forall x y,
     a <= x <= b -> a <= y <= b -> ball x delta y -> ~~ ball (f x) eps (f y)}.
 Proof.
   intros Cf eps.
@@ -1820,7 +1820,7 @@ Proof.
     apply H2 => d /= Hd.
     apply Rnot_lt_le ; contradict Hy.
     by apply Hd.
-  destruct (compactness_value_1d a b (fun x => pos_div_2 (projT1 (H x)))) as [d Hd].
+  destruct (compactness_value_1d a b (fun x => pos_div_2 (proj1_sig (H x)))) as [d Hd].
   exists d => x y Hx Hy Hxy Hf.
   apply (Hd x Hx).
   case => {Hd} t [Ht].
@@ -1850,10 +1850,10 @@ Context {K : AbsRing} {V : NormedModule K}.
 
 Lemma unifcont_normed_1d (f : R -> V) a b :
   (forall x, a <= x <= b -> continuous f x) ->
-  forall eps : posreal, {delta : posreal | forall x y, 
+  forall eps : posreal, {delta : posreal | forall x y,
     a <= x <= b -> a <= y <= b -> ball x delta y -> ball_norm (f x) eps (f y)}.
 Proof.
-  intros.
+  intros H eps.
   assert (0 < eps / (@norm_factor _ V)).
     apply Rdiv_lt_0_compat.
     apply cond_pos.

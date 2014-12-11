@@ -978,4 +978,3 @@ Proof.
   apply f_equal, Rabs_pos_eq.
   now rewrite -Ropp_0 ; apply Ropp_le_contravar.
 Qed.
-

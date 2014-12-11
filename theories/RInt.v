@@ -463,7 +463,7 @@ Proof.
   eapply Rlt_le_trans, Rmin_l.
   by apply Hstep.
   split => //.
-  
+
   have: (seq_step (SF_lx y) < (Rmin (dx a) (dx b))) => [ | {Hstep} Hstep].
     eapply Rlt_le_trans, Rmin_r.
     by apply Hstep.
@@ -550,7 +550,7 @@ Focus 2. (* fst x0 = SF_h y *)
   eapply Rlt_le_trans, Rmin_l.
   eapply Rle_lt_trans, Hstep.
   by apply Rmax_l.
-  
+
   have: (forall x : R, SF_h y <= x < b -> f x = g x) => [ | {Heq} Heq].
     intros.
     apply Heq ; split.
@@ -568,11 +568,11 @@ Focus 2. (* fst x0 = SF_h y *)
   => {y} [x0 | x0 y IH] b Heq Hptd Hstep.
   rewrite !Riemann_sum_zero // minus_eq_zero norm_zero.
   apply (is_pos_div_2 (pos_div_2 _)).
-  
+
   rewrite !Riemann_sum_cons.
   replace (minus (plus (scal (SF_h y - fst x0) (g (snd x0))) (Riemann_sum g y))
     (plus (scal (SF_h y - fst x0) (f (snd x0))) (Riemann_sum f y)))
-    with (plus (scal (SF_h y - fst x0) (minus (g (snd x0)) (f (snd x0)))) 
+    with (plus (scal (SF_h y - fst x0) (minus (g (snd x0)) (f (snd x0))))
                (minus (Riemann_sum g y) (Riemann_sum f y))).
   eapply Rle_lt_trans.
   apply @norm_triangle.
@@ -2016,7 +2016,7 @@ Proof.
 
   assert (H := unifcont_normed_1d f a b (fun x Hx => Cf x)).
 
-  set n := fun eps => projT1 (seq_step_unif_part_ex a b (projT1 (H eps))).
+  set n := fun eps => proj1_sig (seq_step_unif_part_ex a b (proj1_sig (H eps))).
   set s := fun eps => (SF_seq_f2 (fun x y => ((x+y)/2)%R) (unif_part a b (n eps))).
   set (f_eps := fun eps => fun x => match (Rle_dec a x) with
     | left _ => match (Rle_dec x b) with
@@ -2028,7 +2028,7 @@ Proof.
   set F := fun (P : posreal -> Prop) => exists eps : posreal, forall x : posreal,
     x < eps -> P x.
   set If_eps := fun eps => Riemann_sum f (s eps).
-  
+
   assert (FF : ProperFilter F).
   - assert (forall P, F P <-> at_right 0 (fun x => 0 < x /\ forall Hx, P (mkposreal x Hx))).
       split ; intros [e He].
@@ -2110,9 +2110,9 @@ Proof.
     intros Hsort Ht.
     case: sorted_dec.
     + rewrite SF_map_lx SF_lx_f2.
-      intros Hi ; set i := projT1 Hi.
+      intros Hi ; set i := proj1_sig Hi.
       rewrite SF_map_ly (nth_map 0).
-      apply (projT2 (H e)).
+      apply (proj2_sig (H e)).
       by split.
       split ; eapply Rle_trans.
       2: apply ptd_f2.
@@ -2120,7 +2120,7 @@ Proof.
       apply sorted_head.
       apply unif_part_sort.
       by apply Rlt_le.
-      eapply lt_trans, (projT2 Hi).
+      eapply lt_trans, (proj2_sig Hi).
       eapply lt_trans ; apply lt_n_Sn.
       by apply lt_O_Sn.
       by apply unif_part_sort, Rlt_le.
@@ -2131,9 +2131,9 @@ Proof.
       replace x with ((x+x)/2)%R by field.
       split ; apply Rmult_le_compat_r ; intuition.
       rewrite SF_size_f2.
-      move: (proj2 (projT2 Hi)).
+      move: (proj2 (proj2_sig Hi)).
       unfold i.
-      case: (size (unif_part a b (n e))) (projT1 Hi) => [ | m] /= k Hk.
+      case: (size (unif_part a b (n e))) (proj1_sig Hi) => [ | m] /= k Hk.
       by apply lt_n_O in Hk.
       apply lt_S_n.
       eapply lt_trans, Hk.
@@ -2147,9 +2147,9 @@ Proof.
       replace x with ((x+x)/2)%R by field.
       split ; apply Rmult_le_compat_r ; intuition.
       rewrite SF_size_f2.
-      move: (proj2 (projT2 Hi)).
+      move: (proj2 (proj2_sig Hi)).
       unfold i ;
-      case: (size (unif_part a b (n e))) (projT1 Hi) => [ | m] /= k Hk.
+      case: (size (unif_part a b (n e))) (proj1_sig Hi) => [ | m] /= k Hk.
       by apply lt_n_O in Hk.
       apply lt_S_n.
       eapply lt_trans, Hk.
@@ -2160,7 +2160,7 @@ Proof.
       apply Req_le.
       unfold s ; simpl.
       unfold i ;
-      elim: {1 3 6}(n e) (2%nat) (a + 1 * (b - a) / (INR (n e) + 1))%R (projT1 Hi) (proj2 (projT2 Hi)) => [ | m IH] // k x0 j Hj.
+      elim: {1 3 6}(n e) (2%nat) (a + 1 * (b - a) / (INR (n e) + 1))%R (proj1_sig Hi) (proj2 (proj2_sig Hi)) => [ | m IH] // k x0 j Hj.
       simpl in Hj ;
       by apply lt_S_n, lt_S_n, lt_n_O in Hj.
       case: j Hj => [ | j] Hj //=.
@@ -2178,7 +2178,7 @@ Proof.
       rewrite size_mkseq in Hi, i |- *.
       apply lt_S_n.
       eapply lt_le_trans.
-      eapply lt_trans, (projT2 Hi).
+      eapply lt_trans, (proj2_sig Hi).
       by apply lt_n_Sn.
       rewrite /s.
       elim: (n e) (a) (b) => [ | m IH] // a' b'.
@@ -2199,16 +2199,16 @@ Proof.
       apply Rplus_le_compat_l.
       simpl ; apply (sorted_nth Rle (unif_part a b (n e))).
       by apply unif_part_sort, Rlt_le.
-      move: (proj2 (projT2 Hi)).
+      move: (proj2 (proj2_sig Hi)).
       unfold i ;
-      case: (size (unif_part a b (n e))) (projT1 Hi) => [ | m] j /= Hm.
+      case: (size (unif_part a b (n e))) (proj1_sig Hi) => [ | m] j /= Hm.
       by apply lt_n_O in Hm.
       apply lt_S_n.
       eapply lt_trans, Hm.
       by apply lt_n_Sn.
       rewrite SSR_leq.
-      apply lt_le_weak, (projT2 Hi).
-      by apply Rlt_le, (projT2 Hi).
+      apply lt_le_weak, (proj2_sig Hi).
+      by apply Rlt_le, (proj2_sig Hi).
       rewrite SF_ly_f2 nth_behead (nth_pairmap 0).
       pattern (nth 0 (unif_part a b (n e)) (S i)) at 2.
       replace (nth 0 (unif_part a b (n e)) (S i))
@@ -2219,36 +2219,36 @@ Proof.
       apply Rplus_le_compat_r.
       simpl ; apply (sorted_nth Rle (unif_part a b (n e))).
       by apply unif_part_sort, Rlt_le.
-      move: (proj2 (projT2 Hi)).
+      move: (proj2 (proj2_sig Hi)).
       unfold i ;
-      case: (size (unif_part a b (n e))) (projT1 Hi) => [ | m] j /= Hm.
+      case: (size (unif_part a b (n e))) (proj1_sig Hi) => [ | m] j /= Hm.
       by apply lt_n_O in Hm.
       apply lt_S_n.
       eapply lt_trans, Hm.
       by apply lt_n_Sn.
       rewrite SSR_leq.
-      apply lt_le_weak, (projT2 Hi).
-      by apply (projT2 Hi).
+      apply lt_le_weak, (proj2_sig Hi).
+      by apply (proj2_sig Hi).
       apply -> Rminus_le_0.
       apply (sorted_nth Rle (unif_part a b (n e))).
       by apply unif_part_sort, Rlt_le.
-      move: (proj2 (projT2 Hi)).
+      move: (proj2 (proj2_sig Hi)).
       unfold i ;
-      case: (size (unif_part a b (n e))) (projT1 Hi) => [ | m] j /= Hm.
+      case: (size (unif_part a b (n e))) (proj1_sig Hi) => [ | m] j /= Hm.
       by apply lt_n_O in Hm.
       apply lt_S_n.
       eapply lt_trans, Hm.
       by apply lt_n_Sn.
       eapply Rle_lt_trans.
       apply nth_le_seq_step.
-      eapply lt_trans, (projT2 Hi).
+      eapply lt_trans, (proj2_sig Hi).
       by apply lt_n_S.
-      apply (projT2 (seq_step_unif_part_ex a b (projT1 (H e)))).
+      apply (proj2_sig (seq_step_unif_part_ex a b (proj1_sig (H e)))).
       rewrite SSR_leq.
       rewrite SF_size_ly.
       apply le_S_n ; rewrite -SF_size_lx.
       rewrite SF_lx_f2.
-      by apply lt_le_weak, (projT2 Hi).
+      by apply lt_le_weak, (proj2_sig Hi).
       by apply lt_O_Sn.
       by apply lt_O_Sn.
     + intros Hi.
@@ -2262,7 +2262,7 @@ Proof.
       rewrite -minus_n_O.
       intros Hsort Ht Hi.
       rewrite SF_map_ly (nth_map 0).
-      apply (projT2 (H e)).
+      apply (proj2_sig (H e)).
       by split.
       split ; eapply Rle_trans.
       2: apply ptd_f2.
@@ -2343,7 +2343,7 @@ Proof.
       eapply Rle_lt_trans.
       apply nth_le_seq_step.
       rewrite size_mkseq ; by apply lt_n_Sn.
-      apply (projT2 (seq_step_unif_part_ex a b (projT1 (H e)))).
+      apply (proj2_sig (seq_step_unif_part_ex a b (proj1_sig (H e)))).
       rewrite SSR_leq.
       rewrite SF_size_ly.
       apply le_S_n ; rewrite -SF_size_lx.
@@ -4202,7 +4202,7 @@ Proof.
     split.
     exact: H1.
     exact: H2.
-  set alpha := fun eps : posreal => projT1 (completeness (E eps) (E_bnd eps) (E_ex eps)).
+  set alpha := fun eps : posreal => proj1_sig (completeness (E eps) (E_bnd eps) (E_ex eps)).
   have Ealpha : forall eps : posreal, (E eps (alpha eps)).
     revert alpha ; move => /= eps.
     case: (E_ex eps) => alp H.
@@ -4400,7 +4400,7 @@ have Hfin : forall i, (S i < size (unif_part a b n))%nat ->
   replace a0 with ((a0 + a0) / 2) by field.
   split ; apply Rmult_lt_compat_r ; intuition.
   by [].
-  
+
   apply SSR_leq ; by intuition.
   apply SSR_leq ; by intuition.
 
@@ -4674,7 +4674,7 @@ have Hfin' : forall t, is_finite (SF_sup_fun (fun t : R => Rabs (f t - phi t)) a
     | left Ha => match Rle_dec t b with
       | right _ => t
       | left Hb => match Hp t (conj Ha Hb) with
-        | inleft H => (a + (INR (projT1 H) + /2) * (b - a) / (INR n + 1))
+        | inleft H => (a + (INR (proj1_sig H) + /2) * (b - a) / (INR n + 1))
         | inright _ => (a + (INR n + /2) * (b - a) / (INR n + 1))
       end
     end
@@ -4693,7 +4693,7 @@ have Hfin' : forall t, is_finite (SF_sup_fun (fun t : R => Rabs (f t - phi t)) a
     rewrite /g2 /h => {h g2 ptd2 ptd1} H1.
     case: Rle_dec => Ha.
     case: Rle_dec => Hb.
-    case: Hp => [ [j [Ht Hj]] | Ht] ; simpl projT1.
+    case: Hp => [ [j [Ht Hj]] | Ht] ; simpl proj1_sig.
     suff Hij : j = i.
     rewrite Hij in Ht, Hj |- * => {j Hij}.
     rewrite !nth_mkseq.
@@ -4794,7 +4794,7 @@ have Hfin' : forall t, is_finite (SF_sup_fun (fun t : R => Rabs (f t - phi t)) a
       case: Rle_dec => // Ha'.
       case: Rle_dec => // Hb'.
       case: unif_part_nat => [ [i [Ht Hi]] | Ht] ;
-      case: Hp {h g2 ptd2 H2} => [ [j [Ht' Hj]] | Ht'] ; simpl projT1.
+      case: Hp {h g2 ptd2 H2} => [ [j [Ht' Hj]] | Ht'] ; simpl proj1_sig.
       apply (f_equal (fun i => f (a + (INR i + /2) * (b - a) / (INR n + 1)))).
       apply le_antisym ; apply not_lt.
       move: (Rle_lt_trans _ _ _ (proj1 Ht) (proj2 Ht')) => Hij ;
@@ -5276,7 +5276,7 @@ now apply H.
 Qed. *)
 
 Lemma is_RInt_ge_0 (g : R -> R) (a b Ig : R) :
-  (a <= b) -> (is_RInt g a b Ig) -> 
+  (a <= b) -> (is_RInt g a b Ig) ->
   (forall x, a < x < b -> 0 <= g x) -> 0 <= Ig.
 Proof.
   intros Hab Hg Hpos.
@@ -5295,8 +5295,8 @@ Proof.
     by apply Rlt_0_1.
   set da := mkposreal _ (Hd (g a)).
   set db := mkposreal _ (Hd (g b)).
-  
-  destruct (filter_ex (F := Riemann_fine a b) 
+
+  destruct (filter_ex (F := Riemann_fine a b)
     (fun y => seq_step (SF_lx y) < Rmin d (Rmin da db) /\
     pointed_subdiv y /\
     SF_h y = Rmin a b /\ seq.last (SF_h y) (seq.unzip1 (SF_t y)) = Rmax a b)) as [y [Hy Hy']].
@@ -5360,8 +5360,8 @@ Proof.
   case: H1 => H1.
   (* a < snd x0 < b*)
   eapply Rle_trans with 0.
-  apply Rle_div_l ; [by apply Rlt_0_2 | ] ; 
-  apply Rle_div_l ; [by apply Rlt_0_2 | ] ; 
+  apply Rle_div_l ; [by apply Rlt_0_2 | ] ;
+  apply Rle_div_l ; [by apply Rlt_0_2 | ] ;
   apply Ropp_le_cancel ; ring_simplify ; by apply Rlt_le.
   apply Rmult_le_pos.
   apply Rabs_pos.
@@ -5417,11 +5417,11 @@ Proof.
     eapply ptd_cons, Hy'.
     by apply Hy'.
   clear x0 da.
-  move: Hy Hy' Hay ; 
+  move: Hy Hy' Hay ;
   apply SF_cons_ind with (s := y) => {y} [x0 | x0 y IH] Hy /= Hy' Hay.
-  rewrite /Riemann_sum /= /zero /= ; 
-  now apply Rle_div_l ; [by apply Rlt_0_2 | ] ; 
-  apply Rle_div_l ; [by apply Rlt_0_2 | ] ; 
+  rewrite /Riemann_sum /= /zero /= ;
+  now apply Rle_div_l ; [by apply Rlt_0_2 | ] ;
+  apply Rle_div_l ; [by apply Rlt_0_2 | ] ;
   apply Rlt_le, Ropp_lt_cancel ; ring_simplify.
   rewrite Riemann_sum_cons ;
   change plus with Rplus ; change scal with Rmult.
@@ -5462,8 +5462,8 @@ Proof.
     by apply lt_O_Sn.
   case: H0 => H0.
   apply Rle_trans with 0.
-  now apply Rle_div_l ; [by apply Rlt_0_2 | ] ; 
-  apply Rle_div_l ; [by apply Rlt_0_2 | ] ; 
+  now apply Rle_div_l ; [by apply Rlt_0_2 | ] ;
+  apply Rle_div_l ; [by apply Rlt_0_2 | ] ;
   apply Rlt_le, Ropp_lt_cancel ; ring_simplify.
   apply Rmult_le_pos.
   by apply Rabs_pos.
@@ -5553,7 +5553,7 @@ Qed.
 Lemma RInt_gt_0 (g : R -> R) (a b : R) :
   (a < b) -> (forall x, a < x < b -> (0 < g x)) ->
   (forall x, a <= x <= b -> continuous g x) ->
-  0 < RInt g a b. 
+  0 < RInt g a b.
 Proof.
   intros Hab Hg Cg.
   set c := (a + b) / 2.
@@ -5608,7 +5608,7 @@ Proof.
     pattern c at 2 ;
     replace c with ((c + c) / 2) by field ;
     apply Rmult_lt_compat_r ; intuition.
-    by apply Hc.    
+    by apply Hc.
   assert (Hb' : a < b' < b).
     split.
     apply Rlt_trans with a'.
@@ -5674,10 +5674,10 @@ Proof.
 Qed.
 
 Lemma RInt_lt (f g : R -> R) (a b : R) :
-  a < b -> 
+  a < b ->
   (forall x : R, a <= x <= b ->continuous g x) ->
   (forall x : R, a <= x <= b ->continuous f x) ->
-  (forall x : R, a < x < b -> f x < g x) -> 
+  (forall x : R, a < x < b -> f x < g x) ->
   RInt f a b < RInt g a b.
 Proof.
   intros Hab Cg Cf Hfg.
@@ -6328,7 +6328,7 @@ destruct Cdf as (d,Cdf).
 exists d.
 intros v u Hv Hu.
 now apply Cdf.
-intros eps. clear Cdf.
+intros eps. (* 8.4/8.5 compatibility: *) try clearbody Cdf'. clear Cdf.
 assert (H': 0 < eps / Rabs (b - a)).
 apply Rmult_lt_0_compat.
 apply cond_pos.

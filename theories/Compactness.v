@@ -23,6 +23,11 @@ Require Import Reals.
 Require Import ssreflect.
 Require Import List.
 
+(* This enables a compatibility with Coq 8.4, which didn't have the right lemmas Rplus_lt_reg_l
+   and Rplus_lt_reg_r.  So this Import should disappear in the future.  A better solution would
+   be to have the fix in a specific compatibility file, rather than in Rcomplements.v. *)
+Require Import Rcomplements.
+
 Open Scope R_scope.
 
 Lemma completeness_any :
@@ -30,7 +35,7 @@ Lemma completeness_any :
   ( forall x y, x <= y -> P y -> P x ) ->
   forall He : (exists x, P x),
   forall Hb : (bound P),
-  forall x, x < projT1 (completeness _ Hb He) ->
+  forall x, x < proj1_sig (completeness _ Hb He) ->
   ~ ~ P x.
 Proof.
 intros P HP He Hb x.
@@ -161,7 +166,7 @@ apply Hz.
 assert (P1: exists x, P x).
 now exists a.
 (* . *)
-set (y := projT1 (completeness _ P2 P1)).
+set (y := proj1_sig (completeness _ P2 P1)).
 assert (P4: ~~exists d : posreal, P (Rmin b (y + d))).
 specialize (IHn a' b' (fun x' => delta (y,x'))).
 contradict IHn.
@@ -225,7 +230,7 @@ apply Rplus_lt_compat_l.
 rewrite -(Rplus_0_r (d/2)).
 rewrite {2}(double_var d).
 now apply Rplus_lt_compat_l.
-apply Rplus_lt_reg_r with y.
+apply Rplus_lt_reg_l with y.
 now ring_simplify (y + (x - y)).
 clearbody y.
 clear -Ht1.
@@ -300,7 +305,7 @@ exists 1.
 now intros d (Hd,_).
 set (d := completeness P P2 P1).
 (* *)
-assert (P3 : 0 < projT1 d).
+assert (P3 : 0 < proj1_sig d).
 revert d.
 case completeness.
 intros d (Hd1,Hd2).
@@ -343,7 +348,7 @@ now apply IHl.
 exists (mkposreal _ (Fourier_util.Rlt_mult_inv_pos _ _ P3 Rlt_R0_R2)).
 intros x Hx.
 simpl.
-refine (_ (completeness_any P _ P1 P2 (projT1 d / 2) _)).
+refine (_ (completeness_any P _ P1 P2 (proj1_sig d / 2) _)).
 intros HP.
 contradict HP.
 contradict HP.
@@ -362,8 +367,8 @@ apply Ht.
 apply Rle_trans with (1 := Huv).
 apply Ht.
 fold d.
-rewrite -(Rplus_0_r (projT1 d / 2)).
-rewrite {2}(double_var (projT1 d)).
+rewrite -(Rplus_0_r (proj1_sig d / 2)).
+rewrite {2}(double_var (proj1_sig d)).
 apply Rplus_lt_compat_l.
 apply Fourier_util.Rlt_mult_inv_pos.
 exact P3.

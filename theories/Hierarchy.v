@@ -184,7 +184,8 @@ Lemma filterlim_ext_loc :
 Proof.
 intros T U F G FF f g Efg Lf P GP.
 specialize (Lf P GP).
-generalize (filter_and _ _ Efg Lf).
+(* Post-8.4 fix: make second argument explicit. *)
+generalize (filter_and _ (fun x : T => P (f x)) Efg Lf).
 unfold filtermap.
 apply filter_imp.
 now intros x [-> H].
@@ -392,7 +393,7 @@ now apply filter_forall.
 Qed.
 
 Definition subset_filter {T} (F : (T -> Prop) -> Prop) (dom : T -> Prop) (P : {x|dom x} -> Prop) : Prop :=
-  F (fun x => forall H : dom x, P (existT _ x H)).
+  F (fun x => forall H : dom x, P (exist _ x H)).
 
 Global Instance subset_filter_filter :
   forall T F (dom : T -> Prop),
@@ -442,7 +443,7 @@ constructor.
 - unfold subset_filter.
   intros P HP.
   destruct (H _ HP) as [x [H1 H2]].
-  exists (existT _ x H1).
+  exists (exist _ x H1).
   now apply H2.
 - now apply subset_filter_filter.
 Qed.
@@ -777,7 +778,7 @@ Proof.
   by apply le_O_n.
 Qed.
 
-Lemma sum_n_m_sum_n (a:nat -> G) (n m : nat) : 
+Lemma sum_n_m_sum_n (a:nat -> G) (n m : nat) :
   (n <= m)%nat -> sum_n_m a (S n) m = minus (sum_n a m) (sum_n a n).
 Proof.
   intros Hnm.
@@ -879,7 +880,7 @@ Proof.
   by [].
   by apply IH, lt_S_n.
 Qed.
-Lemma sum_n_m_sum_n (a:nat -> G) (n m : nat) : 
+Lemma sum_n_m_sum_n (a:nat -> G) (n m : nat) :
   (n <= m)%nat -> sum_n_m a (S n) m = minus (sum_n a m) (sum_n a n).
 Proof.
   elim: n m a => /= [ | n IH] ;
@@ -897,7 +898,7 @@ Proof.
   elim => /= [ | m IH].
   by rewrite /minus !plus_opp_r.
   rewrite plus_comm /minus -!plus_assoc -/(minus _ _) IH.
-  rewrite /minus. 
+  rewrite /minus.
   rewrite -!plus_assoc plus_comm -!plus_assoc.
   apply f_equal, f_equal, plus_comm.
   intros m.
@@ -1784,7 +1785,7 @@ Context {T : UniformSpace}.
 
 Definition at_point (a : T) (P : T -> Prop) : Prop :=
   forall y, (forall eps : posreal, ball a eps y) -> P y.
-Global Instance at_point_filter (a : T) : 
+Global Instance at_point_filter (a : T) :
   ProperFilter (at_point a).
 Proof.
   split.
@@ -1881,11 +1882,12 @@ End Open.
 
 Lemma open_comp :
   forall {T U : UniformSpace} (f : T -> U) (D : U -> Prop),
-  (forall x, filterlim f (locally x) (locally (f x))) ->
+  (forall x, D (f x) -> filterlim f (locally x) (locally (f x))) ->
   open D -> open (fun x : T => D (f x)).
 Proof.
 intros T U f D Cf OD x Dfx.
 apply Cf.
+exact Dfx.
 now apply OD.
 Qed.
 
@@ -4088,7 +4090,7 @@ Proof.
   apply within_filter, locally_filter.
 Qed.
 
-(** *)
+(* *)
 
 Lemma sum_n_sum_f_R0: forall a N, sum_n a N = sum_f_R0 a N.
 Proof.

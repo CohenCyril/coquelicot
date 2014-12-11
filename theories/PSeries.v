@@ -19,7 +19,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 COPYING file for more details.
 *)
 
-Require Import Reals Even Div2 ssreflect.
+Require Import Reals Even Div2 Omega ssreflect.
 Require Import Rcomplements Rbar Limit Lub.
 Require Import Continuity Derive Derive_2d RInt Seq_fct Series Hierarchy.
 
@@ -1364,7 +1364,7 @@ Proof.
   move => n.
   rewrite /PS_mult /scal /= /mult /= scal_sum.
   apply sum_eq => i Hi.
-  rewrite -{4}(NPeano.Nat.sub_add _ _ Hi).
+  rewrite -{4}(MyNat.sub_add _ _ Hi).
   rewrite pow_n_pow pow_add.
   ring.
   apply (is_series_mult (fun l => a l * x ^ l) (fun l => b l * x ^ l)).
