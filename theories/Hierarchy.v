@@ -4202,39 +4202,17 @@ Proof.
     by apply filterlim_norm.
   clear Ha.
 
-  case: (Markov (fun M => forall n : nat, norm (a n) <= INR M)).
-    intros M.
-    case: (Markov.Markov (fun n => INR M < norm (a n))).
-      intros n ; by apply Rlt_dec.
-    case => n Hn.
-    right ; contradict Hn.
-    by apply Rle_not_lt.
-    move => Hn.
-    left => n.
-    by apply Rnot_lt_le.
-  case => M HM.
-  by exists (INR M).
-  intros HM.
-  assert False.
+  destruct (LPO_cor3 (fun n => norm (a n))) as [[M HM]|HM].
+  now exists M.
+  elimtype False.
   case: H => l Hl.
   assert (H := proj1 (filterlim_locally (F := eventually) _ l) Hl (mkposreal _ Rlt_0_1)).
   clear Hl ; simpl in H ; rewrite /ball /= /AbsRing_ball in H.
   destruct H as [N HN].
-  destruct (nfloor_ex (seq.foldr Rmax (1 + norm l) (seq.map (fun n => norm (a n)) (seq.iota 0 N)))) as [m Hm].
-  have : (0 <= (1 + norm l)).
-    apply Rplus_le_le_0_compat.
-    by apply Rle_0_1.
-    by apply norm_ge_0.
-  elim: (seq.iota 0 N) (1 + norm l) => /= [ | h t IH] h0 Hh0.
-  by [].
-  apply Rmax_case.
-  by apply norm_ge_0.
-  by apply IH.
-  apply (HM (S m)) => n.
-  rewrite S_INR.
-  apply Rlt_le.
-  eapply Rle_lt_trans, Hm.
-  clear Hm HM.
+  specialize (HM (seq.foldr Rmax (1 + norm l) (seq.map (fun n => norm (a n)) (seq.iota 0 N)))).
+  destruct HM as [n Hn].
+  revert Hn.
+  apply Rle_not_lt.
   elim: N a n HN => /=[ |N IH] a n HN.
   rewrite Rplus_comm.
   apply Rlt_le, Rabs_lt_between'.
@@ -4258,7 +4236,6 @@ Proof.
   by [].
   apply f_equal.
   apply IH.
-  by [].
 Qed.
 
 (** Some open sets of [R] *)

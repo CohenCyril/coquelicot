@@ -4264,7 +4264,7 @@ Proof.
       {(forall n0 : nat,
       ~ (x = nth 0 (unif_part a b n) n0
       /\ (n0 < size (unif_part a b n))%nat))}.
-    apply (Markov (fun i => x = nth 0 (unif_part a b n) i
+    apply (LPO (fun i => x = nth 0 (unif_part a b n) i
       /\ (i < size (unif_part a b n))%nat)).
     move => i.
     case: (Req_EM_T x (nth 0 (unif_part a b n) i)) => Hx.

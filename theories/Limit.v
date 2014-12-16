@@ -144,8 +144,11 @@ Proof.
   intro n ; apply Rbar_le_lt_trans with (y := Finite l).
   apply ub ; exists n ; auto.
   pattern l at 1 ; rewrite <-(Rplus_0_r l) ; apply Rplus_lt_compat_l, eps.
-  apply Markov_cor1.
-  intro n ; apply Rbar_lt_dec.
+  apply LPO_cor1.
+  intro n.
+  destruct (Rbar_lt_dec (l - eps) (u n)) as [H|H].
+  now left.
+  now right.
   intro H.
   assert (H0 : (Rbar_is_upper_bound (fun x : Rbar => exists n : nat, x = u n) (Finite (l - eps)))).
   intros x (n,Hn) ; rewrite Hn ; clear Hn ; apply Rbar_not_lt_le, H.
@@ -153,8 +156,11 @@ Proof.
   rewrite <-(Rplus_0_r l) ;
   apply Rplus_lt_compat_l, Ropp_lt_gt_0_contravar, eps.
 (* l = p_infty *)
-  intro M ; apply Markov_cor1.
-  intro n ; apply Rbar_lt_dec.
+  intro M ; apply LPO_cor1.
+  intro n.
+  destruct (Rbar_lt_dec M (u n)) as [H|H].
+  now left.
+  now right.
   intro H.
   assert (H0 : Rbar_is_upper_bound (fun x : Rbar => exists n : nat, x = u n) (Finite M)).
   intros x (n,Hn) ; rewrite Hn ; clear Hn ; apply Rbar_not_lt_le, H.
@@ -224,7 +230,7 @@ Qed.
 
 Lemma ex_sup_seq (u : nat -> Rbar) : {l : Rbar | is_sup_seq u l}.
 Proof.
-  case (Markov (fun n => p_infty = u n)) => [/= |  [np Hnp] | Hnp].
+  case (LPO (fun n => p_infty = u n)) => [/= |  [np Hnp] | Hnp].
     intro n0 ; destruct (u n0) as [r | | ].
     now right.
     left ; auto.

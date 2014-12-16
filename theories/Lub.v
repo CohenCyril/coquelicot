@@ -70,7 +70,7 @@ Proof.
   assert (F_ex : forall n, (exists x : R, F n x)).
     intros ; exists 0 ; by left.
   set (u (n : nat) := proj1_sig (completeness (F n) (F_b n) (F_ex n))).
-  destruct (Markov_cor3 u) as [ [M HM] | HM].
+  destruct (LPO_cor3 u) as [ [M HM] | HM].
   + left ; exists M => x Hx.
     destruct (nfloor_ex (Rmax 0 x)) as [n Hn].
     by apply Rmax_l.
@@ -182,7 +182,7 @@ rename E into F.
     intros m ; exists (- INR m) ; by left.
   set (u m := proj1_sig (completeness (E m) (E_b m) (E_ex m))).
   
-  destruct (Markov (fun n => u n <> - INR n)) as [ [n Hn] | Hn].
+  destruct (LPO (fun n => u n <> - INR n)) as [ [n Hn] | Hn].
     intros n.
     case: (Req_EM_T (u n) (- INR n)) => H.
     by right.

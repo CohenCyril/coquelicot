@@ -21,284 +21,188 @@ COPYING file for more details.
 
 Require Import RIneq Rcomplements.
 
-(** This file describes and proves [Markov]'s principle: if you have a
- decidable property P on [nat], then you either have a proof that P
- does never hold or you have constructed a witness on which P
- holds.
-#<br /># Several variants are given. Additional lemmas are given in
- case you have the excluded middle. *)
-
+(** This file proves the Limited Principle of Omniscience: given a
+decidable property P on [nat], either P never holds or we can construct
+a witness for which P holds. Several variants are given. *)
 
 Open Scope R_scope.
 
-(** * Markov's principle *)
+(** * Limited Principle of Omniscience *)
 
-Lemma Markov_bool :
+Theorem LPO_min :
+  forall P : nat -> Prop, (forall n, P n \/ ~ P n) ->
+  {n : nat | P n /\ forall i, (i < n)%nat -> ~ P i} + {forall n, ~ P n}.
+Proof.
+assert (Hi: forall n, 0 < INR n + 1).
+  intros N.
+  rewrite <- S_INR.
+  apply lt_0_INR.
+  apply lt_0_Sn.
+intros P HP.
+set (E y := exists n, (P n /\ y = / (INR n + 1)) \/ (~ P n /\ y = 0)).
+assert (HE: forall n, P n -> E (/ (INR n + 1))).
+  intros n Pn.
+  exists n.
+  left.
+  now split.
+assert (BE: is_upper_bound E 1).
+  intros x [y [[_ ->]|[_ ->]]].
+  rewrite <- Rinv_1 at 2.
+  apply Rinv_le_contravar.
+  exact Rlt_0_1.
+  rewrite <- S_INR.
+  apply (le_INR 1), le_n_S, le_0_n.
+  exact Rle_0_1.
+destruct (completeness E) as [l [ub lub]].
+  now exists 1.
+  destruct (HP O) as [H0|H0].
+  exists 1.
+  exists O.
+  left.
+  apply (conj H0).
+  rewrite Rplus_0_l.
+  apply sym_eq, Rinv_1.
+  exists 0.
+  exists O.
+  right.
+  now split.
+destruct (Rle_lt_dec l 0) as [Hl|Hl].
+  right.
+  intros n Pn.
+  apply Rle_not_lt with (1 := Hl).
+  apply Rlt_le_trans with (/ (INR n + 1)).
+  now apply Rinv_0_lt_compat.
+  apply ub.
+  now apply HE.
+left.
+set (N := Zabs_nat (up (/l) - 2)).
+exists N.
+assert (HN: INR N + 1 = IZR (up (/ l)) - 1).
+  unfold N.
+  rewrite INR_IZR_INZ.
+  rewrite inj_Zabs_nat.
+  replace (IZR (up (/ l)) - 1) with (IZR (up (/ l) - 2) + 1).
+  apply (f_equal (fun v => IZR v + 1)).
+  apply Zabs_eq.
+  apply Zle_minus_le_0.
+  apply (Zlt_le_succ 1).
+  apply lt_IZR.
+  apply Rle_lt_trans with (/l).
+  apply Rmult_le_reg_r with (1 := Hl).
+  rewrite Rmult_1_l, Rinv_l by now apply Rgt_not_eq.
+  apply lub.
+  exact BE.
+  apply archimed.
+  rewrite minus_IZR.
+  simpl.
+  ring.
+assert (H: forall i, (i < N)%nat -> ~ P i).
+  intros i HiN Pi.
+  unfold is_upper_bound in ub.
+  refine (Rle_not_lt _ _ (ub (/ (INR i + 1)) _) _).
+  now apply HE.
+  rewrite <- (Rinv_involutive l) by now apply Rgt_not_eq.
+  apply Rinv_1_lt_contravar.
+  rewrite <- S_INR.
+  apply (le_INR 1).
+  apply le_n_S.
+  apply le_0_n.
+  apply Rlt_le_trans with (INR N + 1).
+  apply Rplus_lt_compat_r.
+  now apply lt_INR.
+  rewrite HN.
+  apply Rplus_le_reg_r with (-/l + 1).
+  ring_simplify.
+  apply archimed.
+destruct (HP N) as [PN|PN].
+  now split.
+elimtype False.
+refine (Rle_not_lt _ _ (lub (/ (INR (S N) + 1)) _) _).
+  intros x [y [[Py ->]|[_ ->]]].
+  destruct (eq_nat_dec y N) as [HyN|HyN].
+  elim PN.
+  now rewrite <- HyN.
+  apply Rinv_le_contravar.
+  apply Hi.
+  apply Rplus_le_compat_r.
+  apply Rnot_lt_le.
+  intros Hy.
+  refine (H _ _ Py).
+  apply INR_lt in Hy.
+  clear -Hy HyN.
+  omega.
+  now apply Rlt_le, Rinv_0_lt_compat.
+rewrite S_INR, HN.
+ring_simplify (IZR (up (/ l)) - 1 + 1).
+rewrite <- (Rinv_involutive l) at 2 by now apply Rgt_not_eq.
+apply Rinv_1_lt_contravar.
+rewrite <- Rinv_1.
+apply Rinv_le_contravar.
+exact Hl.
+now apply lub.
+apply archimed.
+Qed.
+
+Theorem LPO :
+  forall P : nat -> Prop, (forall n, P n \/ ~ P n) ->
+  {n : nat | P n} + {forall n, ~ P n}.
+Proof.
+intros P HP.
+destruct (LPO_min P HP) as [[n [Pn _]]|Pn].
+left.
+now exists n.
+now right.
+Qed.
+
+Lemma LPO_bool :
   forall f : nat -> bool,
   {n | f n = true} + {forall n, f n = false}.
 Proof.
-(* *)
-assert (Hi: forall n, 0 < INR n + 1).
-intros N.
-rewrite <- S_INR.
-apply lt_0_INR.
-apply lt_0_Sn.
 intros f.
-set (u n := if f n then / (INR n + 1) else 0).
-(* *)
-assert (Bu: forall n, u n <= 1).
+destruct (LPO (fun n => f n = true)) as [H|H].
 intros n.
-unfold u.
-case f.
-rewrite <- S_INR, <- Rinv_1.
-apply Rinv_le_contravar.
-apply Rlt_0_1.
-apply (le_INR 1).
-apply le_n_S.
-apply le_0_n.
-apply Rle_0_1.
-(* *)
-set (E y := exists n, y = u n).
-destruct (completeness E) as (l,(ub,lub)).
-exists 1.
-intros y (n,->).
-apply Bu.
-exists (u O).
-now exists O.
-destruct (Rle_lt_dec l 0) as [Hl|Hl].
-right.
-intros n.
-apply Bool.not_true_is_false.
-intros H.
-apply Rle_not_lt with (1 := Hl).
-apply Rlt_le_trans with (/ (INR n + 1)).
-now apply Rinv_0_lt_compat.
-apply ub.
-exists n.
-unfold u.
-now rewrite H.
-left.
-set (N := Zabs_nat (up (/l) - 2)).
-(* *)
-assert (HN: INR N + 1 = IZR (up (/ l)) - 1).
-unfold N.
-rewrite INR_IZR_INZ.
-rewrite inj_Zabs_nat.
-replace (IZR (up (/ l)) - 1) with (IZR (up (/ l) - 2) + 1).
-apply (f_equal (fun v => IZR v + 1)).
-apply Zabs_eq.
-apply Zle_minus_le_0.
-apply (Zlt_le_succ 1).
-apply lt_IZR.
-apply Rle_lt_trans with (/l).
-apply Rmult_le_reg_r with (1 := Hl).
-rewrite Rmult_1_l, Rinv_l by now apply Rgt_not_eq.
-apply lub.
-intros y (m,->).
-apply Bu.
-apply archimed.
-rewrite minus_IZR.
-simpl.
-ring.
-(* *)
-exists N.
-apply Bool.not_false_is_true.
-intros H.
-refine (Rle_not_lt _ _ (lub (/ (INR (S N) + 1)) _) _).
-intros y (n,->).
-unfold u.
-destruct (le_or_lt n N) as [Hn|Hn].
-case (le_lt_or_eq _ _ Hn) ; clear Hn ; intros Hn.
-(* . *)
-case_eq (f n).
-intros Hf.
-elimtype False.
-apply (Rlt_not_le (/ (INR n + 1)) l).
-rewrite <- (Rinv_involutive l) by now apply Rgt_not_eq.
-rewrite <- S_INR.
-apply Rinv_1_lt_contravar.
-apply (le_INR 1).
-apply le_n_S.
-apply le_0_n.
-apply Rlt_le_trans with (INR N + 1).
-rewrite <- S_INR.
-apply lt_INR.
-now apply lt_n_S.
-rewrite HN.
-apply Rplus_le_reg_r with (-/l + 1).
-ring_simplify.
-apply archimed.
-apply ub.
-exists n.
-unfold u.
-now rewrite Hf.
-intros _.
-apply Rlt_le.
-now apply Rinv_0_lt_compat.
-(* . *)
-rewrite Hn, H.
-apply Rlt_le.
-now apply Rinv_0_lt_compat.
-(* . *)
-case f.
-rewrite <- 2!S_INR.
-apply Rinv_le_contravar.
-apply lt_0_INR.
-apply lt_0_Sn.
-apply le_INR.
-apply le_n_S.
-now apply lt_le_S.
-apply Rlt_le.
-now apply Rinv_0_lt_compat.
-(* *)
-rewrite <- (Rinv_involutive l) by now apply Rgt_not_eq.
-apply Rinv_1_lt_contravar.
-rewrite <- Rinv_1.
-apply Rinv_le_contravar with (1 := Hl).
-apply lub.
-intros y (n,->).
-apply Bu.
-rewrite S_INR.
-rewrite HN.
-ring_simplify.
-apply archimed.
-Qed.
-
-Lemma Markov : forall P : nat -> Prop, (forall n, {P n}+{~P n}) ->
-  {n : nat| P n} + {forall n, ~ P n}.
-Proof.
-  intros P H.
-  destruct (Markov_bool (fun n => if H n then true else false)) as [(n,K)|K].
-  left.
-  exists n.
-  now destruct (H n).
-  right.
-  intros n.
-  specialize (K n).
-  now destruct (H n).
-Qed.
-
-Lemma Markov_min : forall P : nat -> Prop, (forall n, {P n}+{~ P n}) ->
-  {n : nat | P n /\ forall i, (i < n)%nat -> ~ P i } + {forall n, ~ P n}.
-Proof.
-intros P HP.
-assert (forall n, {(forall i : nat, (i < n)%nat -> ~ P i)} + {~ (forall i : nat, (i < n)%nat -> ~ P i)}) as H.
-intro n.
-induction n as [|n IHn].
-left.
-intros i Hi Hi2.
-now apply (lt_n_0 i).
-destruct IHn as [IHn1 | IHn2].
-destruct (HP n) as [Hn1 | Hn2].
-right.
-intro H.
-specialize (H n).
-apply H.
-apply lt_n_Sn.
-assumption.
-left.
-intros i Hi.
-case (eq_nat_dec i n) => Hi2.
-now rewrite Hi2.
-assert (i < n)%nat as Hi3.
-apply not_ge.
-intro Hi3.
-unfold ge in Hi3.
-unfold lt in Hi.
-apply Hi2.
-apply le_S_n in Hi.
-now apply le_antisym.
-now apply IHn1.
-right.
-intro H.
-apply IHn2.
-intros i Hi ; apply H.
-now apply lt_S.
-assert (forall n, {P n /\ (forall i : nat, (i < n)%nat -> ~ P i)} +
-    {~ (P n /\ (forall i : nat, (i < n)%nat -> ~ P i))}) as H2.
-intro n.
-destruct (HP n) as [Hn1 | Hn1].
-destruct (H n) as [Hn2 | Hn2].
-left.
-now split.
-right.
-intro H0 ; destruct H0 as (H0, H1) ; contradiction.
-right ; intro H0 ; destruct H0 as (H0, H1) ; contradiction.
-clear HP.
-assert ({n : nat | P n /\ (forall i : nat, (i < n)%nat -> ~ P i)} +
-          { (forall n : nat, ~ (P n /\ (forall i : nat, (i < n)%nat -> ~ P i)))}) as H1.
-now apply Markov.
-clear H2.
-destruct H1 as [H1|H1].
+case (f n).
+now left.
+now right.
 now left.
 right.
-assert (forall n : nat, forall j, (j <= n)%nat -> ~ P j) as H2.
-intro n.
-induction n as [|n IHn].
-intros j Hj.
-replace j with 0%nat.
-specialize (H1 0%nat).
-intro H0 ; apply H1.
-split.
-apply H0.
-intros i Hi Hi2.
-now apply (lt_n_0 i).
-apply le_antisym.
-apply le_0_n.
-assumption.
-intros j Hj.
-case (eq_nat_dec j (S n)) => Hcase.
-intro Hj2.
-apply (H1 (S n)).
-split.
-now rewrite <- Hcase.
-intros i Hi.
-apply IHn.
-apply le_S_n.
-apply Hi.
-apply IHn.
-apply not_gt.
-intro Hj2.
-unfold gt in Hj2.
-unfold lt in Hj2.
-absurd (j = S n).
-assumption.
-now apply le_antisym.
-intro n ; apply (H2 n).
-apply le_refl.
+intros n.
+now apply Bool.not_true_is_false.
 Qed.
 
 (** ** Corollaries *)
 
-Lemma Markov_cor1 : forall P : nat -> Prop, (forall n, {P n}+{~P n}) ->
+Lemma LPO_cor1 : forall P : nat -> Prop, (forall n, P n \/ ~P n) ->
   (~ forall n : nat, ~ P n) -> exists n : nat, P n.
 Proof.
   intros.
-  destruct (Markov P H).
+  destruct (LPO P H).
   destruct s as (n,H1) ; exists n ; apply H1.
   contradict H0 ; apply n.
 Qed.
 
-Lemma Markov_cor2 : forall P : nat -> Prop, (forall n, {P n}+{~P n}) ->
+Lemma LPO_cor2 : forall P : nat -> Prop, (forall n, P n \/ ~P n) ->
   ~~ (exists n : nat, P n) -> exists n : nat, P n.
 Proof.
   intros.
-  apply Markov_cor1.
+  apply LPO_cor1.
   apply H.
   contradict H0.
   intros (n,H1).
   contradict H1 ; apply H0.
 Qed.
 
-Lemma Markov_cor3 : forall (u : nat -> R),
-  {M : R | forall n, u n <= M} + {(forall M : R, exists n, M < u n)}.
+Lemma LPO_cor3 : forall (u : nat -> R),
+  {M : R | forall n, u n <= M} + {forall M : R, exists n, M < u n}.
 Proof.
   intros u.
-  destruct (Markov (fun M => forall n, u n <= (INR M))) as [ [M MHM] | HM ].
+  destruct (LPO (fun M => forall n, u n <= (INR M))) as [ [M MHM] | HM ].
   intros M.
-  destruct (Markov (fun n => INR M < u n)) as [[n Hn] | Hn].
+  destruct (LPO (fun n => INR M < u n)) as [[n Hn] | Hn].
   intros n.
-  apply Rlt_dec.
+  destruct (Rlt_dec (INR M) (u n)) as [H|H].
+  now left.
+  now right.
   right ; contradict Hn.
   by apply Rle_not_lt.
   left ; intro n.
@@ -308,8 +212,11 @@ Proof.
   destruct (nfloor_ex (Rbasic_fun.Rmax 0 M)) as [m Hm].
   by apply Rbasic_fun.Rmax_l.
   specialize (HM (S m)).
-  apply Markov_cor1.
-  intros n ; by apply Rlt_dec.
+  apply LPO_cor1.
+  intros n.
+  destruct (Rlt_dec M (u n)) as [H|H].
+  now left.
+  now right.
   contradict HM ; intros n.
   rewrite S_INR.
   eapply Rle_trans, Rlt_le, Hm.
