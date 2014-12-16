@@ -238,7 +238,6 @@ Proof.
   exists p_infty => M.
   exists np ; by rewrite -Hnp.
   case (Rbar_ex_lub (fun x => exists n, x = u n)).
-  right ; intros (n0, Hn0) ; generalize Hn0 ; apply Hnp.
   intros l Hl ; exists l ; apply Rbar_is_lub_sup_seq ; auto.
 Qed.
 
@@ -340,21 +339,21 @@ Proof.
   by apply (is_inf_seq_unique u), is_inf_seq_ext with v.
 Qed.
 
-Lemma Rbar_sup_eq_lub (u : nat -> Rbar) Hp :
-  Sup_seq u = Rbar_lub (fun x => exists n, x = u n) Hp.
+Lemma Rbar_sup_eq_lub (u : nat -> Rbar) :
+  Sup_seq u = Rbar_lub (fun x => exists n, x = u n).
 Proof.
   rewrite /Sup_seq ; case: (ex_sup_seq _) => /= s Hs.
-  rewrite /Rbar_lub ; case: (Rbar_ex_lub _ _) => /= l Hl.
+  rewrite /Rbar_lub ; case: (Rbar_ex_lub _) => /= l Hl.
   apply (Rbar_is_lub_eq
     (fun x : Rbar => exists n : nat, x = u n)
     (fun x : Rbar => exists n : nat, x = u n)) => // ;
   by apply is_sup_seq_lub.
 Qed.
-Lemma Inf_eq_glb (u : nat -> Rbar) Hm :
-  Inf_seq u = Rbar_glb (fun x => exists n, x = u n) Hm.
+Lemma Inf_eq_glb (u : nat -> Rbar) :
+  Inf_seq u = Rbar_glb (fun x => exists n, x = u n).
 Proof.
   rewrite /Inf_seq ; case: (ex_inf_seq _) => /= s Hs.
-  rewrite /Rbar_glb ; case: (Rbar_ex_glb _ _) => /= l Hl.
+  rewrite /Rbar_glb ; case: (Rbar_ex_glb _) => /= l Hl.
   apply (Rbar_is_glb_eq
     (fun x : Rbar => exists n : nat, x = u n)
     (fun x : Rbar => exists n : nat, x = u n)) => // ;
