@@ -133,17 +133,64 @@ Qed.
 
 (** Cauchy *)
 
-(* utiliser norm_compat1 et norm_compat2 pour passer de ball à norm *)
-
-Lemma ex_Cauchy_series {K : AbsRing} {V : NormedModule K}
-  (a : nat -> V) :
-  ex_series a -> Cauchy_series a.
-Admitted. (** Admitted. *)
-
 Lemma Cauchy_ex_series {K : AbsRing} {V : CompleteNormedModule K}
   (a : nat -> V) :
+  ex_series a -> Cauchy_series a.
+Proof.
+intros [l Hl] eps.
+set (eps' := eps / (norm_factor (V := V))).
+assert (He: 0 < eps').
+  apply Rdiv_lt_0_compat.
+  apply eps.
+  apply norm_factor_gt_0.
+destruct (proj2 (filterlim_locally_cauchy (U := V) (F := eventually) (sum_n (fun k => a k)))
+  (ex_intro _ l Hl) (mkposreal _ He)) as [P [[N HN] HP]].
+exists (S N).
+intros [|u] v Hu Hv.
+elim le_Sn_O with (1 := Hu).
+destruct (le_or_lt u v) as [Huv|Huv].
+rewrite -> sum_n_m_sum_n with (1 := Huv).
+replace (pos eps) with (norm_factor (V := V) * mkposreal _ He).
+apply norm_compat2.
+apply HP ; apply HN.
+now apply le_S_n.
+now apply le_Sn_le.
+rewrite /eps' /=.
+field.
+apply Rgt_not_eq, norm_factor_gt_0.
+rewrite sum_n_m_zero.
+rewrite norm_zero.
+apply cond_pos.
+now apply lt_S.
+Qed.
+
+Lemma ex_series_Cauchy {K : AbsRing} {V : CompleteNormedModule K}
+  (a : nat -> V) :
   Cauchy_series a -> ex_series a.
-Admitted. (** Admitted. *)
+Proof.
+intros Ca.
+destruct (proj1 (filterlim_locally_cauchy (U := V) (F := eventually) (sum_n a))) as [l Hl].
+2: now exists l.
+intros eps.
+destruct (Ca eps) as [N HN].
+exists (le N).
+split.
+now exists N.
+intros u v.
+wlog Huv: u v / (u <= v)%nat.
+intros H.
+destruct (le_or_lt u v) as [Huv|Huv].
+now apply H.
+intros Hu Hv.
+apply ball_sym.
+apply H => //.
+now apply lt_le_weak.
+intros Hu Hv.
+apply: norm_compat1.
+rewrite <- sum_n_m_sum_n with (1 := Huv).
+apply HN => //.
+now apply le_S.
+Qed.
 
 Section Properties1.
 
@@ -372,7 +419,7 @@ Proof.
   intros Hs.
   apply is_lim_seq_spec.
   intros eps.
-  apply ex_Cauchy_series in Hs.
+  apply (Cauchy_ex_series (V := R_CompleteNormedModule)) in Hs.
   case: (Hs eps) => {Hs} N Hs.
   exists (S N) ; case => [ | n] Hn.
   by apply le_Sn_0 in Hn.
@@ -428,17 +475,17 @@ Lemma ex_series_le {K : AbsRing} {V : CompleteNormedModule K}
    ex_series b -> ex_series a.
 Proof.
   move => H Hb.
-  apply ex_Cauchy_series in Hb.
-  apply Cauchy_ex_series.
+  apply (Cauchy_ex_series (V := R_CompleteNormedModule)) in Hb.
+  apply ex_series_Cauchy.
   move => e.
   case (Hb e) => {Hb} N Hb.
   exists N => n m Hn Hm.
   eapply Rle_lt_trans, (Hb _ _ Hn Hm) => //.
   eapply Rle_trans.
   apply norm_sum_n_m.
-  replace (@norm R_AbsRing R_NormedModule (@sum_n_m R_NormedModule b n m))
-    with (sum_n_m b n m).
+  apply Rle_trans with (sum_n_m b n m).
   by apply sum_n_m_le.
+  right.
   assert (forall n, 0 <= b n).
     intros k.
     eapply Rle_trans, H.
