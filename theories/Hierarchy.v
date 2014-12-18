@@ -3940,8 +3940,8 @@ Definition R_UniformSpace_mixin :=
 Canonical R_UniformSpace :=
   UniformSpace.Pack R R_UniformSpace_mixin R.
 
-Definition R_complete_lim (F : (R -> Prop) -> Prop) :=
-  Lub_Rbar (fun x : R => F (ball x (mkposreal _ Rlt_0_1))) - 1.
+Definition R_complete_lim (F : (R -> Prop) -> Prop) : R :=
+  Lub_Rbar (fun x : R => F (ball (x + 1) (mkposreal _ Rlt_0_1))).
 
 Lemma R_complete_ax1 :
   forall F : (R -> Prop) -> Prop,
@@ -3951,13 +3951,14 @@ Lemma R_complete_ax1 :
 Proof.
 intros F FF HF eps.
 unfold R_complete_lim.
-generalize (Lub_Rbar_correct (fun x : R => F (ball x (mkposreal _ Rlt_0_1)))).
-generalize (Lub_Rbar (fun x : R => F (ball x (mkposreal _ Rlt_0_1)))).
+generalize (Lub_Rbar_correct (fun x : R => F (ball (x + 1) (mkposreal _ Rlt_0_1)))).
+generalize (Lub_Rbar (fun x : R => F (ball (x + 1) (mkposreal _ Rlt_0_1)))).
 intros [x| |] [Hx1 Hx2].
 -
 set (eps' := pos_div_2 (mkposreal _ (Rmin_case _ _ _ Rlt_R0_R2 (cond_pos eps)))).
 destruct (HF eps') as [z Hz].
-assert (H1 : z - Rmin 2 eps / 2 + 1 <= x).
+assert (H1 : z - Rmin 2 eps / 2 + 1 <= x + 1).
+  apply Rplus_le_compat_r.
   apply Hx1.
   revert Hz.
   apply filter_imp.
@@ -3968,7 +3969,8 @@ assert (H1 : z - Rmin 2 eps / 2 + 1 <= x).
   destruct Bu as [Bu1 Bu2].
   assert (H := Rmin_l 2 eps).
   split ; Fourier.fourier.
-assert (H2 : x <= z + Rmin 2 eps / 2 + 1).
+assert (H2 : x + 1 <= z + Rmin 2 eps / 2 + 1).
+  apply Rplus_le_compat_r.
   apply (Hx2 (Finite _)).
   intros v Hv.
   apply Rbar_not_lt_le => Hlt.
@@ -3978,7 +3980,7 @@ assert (H2 : x <= z + Rmin 2 eps / 2 + 1).
   unfold ball ; simpl ; intros w [Hw1 Hw2].
   apply (Rabs_lt_between' w z) in Hw1.
   destruct Hw1 as [_ Hw1].
-  apply (Rabs_lt_between' w v) in Hw2.
+  apply (Rabs_lt_between' w (v + 1)) in Hw2.
   destruct Hw2 as [Hw2 _].
   clear -Hw1 Hw2 Hlt.
   simpl in Hw1, Hw2, Hlt.
@@ -3995,7 +3997,7 @@ destruct Hu.
 split ; Fourier.fourier.
 -
   destruct (HF (mkposreal _ Rlt_0_1)) as [y Fy].
-  elim (Hx2 (y + 2)).
+  elim (Hx2 (y + 1)).
   intros x Fx.
   apply Rbar_not_lt_le => Hlt.
   apply filter_not_empty.
@@ -4004,18 +4006,20 @@ split ; Fourier.fourier.
   intros z [Hz1 Hz2].
   revert Hlt.
   apply Rbar_le_not_lt.
-  apply Rplus_le_reg_r with (-y).
-  replace (y + 2 + -y) with 2 by ring.
+  apply Rplus_le_reg_r with (-(y - 1)).
+  replace (y + 1 + -(y - 1)) with 2 by ring.
   apply Rabs_le_between.
   apply Rlt_le.
-  generalize (ball_triangle y z x 1 1) => /= H.
+  generalize (ball_triangle y z (x + 1) 1 1) => /= H.
+  replace (x + -(y - 1)) with ((x + 1) - y) by ring.
   apply H.
   apply Hz1.
   apply ball_sym in Hz2.
   apply Hz2.
 -
   destruct (HF (mkposreal _ Rlt_0_1)) as [y Fy].
-  elim (Hx1 y Fy).
+  elim (Hx1 (y - 1)).
+  now replace (y - 1 + 1) with y by ring.
 Qed.
 
 Lemma R_complete :
