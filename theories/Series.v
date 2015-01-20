@@ -89,13 +89,13 @@ Proof.
   move => e He ; set eps := mkposreal e He.
   case: (H eps) => /= {H} N H.
   exists N => n Hn.
-  rewrite <- sum_n_sum_f_R0.
+  rewrite <- sum_n_Reals.
   by apply (H n Hn).
   apply (is_lim_seq_spec _ l).
   move => eps.
   case: (H eps (cond_pos eps)) => {H} N H.
   exists N => n Hn.
-  rewrite sum_n_sum_f_R0.
+  rewrite sum_n_Reals.
   by apply (H n Hn).
 Qed.
 
@@ -109,7 +109,7 @@ Proof.
   apply (is_lim_seq_spec _ l) in H.
   case: (H eps) => /= {H} N H.
   exists N => n Hn.
-  rewrite <- sum_n_sum_f_R0.
+  rewrite <- sum_n_Reals.
   by apply (H n Hn).
   apply sym_eq.
   rewrite /Series.
@@ -127,44 +127,69 @@ Proof.
   move => eps.
   case: (H eps (cond_pos eps)) => {H} N H.
   exists N => n Hn.
-  rewrite sum_n_sum_f_R0.
+  rewrite sum_n_Reals.
   by apply (H n Hn).
 Qed.
 
 (** Cauchy *)
 
-(* utiliser norm_compat1 et norm_compat2 pour passer de ball à norm *)
-
-Lemma ex_Cauchy_series {K : AbsRing} {V : NormedModule K}
+Lemma Cauchy_ex_series {K : AbsRing} {V : CompleteNormedModule K}
   (a : nat -> V) :
   ex_series a -> Cauchy_series a.
-Admitted. (** Admitted. *)
+Proof.
+intros [l Hl] eps.
+set (eps' := eps / (norm_factor (V := V))).
+assert (He: 0 < eps').
+  apply Rdiv_lt_0_compat.
+  apply eps.
+  apply norm_factor_gt_0.
+destruct (proj2 (filterlim_locally_cauchy (U := V) (F := eventually) (sum_n (fun k => a k)))
+  (ex_intro _ l Hl) (mkposreal _ He)) as [P [[N HN] HP]].
+exists (S N).
+intros [|u] v Hu Hv.
+elim le_Sn_O with (1 := Hu).
+destruct (le_or_lt u v) as [Huv|Huv].
+rewrite -> sum_n_m_sum_n with (1 := Huv).
+replace (pos eps) with (norm_factor (V := V) * mkposreal _ He).
+apply norm_compat2.
+apply HP ; apply HN.
+now apply le_S_n.
+now apply le_Sn_le.
+rewrite /eps' /=.
+field.
+apply Rgt_not_eq, norm_factor_gt_0.
+rewrite sum_n_m_zero.
+rewrite norm_zero.
+apply cond_pos.
+now apply lt_S.
+Qed.
 
-Lemma Cauchy_ex_series {K : AbsRing} {V : CompleteNormedModule K}
+Lemma ex_series_Cauchy {K : AbsRing} {V : CompleteNormedModule K}
   (a : nat -> V) :
   Cauchy_series a -> ex_series a.
 Proof.
-  intros H.
-  apply (filterlim_locally_cauchy (U := V)).
-  intros eps.
-  case: (H eps) => N HN.
-  exists (fun n => (N <= n)%nat).
-  split.
-  by exists N.
-  intros n m Hn Hm.
-  apply (norm_compat1 (V := V)).
-  case: (le_dec n m) => Hnm.
-  rewrite -sum_n_m_sum_n.
-  apply HN.
-  by eapply le_trans, le_n_Sn.
-  by [].
-  by [].
-  rewrite -norm_opp opp_minus.
-  rewrite -sum_n_m_sum_n.
-  apply HN.
-  by eapply le_trans, le_n_Sn.
-  by [].
-  by apply lt_le_weak, not_le.
+intros Ca.
+destruct (proj1 (filterlim_locally_cauchy (U := V) (F := eventually) (sum_n a))) as [l Hl].
+2: now exists l.
+intros eps.
+destruct (Ca eps) as [N HN].
+exists (le N).
+split.
+now exists N.
+intros u v.
+wlog Huv: u v / (u <= v)%nat.
+intros H.
+destruct (le_or_lt u v) as [Huv|Huv].
+now apply H.
+intros Hu Hv.
+apply ball_sym.
+apply H => //.
+now apply lt_le_weak.
+intros Hu Hv.
+apply: norm_compat1.
+rewrite <- sum_n_m_sum_n with (1 := Huv).
+apply HN => //.
+now apply le_S.
 Qed.
 
 Section Properties1.
@@ -344,7 +369,7 @@ Proof.
   rewrite Rplus_comm.
   apply is_series_decr_n with n.
   by [].
-  rewrite /plus /opp /= sum_n_sum_f_R0.
+  rewrite /plus /opp /= sum_n_Reals.
   ring_simplify (Series (fun k : nat => a (n+ k)%nat) + sum_f_R0 a (pred n) + - sum_f_R0 a (pred n)).
   apply Series_correct.
   by apply ex_series_incr_n.
@@ -394,7 +419,7 @@ Proof.
   intros Hs.
   apply is_lim_seq_spec.
   intros eps.
-  apply ex_Cauchy_series in Hs.
+  apply (Cauchy_ex_series (V := R_CompleteNormedModule)) in Hs.
   case: (Hs eps) => {Hs} N Hs.
   exists (S N) ; case => [ | n] Hn.
   by apply le_Sn_0 in Hn.
@@ -450,17 +475,17 @@ Lemma ex_series_le {K : AbsRing} {V : CompleteNormedModule K}
    ex_series b -> ex_series a.
 Proof.
   move => H Hb.
-  apply ex_Cauchy_series in Hb.
-  apply Cauchy_ex_series.
+  apply (Cauchy_ex_series (V := R_CompleteNormedModule)) in Hb.
+  apply ex_series_Cauchy.
   move => e.
   case (Hb e) => {Hb} N Hb.
   exists N => n m Hn Hm.
   eapply Rle_lt_trans, (Hb _ _ Hn Hm) => //.
   eapply Rle_trans.
   apply norm_sum_n_m.
-  replace (@norm R_AbsRing R_NormedModule (@sum_n_m R_NormedModule b n m))
-    with (sum_n_m b n m).
+  apply Rle_trans with (sum_n_m b n m).
   by apply sum_n_m_le.
+  right.
   assert (forall n, 0 <= b n).
     intros k.
     eapply Rle_trans, H.
@@ -814,7 +839,7 @@ Proof.
     change (is_lim_seq (sum_n (fun n : nat => sum_f_R0 (fun k : nat => a k * b (n - k)%nat) n)) (Finite (la * lb))).
     apply is_lim_seq_le_le with (u := fun n => sum_f_R0 a (Div2.div2 n) * sum_f_R0 b (Div2.div2 n))
     (w := fun n => sum_f_R0 a n * sum_f_R0 b n).
-    intros n; rewrite sum_n_sum_f_R0.
+    intros n; rewrite sum_n_Reals.
     by split.
     replace (Finite (la * lb)) with (Rbar_mult la lb) by auto.
     suff H : is_lim_seq
@@ -838,11 +863,11 @@ Proof.
     by repeat apply le_n_S.
 
     apply is_lim_seq_mult'.
-    apply filterlim_ext with (2:=Hla); apply sum_n_sum_f_R0.
-    apply filterlim_ext with (2:=Hlb); apply sum_n_sum_f_R0.
+    apply filterlim_ext with (2:=Hla); apply sum_n_Reals.
+    apply filterlim_ext with (2:=Hlb); apply sum_n_Reals.
     apply is_lim_seq_mult'.
-    apply filterlim_ext with (2:=Hla); apply sum_n_sum_f_R0.
-    apply filterlim_ext with (2:=Hlb); apply sum_n_sum_f_R0.
+    apply filterlim_ext with (2:=Hla); apply sum_n_Reals.
+    apply filterlim_ext with (2:=Hlb); apply sum_n_Reals.
 Qed.
 
 Lemma is_series_mult (a b : nat -> R) (la lb : R) :
@@ -968,7 +993,7 @@ Proof.
   set k0 := ((k + 1) / 2).
   exists (/(1-k0) * (1-k0*0)).
   apply filterlim_ext with (fun N => / (1 - k0) * (1 - k0 ^ S N)).
-  move => n ; rewrite sum_n_sum_f_R0; rewrite tech3.
+  move => n ; rewrite sum_n_Reals; rewrite tech3.
   by apply Rmult_comm.
   apply Rlt_not_eq.
   replace 1 with ((1+1)/2) by field ; rewrite /k0.
@@ -1134,7 +1159,7 @@ Proof.
   move => Hq.
   apply filterlim_ext with (fun n => (1-q^(S n)) / (1-q)).
   move => n.
-  rewrite sum_n_sum_f_R0; rewrite tech3.
+  rewrite sum_n_Reals; rewrite tech3.
   reflexivity.
   apply Rlt_not_eq.
   apply Rle_lt_trans with (2 := Hq).

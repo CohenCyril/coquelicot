@@ -3940,8 +3940,8 @@ Definition R_UniformSpace_mixin :=
 Canonical R_UniformSpace :=
   UniformSpace.Pack R R_UniformSpace_mixin R.
 
-Definition R_complete_lim (F : (R -> Prop) -> Prop) :=
-  Lub_Rbar (fun x : R => F (ball x (mkposreal _ Rlt_0_1))) - 1.
+Definition R_complete_lim (F : (R -> Prop) -> Prop) : R :=
+  Lub_Rbar (fun x : R => F (ball (x + 1) (mkposreal _ Rlt_0_1))).
 
 Lemma R_complete_ax1 :
   forall F : (R -> Prop) -> Prop,
@@ -3951,13 +3951,14 @@ Lemma R_complete_ax1 :
 Proof.
 intros F FF HF eps.
 unfold R_complete_lim.
-generalize (Lub_Rbar_correct (fun x : R => F (ball x (mkposreal _ Rlt_0_1)))).
-generalize (Lub_Rbar (fun x : R => F (ball x (mkposreal _ Rlt_0_1)))).
+generalize (Lub_Rbar_correct (fun x : R => F (ball (x + 1) (mkposreal _ Rlt_0_1)))).
+generalize (Lub_Rbar (fun x : R => F (ball (x + 1) (mkposreal _ Rlt_0_1)))).
 intros [x| |] [Hx1 Hx2].
 -
 set (eps' := pos_div_2 (mkposreal _ (Rmin_case _ _ _ Rlt_R0_R2 (cond_pos eps)))).
 destruct (HF eps') as [z Hz].
-assert (H1 : z - Rmin 2 eps / 2 + 1 <= x).
+assert (H1 : z - Rmin 2 eps / 2 + 1 <= x + 1).
+  apply Rplus_le_compat_r.
   apply Hx1.
   revert Hz.
   apply filter_imp.
@@ -3968,7 +3969,8 @@ assert (H1 : z - Rmin 2 eps / 2 + 1 <= x).
   destruct Bu as [Bu1 Bu2].
   assert (H := Rmin_l 2 eps).
   split ; Fourier.fourier.
-assert (H2 : x <= z + Rmin 2 eps / 2 + 1).
+assert (H2 : x + 1 <= z + Rmin 2 eps / 2 + 1).
+  apply Rplus_le_compat_r.
   apply (Hx2 (Finite _)).
   intros v Hv.
   apply Rbar_not_lt_le => Hlt.
@@ -3978,7 +3980,7 @@ assert (H2 : x <= z + Rmin 2 eps / 2 + 1).
   unfold ball ; simpl ; intros w [Hw1 Hw2].
   apply (Rabs_lt_between' w z) in Hw1.
   destruct Hw1 as [_ Hw1].
-  apply (Rabs_lt_between' w v) in Hw2.
+  apply (Rabs_lt_between' w (v + 1)) in Hw2.
   destruct Hw2 as [Hw2 _].
   clear -Hw1 Hw2 Hlt.
   simpl in Hw1, Hw2, Hlt.
@@ -3995,7 +3997,7 @@ destruct Hu.
 split ; Fourier.fourier.
 -
   destruct (HF (mkposreal _ Rlt_0_1)) as [y Fy].
-  elim (Hx2 (y + 2)).
+  elim (Hx2 (y + 1)).
   intros x Fx.
   apply Rbar_not_lt_le => Hlt.
   apply filter_not_empty.
@@ -4004,18 +4006,20 @@ split ; Fourier.fourier.
   intros z [Hz1 Hz2].
   revert Hlt.
   apply Rbar_le_not_lt.
-  apply Rplus_le_reg_r with (-y).
-  replace (y + 2 + -y) with 2 by ring.
+  apply Rplus_le_reg_r with (-(y - 1)).
+  replace (y + 1 + -(y - 1)) with 2 by ring.
   apply Rabs_le_between.
   apply Rlt_le.
-  generalize (ball_triangle y z x 1 1) => /= H.
+  generalize (ball_triangle y z (x + 1) 1 1) => /= H.
+  replace (x + -(y - 1)) with ((x + 1) - y) by ring.
   apply H.
   apply Hz1.
   apply ball_sym in Hz2.
   apply Hz2.
 -
   destruct (HF (mkposreal _ Rlt_0_1)) as [y Fy].
-  elim (Hx1 y Fy).
+  elim (Hx1 (y - 1)).
+  now replace (y - 1 + 1) with y by ring.
 Qed.
 
 Lemma R_complete :
@@ -4202,39 +4206,17 @@ Proof.
     by apply filterlim_norm.
   clear Ha.
 
-  case: (Markov (fun M => forall n : nat, norm (a n) <= INR M)).
-    intros M.
-    case: (Markov.Markov (fun n => INR M < norm (a n))).
-      intros n ; by apply Rlt_dec.
-    case => n Hn.
-    right ; contradict Hn.
-    by apply Rle_not_lt.
-    move => Hn.
-    left => n.
-    by apply Rnot_lt_le.
-  case => M HM.
-  by exists (INR M).
-  intros HM.
-  assert False.
+  destruct (LPO_cor3 (fun n => norm (a n))) as [[M HM]|HM].
+  now exists M.
+  elimtype False.
   case: H => l Hl.
   assert (H := proj1 (filterlim_locally (F := eventually) _ l) Hl (mkposreal _ Rlt_0_1)).
   clear Hl ; simpl in H ; rewrite /ball /= /AbsRing_ball in H.
   destruct H as [N HN].
-  destruct (nfloor_ex (seq.foldr Rmax (1 + norm l) (seq.map (fun n => norm (a n)) (seq.iota 0 N)))) as [m Hm].
-  have : (0 <= (1 + norm l)).
-    apply Rplus_le_le_0_compat.
-    by apply Rle_0_1.
-    by apply norm_ge_0.
-  elim: (seq.iota 0 N) (1 + norm l) => /= [ | h t IH] h0 Hh0.
-  by [].
-  apply Rmax_case.
-  by apply norm_ge_0.
-  by apply IH.
-  apply (HM (S m)) => n.
-  rewrite S_INR.
-  apply Rlt_le.
-  eapply Rle_lt_trans, Hm.
-  clear Hm HM.
+  specialize (HM (seq.foldr Rmax (1 + norm l) (seq.map (fun n => norm (a n)) (seq.iota 0 N)))).
+  destruct HM as [n Hn].
+  revert Hn.
+  apply Rle_not_lt.
   elim: N a n HN => /=[ |N IH] a n HN.
   rewrite Rplus_comm.
   apply Rlt_le, Rabs_lt_between'.
@@ -4258,7 +4240,6 @@ Proof.
   by [].
   apply f_equal.
   apply IH.
-  by [].
 Qed.
 
 (** Some open sets of [R] *)

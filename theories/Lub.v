@@ -70,7 +70,7 @@ Proof.
   assert (F_ex : forall n, (exists x : R, F n x)).
     intros ; exists 0 ; by left.
   set (u (n : nat) := proj1_sig (completeness (F n) (F_b n) (F_ex n))).
-  destruct (Markov_cor3 u) as [ [M HM] | HM].
+  destruct (LPO_cor3 u) as [ [M HM] | HM].
   + left ; exists M => x Hx.
     destruct (nfloor_ex (Rmax 0 x)) as [n Hn].
     by apply Rmax_l.
@@ -182,7 +182,7 @@ rename E into F.
     intros m ; exists (- INR m) ; by left.
   set (u m := proj1_sig (completeness (E m) (E_b m) (E_ex m))).
   
-  destruct (Markov (fun n => u n <> - INR n)) as [ [n Hn] | Hn].
+  destruct (LPO (fun n => u n <> - INR n)) as [ [n Hn] | Hn].
     intros n.
     case: (Req_EM_T (u n) (- INR n)) => H.
     by right.
@@ -516,13 +516,17 @@ Proof.
   split ; [ | move => b Hb ; apply Hlub ] ; by apply is_lb_Rbar_correct.
 Qed.
 
-Lemma Rbar_ex_lub (E : Rbar -> Prop) : {E p_infty} + {~ E p_infty} ->
-   {l : Rbar | Rbar_is_lub E l}.
+Lemma Rbar_ex_lub (E : Rbar -> Prop) :
+  {l : Rbar | Rbar_is_lub E l}.
 Proof.
-  case => Hp.
+  destruct (EM_dec (E p_infty)) as [Hp|Hp].
   exists p_infty ; split.
   by case.
-  by intros b Hb ; apply Hb.
+  intros b Hb.
+  apply Rbar_not_lt_le.
+  contradict Hp => H.
+  apply: Rbar_le_not_lt Hp.
+  by apply Hb.
   destruct (ex_lub_Rbar E) as [l Hl].
   exists l ; split.
   case => [x | | ] // Hx.
@@ -531,38 +535,37 @@ Proof.
   apply Hl => x Hx.
   by apply Hb.
 Qed.
-Lemma Rbar_ex_glb (E : Rbar -> Prop) : {E m_infty} + {~ E m_infty} ->
+
+Lemma Rbar_ex_glb (E : Rbar -> Prop) :
   {l : Rbar | Rbar_is_glb E l}.
 Proof.
-  intros Hm ;
   destruct (Rbar_ex_lub (fun x => E (Rbar_opp x))) as [l Hl].
-  by auto.
   exists (Rbar_opp l).
   now apply Rbar_lub_glb ; rewrite Rbar_opp_involutive.
 Qed.
 
 (** Functions *)
 
-Definition Rbar_lub (E : Rbar -> Prop) (Hp : {E p_infty} + {~ E p_infty})
-  := proj1_sig (Rbar_ex_lub E Hp).
-Definition Rbar_glb (E : Rbar -> Prop) (Hp : {E m_infty} + {~ E m_infty})
-  := proj1_sig (Rbar_ex_glb E Hp).
+Definition Rbar_lub (E : Rbar -> Prop)
+  := proj1_sig (Rbar_ex_lub E).
+Definition Rbar_glb (E : Rbar -> Prop)
+  := proj1_sig (Rbar_ex_glb E).
 
-Lemma Rbar_opp_glb_lub (E : Rbar -> Prop) Hp Hm :
-  Rbar_glb (fun x => E (Rbar_opp x)) Hm = Rbar_opp (Rbar_lub E Hp).
+Lemma Rbar_opp_glb_lub (E : Rbar -> Prop) :
+  Rbar_glb (fun x => E (Rbar_opp x)) = Rbar_opp (Rbar_lub E).
 Proof.
-  unfold Rbar_glb ; case (Rbar_ex_glb _ _) ; simpl ; intros g [Hg Hg'] ;
-  unfold Rbar_lub ; case (Rbar_ex_lub _ _) ; simpl ; intros l [Hl Hl'] ;
+  unfold Rbar_glb ; case (Rbar_ex_glb _) ; simpl ; intros g [Hg Hg'] ;
+  unfold Rbar_lub ; case (Rbar_ex_lub _) ; simpl ; intros l [Hl Hl'] ;
   apply Rbar_le_antisym.
   apply Rbar_opp_le ; rewrite Rbar_opp_involutive ; apply Hl', Rbar_lb_ub ;
   rewrite Rbar_opp_involutive ; auto.
   apply Hg', Rbar_lb_ub ; auto.
 Qed.
-Lemma Rbar_opp_lub_glb (E : Rbar -> Prop) Hp Hm :
-  Rbar_lub (fun x => E (Rbar_opp x)) Hp = Rbar_opp (Rbar_glb E Hm).
+Lemma Rbar_opp_lub_glb (E : Rbar -> Prop) :
+  Rbar_lub (fun x => E (Rbar_opp x)) = Rbar_opp (Rbar_glb E).
 Proof.
-  unfold Rbar_glb ; case (Rbar_ex_glb _ _) ; simpl ; intros g (Hg, Hg') ;
-  unfold Rbar_lub ; case (Rbar_ex_lub _ _) ; simpl ; intros l [Hl Hl'] ;
+  unfold Rbar_glb ; case (Rbar_ex_glb _) ; simpl ; intros g (Hg, Hg') ;
+  unfold Rbar_lub ; case (Rbar_ex_lub _) ; simpl ; intros l [Hl Hl'] ;
   apply Rbar_le_antisym.
   apply Hl', Rbar_lb_ub ; rewrite Rbar_opp_involutive ;
   apply (Rbar_is_lb_subset _ E) ; auto ; intros x ; rewrite Rbar_opp_involutive ; auto.
@@ -570,9 +573,8 @@ Proof.
   rewrite Rbar_opp_involutive ; auto.
 Qed.
 
-Lemma Rbar_is_lub_unique (E : Rbar -> Prop) (Hp : {E p_infty} + {~ E p_infty})
-  (l : Rbar) :
-  Rbar_is_lub E l -> Rbar_lub E Hp = l.
+Lemma Rbar_is_lub_unique (E : Rbar -> Prop) (l : Rbar) :
+  Rbar_is_lub E l -> Rbar_lub E = l.
 Proof.
   move => H.
   rewrite /Rbar_lub.
@@ -581,9 +583,8 @@ Proof.
   apply H0, H.
   apply H, H0.
 Qed.
-Lemma Rbar_is_glb_unique (E : Rbar -> Prop) (Hp : {E m_infty} + {~ E m_infty})
-  (l : Rbar) :
-  Rbar_is_glb E l -> Rbar_glb E Hp = l.
+Lemma Rbar_is_glb_unique (E : Rbar -> Prop) (l : Rbar) :
+  Rbar_is_glb E l -> Rbar_glb E = l.
 Proof.
   move => H.
   rewrite /Rbar_glb.
@@ -595,13 +596,13 @@ Qed.
 
 (** Order *)
 
-Lemma Rbar_glb_le_lub (E : Rbar -> Prop) Hp Hm :
-  (exists x, E x) -> Rbar_le (Rbar_glb E Hm) (Rbar_lub E Hp).
+Lemma Rbar_glb_le_lub (E : Rbar -> Prop) :
+  (exists x, E x) -> Rbar_le (Rbar_glb E) (Rbar_lub E).
 Proof.
   case => x Hex.
   apply Rbar_le_trans with x.
-  unfold Rbar_glb ; case (Rbar_ex_glb _ _) ; simpl ; intros g (Hg, _) ; apply Hg ; auto.
-  unfold Rbar_lub ; case (Rbar_ex_lub _ _) ; simpl ; intros l (Hl, _) ; apply Hl ; auto.
+  unfold Rbar_glb ; case (Rbar_ex_glb _) ; simpl ; intros g (Hg, _) ; apply Hg ; auto.
+  unfold Rbar_lub ; case (Rbar_ex_lub _) ; simpl ; intros l (Hl, _) ; apply Hl ; auto.
 Qed.
 
 Lemma Rbar_is_lub_subset (E1 E2 : Rbar -> Prop) (l1 l2 : Rbar) :
@@ -651,26 +652,26 @@ Proof.
   intros b Hb ; apply H2 ; apply (Rbar_is_lb_subset _ E2) ; auto ; intros x Hx ; apply Heq ; auto.
 Qed.
 
-Lemma Rbar_lub_subset (E1 E2 : Rbar -> Prop) Hp1 Hp2 :
-  (forall x, E1 x -> E2 x) -> Rbar_le (Rbar_lub E1 Hp1) (Rbar_lub E2 Hp2).
+Lemma Rbar_lub_subset (E1 E2 : Rbar -> Prop) :
+  (forall x, E1 x -> E2 x) -> Rbar_le (Rbar_lub E1) (Rbar_lub E2).
 Proof.
-  intros Hs ; unfold Rbar_lub ; case (Rbar_ex_lub E1 _) ; intros l1 Hl1 ;
-  case (Rbar_ex_lub E2 _) ; simpl ; intros l2 Hl2 ; apply (Rbar_is_lub_subset E1 E2) ; auto.
+  intros Hs ; unfold Rbar_lub ; case (Rbar_ex_lub E1) ; intros l1 Hl1 ;
+  case (Rbar_ex_lub E2) ; simpl ; intros l2 Hl2 ; apply (Rbar_is_lub_subset E1 E2) ; auto.
 Qed.
-Lemma Rbar_glb_subset (E1 E2 : Rbar -> Prop) Hp1 Hp2 :
-  (forall x, E2 x -> E1 x) -> Rbar_le (Rbar_glb E1 Hp1) (Rbar_glb E2 Hp2).
+Lemma Rbar_glb_subset (E1 E2 : Rbar -> Prop) :
+  (forall x, E2 x -> E1 x) -> Rbar_le (Rbar_glb E1) (Rbar_glb E2).
 Proof.
-  intro Hs ; unfold Rbar_glb ; case (Rbar_ex_glb E1 _) ; intros l1 Hl1 ;
-  case (Rbar_ex_glb E2 _) ; simpl ; intros l2 Hl2 ; apply (Rbar_is_glb_subset E1 E2) ; auto.
+  intro Hs ; unfold Rbar_glb ; case (Rbar_ex_glb E1) ; intros l1 Hl1 ;
+  case (Rbar_ex_glb E2) ; simpl ; intros l2 Hl2 ; apply (Rbar_is_glb_subset E1 E2) ; auto.
 Qed.
 
-Lemma Rbar_lub_rw (E1 E2 : Rbar -> Prop) Hp1 Hp2 :
-  (forall x, E1 x <-> E2 x) -> (Rbar_lub E1 Hp1) = (Rbar_lub E2 Hp2).
+Lemma Rbar_lub_rw (E1 E2 : Rbar -> Prop) :
+  (forall x, E1 x <-> E2 x) -> Rbar_lub E1 = Rbar_lub E2.
 Proof.
   intro Hs ; apply Rbar_le_antisym ; apply Rbar_lub_subset ; intros x H ; apply Hs ; auto.
 Qed.
-Lemma Rbar_glb_rw (E1 E2 : Rbar -> Prop) Hp1 Hp2 :
-  (forall x, E1 x <-> E2 x) -> (Rbar_glb E1 Hp1) = (Rbar_glb E2 Hp2).
+Lemma Rbar_glb_rw (E1 E2 : Rbar -> Prop) :
+  (forall x, E1 x <-> E2 x) -> Rbar_glb E1 = Rbar_glb E2.
 Proof.
   intros Hs ; apply Rbar_le_antisym ; apply Rbar_glb_subset ; intros x H ; apply Hs ; auto.
 Qed.
