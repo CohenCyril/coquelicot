@@ -1,7 +1,7 @@
-Require Import Reals ssreflect.
+Require Import Reals Ssreflect.ssreflect.
 Require Import Rcomplements.
 Require Import List Omega.
-Require Import seq ssrbool eqtype.
+Require Import Ssreflect.seq Ssreflect.ssrbool Ssreflect.eqtype.
 
 Section Iter.
 

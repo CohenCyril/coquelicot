@@ -19,7 +19,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 COPYING file for more details.
 *)
 
-Require Import Reals Even Div2 Omega ssreflect.
+Require Import Reals Even Div2 Omega Ssreflect.ssreflect.
 Require Import Rcomplements Rbar Limit Lub.
 Require Import Continuity Derive Derive_2d RInt Seq_fct Series Hierarchy.
 
@@ -1806,7 +1806,7 @@ Proof.
   apply Rlt_le.
   instantiate (1 := 1).
   eapply (proj1 Hx).
-  case: Hx => Hx1 Hx.
+  destruct Hx as [Hx1 Hx].
   eapply Rle_lt_trans.
   apply Rmult_le_compat_l.
   by apply Rabs_pos.
@@ -1815,7 +1815,7 @@ Proof.
   eapply Rlt_le_trans, Rmax_l.
   by apply Rlt_0_1.
   eapply (proj1 Hx).
-  case: Hx => Hx1 [Hx2 Hx].
+  destruct Hx as [Hx1 [Hx2 Hx]].
   eapply Rle_trans.
   apply Rmult_le_compat_l.
   by apply Rabs_pos.
@@ -2616,7 +2616,6 @@ Proof.
     by apply Rle_lt_trans with (1 := Rle_abs _), Hx.
     by apply Rle_ge, Ht.
   move => y [Hy ->].
-  simpl ball.
   rewrite Rminus_0_r.
   rewrite (sum_n_ext _ (fun m : nat => x ^ m / INR (fact m) * Derive_n f m 0)).
   rewrite sum_n_sum_f_R0.

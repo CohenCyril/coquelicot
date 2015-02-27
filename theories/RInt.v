@@ -20,7 +20,7 @@ COPYING file for more details.
 *)
 
 Require Import Reals Div2 ConstructiveEpsilon.
-Require Import ssreflect ssrbool eqtype seq.
+Require Import Ssreflect.ssreflect Ssreflect.ssrbool Ssreflect.eqtype Ssreflect.seq.
 Require Import Markov Rcomplements Rbar Lub Limit Derive SF_seq.
 Require Import Continuity Derive_2d Hierarchy Seq_fct.
 

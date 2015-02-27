@@ -22,7 +22,7 @@ COPYING file for more details.
 (** * Bac S 2013 *)
 (** https://www.lri.fr/~lelay/Bac2013/Bac_S_2013_Metropole.pdf *)
 
-Require Import Reals ssreflect.
+Require Import Reals Ssreflect.ssreflect.
 Require Import Psatz.
 Require Import Rcomplements Rbar Hierarchy.
 Require Import Derive RInt Continuity Limit ElemFct.

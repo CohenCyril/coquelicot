@@ -22,7 +22,7 @@ COPYING file for more details.
 Require Import Reals.
 Require Import Rcomplements Derive RInt Hierarchy Derive_2d.
 Require Import AutoDerive.
-Require Import ssreflect.
+Require Import Ssreflect.ssreflect.
 
 Open Local Scope R_scope.
 

@@ -1,4 +1,4 @@
-Require Import Reals ssreflect.
+Require Import Reals Ssreflect.ssreflect.
 Require Import Coquelicot.
 
 (** Exponential *)
@@ -667,7 +667,7 @@ Canonical C_R_CompleteNormedModule :=
   CompleteNormedModule.Pack R_AbsRing C (CompleteNormedModule.Class _ _ (NormedModule.class _ C_R_NormedModule) (CompleteSpace.class C_CompleteSpace)) C.
 
 
-Require Import seq.
+Require Import Ssreflect.seq.
 
 Lemma ex_RInt_norm {V : CompleteNormedModule R_AbsRing} (f : R -> V) (a b : R) :
   ex_RInt f a b -> ex_RInt (fun x => norm (f x)) a b.

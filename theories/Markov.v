@@ -19,7 +19,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 COPYING file for more details.
 *)
 
-Require Import RIneq Rcomplements.
+Require Import RIneq Rcomplements Omega.
 
 (** This file proves the Limited Principle of Omniscience: given a
 decidable property P on [nat], either P never holds or we can construct
@@ -160,6 +160,7 @@ Lemma LPO_bool :
 Proof.
 intros f.
 destruct (LPO (fun n => f n = true)) as [H|H].
+simpl.
 intros n.
 case (f n).
 now left.

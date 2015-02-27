@@ -22,7 +22,7 @@ COPYING file for more details.
 Require Import Reals.
 Require Import Rcomplements Rbar Lub.
 Require Import Hierarchy.
-Require Import ssreflect seq ssrbool.
+Require Import Ssreflect.ssreflect Ssreflect.seq Ssreflect.ssrbool.
 
 Open Scope R_scope.
 
