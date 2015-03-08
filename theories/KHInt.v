@@ -1,4 +1,4 @@
-Require Import Reals ssreflect ssrbool seq.
+Require Import Reals Ssreflect.ssreflect Ssreflect.ssrbool Ssreflect.seq.
 Require Import Rcomplements Hierarchy SF_seq RInt.
 
 Definition ith_step (ptd : @SF_seq R) i := nth 0 (SF_lx ptd) (S i) - nth 0 (SF_lx ptd) i.

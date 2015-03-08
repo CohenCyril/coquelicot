@@ -19,7 +19,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 COPYING file for more details.
 *)
 
-Require Import Reals Omega ssreflect.
+Require Import Reals Omega Ssreflect.ssreflect.
 Require Import Rbar Rcomplements Continuity Derive Hierarchy RInt PSeries.
 
 (** * Absolute value *)

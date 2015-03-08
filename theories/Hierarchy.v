@@ -19,7 +19,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 COPYING file for more details.
 *)
 
-Require Import Reals ssreflect.
+Require Import Reals Ssreflect.ssreflect.
 Require Import Rcomplements Rbar Markov Iter Lub.
 
 (* This file describes first filters:

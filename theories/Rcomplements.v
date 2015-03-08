@@ -37,7 +37,7 @@ Ltac evar_last :=
     unfold tmp ; clear tmp
   end.
 
-Require Import Reals ssreflect.
+Require Import Reals Ssreflect.ssreflect.
 
 Module MyNat.
 
@@ -52,9 +52,8 @@ Proof.  move=> h.  by rewrite minus_Sn_m.  Qed.
 
 Lemma lt_neq (n m : nat) : n < m -> n <> m.
 Proof.
-move=> h h'.
-apply: lt_irrefl => //.
-by move: h' h => ->.
+intros H ->.
+exact (lt_irrefl m H).
 Qed.
 
 Lemma minus_0_le (n m : nat) : n <= m -> n - m = 0.
@@ -94,7 +93,7 @@ Qed.
 End MyNat.
 
 Require Import Even Div2.
-Require Import seq ssrbool.
+Require Import Ssreflect.seq Ssreflect.ssrbool.
 
 Open Scope R_scope.
 

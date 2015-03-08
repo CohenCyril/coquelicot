@@ -19,7 +19,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 COPYING file for more details.
 *)
 
-Require Import Reals ssreflect.
+Require Import Reals Ssreflect.ssreflect.
 Require Import Rbar Rcomplements Markov.
 
 (** This file gives properties of (least) upper and (greatest) lower

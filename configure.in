@@ -35,7 +35,7 @@ AC_MSG_RESULT([$COQDOC])
 
 AC_MSG_CHECKING([for SSReflect])
 AS_IF(
-  [ echo "Require Import ssreflect." > conftest.v
+  [ echo "Require Import Ssreflect.ssreflect." > conftest.v
     $COQC conftest.v > conftest.err ],
   [ AC_MSG_RESULT([yes]) ],
   [ AC_MSG_RESULT([no])

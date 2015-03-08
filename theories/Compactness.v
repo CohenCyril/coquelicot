@@ -20,7 +20,7 @@ COPYING file for more details.
 *)
 
 Require Import Reals.
-Require Import ssreflect.
+Require Import Ssreflect.ssreflect.
 Require Import List.
 
 (* This enables a compatibility with Coq 8.4, which didn't have the right lemmas Rplus_lt_reg_l

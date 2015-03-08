@@ -20,7 +20,7 @@ COPYING file for more details.
 *)
 
 Require Import Reals Rbar.
-Require Import ssreflect.
+Require Import Ssreflect.ssreflect.
 Require Import Limit Iter.
 Require Import Hierarchy Continuity Equiv.
 Require Import Rcomplements.

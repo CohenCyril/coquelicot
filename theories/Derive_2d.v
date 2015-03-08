@@ -20,7 +20,7 @@ COPYING file for more details.
 *)
 
 Require Import Reals Omega.
-Require Import ssreflect.
+Require Import Ssreflect.ssreflect.
 Require Import Rcomplements Hierarchy Continuity Derive.
 
 (** * Differentiability *)
