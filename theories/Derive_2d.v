@@ -1285,7 +1285,7 @@ apply is_derive_ext_loc with (fun t => sum_n (fun m => C k m *
   apply filter_imp => {z HH IHk} z [Hz HH].
   specialize (HH Hz).
   apply sym_eq.
-  rewrite sum_n_sum_f_R0.
+  rewrite sum_n_Reals.
   now apply is_derive_n_unique.
 replace (sum_f_R0 (fun m : nat => C (S k) m *
     partial_derive m (S k - m) f (x + z * (u - x)) (y + z * (v - y)) * (u - x) ^ m * (v - y) ^ (S k - m)) (S k)) with
@@ -1337,7 +1337,7 @@ apply @filterdiff_plus_fct ; try apply locally_filter.
 apply filterdiff_const.
 apply @filterdiff_scal_l ; try apply locally_filter.
 simpl => y0 ; apply plus_zero_l.
-rewrite sum_n_sum_f_R0 -(sum_eq (fun m =>
+rewrite sum_n_Reals -(sum_eq (fun m =>
   C k m * (u - x) ^ (S m) * (v - y) ^ (k - m) * partial_derive (S m) (k - m) f (x + z * (u - x)) (y + z * (v - y)) +
   C k m * (u - x) ^ m * (v - y) ^ (S (k - m)) * partial_derive m (S (k - m)) f (x + z * (u - x)) (y + z * (v - y)))).
 2: intros ; simpl ; ring.

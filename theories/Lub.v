@@ -70,7 +70,7 @@ Proof.
   assert (F_ex : forall n, (exists x : R, F n x)).
     intros ; exists 0 ; by left.
   set (u (n : nat) := proj1_sig (completeness (F n) (F_b n) (F_ex n))).
-  destruct (LPO_cor3 u) as [ [M HM] | HM].
+  destruct (LPO_ub_dec u) as [ [M HM] | HM].
   + left ; exists M => x Hx.
     destruct (nfloor_ex (Rmax 0 x)) as [n Hn].
     by apply Rmax_l.

@@ -173,7 +173,7 @@ Qed.
 
 (** ** Corollaries *)
 
-Lemma LPO_cor1 : forall P : nat -> Prop, (forall n, P n \/ ~P n) ->
+Lemma LPO_notforall : forall P : nat -> Prop, (forall n, P n \/ ~P n) ->
   (~ forall n : nat, ~ P n) -> exists n : nat, P n.
 Proof.
   intros.
@@ -182,18 +182,18 @@ Proof.
   contradict H0 ; apply n.
 Qed.
 
-Lemma LPO_cor2 : forall P : nat -> Prop, (forall n, P n \/ ~P n) ->
+Lemma LPO_notnotexists : forall P : nat -> Prop, (forall n, P n \/ ~P n) ->
   ~~ (exists n : nat, P n) -> exists n : nat, P n.
 Proof.
   intros.
-  apply LPO_cor1.
+  apply LPO_notforall.
   apply H.
   contradict H0.
   intros (n,H1).
   contradict H1 ; apply H0.
 Qed.
 
-Lemma LPO_cor3 : forall (u : nat -> R),
+Lemma LPO_ub_dec : forall (u : nat -> R),
   {M : R | forall n, u n <= M} + {forall M : R, exists n, M < u n}.
 Proof.
   intros u.
@@ -213,7 +213,7 @@ Proof.
   destruct (nfloor_ex (Rbasic_fun.Rmax 0 M)) as [m Hm].
   by apply Rbasic_fun.Rmax_l.
   specialize (HM (S m)).
-  apply LPO_cor1.
+  apply LPO_notforall.
   intros n.
   destruct (Rlt_dec M (u n)) as [H|H].
   now left.

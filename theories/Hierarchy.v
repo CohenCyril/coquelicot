@@ -4029,7 +4029,8 @@ Lemma R_complete :
   forall eps : posreal, F (ball (R_complete_lim F) eps).
 Proof.
 intros F FF.
-exact: R_complete_ax1.
+apply R_complete_ax1.
+by apply Proper_StrongProper.
 Qed.
 
 Definition R_CompleteSpace_mixin :=
@@ -4096,11 +4097,26 @@ Qed.
 
 (* *)
 
-Lemma sum_n_sum_f_R0: forall a N, sum_n a N = sum_f_R0 a N.
+Lemma sum_n_Reals : forall a N, sum_n a N = sum_f_R0 a N.
 Proof.
   intros a; induction N; simpl.
   apply sum_n_n.
   by rewrite sum_Sn IHN.
+Qed.
+Lemma sum_n_m_Reals a n m : (n <= m)%nat -> sum_n_m a n m = sum_f n m a.
+Proof.
+  induction m => //= Hnm.
+  apply le_n_O_eq in Hnm.
+  by rewrite -Hnm sum_n_n /=.
+  case: (le_dec n m) => H.
+  rewrite sum_n_Sm // IHm //.
+  rewrite sum_f_n_Sm //.
+  replace n with (S m).
+  rewrite sum_n_n.
+  by rewrite /sum_f minus_diag /=.
+  apply le_antisym => //.
+  apply not_le in H.
+  by apply lt_le_S.
 Qed.
 
 Lemma sum_n_m_const (n m : nat) (a : R) :
@@ -4206,7 +4222,7 @@ Proof.
     by apply filterlim_norm.
   clear Ha.
 
-  destruct (LPO_cor3 (fun n => norm (a n))) as [[M HM]|HM].
+  destruct (LPO_ub_dec (fun n => norm (a n))) as [[M HM]|HM].
   now exists M.
   elimtype False.
   case: H => l Hl.

@@ -908,7 +908,7 @@ Proof.
   apply Series.is_series_unique.
   apply Limit.is_lim_seq_Reals in Hps.
   move: Hps ; apply Limit.is_lim_seq_ext => n.
-  rewrite -sum_n_sum_f_R0.
+  rewrite -sum_n_Reals.
   apply sum_n_ext => k.
   rewrite /tg_alt /Ratan_seq S_INR !plus_INR.
   rewrite pow_add -pow_mult.

@@ -893,7 +893,7 @@ Proof.
     by rewrite sum_O.
     by rewrite sum_Sn IH.
     apply is_lim_seq_ext with (sum_n An).
-    move => n ; by rewrite sum_n_sum_f_R0.
+    move => n ; by rewrite sum_n_Reals.
     apply Lim_seq_correct', H1.
     easy.
 

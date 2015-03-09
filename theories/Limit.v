@@ -144,7 +144,7 @@ Proof.
   intro n ; apply Rbar_le_lt_trans with (y := Finite l).
   apply ub ; exists n ; auto.
   pattern l at 1 ; rewrite <-(Rplus_0_r l) ; apply Rplus_lt_compat_l, eps.
-  apply LPO_cor1.
+  apply LPO_notforall.
   intro n.
   destruct (Rbar_lt_dec (l - eps) (u n)) as [H|H].
   now left.
@@ -156,7 +156,7 @@ Proof.
   rewrite <-(Rplus_0_r l) ;
   apply Rplus_lt_compat_l, Ropp_lt_gt_0_contravar, eps.
 (* l = p_infty *)
-  intro M ; apply LPO_cor1.
+  intro M ; apply LPO_notforall.
   intro n.
   destruct (Rbar_lt_dec M (u n)) as [H|H].
   now left.

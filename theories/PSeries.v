@@ -106,7 +106,7 @@ Proof.
   apply (is_lim_seq_spec _ l) in H.
   case: (H eps) => {H} N H.
   exists N => n Hn.
-  rewrite <- sum_n_sum_f_R0.
+  rewrite <- sum_n_Reals.
   rewrite (sum_n_ext _ (fun n0 : nat => scal (pow_n x n0) (a n0))).
   by apply H.
   intros k; rewrite pow_n_pow /=; apply Rmult_comm.
@@ -115,7 +115,7 @@ Proof.
   case: (H eps (cond_pos eps)) => {H} N H.
   exists N => n Hn.
   rewrite (sum_n_ext _ (fun n0 : nat => a n0 * x ^ n0)).
-  rewrite sum_n_sum_f_R0.
+  rewrite sum_n_Reals.
   by apply H.
   intros; now rewrite Rmult_comm pow_n_pow.
 Qed.
@@ -645,7 +645,7 @@ Proof.
   exists N => n Hn.
   replace (sum_f_R0 (fun k : nat => Rabs (Rabs (a k * r ^ k))) n)
     with (sum_f_R0 (fun k : nat => (Rabs (a k * r ^ k))) n).
-  rewrite <- sum_n_sum_f_R0; by apply Hr.
+  rewrite <- sum_n_Reals; by apply Hr.
   elim: n {Hn} => /= [ | n IH] ; rewrite Rabs_Rabsolu.
   by [].
   by rewrite IH.
@@ -681,7 +681,7 @@ Proof.
     exists N => n Hn.
     set v := sum_n _ _.
     replace v with (sum_n (fun k : nat => Rabs (An k)) n).
-    rewrite sum_n_sum_f_R0; by apply H.
+    rewrite sum_n_Reals; by apply H.
     rewrite /v {v}.
     elim: n {Hn} => /= [ | n IH].
     rewrite !sum_O ; apply Rabs_pos_eq.
@@ -1264,7 +1264,7 @@ Proof.
   move: (is_pseries_decr_n a (S n) x (/x) (PSeries a x) (Rinv_l x Hx) (lt_0_Sn _) (PSeries_correct _ _ Ha)) => Hb.
   rewrite (is_pseries_unique _ _ _ Hb).
   rewrite (sum_n_ext _ (fun k : nat => a k * x ^ k)).
-  rewrite sum_n_sum_f_R0.
+  rewrite sum_n_Reals.
   replace (S n -1)%nat with n.
   rewrite /scal /plus /opp /= /mult /=.
   rewrite pow_n_pow -Rinv_pow ; try assumption.
@@ -1406,7 +1406,7 @@ Proof.
   rewrite /= !sum_O /= ; ring.
   case: (even_odd_dec n) => Hn.
 (* even n *)
-  rewrite 3!sum_n_sum_f_R0.
+  rewrite 3!sum_n_Reals.
   rewrite -(even_div2 _ Hn) {3}(even_double _ Hn).
   elim: (div2 n) => {n Hn} [ | n] ;
   rewrite ?double_S /sum_f_R0 -/sum_f_R0.
@@ -1417,7 +1417,7 @@ Proof.
   replace (S (S (double n)) + 1)%nat with (S (S (S (double n)))) by ring.
   move => <- ; simpl ; ring.
 (* odd n *)
-  rewrite 3!sum_n_sum_f_R0.
+  rewrite 3!sum_n_Reals.
   rewrite -(odd_div2 _ Hn) {3}(odd_double _ Hn).
   elim: (div2 n) => {n Hn} [ | n] ;
   rewrite ?double_S /sum_f_R0 -/sum_f_R0.
@@ -2237,10 +2237,10 @@ Proof.
   apply: is_derive_ext H.
   simpl => t.
   apply (f_equal real), Lim_seq_ext.
-  intros n; apply sym_eq, sum_n_sum_f_R0.
+  intros n; apply sym_eq, sum_n_Reals.
   rewrite -Lim_seq_incr_1.
   apply (f_equal real), Lim_seq_ext => n.
-  rewrite sum_n_sum_f_R0.
+  rewrite sum_n_Reals.
   apply is_derive_unique, Idn.
   by apply lt_O_Sn.
   move => y Hy.
@@ -2618,7 +2618,7 @@ Proof.
   move => y [Hy ->].
   rewrite Rminus_0_r.
   rewrite (sum_n_ext _ (fun m : nat => x ^ m / INR (fact m) * Derive_n f m 0)).
-  rewrite sum_n_sum_f_R0.
+  rewrite sum_n_Reals.
   apply Rle_lt_trans with (2 := HN n Hn).
   replace (r ^ S n * M / INR (fact (S n)))
     with ((r^S n / INR (fact (S n))) * M)
