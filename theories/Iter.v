@@ -104,7 +104,11 @@ Proof.
   case: (le_dec n (S m)).
   intro ; omega.
   intro H2.
-  rewrite not_le_minus_0 in H1 => // ; intuition.
+  rewrite not_le_minus_0 in H1 => //.
+  contradict H2.
+  by eapply le_trans, le_n_Sn.
+  contradict H2.
+  by eapply le_trans, le_n_Sn.
   change ssrnat.addn with Peano.plus in H0.
   split => // H1.
   case: H1 => /= H1 H2.
@@ -149,10 +153,10 @@ Proof.
 Qed.
 
 Lemma iter_nat_Chasles a n m k :
-  (n <= m <= k)%nat ->
+  (n <= S m)%nat -> (m <= k)%nat ->
   iter_nat a n k = op (iter_nat a n m) (iter_nat a (S m) k).
 Proof.
-  intros [Hnm Hmk].
+  intros Hnm Hmk.
   rewrite -iter_cat //.
   pattern (S m) at 2 ;
   replace (S m) with (ssrnat.addn n (S m - n)).

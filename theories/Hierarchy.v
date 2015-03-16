@@ -634,12 +634,14 @@ Definition sum_n (a : nat -> G) n :=
   sum_n_m a O n.
 
 Lemma sum_n_m_Chasles (a : nat -> G) (n m k : nat) :
-  (n <= m <= k)%nat -> sum_n_m a n k = plus (sum_n_m a n m) (sum_n_m a (S m) k).
+  (n <= S m)%nat -> (m <= k)%nat
+    -> sum_n_m a n k = plus (sum_n_m a n m) (sum_n_m a (S m) k).
 Proof.
-  intros Hnmk.
+  intros Hnm Hmk.
   apply iter_nat_Chasles.
   by apply plus_zero_l.
   by apply plus_assoc.
+  by [].
   by [].
 Qed.
 
@@ -654,12 +656,11 @@ Proof.
   by apply sum_n_n.
 Qed.
 Lemma sum_n_Sm (a : nat -> G) (n m : nat) :
-  (n <= m)%nat -> sum_n_m a n (S m) = plus (sum_n_m a n m) (a (S m)).
+  (n <= S m)%nat -> sum_n_m a n (S m) = plus (sum_n_m a n m) (a (S m)).
 Proof.
   intros Hnmk.
   rewrite (sum_n_m_Chasles _ _ m).
   by rewrite sum_n_n.
-  split.
   by [].
   by apply le_n_Sn.
 Qed.
@@ -669,8 +670,7 @@ Proof.
   intros Hnmk.
   rewrite (sum_n_m_Chasles _ _ n).
   by rewrite sum_n_n.
-  split.
-  by apply le_refl.
+  by apply le_n_Sn.
   by [].
 Qed.
 Lemma sum_n_m_S (a : nat -> G) (n m : nat) :
@@ -698,7 +698,13 @@ Proof.
   apply IH.
   by apply lt_S_n.
 Qed.
-
+Lemma sum_n_m_const_zero (n m : nat) :
+  sum_n_m (fun _ => zero) n m = zero.
+Proof.
+  rewrite /sum_n_m /iter_nat.
+  elim: (seq.iota n (S m - n)) => //= h t ->.
+  by apply plus_zero_l.
+Qed.
 
 Lemma sum_n_m_ext_loc (a b : nat -> G) (n m : nat) :
   (forall k, (n <= k <= m)%nat -> a k = b k) ->
@@ -786,8 +792,8 @@ Proof.
   rewrite (plus_comm _ (minus _ _)) /minus -plus_assoc plus_opp_l plus_zero_r.
   rewrite /sum_n /sum_n_m.
   apply sym_eq, sum_n_m_Chasles.
-  split => //.
   by apply le_O_n.
+  by [].
 Qed.
 
 End Sums.
@@ -3652,6 +3658,22 @@ Fixpoint Mone_seq i j : T :=
 Definition Mone {n} : matrix n n :=
   mk_matrix n n Mone_seq.
 
+Lemma Mone_seq_diag : 
+  forall i j : nat, i = j -> Mone_seq i j = @one T.
+Proof.
+  move => i j <- {j}.
+  by induction i.
+Qed.
+Lemma Mone_seq_not_diag : 
+  forall i j : nat, i <> j -> Mone_seq i j = @zero T.
+Proof.
+  elim => //= [ | i IHi] j Hij ;
+  destruct j => //=.
+  apply IHi.
+  contradict Hij.
+  by rewrite Hij.
+Qed.
+
 Definition Mmult {n m k} (A : @matrix T n m) (B : @matrix T m k) :=
   mk_matrix n k (fun i j => sum_n (fun l => mult (coeff_mat zero A i l) (coeff_mat zero B l j)) (pred m)).
 
@@ -3708,59 +3730,30 @@ Proof.
   destruct n ; simpl.
   by apply lt_n_O in Hj.
   move: (coeff_mat zero A) => {A} A.
-  unfold Mone ; simpl.
-  transitivity (sum_n (fun k : nat => mult (A i k)
-    (Mone_seq k j)) n).
-  apply sum_n_m_ext_loc => /= k [_ Hk].
-  rewrite coeff_mat_bij //.
+  erewrite sum_n_ext_loc ; last first.
+  move => /= k Hk.
+  rewrite /Mone coeff_mat_bij //.
   by apply le_lt_n_Sm.
-  - elim: n Hj => [ | n IH] Hj ; rewrite /sum_n -/sum_n.
-    apply lt_n_Sm_le, le_n_0_eq in Hj.
-    rewrite -Hj => {j Hj} /=.
-    rewrite sum_n_n.
-    by apply mult_one_r.
-  - apply le_lt_eq_dec in Hj ; case: Hj => Hj.
-    rewrite sum_n_Sm.
-    replace (Mone_seq (S n) j : T) with (zero : T).
-    rewrite mult_zero_r plus_zero_r.
-    apply lt_n_Sm_le in Hj.
-    by apply IH.
-    apply lt_S_n in Hj.
-    clear -Hj ;
-    elim: n j Hj => [ | n IH] ;
-    case => [ | j] //= Hj.
-    by apply lt_S_n, lt_n_O in Hj.
-    by apply IH, lt_S_n.
-    by apply le_O_n.
-  - apply eq_add_S in Hj.
-    rewrite Hj => /= {j Hj IH}.
-    rewrite sum_n_Sm /=.
-    replace (Mone_seq n n : T) with (one : T).
-    rewrite mult_one_r.
-    apply plus_reg_r with (opp (A i (S n))).
-    rewrite -plus_assoc plus_opp_r plus_zero_r.
-  - elim: n (S n) (lt_n_Sn n) => {m Hi} [ | n IH] m Hm ;
-    destruct m.
-    by apply lt_n_O in Hm.
-    rewrite sum_n_n.
-    by apply mult_zero_r.
-    by apply lt_n_O in Hm.
-    rewrite sum_n_Sm /=.
-    replace (Mone_seq n m : T) with (zero : T).
-    rewrite mult_zero_r plus_zero_r.
-    apply IH.
-    by apply lt_trans with (1 := lt_n_Sn _).
-    clear -Hm ; destruct m.
-    by apply lt_S_n, lt_n_O in Hm.
-    apply lt_S_n in Hm.
-    elim: n m Hm => [ | n IH] ;
-    case => [ | m] Hm //=.
-    by apply lt_S_n, lt_n_O in Hm.
-    apply IH.
-    by apply lt_S_n.
-    by apply le_O_n.
-    by elim: n.
-    by apply le_O_n.
+  rewrite /sum_n (sum_n_m_Chasles _ _ j) //.
+  2: by apply le_O_n.
+  2: by apply lt_n_Sm_le.
+  rewrite (sum_n_m_ext_loc _ (fun _ => zero) (S j)).
+  rewrite sum_n_m_const_zero plus_zero_r.
+  rewrite -/(sum_n _ _).
+  destruct j => //.
+  by rewrite sum_O Mone_seq_diag // mult_one_r.
+  rewrite sum_Sn.
+  rewrite (sum_n_ext_loc _ (fun _ => zero)).
+  rewrite /sum_n sum_n_m_const_zero plus_zero_l.
+  by rewrite Mone_seq_diag // mult_one_r.
+  move => k Hk.
+  rewrite Mone_seq_not_diag.
+  by apply mult_zero_r.
+  by apply NPeano.Nat.lt_neq, le_lt_n_Sm.
+  move => k [Hk _].
+  rewrite Mone_seq_not_diag.
+  by apply mult_zero_r.
+  by apply sym_not_eq, NPeano.Nat.lt_neq.
 Qed.
 
 Lemma Mmult_one_l {m n} :
@@ -3772,57 +3765,30 @@ Proof.
   destruct m ; simpl.
   by apply lt_n_O in Hi.
   move: (coeff_mat zero A) => {A} A.
-  unfold Mone ; simpl.
-  transitivity (sum_n (fun k : nat => mult
-    (Mone_seq i k) (A k j)) m).
-  apply sum_n_m_ext_loc => /= k [_ Hk].
-  rewrite coeff_mat_bij // ; by apply le_lt_n_Sm.
-  - elim: m Hi => [ | m IH] Hi ; rewrite /sum_n.
-    apply lt_n_Sm_le, le_n_0_eq in Hi.
-    rewrite sum_n_n.
-    rewrite -Hi => {i Hi} /=.
-    by apply mult_one_l.
-  - apply le_lt_eq_dec in Hi ; case: Hi => Hi.
-    rewrite sum_n_Sm.
-    replace (Mone_seq i (S m) : T) with (zero : T).
-    rewrite mult_zero_l plus_zero_r.
-    apply lt_n_Sm_le in Hi.
-    by apply IH.
-    apply lt_S_n in Hi.
-    clear -Hi ;
-    elim: (S m) i Hi => {m} [ | m IH] ;
-    case => [ | i] //= Hi.
-    by apply lt_n_O in Hi.
-    by apply IH, lt_S_n.
-    by apply le_O_n.
-  - apply eq_add_S in Hi.
-    rewrite sum_n_Sm.
-    rewrite Hi => {i Hi IH}.
-    simpl Mone_seq at 2.
-    replace (Mone_seq m m : T) with (one : T).
-    rewrite mult_one_l.
-    apply plus_reg_r with (opp (A (S m) j)).
-    rewrite -plus_assoc plus_opp_r plus_zero_r.
-  - elim: m {2 3}(m) (le_refl m) => {n Hj} [ | n IH] m Hm.
-    rewrite sum_n_n /=.
-    by apply mult_zero_l.
-    rewrite sum_n_Sm.
-    simpl Mone_seq at 2.
-    replace (Mone_seq m n : T) with (zero : T).
-    rewrite mult_zero_l plus_zero_r.
-    apply IH.
-    by apply le_trans with (1 := le_n_Sn _).
-    clear -Hm ; destruct m.
-    by apply le_Sn_O in Hm.
-    apply le_S_n in Hm.
-    elim: n m Hm => [ | n IH] ;
-    case => [ | m] Hm //=.
-    by apply le_Sn_O in Hm.
-    apply IH.
-    by apply le_S_n.
-    by apply le_O_n.
-    by elim: m.
-    by apply le_O_n.
+  erewrite sum_n_ext_loc ; last first.
+  move => /= k Hk.
+  rewrite /Mone coeff_mat_bij //.
+  by apply le_lt_n_Sm.
+  rewrite /sum_n (sum_n_m_Chasles _ _ i) //.
+  2: by apply le_O_n.
+  2: by apply lt_n_Sm_le.
+  rewrite (sum_n_m_ext_loc _ (fun _ => zero) (S i)).
+  rewrite sum_n_m_const_zero plus_zero_r.
+  rewrite -/(sum_n _ _).
+  destruct i => //.
+  by rewrite sum_O Mone_seq_diag // mult_one_l.
+  rewrite sum_Sn.
+  rewrite (sum_n_ext_loc _ (fun _ => zero)).
+  rewrite /sum_n sum_n_m_const_zero plus_zero_l.
+  by rewrite Mone_seq_diag // mult_one_l.
+  move => k Hk.
+  rewrite Mone_seq_not_diag.
+  by apply mult_zero_l.
+  by apply sym_not_eq, NPeano.Nat.lt_neq, le_lt_n_Sm.
+  move => k [Hk _].
+  rewrite Mone_seq_not_diag.
+  by apply mult_zero_l.
+  by apply NPeano.Nat.lt_neq.
 Qed.
 
 Lemma Mmult_distr_r {m n k} :
