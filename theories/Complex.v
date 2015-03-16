@@ -287,11 +287,14 @@ intros x.
 apply sqrt_pos.
 Qed.
 Lemma Cmod_gt_0 :
-  forall (x : C), x <> 0 -> 0 < Cmod x.
+  forall (x : C), x <> 0 <-> 0 < Cmod x.
 Proof.
-intros x Hx.
+intros x ; split => Hx.
 destruct (Cmod_ge_0 x) => //.
 by apply sym_eq, Cmod_eq_0 in H.
+contradict Hx.
+apply Rle_not_lt, Req_le.
+by rewrite Hx Cmod_0.
 Qed.
 
 Lemma Cmod_norm :
@@ -433,6 +436,53 @@ Canonical C_R_NormedModuleAux :=
 
 Canonical C_R_NormedModule :=
   NormedModule.Pack R_AbsRing C (NormedModule.class _ (prod_NormedModule _ _ _)) C.
+
+(** * C is a CompleteSpace *)
+
+Definition C_complete_lim (F : (C -> Prop) -> Prop) := 
+  (R_complete_lim (fun P => F (fun z => P (Re z))), R_complete_lim (fun P => F (fun z => P (Im z)))).
+
+Lemma C_complete :
+  forall F : (C -> Prop) -> Prop,
+  ProperFilter F ->
+  (forall eps : posreal, exists x : C, F (ball x eps)) ->
+  forall eps : posreal, F (ball (C_complete_lim F) eps).
+Proof.
+  intros.
+  apply filter_and ; simpl ; revert eps.
+  apply (R_complete (fun P => F (fun z => P (Re z)))).
+  split ; intros.
+  destruct (filter_ex _ H1).
+  by exists (Re x).
+  split.
+  by apply filter_true.
+  intros ; by apply filter_and.
+  intros ; eapply filter_imp, H2.
+  intros ; by apply H1.
+  intros ; destruct (H0 eps).
+  exists (Re x).
+  move: H1 ; apply filter_imp.
+  intros ; by apply H1.
+  apply (R_complete (fun P => F (fun z => P (Im z)))).
+  split ; intros.
+  destruct (filter_ex _ H1).
+  by exists (Im x).
+  split.
+  by apply filter_true.
+  intros ; by apply filter_and.
+  intros ; eapply filter_imp, H2.
+  intros ; by apply H1.
+  intros ; destruct (H0 eps).
+  exists (Im x).
+  move: H1 ; apply filter_imp.
+  intros ; by apply H1.
+Qed.
+
+Definition C_CompleteSpace_mixin :=
+  CompleteSpace.Mixin _ C_complete_lim C_complete.
+
+Canonical C_CompleteNormedModule :=
+  CompleteNormedModule.Pack _ C (CompleteNormedModule.Class C_AbsRing _ (NormedModule.class _ C_NormedModule) C_CompleteSpace_mixin) C.
 
 (** * Limits *)
 
