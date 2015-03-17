@@ -476,21 +476,20 @@ Proof.
   by apply filterdiff_const.
 Qed.
 
-Lemma filterdiff_linear {F} {FF : Filter F}
-  (l : U -> V) :
+Lemma filterdiff_linear {F} (l : U -> V) :
   is_linear l -> filterdiff l F l.
 Proof.
   move => Hl ; split.
   by [].
   move => x Hx eps.
+  apply Hx.
   apply filter_forall => y.
   rewrite /minus -(linear_opp l x Hl) -linear_plus // plus_opp_r norm_zero.
   apply Rmult_le_pos.
   apply Rlt_le, eps.
   by apply norm_ge_0.
 Qed.
-Lemma ex_filterdiff_linear {F} {FF : Filter F}
-  (l : U -> V) :
+Lemma ex_filterdiff_linear {F} (l : U -> V) :
   is_linear l -> ex_filterdiff l F.
 Proof.
   intro Hl ; exists l; by apply filterdiff_linear.

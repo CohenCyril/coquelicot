@@ -928,6 +928,46 @@ Proof.
   by apply is_LimSup_LimInf_seq_le with u.
 Qed.
 
+(** Constant *)
+
+Lemma is_LimSup_seq_const (a : R) :
+  is_LimSup_seq (fun _ => a) a.
+Proof.
+  intros eps ; split.
+  intros N ; exists N ; split.
+  by apply le_refl.
+  apply Rminus_lt_0 ; ring_simplify.
+  by apply eps.
+  exists O => _ _.
+  apply Rminus_lt_0 ; ring_simplify.
+  by apply eps.
+Qed.
+Lemma LimSup_seq_const (a : R) :
+  LimSup_seq (fun _ => a) = a.
+Proof.
+  apply is_LimSup_seq_unique.
+  by apply is_LimSup_seq_const.
+Qed.
+
+Lemma is_LimInf_seq_const (a : R) :
+  is_LimInf_seq (fun _ => a) a.
+Proof.
+  intros eps ; split.
+  intros N ; exists N ; split.
+  by apply le_refl.
+  apply Rminus_lt_0 ; ring_simplify.
+  by apply eps.
+  exists O => _ _.
+  apply Rminus_lt_0 ; ring_simplify.
+  by apply eps.
+Qed.
+Lemma LimInf_seq_const (a : R) :
+  LimInf_seq (fun _ => a) = a.
+Proof.
+  apply is_LimInf_seq_unique.
+  by apply is_LimInf_seq_const.
+Qed.
+
 (** Opposite *)
 
 Lemma LimSup_seq_opp (u : nat -> R) :
@@ -943,6 +983,64 @@ Proof.
   rewrite LimSup_InfSup_seq LimInf_SupInf_seq.
   rewrite Sup_opp_inf ; apply f_equal, Inf_seq_ext => m.
   rewrite Sup_opp_inf ; by apply f_equal, Inf_seq_ext => n.
+Qed.
+
+(** Rbar_le *)
+
+Lemma LimSup_le (u v : nat -> R) :
+  eventually (fun n => u n <= v n)
+  -> Rbar_le (LimSup_seq u) (LimSup_seq v).
+Proof.
+  intros (N,H).
+  rewrite /LimSup_seq.
+  case: ex_LimSup_seq ; case => [lu | | ] //= Hlu ;
+  case: ex_LimSup_seq ; case => [lv | | ] //= Hlv.
+  apply Rnot_lt_le => Hl.
+  apply Rminus_lt_0 in Hl.
+  case: (Hlv (pos_div_2 (mkposreal _ Hl))) => {Hlv} /= _ [n Hlv].
+  case: (proj1 (Hlu (pos_div_2 (mkposreal _ Hl))) (N + n)%nat) => {Hlu} m /= [Hm Hlu].
+  move: (H _ (le_trans _ _ _ (le_plus_l _ _) Hm)).
+  apply Rlt_not_le.
+  eapply Rlt_trans, Hlu.
+  eapply Rlt_le_trans.
+  eapply Hlv, le_trans, Hm.
+  by apply le_plus_r.
+  apply Req_le ; field.
+  
+  case: (Hlv (lu - 1)) => {Hlv} n Hlv.
+  case: (proj1 (Hlu (mkposreal _ Rlt_0_1)) (N + n)%nat) => {Hlu} m /= [Hm Hlu].
+  move: (H _ (le_trans _ _ _ (le_plus_l _ _) Hm)).
+  apply Rlt_not_le.
+  eapply Rlt_trans, Hlu.
+  eapply Hlv, le_trans, Hm.
+  by apply le_plus_r.
+  
+  case: (Hlv (mkposreal _ Rlt_0_1)) => {Hlv} /= _ [n Hlv].
+  case: (Hlu (lv + 1) (N + n)%nat) => {Hlu} /= m [Hm Hlu].
+  move: (H _ (le_trans _ _ _ (le_plus_l _ _) Hm)).
+  apply Rlt_not_le.
+  eapply Rlt_trans, Hlu.
+  eapply Hlv, le_trans, Hm.
+  by apply le_plus_r.
+  
+  case: (Hlv 0) => {Hlv} n Hlv.
+  case: (Hlu 0 (N + n)%nat) => {Hlu} m [Hm Hlu].
+  move: (H _ (le_trans _ _ _ (le_plus_l _ _) Hm)).
+  apply Rlt_not_le.
+  eapply Rlt_trans, Hlu.
+  eapply Hlv, le_trans, Hm.
+  by apply le_plus_r.
+Qed.
+Lemma LimInf_le (u v : nat -> R) :
+  eventually (fun n => u n <= v n)
+  -> Rbar_le (LimInf_seq u) (LimInf_seq v).
+Proof.
+  intros.
+  apply Rbar_opp_le.
+  rewrite -!LimSup_seq_opp.
+  apply LimSup_le.
+  move: H ; apply filter_imp => n.
+  by apply Ropp_le_contravar.
 Qed.
 
 (** Scalar multplication *)
@@ -1156,6 +1254,20 @@ Proof.
   case: (Hl e He) => {Hl} /= N Hl.
   exists N => n Hn.
   by apply (Hl n Hn).
+Qed.
+Lemma is_lim_seq_p_infty_Reals (u : nat -> R) :
+  is_lim_seq u p_infty <-> cv_infty u.
+Proof.
+  split => Hl.
+  move => M.
+  case: (Hl (fun x => M < x)) => {Hl} [ | N Hl].
+  by exists M.
+  by exists N.
+  move => P [M HP].
+  eapply filter_imp.
+  by apply HP.
+  case: (Hl M) => {Hl} N HN.
+  by exists N.
 Qed.
 
 Lemma is_lim_LimSup_seq (u : nat -> R) (l : Rbar) :
@@ -1799,6 +1911,24 @@ Lemma is_lim_seq_le_loc (u v : nat -> R) (l1 l2 : Rbar) :
   Rbar_le l1 l2.
 Proof.
   apply filterlim_le.
+Qed.
+Lemma Lim_seq_le_loc (u v : nat -> R) :
+  eventually (fun n => u n <= v n) ->
+  Rbar_le (Lim_seq u) (Lim_seq v).
+Proof.
+  intros.
+  move: (LimSup_le _ _ H) (LimInf_le _ _ H).
+  move: (LimSup_LimInf_seq_le u) (LimSup_LimInf_seq_le v).
+  unfold Lim_seq.
+  case: (LimSup_seq u) => [lsu | | ] //= ;
+  case: (LimInf_seq u) => [liu | | ] //= ;
+  case: (LimSup_seq v) => [lsv | | ] //= ;
+  case: (LimInf_seq v) => [liv | | ] //= ;
+  intros.
+  apply Rmult_le_compat_r.
+  apply Rlt_le, Rinv_0_lt_compat, Rlt_0_2.
+  by apply Rplus_le_compat.
+  by apply Req_le.
 Qed.
 
 Lemma is_lim_seq_le (u v : nat -> R) (l1 l2 : Rbar) :
