@@ -3370,19 +3370,21 @@ Fixpoint Tn (n : nat) (T : Type) : Type :=
   | S n => prod T (Tn n T)
   end.
 
+Notation "[ x1 , .. , xn ]" := (pair x1 .. (pair xn tt) .. ).
+
 Fixpoint mk_Tn {T} (n : nat) (u : nat -> T) : Tn n T :=
   match n with
     | O => (tt : Tn O T)
     | S n => (u O, mk_Tn n (fun n => u (S n)))
   end.
-Definition coeff_Tn {T} {n : nat} (x0 : T) (v : Tn n T) : nat -> T.
-Proof.
-  induction n ; simpl in v => i.
-  apply x0.
-  destruct i.
-  apply (fst v).
-  apply (IHn (snd v) i).
-Defined.
+Fixpoint coeff_Tn {T} {n : nat} (x0 : T) : (Tn n T) -> nat -> T :=
+  match n with
+  | O => fun (_ : Tn O T) (_ : nat) => x0
+  | S n' => fun (v : Tn (S n') T) (i : nat) => match i with
+           | O => fst v
+           | S i => coeff_Tn x0 (snd v) i
+           end
+  end.
 Lemma mk_Tn_bij {T} {n : nat} (x0 : T) (v : Tn n T) :
   mk_Tn n (coeff_Tn x0 v) = v.
 Proof.

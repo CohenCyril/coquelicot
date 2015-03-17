@@ -3,8 +3,6 @@ Require Import Hierarchy PSeries Rbar Limit.
 
 Open Scope R_scope.
 
-Notation "[ x1 , .. , xn ]" := (pair x1 .. (pair xn tt) .. ).
-
 (** * Bac 2013 - Exercice 4 spécialité *)
 
 (** 1. Exprimer v (S n) et c (S n) en fonction de v n et c n *)
