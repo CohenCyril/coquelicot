@@ -1737,7 +1737,7 @@ Qed.
 
 Section Continuity_op.
 
-Context {U : UniformSpace} {V : AbsRing}.
+Context {U : UniformSpace} {K : AbsRing} {V : NormedModule K}.
 
 Lemma continuous_opp (f : U -> V) (x : U) :
   continuous f x ->
