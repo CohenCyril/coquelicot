@@ -78,17 +78,43 @@ Proof.
   rewrite -scal_minus_distr_l.
   eapply Rle_lt_trans.
   apply norm_scal.
-  by apply (proj2 Hu).
-  apply filter_and.
+  eapply Rle_lt_trans.
+  apply Rmult_le_compat_r.
+  by apply norm_ge_0.
+  replace (fst u) with (plus x (minus (fst u) x)).
+  eapply Rle_trans.
+  apply abs_triangle.
+  apply Rplus_le_compat_l.
+  apply Rlt_le.
+  instantiate (1 := 1).
+  eapply (proj1 (proj2 Hu)).
+  by rewrite plus_comm -plus_assoc plus_opp_l plus_zero_r.
+  rewrite Rmult_comm.
+  apply <- Rlt_div_r.
+  2: apply Rle_lt_0_plus_1, abs_ge_0.
+  by apply (proj2 (proj2 Hu)).
+
+  repeat apply filter_and.
+
   assert (Hd : 0 < eps / 2 / (norm y + 1)).
-  apply Rdiv_lt_0_compat.
-  by apply is_pos_div_2.
-  apply Rle_lt_0_plus_1, norm_ge_0.
+    apply Rdiv_lt_0_compat.
+    by apply is_pos_div_2.
+    apply Rle_lt_0_plus_1, norm_ge_0.
   exists (mkposreal _ Hd) => /= u Hu.
   by apply Hu.
-  change (eps / 2) with (pos (pos_div_2 eps)).
-  move: (pos_div_2 eps) => {eps} eps.
-Admitted.
+
+  destruct (locally_ball_norm x (mkposreal _ Rlt_0_1)) as [d Hd].
+  exists d => u Hu.
+  apply Hd.
+  by apply Hu.
+  
+  assert (Hd : 0 < eps / 2 / (abs x + 1)).
+    apply Rdiv_lt_0_compat.
+    by apply is_pos_div_2.
+    apply Rle_lt_0_plus_1, abs_ge_0.
+  exists (mkposreal _ Hd) => /= u Hu.
+  by apply Hu.
+Qed.
 
 (** ** Continuity.v *)
 
@@ -305,7 +331,7 @@ Proof.
     by apply Hm.
     eapply Rlt_le_trans, Rmax_l.
     by apply Rlt_0_1.
-  eapply filter_imp with (fun x0 : R => ball (@zero V) (pos_div_2 eps) (If x0) /\ ball (@zero V) (pos_div_2 eps) (If x)).
+  apply filter_imp with (fun x0 : R => ball (@zero V) (pos_div_2 eps) (If x0) /\ ball (@zero V) (pos_div_2 eps) (If x)).
   intros y (H,H0).
   rewrite (double_var eps).
   apply ball_triangle with (@zero V).
@@ -730,6 +756,56 @@ Proof.
   intros eps ; exists eps => /= y Hy.
   split => //=.
   by apply ball_center.
+Qed.
+
+Lemma locally_C x P :
+  locally (T := C_UniformSpace) x P <-> locally (T := AbsRing_UniformSpace C_AbsRing) x P.
+Proof.
+  split => [[e He] | [e He]].
+  - exists e => /= y Hy.
+    apply He.
+    split.
+    eapply Rle_lt_trans, Hy.
+    eapply Rle_trans, Rmax_Cmod.
+    apply Rmax_l.
+    eapply Rle_lt_trans, Hy.
+    eapply Rle_trans, Rmax_Cmod.
+    apply Rmax_r.
+  - assert (Hd : 0 < e / sqrt 2).
+    apply Rdiv_lt_0_compat.
+    by apply e.
+    apply Rlt_sqrt2_0.
+    exists (mkposreal _ Hd) => /= y [Hy1 Hy2].
+    apply He.
+    eapply Rle_lt_trans.
+    apply Cmod_2Rmax.
+    rewrite Rmult_comm ; apply Rlt_div_r.
+    apply Rlt_sqrt2_0.
+    apply Rmax_case.
+    by apply Hy1.
+    by apply Hy2.
+Qed.
+Lemma continuous_C_id_1 (x : C) :
+  continuous (T := C_UniformSpace) (U := AbsRing_UniformSpace C_AbsRing) (fun y => y) x.
+Proof.
+  intros P HP.
+  by apply locally_C.
+Qed.
+Lemma continuous_C_id_2 (x : C) :
+  continuous (T := AbsRing_UniformSpace C_AbsRing) (U := C_UniformSpace) (fun y => y) x.
+Proof.
+  intros P HP.
+  by apply locally_C.
+Qed.
+Lemma continuous_C (f : C -> C) (x : C) :
+  continuous (T := C_UniformSpace) (U := C_UniformSpace) f x
+  <-> continuous (T := AbsRing_UniformSpace C_AbsRing) (U := AbsRing_UniformSpace C_AbsRing) f x.
+Proof.
+  split => H.
+  - intros P HP.
+    by apply locally_C, H, locally_C.
+  - intros P HP.
+    by apply locally_C, H, locally_C.
 Qed.
 
 Lemma is_C_derive_filterdiff f x df:
@@ -1288,57 +1364,6 @@ Proof.
   apply continuous_snd.
 Qed.
 
-
-Lemma locally_C x P :
-  locally (T := C_UniformSpace) x P <-> locally (T := AbsRing_UniformSpace C_AbsRing) x P.
-Proof.
-  split => [[e He] | [e He]].
-  - exists e => /= y Hy.
-    apply He.
-    split.
-    eapply Rle_lt_trans, Hy.
-    eapply Rle_trans, Rmax_Cmod.
-    apply Rmax_l.
-    eapply Rle_lt_trans, Hy.
-    eapply Rle_trans, Rmax_Cmod.
-    apply Rmax_r.
-  - assert (Hd : 0 < e / sqrt 2).
-    apply Rdiv_lt_0_compat.
-    by apply e.
-    apply Rlt_sqrt2_0.
-    exists (mkposreal _ Hd) => /= y [Hy1 Hy2].
-    apply He.
-    eapply Rle_lt_trans.
-    apply Cmod_2Rmax.
-    rewrite Rmult_comm ; apply Rlt_div_r.
-    apply Rlt_sqrt2_0.
-    apply Rmax_case.
-    by apply Hy1.
-    by apply Hy2.
-Qed.
-Lemma continuous_C_id_1 (x : C) :
-  continuous (T := C_UniformSpace) (U := AbsRing_UniformSpace C_AbsRing) (fun y => y) x.
-Proof.
-  intros P HP.
-  by apply locally_C.
-Qed.
-Lemma continuous_C_id_2 (x : C) :
-  continuous (T := AbsRing_UniformSpace C_AbsRing) (U := C_UniformSpace) (fun y => y) x.
-Proof.
-  intros P HP.
-  by apply locally_C.
-Qed.
-Lemma continuous_C (f : C -> C) (x : C) :
-  continuous (T := C_UniformSpace) (U := C_UniformSpace) f x
-  <-> continuous (T := AbsRing_UniformSpace C_AbsRing) (U := AbsRing_UniformSpace C_AbsRing) f x.
-Proof.
-  split => H.
-  - intros P HP.
-    by apply locally_C, H, locally_C.
-  - intros P HP.
-    by apply locally_C, H, locally_C.
-Qed.
-
 Lemma continuous_C_segm (f : C -> C) (z1 z2 : C) :
   (forall z : C, complex_segment z1 z2 z -> continuous f z) ->
   (forall z : R, 0 <= z <= 1 ->
@@ -1413,10 +1438,10 @@ Qed.
 Lemma C_RInt_segm_derive (f : C -> C) (z1 z2 : C) :
   (forall z, complex_segment z1 z2 z -> ex_C_derive f z)
   -> (forall z, complex_segment z1 z2 z -> continuous (C_derive f) z)
-  -> is_C_RInt_segm (C_derive f) z1 z2 (f z2 - f z1).
+  -> C_RInt_segm (C_derive f) z1 z2 = f z2 - f z1.
 Proof.
   intros.
-  apply is_C_RInt_segm_derive => //.
+  apply is_C_RInt_segm_unique, is_C_RInt_segm_derive => //.
   intros z Hz.
   case: (H z Hz) => [df Hdf].
   by rewrite (C_derive_unique _ _ _ Hdf).
@@ -1456,13 +1481,11 @@ Proof.
   by apply continuous_C_segm.
 Qed.
 
-Lemma open_C_segm (U : C -> Prop) :
-  open U ->
-  forall z0, U z0
-    -> locally z0 (fun z => forall y, complex_segment z0 z y -> U y).
+Lemma locally_C_segm (P : C -> Prop) :
+  forall z0, locally z0 P
+    -> locally z0 (fun z => forall y, complex_segment z0 z y -> P y).
 Proof.
-  intros oU z0 Uz0.
-  case: (oU z0 Uz0) => e He.
+  intros z0 (e,He).
   assert (Hd : 0 < e / (norm_factor (V := C_NormedModule))).
     apply Rdiv_lt_0_compat.
     by apply e.
@@ -1497,28 +1520,19 @@ Proof.
   rewrite RtoC_minus ; ring.
 Qed.
 
-Lemma C_RInt_segm_cont_0 f z0 If :
-  locally z0 (fun z => is_C_RInt_segm f z0 z (If z))
-  -> continuous If z0.
-Proof.
-  intros.
-Search _ continuous is_RInt.
-Qed.
-
-Lemma prop8 (U : C -> Prop) (z0 : C) (f : C -> C) :
+Lemma ex_antiderive (U : C -> Prop) (z0 : C) (f : C -> C) :
   open U -> is_starred U z0
   -> continuous_on U f
   -> (forall z1 z2 : C, U z1 -> U z2 ->
          (forall z, complex_segment z1 z2 z -> U z)
          -> C_RInt_segm f z0 z1 + C_RInt_segm f z1 z2 + C_RInt_segm f z2 z0 = 0)
-  -> exists (g : C -> C), 
-      (forall z, U z -> is_derive g z (f z)) /\ continuous_on U g.
+  -> exists (g : C -> C), forall z, U z -> is_derive g z (f z).
 Proof.
   intros oU sU Cf Hf.
 
   assert (forall z, U z -> locally z (ex_C_RInt_segm f z)).
     intros z Hz.
-    move: (open_C_segm _ oU z Hz).
+    move: (locally_C_segm _ _ (oU z Hz)).
     apply filter_imp => y Hy.
     apply ex_C_RInt_segm_continuous.
     intros z1 Hz1.
@@ -1526,8 +1540,6 @@ Proof.
     by apply oU, Hy.
 
   exists (C_RInt_segm f z0).
-  split.
-
   intros z Hz.
   split.
   by apply is_linear_scal_l.
@@ -1609,37 +1621,7 @@ Proof.
   rewrite /e /= ; field.
   by apply Rgt_not_eq, norm_factor_gt_0.
   apply locally_C.
-  move: (open_C_segm _ oU z Hz).
+  move: (locally_C_segm _ _ (oU z Hz)).
   apply filter_imp ; intros.
   by apply H0, complex_segment_swap.
-
-  apply continuous_on_forall.
-  simpl => z Hz.
-
-Search _ is_C_RInt_segm.
-
-  apply filterlim_locally => eps.
 Qed.
-
-Require Import Ssreflect.seq.
-
-Lemma ex_RInt_norm {V : CompleteNormedModule R_AbsRing} (f : R -> V) (a b : R) :
-  ex_RInt f a b -> ex_RInt (fun x => norm (f x)) a b.
-Proof.
-  wlog: a b / (a <= b) => [Hw | Hab] Hf.
-    case: (Rle_lt_dec a b) => Hab.
-    by apply Hw.
-    apply ex_RInt_swap in Hf ; apply ex_RInt_swap.
-    apply Hw.
-    by apply Rlt_le.
-    by [].
-  destruct (ex_RInt_ub f a b Hf) as [Mf Hm].
-  move: Hm ; rewrite /Rmin /Rmax ; case: Rle_dec => //= _ Hm.
-  case: Hab => Hab.
-  destruct (proj1 (filterlim_locally_cauchy (fun ptd : SF_seq =>
-     scal (sign (b - a)) (Riemann_sum (fun x : R => norm (f x)) ptd))
-     (F := Riemann_fine a b))) ; [ | exists x ; by apply H].
-
-  simpl ; intros.
-
-Admitted.
