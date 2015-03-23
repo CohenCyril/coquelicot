@@ -481,8 +481,15 @@ Qed.
 Definition C_CompleteSpace_mixin :=
   CompleteSpace.Mixin _ C_complete_lim C_complete.
 
+(* on C *)
+
 Canonical C_CompleteNormedModule :=
   CompleteNormedModule.Pack _ C (CompleteNormedModule.Class C_AbsRing _ (NormedModule.class _ C_NormedModule) C_CompleteSpace_mixin) C.
+
+(* on R *)
+
+Canonical C_R_CompleteNormedModule :=
+  CompleteNormedModule.Pack _ C (CompleteNormedModule.Class R_AbsRing _ (NormedModule.class _ C_R_NormedModule) C_CompleteSpace_mixin) C.
 
 (** * Limits *)
 
