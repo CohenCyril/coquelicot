@@ -1735,6 +1735,18 @@ Proof.
   by apply Hd => /=.
 Qed.
 
+Lemma continuous_const {U V : UniformSpace} (c : V) (x : U) :
+  continuous (fun _ => c) x.
+Proof.
+  apply filterlim_const.
+Qed.
+
+Lemma continuous_id {U : UniformSpace} (x : U) :
+  continuous (fun y => y) x.
+Proof.
+  apply filterlim_id.
+Qed.
+
 Section Continuity_op.
 
 Context {U : UniformSpace} {K : AbsRing} {V : NormedModule K}.
@@ -1770,7 +1782,36 @@ Proof.
   by apply continuous_opp.
 Qed.
 
+Lemma continuous_scal (k : U -> K) (f : U -> V) (x : U) :
+  continuous k x -> continuous f x -> continuous (fun y => scal (k y) (f y)) x.
+Proof.
+  intros.
+  by apply filterlim_comp_2, filterlim_scal.
+Qed.
+Lemma continuous_scal_r (k : K) (f : U -> V) (x : U) :
+  continuous f x -> continuous (fun y => scal k (f y)) x.
+Proof.
+  intros.
+  by apply continuous_comp, filterlim_scal_r.
+Qed.
+Lemma continuous_scal_l (f : U -> K) (k : V) (x : U) :
+  continuous f x -> continuous (fun y => scal (f y) k) x.
+Proof.
+  intros.
+  apply (continuous_comp f (fun y => scal y k)) => //.
+  apply filterlim_scal_l.
+Qed.
+
 End Continuity_op.
+
+Lemma continuous_mult {U : UniformSpace} {K : AbsRing}
+  (f g : U -> K) (x : U) :
+  continuous f x -> continuous g x
+  -> continuous (fun y => mult (f y) (g y)) x.
+Proof.
+  intros.
+  by eapply filterlim_comp_2, filterlim_mult.
+Qed.
 
 Section UnifCont.
 

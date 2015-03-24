@@ -170,8 +170,8 @@ Proof.
   apply Rplus_le_compat.
   (* *)
   apply Rle_trans with (eps' * Rabs (u - x)).
-  apply bounded_variation => t Ht.
-  assert (is_derive g1 t (Derive (fun z : R => f z v) t - l1)).
+  apply bounded_variation with (fun t => Derive (fun z : R => f z v) t - l1) => t Ht.
+  split.
     apply: is_derive_minus.
     apply Derive_correct, Hd1.
     apply Rle_lt_trans with (1 := Ht).
@@ -182,10 +182,7 @@ Proof.
     rewrite -{2}(Rmult_1_r l1).
     apply is_derive_Reals, derivable_pt_lim_scal.
     apply derivable_pt_lim_id.
-  split.
-  eexists. apply H.
   apply Rlt_le.
-  rewrite (is_derive_unique _ _ _ H).
   apply Hd1.
   apply Rle_lt_trans with (1 := Ht).
   apply Rlt_le_trans with (1:=Hu).
@@ -628,8 +625,9 @@ intros f x y eps HD h k Hh Hk phi.
 assert (Hx: x + h - x = h) by ring.
 assert (Hy: y + k - y = k) by ring.
 (* . *)
-destruct (MVT_cor4 (phi k) x (Rabs h)) with (b := x + h) as (u&Hu1&Hu2).
+destruct (MVT_cor4 (phi k) (Derive (phi k)) x (Rabs h)) with (b := x + h) as (u&Hu1&Hu2).
 intros c Hc.
+apply Derive_correct.
 apply: ex_derive_minus.
 apply (HD c).
 now apply Rle_lt_trans with (Rabs h).
@@ -643,9 +641,9 @@ apply Rle_refl.
 rewrite Hx in Hu1, Hu2.
 exists u.
 (* . *)
-destruct (MVT_cor4 (fun v => Derive (fun t => f t v) u) y (Rabs k)) with (b := y + k) as (v&Hv1&Hv2).
+destruct (MVT_cor4 (fun v => Derive (fun t => f t v) u) (Derive (fun v => Derive (fun t => f t v) u)) y (Rabs k)) with (b := y + k) as (v&Hv1&Hv2).
 intros c Hc.
-apply HD.
+apply Derive_correct, HD.
 now apply Rle_lt_trans with (Rabs h).
 now apply Rle_lt_trans with (1 := Hc).
 rewrite Hy.

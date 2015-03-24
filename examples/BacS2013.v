@@ -155,12 +155,12 @@ Qed.
 
 Lemma Variation_1 : forall x y, 0 < x -> x < y -> y < 1 -> f x < f y.
 Proof.
-  apply (incr_function _ 0 1).
+  apply (incr_function _ 0 1 (fun x => (2 - 2 - 2 * ln x) / x ^ 2)).
   move => x H0x Hx1.
-  exists ((2 - 2 - 2 * ln x) / x ^ 2).
   by apply (Dfab 2 2 x).
   move => x H0x Hx1.
   apply sign_0_lt.
+  rewrite -(is_derive_unique _ _ _ (Dfab 2 2 x H0x)).
   rewrite Signe_df.
   apply sign_0_lt.
   apply Ropp_lt_cancel ; rewrite Ropp_0 Ropp_involutive.
@@ -173,16 +173,15 @@ Lemma Variation_2 : forall x y, 1 < x -> x < y -> f x > f y.
 Proof.
   move => x y H1x Hxy.
   apply Ropp_lt_cancel.
-  apply (incr_function (fun x => - f x) 1 p_infty).
+  apply (incr_function (fun x => - f x) 1 p_infty (fun z => - ((2 - 2 - 2 * ln z) / z ^ 2))).
   move => z H1z _.
-  apply: ex_derive_opp.
-  exists ((2 - 2 - 2 * ln z) / z ^ 2).
+  apply: is_derive_opp.
   apply (Dfab 2 2 z).
   by apply Rlt_trans with (1 := Rlt_0_1).
   move => z H1z _.
-  rewrite Derive_opp.
   apply Ropp_lt_cancel ; rewrite Ropp_0 Ropp_involutive.
   apply sign_lt_0.
+  rewrite -(is_derive_unique _ _ _ (Dfab 2 2 z (Rlt_trans _ _ _ Rlt_0_1 H1z))).
   rewrite Signe_df.
   apply sign_lt_0.
   apply Ropp_lt_cancel ; rewrite Ropp_0 Ropp_involutive.

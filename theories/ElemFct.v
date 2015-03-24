@@ -717,7 +717,7 @@ Proof.
     move => x Hx.
     apply Rminus_lt_0.
     apply Rlt_le_trans with (1 := Rlt_0_1).
-    have H : forall x, 0 < x -> is_derive (fun y => y - ln y) x ((x - 1) / x).
+    case: (MVT_gen (fun y => y - ln y) 1 x (fun y => (y-1)/y)).
       move => z Hz.
       evar (l : R).
       replace ((z - 1) / z) with l.
@@ -725,27 +725,25 @@ Proof.
       apply derivable_pt_lim_minus.
       apply derivable_pt_lim_id.
       apply derivable_pt_lim_ln.
-      by apply Hz.
+      eapply Rlt_trans, Hz.
+      apply Rmin_case => //.
+      by apply Rlt_0_1.
       rewrite /l ; field.
-      by apply Rgt_not_eq.
-    case: (MVT_gen (fun y => y - ln y) 1 x).
-    move => y Hy ; exists ((y-1)/y) ; apply H.
-    apply Rlt_trans with (2 := proj1 Hy).
-    apply Rmin_case.
-    apply Rlt_0_1.
-    by apply Hx.
+      apply Rgt_not_eq ; eapply Rlt_trans, Hz.
+      apply Rmin_case => //.
+      by apply Rlt_0_1.
     move => y Hy.
-    apply derivable_continuous_pt.
-    exists ((y-1)/y) ; apply is_derive_Reals, H.
-    apply Rlt_le_trans with (2 := proj1 Hy).
-    apply Rmin_case.
-    apply Rlt_0_1.
-    by apply Hx.
+    apply continuity_pt_minus.
+    apply continuity_pt_id.
+    apply derivable_continuous_pt ;
+    eexists ; apply derivable_pt_lim_ln.
+    eapply Rlt_le_trans, Hy.
+      apply Rmin_case => //.
+      by apply Rlt_0_1.
     move => c [Hc H0].
     replace 1 with (1 - ln 1) by (rewrite ln_1 Rminus_0_r //).
     apply Rminus_le_0.
     rewrite H0.
-    rewrite (is_derive_unique _ _ ((c-1)/c)).
     move: Hc ; rewrite /Rmin /Rmax ; case: Rle_dec => H1 Hc.
     apply Rmult_le_pos.
     apply Rdiv_le_0_compat.
@@ -765,11 +763,6 @@ Proof.
     apply Rgt_not_eq.
     apply Rlt_le_trans with (1 := Hx).
     by apply Hc.
-    apply H.
-    apply Rlt_le_trans with (2 := proj1 Hc).
-    apply Rmin_case.
-    apply Rlt_0_1.
-    apply Hx.
   apply (is_lim_le_le_loc (fun _ => 0) (fun y => 2/sqrt y)).
   exists 1 => x Hx.
   split.

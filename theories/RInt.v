@@ -81,7 +81,7 @@ Proof.
   unfold Riemann_fine.
   rewrite Rmin_comm Rmax_comm.
   apply filterlim_comp with (1 := HIf).
-  apply: filterlim_scal.
+  apply: filterlim_scal_r.
 Qed.
 
 Lemma ex_RInt_swap :
@@ -1385,7 +1385,7 @@ rewrite 2!scal_assoc.
 apply (f_equal (fun x => scal x _)).
 apply Rmult_comm.
 apply filterlim_comp with (1 := Hf).
-apply: filterlim_scal.
+apply: filterlim_scal_r.
 Qed.
 
 Lemma ex_RInt_scal :
@@ -1411,7 +1411,7 @@ rewrite scal_opp_one.
 apply sym_eq, scal_opp_r.
 apply filterlim_comp with (1 := Hf).
 rewrite -(scal_opp_one If).
-apply: filterlim_scal.
+apply: filterlim_scal_r.
 Qed.
 
 Lemma ex_RInt_opp :
@@ -1466,7 +1466,7 @@ rewrite -scal_opp_r.
 apply sym_eq, @scal_distr_l.
 eapply filterlim_comp_2 with (1 := Hf).
 apply filterlim_comp with (1 := Hg).
-eapply @filterlim_scal.
+eapply @filterlim_scal_r.
 rewrite scal_opp_one.
 apply: filterlim_plus.
 Qed.
@@ -6365,9 +6365,9 @@ assert (D6: ex_RInt (fun t => Rabs (f y t - f x t - (y - x) * Derive (fun u => f
 apply Rle_trans with (1 := RiemannInt_P17 _ (ex_RInt_Reals_0 _ _ _ D6) (Rlt_le _ _ H)).
 refine (Rle_trans _ _ _ (RiemannInt_P19 _ (RiemannInt_P14 a b (eps / Rabs (b - a) * Rabs (y - x))) (Rlt_le _ _ H) _) _).
 intros u Hu.
-destruct (MVT_cor4 (fun t => f t u) x) with (eps := pos_div_2 d2) (b := y) as (z,Hz).
+destruct (MVT_cor4 (fun t => f t u) (Derive (fun t => f t u)) x) with (eps := pos_div_2 d2) (b := y) as (z,Hz).
 intros z Hz.
-apply DIf.
+apply Derive_correct, DIf.
 apply Rle_lt_trans with (1 := Hz).
 apply: Rlt_eps2_eps.
 apply cond_pos.

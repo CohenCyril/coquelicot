@@ -58,7 +58,7 @@ Proof.
 Qed.
 
 Lemma linear_cont (l : U -> V) (x : U) :
-  is_linear l -> filterlim l (locally x) (locally (l x)).
+  is_linear l -> continuous l x.
 Proof.
   intros Hl.
   apply filterlim_locally_ball_norm => eps.
@@ -78,6 +78,19 @@ Proof.
   simpl.
   field.
   apply Rgt_not_eq, Hn.
+Qed.
+
+Lemma is_linear_ext (l1 l2 : U -> V) :
+  (forall x, l1 x = l2 x) -> is_linear l1 -> is_linear l2.
+Proof.
+  intros Hl Hl1.
+  split.
+  intros ; rewrite -!Hl ; apply Hl1.
+  intros ; rewrite -!Hl ; apply Hl1.
+  case: Hl1 => _ _ [M Hl1].
+  exists M ; split.
+  by apply Hl1.
+  intros ; rewrite -!Hl ; apply Hl1.
 Qed.
 
 (** zero in a linear function *)
@@ -1844,12 +1857,12 @@ Qed.
 
 (** * Mean value theorem *)
 
-Lemma MVT_gen (f : R -> R) (a b : R) :
+Lemma MVT_gen (f : R -> R) (a b : R) (df : R -> R) :
   let a0 := Rmin a b in
   let b0 := Rmax a b in
-  (forall x, a0 < x < b0 -> ex_derive f x)
+  (forall x, a0 < x < b0 -> is_derive f x (df x))
   -> (forall x, a0 <= x <= b0 -> continuity_pt f x)
-  -> exists c, a0 <= c <= b0 /\ f b - f a = Derive f c * (b - a).
+  -> exists c, a0 <= c <= b0 /\ f b - f a = df c * (b - a).
 Proof.
   move => a0 b0 Hd Hf.
   case: (Req_dec a0 b0) => Hab.
@@ -1859,8 +1872,8 @@ Proof.
   ring.
   move: Hab ; rewrite /a0 /b0 /Rmin /Rmax ; by case: Rle_dec => Hab.
   have pr1 : forall c:R, a0 < c < b0 -> derivable_pt f c.
-    move => x Hx ; exists (Derive f x).
-    by apply is_derive_Reals, Derive_correct, Hd.
+    move => x Hx ; exists (df x).
+    by apply is_derive_Reals, Hd.
   have pr2 : forall c:R, a0 < c < b0 -> derivable_pt id c.
     move => x Hx ; exists 1.
     by apply derivable_pt_lim_id.
@@ -1873,7 +1886,7 @@ Proof.
   move => /= c [Hc H].
   exists c ; split.
   split ; by apply Rlt_le, Hc.
-  replace (Derive f c) with (derive_pt f c (pr1 c Hc)).
+  replace (df c) with (derive_pt f c (pr1 c Hc)).
   move: H ; rewrite {1 2}/id /a0 /b0 /Rmin /Rmax ;
   case: Rle_dec => Hab0 H.
   rewrite Rmult_comm H -(pr_nu _ _ (derivable_pt_id _)) derive_pt_id.
@@ -1884,25 +1897,26 @@ Proof.
   rewrite H -(pr_nu _ _ (derivable_pt_id _)) derive_pt_id.
   ring.
   case: (pr1 c Hc) => /= l Hl.
+  transitivity (Derive f c).
   apply sym_eq, is_derive_unique, is_derive_Reals, Hl.
+  by apply is_derive_unique, Hd.
 Qed.
 
-Lemma incr_function (f : R -> R) (a b : Rbar) :
-  (forall (x : R), Rbar_lt a x -> Rbar_lt x b -> ex_derive f x)
-  -> ((forall (x : R), Rbar_lt a x -> Rbar_lt x b -> Derive f x > 0)
+Lemma incr_function (f : R -> R) (a b : Rbar) (df : R -> R) :
+  (forall (x : R), Rbar_lt a x -> Rbar_lt x b -> is_derive f x (df x))
+  -> ((forall (x : R), Rbar_lt a x -> Rbar_lt x b -> df x > 0)
     -> (forall (x y : R), Rbar_lt a x -> x < y -> Rbar_lt y b -> f x < f y)).
 Proof.
   move => Df Hf x y Hax Hxy Hyb.
   apply Rminus_lt_0.
-  case: (MVT_gen f x y) => [z Hz | z Hz | c [Hc ->]].
+  case: (MVT_gen f x y df) => [z Hz | z Hz | c [Hc ->]].
   apply Df.
   apply Rbar_lt_le_trans with (y := Rmin x y) (2 := Rlt_le _ _ (proj1 Hz)).
   rewrite /Rmin ; case: Rle_dec (Rlt_le _ _ Hxy) => //.
   apply Rbar_le_lt_trans with (y := Rmax x y) (1 := Rlt_le _ _ (proj2 Hz)).
   rewrite /Rmax ; case: Rle_dec (Rlt_le _ _ Hxy) => //.
   apply derivable_continuous_pt.
-  exists (Derive f z) ; apply is_derive_Reals, Derive_correct.
-  apply Df.
+  exists (df z) ; apply is_derive_Reals, Df.
   apply Rbar_lt_le_trans with (y := Rmin x y) (2 := proj1 Hz).
   rewrite /Rmin ; case: Rle_dec (Rlt_le _ _ Hxy) => //.
   apply Rbar_le_lt_trans with (y := Rmax x y) (1 := proj2 Hz).
@@ -1916,22 +1930,21 @@ Proof.
   by apply -> Rminus_lt_0.
 Qed.
 
-Lemma incr_function_le (f : R -> R) (a b : Rbar) :
-  (forall (x : R), Rbar_le a x -> Rbar_le x b -> (ex_derive f) x)
-  -> ((forall (x : R), Rbar_le a x -> Rbar_le x b -> Derive f x > 0)
+Lemma incr_function_le (f : R -> R) (a b : Rbar) (df : R -> R) :
+  (forall (x : R), Rbar_le a x -> Rbar_le x b -> is_derive f x (df x))
+  -> ((forall (x : R), Rbar_le a x -> Rbar_le x b -> df x > 0)
     -> (forall (x y : R), Rbar_le a x -> x < y -> Rbar_le y b -> f x < f y)).
 Proof.
   move => Df Hf x y Hax Hxy Hyb.
   apply Rminus_lt_0.
-  case: (MVT_gen f x y) => [z Hz | z Hz | c [Hc ->]].
+  case: (MVT_gen f x y df) => [z Hz | z Hz | c [Hc ->]].
   apply Df.
   apply Rbar_le_trans with (y := Rmin x y) (2 := Rlt_le _ _ (proj1 Hz)).
   rewrite /Rmin ; case: Rle_dec (Rlt_le _ _ Hxy) => //.
   apply Rbar_le_trans with (y := Rmax x y) (1 := Rlt_le _ _ (proj2 Hz)).
   rewrite /Rmax ; case: Rle_dec (Rlt_le _ _ Hxy) => //.
   apply derivable_continuous_pt.
-  exists (Derive f z) ; apply is_derive_Reals, Derive_correct.
-  apply Df.
+  exists (df z) ; apply is_derive_Reals, Df.
   apply Rbar_le_trans with (y := Rmin x y) (2 := proj1 Hz).
   rewrite /Rmin ; case: Rle_dec (Rlt_le _ _ Hxy) => //.
   apply Rbar_le_trans with (y := Rmax x y) (1 := proj2 Hz).
@@ -1946,20 +1959,19 @@ Proof.
 Qed.
 
 Lemma MVT_cor4:
-  forall (f : R -> R) a eps,
-  (forall c, Rabs (c - a) <= eps -> ex_derive f c) ->
+  forall (f df : R -> R) a eps,
+  (forall c, Rabs (c - a) <= eps -> is_derive f c (df c)) ->
   forall b, (Rabs (b - a) <= eps) ->
-  exists c, f b - f a = Derive f c * (b - a) /\ (Rabs (c - a) <= Rabs (b - a)).
+  exists c, f b - f a = df c * (b - a) /\ (Rabs (c - a) <= Rabs (b - a)).
 Proof.
-intros f a eps Hf' b.
+intros f df a eps Hf' b.
 unfold Rabs at 1 3.
 case Rcase_abs; intros H1 H2.
-destruct (MVT_cor2 f (Derive f) b a).
+destruct (MVT_cor2 f df b a).
 rewrite -(Rplus_0_l a).
 now apply Rlt_minus_l.
 intros c Hc.
-apply is_derive_Reals, Derive_correct.
-apply Hf'.
+apply is_derive_Reals, Hf'.
 rewrite Rabs_left1.
 apply Rle_trans with (2:=H2).
 apply Ropp_le_contravar.
@@ -1975,13 +1987,12 @@ left; now apply Rplus_lt_compat_r.
 apply Rplus_lt_reg_r with a.
 now ring_simplify.
 destruct H1.
-destruct (MVT_cor2 f (Derive f) a b).
+destruct (MVT_cor2 f df a b).
 apply Rplus_lt_reg_r with (-a).
 ring_simplify.
 now rewrite Rplus_comm.
 intros c Hc.
-apply is_derive_Reals, Derive_correct.
-apply Hf'.
+apply is_derive_Reals, Hf'.
 rewrite Rabs_right.
 apply Rle_trans with (2:=H2).
 now apply Rplus_le_compat_r.
@@ -2004,12 +2015,12 @@ rewrite - H; ring.
 Qed.
 
 Lemma bounded_variation :
-  forall h D x y,
-  (forall t, Rabs (t - x) <= Rabs (y - x) -> ex_derive h t /\ (Rabs (Derive h t) <= D)) ->
+  forall h dh D x y,
+  (forall t, Rabs (t - x) <= Rabs (y - x) -> is_derive h t (dh t) /\ (Rabs (dh t) <= D)) ->
   Rabs (h y - h x) <= D * Rabs (y - x).
 Proof.
-intros h D x y H.
-destruct (MVT_cor4 h x (Rabs (y - x))) with (b := y) as [t Ht].
+intros h dh D x y H.
+destruct (MVT_cor4 h dh x (Rabs (y - x))) with (b := y) as [t Ht].
 intros c Hc.
 specialize (H c Hc).
 apply H.

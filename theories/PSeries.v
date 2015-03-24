@@ -915,7 +915,7 @@ Proof.
   by rewrite mult_one_l mult_one_r.
   by rewrite -mult_assoc -IH 2!mult_assoc Hx.
   by [].
-  now apply filterlim_comp with (2 := filterlim_scal _ _).
+  now apply filterlim_comp with (2 := filterlim_scal_r _ _).
 Qed.
 
 Lemma ex_pseries_scal (c : K) (a : nat -> V) (x : K) :
@@ -1034,7 +1034,7 @@ Proof.
  intros n Hn.
  rewrite -pred_Sn.
  now apply lt_pred_n_n.
- now apply filterlim_comp with (2 := filterlim_scal _ _).
+ now apply filterlim_comp with (2 := filterlim_scal_r _ _).
 Qed.
 
 Lemma ex_pseries_incr_1 (a : nat -> V) (x : K) :
@@ -1109,7 +1109,7 @@ Proof.
   rewrite scal_assoc (mult_assoc y).
   rewrite Hx.
   now rewrite mult_one_l.
-  apply filterlim_comp with (2 := filterlim_scal _ _).
+  apply filterlim_comp with (2 := filterlim_scal_r _ _).
   apply filterlim_ext with  (fun n : nat => plus
     (sum_n (fun k => scal (pow_n x k) (a k)) (S n)) (opp (a 0%nat))).
   intros n; induction n; simpl.

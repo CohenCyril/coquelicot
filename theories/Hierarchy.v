@@ -1715,6 +1715,18 @@ Qed.
 
 End Locally.
 
+Lemma filterlim_const :
+  forall {T} {U : UniformSpace} {F : (T -> Prop) -> Prop} {FF : Filter F},
+  forall a : U, filterlim (fun _ => a) F (locally a).
+Proof.
+intros T U F FF a P [eps HP].
+unfold filtermap.
+apply filter_forall.
+intros _.
+apply HP.
+apply ball_center.
+Qed.
+
 Section Locally_fct.
 
 Context {T : Type} {U : UniformSpace}.
@@ -2342,6 +2354,17 @@ rewrite scal_opp_l.
 now rewrite scal_one.
 Qed.
 
+Lemma scal_minus_distr_l (x : K) (u v : V) :
+   scal x (minus u v) = minus (scal x u) (scal x v).
+Proof.
+  by rewrite /minus scal_distr_l scal_opp_r.
+Qed.
+Lemma scal_minus_distr_r (x y : K) (u : V) :
+   scal (minus x y) u = minus (scal x u) (scal y u).
+Proof.
+  by rewrite /minus scal_distr_r scal_opp_l.
+Qed.
+
 Lemma sum_n_m_scal_l :
   forall (a : K) (u : nat -> V) (n m : nat),
   sum_n_m (fun k => scal a (u k)) n m = scal a (sum_n_m u n m).
@@ -2822,6 +2845,31 @@ Qed.
 
 End NormedModule2.
 
+(** Rings with absolute values are normed modules *)
+
+Section AbsRing_NormedModule.
+
+Variable (K : AbsRing).
+
+Canonical AbsRing_NormedModuleAux :=
+  NormedModuleAux.Pack K K (NormedModuleAux.Class _ _ (ModuleSpace.class _ (AbsRing_ModuleSpace K)) (UniformSpace.class (AbsRing_UniformSpace K))) K.
+
+Lemma AbsRing_norm_compat2 :
+  forall (x y : AbsRing_NormedModuleAux) (eps : posreal),
+  ball x eps y -> abs (minus y x) < 1 * eps.
+Proof.
+  intros x y eps H.
+  now rewrite Rmult_1_l.
+Qed.
+
+Definition AbsRing_NormedModule_mixin :=
+  NormedModule.Mixin K _ abs 1 abs_triangle abs_mult (fun x y e H => H) AbsRing_norm_compat2 abs_eq_zero.
+
+Canonical AbsRing_NormedModule :=
+  NormedModule.Pack K _ (NormedModule.Class _ _ _ AbsRing_NormedModule_mixin) K.
+
+End AbsRing_NormedModule.
+
 (** Normed vector spaces have some continuous functions *)
 
 Section NVS_continuity.
@@ -2859,37 +2907,85 @@ by apply plus_comm.
 by [].
 Qed.
 
-Lemma filterlim_scal :
-  forall (k : K) (x : V),
+Lemma filterlim_scal (k : K) (x : V) :
+  filterlim (fun z => scal (fst z) (snd z)) (filter_prod (locally k) (locally x)) (locally (scal k x)).
+Proof.
+  apply filterlim_locally => /= eps.
+  eapply filter_imp.
+  move => /= u Hu.
+  rewrite (double_var eps).
+  apply ball_triangle with (scal (fst u) x).
+  apply norm_compat1.
+  rewrite -scal_minus_distr_r.
+  eapply Rle_lt_trans.
+  apply norm_scal.
+  eapply Rle_lt_trans.
+  apply Rmult_le_compat_l.
+  by apply abs_ge_0.
+  apply Rlt_le, Rlt_plus_1.
+  apply <- Rlt_div_r.
+  2: apply Rle_lt_0_plus_1, norm_ge_0.
+  by eapply (proj1 Hu).
+  apply norm_compat1.
+  rewrite -scal_minus_distr_l.
+  eapply Rle_lt_trans.
+  apply norm_scal.
+  eapply Rle_lt_trans.
+  apply Rmult_le_compat_r.
+  by apply norm_ge_0.
+  replace (fst u) with (plus k (minus (fst u) k)).
+  eapply Rle_trans.
+  apply abs_triangle.
+  apply Rplus_le_compat_l.
+  apply Rlt_le.
+  instantiate (1 := 1).
+  eapply (proj1 (proj2 Hu)).
+  by rewrite plus_comm -plus_assoc plus_opp_l plus_zero_r.
+  rewrite Rmult_comm.
+  apply <- Rlt_div_r.
+  2: apply Rle_lt_0_plus_1, abs_ge_0.
+  by apply (proj2 (proj2 Hu)).
+
+  repeat apply filter_and.
+  
+  assert (Hd : 0 < eps / 2 / (norm x + 1)).
+    apply Rdiv_lt_0_compat.
+    by apply is_pos_div_2.
+    apply Rle_lt_0_plus_1, norm_ge_0.
+  eexists.
+  apply (locally_ball_norm (V := AbsRing_NormedModule K) _ (mkposreal _ Hd)).
+  apply filter_true.
+  by [].
+
+  eexists.
+  apply (locally_ball_norm (V := AbsRing_NormedModule K) _ (mkposreal _ Rlt_0_1)).
+  apply filter_true.
+  by [].
+  
+  assert (Hd : 0 < eps / 2 / (abs k + 1)).
+    apply Rdiv_lt_0_compat.
+    by apply is_pos_div_2.
+    apply Rle_lt_0_plus_1, abs_ge_0.
+  eexists.
+  apply filter_true.
+  apply (locally_ball_norm _ (mkposreal _ Hd)).
+  by [].
+Qed.
+Lemma filterlim_scal_r (k : K) (x : V) :
   filterlim (fun z : V => scal k z) (locally x) (locally (scal k x)).
 Proof.
-intros k x.
-apply (filterlim_filter_le_1 (F := locally_norm x)).
-  apply locally_le_locally_norm.
-apply (filterlim_filter_le_2 (G := locally_norm (scal k x))).
-  apply locally_norm_le_locally.
-intros P [eps HP].
-assert (He : 0 < eps / (Rmax 1 (abs k))).
-  apply Rdiv_lt_0_compat.
-  by apply eps.
-  apply Rlt_le_trans with (2 := Rmax_l _ _).
-  by apply Rlt_0_1.
-exists (mkposreal _ He) => /= y Hy.
-apply HP.
-unfold ball_norm.
-replace (@minus V (scal k y) (scal k x)) with (scal k (minus y x)).
-apply Rle_lt_trans with (1 := norm_scal _ _).
-apply Rle_lt_trans with (Rmax 1 (abs k) * norm (minus y x)).
-apply Rmult_le_compat_r.
-by apply norm_ge_0.
-by apply Rmax_r.
-rewrite Rmult_comm.
-apply Rlt_div_r.
-apply Rlt_le_trans with (2 := Rmax_l _ _).
-by apply Rlt_0_1.
-by [].
-rewrite /minus scal_distr_l ;
-by generalize (scal_opp_r k x) => <-.
+  eapply filterlim_comp_2.
+  by apply filterlim_const.
+  by apply filterlim_id.
+  by apply filterlim_scal.
+Qed.
+Lemma filterlim_scal_l (k : K) (x : V) :
+  filterlim (fun z => scal z x) (locally k) (locally (scal k x)).
+Proof.
+  eapply filterlim_comp_2.
+  by apply filterlim_id.
+  by apply filterlim_const.
+  by apply filterlim_scal.
 Qed.
 
 Lemma filterlim_opp :
@@ -2898,11 +2994,17 @@ Lemma filterlim_opp :
 Proof.
 intros x.
 rewrite -scal_opp_one.
-apply filterlim_ext with (2 := filterlim_scal _ _).
+apply filterlim_ext with (2 := filterlim_scal_r _ _).
 apply: scal_opp_one.
 Qed.
 
 End NVS_continuity.
+
+Lemma filterlim_mult {K : AbsRing} (x y : K) :
+  filterlim (fun z => mult (fst z) (snd z)) (filter_prod (locally x) (locally y)) (locally (mult x y)).
+Proof.
+  by apply @filterlim_scal.
+Qed.
 
 Lemma filterlim_locally_ball_norm :
   forall {K : AbsRing} {T} {U : NormedModule K} {F : (T -> Prop) -> Prop} {FF : Filter F} (f : T -> U) (y : U),
@@ -2921,31 +3023,6 @@ split.
   intros t.
   apply He.
 Qed.
-
-(** Rings with absolute values are normed modules *)
-
-Section AbsRing_NormedModule.
-
-Variable (K : AbsRing).
-
-Canonical AbsRing_NormedModuleAux :=
-  NormedModuleAux.Pack K K (NormedModuleAux.Class _ _ (ModuleSpace.class _ (AbsRing_ModuleSpace K)) (UniformSpace.class (AbsRing_UniformSpace K))) K.
-
-Lemma AbsRing_norm_compat2 :
-  forall (x y : AbsRing_NormedModuleAux) (eps : posreal),
-  ball x eps y -> abs (minus y x) < 1 * eps.
-Proof.
-  intros x y eps H.
-  now rewrite Rmult_1_l.
-Qed.
-
-Definition AbsRing_NormedModule_mixin :=
-  NormedModule.Mixin K _ abs 1 abs_triangle abs_mult (fun x y e H => H) AbsRing_norm_compat2 abs_eq_zero.
-
-Canonical AbsRing_NormedModule :=
-  NormedModule.Pack K _ (NormedModule.Class _ _ _ AbsRing_NormedModule_mixin) K.
-
-End AbsRing_NormedModule.
 
 (** ** Complete Normed Modules *)
 
@@ -4725,18 +4802,6 @@ Proof.
   apply Rle_lt_trans with (1 := Rmax_r 0 _).
   apply Rlt_le_trans with (1 := HN).
   rewrite -S_INR ; by apply le_INR.
-Qed.
-
-Lemma filterlim_const :
-  forall {T} {U : UniformSpace} {F : (T -> Prop) -> Prop} {FF : Filter F},
-  forall a : U, filterlim (fun _ => a) F (locally a).
-Proof.
-intros T U F FF a P [eps HP].
-unfold filtermap.
-apply filter_forall.
-intros _.
-apply HP.
-apply ball_center.
 Qed.
 
 Lemma continuity_pt_locally :
