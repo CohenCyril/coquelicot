@@ -300,31 +300,16 @@ Proof.
   have Haux1: (0 < /exp 1).
     apply Rinv_0_lt_compat.
     apply exp_pos.
-  apply is_RInt_ext with (Derive (fun y => 2 * ln y + (ln y) ^ 2)).
-  move => y Hy.
-  apply is_derive_unique, If.
-  apply Rlt_trans with (2 := proj1 Hy).
-  apply Rmin_case.
-  by apply Haux1.
-  by apply Rlt_0_1.
   evar_last.
-  apply is_RInt_Derive.
+  apply is_RInt_derive.
   move => x Hx.
-  exists (f x) ; apply If.
+  apply If.
   apply Rlt_le_trans with (2 := proj1 Hx).
   apply Rmin_case.
   by apply Haux1.
   by apply Rlt_0_1.
   move => x Hx.
-  apply continuity_pt_filterlim, continuity_pt_ext_loc with f.
-  apply Hierarchy.locally_interval with 0 p_infty.
-  apply Rlt_le_trans with (2 := proj1 Hx).
-  apply Rmin_case.
-  by apply Haux1.
-  by apply Rlt_0_1.
-  by [].
-  move => y H0y _.
-  by apply sym_eq, is_derive_unique, If.
+  apply continuity_pt_filterlim.
   apply derivable_continuous_pt.
   exists (((2 - 2) - 2 * ln x) / x ^ 2) ; apply is_derive_Reals, Dfab.
   apply Rlt_le_trans with (2 := proj1 Hx).

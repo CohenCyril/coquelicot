@@ -476,7 +476,8 @@ Proof.
     replace ((fn n (x + h) - fn n x) / h - (fn m (x + h) - fn m x) / h)
       with (((fn n (x + h) - fn m (x + h)) - (fn n x - fn m x))/h)
       by (field ; auto).
-    case: (MVT_gen (fun x => (fn n x - fn m x)) x (x+h)) => [y Hy | y Hy | z [Hz ->]].
+    case: (MVT_gen (fun x => (fn n x - fn m x)) x (x+h) (Derive (fun x => fn n x - fn m x))) => [y Hy | y Hy | z [Hz ->]].
+    apply Derive_correct.
     apply: ex_derive_minus ; apply Edn, (Hc (Rmin x (x + h)) (Rmax x (x + h))).
     apply Rmin_case ; [by apply Hx | by apply Hh].
     apply Rmax_case ; [by apply Hx | by apply Hh].

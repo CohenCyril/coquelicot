@@ -458,15 +458,8 @@ assert (H: forall x : R, is_derive f x (pow x n)).
   field.
   rewrite /k S_INR.
   apply Rgt_not_eq, INRp1_pos.
-apply is_RInt_ext with (Derive f).
-  intros x _.
-  now apply is_derive_unique.
-apply: is_RInt_Derive => x Hx.
-  now eexists.
-apply continuity_pt_filterlim, continuity_pt_ext with (fun x => pow x n).
-  intros t.
-  apply sym_eq.
-  now apply is_derive_unique.
+  apply: is_RInt_derive => x Hx //.
+apply continuity_pt_filterlim.
 apply derivable_continuous_pt.
 apply derivable_pt_pow.
 Qed.
@@ -667,18 +660,11 @@ Lemma is_RInt_exp :
   is_RInt exp a b (exp b - exp a).
 Proof.
 intros a b.
-apply is_RInt_ext with (Derive exp).
+apply is_RInt_derive.
   intros x _.
-  apply is_derive_unique.
-  apply is_derive_Reals, derivable_pt_lim_exp.
-apply is_RInt_Derive.
-  intros x _.
-  exists (exp x).
   apply is_derive_Reals, derivable_pt_lim_exp.
 intros x _.
-apply continuity_pt_filterlim, continuity_pt_ext with exp.
-  intros t.
-  apply sym_eq, is_derive_unique, is_derive_Reals, derivable_pt_lim_exp.
+apply continuity_pt_filterlim.
 apply derivable_continuous_pt.
 apply derivable_pt_exp.
 Qed.

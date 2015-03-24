@@ -649,7 +649,7 @@ Proof.
   by rewrite !sum_O.
   rewrite !sum_Sn -IH.
   apply: scal_distr_l.
-  now apply filterlim_comp with (2 := filterlim_scal _ _).
+  now apply filterlim_comp with (2 := filterlim_scal_r _ _).
 Qed.
 Lemma is_series_scal_l : forall (c : K) (a : nat -> V) (l : V),
   is_series a l -> is_series (fun n => scal c (a n)) (scal c l).

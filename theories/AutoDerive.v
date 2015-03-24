@@ -1024,9 +1024,22 @@ rewrite -(interp_set_nth (S n)).
 apply (is_const_correct e1 (S n) C1 (z :: l)).
 apply: is_derive_comp.
 rewrite 2!interp_set_nth.
-apply is_derive_RInt with (1 := Hi).
-now apply HexI.
-now apply locally_singleton.
+apply (is_derive_RInt (fun t : R => interp (t :: l)%SEQ e1) _ (interp l e2)).
+apply HexI in H1.
+case: H1 => e He.
+exists e => /= y Hy.
+apply RInt_correct.
+eapply ex_RInt_Chasles.
+apply Hi.
+eapply ex_RInt_Chasles.
+eapply ex_RInt_Chasles, He.
+eapply ex_RInt_swap, @ex_RInt_Chasles_1, He.
+apply Rabs_le_between'.
+rewrite Rminus_eq_0 Rabs_R0 ; by apply Rlt_le, e.
+eapply ex_RInt_swap, @ex_RInt_Chasles_2, He.
+apply Rabs_le_between'.
+by apply Rlt_le, Hy.
+now apply continuity_pt_filterlim, locally_singleton.
 now apply IHe3.
 clear C2.
 case C3: (is_const e3 n).
@@ -1045,9 +1058,21 @@ apply (is_const_correct e1 (S n) C1 (z :: l)).
 apply: (is_derive_comp (fun x0 : R => RInt (fun t : R => interp (t :: l) e1) x0 (interp (set_nth 0 l n (nth 0 l n)) e3))
   (fun x0 : R => interp (set_nth 0 l n x0) e2)).
 rewrite 2!interp_set_nth.
-apply is_derive_RInt' with (1 := Hi).
-now apply HexI.
-now apply locally_singleton.
+apply (is_derive_RInt' (fun t : R => interp (t :: l)%SEQ e1) _ _ (interp l e3)).
+apply HexI in H1.
+case: H1 => e He.
+exists e => /= y Hy.
+apply RInt_correct.
+eapply ex_RInt_Chasles, Hi.
+eapply ex_RInt_Chasles.
+eapply ex_RInt_Chasles, He.
+eapply ex_RInt_swap, @ex_RInt_Chasles_1, He.
+apply Rabs_le_between'.
+by apply Rlt_le, Hy.
+eapply ex_RInt_swap, @ex_RInt_Chasles_2, He.
+apply Rabs_le_between'.
+rewrite Rminus_eq_0 Rabs_R0 ; by apply Rlt_le, e.
+now apply continuity_pt_filterlim, locally_singleton.
 now apply IHe2.
 (* . *)
 clear C3.

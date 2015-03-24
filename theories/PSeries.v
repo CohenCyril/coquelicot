@@ -2709,9 +2709,9 @@ Proof.
   rewrite CV_radius_Int.
   by apply H ; split ; apply Rlt_le ; apply Hy.
   evar_last.
-  apply is_RInt_Derive.
+  apply is_RInt_derive.
   move => y Hy.
-  apply ex_derive_PSeries.
+  apply Derive_correct, ex_derive_PSeries.
   rewrite CV_radius_Int.
   by apply H.
   move => y Hy.
