@@ -267,7 +267,7 @@ Proof.
   now apply @is_RInt_Chasles with b ; apply is_RInt_fct_extend_pair.
 Qed.
 
-(** * Definition 2 *)
+(** ** Definition 2 *)
 
 Definition complex_segment (a b : C) (z : C) :=
   exists (t : R), (0 <= t <= 1)%R /\ z = (1 - t) * a + t * b.
@@ -309,7 +309,7 @@ Proof.
   now rewrite (is_C_RInt_segm_unique _ _ _ _ If).
 Qed.
 
-(** * Proposition 3 *)
+(** ** Proposition 3 *)
 
 Lemma is_C_RInt_segm_swap (f : C -> C) (z1 z2 l : C) :
   is_C_RInt_segm f z2 z1 l -> is_C_RInt_segm f z1 z2 (-l).
@@ -615,7 +615,7 @@ Proof.
   by apply ex_C_RInt_segm_opp.
 Qed.
 
-(** * Proposition 4 *)
+(** ** Proposition 4 *)
 
 Lemma is_C_RInt_segm_norm (f : C -> C) (z1 z2 : C) lf (m : R) :
   is_C_RInt_segm f z1 z2 lf
@@ -652,7 +652,7 @@ Proof.
   by [].
 Qed.
 
-(** * Proposition 5 *)
+(** ** Proposition 5 *)
 
 Lemma is_C_RInt_derive (f df : R -> C) (a b : R) :
   (forall x : R, Rmin a b <= x <= Rmax a b -> filterdiff f (locally x) (fun y => scal y (df x))) ->
@@ -758,7 +758,7 @@ Proof.
   reflexivity.
 Qed.
 
-(** * Corollaire 6 *)
+(** ** Corollaire 6 *)
 
 Lemma C_RInt_segm_derive (f : C -> C) (z1 z2 : C) :
   (forall z, complex_segment z1 z2 z -> ex_C_derive f z)
@@ -772,7 +772,7 @@ Proof.
   by rewrite (C_derive_unique _ _ _ Hdf).
 Qed.
 
-(** * Corolaire 7 *)
+(** ** Corolaire 7 *)
 
 Lemma is_C_RInt_segm_triangle (f g : C -> C) (z1 z2 z3 : C) :
   (forall z, complex_segment z1 z2 z -> is_C_derive g z (f z))
@@ -791,7 +791,7 @@ Proof.
   ring.
 Qed.
 
-(** * Proposition 8 *)
+(** ** Proposition 8 *)
 
 Definition is_starred (U : C -> Prop) (z0 : C) :=
   forall z1 : C, U z1 -> forall z, complex_segment z0 z1 z -> U z.
@@ -845,7 +845,7 @@ Proof.
   rewrite RtoC_minus ; ring.
 Qed.
 
-Lemma ex_antiderive (U : C -> Prop) (z0 : C) (f : C -> C) :
+Lemma ex_antiderive_segm (U : C -> Prop) (z0 : C) (f : C -> C) :
   open U -> is_starred U z0
   -> continuous_on U f
   -> (forall z1 z2 : C, U z1 -> U z2 ->
@@ -950,3 +950,509 @@ Proof.
   apply filter_imp ; intros.
   by apply H0, complex_segment_swap.
 Qed.
+
+(** ** Definition 11 *)
+
+Definition complex_triangle (a b c : C) (z : C) :=
+  exists (a' b' c' : R), 0 <= a' /\ 0 <= b' /\ 0 <= c' /\ z = a' * a + b' * b + c' * c.
+
+Lemma complex_triangle_turn (a b c : C) (z : C) :
+  complex_triangle a b c z -> complex_triangle b c a z.
+Proof.
+  intros (a',(b',(c',(Ha,(Hb,(Hc,->)))))).
+  exists b', c', a'.
+  repeat split => // ; ring.
+Qed.
+Lemma complex_triangle_swap (a b c : C) (z : C) :
+  complex_triangle a b c z -> complex_triangle a c b z.
+Proof.
+  intros (a',(b',(c',(Ha,(Hb,(Hc,->)))))).
+  exists a', c', b'.
+  repeat split => // ; ring.
+Qed.
+Lemma complex_segment_triangle (a b c : C) (z : C) :
+  complex_segment b c z -> complex_triangle a b c z.
+Proof.
+  intros (p,(Hp,->)).
+  exists 0,(1-p)%R,p.
+  repeat split => //.
+  by apply Rle_refl.
+  apply -> Rminus_le_0 ; apply Hp.
+  by apply Hp.
+  rewrite RtoC_minus ; ring.
+Qed.
+
+(** ** Theorem 12 *)
+
+Lemma RtoC_inv (x : R) : (x <> 0)%R -> RtoC (/ x) = / RtoC x.
+Proof.
+  intros Hx.
+  by apply injective_projections ; simpl ; field.
+Qed.
+Lemma RtoC_div (x y : R) : (y <> 0)%R -> RtoC (x / y) = RtoC x / RtoC y.
+Proof.
+  intros Hy.
+  by apply injective_projections ; simpl ; field.
+Qed.
+Lemma complex_segment_Chasles (z1 z2 z3 : C) :
+  complex_segment z1 z3 z2 ->
+  forall (z : C), complex_segment z1 z2 z -> complex_segment z1 z3 z.
+Proof.
+  intros [p2 [Hp2 ->]] _ [p [Hp ->]].
+  exists (p * p2)%R ; repeat split.
+  apply Rmult_le_pos, Hp2 ; apply Hp.
+  rewrite -(Rmult_1_r 1).
+  apply Rmult_le_compat ; intuition.
+  rewrite RtoC_mult ; ring.
+Qed.
+
+Lemma th12 (U : C -> Prop) (z1 z2 z3 : C) (f df : C -> C) :
+  open U ->
+  (forall z, complex_triangle z1 z2 z3 z -> U z) ->
+  (forall z, U z -> is_C_derive f z (df z)) ->
+  C_RInt_segm f z1 z2 + C_RInt_segm f z2 z3 + C_RInt_segm f z3 z1 = 0.
+Proof.
+  intros oU tU Df.
+  assert (If : forall a b, (forall z, complex_segment a b z -> U z) -> ex_C_RInt_segm f a b).
+    intros a b Hab.
+    apply ex_C_RInt_segm_continuous => z Hz.
+    apply @filterdiff_continuous.
+    eexists ; apply Df.
+    by apply Hab.
+
+  set (I z1 z2 z3 := C_RInt_segm f z1 z2 + C_RInt_segm f z2 z3 + C_RInt_segm f z3 z1).
+  set (I_aux i z1 z2 z3 := let w1 := (z2 + z3) / 2 in
+                         let w2 := (z1 + z3) / 2 in
+                         let w3 := (z1 + z2) / 2 in
+                         match i with
+                         | 0%nat => I z1 w3 w2
+                         | 1%nat => I w3 z2 w1
+                         | 2%nat => I w1 z3 w2
+                         | 3%nat => I w3 w1 w2
+                         | _ => 0
+                         end).
+  assert (HI_aux : forall z1 z2 z3, (forall z : C, complex_triangle z1 z2 z3 z -> U z) ->
+                           I z1 z2 z3 = I_aux 0%nat z1 z2 z3 + I_aux 1%nat z1 z2 z3
+                                        + I_aux 2%nat z1 z2 z3 + I_aux 3%nat z1 z2 z3).
+    clear z1 z2 z3 tU => z1 z2 z3 tU.
+    unfold I_aux.
+    set (w1 := (z2 + z3) / 2) ;
+    set (w2 := (z1 + z3) / 2) ;
+    set (w3 := (z1 + z2) / 2).
+    assert (Hw1 : complex_segment z2 z3 w1).
+      unfold w1.
+      exists (/2)%R ; repeat split.
+      by apply Rlt_le, Rinv_0_lt_compat, Rlt_0_2.
+      rewrite -(Rmult_1_l (/2)) ; apply Rle_div_l.
+      by apply Rlt_0_2.
+      apply Rminus_le_0 ; ring_simplify ; apply Rle_0_1.
+      rewrite RtoC_inv.
+      2: by apply Rgt_not_eq, Rlt_0_2.
+      rewrite (RtoC_plus 1 1) ; field.
+      rewrite Rplus_0_l => H ; injection H.
+      by apply Rgt_not_eq, Rlt_0_2.
+    assert (Hw2 : complex_segment z1 z3 w2).
+      unfold w2.
+      exists (/2)%R ; repeat split.
+      by apply Rlt_le, Rinv_0_lt_compat, Rlt_0_2.
+      rewrite -(Rmult_1_l (/2)) ; apply Rle_div_l.
+      by apply Rlt_0_2.
+      apply Rminus_le_0 ; ring_simplify ; apply Rle_0_1.
+      rewrite RtoC_inv.
+      2: by apply Rgt_not_eq, Rlt_0_2.
+      rewrite (RtoC_plus 1 1) ; field.
+      rewrite Rplus_0_l => H ; injection H.
+      by apply Rgt_not_eq, Rlt_0_2.
+    assert (Hw3 : complex_segment z1 z2 w3).
+      unfold w3.
+      exists (/2)%R ; repeat split.
+      by apply Rlt_le, Rinv_0_lt_compat, Rlt_0_2.
+      rewrite -(Rmult_1_l (/2)) ; apply Rle_div_l.
+      by apply Rlt_0_2.
+      apply Rminus_le_0 ; ring_simplify ; apply Rle_0_1.
+      rewrite RtoC_inv.
+      2: by apply Rgt_not_eq, Rlt_0_2.
+      rewrite (RtoC_plus 1 1) ; field.
+      rewrite Rplus_0_l => H ; injection H.
+      by apply Rgt_not_eq, Rlt_0_2.
+    unfold I.
+    rewrite -(C_RInt_segm_Chasles f z1 w3 z2).
+    rewrite -(C_RInt_segm_Chasles f z2 w1 z3).
+    rewrite -(C_RInt_segm_Chasles f z3 w2 z1).
+    rewrite -(C_RInt_segm_swap f w1 w3) -(C_RInt_segm_swap f w2 w1) -(C_RInt_segm_swap f w3 w2).
+    ring.
+    case: (complex_segment_swap _ _ _ Hw2) => p [Hp ->].
+    by exists p.
+    apply If => _ [z [Hz ->]].
+    apply tU.
+    apply complex_triangle_turn, complex_triangle_turn.
+    apply complex_segment_triangle.
+    apply complex_segment_Chasles with w2.
+    by apply complex_segment_swap.
+    by exists z.
+    apply If => _ [z [Hz ->]].
+    apply tU.
+    apply complex_triangle_turn, complex_triangle_turn.
+    apply complex_segment_triangle, complex_segment_swap.
+    apply complex_segment_Chasles with w2.
+    by [].
+    by apply complex_segment_swap ; exists z.
+    case: Hw1 => p [Hp ->].
+    by exists p.
+    apply If => _ [z [Hz ->]].
+    apply tU.
+    apply complex_segment_triangle.
+    apply complex_segment_Chasles with w1.
+    by [].
+    by exists z.
+    apply If => _ [z [Hz ->]].
+    apply tU.
+    apply complex_segment_triangle, complex_segment_swap.
+    apply complex_segment_Chasles with w1.
+    by apply complex_segment_swap.
+    by apply complex_segment_swap ; exists z.
+    case: Hw3 => p [Hp ->].
+    by exists p.
+    apply If => _ [z [Hz ->]].
+    apply tU.
+    apply complex_triangle_turn.
+    apply complex_segment_triangle.
+    apply complex_segment_Chasles with w3.
+    by [].
+    by exists z.
+    apply If => _ [z [Hz ->]].
+    apply tU.
+    apply complex_triangle_turn.
+    apply complex_segment_triangle, complex_segment_swap.
+    apply complex_segment_Chasles with w3.
+    by apply complex_segment_swap.
+    by apply complex_segment_swap ; exists z.
+  set (L (z1 z2 z3 : C) := (Cmod (z1 - z2)%C + Cmod (z2 - z3)%C + Cmod (z3 - z1)%C)%R : R).
+  set (D z1 z2 z3 := Rmax (Cmod (z1 - z2)) (Rmax (Cmod (z2 - z3)) (Cmod (z3 - z1)))).
+  
+  assert (HT_n : forall z1 z2 z3 : C, (forall z : C, complex_triangle z1 z2 z3 z -> U z) ->
+    {y : C * C * C | let y1 := fst (fst y) in
+                     let y2 := snd (fst y) in
+                     let y3 := snd y in
+                     (forall z : C, complex_triangle y1 y2 y3 z -> complex_triangle z1 z2 z3 z)
+                     /\ Cmod (I z1 z2 z3) / 4 <= Cmod (I y1 y2 y3)
+                     /\ L y1 y2 y3 = (L z1 z2 z3 / 2)%R
+                     /\ D y1 y2 y3 = (D z1 z2 z3 / 2)%R}).
+    clear z1 z2 z3 tU => z1 z2 z3 tU.
+    - case: (Rle_lt_dec (Cmod (I z1 z2 z3) / 4) (Cmod (I_aux O z1 z2 z3))) => /= H0.
+      exists (z1, ((z1 + z2) / 2), ((z1 + z3) / 2)) ; simpl ; repeat split => //.
+      intros _ (a,(b,(c,(Ha,(Hb,(Hc,->)))))).
+      exists (a+b/2+c/2)%R, (b/2)%R, (c/2)%R ; repeat split.
+      apply Rplus_le_le_0_compat.
+      apply Rplus_le_le_0_compat => //.
+      apply Rdiv_le_0_compat => // ; apply Rlt_0_2.
+      apply Rdiv_le_0_compat => // ; apply Rlt_0_2.
+      apply Rdiv_le_0_compat => // ; apply Rlt_0_2.
+      apply Rdiv_le_0_compat => // ; apply Rlt_0_2.
+      rewrite !RtoC_plus !RtoC_div ; try apply Rgt_not_eq, Rlt_0_2.
+      rewrite RtoC_plus ; field.
+      rewrite Rplus_0_l => H' ; injection H' ; by apply Rgt_not_eq, Rlt_0_2.
+      unfold L.
+      replace (z1 - (z1 + z2) / 2)%C with ((z1 - z2) / 2).
+      replace ((z1 + z2) / 2 - (z1 + z3) / 2)%C with ((z2 - z3) / 2).
+      replace ((z1 + z3) / 2 - z1) with ((z3 - z1) / 2).
+      rewrite !Cmod_div 1?Cmod_R 1?Rabs_pos_eq.
+      field.
+      by apply Rlt_le, Rlt_0_2.
+      move => H' ; injection H' ; apply Rgt_not_eq, Rlt_0_2.
+      move => H' ; injection H' ; apply Rgt_not_eq, Rlt_0_2.
+      move => H' ; injection H' ; apply Rgt_not_eq, Rlt_0_2.
+      rewrite RtoC_plus ; field.
+      move => H' ; injection H' => _ ; apply Rgt_not_eq, Rlt_0_2.
+      rewrite RtoC_plus ; field.
+      move => H' ; injection H' => _ ; apply Rgt_not_eq, Rlt_0_2.
+      rewrite RtoC_plus ; field.
+      move => H' ; injection H' => _ ; apply Rgt_not_eq, Rlt_0_2.
+      unfold D.
+      replace (z1 - (z1 + z2) / 2)%C with ((z1 - z2) / 2).
+      replace ((z1 + z2) / 2 - (z1 + z3) / 2)%C with ((z2 - z3) / 2).
+      replace ((z1 + z3) / 2 - z1) with ((z3 - z1) / 2).
+      rewrite !Cmod_div 1?Cmod_R 1?Rabs_pos_eq.
+      by rewrite -!Rmax_mult ; try apply Rlt_le, Rinv_0_lt_compat, Rlt_0_2.
+      by apply Rlt_le, Rlt_0_2.
+      move => H' ; injection H' ; apply Rgt_not_eq, Rlt_0_2.
+      move => H' ; injection H' ; apply Rgt_not_eq, Rlt_0_2.
+      move => H' ; injection H' ; apply Rgt_not_eq, Rlt_0_2.
+      rewrite RtoC_plus ; field.
+      move => H' ; injection H' => _ ; apply Rgt_not_eq, Rlt_0_2.
+      rewrite RtoC_plus ; field.
+      move => H' ; injection H' => _ ; apply Rgt_not_eq, Rlt_0_2.
+      rewrite RtoC_plus ; field.
+      move => H' ; injection H' => _ ; apply Rgt_not_eq, Rlt_0_2.
+    - case: (Rle_lt_dec (Cmod (I z1 z2 z3) / 4) (Cmod (I_aux 1%nat z1 z2 z3))) => /= H1.
+      exists  (((z1 + z2) / RtoC 2), z2, ((z2 + z3) / RtoC 2)) ; simpl ; repeat split => //.
+      intros _ (a,(b,(c,(Ha,(Hb,(Hc,->)))))).
+      exists (a/2)%R, (a/2 + b + c/2)%R, (c/2)%R ; repeat split.
+      apply Rdiv_le_0_compat => // ; apply Rlt_0_2.
+      apply Rplus_le_le_0_compat.
+      apply Rplus_le_le_0_compat => //.
+      apply Rdiv_le_0_compat => // ; apply Rlt_0_2.
+      apply Rdiv_le_0_compat => // ; apply Rlt_0_2.
+      apply Rdiv_le_0_compat => // ; apply Rlt_0_2.
+      rewrite !RtoC_plus !RtoC_div ; try apply Rgt_not_eq, Rlt_0_2.
+      rewrite RtoC_plus ; field.
+      rewrite Rplus_0_l => H' ; injection H' ; by apply Rgt_not_eq, Rlt_0_2.
+      unfold L.
+      replace ((z1 + z2) / 2 - z2) with ((z1 - z2) / 2).
+      replace (z2 - (z2 + z3) / 2) with ((z2 - z3) / 2).
+      replace ((z2 + z3) / 2 - (z1 + z2) / 2) with ((z3 - z1) / 2).
+      rewrite !Cmod_div 1?Cmod_R 1?Rabs_pos_eq.
+      field.
+      by apply Rlt_le, Rlt_0_2.
+      move => H' ; injection H' ; apply Rgt_not_eq, Rlt_0_2.
+      move => H' ; injection H' ; apply Rgt_not_eq, Rlt_0_2.
+      move => H' ; injection H' ; apply Rgt_not_eq, Rlt_0_2.
+      rewrite RtoC_plus ; field.
+      move => H' ; injection H' => _ ; apply Rgt_not_eq, Rlt_0_2.
+      rewrite RtoC_plus ; field.
+      move => H' ; injection H' => _ ; apply Rgt_not_eq, Rlt_0_2.
+      rewrite RtoC_plus ; field.
+      move => H' ; injection H' => _ ; apply Rgt_not_eq, Rlt_0_2.
+      unfold D.
+      replace ((z1 + z2) / 2 - z2) with ((z1 - z2) / 2).
+      replace (z2 - (z2 + z3) / 2) with ((z2 - z3) / 2).
+      replace ((z2 + z3) / 2 - (z1 + z2) / 2) with ((z3 - z1) / 2).
+      rewrite !Cmod_div 1?Cmod_R 1?Rabs_pos_eq.
+      by rewrite -!Rmax_mult ; try apply Rlt_le, Rinv_0_lt_compat, Rlt_0_2.
+      by apply Rlt_le, Rlt_0_2.
+      move => H' ; injection H' ; apply Rgt_not_eq, Rlt_0_2.
+      move => H' ; injection H' ; apply Rgt_not_eq, Rlt_0_2.
+      move => H' ; injection H' ; apply Rgt_not_eq, Rlt_0_2.
+      rewrite RtoC_plus ; field.
+      move => H' ; injection H' => _ ; apply Rgt_not_eq, Rlt_0_2.
+      rewrite RtoC_plus ; field.
+      move => H' ; injection H' => _ ; apply Rgt_not_eq, Rlt_0_2.
+      rewrite RtoC_plus ; field.
+      move => H' ; injection H' => _ ; apply Rgt_not_eq, Rlt_0_2.
+    - case: (Rle_lt_dec (Cmod (I z1 z2 z3) / 4) (Cmod (I_aux 2%nat z1 z2 z3))) => /= H2.
+      exists (((z2 + z3) / 2), z3, ((z1 + z3) / 2))  ; simpl ; repeat split => //.
+      intros _ (a,(b,(c,(Ha,(Hb,(Hc,->)))))).
+      exists (c/2)%R, (a/2)%R, (a/2+b+c/2)%R ; repeat split.
+      apply Rdiv_le_0_compat => // ; apply Rlt_0_2.
+      apply Rdiv_le_0_compat => // ; apply Rlt_0_2.
+      apply Rplus_le_le_0_compat.
+      apply Rplus_le_le_0_compat => //.
+      apply Rdiv_le_0_compat => // ; apply Rlt_0_2.
+      apply Rdiv_le_0_compat => // ; apply Rlt_0_2.
+      rewrite !RtoC_plus !RtoC_div ; try apply Rgt_not_eq, Rlt_0_2.
+      rewrite RtoC_plus ; field.
+      rewrite Rplus_0_l => H' ; injection H' ; by apply Rgt_not_eq, Rlt_0_2.
+      unfold L.
+      replace ((z2 + z3) / 2 - z3) with ((z2 - z3) / 2).
+      replace (z3 - (z1 + z3) / 2) with ((z3 - z1) / 2).
+      replace ((z1 + z3) / 2 - (z2 + z3) / 2) with ((z1 - z2) / 2).
+      rewrite !Cmod_div 1?Cmod_R 1?Rabs_pos_eq.
+      field.
+      by apply Rlt_le, Rlt_0_2.
+      move => H' ; injection H' ; apply Rgt_not_eq, Rlt_0_2.
+      move => H' ; injection H' ; apply Rgt_not_eq, Rlt_0_2.
+      move => H' ; injection H' ; apply Rgt_not_eq, Rlt_0_2.
+      rewrite RtoC_plus ; field.
+      move => H' ; injection H' => _ ; apply Rgt_not_eq, Rlt_0_2.
+      rewrite RtoC_plus ; field.
+      move => H' ; injection H' => _ ; apply Rgt_not_eq, Rlt_0_2.
+      rewrite RtoC_plus ; field.
+      move => H' ; injection H' => _ ; apply Rgt_not_eq, Rlt_0_2.
+      unfold D.
+      replace ((z2 + z3) / 2 - z3) with ((z2 - z3) / 2).
+      replace (z3 - (z1 + z3) / 2) with ((z3 - z1) / 2).
+      replace ((z1 + z3) / 2 - (z2 + z3) / 2) with ((z1 - z2) / 2).
+      rewrite !Cmod_div 1?Cmod_R 1?Rabs_pos_eq.
+      rewrite -!Rmax_mult ; try apply Rlt_le, Rinv_0_lt_compat, Rlt_0_2.
+      unfold Rdiv ; apply f_equal2 => //.
+      rewrite Rmax_comm -Rmax_assoc.
+      by rewrite Rmax_comm -Rmax_assoc.
+      by apply Rlt_le, Rlt_0_2.
+      move => H' ; injection H' ; apply Rgt_not_eq, Rlt_0_2.
+      move => H' ; injection H' ; apply Rgt_not_eq, Rlt_0_2.
+      move => H' ; injection H' ; apply Rgt_not_eq, Rlt_0_2.
+      rewrite RtoC_plus ; field.
+      move => H' ; injection H' => _ ; apply Rgt_not_eq, Rlt_0_2.
+      rewrite RtoC_plus ; field.
+      move => H' ; injection H' => _ ; apply Rgt_not_eq, Rlt_0_2.
+      rewrite RtoC_plus ; field.
+      move => H' ; injection H' => _ ; apply Rgt_not_eq, Rlt_0_2.
+    - case: (Rle_lt_dec (Cmod (I z1 z2 z3) / 4) (Cmod (I_aux 3%nat z1 z2 z3))) => /= H3.
+      exists (((z1 + z2) / 2), ((z2 + z3) / 2), ((z1 + z3) / 2)) ; simpl ; repeat split => //.
+      intros _ (a,(b,(c,(Ha,(Hb,(Hc,->)))))).
+      exists (a / 2 + c/2)%R, (a/2 + b / 2)%R, (b/2+c/2)%R ; repeat split.
+      apply Rplus_le_le_0_compat ;
+      apply Rdiv_le_0_compat => // ; apply Rlt_0_2.
+      apply Rplus_le_le_0_compat ;
+      apply Rdiv_le_0_compat => // ; apply Rlt_0_2.
+      apply Rplus_le_le_0_compat ;
+      apply Rdiv_le_0_compat => // ; apply Rlt_0_2.
+      rewrite !RtoC_plus !RtoC_div ; try apply Rgt_not_eq, Rlt_0_2.
+      rewrite RtoC_plus ; field.
+      rewrite Rplus_0_l => H' ; injection H' ; by apply Rgt_not_eq, Rlt_0_2.
+      unfold L.
+      replace ((z1 + z2) / 2 - (z2 + z3) / 2) with (-((z3 - z1) / 2)).
+      replace ((z2 + z3) / 2 - (z1 + z3) / 2) with (-((z1 - z2) / 2)).
+      replace ((z1 + z3) / 2 - (z1 + z2) / 2) with (-((z2 - z3) / 2)).
+      rewrite !Cmod_opp !Cmod_div 1?Cmod_R 1?Rabs_pos_eq.
+      field.
+      by apply Rlt_le, Rlt_0_2.
+      move => H' ; injection H' ; apply Rgt_not_eq, Rlt_0_2.
+      move => H' ; injection H' ; apply Rgt_not_eq, Rlt_0_2.
+      move => H' ; injection H' ; apply Rgt_not_eq, Rlt_0_2.
+      rewrite RtoC_plus ; field.
+      move => H' ; injection H' => _ ; apply Rgt_not_eq, Rlt_0_2.
+      rewrite RtoC_plus ; field.
+      move => H' ; injection H' => _ ; apply Rgt_not_eq, Rlt_0_2.
+      rewrite RtoC_plus ; field.
+      move => H' ; injection H' => _ ; apply Rgt_not_eq, Rlt_0_2.
+      unfold D.
+      replace ((z1 + z2) / 2 - (z2 + z3) / 2) with (-((z3 - z1) / 2)).
+      replace ((z2 + z3) / 2 - (z1 + z3) / 2) with (-((z1 - z2) / 2)).
+      replace ((z1 + z3) / 2 - (z1 + z2) / 2) with (-((z2 - z3) / 2)).
+      rewrite !Cmod_opp !Cmod_div 1?Cmod_R 1?Rabs_pos_eq.
+      rewrite -!Rmax_mult ; try apply Rlt_le, Rinv_0_lt_compat, Rlt_0_2.
+      unfold Rdiv ; apply f_equal2 => //.
+      by rewrite Rmax_comm -Rmax_assoc.
+      by apply Rlt_le, Rlt_0_2.
+      move => H' ; injection H' ; apply Rgt_not_eq, Rlt_0_2.
+      move => H' ; injection H' ; apply Rgt_not_eq, Rlt_0_2.
+      move => H' ; injection H' ; apply Rgt_not_eq, Rlt_0_2.
+      rewrite RtoC_plus ; field.
+      move => H' ; injection H' => _ ; apply Rgt_not_eq, Rlt_0_2.
+      rewrite RtoC_plus ; field.
+      move => H' ; injection H' => _ ; apply Rgt_not_eq, Rlt_0_2.
+      rewrite RtoC_plus ; field.
+      move => H' ; injection H' => _ ; apply Rgt_not_eq, Rlt_0_2.
+      absurd (Cmod (I z1 z2 z3) < Cmod (I z1 z2 z3)).
+      by apply Rlt_irrefl.
+      rewrite {1}HI_aux.
+      eapply Rlt_le_trans.
+      eapply Rle_lt_trans.
+      apply Cmod_triangle.
+      apply Rplus_lt_compat, H3.
+      eapply Rle_lt_trans.
+      apply Cmod_triangle.
+      apply Rplus_lt_compat, H2.
+      eapply Rle_lt_trans.
+      apply Cmod_triangle.
+      apply Rplus_lt_compat, H1.
+      apply H0.
+      apply Req_le ; field.
+      by apply tU.
+  set (t := {z : C * C * C | forall y : C, complex_triangle (fst (fst z)) (snd (fst z)) (snd z) y -> U y}).
+  set (T_0 (z : t) := projT1 (HT_n (fst (fst (proj1_sig z))) (snd (fst (proj1_sig z))) (snd (proj1_sig z)) (proj2_sig z))).
+  assert (HT_0 : forall z, (forall y : C, complex_triangle (fst (fst (T_0 z))) (snd (fst (T_0 z))) (snd (T_0 z)) y -> U y)).
+    intros (((y1,y2),y3),H) y ; unfold T_0 ; simpl.
+    destruct (HT_n y1 y2 y3 _) ; simpl.
+    case: x a => [[x1 x2] x3] /= Hx.
+    intros Hy.
+    by apply H, Hx.
+  set (T_1 := fix f n := match n with | O => existT _ (z1,z2,z3) tU : t
+                                    | S n => existT _ (T_0 (f n)) (HT_0 (f n)) : t end).
+  set (T_n n := projT1 (T_1 n)).
+  assert (LT : forall n, let y1 := fst (fst (T_n n)) in
+                         let y2 := snd (fst (T_n n)) in
+                         let y3 := snd (T_n n) in
+                         L y1 y2 y3 = (L z1 z2 z3 / 2 ^ n)%R).
+    rewrite /T_n /=.
+    induction n ; simpl.
+    by rewrite Rdiv_1.
+    rewrite (proj1 (proj2 (proj2 (projT2 (HT_n _ _ _ _))))).
+    move: IHn.
+    destruct (T_1 n) as [[[y1 y2] y3] Hy] ; simpl.
+    move => /= -> ; field.
+    apply pow_nonzero, Rgt_not_eq, Rlt_0_2.
+  assert (DT : forall n, let y1 := fst (fst (T_n n)) in
+                         let y2 := snd (fst (T_n n)) in
+                         let y3 := snd (T_n n) in
+                         D y1 y2 y3 = (D z1 z2 z3 / 2 ^ n)%R).
+    rewrite /T_n /=.
+    induction n ; simpl.
+    by rewrite Rdiv_1.
+    rewrite (proj2 (proj2 (proj2 (projT2 (HT_n _ _ _ _))))).
+    move: IHn.
+    destruct (T_1 n) as [[[y1 y2] y3] Hy] ; simpl.
+    move => /= -> ; field.
+    apply pow_nonzero, Rgt_not_eq, Rlt_0_2.
+  assert (IT : forall n, let y1 := fst (fst (T_n n)) in
+                         let y2 := snd (fst (T_n n)) in
+                         let y3 := snd (T_n n) in
+                         Cmod (I z1 z2 z3) / 4 ^ n <= Cmod (I y1 y2 y3)).
+    rewrite /T_n /=.
+    induction n ; simpl.
+    by rewrite Rdiv_1 ; apply Rle_refl.
+    eapply Rle_trans, (proj1 (proj2 (projT2 (HT_n _ _ _ _)))).
+    move: IHn.
+    destruct (T_1 n) as [[[y1 y2] y3] Hy] ; simpl => H.
+    apply Rmult_le_reg_l with 4.
+    apply Rmult_lt_0_compat ; apply Rlt_0_2.
+    replace (4 * (Cmod (I y1 y2 y3) / 4))%R with (Cmod (I y1 y2 y3)) by field.
+    eapply Rle_trans, H.
+    apply Req_le ; field.
+    apply pow_nonzero, Rgt_not_eq, Rmult_lt_0_compat ;
+    apply Rlt_0_2.
+  assert (segmT : forall n, let y1 := fst (fst (T_n n)) in
+                            let y2 := snd (fst (T_n n)) in
+                            let y3 := snd (T_n n) in
+                            forall z, complex_triangle y1 y2 y3 z -> U z).
+    rewrite /T_n /= => n.
+    apply (projT2 (T_1 n)).
+
+  assert (exists z : C, forall n, let y1 := fst (fst (T_n n)) in
+                                  let y2 := snd (fst (T_n n)) in
+                                  let y3 := snd (T_n n) in
+                                  complex_triangle y1 y2 y3 z).
+  admit.
+  
+  case: H => z0 Hz0.
+  set (g z := f z - f z0 - (z - z0) * df z0).
+  assert (Hg : forall z1 z2 z3, (forall z : C, complex_triangle z1 z2 z3 z -> U z)
+              -> C_RInt_segm g z1 z2 + C_RInt_segm g z2 z3 + C_RInt_segm g z3 z1 = I z1 z2 z3).
+    clear -Df If => z1 z2 z3 tU.
+    rewrite /I /g.
+    admit. (* Corolaire 7 *)
+  assert (Dg : forall z, U z -> is_C_derive g z (df z - df z0)).
+    intros z Hz.
+    unfold is_C_derive.
+    eapply filterdiff_ext_lin.
+    apply @filterdiff_minus_fct.
+    by apply locally_filter.
+    apply @filterdiff_minus_fct.
+    by apply locally_filter.
+    by apply Df.
+    by apply filterdiff_const.
+    apply @filterdiff_scal_l_fct.
+    by apply locally_filter.
+    apply @filterdiff_minus_fct.
+    by apply locally_filter.
+    apply filterdiff_linear.
+Qed.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
