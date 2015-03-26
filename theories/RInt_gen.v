@@ -210,7 +210,7 @@ Proof.
   exists (fun x => scal k (If x)) ; split.
   move: Hf ; apply filter_imp => x.
   by apply is_RInt_scal.
-  by eapply filterlim_comp, @filterlim_scal.
+  by eapply filterlim_comp, @filterlim_scal_r.
 Qed.
 
 Lemma is_RInt_gen_opp {Fa Fb : (R -> Prop) -> Prop}
@@ -287,7 +287,9 @@ Proof.
   exists (fun ab => f (snd ab) - f (fst ab)) ; split.
   generalize (filter_and _ _ Df Cf) => {Df Cf}.
   apply filter_imp => [[a b]] /= [Df Cf].
-  by apply is_RInt_Derive.
+  apply is_RInt_derive.
+  intros ; by apply Derive_correct, Df.
+  by apply Cf.
   rewrite /Rminus.
   eapply filterlim_comp_2, (filterlim_plus lb (- la)).
   eapply filterlim_comp, Lfb.
@@ -297,7 +299,7 @@ Proof.
   by apply filterlim_fst.
 Qed.
 
-Goal forall x : R, 0 < x -> is_RInt_gen ln (at_right 0) (at_point x) (x * ln x - x).
+(* Goal forall x : R, 0 < x -> is_RInt_gen ln (at_right 0) (at_point x) (x * ln x - x).
 Proof.
   assert (forall x, 0 < x -> is_derive (fun x => x * ln x - x) x (ln x)).
     intros x Hx.
@@ -366,4 +368,4 @@ Proof.
   eexists ; by apply derivable_pt_lim_ln.
   apply continuity_pt_id.
   by rewrite opp_zero plus_zero_r Rminus_0_r.
-Qed.
+Qed. *)

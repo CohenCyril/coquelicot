@@ -44,16 +44,16 @@ Lemma is_linear_C_R (l : C -> C) :
   is_linear (U := C_R_NormedModule) (V := C_R_NormedModule) l.
 Proof.
   intros Lf.
-  split.
-  intros ; apply Lf.
-  simpl ; intros.
-  rewrite !scal_R_Cmult ; by apply Lf.
-  case: Lf => _ _ [M Lf].
-  exists M ; split.
-  by apply Lf.
-  intros.
-  rewrite -!Cmod_norm.
-  apply Lf.
+  - split.
+    intros ; apply Lf.
+    simpl ; intros.
+    rewrite !scal_R_Cmult ; by apply Lf.
+    case: Lf => _ _ [M Lf].
+    exists M ; split.
+    by apply Lf.
+    intros.
+    rewrite -!Cmod_norm.
+    apply Lf.
 Qed.
 
 Lemma is_linear_RtoC : is_linear RtoC.
@@ -697,18 +697,20 @@ Proof.
   intros Cf z Hz.
   apply (continuous_comp RtoC ((fun t : C => (z2 - z1) * f ((1 - t) * z1 + t * z2)))).
   apply continuous_RtoC.
-  eapply (continuous_comp (V := AbsRing_UniformSpace C_AbsRing) (W := C_UniformSpace) (fun t : C => (z2 - z1) * f ((1 - t) * z1 + t * z2)) (fun x => x)),
-         continuous_C_id_2.
-  apply (continuous_scal_r (V := AbsRing_NormedModule C_AbsRing)).
-  apply (continuous_comp (V := AbsRing_UniformSpace C_AbsRing)).
-  apply (continuous_plus (V := AbsRing_NormedModule C_AbsRing)).
-  apply @continuous_scal_l.
-  apply (continuous_minus (U := C_UniformSpace) (V := (AbsRing_NormedModule C_AbsRing)) (fun _ => RtoC 1) (fun x => x) (RtoC z)).
+  apply @continuous_scal.
   apply continuous_const.
+  apply continuous_comp.
+  apply @continuous_plus.
+  apply @continuous_scal.
+  apply (continuous_comp (V := C_NormedModule) (W := AbsRing_UniformSpace C_AbsRing) (fun x => 1 - x) (fun x => x)), continuous_C_id_1.
+  apply @continuous_minus.
+  apply continuous_const.
+  apply continuous_id.
+  apply continuous_const.
+  apply @continuous_scal.
   apply continuous_C_id_1.
-  apply @continuous_scal_l.
-  apply continuous_C_id_1.
-  apply continuous_C, Cf.
+  apply continuous_const.
+  apply Cf.
   by exists z.
 Qed.
 
@@ -956,6 +958,11 @@ Qed.
 Definition complex_triangle (a b c : C) (z : C) :=
   exists (a' b' c' : R), 0 <= a' /\ 0 <= b' /\ 0 <= c' /\ z = a' * a + b' * b + c' * c.
 
+Definition complex_triangle_perimeter (a b c : C) : R :=
+  (Cmod (a - c)%C + Cmod (b - a)%C + Cmod (c - b)%C)%R.
+Definition complex_triangle_diameter (a b c : C) : R :=
+  Rmax (Cmod (a - c)) (Rmax (Cmod (b - a)) (Cmod (c - b))).
+
 Lemma complex_triangle_turn (a b c : C) (z : C) :
   complex_triangle a b c z -> complex_triangle b c a z.
 Proof.
@@ -963,6 +970,12 @@ Proof.
   exists b', c', a'.
   repeat split => // ; ring.
 Qed.
+Lemma complex_triangle_perimeter_turn  (a b c : C) :
+  complex_triangle_perimeter a b c = complex_triangle_perimeter b c a.
+Admitted.
+Lemma complex_triangle_diameter_turn  (a b c : C) :
+  complex_triangle_diameter a b c = complex_triangle_diameter b c a.
+Admitted.
 Lemma complex_triangle_swap (a b c : C) (z : C) :
   complex_triangle a b c z -> complex_triangle a c b z.
 Proof.
@@ -970,6 +983,12 @@ Proof.
   exists a', c', b'.
   repeat split => // ; ring.
 Qed.
+Lemma complex_triangle_perimeter_swap  (a b c : C) :
+  complex_triangle_perimeter a b c = complex_triangle_perimeter a c b.
+Admitted.
+Lemma complex_triangle_diameter_swap  (a b c : C) :
+  complex_triangle_diameter a b c = complex_triangle_diameter a c b.
+Admitted.
 Lemma complex_segment_triangle (a b c : C) (z : C) :
   complex_segment b c z -> complex_triangle a b c z.
 Proof.
@@ -981,6 +1000,30 @@ Proof.
   by apply Hp.
   rewrite RtoC_minus ; ring.
 Qed.
+
+Lemma complex_triangle_diameter_ball (a b c z0 : C) (eps : R) :
+  (complex_triangle_diameter a b c < eps) ->
+  (complex_triangle a b c z0) ->
+  forall z, complex_triangle a b c z -> ball z0 eps z.
+Proof.
+  intros Heps Hz0 z Hz.
+  apply (norm_compat1 (V := C_NormedModule)).
+  eapply Rle_lt_trans, Heps.
+  change norm with Cmod ; change minus with Cminus.
+  unfold complex_triangle_diameter.
+  wlog: a c Heps Hz0 Hz / (Cmod (c - b) <= Cmod (b - a)) => [Hw | H].
+    case: (Rle_lt_dec (Cmod (c - b)) (Cmod (b - a))) => H.
+    by apply Hw.
+    rewrite (Rmax_comm (Cmod (b - a)) (Cmod (c - b))).
+    rewrite -!(Cmod_opp (_-_)) Cmod_opp !Copp_minus_distr.
+    apply Hw => //.
+    by rewrite -complex_triangle_diameter_turn complex_triangle_diameter_swap.
+    by apply complex_triangle_turn, complex_triangle_swap.
+    by apply complex_triangle_turn, complex_triangle_swap.
+    rewrite -!(Cmod_opp (_-_)) !Copp_minus_distr.
+    by apply Rlt_le.
+  rewrite (Rmax_left _ _ H) {H}.
+Admitted.
 
 (** ** Theorem 12 *)
 
@@ -1427,7 +1470,7 @@ Proof.
     apply @filterdiff_minus_fct.
     by apply locally_filter.
     apply filterdiff_linear.
-Qed.
+Admitted.
 
 
 
