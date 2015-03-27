@@ -153,6 +153,41 @@ Qed.
 
 (** ** C is a field *)
 
+Lemma RtoC_plus (x y : R) :
+  RtoC (x + y) = RtoC x + RtoC y.
+Proof.
+  unfold RtoC, Cplus ; simpl.
+  by rewrite Rplus_0_r.
+Qed.
+Lemma RtoC_opp (x : R) :
+  RtoC (- x) = - RtoC x.
+Proof.
+  unfold RtoC, Copp ; simpl.
+  by rewrite Ropp_0.
+Qed.
+Lemma RtoC_minus (x y : R) :
+  RtoC (x - y) = RtoC x - RtoC y.
+Proof.
+  by rewrite /Cminus -RtoC_opp -RtoC_plus.
+Qed.
+Lemma RtoC_mult (x y : R) :
+  RtoC (x * y) = RtoC x * RtoC y.
+Proof.
+  unfold RtoC, Cmult ; simpl.
+  apply injective_projections ; simpl ; ring.
+Qed.
+Lemma RtoC_inv (x : R) : (x <> 0)%R -> RtoC (/ x) = / RtoC x.
+Proof.
+  intros Hx.
+  by apply injective_projections ; simpl ; field.
+Qed.
+Lemma RtoC_div (x y : R) : (y <> 0)%R -> RtoC (x / y) = RtoC x / RtoC y.
+Proof.
+  intros Hy.
+  by apply injective_projections ; simpl ; field.
+Qed.
+
+
 Lemma Cplus_comm (x y : C) : x + y = y + x.
 Proof.
   apply injective_projections ; simpl ; apply Rplus_comm.
@@ -437,6 +472,15 @@ Canonical C_R_NormedModuleAux :=
 Canonical C_R_NormedModule :=
   NormedModule.Pack R_AbsRing C (NormedModule.class _ (prod_NormedModule _ _ _)) C.
 
+Lemma scal_R_Cmult :
+  forall (x : R) (y : C),
+  scal (V := C_R_ModuleSpace) x y = Cmult x y.
+Proof.
+intros x y.
+apply injective_projections ;
+  rewrite /scal /= /scal /= /mult /= ; ring.
+Qed.
+
 (** * C is a CompleteSpace *)
 
 Definition C_complete_lim (F : (C -> Prop) -> Prop) := 
@@ -491,6 +535,36 @@ Canonical C_CompleteNormedModule :=
 Canonical C_R_CompleteNormedModule :=
   CompleteNormedModule.Pack _ C (CompleteNormedModule.Class R_AbsRing _ (NormedModule.class _ C_R_NormedModule) C_CompleteSpace_mixin) C.
 
+(** * Locally compat *)
+
+Lemma locally_C x P :
+  locally (T := C_UniformSpace) x P <-> locally (T := AbsRing_UniformSpace C_AbsRing) x P.
+Proof.
+  split => [[e He] | [e He]].
+  - exists e => /= y Hy.
+    apply He.
+    split.
+    eapply Rle_lt_trans, Hy.
+    eapply Rle_trans, Rmax_Cmod.
+    apply Rmax_l.
+    eapply Rle_lt_trans, Hy.
+    eapply Rle_trans, Rmax_Cmod.
+    apply Rmax_r.
+  - assert (Hd : 0 < e / sqrt 2).
+    apply Rdiv_lt_0_compat.
+    by apply e.
+    apply Rlt_sqrt2_0.
+    exists (mkposreal _ Hd) => /= y [Hy1 Hy2].
+    apply He.
+    eapply Rle_lt_trans.
+    apply Cmod_2Rmax.
+    rewrite Rmult_comm ; apply Rlt_div_r.
+    apply Rlt_sqrt2_0.
+    apply Rmax_case.
+    by apply Hy1.
+    by apply Hy2.
+Qed.
+
 (** * Limits *)
 
 Definition is_C_lim (f : C -> C) (z l : C) :=
@@ -543,16 +617,16 @@ Proof.
   now injection Hy.
 Qed.
 
-(** * Derivatives *)
+(* (** * Derivatives *)
 
 Definition is_C_derive (f : C -> C) (z l : C) :=
   filterdiff f (locally z) (fun y : C => scal y l).
 Definition ex_C_derive (f : C -> C) (z : C) :=
-  exists l : C, is_C_derive f z l.
+  exists l : C, is_C_derive f z l.*)
 Definition C_derive (f : C -> C) (z : C) := C_lim (fun x => (f x - f z) / (x - z)) z.
 
-Lemma C_derive_unique (f : C -> C) (z l : C) :
-  is_C_derive f z l -> C_derive f z = l.
+Lemma is_C_derive_unique (f : C -> C) (z l : C) :
+  is_derive f z l -> C_derive f z = l.
 Proof.
   intros [_ Df].
   specialize (Df _ (fun P H => H)).
@@ -560,6 +634,9 @@ Proof.
   intros P HP.
   destruct HP as [eps HP].
   destruct (Df (pos_div_2 eps)) as [eps' Df'].
+  unfold filtermap, locally', within.
+  
+  apply locally_C.
   exists eps'.
   intros y Hy Hyz.
   apply HP.
@@ -583,11 +660,19 @@ Proof.
   apply Rmult_lt_compat_l.
   by apply eps.
   rewrite Rmult_comm Rlt_div_l.
-  rewrite /norm /minus /plus /opp /=.
+  rewrite /norm /minus /plus /opp /= /abs /=.
   apply Rminus_lt_0 ; ring_simplify.
   by apply Cmod_gt_0.
   by apply Rlt_0_2.
 Qed.
+Lemma C_derive_correct (f : C -> C) (z l : C) :
+  ex_derive f z -> is_derive f z (C_derive f z).
+Proof.
+  case => df Hf.
+  replace (C_derive f z) with df => //.
+  by apply sym_eq, is_C_derive_unique.
+Qed.
+
 
 (** * Integrals *)
 

@@ -7,38 +7,6 @@ Require Import Coquelicot.
 
 Open Local Scope C_scope.
 
-Lemma scal_R_Cmult :
-  forall (x : R) (y : C),
-  scal (V := C_R_ModuleSpace) x y = Cmult x y.
-Proof.
-intros x y.
-apply injective_projections ;
-  rewrite /scal /= /scal /= /mult /= ; ring.
-Qed.
-Lemma RtoC_plus (x y : R) :
-  RtoC (x + y) = RtoC x + RtoC y.
-Proof.
-  unfold RtoC, Cplus ; simpl.
-  by rewrite Rplus_0_r.
-Qed.
-Lemma RtoC_opp (x : R) :
-  RtoC (- x) = - RtoC x.
-Proof.
-  unfold RtoC, Copp ; simpl.
-  by rewrite Ropp_0.
-Qed.
-Lemma RtoC_minus (x y : R) :
-  RtoC (x - y) = RtoC x - RtoC y.
-Proof.
-  by rewrite /Cminus -RtoC_opp -RtoC_plus.
-Qed.
-Lemma RtoC_mult (x y : R) :
-  RtoC (x * y) = RtoC x * RtoC y.
-Proof.
-  unfold RtoC, Cmult ; simpl.
-  apply injective_projections ; simpl ; ring.
-Qed.
-
 Lemma is_linear_C_R (l : C -> C) :
   is_linear (U := C_NormedModule) (V := C_NormedModule) l ->
   is_linear (U := C_R_NormedModule) (V := C_R_NormedModule) l.
@@ -54,6 +22,26 @@ Proof.
     intros.
     rewrite -!Cmod_norm.
     apply Lf.
+Qed.
+Lemma is_linear_C_id_1 :
+  is_linear (U := C_NormedModule) (V := AbsRing_NormedModule C_AbsRing)
+  (fun y : C => y).
+Proof.
+  split => //.
+  exists 1 ; split.
+  by apply Rlt_0_1.
+  intros x ; apply Req_le.
+  rewrite Rmult_1_l ; reflexivity.
+Qed.
+Lemma is_linear_C_id_2 :
+  is_linear (U := AbsRing_NormedModule C_AbsRing) (V := C_NormedModule)
+  (fun y : C_NormedModule => y).
+Proof.
+  split => //.
+  exists 1 ; split.
+  by apply Rlt_0_1.
+  intros x ; apply Req_le.
+  rewrite Rmult_1_l ; reflexivity.
 Qed.
 
 Lemma is_linear_RtoC : is_linear RtoC.
@@ -83,33 +71,6 @@ Proof.
   by apply ball_center.
 Qed.
 
-Lemma locally_C x P :
-  locally (T := C_UniformSpace) x P <-> locally (T := AbsRing_UniformSpace C_AbsRing) x P.
-Proof.
-  split => [[e He] | [e He]].
-  - exists e => /= y Hy.
-    apply He.
-    split.
-    eapply Rle_lt_trans, Hy.
-    eapply Rle_trans, Rmax_Cmod.
-    apply Rmax_l.
-    eapply Rle_lt_trans, Hy.
-    eapply Rle_trans, Rmax_Cmod.
-    apply Rmax_r.
-  - assert (Hd : 0 < e / sqrt 2).
-    apply Rdiv_lt_0_compat.
-    by apply e.
-    apply Rlt_sqrt2_0.
-    exists (mkposreal _ Hd) => /= y [Hy1 Hy2].
-    apply He.
-    eapply Rle_lt_trans.
-    apply Cmod_2Rmax.
-    rewrite Rmult_comm ; apply Rlt_div_r.
-    apply Rlt_sqrt2_0.
-    apply Rmax_case.
-    by apply Hy1.
-    by apply Hy2.
-Qed.
 Lemma continuous_C_id_1 (x : C) :
   continuous (T := C_UniformSpace) (U := AbsRing_UniformSpace C_AbsRing) (fun y => y) x.
 Proof.
@@ -133,32 +94,44 @@ Proof.
     by apply locally_C, H, locally_C.
 Qed.
 
-Lemma is_C_derive_filterdiff f x df:
-  is_C_derive f x df
-  -> filterdiff (U := C_R_NormedModule) (V := C_R_NormedModule) f (locally x) (fun u => scal u df).
+Lemma is_derive_filterdiff_C_R (f : C -> C) (x : C) (df : C -> C) :
+  is_linear df ->
+  is_derive (V := C_NormedModule) f x (df 1)
+  -> filterdiff (U := C_R_NormedModule) (V := C_R_NormedModule) f (locally x) df.
 Proof.
-  case => Lf Hf.
-  split.
-  by apply is_linear_C_R.
-  intros y Hy.
-  apply Hf in Hy => {Hf}.
-  intros eps.
-  case: (Hy eps) => {Hy} /= delta Hy.
-  assert (Hd : 0 < delta / sqrt 2).
-    apply Rdiv_lt_0_compat.
-    by apply delta.
-    apply sqrt_lt_R0, Rlt_0_2.
-  eexists (mkposreal _ Hd) => /= z [Hz1 Hz2].
+  move => Hdf [Lf Hf].
+  split => //.
+  apply is_linear_C_R.
+  split ; apply Hdf.
+
+  intros y Hy eps.
+  apply: locally_le_locally_norm.
+  case: (fun Hy => locally_norm_le_locally _ _ (Hf y Hy eps)) => {Hf} /= delta Hf => //.
+  apply locally_C, Hy.
+  by apply locally_C, Hf.
+  exists delta => /= z Hz.
   rewrite -!Cmod_norm.
-  apply Hy.
-  apply C_NormedModule_mixin_compat1.
-  eapply Rle_lt_trans.
-  apply Cmod_2Rmax.
-  apply Rmax_case ; rewrite Rmult_comm ; apply Rlt_div_r.
-  apply sqrt_lt_R0, Rlt_0_2.
-  apply Hz1.
-  apply sqrt_lt_R0, Rlt_0_2.
-  apply Hz2.
+  rewrite -{1}(Cmult_1_r (minus (G := C_R_NormedModule) z y)).
+  rewrite linear_scal.
+  by apply Hf.
+  by apply Hdf.
+Qed.
+Lemma filterdiff_C_R_is_derive (f : C -> C) (x : C) (df : C) :
+  filterdiff (U := C_R_NormedModule) (V := C_R_NormedModule) f (locally x) (fun u => mult u df)
+  -> is_derive (V := C_NormedModule) f x df.
+Proof.
+  intros (Lf,Df).
+  split.
+  apply is_linear_scal_l.
+
+  intros y Hy eps.
+  apply: locally_le_locally_norm.
+  case: (fun Hy => locally_norm_le_locally _ _ (Df y Hy eps)) => {Df} /= delta Df => //.
+  apply locally_C, Hy.
+  by apply locally_C, Df.
+  exists delta => /= z Hz.
+  rewrite /norm /= /abs /= !Cmod_norm.
+  apply Df, Hz.
 Qed.
 
 (** * Intégrale le long d’un segment *)
@@ -270,14 +243,14 @@ Qed.
 (** ** Definition 2 *)
 
 Definition complex_segment (a b : C) (z : C) :=
-  exists (t : R), (0 <= t <= 1)%R /\ z = (1 - t) * a + t * b.
+  exists (t : R), (0 <= t <= 1)%R /\ z = scal (1 - t)%R a + scal t b.
 
 Definition is_C_RInt_segm f z1 z2 l :=
-  is_RInt (fun t => (z2 - z1) * f ((1-t)*z1+t*z2)) 0 1 l.
+  is_RInt (fun t => (z2 - z1) * f (scal (1-t)%R z1 + scal t z2)) 0 1 l.
 Definition ex_C_RInt_segm (f : C -> C) (z1 z2 : C) :=
   exists l : C, is_C_RInt_segm f z1 z2 l.
 Definition C_RInt_segm (f : C -> C) (z1 z2 : C) : C :=
-  (z2 - z1) * C_RInt (fun t => f ((1 - t) * z1 + t * z2)) 0 1.
+  (z2 - z1) * C_RInt (fun t => f (scal (1 - t)%R z1 + scal t z2)) 0 1.
 
 Lemma is_C_RInt_segm_unique (f : C -> C) (z1 z2 l : C) :
   is_C_RInt_segm f z1 z2 l -> C_RInt_segm f z1 z2 = l.
@@ -290,7 +263,11 @@ Proof.
   - rewrite Hz.
     apply ex_RInt_ext with (fun _ => f z2).
       move => x _.
-      apply f_equal ; ring.
+      apply f_equal.
+      rewrite -{1}(scal_one (V := C_R_ModuleSpace) z2).
+      replace (one (K := R_Ring)) with ((1-x)+x)%R.
+      by rewrite scal_distr_r.
+      change one with 1 ; ring.
     apply ex_RInt_const.
   - eapply ex_RInt_ext.
     2: apply (fun f => ex_C_RInt_scal f (/(z2 - z1))).
@@ -318,16 +295,16 @@ Proof.
   evar (k : C).
   replace (- l) with k.
   apply is_RInt_swap.
-  apply is_RInt_ext with (fun t : R => scal (-1)((z1 - z2) * f ((1 - (-1 * t + 1)%R) * z2 + (-1 * t + 1)%R * z1)%C)).
+  apply is_RInt_ext with (fun t : R => scal (-1) ((z1 - z2) * f (scal (1 - (-1 * t + 1)%R)%R z2 + scal (-1 * t + 1)%R z1)%C)).
     move => x _.
-    replace ((1 - (-1 * x + 1)%R) * z2 + (-1 * x + 1)%R * z1)
-      with ((1 - x) * z1 + x * z2)
-      by (apply injective_projections ; simpl ; ring).
+    replace (scal (1 - (-1 * x + 1)%R)%R z2 + scal (-1 * x + 1)%R z1)
+      with (scal (1 - x)%R z1 + scal x z2).
+      2 : apply injective_projections ; rewrite /= /scal /= /mult /= ; ring.
     rewrite scal_opp_one.
     change opp with Copp.
     change eq with (@eq C).
     field.
-  apply: (is_RInt_comp_lin (fun t : R => (z1 - z2) * f ((1 - t) * z2 + t * z1)) (-1) (1) 1 0).
+  apply (is_RInt_comp_lin (fun t : R => (z1 - z2) * f (scal (1 - t)%R z2 + scal t z1)) (-1)%R (1)%R 1 0).
   ring_simplify (-1 * 1 + 1)%R (-1 * 0 + 1)%R.
   apply H.
   by [].
@@ -342,25 +319,28 @@ Lemma C_RInt_segm_swap (f : C -> C) (z1 z2 : C) :
   - C_RInt_segm f z1 z2 = C_RInt_segm f z2 z1.
 Proof.
   unfold C_RInt_segm.
-  generalize (opp_mult_l (z2 - z1) (C_RInt (fun t : R => f ((1 - t) * z1 + t * z2)) 0 1)).
+  generalize (opp_mult_l (z2 - z1) (C_RInt (fun t : R => f (scal (1 - t)%R z1 + scal t z2)) 0 1)).
   rewrite /opp /mult /=.
   move => /= ->.
   apply f_equal2.
-  apply injective_projections ; simpl ; ring.
+  apply Copp_minus_distr.
   rewrite (C_RInt_ext (fun t : R => opp
-    ((-1) * (f ((1 - (-1 * t + 1)%R) * z2 + (-1 * t + 1)%R * z1)%C)))).
+    ((-1) * (f (scal (1 - (-1 * t + 1)%R)%R z2 + scal (-1 * t + 1)%R z1)%C)))).
   rewrite C_RInt_opp.
   rewrite C_RInt_swap.
-  rewrite (C_RInt_comp_lin (fun t : R => f ((1 - t) * z2 + t * z1)) (-1) (1) 1 0) ;
+  rewrite (C_RInt_comp_lin (fun t : R => f (scal (1 - t)%R z2 + scal t z1)) (-1) (1) 1 0) ;
   apply f_equal2 ; ring.
   intros x _ ; simpl.
   apply injective_projections ; simpl ; ring_simplify ;
   apply f_equal ; apply f_equal ;
-  apply injective_projections ; simpl ; ring.
+  apply injective_projections ; rewrite /= /scal /= /mult /= ; ring.
 Qed.
 
+Definition complex_line (z1 z2 : C) (z : C) :=
+  exists p : R, z = scal (1-p)%R z1 + scal p z2.
+
 Lemma is_C_RInt_segm_Chasles (f : C -> C) (z1 z2 z3 : C) l1 l2 :
-  (exists p : R, z2 = ((1 - p) * z1 + p * z3))
+  complex_line z1 z3 z2
   -> is_C_RInt_segm f z1 z2 l1 -> is_C_RInt_segm f z2 z3 l2
     -> is_C_RInt_segm f z1 z3 (plus l1 l2).
 Proof.
@@ -369,132 +349,61 @@ Proof.
 
   case: (Req_dec p 0) => Hp0.
   rewrite Hp0 in H1 H2 => {p Hp0}.
-  apply (is_RInt_ext _ (fun t : R => (z3 - z1) * f ((1 - t) * z1 + t * z3))) in H2.
+  apply (is_RInt_ext _ (fun t : R => (z3 - z1) * f (scal (1 - t)%R z1 + scal t z3))) in H2.
 Focus 2.
   move => x _.
-  replace ((1 - x) * ((1 - 0) * z1 + 0 * z3) + x * z3) with ((1 - x) * z1 + x * z3) by ring.
-  change eq with (@eq C).
-  ring.
+  by rewrite scal_zero_l Rminus_0_r scal_one Cplus_0_r.
   apply (is_RInt_ext _ (fun _ => zero)) in H1.
 Focus 2.
   move => x _ ; simpl.
-  change zero with (RtoC 0).
-  change eq with (@eq C).
-  ring.
+  by rewrite scal_zero_l Rminus_0_r scal_one Cplus_0_r /Cminus Cplus_opp_r Cmult_0_l.
   move: (is_RInt_plus _ _ _ _ _ _ H1 H2).
   apply is_RInt_ext.
   now move => x _ ; rewrite plus_zero_l.
 
   case: (Req_dec 1 p) => Hp1.
   rewrite -Hp1 in H1 H2 => {p Hp1 Hp0}.
-  apply (is_RInt_ext _ (fun t : R => (z3 - z1) * f ((1 - t) * z1 + t * z3))) in H1.
+  apply (is_RInt_ext _ (fun t : R => (z3 - z1) * f (scal (1 - t)%R z1 + scal t z3))) in H1.
 Focus 2.
   move => x _.
-  replace ((1 - x) * z1 + x * ((1 - 1) * z1 + 1 * z3)) with ((1 - x) * z1 + x * z3) by ring.
-  change eq with (@eq C).
-  ring.
+  by rewrite Rminus_eq_0 scal_zero_l scal_one Cplus_0_l.
   apply (is_RInt_ext _ (fun _ => zero)) in H2.
 Focus 2.
   move => x _ ; simpl.
-  change zero with (RtoC 0).
-  change eq with (@eq C).
-  ring.
+  by rewrite Rminus_eq_0 scal_zero_l scal_one Cplus_0_l /Cminus Cplus_opp_r Cmult_0_l.
   move: (is_RInt_plus _ _ _ _ _ _ H1 H2).
   apply is_RInt_ext.
   now move => x _ ; rewrite plus_zero_r.
 
-  case: (Ceq_dec z1 z3) => Hz.
-  rewrite -Hz in H1 H2 |- * => {z3 Hz}.
-  move: (is_RInt_plus _ _ _ _ _ _ H1 H2).
-    apply is_RInt_ext => x _.
-    replace ((1 - x) * z1 + x * ((1 - p) * z1 + p * z1)) with z1 by ring.
-    replace ((1 - x) * ((1 - p) * z1 + p * z1) + x * z1) with z1 by ring.
-    replace ((1 - x) * z1 + x * z1) with z1 by ring.
-    apply injective_projections ; rewrite /= /plus /= ; ring.
-
-  apply (is_C_RInt_scal _ _ _ (/((1 - p) * z1 + p * z3 - z1))) in H1.
-  apply (is_RInt_ext _ (fun t => ( (f ((1 - t) * z1 + t * ((1 - p) * z1 + p * z3)))))) in H1.
-Focus 2.
-  move => x _.
-  change eq with (@eq C).
-  field.
-  replace (((1, 0) - p) * z1 + p * z3 - z1) with (p * (z3 - z1))
-    by (apply injective_projections ; simpl ; ring).
-  apply Cmult_neq_0.
-  contradict Hp0.
-  now apply (f_equal (@fst R R)) in Hp0 ; simpl in Hp0.
-  now apply Cminus_eq_contra, sym_not_eq.
-  apply (is_RInt_ext _ (fun t => opp (scal (-1)%R (f ((1 - t) * z1 + t * ((1 - p) * z1 + p * z3)))))) in H1.
-Focus 2.
-  intros x _.
-  by rewrite scal_opp_one opp_opp.
-
-  apply (is_C_RInt_scal _ _ _ (/(z3 - ((1 - p) * z1 + p * z3)))) in H2.
-  apply (is_RInt_ext _ (fun t => f ((1 - t) * ((1 - p) * z1 + p * z3) + t * z3))) in H2.
-Focus 2.
-  move => x _.
-  change eq with (@eq C).
-  field.
-  change (1, 0)%R with (RtoC 1).
-  replace (z3 - ((1 - p) * z1 + p * z3)) with ((1-p) * (z3 - z1)) by ring.
-  apply Cmult_neq_0.
-  contradict Hp1.
-  apply (f_equal (@fst R R)) in Hp1 ; simpl in Hp1.
-  now apply Rminus_diag_uniq.
-  now apply Cminus_eq_contra, sym_not_eq.
-  apply (is_RInt_ext _ (fun t => opp (scal (-1)%R (f ((1 - t) * ((1 - p) * z1 + p * z3) + t * z3))))) in H2.
-Focus 2.
-  intros x _.
-  by rewrite scal_opp_one opp_opp.
-
-  evar (k : C).
-  replace (plus l1 l2) with k.
-  apply is_C_RInt_scal.
-
   apply is_RInt_Chasles with p.
-  replace 0%R with (/p * 0 + 0)%R in H1 by ring.
-  pattern 1%R at 4 in H1.
-  replace 1%R with (/p * p + 0)%R in H1 by (by field).
-  apply (is_RInt_comp_lin _ (/p) 0 0 p) in H1.
-  apply (is_C_RInt_scal _ _ _ p) in H1.
-  move: H1 ; apply is_RInt_ext => x Hx.
-  replace ((1 - (/ p * x + 0)%R) * z1 + (/ p * x + 0)%R * ((1 - p) * z1 + p * z3))
-    with ((1 - x) * z1 + x * z3).
-  rewrite scal_opp_one opp_opp scal_R_Cmult.
-  apply injective_projections ; simpl ; by field.
-  apply injective_projections ; simpl ; by field.
-
-  clear H1.
-  replace 0%R with ((/(1-p)) * p + -/(1-p)*p)%R in H2 by ring.
-  pattern 1%R at 6 in H2.
-  replace 1%R with ((/(1-p)) * 1 + -/(1-p)*p)%R in H2 by
-    (by field ; apply Rminus_eq_contra).
-  apply (is_RInt_comp_lin _ (/(1-p)) (-/(1-p)*p) p 1) in H2.
-  apply (is_C_RInt_scal _ _ _ (1-p)) in H2.
-  move: H2 ; apply is_RInt_ext => x Hx.
-  replace ((1 - (/ (1 - p) * x + - / (1 - p) * p)%R) * ((1 - p) * z1 + p * z3) +
-      (/ (1 - p) * x + - / (1 - p) * p)%R * z3)
-    with ((1 - x) * z1 + x * z3).
-  rewrite scal_opp_one opp_opp scal_R_Cmult.
-  now apply injective_projections ; simpl ; field ; apply Rminus_eq_contra.
-  now apply injective_projections ; simpl ; field ; apply Rminus_eq_contra.
-
-  unfold k ; change plus with Cplus.
-  field.
-  change (1, 0) with (RtoC 1).
-  split.
-  replace (z3 - ((1 - p) * z1 + p * z3)) with ((1 - p) * (z3 - z1)) by ring.
-  apply Cmult_neq_0.
-  apply Cminus_eq_contra.
-  contradict Hp1 ; by apply RtoC_inj.
-  by apply Cminus_eq_contra, sym_not_eq.
-  replace ((1 - p) * z1 + p * z3 - z1) with (p * (z3 - z1)) by ring.
-  apply Cmult_neq_0.
-  contradict Hp0 ; by apply RtoC_inj.
-  by apply Cminus_eq_contra, sym_not_eq.
+  eapply is_RInt_ext, (is_RInt_comp_lin _ (/ p) 0).
+  2: replace (/ p * 0 + 0)%R with 0 by ring.
+  2: replace (/ p * p + 0)%R with 1 by now field.
+  2: by apply H1.
+  intros x _ ; simpl.
+  rewrite !scal_R_Cmult !RtoC_minus !RtoC_plus !RtoC_mult !RtoC_inv //.
+  rewrite Cmult_assoc.
+  replace (/ p * ((1 - p) * z1 + p * z3 - z1)) with (z3 - z1).
+  2: now field ; contradict Hp0 ; injection Hp0.
+  apply f_equal, f_equal.
+  now field ; contradict Hp0 ; injection Hp0.
+  
+  apply Rminus_eq_contra in Hp1.
+  eapply is_RInt_ext, (is_RInt_comp_lin _ (/ (1 - p)) (-p / (1 - p))).
+  2: replace (/ (1 - p) * p + - p / (1 - p))%R with 0 by now field.
+  2: replace (/ (1 - p) * 1 + - p / (1 - p))%R with 1 by now field.
+  2: by apply H2.
+  intros x _ ; simpl.
+  rewrite !scal_R_Cmult !RtoC_minus !RtoC_plus !RtoC_mult !RtoC_inv //
+          !RtoC_opp !RtoC_minus.
+  rewrite Cmult_assoc.
+  replace (/ (1 - p) * (z3 - ((1 - p) * z1 + p * z3))) with (z3 - z1).
+  2: now field ; contradict Hp0 ; injection Hp0.
+  apply f_equal, f_equal.
+  now field ; contradict Hp0 ; injection Hp0.
 Qed.
 Lemma ex_C_RInt_segm_Chasles (f : C -> C) (z1 z2 z3 : C) :
-  (exists p : R, z2 = ((1 - p) * z1 + p * z3))
+  complex_line z1 z3 z2
   -> ex_C_RInt_segm f z1 z2 -> ex_C_RInt_segm f z2 z3
     -> ex_C_RInt_segm f z1 z3.
 Proof.
@@ -502,7 +411,7 @@ Proof.
   by apply is_C_RInt_segm_Chasles with z2.
 Qed.
 Lemma C_RInt_segm_Chasles (f : C -> C) (z1 z2 z3 : C) :
-  (exists p : R, z2 = ((1 - p) * z1 + p * z3))
+  complex_line z1 z3 z2
   -> ex_C_RInt_segm f z1 z2 -> ex_C_RInt_segm f z2 z3
   -> C_RInt_segm f z1 z2 + C_RInt_segm f z2 z3 = C_RInt_segm f z1 z3.
 Proof.
@@ -624,7 +533,7 @@ Lemma is_C_RInt_segm_norm (f : C -> C) (z1 z2 : C) lf (m : R) :
 Proof.
   intros Cf Hm.
   rewrite 2!Cmod_norm.
-  apply: (norm_RInt_le (fun t => (z2 - z1) * f ((1 - t) * z1 + t * z2)) (fun _ => Rmult (Cmod (z2 - z1)) m) 0 1).
+  apply: (norm_RInt_le (fun t => (z2 - z1) * f (scal (1 - t)%R z1 + scal t z2)) (fun _ => Rmult (Cmod (z2 - z1)) m) 0 1).
   by apply Rle_0_1.
   intros x Hx.
   rewrite <- Cmod_norm.
@@ -634,9 +543,8 @@ Proof.
   apply Hm.
   now exists x ; split.
   by apply Cf.
-  replace (m * _)%R
-    with (scal (1 - 0)%R (Cmod (z2 - z1)%C * m)%R).
-  apply: is_RInt_const.
+  evar_last.
+  apply is_RInt_const.
   rewrite -Cmod_norm -Cmod_opp Copp_minus_distr ; simpl.
   rewrite /scal /= /mult /=.
   ring.
@@ -655,7 +563,7 @@ Qed.
 (** ** Proposition 5 *)
 
 Lemma is_C_RInt_derive (f df : R -> C) (a b : R) :
-  (forall x : R, Rmin a b <= x <= Rmax a b -> filterdiff f (locally x) (fun y => scal y (df x))) ->
+  (forall x : R, Rmin a b <= x <= Rmax a b -> is_derive f x (df x)) ->
   (forall x : R, Rmin a b <= x <= Rmax a b -> continuous (U := C_R_NormedModule) df x) ->
     is_RInt df a b (f b - f a).
 Proof.
@@ -692,59 +600,57 @@ Qed.
 Lemma continuous_C_segm (f : C -> C) (z1 z2 : C) :
   (forall z : C, complex_segment z1 z2 z -> continuous f z) ->
   (forall z : R, 0 <= z <= 1 ->
-    continuous (fun t : R => (z2 - z1) * f ((1 - t) * z1 + t * z2)) z).
+    continuous (fun t : R => (z2 - z1) * f (scal (1 - t)%R z1 + scal t z2)) z).
 Proof.
   intros Cf z Hz.
-  apply (continuous_comp RtoC ((fun t : C => (z2 - z1) * f ((1 - t) * z1 + t * z2)))).
-  apply continuous_RtoC.
   apply @continuous_scal.
   apply continuous_const.
   apply continuous_comp.
   apply @continuous_plus.
-  apply @continuous_scal.
-  apply (continuous_comp (V := C_NormedModule) (W := AbsRing_UniformSpace C_AbsRing) (fun x => 1 - x) (fun x => x)), continuous_C_id_1.
+  apply (continuous_scal_l (K := R_AbsRing) (V := C_R_NormedModule)).
   apply @continuous_minus.
   apply continuous_const.
   apply continuous_id.
-  apply continuous_const.
-  apply @continuous_scal.
-  apply continuous_C_id_1.
-  apply continuous_const.
+  apply (continuous_scal_l (K := R_AbsRing) (V := C_R_NormedModule)).
+  apply continuous_id.
   apply Cf.
   by exists z.
 Qed.
 
 Lemma is_C_RInt_segm_derive (f g : C -> C) (z1 z2 : C) :
-  (forall z, complex_segment z1 z2 z -> is_C_derive g z (f z))
+  (forall z, complex_segment z1 z2 z -> is_derive g z (f z))
   -> (forall z, complex_segment z1 z2 z -> continuous f z)
   -> is_C_RInt_segm f z1 z2 (g z2 - g z1).
 Proof.
   intros Dg Cf.
   unfold is_C_RInt_segm.
   evar_last.
-  apply (is_C_RInt_derive (fun t : R => g ((1 - t) * z1 + t * z2))
-                          (fun t => (z2 - z1) * f ((1 - t) * z1 + t * z2))).
+  apply (is_C_RInt_derive (fun t : R => g (scal (1 - t)%R z1 + scal t z2))
+                          (fun t => (z2 - z1) * f (scal (1 - t)%R z1 + scal t z2))).
     rewrite /Rmin /Rmax ; case: Rle_dec Rle_0_1 => // _ _.
     intros.
     eapply filterdiff_ext_lin.
-    apply (filterdiff_comp' (U := R_NormedModule) (V := C_R_NormedModule) (fun t : R => ((1 - t) * z1 + t * z2)%C) g).
+    apply (filterdiff_comp' (U := R_NormedModule) (V := C_R_NormedModule)
+      (fun t : R => (scal (1 - t)%R z1 + scal t z2)%C) g).
     apply @filterdiff_plus_fct.
     apply locally_filter.
-    eapply filterdiff_ext.
-    2: apply (filterdiff_scal_l_fct (K := R_AbsRing) (U := R_NormedModule) (V := C_R_NormedModule)
+    apply (filterdiff_scal_l_fct (U := R_NormedModule) (V := C_R_NormedModule)
       z1 (fun u : R => (1 - u)%R)).
-    simpl ; intros.
-    by rewrite scal_R_Cmult RtoC_minus.
     apply @filterdiff_minus_fct.
     by apply locally_filter.
     apply filterdiff_const.
     apply filterdiff_id.
     apply filterdiff_linear.
-    move: (is_linear_scal_l (K := R_AbsRing) (V := C_R_NormedModule) z2) => //=.
-    apply is_linear_ext.
-    intros ; apply scal_R_Cmult.
-    apply is_C_derive_filterdiff, Dg.
-    exists x ; by split.
+    move: (is_linear_scal_l (V := C_R_NormedModule) z2) => //=.
+    apply is_derive_filterdiff_C_R.
+    instantiate (1 := (fun y => y * f (scal (1 - x)%R z1 + scal x z2))).
+    apply (is_linear_comp (U := C_NormedModule) (V := AbsRing_NormedModule C_AbsRing) (fun y => y)).
+    apply is_linear_C_id_1.
+    apply @is_linear_scal_l.
+    simpl ; rewrite Cmult_1_l.
+    apply Dg.
+    by exists x.
+  simpl.
   rewrite /= /scal /= /mult /= /prod_scal.
   change scal with Rmult.
   change plus with Cplus.
@@ -754,32 +660,30 @@ Proof.
   
   rewrite /Rmin /Rmax ; case: Rle_dec Rle_0_1 => // _ _.
   by apply continuous_C_segm.
-
-  ring_simplify ((1 - 1) * z1 + 1 * z2).
-  ring_simplify ((1 - 0) * z1 + 0 * z2).
-  reflexivity.
+  
+  rewrite Rminus_eq_0 Rminus_0_r !scal_one !scal_zero_l.
+  by rewrite Cplus_0_l Cplus_0_r.
 Qed.
 
 (** ** Corollaire 6 *)
 
 Lemma C_RInt_segm_derive (f : C -> C) (z1 z2 : C) :
-  (forall z, complex_segment z1 z2 z -> ex_C_derive f z)
+  (forall z, complex_segment z1 z2 z -> ex_derive f z)
   -> (forall z, complex_segment z1 z2 z -> continuous (C_derive f) z)
   -> C_RInt_segm (C_derive f) z1 z2 = f z2 - f z1.
 Proof.
   intros.
   apply is_C_RInt_segm_unique, is_C_RInt_segm_derive => //.
   intros z Hz.
-  case: (H z Hz) => [df Hdf].
-  by rewrite (C_derive_unique _ _ _ Hdf).
+  by apply C_derive_correct, H.
 Qed.
 
 (** ** Corolaire 7 *)
 
 Lemma is_C_RInt_segm_triangle (f g : C -> C) (z1 z2 z3 : C) :
-  (forall z, complex_segment z1 z2 z -> is_C_derive g z (f z))
-  -> (forall z, complex_segment z2 z3 z -> is_C_derive g z (f z))
-  -> (forall z, complex_segment z3 z1 z -> is_C_derive g z (f z))
+  (forall z, complex_segment z1 z2 z -> is_derive g z (f z))
+  -> (forall z, complex_segment z2 z3 z -> is_derive g z (f z))
+  -> (forall z, complex_segment z3 z1 z -> is_derive g z (f z))
   -> (forall z, complex_segment z1 z2 z -> continuous f z)
   -> (forall z, complex_segment z2 z3 z -> continuous f z)
   -> (forall z, complex_segment z3 z1 z -> continuous f z)
@@ -823,7 +727,8 @@ Proof.
   apply (norm_compat1 (V := C_NormedModule)).
   change minus with Cminus ;
   change norm with Cmod.
-  replace ((1 - x) * z0 + x * z - z0) with (x * (z - z0)) by ring.
+  replace (scal (1 - x)%R z0 + scal x z - z0) with (x * (z - z0)).
+  2: rewrite !scal_R_Cmult RtoC_minus /= ; by ring_simplify.
   rewrite Cmod_mult.
   eapply Rle_lt_trans.
   apply Rmult_le_compat_r.
@@ -844,7 +749,7 @@ Proof.
   split.
   apply Rle_minus_r ; ring_simplify ; apply Hz.
   apply Rminus_le_0 ; ring_simplify ; apply Hz.
-  rewrite RtoC_minus ; ring.
+  rewrite !scal_R_Cmult !RtoC_minus ; ring.
 Qed.
 
 Lemma ex_antiderive_segm (U : C -> Prop) (z0 : C) (f : C -> C) :
@@ -853,7 +758,7 @@ Lemma ex_antiderive_segm (U : C -> Prop) (z0 : C) (f : C -> C) :
   -> (forall z1 z2 : C, U z1 -> U z2 ->
          (forall z, complex_segment z1 z2 z -> U z)
          -> C_RInt_segm f z0 z1 + C_RInt_segm f z1 z2 + C_RInt_segm f z2 z0 = 0)
-  -> exists (g : C -> C), forall z, U z -> is_derive g z (f z).
+  -> forall z, U z -> is_derive (C_RInt_segm f z0) z (f z).
 Proof.
   intros oU sU Cf Hf.
 
@@ -866,10 +771,9 @@ Proof.
     apply continuous_continuous_on with U => //.
     by apply oU, Hy.
 
-  exists (C_RInt_segm f z0).
   intros z Hz.
   split.
-  by apply is_linear_scal_l.
+  by apply @is_linear_scal_l.
   simpl => x Hx eps.
   change norm with Cmod ;
   change minus with Cminus.
@@ -927,7 +831,8 @@ Proof.
   split.
   rewrite /ball /= /AbsRing_ball.
   change minus with Rminus ; change abs with Rabs.
-  replace ((1 + - x) * fst z - (0 + - 0) * snd z + (x * fst y - 0 * snd y) - fst z)%R
+  change scal with Rmult ;
+  replace ((1 - x) * fst z + x * fst y - fst z)%R
     with (x * (fst y - fst z))%R by ring.
   rewrite Rabs_mult.
   eapply Rle_lt_trans, (proj1 Hy).
@@ -937,7 +842,8 @@ Proof.
   rewrite Rabs_pos_eq ; apply Hx.
   rewrite /ball /= /AbsRing_ball.
   change minus with Rminus ; change abs with Rabs.
-  replace ((1 + - x) * snd z + (0 + - 0) * fst z + (x * snd y + 0 * fst y) - snd z)%R
+  change scal with Rmult ;
+  replace ((1 - x) * snd z + x * snd y - snd z)%R
     with (x * (snd y - snd z))%R by ring.
   rewrite Rabs_mult.
   eapply Rle_lt_trans, (proj2 Hy).
@@ -972,10 +878,16 @@ Proof.
 Qed.
 Lemma complex_triangle_perimeter_turn  (a b c : C) :
   complex_triangle_perimeter a b c = complex_triangle_perimeter b c a.
-Admitted.
+Proof.
+  unfold complex_triangle_perimeter ; ring.
+Qed.
 Lemma complex_triangle_diameter_turn  (a b c : C) :
   complex_triangle_diameter a b c = complex_triangle_diameter b c a.
-Admitted.
+Proof.
+  unfold complex_triangle_diameter.
+  apply sym_eq ; rewrite Rmax_assoc.
+  apply Rmax_comm.
+Qed.
 Lemma complex_triangle_swap (a b c : C) (z : C) :
   complex_triangle a b c z -> complex_triangle a c b z.
 Proof.
@@ -985,10 +897,18 @@ Proof.
 Qed.
 Lemma complex_triangle_perimeter_swap  (a b c : C) :
   complex_triangle_perimeter a b c = complex_triangle_perimeter a c b.
-Admitted.
+Proof.
+  unfold complex_triangle_perimeter.
+  rewrite -3!(Cmod_opp (_-_)) !Copp_minus_distr ; ring.
+Qed.
 Lemma complex_triangle_diameter_swap  (a b c : C) :
   complex_triangle_diameter a b c = complex_triangle_diameter a c b.
-Admitted.
+Proof.
+  unfold complex_triangle_diameter.
+  rewrite -3!(Cmod_opp (_-_)) !Copp_minus_distr.
+  rewrite Rmax_comm -Rmax_assoc.
+  apply f_equal, Rmax_comm.
+Qed.
 Lemma complex_segment_triangle (a b c : C) (z : C) :
   complex_segment b c z -> complex_triangle a b c z.
 Proof.
@@ -998,7 +918,7 @@ Proof.
   by apply Rle_refl.
   apply -> Rminus_le_0 ; apply Hp.
   by apply Hp.
-  rewrite RtoC_minus ; ring.
+  rewrite !scal_R_Cmult RtoC_minus ; ring.
 Qed.
 
 Lemma complex_triangle_diameter_ball (a b c z0 : C) (eps : R) :
@@ -1022,21 +942,12 @@ Proof.
     by apply complex_triangle_turn, complex_triangle_swap.
     rewrite -!(Cmod_opp (_-_)) !Copp_minus_distr.
     by apply Rlt_le.
-  rewrite (Rmax_left _ _ H) {H}.
+  rewrite (Rmax_left _ _ H).
+  
 Admitted.
 
 (** ** Theorem 12 *)
 
-Lemma RtoC_inv (x : R) : (x <> 0)%R -> RtoC (/ x) = / RtoC x.
-Proof.
-  intros Hx.
-  by apply injective_projections ; simpl ; field.
-Qed.
-Lemma RtoC_div (x y : R) : (y <> 0)%R -> RtoC (x / y) = RtoC x / RtoC y.
-Proof.
-  intros Hy.
-  by apply injective_projections ; simpl ; field.
-Qed.
 Lemma complex_segment_Chasles (z1 z2 z3 : C) :
   complex_segment z1 z3 z2 ->
   forall (z : C), complex_segment z1 z2 z -> complex_segment z1 z3 z.
@@ -1046,19 +957,21 @@ Proof.
   apply Rmult_le_pos, Hp2 ; apply Hp.
   rewrite -(Rmult_1_r 1).
   apply Rmult_le_compat ; intuition.
-  rewrite RtoC_mult ; ring.
+  rewrite !scal_R_Cmult !RtoC_minus RtoC_mult ; ring.
 Qed.
 
 Lemma th12 (U : C -> Prop) (z1 z2 z3 : C) (f df : C -> C) :
   open U ->
   (forall z, complex_triangle z1 z2 z3 z -> U z) ->
-  (forall z, U z -> is_C_derive f z (df z)) ->
+  (forall z, U z -> is_derive f z (df z)) ->
   C_RInt_segm f z1 z2 + C_RInt_segm f z2 z3 + C_RInt_segm f z3 z1 = 0.
 Proof.
   intros oU tU Df.
   assert (If : forall a b, (forall z, complex_segment a b z -> U z) -> ex_C_RInt_segm f a b).
     intros a b Hab.
     apply ex_C_RInt_segm_continuous => z Hz.
+    eapply (continuous_comp (U := C_UniformSpace) (V := AbsRing_NormedModule C_AbsRing) (fun x => x) f).
+    apply continuous_C_id_1.
     apply @filterdiff_continuous.
     eexists ; apply Df.
     by apply Hab.
@@ -1089,7 +1002,7 @@ Proof.
       rewrite -(Rmult_1_l (/2)) ; apply Rle_div_l.
       by apply Rlt_0_2.
       apply Rminus_le_0 ; ring_simplify ; apply Rle_0_1.
-      rewrite RtoC_inv.
+      rewrite !scal_R_Cmult RtoC_minus RtoC_inv.
       2: by apply Rgt_not_eq, Rlt_0_2.
       rewrite (RtoC_plus 1 1) ; field.
       rewrite Rplus_0_l => H ; injection H.
@@ -1101,7 +1014,7 @@ Proof.
       rewrite -(Rmult_1_l (/2)) ; apply Rle_div_l.
       by apply Rlt_0_2.
       apply Rminus_le_0 ; ring_simplify ; apply Rle_0_1.
-      rewrite RtoC_inv.
+      rewrite !scal_R_Cmult RtoC_minus RtoC_inv.
       2: by apply Rgt_not_eq, Rlt_0_2.
       rewrite (RtoC_plus 1 1) ; field.
       rewrite Rplus_0_l => H ; injection H.
@@ -1113,7 +1026,7 @@ Proof.
       rewrite -(Rmult_1_l (/2)) ; apply Rle_div_l.
       by apply Rlt_0_2.
       apply Rminus_le_0 ; ring_simplify ; apply Rle_0_1.
-      rewrite RtoC_inv.
+      rewrite !scal_R_Cmult RtoC_minus RtoC_inv.
       2: by apply Rgt_not_eq, Rlt_0_2.
       rewrite (RtoC_plus 1 1) ; field.
       rewrite Rplus_0_l => H ; injection H.
@@ -1455,21 +1368,23 @@ Proof.
     clear -Df If => z1 z2 z3 tU.
     rewrite /I /g.
     admit. (* Corolaire 7 *)
-  assert (Dg : forall z, U z -> is_C_derive g z (df z - df z0)).
+  assert (Dg : forall z, U z -> is_derive g z (df z - df z0)).
     intros z Hz.
-    unfold is_C_derive.
-    eapply filterdiff_ext_lin.
-    apply @filterdiff_minus_fct.
-    by apply locally_filter.
-    apply @filterdiff_minus_fct.
-    by apply locally_filter.
+    unfold g.
+    evar_last.
+    apply @is_derive_minus.
+    apply @is_derive_minus.
     by apply Df.
-    by apply filterdiff_const.
-    apply @filterdiff_scal_l_fct.
-    by apply locally_filter.
-    apply @filterdiff_minus_fct.
-    by apply locally_filter.
-    apply filterdiff_linear.
+    apply is_derive_const.
+    apply @is_derive_scal_l.
+    apply @is_derive_minus.
+    apply is_derive_id.
+    apply is_derive_const.
+    change minus with Cminus ;
+    change zero with (RtoC 0) ;
+    change scal with Cmult ;
+    change one with (RtoC 1).
+    ring.
 Admitted.
 
 

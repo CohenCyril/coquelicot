@@ -1120,7 +1120,7 @@ Section Derive.
 Context {K : AbsRing} {V : NormedModule K}.
 
 Definition is_derive (f : K -> V) (x : K) (l : V) :=
-  filterdiff f (locally x) (fun y => scal y l).
+  filterdiff f (locally x) (fun y : K => scal y l).
 
 Definition ex_derive (f : K -> V) (x : K) :=
   exists l : V, is_derive f x l.
