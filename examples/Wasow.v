@@ -862,7 +862,8 @@ Qed.
 (** ** Definition 11 *)
 
 Definition complex_triangle (a b c : C) (z : C) :=
-  exists (a' b' c' : R), 0 <= a' /\ 0 <= b' /\ 0 <= c' /\ z = a' * a + b' * b + c' * c.
+  exists (a' b' c' : R), 0 <= a' /\ 0 <= b' /\ 0 <= c' /\ (a' + b' + c' = 1)%R
+                      /\ z = scal a' a + scal b' b + scal c' c.
 
 Definition complex_triangle_perimeter (a b c : C) : R :=
   (Cmod (a - c)%C + Cmod (b - a)%C + Cmod (c - b)%C)%R.
@@ -872,9 +873,12 @@ Definition complex_triangle_diameter (a b c : C) : R :=
 Lemma complex_triangle_turn (a b c : C) (z : C) :
   complex_triangle a b c z -> complex_triangle b c a z.
 Proof.
-  intros (a',(b',(c',(Ha,(Hb,(Hc,->)))))).
+  intros (a',(b',(c',(Ha,(Hb,(Hc,(Habs,->))))))).
   exists b', c', a'.
-  repeat split => // ; ring.
+  replace (b' + c' + a')%R with (a' + b' + c')%R by ring.
+  repeat split => //.
+  rewrite Cplus_comm Cplus_assoc.
+  by rewrite Cplus_comm Cplus_assoc.
 Qed.
 Lemma complex_triangle_perimeter_turn  (a b c : C) :
   complex_triangle_perimeter a b c = complex_triangle_perimeter b c a.
@@ -891,9 +895,11 @@ Qed.
 Lemma complex_triangle_swap (a b c : C) (z : C) :
   complex_triangle a b c z -> complex_triangle a c b z.
 Proof.
-  intros (a',(b',(c',(Ha,(Hb,(Hc,->)))))).
+  intros (a',(b',(c',(Ha,(Hb,(Hc,(Habc,->))))))).
   exists a', c', b'.
-  repeat split => // ; ring.
+  replace (a' + c' + b')%R with (a' + b' + c')%R by ring.
+  repeat split => //.
+  rewrite -!Cplus_assoc ; apply f_equal, Cplus_comm.
 Qed.
 Lemma complex_triangle_perimeter_swap  (a b c : C) :
   complex_triangle_perimeter a b c = complex_triangle_perimeter a c b.
@@ -918,7 +924,340 @@ Proof.
   by apply Rle_refl.
   apply -> Rminus_le_0 ; apply Hp.
   by apply Hp.
-  rewrite !scal_R_Cmult RtoC_minus ; ring.
+  ring.
+  rewrite !scal_R_Cmult !RtoC_minus.
+  by ring_simplify.
+Qed.
+
+Lemma complex_triangle_diameter_segment (a b c : C) :
+  forall z, complex_segment b c z
+    -> Cmod (z - a) <= complex_triangle_diameter a b c.
+Proof.
+  intros _ (p,(Hp,->)).
+  rewrite !scal_R_Cmult RtoC_minus.
+  replace ((1 - p) * b + p * c - a)
+    with ((1 - p) * (b - a) + p * (c - a))
+    by ring.
+  eapply Rle_trans.
+  apply Cmod_triangle.
+  rewrite !Cmod_mult -RtoC_minus !Cmod_R.
+  eapply Rle_trans.
+  apply Rplus_le_compat ; apply Rmult_le_compat_l ;
+  try apply Rabs_pos.
+  apply (Rmax_l _ (Cmod (c - a))).
+  apply (Rmax_r (Cmod (b - a))).
+  rewrite -Rmult_plus_distr_r.
+  rewrite !Rabs_pos_eq.
+  ring_simplify ; rewrite /complex_triangle_diameter.
+  rewrite Rmax_comm -Cmod_opp Copp_minus_distr Rmax_assoc.
+  by apply Rmax_l.
+  apply Hp.
+  apply -> Rminus_le_0 ; apply Hp.
+Qed.
+Lemma complex_triangle_diameter_corner (a b c : C) :
+  forall z, complex_triangle a b c z
+    -> Cmod (z - a) <= complex_triangle_diameter a b c.
+Proof.
+  intros _ [x [y [z [Hx [ Hy [ Hz [H ->]]]]]]].
+  rewrite !scal_R_Cmult.
+  case: (Req_dec y 1) => Hb.
+(* z = b *)
+  rewrite Hb {y Hb Hy} in H |- *.
+  assert (x = 0).
+    apply Rle_antisym => //.
+    apply Rplus_le_reg_r with (1 + z)%R.
+    rewrite -Rplus_assoc H.
+    by apply Rminus_le_0 ; ring_simplify.
+  rewrite H0 {x H0 Hx} in H |- *.
+  assert (z = 0).
+    replace z with ((0 + 1 + z)%R - 1)%R by ring.
+    rewrite H ; ring.
+  rewrite H0 !Cmult_0_l Cmult_1_l Cplus_0_l Cplus_0_r.
+  eapply Rle_trans, Rmax_r.
+  by apply Rmax_l.
+(* z <> b *)
+  assert (x + z <> 0)%R.
+    contradict Hb.
+    replace y with ((x + y + z) - (x + z))%R by ring.
+    by rewrite Hb Rminus_0_r H.
+  eapply Rle_trans.
+  apply (complex_triangle_diameter_segment a b (scal (x / (x + z))%R a + scal (z / (x + z))%R c)).
+  exists (x + z)%R ; split.
+  split.
+  by apply Rplus_le_le_0_compat.
+  by rewrite -H ; apply Rminus_le_0 ; ring_simplify.
+  rewrite -H !scal_R_Cmult RtoC_minus !RtoC_div // !RtoC_plus.
+  field ; contradict H0 ; by injection H0.
+  rewrite /complex_triangle_diameter.
+  apply Rmax_le_compat.
+  rewrite !scal_R_Cmult !RtoC_div // !RtoC_plus.
+  replace (a - (x / (x + z) * a + z / (x + z) * c))
+    with (z / (x + z) * (a - c)).
+    2: field ; contradict H0 ; by injection H0.
+  rewrite Cmod_mult -!RtoC_plus -RtoC_div // Cmod_R.
+  rewrite -{2}(Rmult_1_l (Cmod _)) ;
+  apply Rmult_le_compat_r.
+  by apply Cmod_ge_0.
+  rewrite Rabs_div // !Rabs_pos_eq //.
+  2: by apply Rplus_le_le_0_compat.
+  apply -> Rdiv_le_1.
+  apply Rminus_le_0 ; by ring_simplify.
+  assert (0 <= x + z) by now apply Rplus_le_le_0_compat.
+  by apply sym_not_eq in H0 ; case: H1 => H1.
+  apply Rmax_case.
+  by apply Rmax_l.
+  rewrite !scal_R_Cmult !RtoC_div // !RtoC_plus.
+  replace (x / (x + z) * a + z / (x + z) * c - b)
+    with (x / (x + z) * (a - b) + z / (x + z) * (c - b)).
+    2: field ; contradict H0 ; by injection H0.
+  eapply Rle_trans.
+  eapply Rle_trans, Rplus_le_compat.
+  apply Cmod_triangle.
+  rewrite Cmod_mult -!RtoC_plus -RtoC_div // Cmod_R.
+  apply Rmult_le_compat_l.
+  by apply Rabs_pos.
+  rewrite -Cmod_opp Copp_minus_distr.
+  apply (Rmax_l _ (Cmod (c - b))).
+  rewrite Cmod_mult -!RtoC_plus -RtoC_div // Cmod_R.
+  apply Rmult_le_compat_l.
+  by apply Rabs_pos.
+  apply (Rmax_r (Cmod (b - a))).
+  rewrite -Rmult_plus_distr_r.
+  rewrite !Rabs_pos_eq.
+  replace (x / (x + z) + z / (x + z))%R with 1 by now field.
+  rewrite Rmult_1_l ; apply Rle_refl.
+  apply Rdiv_le_0_compat => //.
+  assert (0 <= x + z) by now apply Rplus_le_le_0_compat.
+  by apply sym_not_eq in H0 ; case: H1 => H1.
+  apply Rdiv_le_0_compat => //.
+  assert (0 <= x + z) by now apply Rplus_le_le_0_compat.
+  by apply sym_not_eq in H0 ; case: H1 => H1.
+Qed.
+
+Lemma complex_triangle_diameter_le (a b c z0 z : C) :
+  complex_triangle a b c z0 ->
+  complex_triangle a b c z
+    -> Cmod (z - z0) <= complex_triangle_diameter a b c.
+Proof.
+  case => {z0} x0 [y0 [z0 [Hx0 [ Hy0 [ Hz0 [H0 ->]]]]]].
+  case => {z} x' [y' [z' [Hx' [ Hy' [ Hz' [H' ->]]]]]].
+  case: (Req_dec x0 1) => Ha0.
+(* z0 = a *)
+    replace (scal x0 a + scal y0 b + scal z0 c) with a.
+    apply (complex_triangle_diameter_corner a b c).
+    by exists x', y', z'.
+    rewrite Ha0 scal_one Rplus_assoc -{2}(Rplus_0_r 1) {x0 Ha0 Hx0} in H0 |- *.
+    apply Rplus_eq_reg_l in H0.
+    replace y0 with 0.
+    replace z0 with 0.
+    rewrite !scal_zero_l.
+    change zero with (RtoC 0).
+    by rewrite !Cplus_0_r.
+    eapply sym_eq, Rplus_eq_0_l => //.
+    2: erewrite Rplus_comm ; apply H0.
+    by [].
+    eapply sym_eq, Rplus_eq_0_l => //.
+    2: apply H0.
+    by [].
+  rewrite !scal_R_Cmult.
+(* z0 est plus loin de a que z *)
+  wlog: x' y' z' x0 y0 z0 Hx' Hy' Hz' H' Hx0 Hy0 Hz0 H0 Ha0 / (x0 <= x') => [Hw | Ha].
+    case: (Rle_lt_dec x0 x') => Ha.
+    by apply Hw.
+    rewrite -Cmod_opp Copp_minus_distr.
+    apply Hw => //.
+    eapply Rlt_not_eq, Rlt_le_trans.
+    by apply Ha.
+    rewrite -H0 Rminus_le_0 ; ring_simplify.
+    by apply Rplus_le_le_0_compat.
+    by apply Rlt_le.
+    assert (y0 + z0 <> 0)%R.
+      contradict Ha0.
+      rewrite -H0 Rplus_assoc Ha0 ; ring.
+    assert (0 < y0 + z0).
+       assert (0 <= y0 + z0) by now apply Rplus_le_le_0_compat.
+       case: H1 => // H1.
+       by apply sym_eq in H1.
+    assert (y' + z' <= y0 + z0).
+      replace (y' + z')%R with (1 - x')%R by (rewrite -H' ; ring).
+      replace (y0 + z0)%R with (1 - x0)%R by (rewrite -H0 ; ring).
+      apply Rplus_le_compat_l.
+      by apply Ropp_le_contravar.
+(* z0 \in [b;c] *)
+  wlog: b c x0 y0 z0 x' y' z' Hx0 Hy0 Hz0 Hx' Hy' Hz' H' H0 Ha Ha0 H2 H H1 / (x0 = 0) => [Hw | {Hx0 Ha} Hx0].
+    set (b' := scal x0 a + scal (y0 + z0)%R b).
+    set (c' := scal x0 a + scal (y0 + z0)%R c).
+    eapply Rle_trans.
+    eapply Rle_trans, (Hw b' c' 0 (y0 / (y0 + z0))%R (z0 / (y0 + z0))%R
+                                (x' - x0 * (y' + z') / (y0 + z0))%R (y' / (y0 + z0))%R (z' / (y0 + z0))%R) => //.
+    apply Req_le ; apply f_equal.
+    rewrite /b' /c' !scal_R_Cmult RtoC_minus !RtoC_div // RtoC_mult !RtoC_plus.
+    field.
+    by contradict H ; injection H.
+
+    by apply Rle_refl.
+    apply Rdiv_le_0_compat => //.
+    apply Rdiv_le_0_compat => //.
+    rewrite -Rminus_le_0 -(Rmult_1_r x') /Rdiv Rmult_assoc.
+    apply Rmult_le_compat => //.
+    apply Rdiv_le_0_compat => //.
+    by apply Rplus_le_le_0_compat.
+    apply -> Rdiv_le_1 => //.
+    apply Rdiv_le_0_compat => //.
+    apply Rdiv_le_0_compat => //.
+    replace x0 with (1 - (y0 + z0))%R by (rewrite -H0 ; ring).
+    replace x' with (1 - (y' + z'))%R by (rewrite -H' ; ring).
+    now field.
+    now field.
+    rewrite -Rminus_le_0 -(Rmult_1_r x') /Rdiv Rmult_assoc.
+    apply Rmult_le_compat => //.
+    apply Rdiv_le_0_compat => //.
+    by apply Rplus_le_le_0_compat.
+    apply -> Rdiv_le_1 => //.
+    by apply Rlt_not_eq, Rlt_0_1.
+    rewrite /Rdiv -!Rmult_plus_distr_r.
+    apply Rmult_le_compat_r => //.
+    by apply Rlt_le, Rinv_0_lt_compat.
+    replace (y0 / (y0 + z0) + z0 / (y0 + z0))%R with 1 by now field.
+    by apply Rgt_not_eq, Rlt_0_1.
+    replace (y0 / (y0 + z0) + z0 / (y0 + z0))%R with 1 by now field.
+    by apply Rlt_0_1.
+
+    rewrite /complex_triangle_diameter /c' /b' !scal_R_Cmult RtoC_plus.
+    replace (a - (x0 * a + (y0 + z0) * c))
+      with ((y0 + z0) * (a - c)).
+    replace (x0 * a + (y0 + z0) * b - a)
+      with ((y0 + z0) * (b - a)).
+    replace (x0 * a + (y0 + z0) * c - (x0 * a + (y0 + z0) * b))
+      with ((y0 + z0) * (c - b)) by ring.
+    rewrite !Cmod_mult -RtoC_plus  Cmod_R.
+    rewrite !RmaxRmult ; try by apply Rabs_pos.
+    rewrite -{2}(Rmult_1_l (Rmax _ _)).
+    apply Rmult_le_compat_r.
+    eapply Rle_trans, Rmax_l ; apply Cmod_ge_0.
+    rewrite Rabs_pos_eq.
+    by rewrite Rminus_le_0 -H0 ; ring_simplify.
+    by apply Rlt_le.
+    replace x0 with (1 - (y0 + z0))%R by (rewrite -H0 ; ring).
+    rewrite RtoC_minus RtoC_plus ; ring.
+    replace x0 with (1 - (y0 + z0))%R by (rewrite -H0 ; ring).
+    rewrite RtoC_minus RtoC_plus ; ring.
+  rewrite Hx0 Cmult_0_l Cplus_0_l Rplus_0_l {x0 Hx0 Ha0 H H1} in H0 |- *.
+  clear H2.
+(* z est plus proche de [a;b] que z0 *)
+  wlog: b c y' z' y0 z0 Hy' Hz' H' Hy0 Hz0 H0 / ((y' + z') * y0 <= y') => [Hw | Hab].
+    case: (Rle_lt_dec ((y' + z') * y0)%R y') => Hab.
+    by apply Hw.
+    rewrite complex_triangle_diameter_swap.
+    rewrite -Cplus_assoc !(Cplus_comm (_ * b)) Cplus_assoc.
+    apply Hw => //.
+    rewrite -H' ; ring.
+    by rewrite Rplus_comm.
+    rewrite Rplus_comm.
+    pattern z' at 2 ; replace z' with ((y' + z') - y')%R by ring.
+    replace z0 with (1 - y0)%R by (rewrite -H0 ; ring).
+    rewrite Rmult_plus_distr_l Rmult_1_r.
+    apply Rplus_le_compat_l.
+    apply Ropp_le_cancel ; rewrite Ropp_involutive.
+    eapply Rlt_le, Rlt_le_trans.
+    apply Hab.
+    apply Req_le ; ring.
+  assert (Hac : z' <= (y' + z') * z0).
+    pattern z' at 1 ; replace z' with ((y' + z') - y')%R by ring.
+    replace z0 with (1 - y0)%R by (rewrite -H0 ; ring).
+    rewrite Rmult_plus_distr_l Rmult_1_r.
+    apply Rplus_le_compat_l.
+    apply Ropp_le_cancel ; rewrite Ropp_involutive.
+    eapply Rle_trans, Hab.
+    apply Req_le ; ring.
+  case: (Req_dec y0 1) => Hb.
+(* z0 = b *)
+  replace (y0 * b + z0 * c) with b.
+    rewrite complex_triangle_diameter_turn.
+    apply complex_triangle_diameter_corner.
+    exists y', z', x' ; repeat split => //.
+    rewrite -H' ; ring.
+    rewrite !scal_R_Cmult ; ring.
+    unfold complex_triangle_diameter.
+    replace z0 with (1 - y0)%R by (rewrite -H0 ; ring).
+    rewrite RtoC_minus Hb ; ring.
+(* z0 = c *)
+  assert (Hc : (z0 <> 0)%R).
+    contradict Hb ; rewrite -H0 Hb ; ring.
+  wlog: c y0 z0 y' z' Hy0 Hz0 H0 Hy' Hz' H' Hab Hac Hb Hc / (z0 = 1) => [Hw | {Hc} Hc].
+    set (c' := (y0 * b + z0 * c)).
+    eapply Rle_trans.
+    eapply Rle_trans, (Hw c' 0 1) => //.
+    rewrite /c' Cmult_plus_distr_l Cplus_assoc !Cmult_assoc.
+    rewrite -(Cplus_assoc _ (_ * b) (_*b)) -Cmult_plus_distr_r.
+    instantiate (2 := (z' / z0)%R).
+    replace ((z' / z0)%R * z0) with (RtoC z').
+    2: rewrite RtoC_div // ; now field ; contradict Hc ; injection Hc.
+    replace ((z' / z0)%R * y0) with (z' / z0 - RtoC z').
+    2: replace y0 with (1 - z0)%R by (rewrite -H0 ; ring).
+    2: rewrite RtoC_div // RtoC_minus ; now field ; contradict Hc ; injection Hc.
+    instantiate (1 := (y' - (z' / z0 - z'))%R).
+    apply Req_le, f_equal.
+    rewrite !RtoC_minus RtoC_div // ; ring.
+
+    by apply Rle_refl.
+    by apply Rle_0_1.
+    ring.
+    rewrite -Rminus_le_0 Rle_minus_l Rle_div_l //.
+    apply sym_not_eq in Hc ; by case: Hz0.
+    apply Rdiv_le_0_compat => //.
+    apply sym_not_eq in Hc ; case: Hz0 => //.
+    rewrite -H' ; ring.
+    rewrite Rmult_0_r.
+    rewrite -Rminus_le_0 Rle_minus_l Rle_div_l //.
+    apply sym_not_eq in Hc ; by case: Hz0.
+    rewrite Rmult_1_r.
+    rewrite -Rle_minus_l Rminus_eq_0 -Rminus_le_0 Rle_minus_l Rle_div_l //.
+    apply sym_not_eq in Hc ; by case: Hz0.
+    by apply Rlt_not_eq, Rlt_0_1.
+    by apply Rgt_not_eq, Rlt_0_1.
+    
+    rewrite /complex_triangle_diameter /c'.
+    apply Rmax_case.
+    replace (a - (y0 * b + z0 * c)) with
+      (y0 * (a - b) + z0 * (a - c)).
+    2: replace y0 with (1 - z0)%R by (rewrite -H0 ; ring).
+    2: rewrite RtoC_minus ; ring.
+    eapply Rle_trans.
+    eapply Rle_trans, Rplus_le_compat.
+    apply Cmod_triangle.
+    rewrite Cmod_mult Cmod_R -Cmod_opp Copp_minus_distr.
+    apply Rmult_le_compat_l.
+    by apply Rabs_pos.
+    apply (Rmax_r (Cmod (a - c))).
+    rewrite Cmod_mult Cmod_R.
+    apply Rmult_le_compat_l.
+    by apply Rabs_pos.
+    apply (Rmax_l _ (Cmod (b - a))).
+    rewrite -Rmult_plus_distr_r.
+    rewrite !Rabs_pos_eq // H0 Rmult_1_l.
+    rewrite Rmax_assoc ; apply Rmax_l.
+    apply Rmax_case.
+    eapply Rle_trans, Rmax_r.
+    apply Rmax_l.
+    replace (y0 * b + z0 * c - b) with (z0 * (c - b)).
+    2: replace y0 with (1 - z0)%R by (rewrite -H0 ; ring).
+    2: rewrite RtoC_minus ; ring.
+    rewrite Cmod_mult Cmod_R.
+    eapply Rle_trans, Rmax_r.
+    eapply Rle_trans, Rmax_r.
+    rewrite -{2}(Rmult_1_l (Cmod _)).
+    apply Rmult_le_compat_r.
+    by apply Cmod_ge_0.
+    rewrite Rabs_pos_eq // -H0 Rminus_le_0 ; by ring_simplify.
+  replace (y0 * b + z0 * c) with c.
+  2: replace y0 with (1 - z0)%R by (rewrite -H0 ; ring).
+  2: rewrite Hc Rminus_eq_0 ; ring.
+  rewrite -complex_triangle_diameter_turn.
+  apply (complex_triangle_diameter_corner c a b).
+  exists z', x', y' ; repeat split => //.
+  rewrite -H' ; ring.
+  rewrite !scal_R_Cmult ; ring.
 Qed.
 
 Lemma complex_triangle_diameter_ball (a b c z0 : C) (eps : R) :
@@ -928,23 +1267,9 @@ Lemma complex_triangle_diameter_ball (a b c z0 : C) (eps : R) :
 Proof.
   intros Heps Hz0 z Hz.
   apply (norm_compat1 (V := C_NormedModule)).
-  eapply Rle_lt_trans, Heps.
-  change norm with Cmod ; change minus with Cminus.
-  unfold complex_triangle_diameter.
-  wlog: a c Heps Hz0 Hz / (Cmod (c - b) <= Cmod (b - a)) => [Hw | H].
-    case: (Rle_lt_dec (Cmod (c - b)) (Cmod (b - a))) => H.
-    by apply Hw.
-    rewrite (Rmax_comm (Cmod (b - a)) (Cmod (c - b))).
-    rewrite -!(Cmod_opp (_-_)) Cmod_opp !Copp_minus_distr.
-    apply Hw => //.
-    by rewrite -complex_triangle_diameter_turn complex_triangle_diameter_swap.
-    by apply complex_triangle_turn, complex_triangle_swap.
-    by apply complex_triangle_turn, complex_triangle_swap.
-    rewrite -!(Cmod_opp (_-_)) !Copp_minus_distr.
-    by apply Rlt_le.
-  rewrite (Rmax_left _ _ H).
-  
-Admitted.
+  eapply Rle_lt_trans, Heps => {Heps}.
+  by apply complex_triangle_diameter_le.
+Qed.
 
 (** ** Theorem 12 *)
 
@@ -1083,8 +1408,8 @@ Proof.
     apply complex_segment_Chasles with w3.
     by apply complex_segment_swap.
     by apply complex_segment_swap ; exists z.
-  set (L (z1 z2 z3 : C) := (Cmod (z1 - z2)%C + Cmod (z2 - z3)%C + Cmod (z3 - z1)%C)%R : R).
-  set (D z1 z2 z3 := Rmax (Cmod (z1 - z2)) (Rmax (Cmod (z2 - z3)) (Cmod (z3 - z1)))).
+  set (L (z1 z2 z3 : C) := complex_triangle_perimeter z1 z2 z3). 
+  set (D z1 z2 z3 := complex_triangle_diameter z1 z2 z3).
   
   assert (HT_n : forall z1 z2 z3 : C, (forall z : C, complex_triangle z1 z2 z3 z -> U z) ->
     {y : C * C * C | let y1 := fst (fst y) in
@@ -1097,7 +1422,7 @@ Proof.
     clear z1 z2 z3 tU => z1 z2 z3 tU.
     - case: (Rle_lt_dec (Cmod (I z1 z2 z3) / 4) (Cmod (I_aux O z1 z2 z3))) => /= H0.
       exists (z1, ((z1 + z2) / 2), ((z1 + z3) / 2)) ; simpl ; repeat split => //.
-      intros _ (a,(b,(c,(Ha,(Hb,(Hc,->)))))).
+      intros _ (a,(b,(c,(Ha,(Hb,(Hc,(Habc,->))))))).
       exists (a+b/2+c/2)%R, (b/2)%R, (c/2)%R ; repeat split.
       apply Rplus_le_le_0_compat.
       apply Rplus_le_le_0_compat => //.
@@ -1105,13 +1430,15 @@ Proof.
       apply Rdiv_le_0_compat => // ; apply Rlt_0_2.
       apply Rdiv_le_0_compat => // ; apply Rlt_0_2.
       apply Rdiv_le_0_compat => // ; apply Rlt_0_2.
+      rewrite -{9}Habc ; field.
+      rewrite !scal_R_Cmult.
       rewrite !RtoC_plus !RtoC_div ; try apply Rgt_not_eq, Rlt_0_2.
       rewrite RtoC_plus ; field.
       rewrite Rplus_0_l => H' ; injection H' ; by apply Rgt_not_eq, Rlt_0_2.
-      unfold L.
-      replace (z1 - (z1 + z2) / 2)%C with ((z1 - z2) / 2).
-      replace ((z1 + z2) / 2 - (z1 + z3) / 2)%C with ((z2 - z3) / 2).
-      replace ((z1 + z3) / 2 - z1) with ((z3 - z1) / 2).
+      unfold L, complex_triangle_perimeter.
+      replace (z1 - (z1 + z3) / 2)%C with ((z1 - z3) / 2).
+      replace ((z1 + z2) / 2 - z1)%C with ((z2 - z1) / 2).
+      replace ((z1 + z3) / 2 - (z1 + z2) / 2) with ((z3 - z2) / 2).
       rewrite !Cmod_div 1?Cmod_R 1?Rabs_pos_eq.
       field.
       by apply Rlt_le, Rlt_0_2.
@@ -1124,10 +1451,10 @@ Proof.
       move => H' ; injection H' => _ ; apply Rgt_not_eq, Rlt_0_2.
       rewrite RtoC_plus ; field.
       move => H' ; injection H' => _ ; apply Rgt_not_eq, Rlt_0_2.
-      unfold D.
-      replace (z1 - (z1 + z2) / 2)%C with ((z1 - z2) / 2).
-      replace ((z1 + z2) / 2 - (z1 + z3) / 2)%C with ((z2 - z3) / 2).
-      replace ((z1 + z3) / 2 - z1) with ((z3 - z1) / 2).
+      unfold D, complex_triangle_diameter.
+      replace (z1 - (z1 + z3) / 2)%C with ((z1 - z3) / 2).
+      replace ((z1 + z2) / 2 - z1)%C with ((z2 - z1) / 2).
+      replace ((z1 + z3) / 2 - (z1 + z2) / 2) with ((z3 - z2) / 2).
       rewrite !Cmod_div 1?Cmod_R 1?Rabs_pos_eq.
       by rewrite -!Rmax_mult ; try apply Rlt_le, Rinv_0_lt_compat, Rlt_0_2.
       by apply Rlt_le, Rlt_0_2.
@@ -1142,7 +1469,7 @@ Proof.
       move => H' ; injection H' => _ ; apply Rgt_not_eq, Rlt_0_2.
     - case: (Rle_lt_dec (Cmod (I z1 z2 z3) / 4) (Cmod (I_aux 1%nat z1 z2 z3))) => /= H1.
       exists  (((z1 + z2) / RtoC 2), z2, ((z2 + z3) / RtoC 2)) ; simpl ; repeat split => //.
-      intros _ (a,(b,(c,(Ha,(Hb,(Hc,->)))))).
+      intros _ (a,(b,(c,(Ha,(Hb,(Hc,(Habc,->))))))).
       exists (a/2)%R, (a/2 + b + c/2)%R, (c/2)%R ; repeat split.
       apply Rdiv_le_0_compat => // ; apply Rlt_0_2.
       apply Rplus_le_le_0_compat.
@@ -1150,13 +1477,14 @@ Proof.
       apply Rdiv_le_0_compat => // ; apply Rlt_0_2.
       apply Rdiv_le_0_compat => // ; apply Rlt_0_2.
       apply Rdiv_le_0_compat => // ; apply Rlt_0_2.
-      rewrite !RtoC_plus !RtoC_div ; try apply Rgt_not_eq, Rlt_0_2.
+      rewrite -{9}Habc ; field.
+      rewrite !scal_R_Cmult !RtoC_plus !RtoC_div ; try apply Rgt_not_eq, Rlt_0_2.
       rewrite RtoC_plus ; field.
       rewrite Rplus_0_l => H' ; injection H' ; by apply Rgt_not_eq, Rlt_0_2.
-      unfold L.
-      replace ((z1 + z2) / 2 - z2) with ((z1 - z2) / 2).
-      replace (z2 - (z2 + z3) / 2) with ((z2 - z3) / 2).
-      replace ((z2 + z3) / 2 - (z1 + z2) / 2) with ((z3 - z1) / 2).
+      unfold L, complex_triangle_perimeter.
+      replace ((z1 + z2) / 2 - (z2 + z3) / 2) with ((z1 - z3) / 2).
+      replace (z2 - (z1 + z2) / 2) with ((z2 - z1) / 2).
+      replace ((z2 + z3) / 2 - z2) with ((z3 - z2) / 2).
       rewrite !Cmod_div 1?Cmod_R 1?Rabs_pos_eq.
       field.
       by apply Rlt_le, Rlt_0_2.
@@ -1169,10 +1497,10 @@ Proof.
       move => H' ; injection H' => _ ; apply Rgt_not_eq, Rlt_0_2.
       rewrite RtoC_plus ; field.
       move => H' ; injection H' => _ ; apply Rgt_not_eq, Rlt_0_2.
-      unfold D.
-      replace ((z1 + z2) / 2 - z2) with ((z1 - z2) / 2).
-      replace (z2 - (z2 + z3) / 2) with ((z2 - z3) / 2).
-      replace ((z2 + z3) / 2 - (z1 + z2) / 2) with ((z3 - z1) / 2).
+      unfold D, complex_triangle_diameter.
+      replace ((z1 + z2) / 2 - (z2 + z3) / 2) with ((z1 - z3) / 2).
+      replace (z2 - (z1 + z2) / 2) with ((z2 - z1) / 2).
+      replace ((z2 + z3) / 2 - z2) with ((z3 - z2) / 2).
       rewrite !Cmod_div 1?Cmod_R 1?Rabs_pos_eq.
       by rewrite -!Rmax_mult ; try apply Rlt_le, Rinv_0_lt_compat, Rlt_0_2.
       by apply Rlt_le, Rlt_0_2.
@@ -1187,7 +1515,7 @@ Proof.
       move => H' ; injection H' => _ ; apply Rgt_not_eq, Rlt_0_2.
     - case: (Rle_lt_dec (Cmod (I z1 z2 z3) / 4) (Cmod (I_aux 2%nat z1 z2 z3))) => /= H2.
       exists (((z2 + z3) / 2), z3, ((z1 + z3) / 2))  ; simpl ; repeat split => //.
-      intros _ (a,(b,(c,(Ha,(Hb,(Hc,->)))))).
+      intros _ (a,(b,(c,(Ha,(Hb,(Hc,(Habc,->))))))).
       exists (c/2)%R, (a/2)%R, (a/2+b+c/2)%R ; repeat split.
       apply Rdiv_le_0_compat => // ; apply Rlt_0_2.
       apply Rdiv_le_0_compat => // ; apply Rlt_0_2.
@@ -1195,13 +1523,14 @@ Proof.
       apply Rplus_le_le_0_compat => //.
       apply Rdiv_le_0_compat => // ; apply Rlt_0_2.
       apply Rdiv_le_0_compat => // ; apply Rlt_0_2.
-      rewrite !RtoC_plus !RtoC_div ; try apply Rgt_not_eq, Rlt_0_2.
+      rewrite -{9}Habc ; field.
+      rewrite !scal_R_Cmult !RtoC_plus !RtoC_div ; try apply Rgt_not_eq, Rlt_0_2.
       rewrite RtoC_plus ; field.
       rewrite Rplus_0_l => H' ; injection H' ; by apply Rgt_not_eq, Rlt_0_2.
-      unfold L.
-      replace ((z2 + z3) / 2 - z3) with ((z2 - z3) / 2).
-      replace (z3 - (z1 + z3) / 2) with ((z3 - z1) / 2).
-      replace ((z1 + z3) / 2 - (z2 + z3) / 2) with ((z1 - z2) / 2).
+      unfold L, complex_triangle_perimeter.
+      replace ((z2 + z3) / 2 - (z1 + z3) / 2) with ((z2 - z1) / 2).
+      replace (z3 - (z2 + z3) / 2) with ((z3 - z2) / 2).
+      replace ((z1 + z3) / 2 - z3) with ((z1 - z3) / 2).
       rewrite !Cmod_div 1?Cmod_R 1?Rabs_pos_eq.
       field.
       by apply Rlt_le, Rlt_0_2.
@@ -1214,10 +1543,10 @@ Proof.
       move => H' ; injection H' => _ ; apply Rgt_not_eq, Rlt_0_2.
       rewrite RtoC_plus ; field.
       move => H' ; injection H' => _ ; apply Rgt_not_eq, Rlt_0_2.
-      unfold D.
-      replace ((z2 + z3) / 2 - z3) with ((z2 - z3) / 2).
-      replace (z3 - (z1 + z3) / 2) with ((z3 - z1) / 2).
-      replace ((z1 + z3) / 2 - (z2 + z3) / 2) with ((z1 - z2) / 2).
+      unfold D, complex_triangle_diameter.
+      replace ((z2 + z3) / 2 - (z1 + z3) / 2) with ((z2 - z1) / 2).
+      replace (z3 - (z2 + z3) / 2) with ((z3 - z2) / 2).
+      replace ((z1 + z3) / 2 - z3) with ((z1 - z3) / 2).
       rewrite !Cmod_div 1?Cmod_R 1?Rabs_pos_eq.
       rewrite -!Rmax_mult ; try apply Rlt_le, Rinv_0_lt_compat, Rlt_0_2.
       unfold Rdiv ; apply f_equal2 => //.
@@ -1235,7 +1564,7 @@ Proof.
       move => H' ; injection H' => _ ; apply Rgt_not_eq, Rlt_0_2.
     - case: (Rle_lt_dec (Cmod (I z1 z2 z3) / 4) (Cmod (I_aux 3%nat z1 z2 z3))) => /= H3.
       exists (((z1 + z2) / 2), ((z2 + z3) / 2), ((z1 + z3) / 2)) ; simpl ; repeat split => //.
-      intros _ (a,(b,(c,(Ha,(Hb,(Hc,->)))))).
+      intros _ (a,(b,(c,(Ha,(Hb,(Hc,(Habc,->))))))).
       exists (a / 2 + c/2)%R, (a/2 + b / 2)%R, (b/2+c/2)%R ; repeat split.
       apply Rplus_le_le_0_compat ;
       apply Rdiv_le_0_compat => // ; apply Rlt_0_2.
@@ -1243,13 +1572,14 @@ Proof.
       apply Rdiv_le_0_compat => // ; apply Rlt_0_2.
       apply Rplus_le_le_0_compat ;
       apply Rdiv_le_0_compat => // ; apply Rlt_0_2.
-      rewrite !RtoC_plus !RtoC_div ; try apply Rgt_not_eq, Rlt_0_2.
+      rewrite -{13}Habc ; field.
+      rewrite !scal_R_Cmult !RtoC_plus !RtoC_div ; try apply Rgt_not_eq, Rlt_0_2.
       rewrite RtoC_plus ; field.
       rewrite Rplus_0_l => H' ; injection H' ; by apply Rgt_not_eq, Rlt_0_2.
-      unfold L.
-      replace ((z1 + z2) / 2 - (z2 + z3) / 2) with (-((z3 - z1) / 2)).
-      replace ((z2 + z3) / 2 - (z1 + z3) / 2) with (-((z1 - z2) / 2)).
-      replace ((z1 + z3) / 2 - (z1 + z2) / 2) with (-((z2 - z3) / 2)).
+      unfold L, complex_triangle_perimeter.
+      replace ((z1 + z2) / 2 - (z1 + z3) / 2) with (-((z3 - z2) / 2)).
+      replace ((z2 + z3) / 2 - (z1 + z2) / 2) with (-((z1 - z3) / 2)).
+      replace ((z1 + z3) / 2 - (z2 + z3) / 2) with (-((z2 - z1) / 2)).
       rewrite !Cmod_opp !Cmod_div 1?Cmod_R 1?Rabs_pos_eq.
       field.
       by apply Rlt_le, Rlt_0_2.
@@ -1262,10 +1592,10 @@ Proof.
       move => H' ; injection H' => _ ; apply Rgt_not_eq, Rlt_0_2.
       rewrite RtoC_plus ; field.
       move => H' ; injection H' => _ ; apply Rgt_not_eq, Rlt_0_2.
-      unfold D.
-      replace ((z1 + z2) / 2 - (z2 + z3) / 2) with (-((z3 - z1) / 2)).
-      replace ((z2 + z3) / 2 - (z1 + z3) / 2) with (-((z1 - z2) / 2)).
-      replace ((z1 + z3) / 2 - (z1 + z2) / 2) with (-((z2 - z3) / 2)).
+      unfold D, complex_triangle_diameter.
+      replace ((z1 + z2) / 2 - (z1 + z3) / 2) with (-((z3 - z2) / 2)).
+      replace ((z2 + z3) / 2 - (z1 + z2) / 2) with (-((z1 - z3) / 2)).
+      replace ((z1 + z3) / 2 - (z2 + z3) / 2) with (-((z2 - z1) / 2)).
       rewrite !Cmod_opp !Cmod_div 1?Cmod_R 1?Rabs_pos_eq.
       rewrite -!Rmax_mult ; try apply Rlt_le, Rinv_0_lt_compat, Rlt_0_2.
       unfold Rdiv ; apply f_equal2 => //.
@@ -1362,7 +1692,7 @@ Proof.
   admit.
   
   case: H => z0 Hz0.
-  set (g z := f z - f z0 - (z - z0) * df z0).
+  set (g z := f z - (f z0 + (z - z0) * df z0)).
   assert (Hg : forall z1 z2 z3, (forall z : C, complex_triangle z1 z2 z3 z -> U z)
               -> C_RInt_segm g z1 z2 + C_RInt_segm g z2 z3 + C_RInt_segm g z3 z1 = I z1 z2 z3).
     clear -Df If => z1 z2 z3 tU.
