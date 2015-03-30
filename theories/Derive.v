@@ -2085,71 +2085,209 @@ rewrite <- (H _ Hx).
 unfold h; ring.
 Qed.
 
-(** * C1 extension *)
+(** * Extension *)
 
-Lemma extension_cont (f g : R -> R) (a : R) :
-  let h := fun x => match Rle_dec x a with
+Section ext_cont.
+
+Context {U : UniformSpace}.
+
+Definition extension_cont (f g : R -> U) (a x : R) : U :=
+  match Rle_dec x a with
     | left _ => f x
     | right _ => g x
-  end in
-  continuity_pt f a -> continuity_pt g a
+  end.
+
+Lemma extension_cont_continuous (f g : R -> U) (a : R) :
+  continuous f a -> continuous g a
   -> f a = g a
-  -> continuity_pt h a.
+  -> continuous (extension_cont f g a) a.
 Proof.
-  simpl => Cf Cg Heq e He.
-  case: (Cf e He) => {Cf} /= df [Hdf Cf].
-  case: (Cg e He) => {Cg} /= dg [Hdg Cg].
-  exists (Rmin df dg) ; split.
-  by apply Rmin_case.
-  move => x Hx.
-  case: (Rle_dec a a) (Rle_refl a) => //= _ _.
-  case: Rle_dec => Hxa.
-  apply Cf ; intuition.
-  apply Rlt_le_trans with (1 := H0), Rmin_l.
-  rewrite Heq.
-  apply Cg ; intuition.
-  apply Rlt_le_trans with (1 := H0), Rmin_r.
+  simpl => Cf Cg Heq ; apply filterlim_locally => /= eps.
+  generalize (proj1 (filterlim_locally _ _) Cf eps) => {Cf} Cf.
+  generalize (proj1 (filterlim_locally _ _) Cg eps) => {Cg} Cg.
+  generalize (filter_and _ _ Cf Cg).
+  apply filter_imp => {Cf Cg} x [Cf Cg].
+  rewrite /extension_cont.
+  case: Rle_dec (Rle_refl a) => // _ _.
+  case: Rle_dec => // H.
+  by rewrite Heq.
 Qed.
 
-Lemma extension_is_derive (f g : R -> R) (a l : R) :
-  let h := fun x => match Rle_dec x a with
-    | left _ => f x
-    | right _ => g x
-  end in
+End ext_cont.
+
+Section ext_cont'.
+
+Context {V : NormedModule R_AbsRing}.
+
+Lemma extension_cont_is_derive (f g : R -> V) (a : R) (l : V) :
   is_derive f a l -> is_derive g a l
   -> f a = g a
-  -> is_derive h a l.
+  -> is_derive (extension_cont f g a) a l.
 Proof.
-  simpl => Cf Cg Heq.
-  apply is_derive_Reals.
-  apply is_derive_Reals in Cf.
-  apply is_derive_Reals in Cg.
-  intros e He.
-  case: (Cf e He) => {Cf} /= df Cf.
-  case: (Cg e He) => {Cg} /= dg Cg.
-  have Hd : 0 < Rmin df dg.
-    case: (df) ; case: (dg) ; intros ; by apply Rmin_case.
-  exists (mkposreal _ Hd) => /= h Hh0 Hh.
-  case: (Rle_dec a a) (Rle_refl a) => //= _ _.
-  case: Rle_dec => Hxa.
-  apply Cf ; intuition.
-  apply Rlt_le_trans with (1 := Hh), Rmin_l.
-  rewrite Heq.
-  apply Cg ; intuition.
-  apply Rlt_le_trans with (1 := Hh), Rmin_r.
+  case => _ Cf [_ Cg] Heq.
+  split.
+  by apply is_linear_scal_l.
+  move => x Hx eps.
+  move: (Cf x Hx eps) => {Cf} Cf.
+  move: (Cg x Hx eps) => {Cg} Cg.
+  generalize (is_filter_lim_locally_unique _ _ Hx) => {Hx} Hx.
+  rewrite -Hx {x Hx} in Cf, Cg |- *.
+  generalize (filter_and _ _ Cf Cg).
+  apply filter_imp => {Cf Cg} x [Cf Cg].
+  rewrite /extension_cont.
+  case: Rle_dec => Hx ;
+  case: Rle_dec (Rle_refl a) => //= _ _.
+  by rewrite Heq.
 Qed.
 
-Definition extension_C1 (f : R -> R) (a b : Rbar) (x : R) : R :=
+End ext_cont'.
+
+Section ext_C0.
+
+Context {V : NormedModule R_AbsRing}.
+
+Definition extension_C0 (f : R -> V) (a b : Rbar) (x : R) : V :=
   match Rbar_le_dec a x with
     | left _ => match Rbar_le_dec x b with
         | left _ => f x
-        | right _ => f (real b) + (x - real b) * Derive f (real b)
+        | right _ => f (real b)
       end
-    | right _ => f (real a) + (x - real a) * Derive f (real a)
+    | right _ => f (real a)
   end.
 
-Lemma extension_C1_ext (f : R -> R) (a b : Rbar) :
-  forall (x : R), Rbar_le a x -> Rbar_le x b -> (extension_C1 f a b) x = f x.
+Lemma extension_C0_ext (f : R -> V) (a b : Rbar) :
+  forall (x : R), Rbar_le a x -> Rbar_le x b -> (extension_C0 f a b) x = f x.
+Proof.
+  move => x Hax Hxb.
+  rewrite /extension_C0.
+  case: Rbar_le_dec => // _.
+  case: Rbar_le_dec => // _.
+Qed.
+
+Lemma extension_C0_continuous (f : R -> V) (a b : Rbar) :
+  Rbar_le a b
+  -> (forall x : R, Rbar_le a x -> Rbar_le x b -> continuous f x)
+  -> forall x, continuous (extension_C0 f a b) x.
+Proof.
+  intros Hab Cf x.
+  
+  apply Rbar_le_lt_or_eq_dec in Hab ; case: Hab => Hab.
+  
+  case: (Rbar_lt_le_dec x a) => Hax.
+
+  eapply continuous_ext_loc.
+  apply locally_interval with m_infty a.
+  by [].
+  by [].
+  move => y _ Hay.
+  rewrite /extension_C0.
+  case: Rbar_le_dec => H.
+  contradict H ; by apply Rbar_lt_not_le.
+  reflexivity.
+  apply continuous_const.
+
+  apply Rbar_le_lt_or_eq_dec in Hax ; case: Hax => Hax.
+  
+  case: (Rbar_lt_le_dec x b) => Hbx.
+
+  eapply continuous_ext_loc.
+  apply locally_interval with a b.
+  by [].
+  by [].
+  move => y Hay Hby.
+  rewrite /extension_C0.
+  case: Rbar_le_dec => H.
+  case: Rbar_le_dec => H0.
+  reflexivity.
+  contradict H0 ; by apply Rbar_lt_le.
+  contradict H ; by apply Rbar_lt_le.
+  apply Cf ; by apply Rbar_lt_le.
+
+  apply Rbar_le_lt_or_eq_dec in Hbx ; case: Hbx => Hbx.
+  
+  eapply continuous_ext_loc.
+  apply locally_interval with b p_infty.
+  by [].
+  by [].
+  move => y Hby _.
+  rewrite /extension_C0.
+  case: Rbar_le_dec => H.
+  case: Rbar_le_dec => H0.
+  contradict H0 ; by apply Rbar_lt_not_le.
+  reflexivity.
+  contradict H ; eapply Rbar_le_trans, Rbar_lt_le, Hby.
+  by apply Rbar_lt_le.
+  apply continuous_const.
+  
+  destruct b as [b | | ] => //.
+  injection Hbx => {Hbx} Hbx.
+  rewrite -Hbx {x Hbx} in Hax |- *.
+  apply continuous_ext_loc with (extension_cont f (fun _ => f (real b)) b).
+  apply locally_interval with a p_infty => //.
+  move => y Hay _.
+  rewrite /extension_cont /extension_C0.
+  case: Rle_dec => H ;
+  case: Rbar_le_dec => H0 ;
+  case: (Rbar_le_dec y b) => // _.
+  contradict H0 ; by apply Rbar_lt_le.
+  contradict H0 ; by apply Rbar_lt_le.
+  apply extension_cont_continuous => //.
+  apply Cf => /=.
+  by apply Rbar_lt_le.
+  by apply Rle_refl.
+  by apply continuous_const.
+  
+  destruct a as [a | | ] => //.
+  injection Hax => {Hax} Hax.
+  rewrite -Hax {x Hax}.
+  apply continuous_ext_loc with (extension_cont (fun _ => f (real a)) f a).
+  apply locally_interval with m_infty b => //.
+  move => y _ Hbx.
+  rewrite /extension_cont /extension_C0.
+  case: Rle_dec => H ;
+  case: Rbar_le_dec => //= H0 ;
+  try case: Rbar_le_dec => // H1.
+  by replace y with a by now apply Rle_antisym.
+  contradict H1 ; by apply Rbar_lt_le.
+  contradict H1 ; by apply Rbar_lt_le.
+  by contradict H0 ; apply Rlt_le, Rnot_le_lt.
+  apply extension_cont_continuous => //.
+  by apply continuous_const.
+  apply Cf.
+  by apply Rle_refl.
+  by apply Rbar_lt_le.
+  
+  rewrite -Hab {b Hab Cf}.
+  eapply continuous_ext.
+  intros y.
+  rewrite /extension_C0.
+  case: Rbar_le_dec => H.
+  2: reflexivity.
+  case: Rbar_le_dec => // H0.
+  destruct a as [a | | ] => //.
+  by replace y with a by now apply Rle_antisym.
+  by apply continuous_const.
+Qed.
+
+End ext_C0.
+
+(** ** C1 extension *)
+
+Section ext_C1.
+
+Context {V : NormedModule R_AbsRing}.
+
+Definition extension_C1 (f df : R -> V) (a b : Rbar) (x : R) : V :=
+  match Rbar_le_dec a x with
+    | left _ => match Rbar_le_dec x b with
+        | left _ => f x
+        | right _ => plus (f (real b)) (scal (x - real b) (df (real b)))
+      end
+    | right _ => plus (f (real a)) (scal (x - real a) (df (real a)))
+  end.
+
+Lemma extension_C1_ext (f df : R -> V) (a b : Rbar) :
+  forall (x : R), Rbar_le a x -> Rbar_le x b -> (extension_C1 f df a b) x = f x.
 Proof.
   move => x Hax Hxb.
   rewrite /extension_C1.
@@ -2157,390 +2295,186 @@ Proof.
   case: Rbar_le_dec => // _.
 Qed.
 
-Lemma extension_C1_is_derive (f : R -> R) (a b : Rbar) (x l : R) :
-  Rbar_le a x -> Rbar_le x b -> is_derive f x l
-  -> is_derive (extension_C1 f a b) x l.
+Lemma extension_C1_is_derive (f df : R -> V) (a b : Rbar) :
+  Rbar_le a b 
+  -> (forall x : R, Rbar_le a x -> Rbar_le x b -> is_derive f x (df x))
+  -> forall x : R, is_derive (extension_C1 f df a b) x (extension_C0 df a b x).
 Proof.
-  intros Hax' Hxb'.
-  destruct (Rbar_le_lt_or_eq_dec _ _ Hax') as [Hax|Hax] ;
-  destruct (Rbar_le_lt_or_eq_dec _ _ Hxb') as [Hxb|Hxb] ;
-  clear Hax' Hxb' ;
-  intros Hf.
-(* a < x < b *)
-  move: Hf ; apply @filterdiff_ext_locally.
-  apply (locally_interval _ x a b) => // y Hay Hyb.
-  rewrite extension_C1_ext //.
-  now apply Rbar_lt_le.
-  now apply Rbar_lt_le.
-(* a < x = b *)
-  case: b Hxb Hax Hf => [b | | ] //= Hxb Hax Hf.
-  apply Rbar_finite_eq in Hxb ; rewrite Hxb in Hax Hf |- * => {x Hxb}.
-  apply @filterdiff_ext_locally with (fun x : R =>
-     match Rle_dec x b with
-      | left _ => f x
-      | right _ =>  f (real b) + (x - real b) * Derive f (real b)
-    end).
-  case: (Rbar_lt_locally a p_infty b) => // d Hd.
-  exists d => y Hy ; case: Rle_dec => Htb ;
-  rewrite /extension_C1 ; repeat case: Rbar_le_dec => // ; intros.
-  contradict b0 ; apply Rbar_lt_le ; by apply Hd.
-  contradict b0 ; apply Rbar_lt_le ; by apply Hd.
-  apply extension_is_derive => //.
-  eapply filterdiff_ext_lin.
-  apply @filterdiff_plus_fct ; try by apply locally_filter.
-  apply filterdiff_const.
-  apply @filterdiff_scal_l_fct ; try by apply locally_filter.
-  apply @filterdiff_minus_fct ; try by apply locally_filter.
-  apply filterdiff_id.
-  apply filterdiff_const.
-  simpl => y ; rewrite (is_derive_unique _ _ _ Hf).
-  rewrite /minus /plus /opp /scal /zero /= /mult /=.
-  ring.
-  simpl ; ring.
-(* a = x < b *)
-  case: a Hxb Hax Hf => [a | | ] Hxb //= Hax Hf.
-  apply Rbar_finite_eq in Hax ; rewrite -Hax in Hxb Hf |- * => {x Hax}.
-  apply @filterdiff_ext_locally with (fun x : R =>
-     match Rle_dec x a with
-      | left _ => f (real a) + (x - real a) * Derive f (real a)
-      | right _ => f x
-    end).
-  case: (Rbar_lt_locally m_infty b a) => // d Hd.
-  exists d => y Hy ; case: Rle_dec => Hat ;
-  rewrite /extension_C1 ; case: Rbar_le_dec => // ; intros.
-  rewrite (Rle_antisym y a) => //=.
-  apply Rbar_lt_le in Hxb ; case: Rbar_le_dec => //= _ ; ring.
-  case: Rbar_le_dec => // Htb.
-  contradict Htb ; apply Rbar_lt_le ; by apply Hd.
-  contradict b0 ; by apply Rbar_lt_le, Rnot_le_lt.
-  apply extension_is_derive => //.
-  eapply filterdiff_ext_lin.
-  apply @filterdiff_plus_fct ; try by apply locally_filter.
-  apply filterdiff_const.
-  apply @filterdiff_scal_l_fct ; try by apply locally_filter.
-  apply @filterdiff_minus_fct ; try by apply locally_filter.
-  apply filterdiff_id.
-  apply filterdiff_const.
-  rewrite (is_derive_unique _ _ _ Hf) => /= y.
-  rewrite /minus /plus /opp /scal /zero /= /mult /=.
-  ring.
-  simpl ; ring.
-(* a = x = b *)
-  case: a Hax => [a | | ] //= -> {a}.
-  case: b Hxb => [b | | ] //= <- {b}.
-  apply filterdiff_ext with (fun y => f (real x) + (y - real x) * Derive f (real x)).
-  move => t ; rewrite /extension_C1.
-  repeat case: Rbar_le_dec => // ; intros.
-  simpl ; rewrite (Rle_antisym t x) ; try easy.
-  ring.
-  eapply filterdiff_ext_lin.
-  apply @filterdiff_plus_fct ; try by apply locally_filter.
-  apply filterdiff_const.
-  apply @filterdiff_scal_l_fct ; try by apply locally_filter.
-  apply @filterdiff_minus_fct ; try by apply locally_filter.
-  apply filterdiff_id.
-  apply filterdiff_const.
-  rewrite (is_derive_unique _ _ _ Hf) => /= y.
-  rewrite /minus /plus /opp /zero /scal /= /mult /=.
-  ring.
-Qed.
-
-Lemma extension_C1_is_derive_a (f : R -> R) (a : R) (b : Rbar) (x : R) :
-  Rbar_le a b -> x <= a -> (ex_derive f a) ->
-  is_derive (extension_C1 f a b) x (Derive f a).
-Proof.
-  move => Hab ; case => [Hax | -> {x}] Hf ;
-  apply Derive_correct in Hf.
-  apply @filterdiff_ext_locally
-    with (fun x => f (real a) + (x - real a) * Derive f (real a)).
-  case: (Rbar_lt_locally m_infty a x) => // d Hd.
-  exists d => y Hy ; rewrite /extension_C1.
-  specialize (Hd _ Hy).
-  case: Hd => _ Hd.
-  case: Rbar_le_dec => //= ; intros.
-  now elim Rle_not_lt with (1 := a0).
-  rewrite /extension_C1.
-  eapply filterdiff_ext_lin.
-  apply @filterdiff_plus_fct ; try by apply locally_filter.
-  apply filterdiff_const.
-  apply @filterdiff_scal_l_fct ; try by apply locally_filter.
-  apply @filterdiff_minus_fct ; try by apply locally_filter.
-  apply filterdiff_id.
-  apply filterdiff_const.
-  simpl => y.
-  rewrite /minus /plus /opp /zero /scal /= /mult /=.
-  ring.
-  apply extension_C1_is_derive => //.
-  by right.
-Qed.
-
-Lemma extension_C1_is_derive_b (f : R -> R) (a : Rbar) (b x : R) :
-  Rbar_le a b -> b <= x -> (ex_derive f b) ->
-  is_derive (extension_C1 f a b) x (Derive f b).
-Proof.
-  move => Hab ; case => [Hxb | <- {x}] Hf ;
-  apply Derive_correct in Hf.
-  apply @filterdiff_ext_locally
-    with (fun x => f (real b) + (x - real b) * Derive f (real b)).
-  case: (Rbar_lt_locally b p_infty x) => // d Hd.
-  exists d => y Hy ; rewrite /extension_C1.
-  specialize (Hd _ Hy).
-  case: Hd => Hd _.
-  repeat case: Rbar_le_dec => //= ; intros.
-  now elim Rle_not_lt with (1 := a0).
-  contradict Hab ; apply Rbar_lt_not_le, Rbar_lt_trans with y => // ;
-  by apply Rbar_not_le_lt.
-  rewrite /extension_C1.
-  repeat case: Rbar_le_dec => //= ; intros.
-  eapply filterdiff_ext_lin.
-  apply @filterdiff_plus_fct ; try by apply locally_filter.
-  apply filterdiff_const.
-  apply @filterdiff_scal_l_fct ; try by apply locally_filter.
-  apply @filterdiff_minus_fct ; try by apply locally_filter.
-  apply filterdiff_id.
-  apply filterdiff_const.
-  simpl => y.
-  rewrite /minus /plus /opp /zero /scal /= /mult /=.
-  ring.
-  apply extension_C1_is_derive => //.
-  by right.
-Qed.
-
-Lemma extension_C1_ex_derive (f : R -> R) (a b : Rbar) :
-  Rbar_le a b ->
-  (forall (x : R), Rbar_le a x -> Rbar_le x b -> ex_derive f x)
-  -> forall (x : R), ex_derive (extension_C1 f a b) x.
-Proof.
-  intros Hab'.
-  destruct (Rbar_le_lt_or_eq_dec _ _ Hab') as [Hab|Hab] ;
-  clear Hab' ; intros Hf x.
-  case: (Rbar_le_dec a x) => Hax.
-  case: (Rbar_le_dec x b) => Hxb.
-  case: (Hf x Hax Hxb) => {Hf} l Hf.
-  exists l ; by apply extension_C1_is_derive.
-  case: b Hab Hxb Hf => [b | | ] //= Hab Hxb Hf.
-  exists (Derive f b).
-  apply extension_C1_is_derive_b => //.
-  by apply Rbar_lt_le.
-  by apply Rlt_le, (Rbar_not_le_lt x b).
-  apply Hf => //.
-  now apply Rbar_lt_le.
-  apply Rle_refl.
-  now elim (Rbar_lt_not_le _ _ Hab).
-
-  case: a Hab Hax Hf => [a | | ] // Hab Hax Hf.
-  exists (Derive f a).
-  apply extension_C1_is_derive_a => //.
-  by apply Rbar_lt_le.
-  by apply Rlt_le, Rnot_le_lt.
-  apply Hf => //.
-  apply Rle_refl.
-  now apply Rbar_lt_le.
-  by apply Rbar_not_le_lt in Hax.
-
-  case: a Hab Hf => [a | | ] // ;
-  case: b => [b | | ] // Hab Hf.
-  rewrite -Hab in Hf |- * => {b Hab}.
-  apply ex_derive_filterdiff.
-  apply ex_filterdiff_ext with (fun y => f (real a) + (y - real a) * Derive f (real a)).
-  move => t ; rewrite /extension_C1.
-  repeat case: Rbar_le_dec => // ; intros.
-  simpl ; rewrite (Rle_antisym t a) ; try easy.
-  ring.
-  apply @ex_filterdiff_plus_fct ; try by apply locally_filter.
-  apply ex_filterdiff_const.
-  apply @ex_filterdiff_scal_l_fct with (x := Derive f a) (f := fun u => u - a).
-  by apply locally_filter.
-  apply @ex_filterdiff_minus_fct.
-  by apply locally_filter.
-  apply ex_filterdiff_id.
-  apply ex_filterdiff_const.
-
-  apply ex_derive_filterdiff.
-  apply ex_filterdiff_ext with (fun y => f 0 + (y - 0) * Derive f 0).
-  move => t ; rewrite /extension_C1.
-  repeat case: Rbar_le_dec => // ; intros.
-  apply @ex_filterdiff_plus_fct ; try by apply locally_filter.
-  apply ex_filterdiff_const.
-  apply @ex_filterdiff_scal_l_fct ; try by apply locally_filter.
-  apply @ex_filterdiff_minus_fct ; try by apply locally_filter.
-  apply ex_filterdiff_id.
-  apply ex_filterdiff_const.
-
-  apply ex_derive_filterdiff.
-  apply ex_filterdiff_ext with (fun y => f 0 + (y - 0) * Derive f 0).
-  move => t ; rewrite /extension_C1.
-  repeat case: Rbar_le_dec => // ; intros.
-  apply @ex_filterdiff_plus_fct ; try by apply locally_filter.
-  apply ex_filterdiff_const.
-  apply @ex_filterdiff_scal_l_fct ; try by apply locally_filter.
-  apply @ex_filterdiff_minus_fct ; try by apply locally_filter.
-  apply ex_filterdiff_id.
-  apply ex_filterdiff_const.
-Qed.
-
-Lemma extension_C1_Derive_cont (f : R -> R) (a b : Rbar) :
-  Rbar_le a b
-  -> (forall (x : R), Rbar_le a x -> Rbar_le x b -> ex_derive f x /\ continuity_pt (Derive f) x)
-  -> forall x, continuity_pt (Derive (extension_C1 f a b)) x.
-Proof.
-  move => Hab Hf x.
-  case: (Rbar_le_lt_dec a x) => Hax.
-  case: (Rbar_le_lt_or_eq_dec _ _ Hax) => {Hax} Hax.
-  case: (Rbar_le_lt_dec x b) => Hxb.
-  case: (Rbar_le_lt_or_eq_dec _ _ Hxb) => {Hxb} Hxb.
-(* a < x < b *)
-  apply continuity_pt_ext_loc with (Derive f).
-  apply (locally_interval _ _ _ _ Hax Hxb) => y Hay Hyb.
-  apply sym_eq, is_derive_unique, extension_C1_is_derive.
-  now apply Rbar_lt_le.
-  now apply Rbar_lt_le.
-  apply Derive_correct, Hf.
-  now apply Rbar_lt_le.
-  now apply Rbar_lt_le.
-  apply Hf.
-  now apply Rbar_lt_le.
-  now apply Rbar_lt_le.
-(* a < x = b *)
-  case: b Hxb Hf Hab => [b | | ] // Hxb Hf Hab.
-  apply Rbar_finite_eq in Hxb.
-  rewrite Hxb in Hax |- * => {x Hxb Hab}.
-  apply continuity_pt_ext_loc with (fun x : R =>
-     match Rle_dec x b with
-      | left _ => Derive f x
-      | right _ =>  Derive f b
-    end).
-  case: (Rbar_lt_locally a p_infty b) => // d Hd.
-  exists d => y Hy ; case: Rle_dec => Htb ; apply sym_eq, is_derive_unique.
-  apply extension_C1_is_derive.
-  now apply Rbar_lt_le, Hd.
-  exact Htb.
-  apply Derive_correct, Hf.
-  now apply Rbar_lt_le, Hd.
-  exact Htb.
-  apply extension_C1_is_derive_b.
-  now apply Rbar_lt_le.
-  by apply Rlt_le, Rnot_le_lt.
-  apply Hf.
-  now apply Rbar_lt_le.
-  apply Rbar_le_refl.
-  apply extension_cont.
-  apply Hf.
-  now apply Rbar_lt_le.
-  apply Rbar_le_refl.
-  by apply continuity_pt_const.
+  intros Hab Cf x.
+  
+  apply Rbar_le_lt_or_eq_dec in Hab ; case: Hab => Hab.
+  
+  case: (Rbar_lt_le_dec x a) => Hax.
+  
+  evar_last.
+  eapply is_derive_ext_loc.
+  apply locally_interval with m_infty a.
   by [].
-(* a <= b < x *)
-  case: b Hab Hf Hxb => [b | | ] // Hab Hf Hxb.
-  apply continuity_pt_ext_loc with (fun _ => Derive f b).
-  apply (locally_interval _ _ b p_infty) => // y Hay Hyb.
-  apply sym_eq, is_derive_unique.
-  apply extension_C1_is_derive_b => //.
-  by apply Rlt_le.
-  apply Hf => //.
-  by right.
-  by apply continuity_pt_const.
-  case: a Hax Hab Hf => [a | | ] Hax Hab Hf // ; try by case: Hab.
-  apply continuity_pt_ext with (fun _ => Derive f 0).
-    move => t.
-    rewrite (Derive_ext (extension_C1 f m_infty m_infty)
-      (fun y => f (real m_infty) + (y - real m_infty) * Derive f (real m_infty))).
-    apply sym_eq ; apply is_derive_unique.
-    eapply filterdiff_ext_lin.
-    apply @filterdiff_plus_fct ; try by apply locally_filter.
-    apply filterdiff_const.
-    apply @filterdiff_scal_l_fct ; try by apply locally_filter.
-    apply @filterdiff_minus_fct ; try by apply locally_filter.
-    apply filterdiff_id.
-    apply filterdiff_const.
-    simpl => y.
-    rewrite /minus /plus /opp /zero /scal /= /mult /=.
-    ring.
-  move => /= t0 ; rewrite /extension_C1.
-  repeat case: Rbar_le_dec => // ; intros.
-  by apply continuity_pt_const.
-(* a = x *)
-  case: a Hab Hf Hax => [a | | ] // Hab Hf Hax.
-  apply Rbar_finite_eq in Hax ; rewrite -Hax => {x Hax}.
-  case: (Rbar_le_lt_or_eq_dec _ _ Hab) => {Hab} Hab.
-  (* a < b *)
-  apply continuity_pt_ext_loc with (fun x : R =>
-     match Rle_dec x a with
-      | left _ => Derive f a
-      | right _ =>  Derive f x
-    end).
-  case: (Rbar_lt_locally m_infty b a) => // d Hd.
-  exists d => y Hy ; case: Rle_dec => Htb ; apply sym_eq, is_derive_unique.
-  apply extension_C1_is_derive_a.
-  now apply Rbar_lt_le.
-  exact Htb.
-  apply Hf.
-  apply Rle_refl.
-  now apply Rbar_lt_le.
-  apply extension_C1_is_derive.
-  by apply Rbar_lt_le, Rnot_le_lt.
-  by apply Rbar_lt_le, Hd.
-  apply Derive_correct, Hf.
-  by apply Rbar_lt_le, Rnot_le_lt.
-  by apply Rbar_lt_le, Hd.
-  apply extension_cont.
-  by apply continuity_pt_const.
-  apply Hf.
-  apply Rle_refl.
-  now apply Rbar_lt_le.
   by [].
-  (* a = b *)
-  case: b Hf Hab => [b | | ] // Hf Hab.
-  rewrite -Hab in Hf |- * => {b Hab}.
-  apply continuity_pt_ext with (fun _ => Derive f a).
-  move => t.
-  rewrite (Derive_ext (extension_C1 f a a)
-      (fun y => f (real a) + (y - real a) * Derive f (real a))).
-  apply sym_eq ; apply is_derive_unique.
-    eapply filterdiff_ext_lin.
-    apply @filterdiff_plus_fct ; try by apply locally_filter.
-    apply filterdiff_const.
-    apply @filterdiff_scal_l_fct ; try by apply locally_filter.
-    apply @filterdiff_minus_fct ; try by apply locally_filter.
-    apply filterdiff_id.
-    apply filterdiff_const.
-    simpl => y.
-    rewrite /minus /plus /opp /zero /scal /= /mult /=.
-    ring.
-  move => /= t0 ; rewrite /extension_C1.
-  repeat case: Rbar_le_dec => // ; intros.
-  rewrite (Rle_antisym t0 a) ; try easy.
-  ring.
-  by apply continuity_pt_const.
-(* x < a *)
-  case: a Hab Hf Hax => [a | | ] // Hab Hf Hax.
-  apply continuity_pt_ext_loc with (fun _ => Derive f a).
-  apply (locally_interval _ _ m_infty a) => // y Hay Hyb.
-  apply sym_eq, is_derive_unique.
-  apply extension_C1_is_derive_a => //.
-  by apply Rlt_le.
-  apply Hf => //.
-  by right.
-  by apply continuity_pt_const.
-  case: b Hab Hf => [b | | ] Hab Hf // ; try by case: Hab.
-  apply continuity_pt_ext with (fun _ => Derive f 0).
-    move => t.
-    rewrite (Derive_ext (extension_C1 f p_infty p_infty)
-      (fun y => f (real p_infty) + (y - real p_infty) * Derive f (real p_infty))).
-    apply sym_eq ; apply is_derive_unique.
-    eapply filterdiff_ext_lin.
-    apply @filterdiff_plus_fct ; try by apply locally_filter.
-    apply filterdiff_const.
-    apply @filterdiff_scal_l_fct ; try apply locally_filter.
-    apply @filterdiff_minus_fct ; try apply locally_filter.
-    apply filterdiff_id.
-    apply filterdiff_const.
-    simpl => y.
-    rewrite /minus /plus /opp /zero /scal /= /mult /=.
-    ring.
-  move => /= t0 ; rewrite /extension_C1.
-  repeat case: Rbar_le_dec => // ; intros.
-  by apply continuity_pt_const.
+  move => y _ Hay.
+  rewrite /extension_C1.
+  case: Rbar_le_dec => H.
+  contradict H ; by apply Rbar_lt_not_le.
+  reflexivity.
+  apply is_derive_plus.
+  apply is_derive_const.
+  apply @is_derive_scal_l.
+  apply @is_derive_minus.
+  apply is_derive_id.
+  apply is_derive_const.
+  rewrite plus_zero_l minus_zero_r scal_one.
+  rewrite /extension_C0.
+  case: Rbar_le_dec => H //.
+  by apply Rbar_le_not_lt in H.
+
+  apply Rbar_le_lt_or_eq_dec in Hax ; case: Hax => Hax.
+  
+  case: (Rbar_lt_le_dec x b) => Hbx.
+  
+  evar_last.
+  eapply is_derive_ext_loc.
+  apply locally_interval with a b.
+  by [].
+  by [].
+  move => y Hay Hby.
+  apply sym_eq, extension_C1_ext ; by apply Rbar_lt_le.
+  apply Cf ; by apply Rbar_lt_le.
+  rewrite /extension_C0.
+  case: Rbar_le_dec => // H.
+  case: Rbar_le_dec => // H0.
+  by apply Rbar_lt_le in Hbx.
+  by apply Rbar_lt_le in Hax.
+
+  apply Rbar_le_lt_or_eq_dec in Hbx ; case: Hbx => Hbx.
+  
+  evar_last.
+  eapply is_derive_ext_loc.
+  apply locally_interval with b p_infty.
+  by [].
+  by [].
+  move => y Hby _.
+  rewrite /extension_C1.
+  case: Rbar_le_dec => H.
+  case: Rbar_le_dec => H0.
+  contradict H0 ; by apply Rbar_lt_not_le.
+  reflexivity.
+  contradict H ; eapply Rbar_le_trans, Rbar_lt_le, Hby.
+  by apply Rbar_lt_le.
+  apply is_derive_plus.
+  apply is_derive_const.
+  apply @is_derive_scal_l.
+  apply @is_derive_minus.
+  apply is_derive_id.
+  apply is_derive_const.
+  rewrite plus_zero_l minus_zero_r scal_one.
+  rewrite /extension_C0.
+  case: Rbar_le_dec => H //.
+  case: Rbar_le_dec => H0 //.
+  by apply Rbar_le_not_lt in H0.
+  by apply Rbar_lt_le in Hax.
+  
+  destruct b as [b | | ] => //.
+  injection Hbx => {Hbx} Hbx.
+  rewrite -Hbx {x Hbx} in Hax |- *.
+  evar_last.
+  apply is_derive_ext_loc with (extension_cont f (fun x => plus (f (real b)) (scal (x - real b) (df (real b)))) b).
+  apply locally_interval with a p_infty => //.
+  move => y Hay _.
+  rewrite /extension_cont /extension_C1.
+  case: Rle_dec => H ;
+  case: Rbar_le_dec => H0 ;
+  case: (Rbar_le_dec y b) => // _.
+  contradict H0 ; by apply Rbar_lt_le.
+  contradict H0 ; by apply Rbar_lt_le.
+  apply extension_cont_is_derive => //.
+  apply Cf => /=.
+  by apply Rbar_lt_le.
+  by apply Rle_refl.
+  evar_last.
+  apply is_derive_plus.
+  apply is_derive_const.
+  apply @is_derive_scal_l.
+  apply @is_derive_minus.
+  apply is_derive_id.
+  apply is_derive_const.
+  by rewrite plus_zero_l minus_zero_r scal_one.
+  by rewrite Rminus_eq_0 @scal_zero_l plus_zero_r.
+  rewrite /extension_C0.
+  case: Rbar_le_dec => H0.
+  case: Rbar_le_dec (Rle_refl b) => //.
+  by apply Rbar_lt_le in Hax.
+  
+  destruct a as [a | | ] => //.
+  injection Hax => {Hax} Hax.
+  rewrite -Hax {x Hax}.
+  evar_last.
+  apply is_derive_ext_loc with (extension_cont (fun x => plus (f (real a)) (scal (x - real a) (df (real a)))) f a).
+  apply locally_interval with m_infty b => //.
+  move => y _ Hbx.
+  rewrite /extension_cont /extension_C1.
+  case: Rle_dec => H ;
+  case: Rbar_le_dec => //= H0 ;
+  try case: Rbar_le_dec => // H1.
+  replace y with a by now apply Rle_antisym.
+  by rewrite Rminus_eq_0 @scal_zero_l plus_zero_r.
+  contradict H1 ; by apply Rbar_lt_le.
+  contradict H1 ; by apply Rbar_lt_le.
+  by contradict H0 ; apply Rlt_le, Rnot_le_lt.
+  apply extension_cont_is_derive => //.
+  apply is_derive_plus.
+  apply is_derive_const.
+  apply @is_derive_scal_l.
+  apply @is_derive_minus.
+  apply is_derive_id.
+  apply is_derive_const.
+  rewrite plus_zero_l minus_zero_r scal_one.
+  apply Cf.
+  by apply Rle_refl.
+  by apply Rbar_lt_le.
+  by rewrite Rminus_eq_0 @scal_zero_l plus_zero_r.
+  rewrite plus_zero_l minus_zero_r scal_one.
+  rewrite /extension_C0.
+  case: Rbar_le_dec (Rle_refl a) => // _ _.
+  case: Rbar_le_dec => H //.
+  by apply Rbar_lt_le in Hab.
+
+  rewrite -Hab {b Hab Cf}.
+  evar_last.
+  eapply is_derive_ext.
+  intros y.
+  rewrite /extension_C1.
+  case: Rbar_le_dec => H.
+  2: reflexivity.
+  case: Rbar_le_dec => // H0.
+  destruct a as [a | | ] => //.
+  replace y with a by now apply Rle_antisym.
+  by rewrite Rminus_eq_0 @scal_zero_l plus_zero_r.
+  apply is_derive_plus.
+  apply is_derive_const.
+  apply @is_derive_scal_l.
+  apply @is_derive_minus.
+  apply is_derive_id.
+  apply is_derive_const.
+  rewrite plus_zero_l minus_zero_r scal_one.
+  rewrite /extension_C0.
+  case: Rbar_le_dec => H //.
+  case: Rbar_le_dec => H0 //.
+  destruct a as [a | | ] => //.
+  by replace a with x by now apply Rle_antisym.
+Qed.
+
+End ext_C1.
+
+Lemma extension_C1_ex_derive (f df : R -> R) (a b : Rbar) :
+  Rbar_le a b 
+  -> (forall x : R, Rbar_le a x -> Rbar_le x b -> ex_derive f x)
+  -> forall x : R, ex_derive (extension_C1 f (Derive f) a b) x.
+Proof.
+  intros Hab Df x.
+  eexists.
+  apply extension_C1_is_derive => //.
+  intros y Hay Hby.
+  by apply Derive_correct, Df.
 Qed.
 
 (** * Iterated differential *)

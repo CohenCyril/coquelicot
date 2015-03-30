@@ -1750,6 +1750,7 @@ apply is_RInt_point.
 Qed.
 
 (** ** Continuous imply Riemann-integrable *)
+(* todo : dans RInt_analysis ?? *)
 
 Section StepFun.
 
@@ -3304,19 +3305,6 @@ Proof.
   apply @continuous_minus.
   by apply Cg.
   by apply Cf.
-Qed.
-
-Lemma abs_RInt_le :
-  forall (f : R -> R) a b,
-  a <= b -> ex_RInt f a b ->
-  Rabs (RInt f a b) <= RInt (fun t => Rabs (f t)) a b.
-Proof.
-intros f a b H1 If.
-apply: (norm_RInt_le f (fun t : R => norm (f t)) a b).
-exact H1.
-move => x _ ; by apply Rle_refl.
-by apply RInt_correct.
-by apply RInt_correct, ex_RInt_norm.
 Qed.
 
 Lemma abs_RInt_le_const :
@@ -5549,3 +5537,15 @@ apply RiemannInt_P16.
 now apply ex_RInt_Reals_0.
 Qed.
 
+Lemma abs_RInt_le :
+  forall (f : R -> R) a b,
+  a <= b -> ex_RInt f a b ->
+  Rabs (RInt f a b) <= RInt (fun t => Rabs (f t)) a b.
+Proof.
+intros f a b H1 If.
+apply: (norm_RInt_le f (fun t : R => norm (f t)) a b).
+exact H1.
+move => x _ ; by apply Rle_refl.
+by apply RInt_correct.
+by apply RInt_correct, ex_RInt_norm.
+Qed.

@@ -1695,21 +1695,39 @@ Proof.
   set (g z := f z - (f z0 + (z - z0) * df z0)).
   assert (Hg : forall z1 z2 z3, (forall z : C, complex_triangle z1 z2 z3 z -> U z)
               -> C_RInt_segm g z1 z2 + C_RInt_segm g z2 z3 + C_RInt_segm g z3 z1 = I z1 z2 z3).
-    clear -Df If => z1 z2 z3 tU.
+    clear -If => z1 z2 z3 tU.
     rewrite /I /g.
+    assert (forall z : C, continuous (fun z => f z0 + (z - z0) * df z0) z).
+      intros z.
+      apply @continuous_plus.
+      apply continuous_const.
+      apply @continuous_scal.
+      apply (continuous_minus (U := C_UniformSpace) (V := AbsRing_NormedModule C_AbsRing) (fun y => y) (fun _ => z0)).
+      apply continuous_C_id_1.
+      apply continuous_const.
+      apply continuous_const.
+    assert (forall z, is_derive (fun z => z * f z0 + (z - z0) * (z - z0) * df z0 / 2) z (f z0 + (z - z0) * df z0)).
+      intros z.
+      evar_last.
+      apply @is_derive_plus.
+      apply @is_derive_scal.
+
+    rewrite !C_RInt_segm_minus.
+    Search C_RInt_segm.
     admit. (* Corolaire 7 *)
   assert (Dg : forall z, U z -> is_derive g z (df z - df z0)).
     intros z Hz.
     unfold g.
     evar_last.
     apply @is_derive_minus.
-    apply @is_derive_minus.
     by apply Df.
+    apply @is_derive_plus.
     apply is_derive_const.
     apply @is_derive_scal_l.
     apply @is_derive_minus.
     apply is_derive_id.
     apply is_derive_const.
+    change plus with Cplus ;
     change minus with Cminus ;
     change zero with (RtoC 0) ;
     change scal with Cmult ;
