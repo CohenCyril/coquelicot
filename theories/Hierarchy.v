@@ -2,11 +2,11 @@
 This file is part of the Coquelicot formalization of real
 analysis in Coq: http://coquelicot.saclay.inria.fr/
 
-Copyright (C) 2011-2013 Sylvie Boldo
+Copyright (C) 2011-2015 Sylvie Boldo
 #<br />#
-Copyright (C) 2011-2013 Catherine Lelay
+Copyright (C) 2011-2015 Catherine Lelay
 #<br />#
-Copyright (C) 2011-2013 Guillaume Melquiond
+Copyright (C) 2011-2015 Guillaume Melquiond
 
 This library is free software; you can redistribute it and/or
 modify it under the terms of the GNU Lesser General Public
@@ -22,23 +22,14 @@ COPYING file for more details.
 Require Import Reals Ssreflect.ssreflect.
 Require Import Rcomplements Rbar Markov Iter Lub.
 
-(* This file describes first filters:
+(** This file first describes [Filter]s that are predicates of type
+[(T -> Prop) -> Prop] used for limits and neighborhoods.  Then the
+algebraic hierarchy of the Coquelicot library is given: from the
+[AbelianGroup] to the [CompleteNormedModule]. Topologies on [R] and
+[R*R] are also given.
 
- - [Filter]: they are sets of sets of reals. They can be seen for example as the way we will converge towards a point x (from above, by a ball, and so on).
-#<br /># Many of the later definitions are filters, therefore many basic lemmas are only those about filters. It includes [filter_forall] and [filter_const].
-
- - [filterlim] is the basic tool to use filters. It takes a function f and two filters F and G. The property [filterlim] f F G then states that f transforms filter F into filter G. For example, continuity of f at point x can be stated as f transforms a surrounding of x into a surrounding of (f x). Lemmas about composition, extensionality are given, and filters for pairs are defined. The restriction of a filter to a domain is defined using [within].
-
-
-
-This file then describes a hierarchy of type classes for groups, rings, and so on:
- - [AbelianGroup] for commutative groups. The operation is denoted by [plus], the opposite by [opp] and the zero by [zero].
-#<br /># This allows the definition of a [sum_n] which sums a sequence from 0 to N. It is equivalent to the [sum_f_R0] of the standard library reals.
- - [Ring] for noncommutative rings
-
-
-
-*)
+ #<br/># More documentation details can be found in #<a
+  href="Coquelicot.Coquelicot.html">Coquelicot.html</a>#. *)
 
 Open Scope R_scope.
 

@@ -2,11 +2,11 @@
 This file is part of the Coquelicot formalization of real
 analysis in Coq: http://coquelicot.saclay.inria.fr/
 
-Copyright (C) 2011-2013 Sylvie Boldo
+Copyright (C) 2011-2015 Sylvie Boldo
 #<br />#
-Copyright (C) 2011-2013 Catherine Lelay
+Copyright (C) 2011-2015 Catherine Lelay
 #<br />#
-Copyright (C) 2011-2013 Guillaume Melquiond
+Copyright (C) 2011-2015 Guillaume Melquiond
 
 This library is free software; you can redistribute it and/or
 modify it under the terms of the GNU Lesser General Public
@@ -18,6 +18,12 @@ but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 COPYING file for more details.
 *)
+
+(** This file containes the definition and properties of the Riemann
+integral, defined on a normed module on [R]. For real functions, a
+total function [RInt] is available. Results on differentiability and
+on parametric integrals are provided. *)
+
 
 Require Import Reals Div2 ConstructiveEpsilon.
 Require Import Ssreflect.ssreflect Ssreflect.ssrbool Ssreflect.eqtype Ssreflect.seq.
@@ -5814,7 +5820,7 @@ now apply RInt_correct.
 Qed.
 
 (** * Riemann integral and continuity *)
-
+(* todo ? *)
 (* Lemma continuity_RInt: forall f a b,
   ex_RInt f a b ->
   (exists eps:posreal, ex_RInt f (b-eps) (b+eps)) ->

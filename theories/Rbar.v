@@ -2,11 +2,11 @@
 This file is part of the Coquelicot formalization of real
 analysis in Coq: http://coquelicot.saclay.inria.fr/
 
-Copyright (C) 2011-2013 Sylvie Boldo
+Copyright (C) 2011-2015 Sylvie Boldo
 #<br />#
-Copyright (C) 2011-2013 Catherine Lelay
+Copyright (C) 2011-2015 Catherine Lelay
 #<br />#
-Copyright (C) 2011-2013 Guillaume Melquiond
+Copyright (C) 2011-2015 Guillaume Melquiond
 
 This library is free software; you can redistribute it and/or
 modify it under the terms of the GNU Lesser General Public
@@ -28,7 +28,7 @@ Require Import Rcomplements.
   - coercions from [R] to [Rbar] and vice versa ([Finite] gives [R0] at infinity points)
   - an order [Rbar_lt] and [Rbar_le]
   - total operations: [Rbar_opp], [Rbar_plus], [Rbar_minus], [Rbar_inv], [Rbar_min] and [Rbar_abs]
-  - lemmas about the decidability of the order andproperties of the operations (such as [Rbar_plus_comm] or [Rbar_plus_lt_compat])
+  - lemmas about the decidability of the order and properties of the operations (such as [Rbar_plus_comm] or [Rbar_plus_lt_compat])
  *)
 
 

@@ -2,11 +2,11 @@
 This file is part of the Coquelicot formalization of real
 analysis in Coq: http://coquelicot.saclay.inria.fr/
 
-Copyright (C) 2011-2013 Sylvie Boldo
+Copyright (C) 2011-2015 Sylvie Boldo
 #<br />#
-Copyright (C) 2011-2013 Catherine Lelay
+Copyright (C) 2011-2015 Catherine Lelay
 #<br />#
-Copyright (C) 2011-2013 Guillaume Melquiond
+Copyright (C) 2011-2015 Guillaume Melquiond
 
 This library is free software; you can redistribute it and/or
 modify it under the terms of the GNU Lesser General Public
@@ -18,6 +18,11 @@ but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 COPYING file for more details.
 *)
+
+(** This file describes power series: #&Sigma; a<sub>k</sub>
+x<sup>k</sup>#. It containes definition, equivalence with the standard
+library, differentiability, integrability, and many results about the
+convergence circle. *)
 
 Require Import Reals Even Div2 Omega Ssreflect.ssreflect.
 Require Import Rcomplements Rbar Limit Lub.
