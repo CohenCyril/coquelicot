@@ -2,11 +2,11 @@
 This file is part of the Coquelicot formalization of real
 analysis in Coq: http://coquelicot.saclay.inria.fr/
 
-Copyright (C) 2011-2013 Sylvie Boldo
+Copyright (C) 2011-2015 Sylvie Boldo
 #<br />#
-Copyright (C) 2011-2013 Catherine Lelay
+Copyright (C) 2011-2015 Catherine Lelay
 #<br />#
-Copyright (C) 2011-2013 Guillaume Melquiond
+Copyright (C) 2011-2015 Guillaume Melquiond
 
 This library is free software; you can redistribute it and/or
 modify it under the terms of the GNU Lesser General Public
@@ -18,6 +18,14 @@ but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 COPYING file for more details.
 *)
+
+(** This file describes properties and definitions about limits of
+real sequences. This includes properties about the predicates
+[is_lim_seq] and [ex_lim_seq]. This file also defines several total
+functions using the Limited Principle of Omniscience. These total
+functions on [R] sequences are [Sup_seq], [Inf_seq], [LimSup_seq],
+[LimInf_seq] and of course [Lim_seq]. *)
+
 
 Require Import Reals Ssreflect.ssreflect.
 Require Import Rcomplements.

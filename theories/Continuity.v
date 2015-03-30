@@ -2,11 +2,11 @@
 This file is part of the Coquelicot formalization of real
 analysis in Coq: http://coquelicot.saclay.inria.fr/
 
-Copyright (C) 2011-2013 Sylvie Boldo
+Copyright (C) 2011-2015 Sylvie Boldo
 #<br />#
-Copyright (C) 2011-2013 Catherine Lelay
+Copyright (C) 2011-2015 Catherine Lelay
 #<br />#
-Copyright (C) 2011-2013 Guillaume Melquiond
+Copyright (C) 2011-2015 Guillaume Melquiond
 
 This library is free software; you can redistribute it and/or
 modify it under the terms of the GNU Lesser General Public
@@ -19,10 +19,16 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 COPYING file for more details.
 *)
 
-Require Import Reals.
-Require Import Ssreflect.ssreflect.
-Require Import Rcomplements Rbar Hierarchy.
-Require Import Compactness Limit SF_seq.
+(** This file describes defineitions and properties of continuity on
+[R] and on uniform spaces. It also contains many results about the
+limit of a real function (predicates [is_lim] and [ex_lim] and total
+function [Lim]). This limit may be either a real or an extended
+real. *)
+
+
+Require Import Reals.  Require Import Ssreflect.ssreflect.  Require
+Import Rcomplements Rbar Hierarchy.  Require Import Compactness Limit
+SF_seq.
 
 (** * Limit of fonctions *)
 
