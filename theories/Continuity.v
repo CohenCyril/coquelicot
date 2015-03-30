@@ -26,9 +26,10 @@ function [Lim]). This limit may be either a real or an extended
 real. *)
 
 
-Require Import Reals.  Require Import Ssreflect.ssreflect.  Require
-Import Rcomplements Rbar Hierarchy.  Require Import Compactness Limit
-SF_seq.
+Require Import Reals.
+Require Import Ssreflect.ssreflect.
+Require Import Rcomplements Rbar Hierarchy.
+Require Import Compactness Limit SF_seq.
 
 (** * Limit of fonctions *)
 
@@ -859,6 +860,7 @@ Proof.
     intros x y ; edestruct Rlt_dec.
     left ; by apply r.
     by right.
+
   set delta := (fun (x : R) => proj1_sig (locally_ex_dec x _ (H0 x) (H x))).
   destruct (compactness_value_1d a b delta) as [d Hd].
   destruct (seq_step_unif_part_ex a b d) as [n Hn].

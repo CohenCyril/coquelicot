@@ -25,6 +25,7 @@ square root, power, exponential and so on.*)
 
 Require Import Reals Omega Ssreflect.ssreflect.
 Require Import Rbar Rcomplements Continuity Derive Hierarchy RInt PSeries.
+Require Import RInt_analysis.
 
 (** * Absolute value *)
 

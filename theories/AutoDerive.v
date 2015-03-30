@@ -20,7 +20,7 @@ COPYING file for more details.
 *)
 
 Require Import Reals.
-Require Import Rcomplements Hierarchy Derive RInt Derive_2d Continuity ElemFct.
+Require Import Rcomplements Hierarchy Derive RInt RInt_analysis Derive_2d Continuity ElemFct.
 Require Import Ssreflect.ssreflect Ssreflect.ssrbool Ssreflect.seq Datatypes.
 
 (** * Reflective tactic for solving goals of the form [derivable_pt_lim] *)

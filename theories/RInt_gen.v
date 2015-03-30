@@ -19,16 +19,13 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 COPYING file for more details.
 *)
 
-(* todo ? *)
-(* admit commenté ? *)
-
 Require Import Reals Ssreflect.ssreflect.
 Require Import Rbar Hierarchy RInt Limit Continuity Derive.
-Require Import Rcomplements.
+Require Import Rcomplements RInt_analysis.
 
 Open Scope R_scope.
 
-(** * Generalized Riemann integral *)
+(** * Improper Riemann integral *)
 
 Section RInt_gen.
 
@@ -322,74 +319,3 @@ Proof.
   eapply filterlim_comp, Lfa.
   by apply filterlim_fst.
 Qed.
-
-(* Goal forall x : R, 0 < x -> is_RInt_gen ln (at_right 0) (at_point x) (x * ln x - x).
-Proof.
-  assert (forall x, 0 < x -> is_derive (fun x => x * ln x - x) x (ln x)).
-    intros x Hx.
-    evar_last.
-    apply @is_derive_minus.
-    apply @is_derive_mult.
-    by apply is_derive_id.
-    by apply is_derive_Reals, derivable_pt_lim_ln.
-    by apply is_derive_id.
-    rewrite /minus /plus /one /opp /= ; field.
-    by apply Rgt_not_eq.
-  intros x Hx.
-  evar_last.
-  eapply is_RInt_gen_ext.
-  2: apply is_RInt_gen_Derive.
-  exists (fun x => 0 < x) (fun y => y = x).
-  by exists (mkposreal _ Hx).
-  intros y Hy.
-  now apply eq_sym, ball_eq.
-  move => /= a _ Ha -> y Hy.
-  apply is_derive_unique, H.
-  eapply Rlt_trans, Hy.
-  by apply Rmin_case.
-  exists (fun x => 0 < x) (fun y => y = x).
-  by exists (mkposreal _ Hx).
-  intros y Hy.
-  now apply eq_sym, ball_eq.
-  move => /= a _ Ha -> y Hy.
-  eexists ; apply H.
-  eapply Rlt_le_trans, Hy.
-  by apply Rmin_case.
-  exists (fun x => 0 < x) (fun y => y = x).
-  by exists (mkposreal _ Hx).
-  intros y Hy.
-  now apply eq_sym, ball_eq.
-  move => /= a _ Ha -> y Hy.
-  eapply continuous_ext_loc.
-  apply locally_interval with 0 p_infty.
-  eapply Rlt_le_trans, Hy.
-  by apply Rmin_case.
-  by [].
-  move => /= z Hz _.
-  by apply sym_eq, is_derive_unique, H.
-  apply continuity_pt_filterlim, derivable_continuous_pt.
-  eexists ; apply derivable_pt_lim_ln.
-  eapply Rlt_le_trans, Hy.
-  by apply Rmin_case.
-  rewrite /Rminus.
-  eapply filterlim_comp_2, @filterlim_plus.
-  instantiate (1 := 0).
-  admit.
-  eapply filterlim_filter_le_1.
-  2: apply @filterlim_opp.
-  intros P [d Hd].
-  exists d => y Hy _.
-  apply Hd, Hy.
-  eapply filterlim_filter_le_1.
-  2: apply continuity_pt_filterlim.
-  intros P [d Hd].
-  move => y Hy.
-  apply Hd, Hy.
-  apply continuity_pt_minus.
-  apply continuity_pt_mult.
-  apply continuity_pt_id.
-  apply derivable_continuous_pt.
-  eexists ; by apply derivable_pt_lim_ln.
-  apply continuity_pt_id.
-  by rewrite opp_zero plus_zero_r Rminus_0_r.
-Qed. *)

@@ -18,6 +18,7 @@ FILES = \
 	Rbar.v \
 	Rcomplements.v \
 	RInt.v \
+	RInt_analysis.v \
 	RInt_gen.v \
 	Seq_fct.v \
 	Series.v \

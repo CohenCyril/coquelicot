@@ -592,18 +592,12 @@ Qed.
 
 (** * Limits *)
 
-Definition is_C_lim (f : C -> C) (z l : C) :=
-  filterlim f (locally' z) (locally l).
-
-Definition ex_C_lim (f : C -> C) (z : C) :=
-  exists (l : C), is_C_lim f z l.
-
 Definition C_lim (f : C -> C) (z : C) : C :=
   (real (Lim (fun x => fst (f (x, snd z))) (fst z)),
   real (Lim (fun x => snd (f (x, snd z))) (fst z))).
 
 Lemma is_C_lim_unique (f : C -> C) (z l : C) :
-  is_C_lim f z l -> C_lim f z = l.
+  filterlim f (locally' z) (locally l) -> C_lim f z = l.
 Proof.
   case: l => lx ly H.
   apply injective_projections ; simpl.
@@ -642,12 +636,8 @@ Proof.
   now injection Hy.
 Qed.
 
-(* (** * Derivatives *)
+(** * Derivatives *)
 
-Definition is_C_derive (f : C -> C) (z l : C) :=
-  filterdiff f (locally z) (fun y : C => scal y l).
-Definition ex_C_derive (f : C -> C) (z : C) :=
-  exists l : C, is_C_derive f z l.*)
 Definition C_derive (f : C -> C) (z : C) := C_lim (fun x => (f x - f z) / (x - z)) z.
 
 Lemma is_C_derive_unique (f : C -> C) (z l : C) :
@@ -698,9 +688,3 @@ Proof.
   by apply sym_eq, is_C_derive_unique.
 Qed.
 
-
-(** * Integrals *)
-
-(** * Complex power series *)
-
-(* todo ?*)

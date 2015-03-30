@@ -26,7 +26,7 @@ convergence circle. *)
 
 Require Import Reals Even Div2 Omega Ssreflect.ssreflect.
 Require Import Rcomplements Rbar Limit Lub.
-Require Import Continuity Derive Derive_2d RInt Seq_fct Series Hierarchy.
+Require Import Continuity Derive Derive_2d RInt RInt_analysis Seq_fct Series Hierarchy.
 
 (** * Definition *)
 

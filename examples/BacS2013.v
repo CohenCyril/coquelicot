@@ -25,7 +25,7 @@ COPYING file for more details.
 Require Import Reals Ssreflect.ssreflect.
 Require Import Psatz.
 Require Import Rcomplements Rbar Hierarchy.
-Require Import Derive RInt Continuity Limit ElemFct.
+Require Import Derive RInt Continuity Limit ElemFct RInt_analysis.
 
 Ltac pos_rat :=
   repeat ( apply Rdiv_lt_0_compat
