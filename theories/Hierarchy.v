@@ -175,7 +175,6 @@ Lemma filterlim_ext_loc :
 Proof.
 intros T U F G FF f g Efg Lf P GP.
 specialize (Lf P GP).
-(* Post-8.4 fix: make second argument explicit. *)
 generalize (filter_and _ (fun x : T => P (f x)) Efg Lf).
 unfold filtermap.
 apply filter_imp.
@@ -755,6 +754,14 @@ Proof.
   by rewrite plus_zero_l.
 Qed.
 
+Lemma sum_n_plus :
+  forall (u v : nat -> G) (n : nat),
+  sum_n (fun k => plus (u k) (v k)) n = plus (sum_n u n) (sum_n v n).
+Proof.
+  intros u v n.
+  apply sum_n_m_plus.
+Qed.
+
 Lemma sum_n_switch :
   forall (u : nat -> nat -> G) (m n : nat),
   sum_n (fun i => sum_n (u i) n) m = sum_n (fun j => sum_n (fun i => u i j) m) n.
@@ -788,142 +795,6 @@ Proof.
 Qed.
 
 End Sums.
-
-(* Fixpoint sum_n (a:nat -> G) (N : nat) {struct N} : G :=
-  match N with
-   | 0%nat => a 0%nat
-   | S i => plus (sum_n a i)  (a (S i))
-  end.
-
-Lemma sum_n_ext_aux :
-  forall (a b : nat -> G) N,
-  (forall n, (n < S N)%nat -> a n = b n) ->
-  sum_n a N = sum_n b N.
-Proof.
-  intros a b N H; induction N; simpl.
-  apply H.
-  by apply le_refl.
-  rewrite IHN.
-  by rewrite H.
-  move => n Hn.
-  now apply H, le_trans with (1 := Hn), le_n_Sn.
-Qed.
-
-Lemma sum_n_ext :
-  forall (a b : nat -> G) N,
-  (forall n, a n = b n) ->
-  sum_n a N = sum_n b N.
-Proof.
-  intros a b N H; induction N; simpl.
-  apply H.
-  now rewrite IHN; rewrite H.
-Qed.
-
-Lemma decomp_sum_n :
-  forall (a : nat-> G) N,
-  (0 < N)%nat ->
-  sum_n a N = plus (a 0%nat) (sum_n (fun i : nat => a (S i)) (pred N)).
-Proof.
-  intros a N HN; destruct N; simpl.
-  exfalso; omega.
-  clear HN; induction N; simpl.
-  easy.
-  rewrite IHN.
-  apply sym_eq, plus_assoc.
-Qed.
-
-Lemma sum_n_plus :
-  forall (u v : nat -> G) (n : nat),
-  sum_n (fun k => plus (u k) (v k)) n = plus (sum_n u n) (sum_n v n).
-Proof.
-  intros u v.
-  induction n ; simpl.
-  by [].
-  rewrite IHn ; clear IHn.
-  rewrite -?plus_assoc.
-  apply f_equal.
-  rewrite ?plus_assoc.
-  apply f_equal2.
-  by apply plus_comm.
-  by [].
-Qed.
-
-Lemma sum_n_switch :
-  forall (u : nat -> nat -> G) (m n : nat),
-  sum_n (fun i => sum_n (u i) n) m = sum_n (fun j => sum_n (fun i => u i j) m) n.
-Proof.
-  intros u.
-  induction m ; simpl ; intros n.
-  by [].
-  rewrite IHm ; clear IHm.
-  by rewrite -sum_n_plus.
-Qed.
-
-(** sum_n_m *)
-
-Fixpoint sum_n_m (a:nat -> G) (n m : nat) : G :=
-  match n, m with
-  | S _, O => zero
-  | S n, S m => sum_n_m (fun k => a (S k)) n m
-  | O , _ => sum_n a m
-  end.
-
-Lemma sum_n_m_zero (a : nat -> G) (n m : nat) : (m < n)%nat
-  -> sum_n_m a n m = zero.
-Proof.
-  elim: n m a => /= [ | n IH] m a Hnm.
-  by apply lt_n_O in Hnm.
-  case: m Hnm => /= [ | m] Hnm.
-  by [].
-  by apply IH, lt_S_n.
-Qed.
-Lemma sum_n_m_sum_n (a:nat -> G) (n m : nat) :
-  (n <= m)%nat -> sum_n_m a (S n) m = minus (sum_n a m) (sum_n a n).
-Proof.
-  elim: n m a => /= [ | n IH] ;
-  case => /= [ | m] a Hnm.
-  by rewrite /minus plus_opp_r.
-  clear Hnm.
-  elim: m a => /= [ | m IH] a.
-  by rewrite plus_comm /minus -plus_assoc plus_opp_r plus_zero_r.
-  rewrite IH /minus -!plus_assoc.
-  apply f_equal, f_equal, plus_comm.
-  by apply le_Sn_O in Hnm.
-  rewrite (IH m (fun n => a (S n))) /= ; try by apply le_S_n.
-  clear.
-  elim: n m => /= [ | n IH].
-  elim => /= [ | m IH].
-  by rewrite /minus !plus_opp_r.
-  rewrite plus_comm /minus -!plus_assoc -/(minus _ _) IH.
-  rewrite /minus.
-  rewrite -!plus_assoc plus_comm -!plus_assoc.
-  apply f_equal, f_equal, plus_comm.
-  intros m.
-  rewrite /minus opp_plus plus_assoc -!/(minus _ _) IH.
-  by rewrite /minus !opp_plus -!plus_assoc.
-Qed.
-
-Lemma sum_n_m_ext_aux (a b : nat -> G) (n m : nat) :
-  (forall k, (n <= k <= m)%nat -> a k = b k) ->
-  sum_n_m a n m = sum_n_m b n m.
-Proof.
-  elim: n m a b => /= [ | n IH] m a b Heq.
-  apply sum_n_ext_aux => k Hk.
-  apply Heq ; split.
-  by apply le_O_n.
-  by apply lt_n_Sm_le, Hk.
-  case: m Heq => /= [ | m] Heq.
-  by [].
-  apply IH => k Hk.
-  apply Heq ; split ; apply le_n_S, Hk.
-Qed.
-Lemma sum_n_m_ext (a b : nat -> G) n m :
-  (forall n, a n = b n) ->
-  sum_n_m a n m = sum_n_m b n m.
-Proof.
-  intros H.
-  by apply sum_n_m_ext_aux => k Hk.
-Qed. *)
 
 (** ** Noncommutative rings *)
 
@@ -2514,17 +2385,13 @@ Proof.
   by rewrite scal_zero_r.
 Qed.
 
-(* Lemma sum_n_scal_l :
+Lemma sum_n_scal_l :
   forall (a : K) (u : nat -> V) (n : nat),
   sum_n (fun k => scal a (u k)) n = scal a (sum_n u n).
 Proof.
   intros a u n.
-  induction n ; simpl.
-  by [].
-  rewrite IHn.
-  apply eq_sym.
-  by apply scal_distr_l.
-Qed. *)
+  apply sum_n_m_scal_l.
+Qed.
 
 End ModuleSpace1.
 
@@ -2556,7 +2423,7 @@ End AbsRing_ModuleSpace.
 
 (** ** Modules with a norm *)
 
-Module NormedModuleAux. (* ??? *)
+Module NormedModuleAux.
 
 Section ClassDef.
 
@@ -4501,20 +4368,6 @@ split ; intros [d H] ; exists d.
   apply (H (u,v)).
   by split.
 Qed.
-
-(*
-Lemma locally_2d_locally' :
-  forall P x y,
-  locally_2d P x y <-> locally ((x,(y,tt)) : Tn 2 R) (fun z : Tn 2 R => P (fst z) (fst (snd z))).
-Proof.
-intros P x y.
-split ; intros [d H] ; exists d.
-- move => [u [v _]] /= [H1 [H2 _]].
-  now apply H.
-- intros u v Hu Hv.
-  now apply (H (u,(v,tt))) ; repeat split.
-Qed.
-*)
 
 Lemma locally_2d_impl_strong :
   forall (P Q : R -> R -> Prop) x y, locally_2d (fun u v => locally_2d P u v -> Q u v) x y ->

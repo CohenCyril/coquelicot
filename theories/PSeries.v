@@ -2557,7 +2557,6 @@ Proof.
     apply Rabs_lt_between.
     by split.
 
-  (* ? *)
   move => P [eps Heps].
   have : exists N, forall n, (N <= n)%nat -> r ^ (S n) * M / INR (fact (S n)) < eps.
     have H : is_lim_seq (fun n => r ^ n * M / INR (fact n)) 0.

@@ -1540,7 +1540,7 @@ Qed.
 
 Section Riemann_sum.
 
-Context {V : ModuleSpace R_Ring}. (* ??? *)
+Context {V : ModuleSpace R_Ring}.
 
 Definition Riemann_sum (f : R -> V) (ptd : SF_seq) : V :=
   foldr plus zero (pairmap (fun x y => (scal (fst y - fst x) (f (snd y)))) (SF_h ptd,zero) (SF_t ptd)).

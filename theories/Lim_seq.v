@@ -1957,7 +1957,6 @@ intros P [M HM].
 assert (H' : Rbar_locally p_infty (fun y => M < y)).
   now exists M.
 unfold filtermap.
-(* Post-8.4 fix: make second argument explicit. *)
 generalize (filter_and (fun x : T => f x <= g x) _ H (Hf (fun y : R => M < y) H')).
 apply filter_imp.
 intros x [H1 H2].
@@ -1977,7 +1976,6 @@ pose ineq (y : R) := y < M.
 assert (H' : Rbar_locally m_infty ineq).
   now exists M.
 unfold filtermap.
-(* Post-8.4 fix: make second argument explicit. *)
 generalize (filter_and _ (fun x : T => ineq (f x)) H (Hf ineq H')).
 apply filter_imp.
 intros x [H1 H2].

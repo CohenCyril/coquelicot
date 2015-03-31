@@ -582,7 +582,6 @@ intros T F FF f g [l| |] Hfg Hf P [eps HP] ;
   apply Rlt_le.
   apply Rlt_le_trans with (1 := Hx).
   apply Rmin_r.
-  (* Post-8.4 fix: make second argument explicit. *)
   generalize (filter_and  _  (fun (x : T) =>  ineqs (f x))  (Hfg (mkposreal _ He))  (Hf _ Hl)).
   apply filter_imp.
   simpl.
@@ -605,7 +604,6 @@ intros T F FF f g [l| |] Hfg Hf P [eps HP] ;
 - pose ineq (y : R) := Rmax 0 (2 * eps) < y.
   assert (Hl: Rbar_locally' p_infty ineq).
   now exists (Rmax 0 (2 * eps)).
-  (* Post-8.4 fix: make second argument explicit. *)
   generalize (filter_and _ (fun (x : T) => ineq (f x)) (Hfg (mkposreal _ pos_half_prf)) (Hf _ Hl)).
   apply filter_imp.
   simpl.
@@ -627,7 +625,6 @@ intros T F FF f g [l| |] Hfg Hf P [eps HP] ;
 - pose ineq (y : R) := y < Rmin 0 (2 * eps).
   assert (Hl: Rbar_locally' m_infty ineq).
   now exists (Rmin 0 (2 * eps)).
-  (* Post-8.4 fix: make second argument explicit. *)
   generalize (filter_and _ (fun (x : T) => ineq (f x)) (Hfg (mkposreal _ pos_half_prf)) (Hf _ Hl)).
   apply filter_imp.
   simpl.
