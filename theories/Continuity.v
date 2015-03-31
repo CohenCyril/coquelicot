@@ -1793,7 +1793,7 @@ Lemma continuous_scal (k : U -> K) (f : U -> V) (x : U) :
   continuous k x -> continuous f x -> continuous (fun y => scal (k y) (f y)) x.
 Proof.
   intros.
-  by apply filterlim_comp_2, filterlim_scal.
+  by eapply filterlim_comp_2, filterlim_scal.
 Qed.
 Lemma continuous_scal_r (k : K) (f : U -> V) (x : U) :
   continuous f x -> continuous (fun y => scal k (f y)) x.

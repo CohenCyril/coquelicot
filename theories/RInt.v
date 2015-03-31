@@ -19,7 +19,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 COPYING file for more details.
 *)
 
-Require Import Reals Div2 ConstructiveEpsilon.
+Require Import Reals.
 Require Import Ssreflect.ssreflect Ssreflect.ssrbool Ssreflect.eqtype Ssreflect.seq.
 Require Import Markov Rcomplements Rbar Lub Limit SF_seq.
 Require Import Continuity Hierarchy Seq_fct.

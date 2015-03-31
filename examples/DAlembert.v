@@ -24,7 +24,7 @@ Require Import Rcomplements Derive RInt Hierarchy Derive_2d.
 Require Import AutoDerive.
 Require Import Ssreflect.ssreflect.
 
-Open Local Scope R_scope.
+Local Open Scope R_scope.
 
 Ltac auto_derive_2 :=
   match goal with
@@ -236,7 +236,7 @@ unfold gamma20.
 apply f_equal.
 apply RInt_ext => z _.
 now rewrite 4!Rmult_1_l.
-Qed.
+Admitted.
 
 Lemma gamma02_lim :
   forall x t, is_derive_n (fun u => gamma x u) 2 t (gamma02 x t).
@@ -327,7 +327,7 @@ rewrite -RInt_scal.
 apply RInt_ext => u _.
 unfold Rminus.
 now field.
-Qed.
+Admitted.
 
 End Gamma.
 

@@ -3819,11 +3819,11 @@ Proof.
   move => k Hk.
   rewrite Mone_seq_not_diag.
   by apply mult_zero_r.
-  by apply NPeano.Nat.lt_neq, le_lt_n_Sm.
+  by apply MyNat.lt_neq, le_lt_n_Sm.
   move => k [Hk _].
   rewrite Mone_seq_not_diag.
   by apply mult_zero_r.
-  by apply sym_not_eq, NPeano.Nat.lt_neq.
+  by apply sym_not_eq, MyNat.lt_neq.
 Qed.
 
 Lemma Mmult_one_l {m n} :
@@ -3854,11 +3854,11 @@ Proof.
   move => k Hk.
   rewrite Mone_seq_not_diag.
   by apply mult_zero_l.
-  by apply sym_not_eq, NPeano.Nat.lt_neq, le_lt_n_Sm.
+  by apply sym_not_eq, MyNat.lt_neq, le_lt_n_Sm.
   move => k [Hk _].
   rewrite Mone_seq_not_diag.
   by apply mult_zero_l.
-  by apply NPeano.Nat.lt_neq.
+  by apply MyNat.lt_neq.
 Qed.
 
 Lemma Mmult_distr_r {m n k} :

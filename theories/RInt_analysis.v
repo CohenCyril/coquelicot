@@ -19,7 +19,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 COPYING file for more details.
 *)
 
-Require Import Reals Div2 ConstructiveEpsilon.
+Require Import Reals.
 Require Import Ssreflect.ssreflect Ssreflect.ssrbool Ssreflect.eqtype Ssreflect.seq.
 Require Import Markov Rcomplements Rbar Lub Limit Derive SF_seq.
 Require Import Continuity Derive_2d Hierarchy Seq_fct RInt.
@@ -201,7 +201,7 @@ Proof.
   apply continuous_ext with (fun z => plus (If b) (minus (If z) (If b))) ; simpl.
   intros x.
   by rewrite plus_comm -plus_assoc plus_opp_l plus_zero_r.
-  apply filterlim_comp_2, filterlim_plus.
+  eapply filterlim_comp_2, filterlim_plus.
   apply filterlim_const.
   apply (continuous_RInt_0 f _ (fun x : R_UniformSpace => minus (If x) (If b))).
   apply: filter_imp H => x Hx.
@@ -406,10 +406,10 @@ Proof.
     apply (He (a,x)).
     split => //.
     by apply ball_center.
-    
+
   eapply filterdiff_ext_lin.
 
-  apply filterdiff_ext_loc with (fun u : R * R => plus (If (fst u) b) (minus (If a (snd u)) (If a b))) ;
+  apply (filterdiff_ext_loc (FF := @filter_filter _ _ (locally_filter _)) (fun u : R * R => plus (If (fst u) b) (minus (If a (snd u)) (If a b)))) ;
   last first.
   apply filterdiff_plus_fct.
   apply (filterdiff_comp' (fun u : R * R => fst u) (fun a : R => If a b)).

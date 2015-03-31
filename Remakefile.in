@@ -63,7 +63,7 @@ doc: html/index.html deps.dot
 deps.dot: $(addprefix theories/,$(FILES))
 	(echo "digraph coquelicot_deps {" ;
 	 echo "node [shape = ellipse, style=filled, URL=\"Coquelicot.\N.html\", color=black, fillcolor=cornflowerblue];";
-	(cd theories ; @COQDEP@ -I . $(FILES)) | sed -e 's/[.]vo.*: [^ ]*[.]v//' |
+	(cd theories ; @COQDEP@ -R . Coquelicot $(FILES)) | sed -n -e 's/[.]vo.*: [^ ]*[.]v//p' |
 	while read src dst; do
 	  for d in $dst; do
 	    echo $src "->" ${d%.vo} ";"
