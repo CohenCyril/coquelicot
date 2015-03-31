@@ -1243,29 +1243,6 @@ split.
   now exists eps.
 Qed.
 
-(*
-Lemma continuity_2d_pt_filterlim' :
-  forall f x y,
-  continuity_2d_pt f x y <->
-  filterlim (fun z : Hierarchy.Tn 2 R => f (fst z) (fst (snd z))) (@locally (Hierarchy.Tn 2 R) _ (x,(y,tt))) (locally (f x y)).
-Proof.
-split.
-- intros Cf P [eps He].
-  specialize (Cf eps).
-  apply locally_2d_locally' in Cf.
-  apply filter_imp with (2 := Cf).
-  simpl.
-  intros [u [v t]].
-  apply He.
-- intros Cf eps.
-  apply locally_2d_locally'.
-  specialize (Cf (fun z => Rabs (z - f x y) < eps)).
-  unfold filtermap in Cf.
-  apply Cf.
-  now exists eps.
-Qed.
-*)
-
 Lemma uniform_continuity_2d :
   forall f a b c d,
   (forall x y, a <= x <= b -> c <= y <= d -> continuity_2d_pt f x y) ->
