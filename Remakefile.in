@@ -94,7 +94,7 @@ EXTRA_DIST = \
 	configure
 
 REMOVE_FROM_DIST = \
-	examples/part1.v
+	examples/Wasow.v
 
 dist: $(EXTRA_DIST)
 	PACK=@PACKAGE_TARNAME@-@PACKAGE_VERSION@
