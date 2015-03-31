@@ -21,7 +21,7 @@ COPYING file for more details.
 
 Require Import Reals.
 Require Import Ssreflect.ssreflect Ssreflect.ssrbool Ssreflect.eqtype Ssreflect.seq.
-Require Import Markov Rcomplements Rbar Lub Limit Derive SF_seq.
+Require Import Markov Rcomplements Rbar Lub Lim_seq Derive SF_seq.
 Require Import Continuity Derive_2d Hierarchy Seq_fct RInt PSeries.
 
 (** This file contains results about the integral as a function:

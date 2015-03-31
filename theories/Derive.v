@@ -21,7 +21,7 @@ COPYING file for more details.
 
 Require Import Reals Rbar.
 Require Import Ssreflect.ssreflect.
-Require Import Limit Iter.
+Require Import Lim_seq Iter.
 Require Import Hierarchy Continuity Equiv.
 Require Import Rcomplements.
 Open Scope R_scope.

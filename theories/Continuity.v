@@ -22,7 +22,7 @@ COPYING file for more details.
 Require Import Reals.
 Require Import Ssreflect.ssreflect.
 Require Import Rcomplements Rbar Hierarchy.
-Require Import Compactness Limit SF_seq.
+Require Import Compactness Lim_seq SF_seq.
 
 (** This file describes defineitions and properties of continuity on
 [R] and on uniform spaces. It also contains many results about the

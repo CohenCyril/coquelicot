@@ -268,7 +268,7 @@ library is provided by lemmas [is_series_Reals] and [is_pseries_Reals].
 *)
 
 Require Export AutoDerive Compactness Complex Continuity Derive.
-Require Export Derive_2d Equiv ElemFct Hierarchy Limit.
+Require Export Derive_2d Equiv ElemFct Hierarchy Lim_seq.
 Require Export Lub Markov PSeries Rbar Rcomplements.
 Require Export RInt Seq_fct Series SF_seq.
 

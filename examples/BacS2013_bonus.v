@@ -20,7 +20,7 @@ COPYING file for more details.
 *)
 
 Require Import Reals Ssreflect.ssreflect Psatz Omega.
-Require Import Hierarchy PSeries Rbar Limit.
+Require Import Hierarchy PSeries Rbar Lim_seq.
 
 (** This file describes an experiment: most 18-year old French
 students pass an exam called Baccalaureate which ends the high school

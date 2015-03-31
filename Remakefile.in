@@ -11,7 +11,7 @@ FILES = \
 	Hierarchy.v \
 	Iter.v \
 	KHInt.v \
-	Limit.v \
+	Lim_seq.v \
 	Lub.v \
 	Markov.v \
 	PSeries.v \

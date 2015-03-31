@@ -21,7 +21,7 @@ COPYING file for more details.
 
 Require Import Reals Ssreflect.ssreflect.
 Require Import Rcomplements Rbar Hierarchy.
-Require Import Derive Series PSeries Limit.
+Require Import Derive Series PSeries Lim_seq.
 Require Import AutoDerive.
 
 (** This file is an example of how to use power series. It defines and

@@ -20,7 +20,7 @@ COPYING file for more details.
 *)
 
 Require Import Reals Ssreflect.ssreflect.
-Require Import Rbar Hierarchy RInt Limit Continuity Derive.
+Require Import Rbar Hierarchy RInt Lim_seq Continuity Derive.
 Require Import Rcomplements RInt_analysis.
 
 (** This file describes improper integrals, such as integrals with an

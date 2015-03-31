@@ -21,7 +21,7 @@ COPYING file for more details.
 
 Require Import Reals Ssreflect.ssreflect Rbar.
 Require Import Rcomplements.
-Require Import Limit Continuity Derive Series.
+Require Import Lim_seq Continuity Derive Series.
 Require Import Lub Hierarchy.
 
 (** This file describes sequences of functions and results about

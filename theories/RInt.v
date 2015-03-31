@@ -21,7 +21,7 @@ COPYING file for more details.
 
 Require Import Reals.
 Require Import Ssreflect.ssreflect Ssreflect.ssrbool Ssreflect.eqtype Ssreflect.seq.
-Require Import Markov Rcomplements Rbar Lub Limit SF_seq.
+Require Import Markov Rcomplements Rbar Lub Lim_seq SF_seq.
 Require Import Continuity Hierarchy.
 
 (** This file contains the definition and properties of the Riemann

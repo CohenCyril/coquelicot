@@ -21,7 +21,7 @@ COPYING file for more details.
 
 Require Import Reals Omega Ssreflect.ssreflect.
 Require Import Rcomplements.
-Require Import Limit Rbar Hierarchy.
+Require Import Lim_seq Rbar Hierarchy.
 
 (** This file gives definitions and properties about series defined on
 a normed module. An equivalence with the standard library and several

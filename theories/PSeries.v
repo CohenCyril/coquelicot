@@ -20,7 +20,7 @@ COPYING file for more details.
 *)
 
 Require Import Reals Even Div2 Omega Ssreflect.ssreflect.
-Require Import Rcomplements Rbar Limit Lub Hierarchy.
+Require Import Rcomplements Rbar Lim_seq Lub Hierarchy.
 Require Import Continuity Derive Seq_fct Series.
 
 (** This file describes power series: #&Sigma; a<sub>k</sub>
@@ -1746,7 +1746,7 @@ Proof.
     rewrite /is_pseries /is_series.
     replace (@locally R_NormedModule (l / (1 - x)))
       with (Rbar_locally (Rbar_mult (l - ((Rbar_mult x 0) * 0)) (/ (1 - x)))).
-    apply (Limit.is_lim_seq_ext
+    apply (is_lim_seq_ext
       (fun n => (sum_n (fun k : nat => scal (pow_n (K := R_AbsRing) x k) (a k)) n
                      - scal (pow_n (K := R_AbsRing) x (S n)) (Sa n)) / (1 - x))
        (sum_n (fun k : nat => scal (pow_n (K := R_AbsRing) x k) (Sa k)))).
@@ -1754,17 +1754,17 @@ Proof.
        field.
        apply Rgt_not_eq ; apply -> Rminus_lt_0.
        by apply Rabs_lt_between, Hx.
-    apply Limit.is_lim_seq_scal_r.
-    apply Limit.is_lim_seq_minus'.
+    apply is_lim_seq_scal_r.
+    apply is_lim_seq_minus'.
     apply Hl.
-    apply Limit.is_lim_seq_mult'.
-    apply Limit.is_lim_seq_mult'.
-    apply Limit.is_lim_seq_const.
-    eapply Limit.is_lim_seq_ext.
+    apply is_lim_seq_mult'.
+    apply is_lim_seq_mult'.
+    apply is_lim_seq_const.
+    eapply is_lim_seq_ext.
     intros n ; by apply sym_eq, pow_n_pow.
-    apply Limit.is_lim_seq_geom.
+    apply is_lim_seq_geom.
     by apply Hx.
-    move: Ha1 ; apply (Limit.is_lim_seq_ext _ _ 0).
+    move: Ha1 ; apply (is_lim_seq_ext _ _ 0).
     intros n ; apply sum_n_ext => k.
     by rewrite pow_n_pow pow1 scal_one.
     by replace (Rbar_mult (l - Rbar_mult x 0 * 0) (/ (1 - x)))

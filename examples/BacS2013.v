@@ -24,7 +24,7 @@ COPYING file for more details.
 Require Import Reals Ssreflect.ssreflect.
 Require Import Psatz.
 Require Import Rcomplements Rbar Hierarchy.
-Require Import Derive RInt Continuity Limit ElemFct RInt_analysis.
+Require Import Derive RInt Continuity Lim_seq ElemFct RInt_analysis.
 
 (** This file describes an experiment: most 18-year old French
 students pass an exam called Baccalaureate which ends the high school
