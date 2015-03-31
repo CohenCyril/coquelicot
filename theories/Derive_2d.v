@@ -35,6 +35,59 @@ Definition differentiable_pt_lim (f : R -> R -> R) (x y : R) (lx ly : R) :=
   forall eps : posreal, locally_2d (fun u v =>
     Rabs (f u v - f x y - (lx * (u - x) + ly * (v - y))) <= eps * Rmax (Rabs (u - x)) (Rabs (v - y))) x y.
 
+Lemma filterdiff_differentiable_pt_lim (f : R -> R -> R) (x y lx ly : R) :
+  filterdiff (fun u : R * R => f (fst u) (snd u)) (locally (x,y)) (fun u : R * R => fst u * lx + snd u * ly)
+  <-> differentiable_pt_lim f x y lx ly.
+Proof.
+  split => Df.
+  move => eps.
+  case: Df => _ Df.
+  assert (is_filter_lim (locally (x, y)) (x, y)) by now intro.
+  specialize (Df (x,y) H) => {H}.
+  apply locally_2d_locally.
+  assert (0 < eps / sqrt 2).
+    apply Rdiv_lt_0_compat.
+    by apply eps.
+    by apply Rlt_sqrt2_0.
+  move: (Df (mkposreal _ H)).
+  apply filter_imp => [[u v] /= Huv].
+  rewrite !(Rmult_comm _ (_-_)).
+  eapply Rle_trans.
+  apply Huv.
+  rewrite Rmult_assoc.
+  apply Rmult_le_compat_l.
+  by apply Rlt_le, eps.
+  rewrite Rmult_comm Rle_div_l.
+  rewrite Rmult_comm.
+  eapply Rle_trans.
+  apply norm_prod.
+  apply Rle_refl.
+  by apply Rlt_sqrt2_0.
+  
+  split.
+  apply (is_linear_comp (fun u : R * R => (scal (fst u) lx,scal (snd u) ly))
+                          (fun u : R * R => plus (fst u) (snd u))).
+  apply is_linear_prod.
+  apply (is_linear_comp (@fst _ _) (fun t : R => scal t lx)).
+  by apply is_linear_fst.
+  by apply @is_linear_scal_l.
+  apply (is_linear_comp (@snd _ _) (fun t : R => scal t ly)).
+  by apply is_linear_snd.
+  by apply @is_linear_scal_l.
+  by apply @is_linear_plus.
+  simpl => u Hu.
+  replace u with (x,y) by now apply is_filter_lim_locally_unique.
+  move => {u Hu} eps /=.
+  move: (proj1 (locally_2d_locally _ _ _) (Df eps)).
+  apply filter_imp => [[u v]] /= Huv.
+  rewrite !(Rmult_comm (_-_)).
+  eapply Rle_trans.
+  apply Huv.
+  apply Rmult_le_compat_l.
+  by apply Rlt_le, eps.
+  apply (norm_prod (u - x) (v - y)).
+Qed.
+
 Lemma differentiable_pt_lim_ext : forall f1 f2 x y lx ly,
   locally_2d (fun u v => f1 u v = f2 u v) x y ->
   differentiable_pt_lim f1 x y lx ly -> differentiable_pt_lim f2 x y lx ly.
@@ -150,7 +203,7 @@ Proof.
   apply sym_not_eq, Rlt_not_eq, (Rlt_trans _ _ _ Rlt_0_1 n).
 Qed.
 
-Lemma derivable_differentiable_pt_lim : forall f x y l2,
+(* Lemma derivable_differentiable_pt_lim : forall f x y l2,
   locally_2d (fun u v => ex_derive (fun z => f z v) u) x y ->
   is_derive (fun z => f x z) y l2 ->
   continuity_2d_pt (fun u v => Derive (fun z => f z v) u) x y ->
@@ -207,81 +260,6 @@ Proof.
   rewrite Rmult_comm ; apply Hd2.
   apply Rlt_le_trans with (1:=Hv).
   apply Rmin_r.
-  apply Rmult_le_compat_l.
-  apply Rlt_le.
-  apply cond_pos.
-  apply Rmax_r.
-Qed.
-
-(* old version
-Lemma derivable_differentiable_pt_lim : forall f x y,
-  locally_2d (fun u v => ex_derive (fun z => f z v) u) x y ->
-  locally_2d (fun u v => ex_derive (fun z => f u z) v) x y ->
-  continuity2_pt (fun u v => Derive (fun z => f z v) u) x y ->
-  continuity2_pt (fun u v => Derive (fun z => f u z) v) x y ->
-  differentiable_pt_lim f x y (Derive (fun u => f u y) x) (Derive (fun v => f x v) y).
-Proof.
-  intros f x y Dx Dy Cx Cy eps.
-  set (eps' := pos_div_2 eps).
-  specialize (Cx eps').
-  specialize (Cy eps').
-  move: (locally_2d_and _ _ _ _ Dx Dy) => {Dx Dy} H.
-  move: (locally_2d_and _ _ _ _ H Cx) => {H Cx} H.
-  move: (locally_2d_and _ _ _ _ H Cy) => {H Cy}.
-  set (l1 := Derive (fun u : R => f u y) x).
-  set (l2 := Derive (fun v : R => f x v) y).
-  apply: locally_2d_align => delta H u v Hu Hv.
-  set (g1 t := f t v - l1*t).
-  set (g2 t := f x t - l2*t).
-  apply Rle_trans with (Rabs (g1 u - g1 x) + Rabs (g2 v - g2 y)).
-    replace (f u v - f x y - (l1 * (u - x) + l2 * (v - y))) with
-      ((g1 u - g1 x) + (g2 v - g2 y)) by (unfold g1, g2 ; ring).
-    apply Rabs_triang.
-  replace (pos eps) with (eps' + eps') by (apply sym_eq ; apply double_var).
-  rewrite Rmult_plus_distr_r.
-  apply Rplus_le_compat.
-  (* *)
-  apply Rle_trans with (eps' * Rabs (u - x)).
-  apply bounded_variation => t Ht.
-  assert (is_derive g1 t (Derive (fun z : R => f z v) t - l1)).
-    apply derivable_pt_lim_minus with (f2 := fun t => l1 * t).
-    apply Derive_correct.
-    apply H with (2 := Hv).
-    now apply Rle_lt_trans with (1 := Ht).
-    rewrite -{2}(Rmult_1_r l1).
-    apply derivable_pt_lim_scal.
-    apply derivable_pt_lim_id.
-  split.
-  eexists. apply H0.
-  apply Rlt_le.
-  rewrite (is_derive_unique _ _ _ H0).
-  apply H with (2 := Hv).
-  now apply Rle_lt_trans with (1 := Ht).
-  apply Rmult_le_compat_l.
-  apply Rlt_le.
-  apply cond_pos.
-  apply Rmax_l.
-  (* *)
-  apply Rle_trans with (eps' * Rabs (v - y)).
-  apply bounded_variation => t Ht.
-  assert (is_derive g2 t (Derive (fun z : R => f x z) t - l2)).
-    apply derivable_pt_lim_minus with (f1 := fun v => f x v) (f2 := fun t => l2 * t).
-    apply Derive_correct.
-    apply H.
-    rewrite /Rminus Rplus_opp_r Rabs_R0.
-    apply cond_pos.
-    now apply Rle_lt_trans with (1 := Ht).
-    rewrite -{2}(Rmult_1_r l2).
-    apply derivable_pt_lim_scal.
-    apply derivable_pt_lim_id.
-  split.
-  eexists. apply H0.
-  apply Rlt_le.
-  rewrite (is_derive_unique _ _ _ H0).
-  apply H.
-  rewrite /Rminus Rplus_opp_r Rabs_R0.
-  apply cond_pos.
-  now apply Rle_lt_trans with (1 := Ht).
   apply Rmult_le_compat_l.
   apply Rlt_le.
   apply cond_pos.
@@ -1309,22 +1287,30 @@ replace (partial_derive (S p) (k - p) f (x + z * (u - x)) (y + z * (v - y)))
 2: reflexivity.
 replace (partial_derive p (S (k - p)) f (x + z * (u - x)) (y + z * (v - y))) with
   (Derive (fun v : R => partial_derive p (k - p) f  (x + z * (u - x)) v) (y + z * (v - y))).
-apply derivable_differentiable_pt_lim.
-apply locally_2d_impl with (2:=HH).
-apply locally_2d_forall.
-clear - Hk Hp; intros u v (H1,H2).
+apply filterdiff_differentiable_pt_lim.
+eapply filterdiff_ext_lin.
+apply is_derive_filterdiff.
+apply locally_2d_locally in HH.
+apply filter_imp with (2:=HH).
+clear - Hk Hp ; intros [u' v'] (H1,H2).
+evar_last.
+apply Derive_correct.
 apply ex_diff_n_ex_deriv_inf_1 with (S n).
 now rewrite - le_plus_minus.
 exact H1.
+simpl ; reflexivity.
 apply locally_2d_singleton in HH.
 apply Derive_correct.
 apply ex_diff_n_ex_deriv_inf_2 with (S n).
 now rewrite - le_plus_minus.
 apply HH.
 apply locally_2d_singleton in HH.
+apply continuity_2d_pt_filterlim.
 apply ex_diff_n_continuity_inf_1 with (S n).
 now rewrite - le_plus_minus.
 apply HH.
+case => /= u' v'.
+reflexivity.
 apply Derive_partial_derive_aux2.
 apply locally_2d_impl with (2:=HH).
 apply locally_2d_forall.

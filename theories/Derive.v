@@ -2018,12 +2018,11 @@ ring_simplify.
 rewrite - H; ring.
 Qed.
 
-Lemma bounded_variation :
-  forall h dh D x y,
-  (forall t, Rabs (t - x) <= Rabs (y - x) -> is_derive h t (dh t) /\ (Rabs (dh t) <= D)) ->
+Lemma bounded_variation (h dh : R -> R) (D : R) (x y : R) :
+  (forall t : R, Rabs (t - x) <= Rabs (y - x) -> is_derive h t (dh t) /\ (Rabs (dh t) <= D)) ->
   Rabs (h y - h x) <= D * Rabs (y - x).
 Proof.
-intros h dh D x y H.
+intros H.
 destruct (MVT_cor4 h dh x (Rabs (y - x))) with (b := y) as [t Ht].
 intros c Hc.
 specialize (H c Hc).
@@ -2034,6 +2033,108 @@ rewrite Rabs_mult.
 apply Rmult_le_compat_r.
 apply Rabs_pos.
 now apply H.
+Qed.
+
+Lemma norm_le_prod_norm_1 {K : AbsRing} {U V : NormedModule K} (x : U * V) :
+  norm (fst x) <= norm x.
+Proof.
+  eapply Rle_trans, sqrt_plus_sqr.
+  rewrite Rabs_pos_eq.
+  apply Rmax_l.
+  by apply norm_ge_0.
+Qed.
+Lemma norm_le_prod_norm_2 {K : AbsRing} {U V : NormedModule K} (x : U * V) :
+  norm (snd x) <= norm x.
+Proof.
+  eapply Rle_trans, sqrt_plus_sqr.
+  rewrite (Rabs_pos_eq (norm (snd x))).
+  apply Rmax_r.
+  by apply norm_ge_0.
+Qed.
+
+Lemma is_derive_filterdiff (f : R -> R -> R) (x y : R) (dfx : R -> R -> R) (dfy : R) :
+  locally (x,y) (fun u : R * R => is_derive (fun z => f z (snd u)) (fst u) (dfx (fst u) (snd u))) ->
+  is_derive (fun z : R => f x z) y dfy ->
+  continuous (fun u : R * R => dfx (fst u) (snd u)) (x,y) ->
+  filterdiff (fun u : R * R => f (fst u) (snd u)) (locally (x,y)) (fun u : R * R => plus (scal (fst u) (dfx x y)) (scal (snd u) dfy)).
+Proof.
+  intros Dx Dy Cx.
+  split.
+    apply (is_linear_comp (fun u : R * R => (scal (fst u) (dfx x y),scal (snd u) dfy))
+                          (fun u : R * R => plus (fst u) (snd u))).
+    apply is_linear_prod.
+    apply (is_linear_comp (@fst _ _) (fun t : R => scal t (dfx x y))).
+    by apply is_linear_fst.
+    by apply @is_linear_scal_l.
+    apply (is_linear_comp (@snd _ _) (fun t : R => scal t dfy)).
+    by apply is_linear_snd.
+    by apply @is_linear_scal_l.
+    by apply @is_linear_plus.
+  simpl => u Hu.
+  replace u with (x,y) by now apply is_filter_lim_locally_unique.
+  move => {u Hu} eps /=.
+  set (eps' := pos_div_2 eps).
+  generalize (proj1 (filterlim_locally _ _) Cx eps') => {Cx} /= Cx.
+  generalize (filter_and _ _ Dx Cx) => {Dx Cx}.
+  intros (d1,Hd1).
+  destruct (proj2 Dy y (fun P H => H) eps') as (d2,Hd2).
+  set (l1 := dfx x y).
+  exists (mkposreal _ (Rmin_stable_in_posreal d1 d2)).
+  intros (u,v) (Hu,Hv) ; simpl in *.
+  set (g1 t := minus (f t v) (scal t l1)).
+  set (g2 t := minus (f x t) (scal t dfy)).
+  apply Rle_trans with (norm (minus (g1 u) (g1 x)) + norm (minus (g2 v) (g2 y))).
+  eapply Rle_trans, norm_triangle.
+  apply Req_le, f_equal, sym_eq.
+    rewrite /g1 /g2 /minus !opp_plus !opp_opp -!plus_assoc ; apply f_equal.
+    do 5 rewrite plus_comm -!plus_assoc ; apply f_equal.
+    rewrite !scal_distr_r !opp_plus -!plus_assoc !scal_opp_l !opp_opp.
+    rewrite plus_comm -!plus_assoc ; apply f_equal.
+    rewrite plus_comm -!plus_assoc ; apply f_equal.
+    by rewrite plus_comm -!plus_assoc plus_opp_l plus_zero_r.
+  replace (pos eps) with (eps' + eps') by (apply sym_eq ; apply double_var).
+  rewrite Rmult_plus_distr_r.
+  apply Rplus_le_compat.
+  (* *)
+  apply Rle_trans with (eps' * norm (minus u x)).
+  apply bounded_variation with (fun t => minus (dfx t v) l1) => t Ht.
+  split.
+    apply: is_derive_minus.
+    apply (Hd1 (t,v)) ; split ; simpl.
+    apply Rle_lt_trans with (1 := Ht).
+    apply Rlt_le_trans with (1:=Hu).
+    apply Rmin_l.
+    apply Rlt_le_trans with (1:=Hv).
+    apply Rmin_l.
+    rewrite -{2}(Rmult_1_r l1).
+    evar_last.
+    apply filterdiff_linear, is_linear_scal_l.
+    by rewrite Rmult_1_r.
+  apply Rlt_le.
+  apply (Hd1 (t,v)) ; split ; simpl.
+  apply Rle_lt_trans with (1 := Ht).
+  apply Rlt_le_trans with (1:=Hu).
+  apply Rmin_l.
+  apply Rlt_le_trans with (1:=Hv).
+  apply Rmin_l.
+  apply Rmult_le_compat_l.
+  apply Rlt_le.
+  apply cond_pos.
+  apply (norm_le_prod_norm_1 (minus (u, v) (x, y))).
+  (* *)
+  apply Rle_trans with (eps' * norm (minus v y)).
+  apply Rle_trans with (norm (minus (minus (f x v) (f x y)) (scal (minus v y) dfy))).
+  right; apply f_equal.
+  rewrite /g2 scal_minus_distr_r /minus !opp_plus opp_opp -!plus_assoc ; apply f_equal.
+  rewrite plus_comm -!plus_assoc ; apply f_equal.
+  apply plus_comm.
+  apply Hd2.
+  apply Rlt_le_trans with (1:=Hv).
+  apply Rmin_r.
+  apply Rmult_le_compat_l.
+  apply Rlt_le.
+  apply cond_pos.
+  apply (norm_le_prod_norm_2 (minus (u, v) (x, y))).
 Qed.
 
 (** * Newton integration *)

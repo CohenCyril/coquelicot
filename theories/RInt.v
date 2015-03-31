@@ -1750,7 +1750,6 @@ apply is_RInt_point.
 Qed.
 
 (** ** Continuous imply Riemann-integrable *)
-(* todo : dans RInt_analysis ?? *)
 
 Section StepFun.
 

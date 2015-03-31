@@ -28,7 +28,7 @@ on parametric integrals are provided. *)
 Require Import Reals Div2 ConstructiveEpsilon.
 Require Import Ssreflect.ssreflect Ssreflect.ssrbool Ssreflect.eqtype Ssreflect.seq.
 Require Import Markov Rcomplements Rbar Lub Limit Derive SF_seq.
-Require Import Continuity Derive_2d Hierarchy Seq_fct RInt.
+Require Import Continuity (*Derive_2d*) Hierarchy Seq_fct RInt.
 
 (** * Continuity *)
 
@@ -346,6 +346,7 @@ Proof.
   field.
   apply Rgt_not_eq, norm_factor_gt_0.
 Qed.
+
 Lemma is_derive_RInt (f If : R -> V) (a b : R) :
   locally b (fun b => is_RInt f a b (If b))
   -> continuous f b
@@ -372,6 +373,7 @@ Proof.
   apply is_derive_const.
   by apply plus_zero_r.
 Qed.
+
 Lemma is_derive_RInt' (f If : R -> V) (a b : R) :
   locally a (fun a => is_RInt f a b (If a))
   -> continuous f a
@@ -451,6 +453,25 @@ Proof.
 Qed.
 
 End Derive.
+
+Lemma Derive_RInt (f : R -> R) (a b : R) :
+  locally b (ex_RInt f a) -> continuous f b
+  -> Derive (RInt f a) b = f b.
+Proof.
+  intros If Cf.
+  apply is_derive_unique, (is_derive_RInt _ _ a) => //.
+  move: If ; apply filter_imp => y.
+  by apply RInt_correct.
+Qed.
+Lemma Derive_RInt' (f : R -> R) (a b : R) :
+  locally a (fun a => ex_RInt f a b) -> continuous f a
+  -> Derive (fun a => RInt f a b) a = - f a.
+Proof.
+  intros If Cf.
+  eapply is_derive_unique, (is_derive_RInt' (V := R_NormedModule) _ _ a b) => //.
+  move: If ; apply filter_imp => y.
+  by apply RInt_correct.
+Qed.
 
 Lemma is_RInt_derive (f df : R -> R) (a b : R) :
   (forall x : R, Rmin a b <= x <= Rmax a b -> is_derive f x (df x)) ->
@@ -620,7 +641,7 @@ apply is_RInt_unique, is_RInt_derive => //.
 intros ; by apply Derive_correct, Df.
 Qed.
 
-(** * Composition *)
+(** ** Composition *)
 
 Lemma is_RInt_comp (f g dg : R -> R) (a b : R) :
   (forall x, Rmin a b <= x <= Rmax a b -> continuous f (g x))
@@ -742,16 +763,15 @@ Proof.
   by rewrite RInt_point Rminus_0_r.
 Qed.
 
-Lemma RInt_Chasles_bound_comp_l_loc :
-  forall f a b x,
+Lemma RInt_Chasles_bound_comp_l_loc (f : R -> R -> R) (a : R -> R) (b x : R) :
   locally x (fun y => ex_RInt (f y) (a x) b) ->
   (exists eps : posreal, locally x (fun y => ex_RInt (f y) (a x - eps) (a x + eps))) ->
-  continuity_pt a x ->
+  continuous a x ->
   locally x (fun x' => RInt (f x') (a x') (a x) + RInt (f x') (a x) b =
     RInt (f x') (a x') b).
 Proof.
-intros f a b x Hab (eps,Hae) Ca.
-move /continuity_pt_locally: Ca => Ca.
+intros Hab (eps,Hae) Ca.
+generalize (proj1 (filterlim_locally _ _) Ca) => {Ca} Ca.
 generalize (filter_and _ _ (Ca eps) (filter_and _ _ Hab Hae)).
 apply filter_imp => {Ca Hae Hab} y [Hy [Hab Hae]].
 apply RInt_Chasles with (2 := Hab).
@@ -761,19 +781,18 @@ rewrite /Rminus Rplus_opp_r Rabs_R0.
 apply Rlt_le, cond_pos.
 Qed.
 
-Lemma RInt_Chasles_bound_comp_loc :
-  forall f a b x,
+Lemma RInt_Chasles_bound_comp_loc (f : R -> R -> R) (a b : R -> R) (x : R) :
   locally x (fun y => ex_RInt (f y) (a x) (b x)) ->
   (exists eps : posreal, locally x (fun y => ex_RInt (f y) (a x - eps) (a x + eps))) ->
   (exists eps : posreal, locally x (fun y => ex_RInt (f y) (b x - eps) (b x + eps))) ->
-  continuity_pt a x ->
-  continuity_pt b x ->
+  continuous a x ->
+  continuous b x ->
   locally x (fun x' => RInt (f x') (a x') (a x) + RInt (f x') (a x) (b x') =
     RInt (f x') (a x') (b x')).
 Proof.
-intros f a b x Hab (ea,Hae) (eb,Hbe) Ca Cb.
-move /continuity_pt_locally: Ca => Ca.
-move /continuity_pt_locally: Cb => Cb.
+intros Hab (ea,Hae) (eb,Hbe) Ca Cb.
+generalize (proj1 (filterlim_locally _ _) Ca) => {Ca} Ca.
+generalize (proj1 (filterlim_locally _ _) Cb) => {Cb} Cb.
 set (e := mkposreal _ (Rmin_stable_in_posreal ea eb)).
 generalize (filter_and _ _ (filter_and _ _ (Ca e) (Cb e))
   (filter_and _ _ Hab (filter_and _ _ Hae Hbe))).
@@ -794,13 +813,44 @@ apply Rlt_le_trans with (1 := Hby).
 exact: Rmin_r.
 Qed.
 
-Lemma is_derive_RInt_bound_comp :
+Section RInt_comp.
+
+Context {V : NormedModule R_AbsRing}.
+
+Lemma is_derive_RInt_bound_comp (f : R -> V) (If : R -> R -> V) (a b : R -> R) (da db x : R) :
+  locally (a x, b x)
+    (fun u : R * R => is_RInt f (fst u) (snd u) (If (fst u) (snd u))) ->
+  continuous f (a x) ->
+  continuous f (b x) ->
+  is_derive a x da ->
+  is_derive b x db ->
+  is_derive (fun x => If (a x) (b x)) x (minus (scal db (f (b x))) (scal da (f (a x)))).
+Proof.
+  intros Iab Ca Cb Da Db.
+  unfold is_derive.
+  eapply filterdiff_ext_lin.
+  apply @filterdiff_comp'_2.
+  apply Da.
+  apply Db.
+  eapply filterdiff_ext_lin.
+  apply (filterdiff_RInt f If (a x) (b x)).
+  exact Iab.
+  exact Ca.
+  exact Cb.
+  by case => y z /=.
+  simpl => y.
+  by rewrite -!scal_assoc scal_minus_distr_l.
+Qed.
+
+End RInt_comp.
+
+(*Lemma is_derive_RInt_bound_comp :
   forall f a b da db x,
   ex_RInt f (a x) (b x) ->
   (exists eps : posreal, ex_RInt f (a x - eps) (a x + eps)) ->
   (exists eps : posreal, ex_RInt f (b x - eps) (b x + eps)) ->
-  continuity_pt f (a x) ->
-  continuity_pt f (b x) ->
+  continuous f (a x) ->
+  continuous f (b x) ->
   is_derive a x da ->
   is_derive b x db ->
   is_derive (fun x => RInt f (a x) (b x)) x (db * f (b x) - da * f (a x)).
@@ -865,7 +915,7 @@ by apply continuity_pt_filterlim.
 simpl => y.
 rewrite /plus /scal /= /mult /= /opp /=.
 ring.
-Qed.
+Qed.*)
 
 (** * Parametric integrals *)
 
@@ -1217,17 +1267,19 @@ apply is_derive_ext_loc with (fun x0 => plus (RInt (fun t : R => f x0 t) (a x0) 
 apply RInt_Chasles_bound_comp_l_loc.
 exact Hi.
 now exists d0.
-apply derivable_continuous_pt.
+apply @filterdiff_continuous.
 eexists.
-apply is_derive_Reals, Da.
+apply Da.
 eapply filterdiff_ext_lin.
 apply @filterdiff_plus_fct.
 by apply locally_filter.
 (* *)
-apply is_derive_Reals.
-apply derivable_pt_lim_comp_2d with
-   (f1 := fun x0 y => RInt (fun t : R => f x0 t) y (a x)).
-apply derivable_differentiable_pt_lim.
+apply @filterdiff_comp'_2 with
+   (h := fun x0 y => RInt (fun t : R => f x0 t) y (a x)).
+apply filterdiff_id.
+apply Da.
+eapply filterdiff_ext_lin.
+apply (is_derive_filterdiff (fun u v => RInt (fun t0 : R => f u t0) v (a x))).
 (* . *)
 destruct Df as (d1,(d2,Df)).
 destruct Cdf2 as (d3,Cdf2).
@@ -1236,8 +1288,8 @@ exists (mkposreal _ (Rmin_stable_in_posreal
                 (mkposreal _ (Rmin_stable_in_posreal d1 (pos_div_2 d2)))
                 (mkposreal _ (Rmin_stable_in_posreal d3
                             (mkposreal _ (Rmin_stable_in_posreal d0 (pos_div_2 d4))))))).
-simpl; intros u v Hu Hv.
-eexists; eapply is_derive_RInt_param.
+intros [u v] [Hu Hv] ; simpl in *.
+eapply is_derive_RInt_param.
 exists (pos_div_2 d2).
 intros y Hy t Ht.
 apply Df.
@@ -1315,6 +1367,9 @@ eapply @ex_RInt_Chasles_2, Ia.
 split ; apply Rminus_le_0 ; ring_simplify ; apply Rlt_le, d0.
 by apply continuity_pt_filterlim, Cfa.
 (* . *)
+simpl.
+apply (continuity_2d_pt_filterlim (fun u v =>
+   RInt (fun t : R => Derive (fun u0 : R => f u0 t) u) v (a x))).
 apply is_derive_RInt_param_bound_comp_aux1; try easy.
 exists d0; exact Ia.
 destruct Df as (d,Hd).
