@@ -22,7 +22,9 @@ COPYING file for more details.
 Require Import Reals Ssreflect.ssreflect.
 Require Import Rbar Rcomplements Hierarchy.
 
-(** * Definitions of equivalent and dominant *)
+(** This file gives definitions of equivalent (g ~ f) and dominant (g
+= o(f)). This is used for defining differentiability on a
+[NormedModule]. *)
 
 Definition is_domin {T} {Ku Kv : AbsRing}
   {U : NormedModule Ku} {V : NormedModule Kv}

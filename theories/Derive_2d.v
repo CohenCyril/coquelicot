@@ -19,15 +19,13 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 COPYING file for more details.
 *)
 
-(** This file describes results about differentiability in [R x
- R]. This includes the [Schwarz] theorem and the 2D Taylor-Lagrange
- inequality. *)
-
-
-
 Require Import Reals Omega.
 Require Import Ssreflect.ssreflect.
 Require Import Rcomplements Hierarchy Continuity Derive.
+
+(** This file describes results about differentiability in [R x
+ R]. This includes the [Schwarz] theorem and the 2D Taylor-Lagrange
+ inequality. *)
 
 (** * Differentiability *)
 

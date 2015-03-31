@@ -19,13 +19,13 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 COPYING file for more details.
 *)
 
-(** This file describes iterators on lists. This is mainly used for
-Riemannn sums. *)
-
 Require Import Reals Ssreflect.ssreflect.
 Require Import Rcomplements.
 Require Import List Omega.
 Require Import Ssreflect.seq Ssreflect.ssrbool Ssreflect.eqtype.
+
+(** This file describes iterators on lists. This is mainly used for
+Riemannn sums. *)
 
 Section Iter.
 

@@ -19,13 +19,13 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 COPYING file for more details.
 *)
 
-(** This file defines complex numbers [C] as [R * R]. Operations are
-given, and [C] is proved to be a field, a normed module, and a
-complete space. *)
-
 Require Import Reals Ssreflect.ssreflect.
 Require Import Rcomplements Rbar.
 Require Import Continuity Derive Hierarchy.
+
+(** This file defines complex numbers [C] as [R * R]. Operations are
+given, and [C] is proved to be a field, a normed module, and a
+complete space. *)
 
 (** * The set of complex numbers *)
 

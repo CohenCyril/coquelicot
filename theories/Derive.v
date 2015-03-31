@@ -19,10 +19,6 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 COPYING file for more details.
 *)
 
-(** This file describes results about differentiability on a generic
-normed module. Specific results are also given on [R] with a total
-function [Derive]. It ends with the Taylor-Lagrange formula. *)
-
 Require Import Reals Rbar.
 Require Import Ssreflect.ssreflect.
 Require Import Limit Iter.
@@ -30,9 +26,13 @@ Require Import Hierarchy Continuity Equiv.
 Require Import Rcomplements.
 Open Scope R_scope.
 
-(** * Linear functions *)
+(** This file describes results about differentiability on a generic
+normed module. Specific results are also given on [R] with a total
+function [Derive]. It ends with the Taylor-Lagrange formula. *)
 
 Section LinearFct.
+
+(** * Linear functions *)
 
 Context {K : AbsRing} {U V : NormedModule K}.
 

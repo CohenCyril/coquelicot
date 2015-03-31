@@ -19,13 +19,13 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 COPYING file for more details.
 *)
 
-(** This file describes basic properties (such as limits or
-differentiability) about basic functions: absolute value, inverse,
-square root, power, exponential and so on.*)
-
 Require Import Reals Omega Ssreflect.ssreflect.
 Require Import Rbar Rcomplements Continuity Derive Hierarchy RInt PSeries.
 Require Import RInt_analysis.
+
+(** This file describes basic properties (such as limits or
+differentiability) about basic functions: absolute value, inverse,
+square root, power, exponential and so on.*)
 
 (** * Absolute value *)
 

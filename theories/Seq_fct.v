@@ -19,13 +19,14 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 COPYING file for more details.
 *)
 
-(* todo ? *)
-
-
 Require Import Reals Ssreflect.ssreflect Rbar.
 Require Import Rcomplements.
 Require Import Limit Continuity Derive Series.
 Require Import Lub Hierarchy.
+
+(** This files describes sequence of functions and and results about
+their convergence. It also includes the [filterlim_switch] theorem for
+exchanging limits. *)
 
 
 Open Scope R_scope.

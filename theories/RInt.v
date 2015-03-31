@@ -19,20 +19,18 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 COPYING file for more details.
 *)
 
-(** This file containes the definition and properties of the Riemann
-integral, defined on a normed module on [R]. For real functions, a
-total function [RInt] is available. Results on differentiability and
-on parametric integrals are provided. *)
-
-
 Require Import Reals Div2 ConstructiveEpsilon.
 Require Import Ssreflect.ssreflect Ssreflect.ssrbool Ssreflect.eqtype Ssreflect.seq.
 Require Import Markov Rcomplements Rbar Lub Limit SF_seq.
 Require Import Continuity Hierarchy Seq_fct.
 
-(** * Definition of Riemann integral *)
+(** This file contains the definition and properties of the Riemann
+integral, defined on a normed module on [R]. For real functions, a
+total function [RInt] is available. *)
 
 Section is_RInt.
+
+(** * Definition of Riemann integral *)
 
 Context {V : NormedModule R_AbsRing}.
 

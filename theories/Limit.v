@@ -19,17 +19,16 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 COPYING file for more details.
 *)
 
+Require Import Reals Ssreflect.ssreflect.
+Require Import Rcomplements.
+Require Import Rbar Lub Markov Hierarchy.
+
 (** This file describes properties and definitions about limits of
 real sequences. This includes properties about the predicates
 [is_lim_seq] and [ex_lim_seq]. This file also defines several total
 functions using the Limited Principle of Omniscience. These total
 functions on [R] sequences are [Sup_seq], [Inf_seq], [LimSup_seq],
 [LimInf_seq] and of course [Lim_seq]. *)
-
-
-Require Import Reals Ssreflect.ssreflect.
-Require Import Rcomplements.
-Require Import Rbar Lub Markov Hierarchy.
 
 Open Scope R_scope.
 

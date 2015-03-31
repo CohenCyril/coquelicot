@@ -23,6 +23,10 @@ Require Import Reals Ssreflect.ssreflect.
 Require Import Rbar Hierarchy RInt Limit Continuity Derive.
 Require Import Rcomplements RInt_analysis.
 
+(** This file describes improper integrals, such as integrals with an
+infinity endpoint or integrals of a function with a singularity. A few
+properties are given: Chasles, operations, composition, derivation.*)
+
 Open Scope R_scope.
 
 (** * Improper Riemann integral *)

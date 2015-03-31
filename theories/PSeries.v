@@ -19,18 +19,18 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 COPYING file for more details.
 *)
 
-(** This file describes power series: #&Sigma; a<sub>k</sub>
-x<sup>k</sup>#. It containes definition, equivalence with the standard
-library, differentiability, integrability, and many results about the
-convergence circle. *)
-
 Require Import Reals Even Div2 Omega Ssreflect.ssreflect.
 Require Import Rcomplements Rbar Limit Lub.
 Require Import Continuity Derive Derive_2d RInt RInt_analysis Seq_fct Series Hierarchy.
 
-(** * Definition *)
+(** This file describes power series: #&Sigma; a<sub>k</sub>
+x<sup>k</sup>#. It contains definition, equivalence with the standard
+library, differentiability, integrability, and many results about the
+convergence circle. *)
 
 Section Definitions.
+
+(** * Definition *)
 
 Context {K : AbsRing} {V : NormedModule K}.
 

@@ -19,17 +19,17 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 COPYING file for more details.
 *)
 
-(** This file gives definitions and properties about series defined on
-a normed module. An equivalence with the standard library and several
-convergence criteria are provided. *)
-
 Require Import Reals Omega Ssreflect.ssreflect.
 Require Import Rcomplements.
 Require Import Limit Rbar Hierarchy.
 
-(** * Definitions *)
+(** This file gives definitions and properties about series defined on
+a normed module. An equivalence with the standard library and several
+convergence criteria are provided. *)
 
 Section Definitions.
+
+(** * Definitions *)
 
 Context {K : AbsRing} {V : NormedModule K}.
 

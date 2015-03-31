@@ -35,7 +35,6 @@ Open Scope R_scope.
 
 (** * Bounds for sets in [R] *)
 (** ** Upper and Lower bounds *)
-(* Todo : homogénéiser les noms entre R et Rbar *)
 
 Definition is_ub_Rbar (E : R -> Prop) (l : Rbar) :=
   forall (x : R), E x -> Rbar_le x l.
