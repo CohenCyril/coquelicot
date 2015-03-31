@@ -19,15 +19,15 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 COPYING file for more details.
 *)
 
-(** This file describes many properties about sequences of real
-numbers. Several formalizations are provided. They are mainly used for
-defining pointed subvivision in order to define Riemann sums. *)
-
-
 Require Import Reals.
 Require Import Rcomplements Rbar Lub.
 Require Import Hierarchy.
 Require Import Ssreflect.ssreflect Ssreflect.seq Ssreflect.ssrbool.
+
+(** This file describes many properties about sequences of real
+numbers. Several formalizations are provided. They are mainly used for
+defining pointed subvivision in order to define Riemann sums. *)
+
 
 Open Scope R_scope.
 
@@ -1540,7 +1540,7 @@ Qed.
 
 Section Riemann_sum.
 
-Context {V : ModuleSpace R_Ring}. (* ??? *)
+Context {V : ModuleSpace R_Ring}.
 
 Definition Riemann_sum (f : R -> V) (ptd : SF_seq) : V :=
   foldr plus zero (pairmap (fun x y => (scal (fst y - fst x) (f (snd y)))) (SF_h ptd,zero) (SF_t ptd)).
@@ -2739,11 +2739,11 @@ Proof.
   move: (H4 i H3) => {H4} H3' x H4.
   move: (H3' x H4) => {H3'} <-.
   rewrite -(SF_fun_map real).
-  
+
   2: rewrite SF_map_lx SF_lx_f2 // ; by apply lt_O_Sn.
   2: rewrite SF_map_ly SF_ly_f2 ;
   by rewrite -behead_map map_pairmap.
-  
+
   move: H3 H4.
   rewrite /SF_sup_seq.
   rewrite !nth_compat size_compat SF_map_lx SF_lx_f2.
@@ -2855,11 +2855,11 @@ Proof.
   move: (H4 i H3) => {H4} H3' x H4.
   move: (H3' x H4) => {H3'} <-.
   rewrite -(SF_fun_map real).
-  
+
   2: rewrite SF_map_lx SF_lx_f2 // ; by apply lt_O_Sn.
   2: rewrite SF_map_ly SF_ly_f2 ;
   by rewrite -behead_map map_pairmap.
-  
+
   move: H3 H4.
   rewrite /SF_inf_seq.
   rewrite !nth_compat size_compat SF_map_lx SF_lx_f2.

@@ -2,11 +2,11 @@
 This file is part of the Coquelicot formalization of real
 analysis in Coq: http://coquelicot.saclay.inria.fr/
 
-Copyright (C) 2011-2013 Sylvie Boldo
+Copyright (C) 2011-2015 Sylvie Boldo
 #<br />#
-Copyright (C) 2011-2013 Catherine Lelay
+Copyright (C) 2011-2015 Catherine Lelay
 #<br />#
-Copyright (C) 2011-2013 Guillaume Melquiond
+Copyright (C) 2011-2015 Guillaume Melquiond
 
 This library is free software; you can redistribute it and/or
 modify it under the terms of the GNU Lesser General Public
@@ -24,7 +24,11 @@ Require Import Rcomplements Derive RInt Hierarchy Derive_2d.
 Require Import AutoDerive.
 Require Import Ssreflect.ssreflect.
 
-Open Local Scope R_scope.
+(** This file aims at proving that d'Alembert's formula defines a
+function that is solution to the one-dimensional wave equation. We
+also need to prove the regularity of this function. *)
+
+Local Open Scope R_scope.
 
 Ltac auto_derive_2 :=
   match goal with
@@ -236,7 +240,7 @@ unfold gamma20.
 apply f_equal.
 apply RInt_ext => z _.
 now rewrite 4!Rmult_1_l.
-Qed.
+Admitted.
 
 Lemma gamma02_lim :
   forall x t, is_derive_n (fun u => gamma x u) 2 t (gamma02 x t).
@@ -327,7 +331,7 @@ rewrite -RInt_scal.
 apply RInt_ext => u _.
 unfold Rminus.
 now field.
-Qed.
+Admitted.
 
 End Gamma.
 

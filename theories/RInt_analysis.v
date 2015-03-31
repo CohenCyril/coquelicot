@@ -19,16 +19,14 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 COPYING file for more details.
 *)
 
-(** This file containes the definition and properties of the Riemann
-integral, defined on a normed module on [R]. For real functions, a
-total function [RInt] is available. Results on differentiability and
-on parametric integrals are provided. *)
-
-
-Require Import Reals Div2 ConstructiveEpsilon.
+Require Import Reals.
 Require Import Ssreflect.ssreflect Ssreflect.ssrbool Ssreflect.eqtype Ssreflect.seq.
-Require Import Markov Rcomplements Rbar Lub Limit Derive SF_seq.
-Require Import Continuity (*Derive_2d*) Hierarchy Seq_fct RInt.
+Require Import Markov Rcomplements Rbar Lub Lim_seq Derive SF_seq.
+Require Import Continuity Hierarchy Seq_fct RInt PSeries.
+
+(** This file contains results about the integral as a function:
+ continuity, differentiability, and composition. Theorems on
+ parametric integrals are also provided. *)
 
 (** * Continuity *)
 
@@ -202,7 +200,7 @@ Proof.
   apply continuous_ext with (fun z => plus (If b) (minus (If z) (If b))) ; simpl.
   intros x.
   by rewrite plus_comm -plus_assoc plus_opp_l plus_zero_r.
-  apply filterlim_comp_2, filterlim_plus.
+  eapply filterlim_comp_2, filterlim_plus.
   apply filterlim_const.
   apply (continuous_RInt_0 f _ (fun x : R_UniformSpace => minus (If x) (If b))).
   apply: filter_imp H => x Hx.
@@ -234,7 +232,7 @@ Lemma continuous_RInt (f : R -> V) (a b : R) (If : R -> R -> V) :
 Proof.
   intros HIf.
   move: (locally_singleton _ _ HIf) => /= Hab.
-  apply continuous_ext_loc 
+  apply continuous_ext_loc
     with (fun z : R * R => plus (If (fst z) b) (plus (opp (If a b)) (If a (snd z)))) ; simpl.
     assert (Ha : locally (a,b) (fun z : R * R => is_RInt f a (snd z) (If a (snd z)))).
       case: HIf => /= d HIf.
@@ -280,6 +278,36 @@ Proof.
 Qed.
 
 End Continuity.
+
+Lemma ex_RInt_locally {V : CompleteNormedModule R_AbsRing} (f : R -> V) (a b : R) :
+  ex_RInt f a b
+  -> (exists eps : posreal, ex_RInt f (a - eps) (a + eps))
+  -> (exists eps : posreal, ex_RInt f (b - eps) (b + eps))
+  -> locally (a,b) (fun z : R * R => ex_RInt f (fst z) (snd z)).
+Proof.
+  intros Hf (ea,Hea) (eb,Heb).
+  exists (mkposreal _ (Rmin_stable_in_posreal ea eb)) => [[a' b'] [Ha' Hb']] ; simpl in *.
+  apply ex_RInt_Chasles with (a - ea).
+  eapply ex_RInt_swap, ex_RInt_Chasles_1 ; try eassumption.
+  apply Rabs_le_between'.
+  eapply Rlt_le, Rlt_le_trans, Rmin_l.
+  by apply Ha'.
+  apply ex_RInt_Chasles with a.
+  eapply ex_RInt_Chasles_1 ; try eassumption.
+  apply Rabs_le_between'.
+  rewrite Rminus_eq_0 Rabs_R0.
+  by apply Rlt_le, ea.
+  apply ex_RInt_Chasles with b => //.
+  apply ex_RInt_Chasles with (b - eb).
+  eapply ex_RInt_swap, ex_RInt_Chasles_1; try eassumption.
+  apply Rabs_le_between'.
+  rewrite Rminus_eq_0 Rabs_R0.
+  by apply Rlt_le, eb.
+  eapply ex_RInt_Chasles_1 ; try eassumption.
+  apply Rabs_le_between'.
+  eapply Rlt_le, Rlt_le_trans, Rmin_r.
+  by apply Hb'.
+Qed.
 
 (** * Riemann integral and differentiability *)
 
@@ -409,10 +437,10 @@ Proof.
     apply (He (a,x)).
     split => //.
     by apply ball_center.
-    
+
   eapply filterdiff_ext_lin.
 
-  apply filterdiff_ext_loc with (fun u : R * R => plus (If (fst u) b) (minus (If a (snd u)) (If a b))) ;
+  apply (filterdiff_ext_loc (FF := @filter_filter _ _ (locally_filter _)) (fun u : R * R => plus (If (fst u) b) (minus (If a (snd u)) (If a b)))) ;
   last first.
   apply filterdiff_plus_fct.
   apply (filterdiff_comp' (fun u : R * R => fst u) (fun a : R => If a b)).
@@ -425,7 +453,7 @@ Proof.
   eapply is_derive_RInt, Cfb.
   by apply Hb.
   apply filterdiff_const.
-  
+
   move => /= x Hx.
   apply @is_filter_lim_locally_unique in Hx.
   by rewrite -Hx /= minus_eq_zero plus_zero_r.
@@ -500,7 +528,7 @@ Proof.
   rewrite /Rmin /Rmax in Hf, Hdf ;
   destruct (Rle_dec a b) as [_ | Hab'].
   2: contradict Hab' ; by apply Rlt_le.
-  
+
   assert (He : 0 < eps / (b - a)).
     apply Rdiv_lt_0_compat.
     by apply eps.
@@ -523,7 +551,7 @@ Proof.
   change minus with Rminus ;
   change plus with Rplus ;
   change scal with Rmult.
-  
+
   assert (Hab_0 : fst x0 <= SF_h y).
     eapply Rle_trans ; apply (Hptd _ (lt_O_Sn _)).
   assert (Hab_1 : SF_h y <= seq.last (SF_h y) (SF_lx y)).
@@ -588,7 +616,7 @@ Proof.
   destruct (MVT_gen f (fst x0) (SF_h y) df) as [c [Hc Hdf]] => //.
   rewrite /Rmin /Rmax ; case: Rle_dec (Rlt_le _ _ Hab_0) => // _ _.
   intros c Hc ; apply Hf_0.
-  move: Hc ; 
+  move: Hc ;
   by split ; apply Rlt_le ; apply Hc.
   rewrite /Rmin /Rmax ; case: Rle_dec (Rlt_le _ _ Hab_0) => // _ _.
   intros c Hc ; apply continuity_pt_filterlim, @ex_derive_continuous.
@@ -616,14 +644,14 @@ Proof.
   apply Rplus_le_compat.
   by apply Hptd_0.
   by apply Ropp_le_contravar, Hc.
-  
+
   case: Hab_1 => /= Hab_1 ; last first.
   rewrite -Hab_1 !Rminus_eq_0 Rmult_0_r.
   rewrite Riemann_sum_zero //.
   rewrite Rminus_eq_0 norm_zero.
   by apply Rle_refl.
   by apply ptd_sort.
-  
+
   by apply Rlt_le, IHy.
 
   unfold e ; simpl ; field.
@@ -1289,7 +1317,8 @@ exists (mkposreal _ (Rmin_stable_in_posreal
                 (mkposreal _ (Rmin_stable_in_posreal d3
                             (mkposreal _ (Rmin_stable_in_posreal d0 (pos_div_2 d4))))))).
 intros [u v] [Hu Hv] ; simpl in *.
-eapply is_derive_RInt_param.
+eapply Derive_correct.
+eexists ; apply is_derive_RInt_param.
 exists (pos_div_2 d2).
 intros y Hy t Ht.
 apply Df.
@@ -1369,7 +1398,7 @@ by apply continuity_pt_filterlim, Cfa.
 (* . *)
 simpl.
 apply (continuity_2d_pt_filterlim (fun u v =>
-   RInt (fun t : R => Derive (fun u0 : R => f u0 t) u) v (a x))).
+   Derive (fun z : R => RInt (fun t0 : R => f z t0) v (a x)) u)).
 apply is_derive_RInt_param_bound_comp_aux1; try easy.
 exists d0; exact Ia.
 destruct Df as (d,Hd).
@@ -1382,9 +1411,11 @@ apply Rle_trans with (2:=proj1 Ht).
 apply Rmin_l.
 apply Rle_trans with (1:=proj2 Ht).
 apply Rmax_l.
-(* . *)
-apply derivable_pt_lim_id.
-apply is_derive_Reals, Da.
+
+case => /= u v.
+erewrite Derive_ext.
+2: intros ; by rewrite RInt_point.
+by rewrite Derive_const scal_zero_r plus_zero_l.
 (* *)
 apply is_derive_RInt_param.
 destruct Df as (d,Df).
@@ -1403,12 +1434,7 @@ exact Cdf1.
 exact Hi.
 move => /= y ; apply Rminus_diag_uniq.
 rewrite /plus /scal /opp /= /mult /=.
-ring_simplify.
-rewrite -(Derive_ext (fun _ => 0)).
-rewrite Derive_const.
-by apply Rmult_0_r.
-move => t.
-by rewrite RInt_point.
+ring.
 Qed.
 
 Lemma is_derive_RInt_param_bound_comp_aux3 :
@@ -1483,12 +1509,12 @@ intros f a b x da db If Ifa Ifb Da Db Df Cf Cfa Cfb Ca Cb.
 apply is_derive_ext_loc with (fun x0 : R => RInt (fun t : R => f x0 t) (a x0) (a x)
     + RInt (fun t : R => f x0 t) (a x) (b x0)).
 apply RInt_Chasles_bound_comp_loc ; trivial.
-apply derivable_continuous_pt.
+apply @filterdiff_continuous.
 eexists.
-apply is_derive_Reals, Da.
-apply derivable_continuous_pt.
+apply Da.
+apply @filterdiff_continuous.
 eexists.
-apply is_derive_Reals, Db.
+apply Db.
 eapply filterdiff_ext_lin.
 apply @filterdiff_plus_fct.
 by apply locally_filter.
@@ -1546,4 +1572,114 @@ rewrite RInt_point.
 simpl => y.
 rewrite /plus /scal /= /mult /=.
 ring.
+Qed.
+
+(** * Power series *)
+
+Definition PS_Int (a : nat -> R) (n : nat) : R :=
+  match n with
+    | O => 0
+    | S n => a n / INR (S n)
+  end.
+
+Lemma CV_radius_Int (a : nat -> R) :
+  CV_radius (PS_Int a) = CV_radius a.
+Proof.
+  rewrite -CV_radius_derive.
+  apply CV_radius_ext.
+  rewrite /PS_derive /PS_Int => n ; rewrite S_INR.
+  field.
+  apply Rgt_not_eq, INRp1_pos.
+Qed.
+
+Lemma is_RInt_PSeries (a : nat -> R) (x : R) :
+  Rbar_lt (Rabs x) (CV_radius a)
+  -> is_RInt (PSeries a) 0 x (PSeries (PS_Int a) x).
+Proof.
+  move => Hx.
+  have H : forall y, Rmin 0 x <= y <= Rmax 0 x -> Rbar_lt (Rabs y) (CV_radius a).
+    move => y Hy.
+    apply: Rbar_le_lt_trans Hx.
+    apply Rabs_le_between.
+    split.
+    apply Rle_trans with (2 := proj1 Hy).
+    rewrite /Rabs /Rmin.
+    case: Rcase_abs ; case: Rle_dec => // Hx Hx' ; rewrite ?Ropp_involutive.
+    by apply Rlt_le.
+    by apply Req_le.
+    apply Ropp_le_cancel ; by rewrite Ropp_involutive Ropp_0.
+    by apply Rge_le in Hx'.
+    apply Rle_trans with (1 := proj2 Hy).
+    rewrite /Rabs /Rmax.
+    case: Rcase_abs ; case: Rle_dec => // Hx Hx'.
+    by apply Rlt_not_le in Hx'.
+    apply Ropp_le_cancel, Rlt_le ; by rewrite Ropp_involutive Ropp_0.
+    by apply Req_le.
+    by apply Rge_le in Hx'.
+
+  apply is_RInt_ext with (Derive (PSeries (PS_Int a))).
+  move => y Hy.
+  rewrite Derive_PSeries.
+  apply PSeries_ext ; rewrite /PS_derive /PS_Int => n ; rewrite S_INR.
+  field.
+  apply Rgt_not_eq, INRp1_pos.
+  rewrite CV_radius_Int.
+  by apply H ; split ; apply Rlt_le ; apply Hy.
+  evar_last.
+  apply is_RInt_derive.
+  move => y Hy.
+  apply Derive_correct, ex_derive_PSeries.
+  rewrite CV_radius_Int.
+  by apply H.
+  move => y Hy.
+  apply continuous_ext_loc with (PSeries a).
+
+  apply locally_interval with (Rbar_opp (CV_radius a)) (CV_radius a).
+  apply Rbar_opp_lt ; rewrite Rbar_opp_involutive.
+  apply: Rbar_le_lt_trans (H _ Hy).
+  apply Rabs_maj2.
+  apply: Rbar_le_lt_trans (H _ Hy).
+  apply Rle_abs.
+  move => z Hz Hz'.
+  rewrite Derive_PSeries.
+  apply PSeries_ext ; rewrite /PS_derive /PS_Int => n ; rewrite S_INR.
+  field.
+  apply Rgt_not_eq, INRp1_pos.
+  rewrite CV_radius_Int.
+  apply (Rbar_abs_lt_between z) ; by split.
+  apply continuity_pt_filterlim, PSeries_continuity.
+  by apply H.
+
+  rewrite PSeries_0 /(PS_Int _ 0) ; by rewrite Rminus_0_r.
+Qed.
+
+Lemma ex_RInt_PSeries (a : nat -> R) (x : R) :
+  Rbar_lt (Rabs x) (CV_radius a)
+  -> ex_RInt (PSeries a) 0 x.
+Proof.
+  move => Hx.
+  exists (PSeries (PS_Int a) x).
+  by apply is_RInt_PSeries.
+Qed.
+
+Lemma RInt_PSeries (a : nat -> R) (x : R) :
+  Rbar_lt (Rabs x) (CV_radius a)
+  -> RInt (PSeries a) 0 x = PSeries (PS_Int a) x.
+Proof.
+  move => Hx.
+  apply is_RInt_unique.
+  by apply is_RInt_PSeries.
+Qed.
+
+Lemma is_pseries_RInt (a : nat -> R) :
+  forall x, Rbar_lt (Rabs x) (CV_radius a)
+    -> is_pseries (PS_Int a) x (RInt (PSeries a) 0 x).
+Proof.
+  move => x Hx.
+  assert (Ha := is_RInt_PSeries _ _ Hx).
+  apply is_RInt_unique in Ha.
+  rewrite Ha.
+  apply PSeries_correct.
+  apply CV_radius_inside.
+  by rewrite CV_radius_Int.
 Qed.

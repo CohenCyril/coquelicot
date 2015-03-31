@@ -19,11 +19,11 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 COPYING file for more details.
 *)
 
+Require Import RIneq Rcomplements Omega.
+
 (** This file proves the Limited Principle of Omniscience: given a
 decidable property P on [nat], either P never holds or we can construct
 a witness for which P holds. Several variants are given. *)
-
-Require Import RIneq Rcomplements Omega.
 
 Open Scope R_scope.
 
@@ -223,7 +223,7 @@ Proof.
   eapply Rle_trans, Rlt_le, Hm.
   eapply Rle_trans, Rbasic_fun.Rmax_r.
   by apply Rnot_lt_le.
-Qed.  
+Qed.
 
 (** * Excluded-middle and decidability *)
 

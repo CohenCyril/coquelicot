@@ -19,9 +19,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 COPYING file for more details.
 *)
 
-(** This file describes basic missing facts about the standard library
-of reals and a few concerning ssreflect.seq.
-#<br /># It also contains a definition of the [sign] function. *)
+(** * This file describes basic missing facts about the standard library of reals and a few concerning ssreflect.seq. It also contains a definition of the [sign] function. *)
 
 (** Tactic for changing the last argument of a property to an evar,
     in order to apply theorems modulo equality. *)

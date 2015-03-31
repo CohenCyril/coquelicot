@@ -19,17 +19,16 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 COPYING file for more details.
 *)
 
+Require Import Reals Ssreflect.ssreflect.
+Require Import Rcomplements.
+Require Import Rbar Lub Markov Hierarchy.
+
 (** This file describes properties and definitions about limits of
 real sequences. This includes properties about the predicates
 [is_lim_seq] and [ex_lim_seq]. This file also defines several total
 functions using the Limited Principle of Omniscience. These total
 functions on [R] sequences are [Sup_seq], [Inf_seq], [LimSup_seq],
 [LimInf_seq] and of course [Lim_seq]. *)
-
-
-Require Import Reals Ssreflect.ssreflect.
-Require Import Rcomplements.
-Require Import Rbar Lub Markov Hierarchy.
 
 Open Scope R_scope.
 
@@ -1014,7 +1013,7 @@ Proof.
   eapply Hlv, le_trans, Hm.
   by apply le_plus_r.
   apply Req_le ; field.
-  
+
   case: (Hlv (lu - 1)) => {Hlv} n Hlv.
   case: (proj1 (Hlu (mkposreal _ Rlt_0_1)) (N + n)%nat) => {Hlu} m /= [Hm Hlu].
   move: (H _ (le_trans _ _ _ (le_plus_l _ _) Hm)).
@@ -1022,7 +1021,7 @@ Proof.
   eapply Rlt_trans, Hlu.
   eapply Hlv, le_trans, Hm.
   by apply le_plus_r.
-  
+
   case: (Hlv (mkposreal _ Rlt_0_1)) => {Hlv} /= _ [n Hlv].
   case: (Hlu (lv + 1) (N + n)%nat) => {Hlu} /= m [Hm Hlu].
   move: (H _ (le_trans _ _ _ (le_plus_l _ _) Hm)).
@@ -1030,7 +1029,7 @@ Proof.
   eapply Rlt_trans, Hlu.
   eapply Hlv, le_trans, Hm.
   by apply le_plus_r.
-  
+
   case: (Hlv 0) => {Hlv} n Hlv.
   case: (Hlu 0 (N + n)%nat) => {Hlu} m [Hm Hlu].
   move: (H _ (le_trans _ _ _ (le_plus_l _ _) Hm)).
@@ -1958,7 +1957,6 @@ intros P [M HM].
 assert (H' : Rbar_locally p_infty (fun y => M < y)).
   now exists M.
 unfold filtermap.
-(* Post-8.4 fix: make second argument explicit. *)
 generalize (filter_and (fun x : T => f x <= g x) _ H (Hf (fun y : R => M < y) H')).
 apply filter_imp.
 intros x [H1 H2].
@@ -1978,7 +1976,6 @@ pose ineq (y : R) := y < M.
 assert (H' : Rbar_locally m_infty ineq).
   now exists M.
 unfold filtermap.
-(* Post-8.4 fix: make second argument explicit. *)
 generalize (filter_and _ (fun x : T => ineq (f x)) H (Hf ineq H')).
 apply filter_imp.
 intros x [H1 H2].

@@ -20,8 +20,12 @@ COPYING file for more details.
 *)
 
 Require Import Reals Ssreflect.ssreflect.
-Require Import Rbar Hierarchy RInt Limit Continuity Derive.
+Require Import Rbar Hierarchy RInt Lim_seq Continuity Derive.
 Require Import Rcomplements RInt_analysis.
+
+(** This file describes improper integrals, such as integrals with an
+infinity endpoint or integrals of a function with a singularity. A few
+properties are given: Chasles, operations, composition, derivation.*)
 
 Open Scope R_scope.
 
@@ -125,7 +129,7 @@ Qed.
 
 Lemma is_RInt_gen_Chasles {Fa Fc : (R -> Prop) -> Prop}
   {FFa : Filter Fa} {FFc : Filter Fc}
-  (f : R -> V) (b : R) (l1 l2 : V) : 
+  (f : R -> V) (b : R) (l1 l2 : V) :
   is_RInt_gen f Fa (at_point b) l1 -> is_RInt_gen f (at_point b) Fc l2
   -> is_RInt_gen f Fa Fc (plus l1 l2).
 Proof.

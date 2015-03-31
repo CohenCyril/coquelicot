@@ -175,7 +175,6 @@ Lemma filterlim_ext_loc :
 Proof.
 intros T U F G FF f g Efg Lf P GP.
 specialize (Lf P GP).
-(* Post-8.4 fix: make second argument explicit. *)
 generalize (filter_and _ (fun x : T => P (f x)) Efg Lf).
 unfold filtermap.
 apply filter_imp.
@@ -755,6 +754,14 @@ Proof.
   by rewrite plus_zero_l.
 Qed.
 
+Lemma sum_n_plus :
+  forall (u v : nat -> G) (n : nat),
+  sum_n (fun k => plus (u k) (v k)) n = plus (sum_n u n) (sum_n v n).
+Proof.
+  intros u v n.
+  apply sum_n_m_plus.
+Qed.
+
 Lemma sum_n_switch :
   forall (u : nat -> nat -> G) (m n : nat),
   sum_n (fun i => sum_n (u i) n) m = sum_n (fun j => sum_n (fun i => u i j) m) n.
@@ -788,142 +795,6 @@ Proof.
 Qed.
 
 End Sums.
-
-(* Fixpoint sum_n (a:nat -> G) (N : nat) {struct N} : G :=
-  match N with
-   | 0%nat => a 0%nat
-   | S i => plus (sum_n a i)  (a (S i))
-  end.
-
-Lemma sum_n_ext_aux :
-  forall (a b : nat -> G) N,
-  (forall n, (n < S N)%nat -> a n = b n) ->
-  sum_n a N = sum_n b N.
-Proof.
-  intros a b N H; induction N; simpl.
-  apply H.
-  by apply le_refl.
-  rewrite IHN.
-  by rewrite H.
-  move => n Hn.
-  now apply H, le_trans with (1 := Hn), le_n_Sn.
-Qed.
-
-Lemma sum_n_ext :
-  forall (a b : nat -> G) N,
-  (forall n, a n = b n) ->
-  sum_n a N = sum_n b N.
-Proof.
-  intros a b N H; induction N; simpl.
-  apply H.
-  now rewrite IHN; rewrite H.
-Qed.
-
-Lemma decomp_sum_n :
-  forall (a : nat-> G) N,
-  (0 < N)%nat ->
-  sum_n a N = plus (a 0%nat) (sum_n (fun i : nat => a (S i)) (pred N)).
-Proof.
-  intros a N HN; destruct N; simpl.
-  exfalso; omega.
-  clear HN; induction N; simpl.
-  easy.
-  rewrite IHN.
-  apply sym_eq, plus_assoc.
-Qed.
-
-Lemma sum_n_plus :
-  forall (u v : nat -> G) (n : nat),
-  sum_n (fun k => plus (u k) (v k)) n = plus (sum_n u n) (sum_n v n).
-Proof.
-  intros u v.
-  induction n ; simpl.
-  by [].
-  rewrite IHn ; clear IHn.
-  rewrite -?plus_assoc.
-  apply f_equal.
-  rewrite ?plus_assoc.
-  apply f_equal2.
-  by apply plus_comm.
-  by [].
-Qed.
-
-Lemma sum_n_switch :
-  forall (u : nat -> nat -> G) (m n : nat),
-  sum_n (fun i => sum_n (u i) n) m = sum_n (fun j => sum_n (fun i => u i j) m) n.
-Proof.
-  intros u.
-  induction m ; simpl ; intros n.
-  by [].
-  rewrite IHm ; clear IHm.
-  by rewrite -sum_n_plus.
-Qed.
-
-(** sum_n_m *)
-
-Fixpoint sum_n_m (a:nat -> G) (n m : nat) : G :=
-  match n, m with
-  | S _, O => zero
-  | S n, S m => sum_n_m (fun k => a (S k)) n m
-  | O , _ => sum_n a m
-  end.
-
-Lemma sum_n_m_zero (a : nat -> G) (n m : nat) : (m < n)%nat
-  -> sum_n_m a n m = zero.
-Proof.
-  elim: n m a => /= [ | n IH] m a Hnm.
-  by apply lt_n_O in Hnm.
-  case: m Hnm => /= [ | m] Hnm.
-  by [].
-  by apply IH, lt_S_n.
-Qed.
-Lemma sum_n_m_sum_n (a:nat -> G) (n m : nat) :
-  (n <= m)%nat -> sum_n_m a (S n) m = minus (sum_n a m) (sum_n a n).
-Proof.
-  elim: n m a => /= [ | n IH] ;
-  case => /= [ | m] a Hnm.
-  by rewrite /minus plus_opp_r.
-  clear Hnm.
-  elim: m a => /= [ | m IH] a.
-  by rewrite plus_comm /minus -plus_assoc plus_opp_r plus_zero_r.
-  rewrite IH /minus -!plus_assoc.
-  apply f_equal, f_equal, plus_comm.
-  by apply le_Sn_O in Hnm.
-  rewrite (IH m (fun n => a (S n))) /= ; try by apply le_S_n.
-  clear.
-  elim: n m => /= [ | n IH].
-  elim => /= [ | m IH].
-  by rewrite /minus !plus_opp_r.
-  rewrite plus_comm /minus -!plus_assoc -/(minus _ _) IH.
-  rewrite /minus.
-  rewrite -!plus_assoc plus_comm -!plus_assoc.
-  apply f_equal, f_equal, plus_comm.
-  intros m.
-  rewrite /minus opp_plus plus_assoc -!/(minus _ _) IH.
-  by rewrite /minus !opp_plus -!plus_assoc.
-Qed.
-
-Lemma sum_n_m_ext_aux (a b : nat -> G) (n m : nat) :
-  (forall k, (n <= k <= m)%nat -> a k = b k) ->
-  sum_n_m a n m = sum_n_m b n m.
-Proof.
-  elim: n m a b => /= [ | n IH] m a b Heq.
-  apply sum_n_ext_aux => k Hk.
-  apply Heq ; split.
-  by apply le_O_n.
-  by apply lt_n_Sm_le, Hk.
-  case: m Heq => /= [ | m] Heq.
-  by [].
-  apply IH => k Hk.
-  apply Heq ; split ; apply le_n_S, Hk.
-Qed.
-Lemma sum_n_m_ext (a b : nat -> G) n m :
-  (forall n, a n = b n) ->
-  sum_n_m a n m = sum_n_m b n m.
-Proof.
-  intros H.
-  by apply sum_n_m_ext_aux => k Hk.
-Qed. *)
 
 (** ** Noncommutative rings *)
 
@@ -2206,6 +2077,142 @@ Canonical fct_CompleteSpace :=
 
 End fct_CompleteSpace.
 
+(** ** Limit switching *)
+
+Section Filterlim_switch.
+
+Context {T1 T2 : Type}.
+
+Lemma filterlim_switch_1 {U : UniformSpace}
+  F1 (FF1 : ProperFilter F1) F2 (FF2 : Filter F2) (f : T1 -> T2 -> U) g h (l : U) :
+  filterlim f F1 (locally g) ->
+  (forall x, filterlim (f x) F2 (locally (h x))) ->
+  filterlim h F1 (locally l) -> filterlim g F2 (locally l).
+Proof.
+  intros Hfg Hfh Hhl P.
+  case: FF1 => HF1 FF1.
+  apply filterlim_locally.
+  move => eps.
+
+  have FF := (filter_prod_filter _ _ F1 F2 FF1 FF2).
+
+  assert (filter_prod F1 F2 (fun x => ball (g (snd x)) (eps / 2 / 2) (f (fst x) (snd x)))).
+    apply Filter_prod with (fun x : T1 => ball g (eps / 2 / 2) (f x)) (fun _ => True).
+    move: (proj1 (@filterlim_locally _ _ F1 FF1 f g) Hfg (pos_div_2 (pos_div_2 eps))) => {Hfg} /= Hfg.
+    by [].
+    by apply FF2.
+    simpl ; intros.
+    apply H.
+  move: H => {Hfg} Hfg.
+
+  assert (filter_prod F1 F2 (fun x : T1 * T2 => ball l (eps / 2) (h (fst x)))).
+    apply Filter_prod with (fun x : T1 => ball l (eps / 2) (h x)) (fun _ => True).
+    move: (proj1 (@filterlim_locally _ _ F1 FF1 h l) Hhl (pos_div_2 eps)) => {Hhl} /= Hhl.
+    by [].
+    by apply FF2.
+    by [].
+  move: H => {Hhl} Hhl.
+
+  case: (@filter_and _ _ FF _ _ Hhl Hfg) => {Hhl Hfg} /= ; intros.
+
+  move: (fun x => proj1 (@filterlim_locally _ _ F2 FF2 (f x) (h x)) (Hfh x) (pos_div_2 (pos_div_2 eps))) => {Hfh} /= Hfh.
+  case: (HF1 Q f0) => x Hx.
+  move: (@filter_and _ _ FF2 _ _ (Hfh x) g0) => {Hfh}.
+  apply filter_imp => y Hy.
+  rewrite (double_var eps).
+  apply ball_triangle with (h x).
+  apply (p x y).
+  by [].
+  by apply Hy.
+  rewrite (double_var (eps / 2)).
+  apply ball_triangle with (f x y).
+  by apply Hy.
+  apply ball_sym, p.
+  by [].
+  by apply Hy.
+Qed.
+
+Lemma filterlim_switch_2 {U : CompleteSpace}
+  F1 (FF1 : ProperFilter F1) F2 (FF2 : ProperFilter F2) (f : T1 -> T2 -> U) g h :
+  filterlim f F1 (locally g) ->
+  (forall x, filterlim (f x) F2 (locally (h x))) ->
+  exists l : U, filterlim h F1 (locally l).
+Proof.
+  move => Hfg Hfh.
+  case : (proj1 (filterlim_locally_cauchy h)).
+  move => eps.
+  generalize (proj2 (filterlim_locally_cauchy f)) => Hf.
+  assert (exists y : T2 -> U, filterlim f F1 (locally y)).
+    exists g => P Hp.
+    apply Hfg.
+    case: Hp => d Hp.
+    exists d => y Hy.
+    apply: Hp.
+    by apply Hy.
+
+  move: H => {Hfg} Hfg.
+  move: (Hf Hfg (pos_div_2 eps)) => {Hf Hfg} /= Hf.
+
+  case: FF2 => HF2 FF2.
+  generalize (fun x => proj1 (filterlim_locally (f x) (h x)) (Hfh x) (pos_div_2 (pos_div_2 eps)))
+    => {Hfh} Hfh.
+
+  case: Hf => P [Hp Hf].
+  exists P ; split.
+  by [].
+  move => u v Hu Hv.
+  move: (Hfh u) => /= Hu'.
+  move: (Hfh v) => /= Hv'.
+  move: (@filter_and _ F2 FF2 _ _ Hu' Hv') => {Hu' Hv' Hfh} Hfh.
+  case: (HF2 _ Hfh) => {Hfh} y Hy.
+  replace (pos eps) with (eps / 2 / 2 + (eps / 2 + eps / 2 / 2)) by field.
+  apply ball_triangle with (f u y).
+  by apply Hy.
+  apply ball_triangle with (f v y).
+  by apply Hf.
+  now apply ball_sym.
+
+  move => l Hl.
+  by exists l.
+Qed.
+
+Lemma filterlim_switch {U : CompleteSpace}
+  F1 (FF1 : ProperFilter F1) F2 (FF2 : ProperFilter F2) (f : T1 -> T2 -> U) g h :
+  filterlim f F1 (locally g) ->
+  (forall x, filterlim (f x) F2 (locally (h x))) ->
+  exists l : U, filterlim h F1 (locally l) /\ filterlim g F2 (locally l).
+Proof.
+  move => Hfg Hfh.
+  destruct (filterlim_switch_2 F1 FF1 F2 FF2 f g h Hfg Hfh) as [l Hhl].
+  exists l ; split.
+  exact Hhl.
+  case: FF2 => HF2 FF2.
+  now apply (filterlim_switch_1 F1 FF1 F2 FF2 f g h l).
+Qed.
+
+End Filterlim_switch.
+
+Lemma filterlim_switch_dom {T1 T2 : Type} {U : CompleteSpace}
+  F1 (FF1 : ProperFilter F1) F2 (FF2 : Filter F2)
+  (dom : T2 -> Prop) (HF2 : forall P, F2 P -> exists x, dom x /\ P x)
+  (f : T1 -> T2 -> U) g h :
+  filterlim (fun x (y : {z : T2 | dom z}) => f x (proj1_sig y)) F1 (locally (T := fct_UniformSpace _ _) (fun y : {z : T2 | dom z} => g (proj1_sig y))) ->
+  (forall x, filterlim (f x) (within dom F2) (locally (h x))) ->
+  exists l : U, filterlim h F1 (locally l) /\ filterlim g (within dom F2) (locally l).
+Proof.
+set (T2' := { y : T2 | dom y }).
+set (f' := fun x (y : T2') => f x (proj1_sig y)).
+set (F2' := fun P : T2' -> Prop => F2 (fun x => forall (H:dom x), P (exist _ x H))).
+set (g' := fun y : T2' => g (proj1_sig y)).
+intros Hfg Hfh.
+refine (filterlim_switch F1 FF1 F2' _ f' g' h _ _).
+now apply subset_filter_proper.
+intros H P.
+now apply Hfg.
+intros x P HP.
+now apply Hfh.
+Qed.
+
 (** * Modules *)
 
 Module ModuleSpace.
@@ -2378,17 +2385,13 @@ Proof.
   by rewrite scal_zero_r.
 Qed.
 
-(* Lemma sum_n_scal_l :
+Lemma sum_n_scal_l :
   forall (a : K) (u : nat -> V) (n : nat),
   sum_n (fun k => scal a (u k)) n = scal a (sum_n u n).
 Proof.
   intros a u n.
-  induction n ; simpl.
-  by [].
-  rewrite IHn.
-  apply eq_sym.
-  by apply scal_distr_l.
-Qed. *)
+  apply sum_n_m_scal_l.
+Qed.
 
 End ModuleSpace1.
 
@@ -2420,7 +2423,7 @@ End AbsRing_ModuleSpace.
 
 (** ** Modules with a norm *)
 
-Module NormedModuleAux. (* ??? *)
+Module NormedModuleAux.
 
 Section ClassDef.
 
@@ -2938,7 +2941,7 @@ Proof.
   by apply (proj2 (proj2 Hu)).
 
   repeat apply filter_and.
-  
+
   assert (Hd : 0 < eps / 2 / (norm x + 1)).
     apply Rdiv_lt_0_compat.
     by apply is_pos_div_2.
@@ -2952,7 +2955,7 @@ Proof.
   apply (locally_ball_norm (V := AbsRing_NormedModule K) _ (mkposreal _ Rlt_0_1)).
   apply filter_true.
   by [].
-  
+
   assert (Hd : 0 < eps / 2 / (abs k + 1)).
     apply Rdiv_lt_0_compat.
     by apply is_pos_div_2.
@@ -3728,13 +3731,13 @@ Fixpoint Mone_seq i j : T :=
 Definition Mone {n} : matrix n n :=
   mk_matrix n n Mone_seq.
 
-Lemma Mone_seq_diag : 
+Lemma Mone_seq_diag :
   forall i j : nat, i = j -> Mone_seq i j = @one T.
 Proof.
   move => i j <- {j}.
   by induction i.
 Qed.
-Lemma Mone_seq_not_diag : 
+Lemma Mone_seq_not_diag :
   forall i j : nat, i <> j -> Mone_seq i j = @zero T.
 Proof.
   elim => //= [ | i IHi] j Hij ;
@@ -3819,11 +3822,11 @@ Proof.
   move => k Hk.
   rewrite Mone_seq_not_diag.
   by apply mult_zero_r.
-  by apply NPeano.Nat.lt_neq, le_lt_n_Sm.
+  by apply MyNat.lt_neq, le_lt_n_Sm.
   move => k [Hk _].
   rewrite Mone_seq_not_diag.
   by apply mult_zero_r.
-  by apply sym_not_eq, NPeano.Nat.lt_neq.
+  by apply sym_not_eq, MyNat.lt_neq.
 Qed.
 
 Lemma Mmult_one_l {m n} :
@@ -3854,11 +3857,11 @@ Proof.
   move => k Hk.
   rewrite Mone_seq_not_diag.
   by apply mult_zero_l.
-  by apply sym_not_eq, NPeano.Nat.lt_neq, le_lt_n_Sm.
+  by apply sym_not_eq, MyNat.lt_neq, le_lt_n_Sm.
   move => k [Hk _].
   rewrite Mone_seq_not_diag.
   by apply mult_zero_l.
-  by apply NPeano.Nat.lt_neq.
+  by apply MyNat.lt_neq.
 Qed.
 
 Lemma Mmult_distr_r {m n k} :
@@ -4365,20 +4368,6 @@ split ; intros [d H] ; exists d.
   apply (H (u,v)).
   by split.
 Qed.
-
-(*
-Lemma locally_2d_locally' :
-  forall P x y,
-  locally_2d P x y <-> locally ((x,(y,tt)) : Tn 2 R) (fun z : Tn 2 R => P (fst z) (fst (snd z))).
-Proof.
-intros P x y.
-split ; intros [d H] ; exists d.
-- move => [u [v _]] /= [H1 [H2 _]].
-  now apply H.
-- intros u v Hu Hv.
-  now apply (H (u,(v,tt))) ; repeat split.
-Qed.
-*)
 
 Lemma locally_2d_impl_strong :
   forall (P Q : R -> R -> Prop) x y, locally_2d (fun u v => locally_2d P u v -> Q u v) x y ->

@@ -19,20 +19,18 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 COPYING file for more details.
 *)
 
-(** This file containes the definition and properties of the Riemann
-integral, defined on a normed module on [R]. For real functions, a
-total function [RInt] is available. Results on differentiability and
-on parametric integrals are provided. *)
-
-
-Require Import Reals Div2 ConstructiveEpsilon.
+Require Import Reals.
 Require Import Ssreflect.ssreflect Ssreflect.ssrbool Ssreflect.eqtype Ssreflect.seq.
-Require Import Markov Rcomplements Rbar Lub Limit SF_seq.
-Require Import Continuity Hierarchy Seq_fct.
+Require Import Markov Rcomplements Rbar Lub Lim_seq SF_seq.
+Require Import Continuity Hierarchy.
 
-(** * Definition of Riemann integral *)
+(** This file contains the definition and properties of the Riemann
+integral, defined on a normed module on [R]. For real functions, a
+total function [RInt] is available. *)
 
 Section is_RInt.
+
+(** * Definition of Riemann integral *)
 
 Context {V : NormedModule R_AbsRing}.
 
@@ -1655,11 +1653,11 @@ wlog: a b h Hfh / (a <= b) => [Hw | Hab].
 case: Hab => Hab.
 
 destruct (fun FF2 HF2 => filterlim_switch_dom
-  (fun (x : U) ptd => scal (sign (b - a)) (Riemann_sum (f x) ptd))
-  F (locally_dist (fun ptd : SF_seq.SF_seq => SF_seq.seq_step (SF_seq.SF_lx ptd)))
+  F FF (locally_dist (fun ptd : SF_seq.SF_seq => SF_seq.seq_step (SF_seq.SF_lx ptd))) FF2
   (fun ptd : SF_seq.SF_seq => SF_seq.pointed_subdiv ptd /\
     SF_seq.SF_h ptd = Rmin a b /\
-    seq.last (SF_seq.SF_h ptd) (SF_seq.SF_lx ptd) = Rmax a b) FF FF2 HF2
+    seq.last (SF_seq.SF_h ptd) (SF_seq.SF_lx ptd) = Rmax a b) HF2
+  (fun (x : U) ptd => scal (sign (b - a)) (Riemann_sum (f x) ptd))
   (fun ptd => scal (sign (b - a)) (Riemann_sum g ptd)) h) as [If [Hh Hg]].
 by apply locally_dist_filter.
 intros P [eP HP].

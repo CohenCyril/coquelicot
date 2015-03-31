@@ -1,5 +1,33 @@
+(**
+This file is part of the Coquelicot formalization of real
+analysis in Coq: http://coquelicot.saclay.inria.fr/
+
+Copyright (C) 2011-2015 Sylvie Boldo
+#<br />#
+Copyright (C) 2011-2015 Catherine Lelay
+#<br />#
+Copyright (C) 2011-2015 Guillaume Melquiond
+
+This library is free software; you can redistribute it and/or
+modify it under the terms of the GNU Lesser General Public
+License as published by the Free Software Foundation; either
+version 3 of the License, or (at your option) any later version.
+
+This library is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+COPYING file for more details.
+*)
+
 Require Import Reals Ssreflect.ssreflect Psatz Omega.
-Require Import Hierarchy PSeries Rbar Limit.
+Require Import Hierarchy PSeries Rbar Lim_seq.
+
+(** This file describes an experiment: most 18-year old French
+students pass an exam called Baccalaureate which ends the high school
+and is required for attending the university. We took the 2013
+mathematics test of the scientific Baccalaureate at the same time as
+the students. The pdf of the test is available #<a href="https://www.lri.fr/~lelay/Bac2013/Bac_S_2013_Metropole.pdf">here</a>#. This file is dedicated
+to the mathematics specialty exercise, done after the exam. *)
 
 Open Scope R_scope.
 

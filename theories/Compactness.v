@@ -19,14 +19,13 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 COPYING file for more details.
 *)
 
-(** This file describes compactness results: finite covering of opens,
-finite covering based on a gauge function, specific instances for 1D
-and 2D spaces. *)
-
-
 Require Import Reals.
 Require Import Ssreflect.ssreflect.
 Require Import List.
+
+(** This file describes compactness results: finite covering of opens,
+finite covering based on a gauge function, specific instances for 1D
+and 2D spaces. *)
 
 (* This enables a compatibility with Coq 8.4, which didn't have the right lemmas Rplus_lt_reg_l
    and Rplus_lt_reg_r.  So this Import should disappear in the future.  A better solution would

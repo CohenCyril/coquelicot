@@ -19,17 +19,17 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 COPYING file for more details.
 *)
 
+Require Import Reals Omega Ssreflect.ssreflect.
+Require Import Rcomplements.
+Require Import Lim_seq Rbar Hierarchy.
+
 (** This file gives definitions and properties about series defined on
 a normed module. An equivalence with the standard library and several
 convergence criteria are provided. *)
 
-Require Import Reals Omega Ssreflect.ssreflect.
-Require Import Rcomplements.
-Require Import Limit Rbar Hierarchy.
+Section Definitions.
 
 (** * Definitions *)
-
-Section Definitions.
 
 Context {K : AbsRing} {V : NormedModule K}.
 
@@ -40,7 +40,7 @@ Definition ex_series (a : nat -> V) :=
    exists l : V, is_series a l.
 
 Definition Cauchy_series (a : nat -> V) :=
-  forall eps : posreal, 
+  forall eps : posreal,
     exists N : nat, forall n m : nat,
       (N <= n)%nat -> (N <= m)%nat ->
       norm (sum_n_m a n m) < eps.
@@ -406,12 +406,13 @@ Qed.
 
 (** * Convergence theorems *)
 
-(* A supprimer / convertir *)
-Lemma Cauchy_ex_series_Reals (a : nat -> R) :
-  ex_series a <-> (Cauchy_crit_series a).
+Lemma Cauchy_series_Reals (a : nat -> R) :
+  Cauchy_series a <-> Cauchy_crit_series a.
 Proof.
   split => Hcv.
-  by apply cv_cauchy_1, ex_series_Reals_0.
+  apply cv_cauchy_1, ex_series_Reals_0.
+  by apply: ex_series_Cauchy.
+  apply: Cauchy_ex_series.
   apply ex_series_Reals_1.
   apply cv_cauchy_2.
   by apply Hcv.
@@ -438,9 +439,11 @@ Lemma ex_series_Rabs (a : nat -> R) :
   ex_series (fun n => Rabs (a n)) -> ex_series a.
 Proof.
   move => H.
-  apply Cauchy_ex_series_Reals.
+  apply: ex_series_Cauchy.
+  apply Cauchy_series_Reals.
   apply cauchy_abs.
-  by apply Cauchy_ex_series_Reals.
+  apply Cauchy_series_Reals.
+  by apply: Cauchy_ex_series.
 Qed.
 
 Lemma Series_Rabs (a : nat -> R) :

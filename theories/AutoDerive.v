@@ -809,30 +809,37 @@ rewrite /Derive_Rn.
 rewrite -(nth_map (Cst 0) 0 (interp l) Hv1).
 rewrite -(nth_map (Cst 0) 0 (interp l) Hv2).
 rewrite -(Derive_ext (fun x => g x (nth 0 (map (interp l) le) v2))).
-apply derivable_differentiable_pt_lim.
-apply: locally_2d_impl H1.
-apply locally_2d_forall => u v H'.
+apply filterdiff_differentiable_pt_lim.
+eapply filterdiff_ext_lin.
+apply (is_derive_filterdiff g).
+apply filter_imp with ( 2 := proj1 (locally_2d_locally _ _ _) H1).
+case => u v H'.
 unfold g.
 unfold ex_derive_Rn in H'.
 rewrite ssrnat.eqnE eqtype.eq_refl in H'.
+evar_last.
+apply Derive_correct.
 apply: ex_derive_ext H' => t.
 apply apply_ext => p Hp.
 rewrite -ssrnat.eqnE.
 now case E: (ssrnat.eqn p v1).
-apply: is_derive_ext (Derive_correct _ _ H4) => t.
+simpl ; reflexivity.
+apply is_derive_ext with (2 := Derive_correct _ _ H4) => t.
 apply apply_ext => p Hp.
 case E: (ssrnat.eqn p v1) => //.
 rewrite (ssrnat.eqnP E).
 revert Hv.
 rewrite /in_mem /= ssrnat.eqnE.
 now case eqtype.eq_op.
-apply: continuity_2d_pt_ext H2 => u v.
+apply continuity_2d_pt_filterlim in H2.
+apply: continuous_ext H2 => [[u v]].
 unfold Derive_Rn.
 rewrite ssrnat.eqnE eqtype.eq_refl.
 apply Derive_ext => t.
 apply apply_ext => p Hp.
 rewrite -ssrnat.eqnE.
 now case E: (ssrnat.eqn p v1).
+intros t ; reflexivity.
 intros t.
 apply apply_ext.
 intros p Hp.
@@ -1085,18 +1092,22 @@ intros z _.
 rewrite -(interp_set_nth (S n)).
 apply (is_const_correct e1 (S n) C1 (z :: l)).
 rewrite -(interp_set_nth n l e2) -(interp_set_nth n l e3).
-apply is_derive_RInt_bound_comp.
-now rewrite 2!interp_set_nth.
-rewrite interp_set_nth.
+evar_last.
+apply (is_derive_RInt_bound_comp (fun t : R => interp (t :: l)%SEQ e1)).
+rewrite 2!interp_set_nth.
+eapply filter_imp.
+intros x Hx ; simpl.
+by apply RInt_correct, Hx.
+apply @ex_RInt_locally => //.
+now apply HexI.
 now apply HexI.
 rewrite interp_set_nth.
-now apply HexI.
+now apply continuity_pt_filterlim, locally_singleton.
 rewrite interp_set_nth.
-now apply locally_singleton.
-rewrite interp_set_nth.
-now apply locally_singleton.
+now apply continuity_pt_filterlim, locally_singleton.
 now apply IHe2.
 now apply IHe3.
+reflexivity.
 case C2: (is_const e2 n).
 clear IHe2.
 case C3: (is_const e3 n).

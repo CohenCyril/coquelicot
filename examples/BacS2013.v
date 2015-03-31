@@ -2,11 +2,11 @@
 This file is part of the Coquelicot formalization of real
 analysis in Coq: http://coquelicot.saclay.inria.fr/
 
-Copyright (C) 2011-2013 Sylvie Boldo
+Copyright (C) 2011-2015 Sylvie Boldo
 #<br />#
-Copyright (C) 2011-2013 Catherine Lelay
+Copyright (C) 2011-2015 Catherine Lelay
 #<br />#
-Copyright (C) 2011-2013 Guillaume Melquiond
+Copyright (C) 2011-2015 Guillaume Melquiond
 
 This library is free software; you can redistribute it and/or
 modify it under the terms of the GNU Lesser General Public
@@ -19,13 +19,19 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 COPYING file for more details.
 *)
 
-(** * Bac S 2013 *)
-(** https://www.lri.fr/~lelay/Bac2013/Bac_S_2013_Metropole.pdf *)
+
 
 Require Import Reals Ssreflect.ssreflect.
 Require Import Psatz.
 Require Import Rcomplements Rbar Hierarchy.
-Require Import Derive RInt Continuity Limit ElemFct RInt_analysis.
+Require Import Derive RInt Continuity Lim_seq ElemFct RInt_analysis.
+
+(** This file describes an experiment: most 18-year old French
+students pass an exam called Baccalaureate which ends the high school
+and is required for attending the university. We took the 2013
+mathematics test of the scientific Baccalaureate at the same time as
+the students. The pdf of the test is available #<a href="https://www.lri.fr/~lelay/Bac2013/Bac_S_2013_Metropole.pdf">here</a>#. *)
+
 
 Ltac pos_rat :=
   repeat ( apply Rdiv_lt_0_compat

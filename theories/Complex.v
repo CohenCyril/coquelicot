@@ -19,13 +19,13 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 COPYING file for more details.
 *)
 
-(** This file defines complex numbers [C] as [R * R]. Operations are
-given, and [C] is proved to be a field, a normed module, and a
-complete space. *)
-
 Require Import Reals Ssreflect.ssreflect.
 Require Import Rcomplements Rbar.
 Require Import Continuity Derive Hierarchy.
+
+(** This file defines complex numbers [C] as [R * R]. Operations are
+given, and [C] is proved to be a field, a normed module, and a
+complete space. *)
 
 (** * The set of complex numbers *)
 
@@ -508,7 +508,7 @@ Qed.
 
 (** * C is a CompleteSpace *)
 
-Definition C_complete_lim (F : (C -> Prop) -> Prop) := 
+Definition C_complete_lim (F : (C -> Prop) -> Prop) :=
   (R_complete_lim (fun P => F (fun z => P (Re z))), R_complete_lim (fun P => F (fun z => P (Im z)))).
 
 Lemma C_complete :
@@ -650,7 +650,7 @@ Proof.
   destruct HP as [eps HP].
   destruct (Df (pos_div_2 eps)) as [eps' Df'].
   unfold filtermap, locally', within.
-  
+
   apply locally_C.
   exists eps'.
   intros y Hy Hyz.

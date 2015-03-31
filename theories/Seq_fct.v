@@ -19,14 +19,13 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 COPYING file for more details.
 *)
 
-(* todo ? *)
-
-
 Require Import Reals Ssreflect.ssreflect Rbar.
 Require Import Rcomplements.
-Require Import Limit Continuity Derive Series.
+Require Import Lim_seq Continuity Derive Series.
 Require Import Lub Hierarchy.
 
+(** This file describes sequences of functions and results about
+their convergence. *)
 
 Open Scope R_scope.
 
@@ -376,20 +375,6 @@ Proof.
   exact: Hy.
 Qed.
 
-(* Lemma CVU_NInt (fn Fn : nat -> R -> R) (F : R -> R) (a b : R) (Hab : a < b) :
-  CVU_dom fn (fun x => a <= x <= b)
-  -> (forall n, forall x, a <= x <= b -> continuity_pt (fn n) x)
-  -> (forall n x, a <= x <= b -> is_derive (Fn n) x (fn n x)) -> (forall n, Fn n a = 0)
-  -> (forall x, a <= x <= b -> is_derive F x (Lim_seq (fun n => fn n x))) -> (F a = 0)
-  -> CVU_dom Fn (fun x => a <= x <= b)
-    /\ (forall x, a <= x <= b -> Lim_seq (fun n => Fn n x) = F x).
-Lemma CVU_Rint (fn : nat -> R -> R) (a b : R) (Hab : a < b) :
-  CVU_dom fn (fun x => a <= x <= b)
-  -> (forall n, forall x, a <= x <= b -> continuity_pt (fn n) x)
-  -> CVU_dom (fun n x => RInt (fn n) a x) (fun x => a <= x <= b)
-    /\ (forall x, a <= x <= b ->
-  Lim_seq (fun n => RInt (fn n) a x) = RInt (fun y => Lim_seq (fun n => fn n y)) a x).
-*)
 Lemma CVU_Derive (fn : nat -> R -> R) (D : R -> Prop) :
   open D -> is_connected D
   -> CVU_dom fn D
@@ -946,132 +931,4 @@ Proof.
   by apply lt_O_Sn.
   apply ex_series_Rabs.
   by apply H3.
-Qed.
-
-(** * Swich limits *)
-
-Lemma filterlim_switch_1 {T1 T2} {G : UniformSpace}
-  (f : T1 -> T2 -> G) F1 F2 (FF1 : ProperFilter F1) (FF2 : Filter F2) g h (l : G) :
-  (filterlim f F1 (locally g))
-  -> (forall x, filterlim (f x) F2 (locally (h x)))
-  -> filterlim h F1 (locally l) -> filterlim g F2 (locally l).
-Proof.
-  intros Hfg Hfh Hhl P.
-  case: FF1 => HF1 FF1.
-  apply filterlim_locally.
-  move => eps.
-
-  have FF := (filter_prod_filter _ _ F1 F2 FF1 FF2).
-
-  assert (filter_prod F1 F2 (fun x => ball (g (snd x)) (eps / 2 / 2) (f (fst x) (snd x)))).
-    apply Filter_prod with (fun x : T1 => ball g (eps / 2 / 2) (f x)) (fun _ => True).
-    move: (proj1 (@filterlim_locally _ _ F1 FF1 f g) Hfg (pos_div_2 (pos_div_2 eps))) => {Hfg} /= Hfg.
-    by [].
-    by apply FF2.
-    simpl ; intros.
-    apply H.
-  move: H => {Hfg} Hfg.
-
-  assert (filter_prod F1 F2 (fun x : T1 * T2 => ball l (eps / 2) (h (fst x)))).
-    apply Filter_prod with (fun x : T1 => ball l (eps / 2) (h x)) (fun _ => True).
-    move: (proj1 (@filterlim_locally _ _ F1 FF1 h l) Hhl (pos_div_2 eps)) => {Hhl} /= Hhl.
-    by [].
-    by apply FF2.
-    by [].
-  move: H => {Hhl} Hhl.
-
-  case: (@filter_and _ _ FF _ _ Hhl Hfg) => {Hhl Hfg} /= ; intros.
-
-  move: (fun x => proj1 (@filterlim_locally _ _ F2 FF2 (f x) (h x)) (Hfh x) (pos_div_2 (pos_div_2 eps))) => {Hfh} /= Hfh.
-  case: (HF1 Q f0) => x Hx.
-  move: (@filter_and _ _ FF2 _ _ (Hfh x) g0) => {Hfh}.
-  apply filter_imp => y Hy.
-  rewrite (double_var eps).
-  apply ball_triangle with (h x).
-  apply (p x y).
-  by [].
-  by apply Hy.
-  rewrite (double_var (eps / 2)).
-  apply ball_triangle with (f x y).
-  by apply Hy.
-  apply ball_sym, p.
-  by [].
-  by apply Hy.
-Qed.
-
-Lemma filterlim_switch_2 {T1 T2} {U : CompleteSpace}
-  (f : T1 -> T2 -> U) F1 F2 (FF1 : ProperFilter F1) (FF2 : ProperFilter F2) g h :
-  (filterlim f F1 (locally g))
-  -> (forall x, filterlim (f x) F2 (locally (h x)))
-  -> (exists l : U, filterlim h F1 (locally l)).
-Proof.
-  move => Hfg Hfh.
-  case : (proj1 (filterlim_locally_cauchy h)).
-  move => eps.
-  generalize (proj2 (filterlim_locally_cauchy f)) => Hf.
-  assert (exists y : T2 -> U, filterlim f F1 (locally y)).
-    exists g => P Hp.
-    apply Hfg.
-    case: Hp => d Hp.
-    exists d => y Hy.
-    apply: Hp.
-    by apply Hy.
-
-  move: H => {Hfg} Hfg.
-  move: (Hf Hfg (pos_div_2 eps)) => {Hf Hfg} /= Hf.
-
-  case: FF2 => HF2 FF2.
-  generalize (fun x => proj1 (filterlim_locally (f x) (h x)) (Hfh x) (pos_div_2 (pos_div_2 eps)))
-    => {Hfh} Hfh.
-
-  case: Hf => P [Hp Hf].
-  exists P ; split.
-  by [].
-  move => u v Hu Hv.
-  move: (Hfh u) => /= Hu'.
-  move: (Hfh v) => /= Hv'.
-  move: (@filter_and _ F2 FF2 _ _ Hu' Hv') => {Hu' Hv' Hfh} Hfh.
-  case: (HF2 _ Hfh) => {Hfh} y Hy.
-  replace (pos eps) with (eps / 2 / 2 + (eps / 2 + eps / 2 / 2)) by field.
-  apply ball_triangle with (f u y).
-  by apply Hy.
-  apply ball_triangle with (f v y).
-  by apply Hf.
-  now apply ball_sym.
-
-  move => l Hl.
-  by exists l.
-Qed.
-
-Lemma filterlim_switch {T1 T2} {U : CompleteSpace}
-  (f : T1 -> T2 -> U) F1 F2 (FF1 : ProperFilter F1) (FF2 : ProperFilter F2) g h :
-  (filterlim f F1 (locally g))
-  -> (forall x, filterlim (f x) F2 (locally (h x)))
-  -> (exists l : U, filterlim h F1 (locally l) /\ filterlim g F2 (locally l)).
-Proof.
-  move => Hfg Hfh.
-  destruct (filterlim_switch_2 f F1 F2 FF1 FF2 g h Hfg Hfh) as [l Hhl].
-  exists l ; split.
-  exact Hhl.
-  case: FF2 => HF2 FF2.
-  now apply (filterlim_switch_1 f F1 F2 FF1 FF2 g h l).
-Qed.
-
-Lemma filterlim_switch_dom {T1 T2} {U : CompleteSpace}
-  (f : T1 -> T2 -> U) F1 F2 (dom : T2 -> Prop) (FF1 : ProperFilter F1) (FF2 : Filter F2) (HF2 : forall P, F2 P -> exists x, dom x /\ P x) g h :
-  (filterlim (fun x (y : {z : T2 | dom z}) => f x (proj1_sig y)) F1 (locally (T := fct_UniformSpace _ _) (fun y : {z : T2 | dom z} => g (proj1_sig y))))
-  -> (forall x, filterlim (f x) (within dom F2) (locally (h x)))
-  -> (exists l : U, filterlim h F1 (locally l) /\ filterlim g (within dom F2) (locally l)).
-Proof.
-set (T2' := { y : T2 | dom y }).
-set (f' := fun x (y : T2') => f x (proj1_sig y)).
-set (F2' := fun P : T2' -> Prop => F2 (fun x => forall (H:dom x), P (exist _ x H))).
-set (g' := fun y : T2' => g (proj1_sig y)).
-intros Hfg Hfh.
-refine (filterlim_switch f' F1 F2' FF1 _ g' h _ _).
-now apply subset_filter_proper.
-intros H P.
-now apply Hfg.
-intros x P HP.
-now apply Hfh.
 Qed.

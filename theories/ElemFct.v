@@ -19,13 +19,13 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 COPYING file for more details.
 *)
 
+Require Import Reals Omega Ssreflect.ssreflect.
+Require Import Rbar Rcomplements Continuity Derive Hierarchy RInt PSeries.
+Require Import Lim_seq RInt_analysis.
+
 (** This file describes basic properties (such as limits or
 differentiability) about basic functions: absolute value, inverse,
 square root, power, exponential and so on.*)
-
-Require Import Reals Omega Ssreflect.ssreflect.
-Require Import Rbar Rcomplements Continuity Derive Hierarchy RInt PSeries.
-Require Import RInt_analysis.
 
 (** * Absolute value *)
 
@@ -224,7 +224,7 @@ Proof.
   by apply filterlim_Ropp_left.
   rewrite Ropp_0.
   by apply filterlim_Rinv_0_right.
-  apply Limit.filterlim_Rbar_opp.
+  apply filterlim_Rbar_opp.
 Qed.
 Lemma is_lim_Rinv_0_left (f : R -> R) (x : Rbar) :
   is_lim f x 0 -> Rbar_locally' x (fun x => f x < 0) ->
@@ -836,7 +836,7 @@ Proof.
   apply Rlt_not_eq, Rminus_lt_0 ; ring_simplify ; apply Rlt_0_1.
   rewrite S_INR ; by apply Rgt_not_eq, RinvN_pos.
   by apply Rlt_0_1.
-  apply Limit.is_lim_seq_ext with (fun n => 1 - 2 / (2 * INR n + 3)).
+  apply is_lim_seq_ext with (fun n => 1 - 2 / (2 * INR n + 3)).
   intros n.
   rewrite -plus_n_Sm plus_Sn_m !S_INR plus_INR.
   assert (0 < INR n + INR n + 1).
@@ -854,17 +854,17 @@ Proof.
   apply Rlt_not_eq, Rminus_lt_0 ; ring_simplify ; apply Rlt_0_1.
   rewrite -plus_INR ; by apply Rgt_not_eq, RinvN_pos.
   evar_last.
-  apply Limit.is_lim_seq_minus'.
+  apply is_lim_seq_minus'.
   apply filterlim_const.
-  eapply Limit.is_lim_seq_div.
-  apply Limit.is_lim_seq_const.
-  eapply Limit.is_lim_seq_plus.
-  eapply Limit.is_lim_seq_mult.
-  apply Limit.is_lim_seq_const.
-  apply Limit.is_lim_seq_INR.
+  eapply is_lim_seq_div.
+  apply is_lim_seq_const.
+  eapply is_lim_seq_plus.
+  eapply is_lim_seq_mult.
+  apply is_lim_seq_const.
+  apply is_lim_seq_INR.
   apply is_Rbar_mult_sym, is_Rbar_mult_p_infty_pos.
   by apply Rlt_0_2.
-  apply Limit.is_lim_seq_const.
+  apply is_lim_seq_const.
   reflexivity ; simpl.
   by [].
   reflexivity.
@@ -890,8 +890,8 @@ Proof.
   apply sym_eq.
   rewrite -Series.Series_scal_l.
   apply Series.is_series_unique.
-  apply Limit.is_lim_seq_Reals in Hps.
-  move: Hps ; apply Limit.is_lim_seq_ext => n.
+  apply is_lim_seq_Reals in Hps.
+  move: Hps ; apply is_lim_seq_ext => n.
   rewrite -sum_n_Reals.
   apply sum_n_ext => k.
   rewrite /tg_alt /Ratan_seq S_INR !plus_INR.

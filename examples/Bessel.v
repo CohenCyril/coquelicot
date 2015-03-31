@@ -2,11 +2,11 @@
 This file is part of the Coquelicot formalization of real
 analysis in Coq: http://coquelicot.saclay.inria.fr/
 
-Copyright (C) 2011-2013 Sylvie Boldo
+Copyright (C) 2011-2015 Sylvie Boldo
 #<br />#
-Copyright (C) 2011-2013 Catherine Lelay
+Copyright (C) 2011-2015 Catherine Lelay
 #<br />#
-Copyright (C) 2011-2013 Guillaume Melquiond
+Copyright (C) 2011-2015 Guillaume Melquiond
 
 This library is free software; you can redistribute it and/or
 modify it under the terms of the GNU Lesser General Public
@@ -21,10 +21,11 @@ COPYING file for more details.
 
 Require Import Reals Ssreflect.ssreflect.
 Require Import Rcomplements Rbar Hierarchy.
-Require Import Derive Series PSeries Limit.
+Require Import Derive Series PSeries Lim_seq.
 Require Import AutoDerive.
 
-(** An example of how to use power series *)
+(** This file is an example of how to use power series. It defines and
+gives properties of the Bessel functions. *)
 
 Definition Bessel1_seq (n k : nat) :=
   (-1)^(k)/(INR (fact (k)) * INR (fact (n + (k)))).
@@ -315,7 +316,7 @@ Qed.
 
 (** * Unicity *)
 
-Lemma Bessel1_uniqueness_aux_0 (a : nat -> R) (n : nat) : 
+Lemma Bessel1_uniqueness_aux_0 (a : nat -> R) (n : nat) :
   Rbar_lt 0 (CV_radius a) ->
   (forall x : R, Rbar_lt (Rabs x) (CV_radius a) -> x^2 * Derive_n (PSeries a) 2 x + x * Derive (PSeries a) x + (x^2 - (INR n)^2) * PSeries a x = 0)
   ->
@@ -418,7 +419,7 @@ Proof.
   rewrite -Derive_PSeries.
   rewrite -Rmult_plus_distr_r.
   apply H.
-  
+
   by apply H1.
   by apply H1.
   by apply H1.
@@ -426,20 +427,20 @@ Proof.
   apply ex_pseries_scal, CV_radius_inside.
   by apply Rmult_comm.
   by apply H1.
-  apply ex_pseries_incr_n. 
+  apply ex_pseries_incr_n.
   apply CV_radius_inside.
   rewrite CV_radius_derive_n.
   by apply H1.
   apply ex_pseries_incr_1, ex_pseries_derive.
   by apply H1.
   apply ex_pseries_plus.
-  apply ex_pseries_incr_n. 
+  apply ex_pseries_incr_n.
   apply CV_radius_inside.
   by rewrite CV_radius_derive_n ; apply H1.
   apply ex_pseries_incr_1, ex_pseries_derive.
   by apply H1.
   apply ex_pseries_plus.
-  apply ex_pseries_incr_n. 
+  apply ex_pseries_incr_n.
   apply CV_radius_inside.
   by apply H1.
   apply ex_pseries_scal.
@@ -451,7 +452,7 @@ Lemma Bessel1_uniqueness_aux_1 (a : nat -> R) (n : nat) :
   (a 0%nat = 0 \/ n = O) ->
   (a 1%nat = 0 \/ n = 1%nat) ->
   (forall k, (INR (S (S k)) ^ 2 - INR n ^ 2) * a (S (S k)) + a k = 0) ->
-  (forall k : nat, (k < n)%nat -> a k = 0) 
+  (forall k : nat, (k < n)%nat -> a k = 0)
   /\ (forall p : nat, a (n + 2 * p + 1)%nat = 0)
   /\ (forall p : nat, a (n + 2 * p)%nat = Bessel1_seq n p * / 2 ^ (2 * p) * INR (fact n) * a n).
 Proof.
@@ -468,7 +469,7 @@ Proof.
     by apply not_INR.
     rewrite -plus_INR plus_Sn_m.
     by apply (not_INR _ O), sym_not_eq, O_S.
-    replace (a k) 
+    replace (a k)
     with ((INR (S (S k)) ^ 2 - INR n ^ 2) * a (S (S k)) + a k - (INR (S (S k)) ^ 2 - INR n ^ 2) * a (S (S k)))
     by ring.
     rewrite Ha ; ring.
@@ -539,7 +540,7 @@ Proof.
     (a 1%nat = 0 \/ n = 1%nat) /\
     (forall k, (INR (S (S k)) ^ 2 - INR n ^ 2) * a (S (S k)) + a k = 0)).
   by apply Bessel1_uniqueness_aux_0.
-  assert ((forall k : nat, (k < n)%nat -> a k = 0) 
+  assert ((forall k : nat, (k < n)%nat -> a k = 0)
   /\ (forall p : nat, a (n + 2 * p + 1)%nat = 0)
   /\ (forall p : nat, a (n + 2 * p)%nat = Bessel1_seq n p * / 2 ^ (2 * p) * INR (fact n) * a n)).
   apply Bessel1_uniqueness_aux_1 ; by apply H.

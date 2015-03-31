@@ -35,7 +35,6 @@ Open Scope R_scope.
 
 (** * Bounds for sets in [R] *)
 (** ** Upper and Lower bounds *)
-(* Todo : homogénéiser les noms entre R et Rbar *)
 
 Definition is_ub_Rbar (E : R -> Prop) (l : Rbar) :=
   forall (x : R), E x -> Rbar_le x l.
@@ -181,7 +180,7 @@ rename E into F.
   assert (E_ex : forall m, exists x : R, E m x).
     intros m ; exists (- INR m) ; by left.
   set (u m := proj1_sig (completeness (E m) (E_b m) (E_ex m))).
-  
+
   destruct (LPO (fun n => u n <> - INR n)) as [ [n Hn] | Hn].
     intros n.
     case: (Req_EM_T (u n) (- INR n)) => H.

@@ -19,15 +19,13 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 COPYING file for more details.
 *)
 
-(** This file describes results about differentiability in [R x
- R]. This includes the [Schwarz] theorem and the 2D Taylor-Lagrange
- inequality. *)
-
-
-
 Require Import Reals Omega.
 Require Import Ssreflect.ssreflect.
 Require Import Rcomplements Hierarchy Continuity Derive.
+
+(** This file describes results about differentiability in [R x
+ R]. This includes the [Schwarz] theorem and the 2D Taylor-Lagrange
+ inequality. *)
 
 (** * Differentiability *)
 
@@ -202,69 +200,6 @@ Proof.
   apply Rnot_le_lt in n.
   apply sym_not_eq, Rlt_not_eq, (Rlt_trans _ _ _ Rlt_0_1 n).
 Qed.
-
-(* Lemma derivable_differentiable_pt_lim : forall f x y l2,
-  locally_2d (fun u v => ex_derive (fun z => f z v) u) x y ->
-  is_derive (fun z => f x z) y l2 ->
-  continuity_2d_pt (fun u v => Derive (fun z => f z v) u) x y ->
-  differentiable_pt_lim f x y (Derive (fun u => f u y) x) l2.
-Proof.
-  intros f x y l2 Dx Dy Cx eps.
-  set (eps' := pos_div_2 eps).
-  specialize (Cx eps').
-  move: (locally_2d_and _ _ _ _ Dx Cx) => {Dx Cx}.
-  intros (d1,Hd1).
-  destruct (proj2 Dy y (fun P H => H) eps') as (d2,Hd2).
-  set (l1 := Derive (fun u : R => f u y) x).
-  exists (mkposreal _ (Rmin_stable_in_posreal d1 d2)).
-  simpl; intros u v Hu Hv.
-  set (g1 t := f t v - l1*t).
-  set (g2 t := f x t - l2*t).
-  apply Rle_trans with (Rabs (g1 u - g1 x) + Rabs (g2 v - g2 y)).
-    replace (f u v - f x y - (l1 * (u - x) + l2 * (v - y))) with
-      ((g1 u - g1 x) + (g2 v - g2 y)) by (unfold g1, g2 ; ring).
-    apply Rabs_triang.
-  replace (pos eps) with (eps' + eps') by (apply sym_eq ; apply double_var).
-  rewrite Rmult_plus_distr_r.
-  apply Rplus_le_compat.
-  (* *)
-  apply Rle_trans with (eps' * Rabs (u - x)).
-  apply bounded_variation with (fun t => Derive (fun z : R => f z v) t - l1) => t Ht.
-  split.
-    apply: is_derive_minus.
-    apply Derive_correct, Hd1.
-    apply Rle_lt_trans with (1 := Ht).
-    apply Rlt_le_trans with (1:=Hu).
-    apply Rmin_l.
-    apply Rlt_le_trans with (1:=Hv).
-    apply Rmin_l.
-    rewrite -{2}(Rmult_1_r l1).
-    apply is_derive_Reals, derivable_pt_lim_scal.
-    apply derivable_pt_lim_id.
-  apply Rlt_le.
-  apply Hd1.
-  apply Rle_lt_trans with (1 := Ht).
-  apply Rlt_le_trans with (1:=Hu).
-  apply Rmin_l.
-  apply Rlt_le_trans with (1:=Hv).
-  apply Rmin_l.
-  apply Rmult_le_compat_l.
-  apply Rlt_le.
-  apply cond_pos.
-  apply Rmax_l.
-  (* *)
-  apply Rle_trans with (eps' * Rabs (v - y)).
-  apply Rle_trans with (Rabs (f x v - f x y - l2 * (v - y))).
-  right; apply f_equal.
-  unfold g2; ring.
-  rewrite Rmult_comm ; apply Hd2.
-  apply Rlt_le_trans with (1:=Hv).
-  apply Rmin_r.
-  apply Rmult_le_compat_l.
-  apply Rlt_le.
-  apply cond_pos.
-  apply Rmax_r.
-Qed.*)
 
 Lemma differentiable_pt_lim_proj1_0 (f : R -> R) (x y l : R) :
   derivable_pt_lim f x l -> differentiable_pt_lim (fun u v => f u) x y l 0.
@@ -553,8 +488,6 @@ Proof.
   apply: differentiable_pt_lim_proj1_0 H0.
   apply: differentiable_pt_lim_proj1_0 H1.
 Qed.
-
-(* opération : plus tard en utilisant la compositions ? *)
 
 (** * Partial derivatives *)
 

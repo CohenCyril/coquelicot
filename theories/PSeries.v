@@ -19,18 +19,18 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 COPYING file for more details.
 *)
 
+Require Import Reals Even Div2 Omega Ssreflect.ssreflect.
+Require Import Rcomplements Rbar Lim_seq Lub Hierarchy.
+Require Import Continuity Derive Seq_fct Series.
+
 (** This file describes power series: #&Sigma; a<sub>k</sub>
-x<sup>k</sup>#. It containes definition, equivalence with the standard
+x<sup>k</sup>#. It contains definition, equivalence with the standard
 library, differentiability, integrability, and many results about the
 convergence circle. *)
 
-Require Import Reals Even Div2 Omega Ssreflect.ssreflect.
-Require Import Rcomplements Rbar Limit Lub.
-Require Import Continuity Derive Derive_2d RInt RInt_analysis Seq_fct Series Hierarchy.
+Section Definitions.
 
 (** * Definition *)
-
-Section Definitions.
 
 Context {K : AbsRing} {V : NormedModule K}.
 
@@ -821,9 +821,9 @@ Proof.
     rewrite (CV_radius_ext (PS_plus a b) (PS_plus b a)).
     by apply Hw, Rbar_lt_le.
     now intros n ; apply Rplus_comm.
-  
+
   replace (Rbar_min (CV_radius a) (CV_radius b)) with (CV_radius a).
-  
+
   apply is_lub_Rbar_subset
     with (CV_disk (PS_plus a b))
     (fun x => (CV_disk a x) /\ (CV_disk b x)).
@@ -834,7 +834,7 @@ Proof.
     rewrite /CV_radius /Lub_Rbar ; by case: ex_lub_Rbar.
   have Hb : is_lub_Rbar (fun x : R => CV_disk b x) (CV_radius b).
     rewrite /CV_radius /Lub_Rbar ; by case: ex_lub_Rbar.
-  
+
   split.
   intros y [Hay Hby].
   by apply Ha.
@@ -848,10 +848,10 @@ Proof.
   2: by case: (CV_radius a).
   apply Rbar_not_lt_le => Hac.
   move: (Rbar_lt_le_trans _ _ _ Hac Hle) => Hbc.
-  
+
   eapply Rbar_le_not_lt.
   apply (Hc ((c + Rbar_min (c + 1) (CV_radius a)) / 2)).
-  
+
   assert (Rbar_lt (Rabs ((c + Rbar_min (c + 1) (CV_radius a)) / 2)) (CV_radius a)).
     case: (CV_radius a) Hac => //= l Hl.
     rewrite Rabs_pos_eq.
@@ -1624,7 +1624,7 @@ Lemma Abel (a : nat -> R) :
   -> filterlim (PSeries a) (at_left (CV_radius a)) (locally (PSeries a (CV_radius a))).
 Proof.
   case Hcv : (CV_radius a) => [cv | | ] //= Hcv0 _ Ha1.
-  
+
   wlog: cv a Hcv Hcv0 Ha1 / (cv = 1) => Hw.
     apply filterlim_ext with
       (fun x => PSeries (fun n => a n * cv ^ n) (x / cv)).
@@ -1746,7 +1746,7 @@ Proof.
     rewrite /is_pseries /is_series.
     replace (@locally R_NormedModule (l / (1 - x)))
       with (Rbar_locally (Rbar_mult (l - ((Rbar_mult x 0) * 0)) (/ (1 - x)))).
-    apply (Limit.is_lim_seq_ext
+    apply (is_lim_seq_ext
       (fun n => (sum_n (fun k : nat => scal (pow_n (K := R_AbsRing) x k) (a k)) n
                      - scal (pow_n (K := R_AbsRing) x (S n)) (Sa n)) / (1 - x))
        (sum_n (fun k : nat => scal (pow_n (K := R_AbsRing) x k) (Sa k)))).
@@ -1754,17 +1754,17 @@ Proof.
        field.
        apply Rgt_not_eq ; apply -> Rminus_lt_0.
        by apply Rabs_lt_between, Hx.
-    apply Limit.is_lim_seq_scal_r.
-    apply Limit.is_lim_seq_minus'.
+    apply is_lim_seq_scal_r.
+    apply is_lim_seq_minus'.
     apply Hl.
-    apply Limit.is_lim_seq_mult'.
-    apply Limit.is_lim_seq_mult'.
-    apply Limit.is_lim_seq_const.
-    eapply Limit.is_lim_seq_ext.
+    apply is_lim_seq_mult'.
+    apply is_lim_seq_mult'.
+    apply is_lim_seq_const.
+    eapply is_lim_seq_ext.
     intros n ; by apply sym_eq, pow_n_pow.
-    apply Limit.is_lim_seq_geom.
+    apply is_lim_seq_geom.
     by apply Hx.
-    move: Ha1 ; apply (Limit.is_lim_seq_ext _ _ 0).
+    move: Ha1 ; apply (is_lim_seq_ext _ _ 0).
     intros n ; apply sum_n_ext => k.
     by rewrite pow_n_pow pow1 scal_one.
     by replace (Rbar_mult (l - Rbar_mult x 0 * 0) (/ (1 - x)))
@@ -1785,7 +1785,7 @@ Proof.
   apply filterlim_locally => eps.
   destruct (Ha1 (ball 0 (pos_div_2 eps))) as [N HN].
   apply locally_ball.
-  
+
   eapply filter_imp.
   intros x Hx.
   rewrite (PSeries_decr_n _ N).
@@ -2293,7 +2293,7 @@ Proof.
 Qed.
 
 Lemma is_pseries_derive (a : nat -> R) x :
-  Rbar_lt (Rabs x) (CV_radius a) 
+  Rbar_lt (Rabs x) (CV_radius a)
     -> is_pseries (PS_derive a) x (Derive (PSeries a) x).
 Proof.
   intros Hx.
@@ -2557,7 +2557,6 @@ Proof.
     apply Rabs_lt_between.
     by split.
 
-  (* ? *)
   move => P [eps Heps].
   have : exists N, forall n, (N <= n)%nat -> r ^ (S n) * M / INR (fact (S n)) < eps.
     have H : is_lim_seq (fun n => r ^ n * M / INR (fact n)) 0.
@@ -2661,113 +2660,3 @@ Proof.
   intros m; rewrite pow_n_pow.
   rewrite /scal /= /mult /= /Rdiv ; ring.
 Qed.
-
-(** ** Riemann integrability *)
-
-Definition PS_Int (a : nat -> R) (n : nat) : R :=
-  match n with
-    | O => 0
-    | S n => a n / INR (S n)
-  end.
-
-Lemma CV_radius_Int (a : nat -> R) :
-  CV_radius (PS_Int a) = CV_radius a.
-Proof.
-  rewrite -CV_radius_derive.
-  apply CV_radius_ext.
-  rewrite /PS_derive /PS_Int => n ; rewrite S_INR.
-  field.
-  apply Rgt_not_eq, INRp1_pos.
-Qed.
-
-Lemma is_RInt_PSeries (a : nat -> R) (x : R) :
-  Rbar_lt (Rabs x) (CV_radius a)
-  -> is_RInt (PSeries a) 0 x (PSeries (PS_Int a) x).
-Proof.
-  move => Hx.
-  have H : forall y, Rmin 0 x <= y <= Rmax 0 x -> Rbar_lt (Rabs y) (CV_radius a).
-    move => y Hy.
-    apply: Rbar_le_lt_trans Hx.
-    apply Rabs_le_between.
-    split.
-    apply Rle_trans with (2 := proj1 Hy).
-    rewrite /Rabs /Rmin.
-    case: Rcase_abs ; case: Rle_dec => // Hx Hx' ; rewrite ?Ropp_involutive.
-    by apply Rlt_le.
-    by apply Req_le.
-    apply Ropp_le_cancel ; by rewrite Ropp_involutive Ropp_0.
-    by apply Rge_le in Hx'.
-    apply Rle_trans with (1 := proj2 Hy).
-    rewrite /Rabs /Rmax.
-    case: Rcase_abs ; case: Rle_dec => // Hx Hx'.
-    by apply Rlt_not_le in Hx'.
-    apply Ropp_le_cancel, Rlt_le ; by rewrite Ropp_involutive Ropp_0.
-    by apply Req_le.
-    by apply Rge_le in Hx'.
-
-  apply is_RInt_ext with (Derive (PSeries (PS_Int a))).
-  move => y Hy.
-  rewrite Derive_PSeries.
-  apply PSeries_ext ; rewrite /PS_derive /PS_Int => n ; rewrite S_INR.
-  field.
-  apply Rgt_not_eq, INRp1_pos.
-  rewrite CV_radius_Int.
-  by apply H ; split ; apply Rlt_le ; apply Hy.
-  evar_last.
-  apply is_RInt_derive.
-  move => y Hy.
-  apply Derive_correct, ex_derive_PSeries.
-  rewrite CV_radius_Int.
-  by apply H.
-  move => y Hy.
-  apply continuous_ext_loc with (PSeries a).
-
-  apply locally_interval with (Rbar_opp (CV_radius a)) (CV_radius a).
-  apply Rbar_opp_lt ; rewrite Rbar_opp_involutive.
-  apply: Rbar_le_lt_trans (H _ Hy).
-  apply Rabs_maj2.
-  apply: Rbar_le_lt_trans (H _ Hy).
-  apply Rle_abs.
-  move => z Hz Hz'.
-  rewrite Derive_PSeries.
-  apply PSeries_ext ; rewrite /PS_derive /PS_Int => n ; rewrite S_INR.
-  field.
-  apply Rgt_not_eq, INRp1_pos.
-  rewrite CV_radius_Int.
-  apply (Rbar_abs_lt_between z) ; by split.
-  apply continuity_pt_filterlim, PSeries_continuity.
-  by apply H.
-
-  rewrite PSeries_0 /(PS_Int _ 0) ; by rewrite Rminus_0_r.
-Qed.
-
-Lemma ex_RInt_PSeries (a : nat -> R) (x : R) :
-  Rbar_lt (Rabs x) (CV_radius a)
-  -> ex_RInt (PSeries a) 0 x.
-Proof.
-  move => Hx.
-  exists (PSeries (PS_Int a) x).
-  by apply is_RInt_PSeries.
-Qed.
-Lemma RInt_PSeries (a : nat -> R) (x : R) :
-  Rbar_lt (Rabs x) (CV_radius a)
-  -> RInt (PSeries a) 0 x = PSeries (PS_Int a) x.
-Proof.
-  move => Hx.
-  apply is_RInt_unique.
-  by apply is_RInt_PSeries.
-Qed.
-
-Lemma is_pseries_RInt (a : nat -> R) :
-  forall x, Rbar_lt (Rabs x) (CV_radius a) 
-    -> is_pseries (PS_Int a) x (RInt (PSeries a) 0 x).
-Proof.
-  move => x Hx.
-  assert (Ha := is_RInt_PSeries _ _ Hx).
-  apply is_RInt_unique in Ha.
-  rewrite Ha.
-  apply PSeries_correct.
-  apply CV_radius_inside.
-  by rewrite CV_radius_Int.
-Qed.
-

@@ -1,11 +1,37 @@
+(**
+This file is part of the Coquelicot formalization of real
+analysis in Coq: http://coquelicot.saclay.inria.fr/
+
+Copyright (C) 2011-2015 Sylvie Boldo
+#<br />#
+Copyright (C) 2011-2015 Catherine Lelay
+#<br />#
+Copyright (C) 2011-2015 Guillaume Melquiond
+
+This library is free software; you can redistribute it and/or
+modify it under the terms of the GNU Lesser General Public
+License as published by the Free Software Foundation; either
+version 3 of the License, or (at your option) any later version.
+
+This library is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+COPYING file for more details.
+*)
+
 Require Import Reals Ssreflect.ssreflect.
 Require Import Coquelicot.
+
+(** This file describes some complex analysis results, including path
+integrals. The final goal is to prove a version of Cauchy-Lipschitz
+theorem. *)
+
 
 (** * Additionnal Lemmas *)
 
 (** ** Complex.v *)
 
-Open Local Scope C_scope.
+Local Open Scope C_scope.
 
 Lemma is_linear_C_R (l : C -> C) :
   is_linear (U := C_NormedModule) (V := C_NormedModule) l ->
@@ -387,7 +413,7 @@ Focus 2.
   2: now field ; contradict Hp0 ; injection Hp0.
   apply f_equal, f_equal.
   now field ; contradict Hp0 ; injection Hp0.
-  
+
   apply Rminus_eq_contra in Hp1.
   eapply is_RInt_ext, (is_RInt_comp_lin _ (/ (1 - p)) (-p / (1 - p))).
   2: replace (/ (1 - p) * p + - p / (1 - p))%R with 0 by now field.
@@ -569,7 +595,7 @@ Lemma is_C_RInt_derive (f df : R -> C) (a b : R) :
 Proof.
   intros.
   apply is_RInt_fct_extend_pair ; simpl.
-  
+
   apply (is_RInt_derive (fun y => fst (f y)) (fun y => fst (df y))).
   intros x Hx.
   unfold is_derive.
@@ -582,7 +608,7 @@ Proof.
   apply continuous_comp.
   by apply H0.
   apply continuous_fst.
-  
+
   apply (is_RInt_derive (fun y => snd (f y)) (fun y => snd (df y))).
   intros x Hx.
   unfold is_derive.
@@ -657,10 +683,10 @@ Proof.
   change minus with Rminus.
   change zero with R0.
   intros y ; apply injective_projections ; simpl ; ring.
-  
+
   rewrite /Rmin /Rmax ; case: Rle_dec Rle_0_1 => // _ _.
   by apply continuous_C_segm.
-  
+
   rewrite Rminus_eq_0 Rminus_0_r !scal_one !scal_zero_l.
   by rewrite Cplus_0_l Cplus_0_r.
 Qed.
@@ -1216,7 +1242,7 @@ Proof.
     apply sym_not_eq in Hc ; by case: Hz0.
     by apply Rlt_not_eq, Rlt_0_1.
     by apply Rgt_not_eq, Rlt_0_1.
-    
+
     rewrite /complex_triangle_diameter /c'.
     apply Rmax_case.
     replace (a - (y0 * b + z0 * c)) with
@@ -1408,9 +1434,9 @@ Proof.
     apply complex_segment_Chasles with w3.
     by apply complex_segment_swap.
     by apply complex_segment_swap ; exists z.
-  set (L (z1 z2 z3 : C) := complex_triangle_perimeter z1 z2 z3). 
+  set (L (z1 z2 z3 : C) := complex_triangle_perimeter z1 z2 z3).
   set (D z1 z2 z3 := complex_triangle_diameter z1 z2 z3).
-  
+
   assert (HT_n : forall z1 z2 z3 : C, (forall z : C, complex_triangle z1 z2 z3 z -> U z) ->
     {y : C * C * C | let y1 := fst (fst y) in
                      let y2 := snd (fst y) in
@@ -1627,16 +1653,16 @@ Proof.
       apply Req_le ; field.
       by apply tU.
   set (t := {z : C * C * C | forall y : C, complex_triangle (fst (fst z)) (snd (fst z)) (snd z) y -> U y}).
-  set (T_0 (z : t) := projT1 (HT_n (fst (fst (proj1_sig z))) (snd (fst (proj1_sig z))) (snd (proj1_sig z)) (proj2_sig z))).
+  set (T_0 (z : t) := proj1_sig (HT_n (fst (fst (proj1_sig z))) (snd (fst (proj1_sig z))) (snd (proj1_sig z)) (proj2_sig z))).
   assert (HT_0 : forall z, (forall y : C, complex_triangle (fst (fst (T_0 z))) (snd (fst (T_0 z))) (snd (T_0 z)) y -> U y)).
     intros (((y1,y2),y3),H) y ; unfold T_0 ; simpl.
     destruct (HT_n y1 y2 y3 _) ; simpl.
     case: x a => [[x1 x2] x3] /= Hx.
     intros Hy.
     by apply H, Hx.
-  set (T_1 := fix f n := match n with | O => existT _ (z1,z2,z3) tU : t
-                                    | S n => existT _ (T_0 (f n)) (HT_0 (f n)) : t end).
-  set (T_n n := projT1 (T_1 n)).
+  set (T_1 := fix f n := match n with | O => exist _ (z1,z2,z3) tU : t
+                                    | S n => exist _ (T_0 (f n)) (HT_0 (f n)) : t end).
+  set (T_n n := proj1_sig (T_1 n)).
   assert (LT : forall n, let y1 := fst (fst (T_n n)) in
                          let y2 := snd (fst (T_n n)) in
                          let y3 := snd (T_n n) in
@@ -1644,7 +1670,7 @@ Proof.
     rewrite /T_n /=.
     induction n ; simpl.
     by rewrite Rdiv_1.
-    rewrite (proj1 (proj2 (proj2 (projT2 (HT_n _ _ _ _))))).
+    rewrite (proj1 (proj2 (proj2 (proj2_sig (HT_n _ _ _ _))))).
     move: IHn.
     destruct (T_1 n) as [[[y1 y2] y3] Hy] ; simpl.
     move => /= -> ; field.
@@ -1656,7 +1682,7 @@ Proof.
     rewrite /T_n /=.
     induction n ; simpl.
     by rewrite Rdiv_1.
-    rewrite (proj2 (proj2 (proj2 (projT2 (HT_n _ _ _ _))))).
+    rewrite (proj2 (proj2 (proj2 (proj2_sig (HT_n _ _ _ _))))).
     move: IHn.
     destruct (T_1 n) as [[[y1 y2] y3] Hy] ; simpl.
     move => /= -> ; field.
@@ -1668,7 +1694,7 @@ Proof.
     rewrite /T_n /=.
     induction n ; simpl.
     by rewrite Rdiv_1 ; apply Rle_refl.
-    eapply Rle_trans, (proj1 (proj2 (projT2 (HT_n _ _ _ _)))).
+    eapply Rle_trans, (proj1 (proj2 (proj2_sig (HT_n _ _ _ _)))).
     move: IHn.
     destruct (T_1 n) as [[[y1 y2] y3] Hy] ; simpl => H.
     apply Rmult_le_reg_l with 4.
@@ -1683,14 +1709,14 @@ Proof.
                             let y3 := snd (T_n n) in
                             forall z, complex_triangle y1 y2 y3 z -> U z).
     rewrite /T_n /= => n.
-    apply (projT2 (T_1 n)).
+    apply (proj2_sig (T_1 n)).
 
   assert (exists z : C, forall n, let y1 := fst (fst (T_n n)) in
                                   let y2 := snd (fst (T_n n)) in
                                   let y3 := snd (T_n n) in
                                   complex_triangle y1 y2 y3 z).
   admit.
-  
+
   case: H => z0 Hz0.
   set (g z := f z - (f z0 + (z - z0) * df z0)).
   assert (Hg : forall z1 z2 z3, (forall z : C, complex_triangle z1 z2 z3 z -> U z)
