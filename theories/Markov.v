@@ -223,7 +223,7 @@ Proof.
   eapply Rle_trans, Rlt_le, Hm.
   eapply Rle_trans, Rbasic_fun.Rmax_r.
   by apply Rnot_lt_le.
-Qed.  
+Qed.
 
 (** * Excluded-middle and decidability *)
 

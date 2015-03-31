@@ -996,7 +996,7 @@ Proof.
   eexists.
   apply filterdiff_plus_fct ; eassumption.
 Qed.
-Lemma filterdiff_iter_plus_fct {I} {F} {FF : Filter F} 
+Lemma filterdiff_iter_plus_fct {I} {F} {FF : Filter F}
   (l : list I) (f : I -> U -> V) df (x : U) :
   (forall (j : I), List.In j l -> filterdiff (f j) F (df j)) ->
   filterdiff (fun y => iter plus zero l (fun j => f j y)) F
@@ -2170,9 +2170,9 @@ Lemma extension_C0_continuous (f : R -> V) (a b : Rbar) :
   -> forall x, continuous (extension_C0 f a b) x.
 Proof.
   intros Hab Cf x.
-  
+
   apply Rbar_le_lt_or_eq_dec in Hab ; case: Hab => Hab.
-  
+
   case: (Rbar_lt_le_dec x a) => Hax.
 
   eapply continuous_ext_loc.
@@ -2187,7 +2187,7 @@ Proof.
   apply continuous_const.
 
   apply Rbar_le_lt_or_eq_dec in Hax ; case: Hax => Hax.
-  
+
   case: (Rbar_lt_le_dec x b) => Hbx.
 
   eapply continuous_ext_loc.
@@ -2204,7 +2204,7 @@ Proof.
   apply Cf ; by apply Rbar_lt_le.
 
   apply Rbar_le_lt_or_eq_dec in Hbx ; case: Hbx => Hbx.
-  
+
   eapply continuous_ext_loc.
   apply locally_interval with b p_infty.
   by [].
@@ -2218,7 +2218,7 @@ Proof.
   contradict H ; eapply Rbar_le_trans, Rbar_lt_le, Hby.
   by apply Rbar_lt_le.
   apply continuous_const.
-  
+
   destruct b as [b | | ] => //.
   injection Hbx => {Hbx} Hbx.
   rewrite -Hbx {x Hbx} in Hax |- *.
@@ -2236,7 +2236,7 @@ Proof.
   by apply Rbar_lt_le.
   by apply Rle_refl.
   by apply continuous_const.
-  
+
   destruct a as [a | | ] => //.
   injection Hax => {Hax} Hax.
   rewrite -Hax {x Hax}.
@@ -2256,7 +2256,7 @@ Proof.
   apply Cf.
   by apply Rle_refl.
   by apply Rbar_lt_le.
-  
+
   rewrite -Hab {b Hab Cf}.
   eapply continuous_ext.
   intros y.
@@ -2296,16 +2296,16 @@ Proof.
 Qed.
 
 Lemma extension_C1_is_derive (f df : R -> V) (a b : Rbar) :
-  Rbar_le a b 
+  Rbar_le a b
   -> (forall x : R, Rbar_le a x -> Rbar_le x b -> is_derive f x (df x))
   -> forall x : R, is_derive (extension_C1 f df a b) x (extension_C0 df a b x).
 Proof.
   intros Hab Cf x.
-  
+
   apply Rbar_le_lt_or_eq_dec in Hab ; case: Hab => Hab.
-  
+
   case: (Rbar_lt_le_dec x a) => Hax.
-  
+
   evar_last.
   eapply is_derive_ext_loc.
   apply locally_interval with m_infty a.
@@ -2328,9 +2328,9 @@ Proof.
   by apply Rbar_le_not_lt in H.
 
   apply Rbar_le_lt_or_eq_dec in Hax ; case: Hax => Hax.
-  
+
   case: (Rbar_lt_le_dec x b) => Hbx.
-  
+
   evar_last.
   eapply is_derive_ext_loc.
   apply locally_interval with a b.
@@ -2346,7 +2346,7 @@ Proof.
   by apply Rbar_lt_le in Hax.
 
   apply Rbar_le_lt_or_eq_dec in Hbx ; case: Hbx => Hbx.
-  
+
   evar_last.
   eapply is_derive_ext_loc.
   apply locally_interval with b p_infty.
@@ -2372,7 +2372,7 @@ Proof.
   case: Rbar_le_dec => H0 //.
   by apply Rbar_le_not_lt in H0.
   by apply Rbar_lt_le in Hax.
-  
+
   destruct b as [b | | ] => //.
   injection Hbx => {Hbx} Hbx.
   rewrite -Hbx {x Hbx} in Hax |- *.
@@ -2403,7 +2403,7 @@ Proof.
   case: Rbar_le_dec => H0.
   case: Rbar_le_dec (Rle_refl b) => //.
   by apply Rbar_lt_le in Hax.
-  
+
   destruct a as [a | | ] => //.
   injection Hax => {Hax} Hax.
   rewrite -Hax {x Hax}.
@@ -2466,7 +2466,7 @@ Qed.
 End ext_C1.
 
 Lemma extension_C1_ex_derive (f df : R -> R) (a b : Rbar) :
-  Rbar_le a b 
+  Rbar_le a b
   -> (forall x : R, Rbar_le a x -> Rbar_le x b -> ex_derive f x)
   -> forall x : R, ex_derive (extension_C1 f (Derive f) a b) x.
 Proof.
@@ -2769,7 +2769,7 @@ Proof.
 Qed.
 
 Lemma is_derive_n_iter_plus {I : Type} (l : list I) (f : I -> R -> R) (n: nat) (x : R) :
-  locally x (fun y => forall (j : I) (k : nat), List.In j l -> (k <= n)%nat -> ex_derive_n (f j) k y) -> 
+  locally x (fun y => forall (j : I) (k : nat), List.In j l -> (k <= n)%nat -> ex_derive_n (f j) k y) ->
   is_derive_n (fun y => iter Rplus 0 l (fun j => f j y)) n x
     (iter Rplus 0 l (fun j => Derive_n (f j) n x)).
 Proof.
@@ -2805,7 +2805,7 @@ Proof.
 Qed.
 
 Lemma ex_derive_n_iter_plus {I : Type} (l : list I) (f : I -> R -> R) (n: nat) (x : R) :
-  locally x (fun y => forall (j : I) (k : nat), List.In j l -> (k <= n)%nat -> ex_derive_n (f j) k y) -> 
+  locally x (fun y => forall (j : I) (k : nat), List.In j l -> (k <= n)%nat -> ex_derive_n (f j) k y) ->
   ex_derive_n (fun y => iter Rplus 0 l (fun j => f j y)) n x.
 Proof.
   case: n => //= n H.
@@ -2814,8 +2814,8 @@ Proof.
 Qed.
 
 Lemma Derive_n_iter_plus {I : Type} (l : list I) (f : I -> R -> R) (n: nat) (x : R) :
-  locally x (fun y => forall (j : I) (k : nat), List.In j l -> (k <= n)%nat -> ex_derive_n (f j) k y) -> 
-  Derive_n (fun y => iter Rplus 0 l (fun j => f j y)) n x = 
+  locally x (fun y => forall (j : I) (k : nat), List.In j l -> (k <= n)%nat -> ex_derive_n (f j) k y) ->
+  Derive_n (fun y => iter Rplus 0 l (fun j => f j y)) n x =
     iter Rplus 0 l (fun j => Derive_n (f j) n x).
 Proof.
   intros H.
@@ -2824,8 +2824,8 @@ Proof.
 Qed.
 
 Lemma is_derive_n_sum_n_m n m (f : nat -> R -> R) (k: nat) (x : R) :
-  locally x (fun t => forall l j , (n <= l <= m)%nat ->(j <= k)%nat -> ex_derive_n (f l) j t) -> 
-  is_derive_n (fun y => sum_n_m (fun j => f j y) n m) k x 
+  locally x (fun t => forall l j , (n <= l <= m)%nat ->(j <= k)%nat -> ex_derive_n (f l) j t) ->
+  is_derive_n (fun y => sum_n_m (fun j => f j y) n m) k x
     (sum_n_m (fun j => Derive_n (f j) k x) n m).
 Proof.
   intros.
@@ -2835,7 +2835,7 @@ Proof.
   by apply In_iota.
 Qed.
 Lemma ex_derive_n_sum_n_m n m (f : nat -> R -> R) (k: nat) (x : R) :
-  locally x (fun t => forall l j , (n <= l <= m)%nat ->(j <= k)%nat -> ex_derive_n (f l) j t) -> 
+  locally x (fun t => forall l j , (n <= l <= m)%nat ->(j <= k)%nat -> ex_derive_n (f l) j t) ->
   ex_derive_n (fun y => sum_n_m (fun j => f j y) n m) k x.
 Proof.
   intros.
@@ -2845,7 +2845,7 @@ Proof.
   by apply In_iota.
 Qed.
 Lemma Derive_n_sum_n_m n m (f : nat -> R -> R) (k: nat) (x : R) :
-  locally x (fun t => forall l j , (n <= l <= m)%nat ->(j <= k)%nat -> ex_derive_n (f l) j t) -> 
+  locally x (fun t => forall l j , (n <= l <= m)%nat ->(j <= k)%nat -> ex_derive_n (f l) j t) ->
   Derive_n (fun y => sum_n_m (fun j => f j y) n m) k x
     = sum_n_m (fun j => Derive_n (f j) k x) n m.
 Proof.
@@ -2857,8 +2857,8 @@ Proof.
 Qed.
 
 Lemma is_derive_n_sum_n n (f : nat -> R -> R) (k: nat) (x : R) :
-  locally x (fun t => forall l j , (l <= n)%nat ->(j <= k)%nat -> ex_derive_n (f l) j t) -> 
-  is_derive_n (fun y => sum_n (fun j => f j y) n) k x 
+  locally x (fun t => forall l j , (l <= n)%nat ->(j <= k)%nat -> ex_derive_n (f l) j t) ->
+  is_derive_n (fun y => sum_n (fun j => f j y) n) k x
     (sum_n (fun j => Derive_n (f j) k x) n).
 Proof.
   intros.
@@ -2868,7 +2868,7 @@ Proof.
   by apply H0.
 Qed.
 Lemma ex_derive_n_sum_n n (f : nat -> R -> R) (k: nat) (x : R) :
-  locally x (fun t => forall l j , (l <= n)%nat ->(j <= k)%nat -> ex_derive_n (f l) j t) -> 
+  locally x (fun t => forall l j , (l <= n)%nat ->(j <= k)%nat -> ex_derive_n (f l) j t) ->
   ex_derive_n (fun y => sum_n (fun j => f j y) n) k x.
 Proof.
   intros.
@@ -2878,7 +2878,7 @@ Proof.
   by apply H0.
 Qed.
 Lemma Derive_n_sum_n n (f : nat -> R -> R) (k: nat) (x : R) :
-  locally x (fun t => forall l j , (l <= n)%nat ->(j <= k)%nat -> ex_derive_n (f l) j t) -> 
+  locally x (fun t => forall l j , (l <= n)%nat ->(j <= k)%nat -> ex_derive_n (f l) j t) ->
   Derive_n (fun y => sum_n (fun j => f j y) n) k x =
     (sum_n (fun j => Derive_n (f j) k x) n).
 Proof.

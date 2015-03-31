@@ -233,7 +233,7 @@ Lemma continuous_RInt (f : R -> V) (a b : R) (If : R -> R -> V) :
 Proof.
   intros HIf.
   move: (locally_singleton _ _ HIf) => /= Hab.
-  apply continuous_ext_loc 
+  apply continuous_ext_loc
     with (fun z : R * R => plus (If (fst z) b) (plus (opp (If a b)) (If a (snd z)))) ; simpl.
     assert (Ha : locally (a,b) (fun z : R * R => is_RInt f a (snd z) (If a (snd z)))).
       case: HIf => /= d HIf.
@@ -422,7 +422,7 @@ Proof.
   eapply is_derive_RInt, Cfb.
   by apply Hb.
   apply filterdiff_const.
-  
+
   move => /= x Hx.
   apply @is_filter_lim_locally_unique in Hx.
   by rewrite -Hx /= minus_eq_zero plus_zero_r.
@@ -478,7 +478,7 @@ Proof.
   rewrite /Rmin /Rmax in Hf, Hdf ;
   destruct (Rle_dec a b) as [_ | Hab'].
   2: contradict Hab' ; by apply Rlt_le.
-  
+
   assert (He : 0 < eps / (b - a)).
     apply Rdiv_lt_0_compat.
     by apply eps.
@@ -501,7 +501,7 @@ Proof.
   change minus with Rminus ;
   change plus with Rplus ;
   change scal with Rmult.
-  
+
   assert (Hab_0 : fst x0 <= SF_h y).
     eapply Rle_trans ; apply (Hptd _ (lt_O_Sn _)).
   assert (Hab_1 : SF_h y <= seq.last (SF_h y) (SF_lx y)).
@@ -566,7 +566,7 @@ Proof.
   destruct (MVT_gen f (fst x0) (SF_h y) df) as [c [Hc Hdf]] => //.
   rewrite /Rmin /Rmax ; case: Rle_dec (Rlt_le _ _ Hab_0) => // _ _.
   intros c Hc ; apply Hf_0.
-  move: Hc ; 
+  move: Hc ;
   by split ; apply Rlt_le ; apply Hc.
   rewrite /Rmin /Rmax ; case: Rle_dec (Rlt_le _ _ Hab_0) => // _ _.
   intros c Hc ; apply continuity_pt_filterlim, @ex_derive_continuous.
@@ -594,14 +594,14 @@ Proof.
   apply Rplus_le_compat.
   by apply Hptd_0.
   by apply Ropp_le_contravar, Hc.
-  
+
   case: Hab_1 => /= Hab_1 ; last first.
   rewrite -Hab_1 !Rminus_eq_0 Rmult_0_r.
   rewrite Riemann_sum_zero //.
   rewrite Rminus_eq_0 norm_zero.
   by apply Rle_refl.
   by apply ptd_sort.
-  
+
   by apply Rlt_le, IHy.
 
   unfold e ; simpl ; field.
@@ -1590,7 +1590,7 @@ Proof.
 Qed.
 
 Lemma is_pseries_RInt (a : nat -> R) :
-  forall x, Rbar_lt (Rabs x) (CV_radius a) 
+  forall x, Rbar_lt (Rabs x) (CV_radius a)
     -> is_pseries (PS_Int a) x (RInt (PSeries a) 0 x).
 Proof.
   move => x Hx.

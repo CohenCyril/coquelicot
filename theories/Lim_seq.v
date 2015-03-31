@@ -1013,7 +1013,7 @@ Proof.
   eapply Hlv, le_trans, Hm.
   by apply le_plus_r.
   apply Req_le ; field.
-  
+
   case: (Hlv (lu - 1)) => {Hlv} n Hlv.
   case: (proj1 (Hlu (mkposreal _ Rlt_0_1)) (N + n)%nat) => {Hlu} m /= [Hm Hlu].
   move: (H _ (le_trans _ _ _ (le_plus_l _ _) Hm)).
@@ -1021,7 +1021,7 @@ Proof.
   eapply Rlt_trans, Hlu.
   eapply Hlv, le_trans, Hm.
   by apply le_plus_r.
-  
+
   case: (Hlv (mkposreal _ Rlt_0_1)) => {Hlv} /= _ [n Hlv].
   case: (Hlu (lv + 1) (N + n)%nat) => {Hlu} /= m [Hm Hlu].
   move: (H _ (le_trans _ _ _ (le_plus_l _ _) Hm)).
@@ -1029,7 +1029,7 @@ Proof.
   eapply Rlt_trans, Hlu.
   eapply Hlv, le_trans, Hm.
   by apply le_plus_r.
-  
+
   case: (Hlv 0) => {Hlv} n Hlv.
   case: (Hlu 0 (N + n)%nat) => {Hlu} m [Hm Hlu].
   move: (H _ (le_trans _ _ _ (le_plus_l _ _) Hm)).

@@ -26,7 +26,7 @@ Require Import Hierarchy PSeries Rbar Lim_seq.
 students pass an exam called Baccalaureate which ends the high school
 and is required for attending the university. We took the 2013
 mathematics test of the scientific Baccalaureate at the same time as
-the students. The pdf of the test is available #<a href="https://www.lri.fr/~lelay/Bac2013/Bac_S_2013_Metropole.pdf">here</a>#. This file is dedicated 
+the students. The pdf of the test is available #<a href="https://www.lri.fr/~lelay/Bac2013/Bac_S_2013_Metropole.pdf">here</a>#. This file is dedicated
 to the mathematics specialty exercise, done after the exam. *)
 
 Open Scope R_scope.

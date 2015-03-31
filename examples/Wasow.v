@@ -413,7 +413,7 @@ Focus 2.
   2: now field ; contradict Hp0 ; injection Hp0.
   apply f_equal, f_equal.
   now field ; contradict Hp0 ; injection Hp0.
-  
+
   apply Rminus_eq_contra in Hp1.
   eapply is_RInt_ext, (is_RInt_comp_lin _ (/ (1 - p)) (-p / (1 - p))).
   2: replace (/ (1 - p) * p + - p / (1 - p))%R with 0 by now field.
@@ -595,7 +595,7 @@ Lemma is_C_RInt_derive (f df : R -> C) (a b : R) :
 Proof.
   intros.
   apply is_RInt_fct_extend_pair ; simpl.
-  
+
   apply (is_RInt_derive (fun y => fst (f y)) (fun y => fst (df y))).
   intros x Hx.
   unfold is_derive.
@@ -608,7 +608,7 @@ Proof.
   apply continuous_comp.
   by apply H0.
   apply continuous_fst.
-  
+
   apply (is_RInt_derive (fun y => snd (f y)) (fun y => snd (df y))).
   intros x Hx.
   unfold is_derive.
@@ -683,10 +683,10 @@ Proof.
   change minus with Rminus.
   change zero with R0.
   intros y ; apply injective_projections ; simpl ; ring.
-  
+
   rewrite /Rmin /Rmax ; case: Rle_dec Rle_0_1 => // _ _.
   by apply continuous_C_segm.
-  
+
   rewrite Rminus_eq_0 Rminus_0_r !scal_one !scal_zero_l.
   by rewrite Cplus_0_l Cplus_0_r.
 Qed.
@@ -1242,7 +1242,7 @@ Proof.
     apply sym_not_eq in Hc ; by case: Hz0.
     by apply Rlt_not_eq, Rlt_0_1.
     by apply Rgt_not_eq, Rlt_0_1.
-    
+
     rewrite /complex_triangle_diameter /c'.
     apply Rmax_case.
     replace (a - (y0 * b + z0 * c)) with
@@ -1434,9 +1434,9 @@ Proof.
     apply complex_segment_Chasles with w3.
     by apply complex_segment_swap.
     by apply complex_segment_swap ; exists z.
-  set (L (z1 z2 z3 : C) := complex_triangle_perimeter z1 z2 z3). 
+  set (L (z1 z2 z3 : C) := complex_triangle_perimeter z1 z2 z3).
   set (D z1 z2 z3 := complex_triangle_diameter z1 z2 z3).
-  
+
   assert (HT_n : forall z1 z2 z3 : C, (forall z : C, complex_triangle z1 z2 z3 z -> U z) ->
     {y : C * C * C | let y1 := fst (fst y) in
                      let y2 := snd (fst y) in
@@ -1716,7 +1716,7 @@ Proof.
                                   let y3 := snd (T_n n) in
                                   complex_triangle y1 y2 y3 z).
   admit.
-  
+
   case: H => z0 Hz0.
   set (g z := f z - (f z0 + (z - z0) * df z0)).
   assert (Hg : forall z1 z2 z3, (forall z : C, complex_triangle z1 z2 z3 z -> U z)

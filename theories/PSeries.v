@@ -821,9 +821,9 @@ Proof.
     rewrite (CV_radius_ext (PS_plus a b) (PS_plus b a)).
     by apply Hw, Rbar_lt_le.
     now intros n ; apply Rplus_comm.
-  
+
   replace (Rbar_min (CV_radius a) (CV_radius b)) with (CV_radius a).
-  
+
   apply is_lub_Rbar_subset
     with (CV_disk (PS_plus a b))
     (fun x => (CV_disk a x) /\ (CV_disk b x)).
@@ -834,7 +834,7 @@ Proof.
     rewrite /CV_radius /Lub_Rbar ; by case: ex_lub_Rbar.
   have Hb : is_lub_Rbar (fun x : R => CV_disk b x) (CV_radius b).
     rewrite /CV_radius /Lub_Rbar ; by case: ex_lub_Rbar.
-  
+
   split.
   intros y [Hay Hby].
   by apply Ha.
@@ -848,10 +848,10 @@ Proof.
   2: by case: (CV_radius a).
   apply Rbar_not_lt_le => Hac.
   move: (Rbar_lt_le_trans _ _ _ Hac Hle) => Hbc.
-  
+
   eapply Rbar_le_not_lt.
   apply (Hc ((c + Rbar_min (c + 1) (CV_radius a)) / 2)).
-  
+
   assert (Rbar_lt (Rabs ((c + Rbar_min (c + 1) (CV_radius a)) / 2)) (CV_radius a)).
     case: (CV_radius a) Hac => //= l Hl.
     rewrite Rabs_pos_eq.
@@ -1624,7 +1624,7 @@ Lemma Abel (a : nat -> R) :
   -> filterlim (PSeries a) (at_left (CV_radius a)) (locally (PSeries a (CV_radius a))).
 Proof.
   case Hcv : (CV_radius a) => [cv | | ] //= Hcv0 _ Ha1.
-  
+
   wlog: cv a Hcv Hcv0 Ha1 / (cv = 1) => Hw.
     apply filterlim_ext with
       (fun x => PSeries (fun n => a n * cv ^ n) (x / cv)).
@@ -1785,7 +1785,7 @@ Proof.
   apply filterlim_locally => eps.
   destruct (Ha1 (ball 0 (pos_div_2 eps))) as [N HN].
   apply locally_ball.
-  
+
   eapply filter_imp.
   intros x Hx.
   rewrite (PSeries_decr_n _ N).
@@ -2293,7 +2293,7 @@ Proof.
 Qed.
 
 Lemma is_pseries_derive (a : nat -> R) x :
-  Rbar_lt (Rabs x) (CV_radius a) 
+  Rbar_lt (Rabs x) (CV_radius a)
     -> is_pseries (PS_derive a) x (Derive (PSeries a) x).
 Proof.
   intros Hx.

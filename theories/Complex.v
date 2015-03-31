@@ -508,7 +508,7 @@ Qed.
 
 (** * C is a CompleteSpace *)
 
-Definition C_complete_lim (F : (C -> Prop) -> Prop) := 
+Definition C_complete_lim (F : (C -> Prop) -> Prop) :=
   (R_complete_lim (fun P => F (fun z => P (Re z))), R_complete_lim (fun P => F (fun z => P (Im z)))).
 
 Lemma C_complete :
@@ -650,7 +650,7 @@ Proof.
   destruct HP as [eps HP].
   destruct (Df (pos_div_2 eps)) as [eps' Df'].
   unfold filtermap, locally', within.
-  
+
   apply locally_C.
   exists eps'.
   intros y Hy Hyz.

@@ -40,7 +40,7 @@ Definition ex_series (a : nat -> V) :=
    exists l : V, is_series a l.
 
 Definition Cauchy_series (a : nat -> V) :=
-  forall eps : posreal, 
+  forall eps : posreal,
     exists N : nat, forall n m : nat,
       (N <= n)%nat -> (N <= m)%nat ->
       norm (sum_n_m a n m) < eps.

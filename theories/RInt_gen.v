@@ -129,7 +129,7 @@ Qed.
 
 Lemma is_RInt_gen_Chasles {Fa Fc : (R -> Prop) -> Prop}
   {FFa : Filter Fa} {FFc : Filter Fc}
-  (f : R -> V) (b : R) (l1 l2 : V) : 
+  (f : R -> V) (b : R) (l1 l2 : V) :
   is_RInt_gen f Fa (at_point b) l1 -> is_RInt_gen f (at_point b) Fc l2
   -> is_RInt_gen f Fa Fc (plus l1 l2).
 Proof.

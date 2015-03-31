@@ -3074,7 +3074,7 @@ Proof.
   by apply (proj2 (proj2 Hu)).
 
   repeat apply filter_and.
-  
+
   assert (Hd : 0 < eps / 2 / (norm x + 1)).
     apply Rdiv_lt_0_compat.
     by apply is_pos_div_2.
@@ -3088,7 +3088,7 @@ Proof.
   apply (locally_ball_norm (V := AbsRing_NormedModule K) _ (mkposreal _ Rlt_0_1)).
   apply filter_true.
   by [].
-  
+
   assert (Hd : 0 < eps / 2 / (abs k + 1)).
     apply Rdiv_lt_0_compat.
     by apply is_pos_div_2.
@@ -3864,13 +3864,13 @@ Fixpoint Mone_seq i j : T :=
 Definition Mone {n} : matrix n n :=
   mk_matrix n n Mone_seq.
 
-Lemma Mone_seq_diag : 
+Lemma Mone_seq_diag :
   forall i j : nat, i = j -> Mone_seq i j = @one T.
 Proof.
   move => i j <- {j}.
   by induction i.
 Qed.
-Lemma Mone_seq_not_diag : 
+Lemma Mone_seq_not_diag :
   forall i j : nat, i <> j -> Mone_seq i j = @zero T.
 Proof.
   elim => //= [ | i IHi] j Hij ;
