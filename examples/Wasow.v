@@ -31,7 +31,7 @@ theorem. *)
 
 (** ** Complex.v *)
 
-Open Local Scope C_scope.
+Local Open Scope C_scope.
 
 Lemma is_linear_C_R (l : C -> C) :
   is_linear (U := C_NormedModule) (V := C_NormedModule) l ->
@@ -1653,16 +1653,16 @@ Proof.
       apply Req_le ; field.
       by apply tU.
   set (t := {z : C * C * C | forall y : C, complex_triangle (fst (fst z)) (snd (fst z)) (snd z) y -> U y}).
-  set (T_0 (z : t) := projT1 (HT_n (fst (fst (proj1_sig z))) (snd (fst (proj1_sig z))) (snd (proj1_sig z)) (proj2_sig z))).
+  set (T_0 (z : t) := proj1_sig (HT_n (fst (fst (proj1_sig z))) (snd (fst (proj1_sig z))) (snd (proj1_sig z)) (proj2_sig z))).
   assert (HT_0 : forall z, (forall y : C, complex_triangle (fst (fst (T_0 z))) (snd (fst (T_0 z))) (snd (T_0 z)) y -> U y)).
     intros (((y1,y2),y3),H) y ; unfold T_0 ; simpl.
     destruct (HT_n y1 y2 y3 _) ; simpl.
     case: x a => [[x1 x2] x3] /= Hx.
     intros Hy.
     by apply H, Hx.
-  set (T_1 := fix f n := match n with | O => existT _ (z1,z2,z3) tU : t
-                                    | S n => existT _ (T_0 (f n)) (HT_0 (f n)) : t end).
-  set (T_n n := projT1 (T_1 n)).
+  set (T_1 := fix f n := match n with | O => exist _ (z1,z2,z3) tU : t
+                                    | S n => exist _ (T_0 (f n)) (HT_0 (f n)) : t end).
+  set (T_n n := proj1_sig (T_1 n)).
   assert (LT : forall n, let y1 := fst (fst (T_n n)) in
                          let y2 := snd (fst (T_n n)) in
                          let y3 := snd (T_n n) in
@@ -1670,7 +1670,7 @@ Proof.
     rewrite /T_n /=.
     induction n ; simpl.
     by rewrite Rdiv_1.
-    rewrite (proj1 (proj2 (proj2 (projT2 (HT_n _ _ _ _))))).
+    rewrite (proj1 (proj2 (proj2 (proj2_sig (HT_n _ _ _ _))))).
     move: IHn.
     destruct (T_1 n) as [[[y1 y2] y3] Hy] ; simpl.
     move => /= -> ; field.
@@ -1682,7 +1682,7 @@ Proof.
     rewrite /T_n /=.
     induction n ; simpl.
     by rewrite Rdiv_1.
-    rewrite (proj2 (proj2 (proj2 (projT2 (HT_n _ _ _ _))))).
+    rewrite (proj2 (proj2 (proj2 (proj2_sig (HT_n _ _ _ _))))).
     move: IHn.
     destruct (T_1 n) as [[[y1 y2] y3] Hy] ; simpl.
     move => /= -> ; field.
@@ -1694,7 +1694,7 @@ Proof.
     rewrite /T_n /=.
     induction n ; simpl.
     by rewrite Rdiv_1 ; apply Rle_refl.
-    eapply Rle_trans, (proj1 (proj2 (projT2 (HT_n _ _ _ _)))).
+    eapply Rle_trans, (proj1 (proj2 (proj2_sig (HT_n _ _ _ _)))).
     move: IHn.
     destruct (T_1 n) as [[[y1 y2] y3] Hy] ; simpl => H.
     apply Rmult_le_reg_l with 4.
@@ -1709,7 +1709,7 @@ Proof.
                             let y3 := snd (T_n n) in
                             forall z, complex_triangle y1 y2 y3 z -> U z).
     rewrite /T_n /= => n.
-    apply (projT2 (T_1 n)).
+    apply (proj2_sig (T_1 n)).
 
   assert (exists z : C, forall n, let y1 := fst (fst (T_n n)) in
                                   let y2 := snd (fst (T_n n)) in
