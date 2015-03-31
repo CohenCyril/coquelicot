@@ -2,11 +2,11 @@
 This file is part of the Coquelicot formalization of real
 analysis in Coq: http://coquelicot.saclay.inria.fr/
 
-Copyright (C) 2011-2013 Sylvie Boldo
+Copyright (C) 2011-2015 Sylvie Boldo
 #<br />#
-Copyright (C) 2011-2013 Catherine Lelay
+Copyright (C) 2011-2015 Catherine Lelay
 #<br />#
-Copyright (C) 2011-2013 Guillaume Melquiond
+Copyright (C) 2011-2015 Guillaume Melquiond
 
 This library is free software; you can redistribute it and/or
 modify it under the terms of the GNU Lesser General Public
@@ -24,7 +24,8 @@ Require Import Rcomplements Rbar Hierarchy.
 Require Import Derive Series PSeries Limit.
 Require Import AutoDerive.
 
-(** An example of how to use power series *)
+(** This file is an example of how to use power series. It defines and
+gives properties of the Bessel functions. *)
 
 Definition Bessel1_seq (n k : nat) :=
   (-1)^(k)/(INR (fact (k)) * INR (fact (n + (k)))).
