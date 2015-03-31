@@ -1,3 +1,17 @@
+Version 2.1.0:
+- added "continuous" for expressing continuity
+- modified definitions for "sum_n" and "sum_n_m"
+- strengthened axioms for "AbsRing" and "NormedModule"
+- added "closed" for characterizing closed sets
+- added "iota" for Hilbert's operator on "CompleteSpace"
+- added notation "[ _ , _ , ...]" for vectors of type "Tn"
+- renamed "Markov*" lemmas to "LPO*"
+- proved Abel's theorem on power series
+- generalized continuity and differentiability of "RInt" in RInt_analysis
+- added support for improper integrals in RInt_gen
+- renamed Limit into Lim_seq
+- added example BacS2013_bonus about matrices
+
 Version 2.0.1:
 - fixed compilation with ssreflect 1.5
 
