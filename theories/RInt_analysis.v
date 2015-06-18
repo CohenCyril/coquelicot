@@ -1121,8 +1121,9 @@ apply cond_pos.
 exact Hz.
 Qed.
 
-Lemma is_derive_RInt_param_bound_comp_aux1: forall f a x,
-  (exists eps:posreal, locally x (fun y => ex_RInt (fun t => f y t) (a x - eps) (a x + eps))) ->
+Lemma is_derive_RInt_param_bound_comp_aux1 :
+  forall (f : R -> R -> R) (a : R -> R) (x : R),
+  (exists eps:posreal, locally x (fun y : R => ex_RInt (fun t => f y t) (a x - eps) (a x + eps))) ->
   (exists eps:posreal, locally x
     (fun x0 : R =>
        forall t : R,
@@ -1270,9 +1271,9 @@ left; apply cond_pos.
 Qed.
 
 Lemma is_derive_RInt_param_bound_comp_aux2 :
-  forall f a b x da,
-  (locally x (fun y => ex_RInt (fun t => f y t) (a x) b)) ->
-  (exists eps:posreal, locally x (fun y => ex_RInt (fun t => f y t) (a x - eps) (a x + eps))) ->
+  forall (f : R -> R -> R) (a : R -> R) (b x da : R),
+  (locally x (fun y : R => ex_RInt (fun t => f y t) (a x) b)) ->
+  (exists eps:posreal, locally x (fun y : R => ex_RInt (fun t => f y t) (a x - eps) (a x + eps))) ->
   is_derive a x da ->
   (exists eps:posreal, locally x
     (fun x0 : R =>
@@ -1286,30 +1287,31 @@ Lemma is_derive_RInt_param_bound_comp_aux2 :
          continuity_2d_pt (fun u v : R => Derive (fun z : R => f z v) u) x' t) x (a x)) ->
    continuity_pt (fun t => f x t) (a x) ->
 
-  is_derive (fun x => RInt (fun t => f x t) (a x) b) x
+  is_derive (fun x : R => RInt (fun t => f x t) (a x) b) x
     (RInt (fun t : R => Derive (fun u => f u t) x) (a x) b+(-f x (a x))*da).
 Proof.
-intros f a b x da Hi (d0,Ia) Da Df Cdf1 Cdf2 Cfa.
+intros f a b x da Hi [d0 Ia] Da [d1 Df] Cdf1 Cdf2 Cfa.
 rewrite Rplus_comm.
 apply is_derive_ext_loc with (fun x0 => plus (RInt (fun t : R => f x0 t) (a x0) (a x)) (RInt (fun t : R => f x0 t) (a x) b)).
 apply RInt_Chasles_bound_comp_l_loc.
 exact Hi.
 now exists d0.
-apply @filterdiff_continuous.
+apply: filterdiff_continuous.
 eexists.
 apply Da.
-eapply filterdiff_ext_lin.
-apply @filterdiff_plus_fct.
-by apply locally_filter.
+apply: is_derive_plus.
 (* *)
+eapply filterdiff_ext_lin.
 apply @filterdiff_comp'_2 with
    (h := fun x0 y => RInt (fun t : R => f x0 t) y (a x)).
 apply filterdiff_id.
 apply Da.
 eapply filterdiff_ext_lin.
-apply (is_derive_filterdiff (fun u v => RInt (fun t0 : R => f u t0) v (a x))).
+apply (is_derive_filterdiff
+  (fun u v => RInt (fun t0 : R => f u t0) v (a x)) x (a x)
+  (fun u v => Derive (fun z => RInt (fun t => f z t) v (a x)) u)).
 (* . *)
-destruct Df as (d1,(d2,Df)).
+destruct Df as (d2,Df).
 destruct Cdf2 as (d3,Cdf2).
 destruct Ia as (d4,Ia).
 exists (mkposreal _ (Rmin_stable_in_posreal
@@ -1317,39 +1319,33 @@ exists (mkposreal _ (Rmin_stable_in_posreal
                 (mkposreal _ (Rmin_stable_in_posreal d3
                             (mkposreal _ (Rmin_stable_in_posreal d0 (pos_div_2 d4))))))).
 intros [u v] [Hu Hv] ; simpl in *.
-eapply Derive_correct.
+apply: Derive_correct.
 eexists ; apply is_derive_RInt_param.
 exists (pos_div_2 d2).
 intros y Hy t Ht.
 apply Df.
 rewrite (double_var d2).
-apply ball_triangle with u.
+apply: ball_triangle Hy.
 apply Rlt_le_trans with (1:=Hu).
 apply Rle_trans with (1:=Rmin_l _ _).
 apply Rmin_r.
-by apply Hy.
 split.
 apply Rle_trans with (2:=proj1 Ht).
-apply Rle_trans with (a x - d1).
-apply Rmin_l.
+apply Rle_trans with (1 := Rmin_l _ _).
 apply Rmin_glb.
-assert (a x - d1 <= v <= a x + d1).
 apply Rabs_le_between'.
 left; apply Rlt_le_trans with (1:=Hv).
 apply Rle_trans with (1:=Rmin_l _ _).
 apply Rmin_l.
-apply H.
 apply Rplus_le_reg_l with (- a x + d1); ring_simplify.
 left; apply cond_pos.
 apply Rle_trans with (1:=proj2 Ht).
 apply Rle_trans with (a x + d1).
 apply Rmax_lub.
-assert (a x - d1 <= v <= a x + d1).
 apply Rabs_le_between'.
 left; apply Rlt_le_trans with (1:=Hv).
 apply Rle_trans with (1:=Rmin_l _ _).
 apply Rmin_l.
-apply H.
 apply Rplus_le_reg_l with (- a x); ring_simplify.
 left; apply cond_pos.
 apply Rmax_l.
@@ -1368,12 +1364,11 @@ intros y Hy.
 apply (ex_RInt_inside (f y)) with (a x) d0.
 apply Ia.
 rewrite (double_var d4).
-apply ball_triangle with u.
+apply: ball_triangle Hy.
 apply Rlt_le_trans with (1:=Hu).
 apply Rle_trans with (1:=Rmin_r _ _).
 apply Rle_trans with (1:=Rmin_r _ _).
 apply Rmin_r.
-by apply Hy.
 left; apply Rlt_le_trans with (1:=Hv).
 apply Rle_trans with (1:=Rmin_r _ _).
 apply Rle_trans with (1:=Rmin_r _ _).
@@ -1393,17 +1388,18 @@ eapply @ex_RInt_Chasles_1, Ia.
 split ; apply Rlt_le, Hy.
 apply ex_RInt_swap.
 eapply @ex_RInt_Chasles_2, Ia.
-split ; apply Rminus_le_0 ; ring_simplify ; apply Rlt_le, d0.
+apply Rabs_le_between'.
+rewrite /Rminus Rplus_opp_r Rabs_R0.
+left; apply cond_pos.
 by apply continuity_pt_filterlim, Cfa.
 (* . *)
-simpl.
 apply (continuity_2d_pt_filterlim (fun u v =>
    Derive (fun z : R => RInt (fun t0 : R => f z t0) v (a x)) u)).
+simpl.
 apply is_derive_RInt_param_bound_comp_aux1; try easy.
 exists d0; exact Ia.
-destruct Df as (d,Hd).
-exists d.
-move: Hd ; apply filter_imp.
+exists d1.
+move: Df ; apply filter_imp.
 intros y H t Ht.
 apply H.
 split.
@@ -1416,31 +1412,28 @@ case => /= u v.
 erewrite Derive_ext.
 2: intros ; by rewrite RInt_point.
 by rewrite Derive_const scal_zero_r plus_zero_l.
+move => /= y ; apply Rminus_diag_uniq.
+rewrite /plus /scal /opp /= /mult /=.
+ring.
 (* *)
-apply is_derive_RInt_param.
-destruct Df as (d,Df).
+apply is_derive_RInt_param with (2 := Cdf1) (3 := Hi).
 move: Df ; apply filter_imp.
 intros y Hy t Ht; apply Hy.
 split.
 apply Rle_trans with (2:=proj1 Ht).
 apply Rle_min_compat_r.
-apply Rplus_le_reg_l with (-a x+d); ring_simplify.
+apply Rplus_le_reg_l with (-a x+d1); ring_simplify.
 left; apply cond_pos.
 apply Rle_trans with (1:=proj2 Ht).
 apply Rle_max_compat_r.
 apply Rplus_le_reg_l with (-a x); ring_simplify.
 left; apply cond_pos.
-exact Cdf1.
-exact Hi.
-move => /= y ; apply Rminus_diag_uniq.
-rewrite /plus /scal /opp /= /mult /=.
-ring.
 Qed.
 
 Lemma is_derive_RInt_param_bound_comp_aux3 :
-  forall f a b x db,
-  (locally x (fun y => ex_RInt (fun t => f y t) a (b x))) ->
-  (exists eps:posreal, locally x (fun y => ex_RInt (fun t => f y t) (b x - eps) (b x + eps))) ->
+  forall (f : R -> R -> R) a (b : R -> R) (x db : R),
+  (locally x (fun y : R => ex_RInt (fun t => f y t) a (b x))) ->
+  (exists eps:posreal, locally x (fun y : R => ex_RInt (fun t => f y t) (b x - eps) (b x + eps))) ->
   is_derive b x db ->
   (exists eps:posreal, locally x
     (fun x0 : R =>
@@ -1454,7 +1447,7 @@ Lemma is_derive_RInt_param_bound_comp_aux3 :
          continuity_2d_pt (fun u v : R => Derive (fun z : R => f z v) u) x' t) x (b x)) ->
    continuity_pt (fun t => f x t) (b x) ->
 
-  is_derive (fun x => RInt (fun t => f x t) a (b x)) x
+  is_derive (fun x : R => RInt (fun t => f x t) a (b x)) x
     (RInt (fun t : R => Derive (fun u => f u t) x) a (b x) +f x (b x)*db).
 Proof.
 intros f a b x db If Ib Db Df Cf1 Cf2 Cfb.
@@ -1482,10 +1475,10 @@ Qed.
 
 
 Lemma is_derive_RInt_param_bound_comp :
- forall f a b x da db,
-  (locally x (fun y => ex_RInt (fun t => f y t) (a x) (b x))) ->
-  (exists eps:posreal, locally x (fun y => ex_RInt (fun t => f y t) (a x - eps) (a x + eps))) ->
-  (exists eps:posreal, locally x (fun y => ex_RInt (fun t => f y t) (b x - eps) (b x + eps))) ->
+ forall (f : R -> R -> R) (a b : R -> R) (x da db : R),
+  (locally x (fun y : R => ex_RInt (fun t => f y t) (a x) (b x))) ->
+  (exists eps:posreal, locally x (fun y : R => ex_RInt (fun t => f y t) (a x - eps) (a x + eps))) ->
+  (exists eps:posreal, locally x (fun y : R => ex_RInt (fun t => f y t) (b x - eps) (b x + eps))) ->
   is_derive a x da ->
   is_derive b x db ->
   (exists eps:posreal, locally x
@@ -1500,9 +1493,10 @@ Lemma is_derive_RInt_param_bound_comp :
          continuity_2d_pt (fun u v : R => Derive (fun z : R => f z v) u) x' t) x (a x)) ->
   (locally_2d (fun x' t =>
          continuity_2d_pt (fun u v : R => Derive (fun z : R => f z v) u) x' t) x (b x)) ->
-   continuity_pt (fun t => f x t) (a x) ->   continuity_pt (fun t => f x t) (b x) ->
+   continuity_pt (fun t => f x t) (a x) ->
+   continuity_pt (fun t => f x t) (b x) ->
 
-  is_derive (fun x => RInt (fun t => f x t) (a x) (b x)) x
+  is_derive (fun x : R => RInt (fun t => f x t) (a x) (b x)) x
     (RInt (fun t : R => Derive (fun u => f u t) x) (a x) (b x)+(-f x (a x))*da+(f x (b x))*db).
 Proof.
 intros f a b x da db If Ifa Ifb Da Db Df Cf Cfa Cfb Ca Cb.
