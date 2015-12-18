@@ -20,7 +20,7 @@ COPYING file for more details.
 *)
 
 Require Import Reals.
-Require Import Ssreflect.ssreflect.
+Require Import mathcomp.ssreflect.ssreflect.
 Require Import Rcomplements.
 
 (** This file contains the definition and properties of the set

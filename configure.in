@@ -35,11 +35,11 @@ AC_MSG_RESULT([$COQDOC])
 
 AC_MSG_CHECKING([for SSReflect])
 AS_IF(
-  [ echo "Require Import Ssreflect.ssreflect." > conftest.v
+  [ echo "Require Import mathcomp.ssreflect.ssreflect." > conftest.v
     $COQC conftest.v > conftest.err ],
   [ AC_MSG_RESULT([yes]) ],
   [ AC_MSG_RESULT([no])
-    AC_MSG_ERROR([ *** Unable to find the SSReflect library (http://www.msr-inria.fr/projects/mathematical-components/)])])
+    AC_MSG_ERROR([ *** Unable to find library mathcomp.ssreflect >= 1.6 (http://math-comp.github.io/math-comp/)])])
 rm -f conftest.v conftest.vo conftest.err
 
 if test "$libdir" = '${exec_prefix}/lib'; then

@@ -19,10 +19,10 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 COPYING file for more details.
 *)
 
-Require Import Reals Ssreflect.ssreflect.
+Require Import Reals mathcomp.ssreflect.ssreflect.
 Require Import Rcomplements.
 Require Import List Omega.
-Require Import Ssreflect.seq Ssreflect.ssrbool Ssreflect.eqtype.
+Require Import mathcomp.ssreflect.seq mathcomp.ssreflect.ssrbool mathcomp.ssreflect.eqtype.
 
 (** This file describes iterators on lists. This is mainly used for
 Riemannn sums. *)

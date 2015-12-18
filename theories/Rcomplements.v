@@ -35,7 +35,7 @@ Ltac evar_last :=
     unfold tmp ; clear tmp
   end.
 
-Require Import Reals Ssreflect.ssreflect.
+Require Import Reals mathcomp.ssreflect.ssreflect.
 
 Module MyNat.
 
@@ -91,7 +91,7 @@ Qed.
 End MyNat.
 
 Require Import Even Div2.
-Require Import Ssreflect.seq Ssreflect.ssrbool.
+Require Import mathcomp.ssreflect.seq mathcomp.ssreflect.ssrbool.
 
 Open Scope R_scope.
 

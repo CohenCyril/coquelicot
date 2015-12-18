@@ -20,7 +20,7 @@ COPYING file for more details.
 *)
 
 Require Import Reals.
-Require Import Ssreflect.ssreflect.
+Require Import mathcomp.ssreflect.ssreflect.
 Require Import Rcomplements Rbar Hierarchy.
 Require Import Compactness Lim_seq.
 
@@ -374,7 +374,7 @@ Lemma ex_lim_plus (f g : R -> R) (x : Rbar) :
   ex_Rbar_plus (Lim f x) (Lim g x) ->
   ex_lim (fun y => f y + g y) x.
 Proof.
-  move/Lim_correct => Hf ; move/Lim_correct => Hg Hl.
+  move => /Lim_correct Hf /Lim_correct Hg Hl.
   exists (Rbar_plus (Lim f x) (Lim g x)).
   eapply is_lim_plus ; try eassumption.
   by apply Rbar_plus_correct.
@@ -384,7 +384,7 @@ Lemma Lim_plus (f g : R -> R) (x : Rbar) :
   ex_Rbar_plus (Lim f x) (Lim g x) ->
   Lim (fun y => f y + g y) x = Rbar_plus (Lim f x) (Lim g x).
 Proof.
-  move/Lim_correct => Hf ; move/Lim_correct => Hg Hl.
+  move => /Lim_correct Hf /Lim_correct Hg Hl.
   apply is_lim_unique.
   eapply is_lim_plus ; try eassumption.
   by apply Rbar_plus_correct.
@@ -450,14 +450,14 @@ Qed.
 Lemma ex_lim_inv (f : R -> R) (x : Rbar) :
   ex_lim f x -> Lim f x <> 0 -> ex_lim (fun y => / f y) x.
 Proof.
-  move/Lim_correct => Hf Hlf.
+  move => /Lim_correct Hf Hlf.
   exists (Rbar_inv (Lim f x)).
   by apply is_lim_inv.
 Qed.
 Lemma Lim_inv (f : R -> R) (x : Rbar) :
   ex_lim f x -> Lim f x <> 0 -> Lim (fun y => / f y) x = Rbar_inv (Lim f x).
 Proof.
-  move/Lim_correct => Hf Hlf.
+  move => /Lim_correct Hf Hlf.
   apply is_lim_unique.
   by apply is_lim_inv.
 Qed.
@@ -478,7 +478,7 @@ Lemma ex_lim_mult (f g : R -> R) (x : Rbar) :
   ex_Rbar_mult (Lim f x) (Lim g x) ->
   ex_lim (fun y => f y * g y) x.
 Proof.
-  move/Lim_correct => Hf ; move/Lim_correct => Hg Hl.
+  move => /Lim_correct Hf /Lim_correct Hg Hl.
   exists (Rbar_mult (Lim f x) (Lim g x)).
   now apply is_lim_mult.
 Qed.
@@ -487,7 +487,7 @@ Lemma Lim_mult (f g : R -> R) (x : Rbar) :
   ex_Rbar_mult (Lim f x) (Lim g x) ->
   Lim (fun y => f y * g y) x = Rbar_mult (Lim f x) (Lim g x).
 Proof.
-  move/Lim_correct => Hf ; move/Lim_correct => Hg Hl.
+  move => /Lim_correct Hf /Lim_correct Hg Hl.
   apply is_lim_unique.
   now apply is_lim_mult.
 Qed.

@@ -20,7 +20,7 @@ COPYING file for more details.
 *)
 
 Require Import Reals Rbar.
-Require Import Ssreflect.ssreflect.
+Require Import mathcomp.ssreflect.ssreflect.
 Require Import Lim_seq Iter.
 Require Import Hierarchy Continuity Equiv.
 Require Import Rcomplements.

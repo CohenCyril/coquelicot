@@ -22,7 +22,7 @@ COPYING file for more details.
 Require Import Reals.
 Require Import Rcomplements Derive RInt Hierarchy Derive_2d.
 Require Import AutoDerive.
-Require Import Ssreflect.ssreflect.
+Require Import mathcomp.ssreflect.ssreflect.
 
 (** This file aims at proving that d'Alembert's formula defines a
 function that is solution to the one-dimensional wave equation. We

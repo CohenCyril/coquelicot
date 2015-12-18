@@ -21,7 +21,7 @@ COPYING file for more details.
 
 
 
-Require Import Reals Ssreflect.ssreflect.
+Require Import Reals mathcomp.ssreflect.ssreflect.
 Require Import Psatz.
 Require Import Rcomplements Rbar Hierarchy.
 Require Import Derive RInt Continuity Lim_seq ElemFct RInt_analysis.

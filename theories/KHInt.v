@@ -21,7 +21,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 COPYING file for more details.
 *)
 
-Require Import Reals Ssreflect.ssreflect Ssreflect.ssrbool Ssreflect.seq.
+Require Import Reals mathcomp.ssreflect.ssreflect mathcomp.ssreflect.ssrbool mathcomp.ssreflect.seq.
 Require Import Rcomplements Hierarchy SF_seq RInt.
 
 (** This file describes the definition and properties of the
@@ -243,7 +243,7 @@ rewrite last_cons ; rewrite last_cons ; easy.
 rewrite H0.
 destruct H as (H, H').
 now apply H.
-move /ssrnat.leP :Hcase2 => Hcase2.
+move :Hcase2 => /ssrnat.leP Hcase2.
 apply not_le in Hcase2 ; unfold gt in Hcase2.
 rewrite SF_size_ly in Hcase2.
 unfold lt in Hcase2.
@@ -252,25 +252,25 @@ unfold lt in Hsi.
 assert (S i <= i)%nat as Hcase4.
 now apply le_trans with (SF_size s).
 apply le_Sn_n in Hcase4 ; destruct Hcase4.
-move /ssrnat.leP :Hcase => Hcase.
+move :Hcase => /ssrnat.leP Hcase.
 rewrite SF_size_lx in Hcase.
 apply le_n_S in Hi.
 contradiction.
-move /ssrnat.leP :Hcase => Hcase.
+move :Hcase => /ssrnat.leP Hcase.
 rewrite SF_size_lx in Hcase.
 apply le_n_S in Hi.
 contradiction.
 now apply (H2 i).
-move /ssrnat.leP :Hcase2 => Hcase2.
+move :Hcase2 => /ssrnat.leP Hcase2.
 rewrite SF_size_lx in Hcase2.
 unfold lt in Hsi.
 apply le_n_S in Hsi.
 contradiction.
-move /ssrnat.leP :Hcase => Hcase.
+move :Hcase => /ssrnat.leP Hcase.
 rewrite SF_size_ly in Hcase.
 unfold lt in Hsi.
 contradiction.
-move /ssrnat.leP :Hcase => Hcase.
+move :Hcase => /ssrnat.leP Hcase.
 rewrite SF_size_ly in Hcase.
 unfold lt in Hsi.
 contradiction.
@@ -304,14 +304,14 @@ simpl.
 rewrite nth_rcons.
 case Hcase : ssrnat.leq.
 easy.
-move /ssrnat.leP :Hcase => Hcase.
+move :Hcase => /ssrnat.leP Hcase.
 rewrite SF_size_ly in Hcase.
 contradiction.
 rewrite SF_lx_rcons.
 rewrite nth_rcons.
 case Hcase : ssrnat.leq.
 easy.
-move /ssrnat.leP :Hcase => Hcase.
+move :Hcase => /ssrnat.leP Hcase.
 rewrite SF_size_lx in Hcase.
 apply le_n_S in Hi.
 contradiction.
@@ -319,7 +319,7 @@ rewrite SF_lx_rcons.
 rewrite nth_rcons.
 case Hcase : ssrnat.leq.
 easy.
-move /ssrnat.leP :Hcase => Hcase.
+move :Hcase => /ssrnat.leP Hcase.
 rewrite SF_size_lx in Hcase.
 apply le_n_S in Hi2.
 contradiction.
@@ -360,7 +360,7 @@ unfold size in Hss.
 apply O_S in Hss ; destruct Hss.
 rewrite last_cons ; rewrite last_cons ; easy.
 rewrite SF_size_lx ; simpl ; easy.
-move /ssrnat.leP :Hcase => Hcase.
+move :Hcase => /ssrnat.leP Hcase.
 absurd (S (SF_size s) <= S (SF_size s))%nat.
 assumption.
 apply le_refl.

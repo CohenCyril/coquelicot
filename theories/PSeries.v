@@ -19,7 +19,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 COPYING file for more details.
 *)
 
-Require Import Reals Even Div2 Omega Ssreflect.ssreflect.
+Require Import Reals Even Div2 Omega mathcomp.ssreflect.ssreflect.
 Require Import Rcomplements Rbar Lim_seq Lub Hierarchy.
 Require Import Continuity Derive Seq_fct Series.
 

@@ -19,7 +19,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 COPYING file for more details.
 *)
 
-Require Import Reals Ssreflect.ssreflect.
+Require Import Reals mathcomp.ssreflect.ssreflect.
 Require Import Rcomplements Rbar Hierarchy.
 Require Import Derive Series PSeries Lim_seq.
 Require Import AutoDerive.

@@ -20,7 +20,7 @@ COPYING file for more details.
 *)
 
 Require Import Reals.
-Require Import Ssreflect.ssreflect Ssreflect.ssrbool Ssreflect.eqtype Ssreflect.seq.
+Require Import mathcomp.ssreflect.ssreflect mathcomp.ssreflect.ssrbool mathcomp.ssreflect.eqtype mathcomp.ssreflect.seq.
 Require Import Markov Rcomplements Rbar Lub Lim_seq SF_seq.
 Require Import Continuity Hierarchy.
 

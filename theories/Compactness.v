@@ -20,7 +20,7 @@ COPYING file for more details.
 *)
 
 Require Import Reals.
-Require Import Ssreflect.ssreflect.
+Require Import mathcomp.ssreflect.ssreflect.
 Require Import List.
 
 (** This file describes compactness results: finite covering of opens,

@@ -20,7 +20,7 @@ COPYING file for more details.
 *)
 
 Require Import Reals Omega.
-Require Import Ssreflect.ssreflect.
+Require Import mathcomp.ssreflect.ssreflect.
 Require Import Rcomplements Hierarchy Continuity Derive.
 
 (** This file describes results about differentiability in [R x
@@ -530,8 +530,8 @@ Qed.
 Lemma Schwarz_aux :
   forall f x y (eps : posreal),
   ( forall u v, Rabs (u - x) < eps -> Rabs (v - y) < eps ->
-    ex_derive (fun z => f z v) u /\
-    ex_derive (fun z => Derive (fun t => f t z) u) v ) ->
+    ex_derive (fun z : R => f z v) u /\
+    ex_derive (fun z : R => Derive (fun t => f t z) u) v ) ->
   forall h k, Rabs h < eps -> Rabs k < eps ->
   let phi k x := f x (y + k) - f x y in
   exists u, exists v,
@@ -582,23 +582,21 @@ apply cond_pos.
 Qed.
 
 Lemma Schwarz :
-  forall f x y,
+  forall (f : R -> R -> R) x y,
   locally_2d (fun u v =>
-    ex_derive (fun z => f z v) u /\
-    ex_derive (fun z => f u z) v /\
-    ex_derive (fun z => Derive (fun t => f z t) v) u /\
-    ex_derive (fun z => Derive (fun t => f t z) u) v) x y ->
+    ex_derive (fun z : R => f z v) u /\
+    ex_derive (fun z : R => f u z) v /\
+    ex_derive (fun z : R => Derive (fun t => f z t) v) u /\
+    ex_derive (fun z : R => Derive (fun t => f t z) u) v) x y ->
   continuity_2d_pt (fun u v => Derive (fun z => Derive (fun t => f z t) v) u) x y ->
   continuity_2d_pt (fun u v => Derive (fun z => Derive (fun t => f t z) u) v) x y ->
   Derive (fun z => Derive (fun t => f z t) y) x = Derive (fun z => Derive (fun t => f t z) x) y.
 Proof.
 intros f x y (eps, HD) HC2 HC1.
-refine (let H1 := Schwarz_aux f x y eps _ in _).
-intros u v Hu Hv.
-split ; now apply (HD u v).
-refine (let H2 := Schwarz_aux (fun x y => f y x) y x eps _ in _).
-intros u v Hu Hv.
-split ; now apply (HD v u).
+refine ((fun H1 => _) (Schwarz_aux f x y eps _)).
+2: intros u v Hu Hv ; split ; now apply (HD u v).
+refine ((fun H2 => _ )(Schwarz_aux (fun x y => f y x) y x eps _)).
+2: intros u v Hu Hv ; split ; now apply (HD v u).
 simpl in H1, H2.
 apply Req_lt_aux.
 intros e.

@@ -22,7 +22,7 @@ COPYING file for more details.
 Require Import Reals.
 Require Import Rcomplements Rbar Lub.
 Require Import Hierarchy.
-Require Import Ssreflect.ssreflect Ssreflect.seq Ssreflect.ssrbool.
+Require Import mathcomp.ssreflect.ssreflect mathcomp.ssreflect.seq mathcomp.ssreflect.ssrbool.
 
 (** This file describes many properties about sequences of real
 numbers. Several formalizations are provided. They are mainly used for

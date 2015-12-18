@@ -20,7 +20,7 @@ COPYING file for more details.
 *)
 
 Require Import Reals.
-Require Import Ssreflect.ssreflect Ssreflect.ssrbool Ssreflect.eqtype Ssreflect.seq.
+Require Import mathcomp.ssreflect.ssreflect mathcomp.ssreflect.ssrbool mathcomp.ssreflect.eqtype mathcomp.ssreflect.seq.
 Require Import Markov Rcomplements Rbar Lub Lim_seq Derive SF_seq.
 Require Import Continuity Hierarchy Seq_fct RInt PSeries.
 
@@ -947,12 +947,12 @@ Qed.*)
 
 (** * Parametric integrals *)
 
-Lemma is_derive_RInt_param_aux : forall f a b x,
-  locally x (fun x => forall t, Rmin a b <= t <= Rmax a b -> ex_derive (fun u => f u t) x) ->
+Lemma is_derive_RInt_param_aux : forall (f : R -> R -> R) (a b x : R),
+  locally x (fun x : R => forall t, Rmin a b <= t <= Rmax a b -> ex_derive (fun u : R => f u t) x) ->
   (forall t, Rmin a b <= t <= Rmax a b -> continuity_2d_pt (fun u v => Derive (fun z => f z v) u) x t) ->
-  locally x (fun y => ex_RInt (fun t => f y t) a b) ->
+  locally x (fun y : R => ex_RInt (fun t => f y t) a b) ->
   ex_RInt (fun t => Derive (fun u => f u t) x) a b ->
-  is_derive (fun x => RInt (fun t => f x t) a b) x
+  is_derive (fun x : R => RInt (fun t => f x t) a b) x
     (RInt (fun t => Derive (fun u => f u t) x) a b).
 Proof.
 intros f a b x.
@@ -990,7 +990,8 @@ intros Df Cdf If IDf.
 split => [ | y Hy].
 by apply @is_linear_scal_l.
 rewrite -(is_filter_lim_locally_unique _ _ Hy) => {y Hy}.
-refine (let Cdf' := uniform_continuity_2d_1d (fun u v => Derive (fun z => f z u) v) a b x _ in _).
+assert (Cdf'' : forall t : R, a <= t <= b ->
+        continuity_2d_pt (fun u v : R => Derive (fun z : R => f z u) v) t x).
 intros t Ht eps.
 specialize (Cdf t Ht eps).
 simpl in Cdf.
@@ -998,6 +999,7 @@ destruct Cdf as (d,Cdf).
 exists d.
 intros v u Hv Hu.
 now apply Cdf.
+assert (Cdf' := uniform_continuity_2d_1d (fun u v => Derive (fun z => f z u) v) a b x Cdf'').
 intros eps. (* 8.4/8.5 compatibility: *) try clearbody Cdf'. clear Cdf.
 assert (H': 0 < eps / Rabs (b - a)).
 apply Rmult_lt_0_compat.
