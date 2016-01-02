@@ -1,5 +1,5 @@
-AC_INIT([Coquelicot], [2.1.0],
-        [Catherine Lelay <catherine.lelay@inria.fr>],
+AC_INIT([Coquelicot], [2.1.1],
+        [Guillaume Melquiond <guillaume.melquiond@inria.fr>],
         [coquelicot])
 
 m4_divert_push(99)

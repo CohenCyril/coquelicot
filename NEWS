@@ -1,3 +1,6 @@
+Version 2.1.1:
+- fixed compilation with ssreflect 1.6
+
 Version 2.1.0:
 - added "continuous" for expressing continuity
 - modified definitions for "sum_n" and "sum_n_m"
