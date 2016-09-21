@@ -312,7 +312,7 @@ Proof.
   exists (fun ab => f (snd ab) - f (fst ab)) ; split.
   generalize (filter_and _ _ Df Cf) => {Df Cf}.
   apply filter_imp => [[a b]] /= [Df Cf].
-  apply is_RInt_derive.
+  apply: is_RInt_derive.
   intros ; by apply Derive_correct, Df.
   by apply Cf.
   rewrite /Rminus.

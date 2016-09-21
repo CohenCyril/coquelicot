@@ -665,7 +665,7 @@ Lemma is_RInt_exp :
   is_RInt exp a b (exp b - exp a).
 Proof.
 intros a b.
-apply is_RInt_derive.
+apply: is_RInt_derive.
   intros x _.
   apply is_derive_Reals, derivable_pt_lim_exp.
 intros x _.

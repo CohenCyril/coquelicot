@@ -501,24 +501,28 @@ Proof.
   by apply RInt_correct.
 Qed.
 
-Lemma is_RInt_derive (f df : R -> R) (a b : R) :
+Section Derive'.
+
+Context {V : NormedModule R_AbsRing}.
+
+Lemma is_RInt_derive (f df : R -> V) (a b : R) :
   (forall x : R, Rmin a b <= x <= Rmax a b -> is_derive f x (df x)) ->
   (forall x : R, Rmin a b <= x <= Rmax a b -> continuous df x) ->
-    is_RInt df a b (f b - f a)%R.
+  is_RInt df a b (minus (f b) (f a)).
 Proof.
   intros Hf Hdf.
   wlog: a b Hf Hdf / (a < b) => [Hw | Hab].
     case: (Rle_lt_dec a b) => Hab.
     case: Hab => Hab.
     by apply Hw.
-    rewrite Hab Rminus_eq_0.
-    by apply @is_RInt_point.
+    rewrite Hab minus_eq_zero.
+    apply is_RInt_point.
     evar_last.
     apply is_RInt_swap.
     apply Hw => //.
     by rewrite Rmin_comm Rmax_comm.
     by rewrite Rmin_comm Rmax_comm.
-    change opp with Ropp ; simpl ; ring.
+    apply opp_minus.
   apply filterlim_locally.
   rewrite (proj1 (sign_0_lt _)).
   2: by apply Rminus_lt_0 in Hab.
@@ -529,10 +533,10 @@ Proof.
   destruct (Rle_dec a b) as [_ | Hab'].
   2: contradict Hab' ; by apply Rlt_le.
 
-  assert (He : 0 < eps / (b - a)).
+  assert (He : 0 < (eps/2) / (b - a)).
     apply Rdiv_lt_0_compat.
-    by apply eps.
-    by apply Rminus_lt_0 in Hab.
+    apply is_pos_div_2.
+    now apply -> Rminus_lt_0.
   set (e := mkposreal _ He).
   destruct (unifcont_normed_1d _ _ _ Hdf e) as [delta Hd] ; clear Hdf.
   exists delta.
@@ -540,17 +544,18 @@ Proof.
   destruct (Rle_dec a b) as [_ | Hab'].
   2: contradict Hab' ; by apply Rlt_le.
   intros y Hstep [Hptd [Ha Hb]].
-  replace (pos eps) with (e * (b - a))%R.
+  refine (Rle_lt_trans _ _ _ _ (Rlt_eps2_eps _ (cond_pos eps))).
+  replace (eps * /2) with (e * (b - a))%R.
+  2: rewrite /e /= ; field ; apply Rgt_not_eq ; now apply -> Rminus_lt_0.
   move: e Hd => {eps He} e Hd.
   rewrite -Ha {a Ha} in Hf Hd Hab |- *.
   rewrite -Hb {b Hb} in Hf Hd Hab |- *.
+  apply Rlt_le in Hab.
   move: Hab Hstep Hptd Hf Hd.
   apply SF_cons_ind with (s := y) => {y} [x0 | x0 y IHy] /= Hab Hstep Hptd Hf Hd.
-  by apply Rlt_irrefl in Hab.
+  rewrite minus_eq_zero Rminus_eq_0 Rmult_0_r /Riemann_sum /= minus_zero_r norm_zero.
+  apply Rle_refl.
   rewrite Riemann_sum_cons.
-  change minus with Rminus ;
-  change plus with Rplus ;
-  change scal with Rmult.
 
   assert (Hab_0 : fst x0 <= SF_h y).
     eapply Rle_trans ; apply (Hptd _ (lt_O_Sn _)).
@@ -595,24 +600,18 @@ Proof.
     by apply H.
     by eapply Rle_trans, H0.
     by apply H0.
-  move: (fun H => IHy H Hstep_1 Hptd_1 Hf_1 Hd_1) => {IHy Hstep Hptd Hf Hd Hstep_1 Hf_1 Hd_1} IHy.
-  assert (((SF_h y - fst x0) * df (snd x0) + Riemann_sum df y -
-    (f (seq.last (SF_h y) (seq.unzip1 (SF_t y))) - f (fst x0)))%R
-    = (((SF_h y - fst x0) * df (snd x0) - (f (SF_h y) - f (fst x0)))
-        + (Riemann_sum df y - (f (seq.last (SF_h y) (seq.unzip1 (SF_t y))) - f (SF_h y))))%R)
+  move: (IHy Hab_1 Hstep_1 Hptd_1 Hf_1 Hd_1) => {IHy Hstep Hptd Hf Hd Hstep_1 Hf_1 Hd_1} IHy.
+  replace (@minus V _ _)
+    with (plus (minus (scal (SF_h y - fst x0) (df (snd x0))) (minus (f (SF_h y)) (f (fst x0))))
+      (minus (Riemann_sum df y) (minus (f (last (SF_h y) (unzip1 (SF_t y)))) (f (SF_h y))))).
+  eapply Rle_trans.
+  apply: norm_triangle.
+  replace (e * (last (SF_h y) (unzip1 (SF_t y)) - fst x0))%R
+    with ((SF_h y - fst x0) * e + (e * (last (SF_h y) (unzip1 (SF_t y)) - SF_h y)))%R
     by ring.
-  rewrite H {H}.
-  eapply Rle_lt_trans.
-  apply @norm_triangle.
-  replace (e * (seq.last (SF_h y) (seq.unzip1 (SF_t y)) - fst x0))%R
-    with ((SF_h y - fst x0) * e +
-         (e * (seq.last (SF_h y) (seq.unzip1 (SF_t y)) - SF_h y)))%R
-    by ring.
+  apply: Rplus_le_compat IHy.
 
-  case: Hab_0 => Hab_0 ; last first.
-  rewrite Hab_0 !Rminus_eq_0 !Rmult_0_l Rminus_eq_0 norm_zero !Rplus_0_l.
-  apply IHy.
-  by rewrite -Hab_0.
+(*
   destruct (MVT_gen f (fst x0) (SF_h y) df) as [c [Hc Hdf]] => //.
   rewrite /Rmin /Rmax ; case: Rle_dec (Rlt_le _ _ Hab_0) => // _ _.
   intros c Hc ; apply Hf_0.
@@ -658,6 +657,10 @@ Proof.
   apply Rgt_not_eq.
   by apply Rminus_lt_0 in Hab.
 Qed.
+*)
+Admitted.
+
+End Derive'.
 
 Lemma RInt_Derive (f : R -> R) (a b : R):
   (forall x, Rmin a b <= x <= Rmax a b -> ex_derive f x) ->
@@ -665,45 +668,48 @@ Lemma RInt_Derive (f : R -> R) (a b : R):
   RInt (Derive f) a b = f b - f a.
 Proof.
 intros Df Cdf.
-apply is_RInt_unique, is_RInt_derive => //.
+apply is_RInt_unique.
+apply: is_RInt_derive => //.
 intros ; by apply Derive_correct, Df.
 Qed.
 
 (** ** Composition *)
 
-Lemma is_RInt_comp (f g dg : R -> R) (a b : R) :
-  (forall x, Rmin a b <= x <= Rmax a b -> continuous f (g x))
-  -> (forall x, Rmin a b <= x <= Rmax a b -> is_derive g x (dg x) /\ continuous dg x)
-  -> is_RInt (fun y => dg y * f (g y)) a b (RInt f (g a) (g b)).
-Proof.
-  case: (Req_dec a b) => [<- {b} | Hab].
-    move => Hf Hg.
-    rewrite RInt_point ; by apply @is_RInt_point.
-  wlog: a b Hab /(a < b) => [Hw | {Hab} Hab].
-    case: (Rle_lt_dec a b) => Hab' Hf Hg.
-    case: Hab' => // Hab'.
-    by apply Hw.
-    rewrite -RInt_swap.
-    apply @is_RInt_swap.
-    apply Hw => //.
-    by apply sym_not_eq.
-    rewrite Rmin_comm Rmax_comm.
-    by apply Hf.
-    rewrite Rmin_comm Rmax_comm.
-    by apply Hg.
-  rewrite /(Rmin a) /(Rmax a) ; case: Rle_dec (Rlt_le _ _ Hab)
-    => // _ _.
+Section Comp.
 
-  wlog: g dg / (forall x : R, is_derive g x (dg x) /\ continuous dg x) => [Hw Hf Hg | Hg Hf _].
+Context {V : NormedModule R_AbsRing}.
+
+Lemma is_RInt_comp (f : R -> V) (g dg : R -> R) (a b : R) If :
+  (forall x, Rmin a b <= x <= Rmax a b -> continuous f (g x)) ->
+  (forall x, Rmin a b <= x <= Rmax a b -> is_derive g x (dg x) /\ continuous dg x) ->
+  is_RInt f (g a) (g b) If ->
+  is_RInt (fun y => scal (dg y) (f (g y))) a b If.
+Proof.
+  wlog: a b If / (a < b) => [Hw|Hab].
+    case: (total_order_T a b) => [[Hab'|Hab']|Hab'] Hf Hg HI.
+    exact: Hw.
+    rewrite Hab' in HI |- *.
+    evar_last.
+    apply is_RInt_point.
+    exact (filterlim_locally_unique _ _ _ (is_RInt_point f _) HI).
+    rewrite <- (opp_opp If).
+    apply is_RInt_swap.
+    apply Hw => //.
+    now rewrite Rmin_comm Rmax_comm.
+    now rewrite Rmin_comm Rmax_comm.
+    now apply is_RInt_swap.
+  rewrite -> Rmin_left by now apply Rlt_le.
+  rewrite -> Rmax_right by now apply Rlt_le.
+
+  wlog: g dg / (forall x : R, is_derive g x (dg x) /\ continuous dg x) => [Hw Hf Hg HI | Hg Hf HI _].
     rewrite -?(extension_C1_ext g a b) ; try by [left | right].
     set g0 := extension_C1 g dg a b.
     set dg0 := extension_C0 dg a b.
-    apply is_RInt_ext with (fun y : R => dg0 y * f (g0 y)).
+    apply is_RInt_ext with (fun y : R => scal (dg0 y) (f (g0 y))).
     rewrite /Rmin /Rmax /g0 ; case: Rle_dec (Rlt_le _ _ Hab) => // _ _ x Hx.
     apply f_equal2.
     apply extension_C0_ext ; by apply Rlt_le, Hx.
     apply f_equal, extension_C1_ext ; by apply Rlt_le, Hx.
-    evar_last.
     apply Hw.
     intros x ; split.
     apply extension_C1_is_derive.
@@ -723,13 +729,11 @@ Proof.
     apply @extension_C0_continuous.
     by apply Rlt_le.
     intros ; apply Hg ; by split.
-    apply f_equal2.
-    apply extension_C1_ext.
-    by apply Rle_refl.
-    by apply Rlt_le.
-    apply extension_C1_ext.
+    rewrite /g0 ?extension_C1_ext //.
     by apply Rlt_le.
     by apply Rle_refl.
+    by apply Rle_refl.
+    by apply Rlt_le.
   wlog: f Hf / (forall x, continuous f x) => [Hw | {Hf} Hf].
     case: (continuity_ab_maj g a b (Rlt_le _ _ Hab)) => [ | M HM].
       move => x Hx.
@@ -753,8 +757,7 @@ Proof.
     apply Rmin_case ; intuition.
     apply Rle_trans with (1 := proj2 Hx).
     apply Rmax_case ; intuition.
-    replace (RInt f (g a) (g b)) with (RInt f0 (g a) (g b)).
-    apply is_RInt_ext with (fun y : R => dg y * f0 (g y)).
+    apply is_RInt_ext with (fun y : R => scal (dg y) (f0 (g y))).
     rewrite /Rmin /Rmax ; case: Rle_dec (Rlt_le _ _ Hab) => // _ _ x Hc.
     apply f_equal.
     apply Hf0 ; split.
@@ -763,13 +766,8 @@ Proof.
     apply Hw.
     move => x Hx ; apply Hf0.
     move => x ; apply Hf0.
-    apply RInt_ext => x Hx.
-    apply Hf0 ; split.
-    apply Rle_trans with (2 := proj1 Hx).
-    apply Rmin_case ; intuition.
-    apply Rle_trans with (1 := proj2 Hx).
-    apply Rmax_case ; intuition.
   evar_last.
+(*
   apply (is_RInt_derive (fun x => RInt f (g a) (g x))).
   intros x Hx.
   evar_last.
@@ -790,6 +788,10 @@ Proof.
   by apply Hf.
   by rewrite RInt_point Rminus_0_r.
 Qed.
+*)
+Admitted.
+
+End Comp.
 
 Lemma RInt_Chasles_bound_comp_l_loc (f : R -> R -> R) (a : R -> R) (b x : R) :
   locally x (fun y => ex_RInt (f y) (a x) b) ->
@@ -1646,7 +1648,7 @@ Proof.
   apply continuity_pt_filterlim, PSeries_continuity.
   by apply H.
 
-  rewrite PSeries_0 /(PS_Int _ 0) ; by rewrite Rminus_0_r.
+  rewrite PSeries_0 /(PS_Int _ 0) ; by rewrite minus_zero_r.
 Qed.
 
 Lemma ex_RInt_PSeries (a : nat -> R) (x : R) :

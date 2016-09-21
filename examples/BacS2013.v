@@ -322,7 +322,7 @@ Proof.
   apply Rmin_case.
   by apply Haux1.
   by apply Rlt_0_1.
-  simpl.
+  rewrite /minus /= /plus /opp /= -[eq]/(@eq R).
   rewrite ln_Rinv.
   rewrite ln_exp.
   rewrite ln_1.

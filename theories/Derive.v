@@ -1013,7 +1013,6 @@ Proof.
   by right.
 Qed.
 
-
 Lemma filterdiff_minus_fct {F} {FF : Filter F} (f g : U -> V) (lf lg : U -> V) :
   filterdiff f F lf -> filterdiff g F lg ->
   filterdiff (fun u => minus (f u) (g u)) F (fun u => minus (lf u) (lg u)).
