@@ -1681,3 +1681,77 @@ Proof.
   apply CV_radius_inside.
   by rewrite CV_radius_Int.
 Qed.
+
+(** * Integration by parts *)
+
+Section ByParts.
+
+Context {V : NormedModule R_AbsRing}.
+
+Lemma is_RInt_scal_derive :
+  forall (f : R -> R) (g : R -> V) (f' : R -> R) (g' : R -> V) (a b : R),
+  (forall t, Rmin a b <= t <= Rmax a b -> is_derive f t (f' t)) ->
+  (forall t, Rmin a b <= t <= Rmax a b -> is_derive g t (g' t)) ->
+  (forall t, Rmin a b <= t <= Rmax a b -> continuous f' t) ->
+  (forall t, Rmin a b <= t <= Rmax a b -> continuous g' t) ->
+  is_RInt (fun t => plus (scal (f' t) (g t)) (scal (f t) (g' t))) a b (minus (scal (f b) (g b)) (scal (f a) (g a))).
+Proof.
+intros f g f' g' a b Df Dg Cf' Cg' If'g.
+apply (is_RInt_derive (fun t => scal (f t) (g t))).
+intros t Ht.
+refine (_ (filterdiff_scal_fct t f g _ _ _ (Df _ Ht) (Dg _ Ht))).
+intros H.
+apply: filterdiff_ext_lin H _ => u.
+by rewrite scal_distr_l !scal_assoc /mult /= Rmult_comm.
+exact Rmult_comm.
+intros t Ht.
+apply: continuous_plus.
+apply: continuous_scal.
+now apply Cf'.
+apply ex_derive_continuous.
+eexists.
+now apply Dg.
+apply: continuous_scal.
+apply: ex_derive_continuous.
+eexists.
+now apply Df.
+now apply Cg'.
+Qed.
+
+Lemma is_RInt_scal_derive_r :
+  forall (f : R -> R) (g : R -> V) (f' : R -> R) (g' : R -> V) (a b : R) (l : V),
+  (forall t, Rmin a b <= t <= Rmax a b -> is_derive f t (f' t)) ->
+  (forall t, Rmin a b <= t <= Rmax a b -> is_derive g t (g' t)) ->
+  (forall t, Rmin a b <= t <= Rmax a b -> continuous f' t) ->
+  (forall t, Rmin a b <= t <= Rmax a b -> continuous g' t) ->
+  is_RInt (fun t => scal (f' t) (g t)) a b l ->
+  is_RInt (fun t => scal (f t) (g' t)) a b (minus (minus (scal (f b) (g b)) (scal (f a) (g a))) l).
+Proof.
+intros f g f' g' a b l Df Dg Cf' Cg' If'g.
+apply (is_RInt_ext (fun t =>
+  minus (plus (scal (f' t) (g t)) (scal (f t) (g' t))) (scal (f' t) (g t)))).
+intros x H.
+by rewrite /minus (plus_comm (scal (f' x) _)) -plus_assoc plus_opp_r plus_zero_r.
+apply is_RInt_minus with (2 := If'g).
+exact: is_RInt_scal_derive.
+Qed.
+
+Lemma is_RInt_scal_derive_l :
+  forall (f : R -> R) (g : R -> V) (f' : R -> R) (g' : R -> V) (a b : R) (l : V),
+  (forall t, Rmin a b <= t <= Rmax a b -> is_derive f t (f' t)) ->
+  (forall t, Rmin a b <= t <= Rmax a b -> is_derive g t (g' t)) ->
+  (forall t, Rmin a b <= t <= Rmax a b -> continuous f' t) ->
+  (forall t, Rmin a b <= t <= Rmax a b -> continuous g' t) ->
+  is_RInt (fun t => scal (f t) (g' t)) a b l ->
+  is_RInt (fun t => scal (f' t) (g t)) a b (minus (minus (scal (f b) (g b)) (scal (f a) (g a))) l).
+Proof.
+intros f g f' g' a b l Df Dg Cf' Cg' If'g.
+apply (is_RInt_ext (fun t =>
+  minus (plus (scal (f' t) (g t)) (scal (f t) (g' t))) (scal (f t) (g' t)))).
+intros x H.
+by rewrite /minus -plus_assoc plus_opp_r plus_zero_r.
+apply is_RInt_minus with (2 := If'g).
+exact: is_RInt_scal_derive.
+Qed.
+
+End ByParts.
