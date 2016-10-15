@@ -1875,10 +1875,10 @@ contradict Dfx.
 exact: Cf Dfx.
 Qed.
 
-Lemma closed_filterlim :
+Lemma closed_filterlim_loc :
   forall {T} {U : UniformSpace} {F} {FF : ProperFilter' F} (f : T -> U) (D : U -> Prop),
   forall y, filterlim f F (locally y) ->
-  (forall x, D (f x)) ->
+  F (fun x => D (f x)) ->
   closed D -> D y.
 Proof.
 intros T U F FF f D y Ffy Df CD.
@@ -1887,9 +1887,20 @@ intros LD.
 apply filter_not_empty.
 specialize (Ffy _ LD).
 unfold filtermap in Ffy.
-apply: filter_imp Ffy.
+apply: filter_imp (filter_and _ _ Df Ffy).
 intros x Dfx.
 now apply Dfx.
+Qed.
+
+Lemma closed_filterlim :
+  forall {T} {U : UniformSpace} {F} {FF : ProperFilter' F} (f : T -> U) (D : U -> Prop),
+  forall y, filterlim f F (locally y) ->
+  (forall x, D (f x)) ->
+  closed D -> D y.
+Proof.
+intros T U F FF f D y Ffy Df.
+apply: closed_filterlim_loc Ffy _.
+now apply filter_forall.
 Qed.
 
 (** ** Complete uniform spaces *)
