@@ -1778,18 +1778,42 @@ Section Closed.
 Context {T : UniformSpace}.
 
 Definition closed (D : T -> Prop) :=
-  open (fun x : T => not (D x)).
+  forall x, not (locally x (fun x : T => not (D x))) -> D x.
+
+Lemma open_not :
+  forall D : T -> Prop,
+  closed D -> open (fun x => not (D x)).
+Proof.
+intros D CD x Dx.
+apply locally_not.
+intros H.
+apply Dx, CD.
+intros [eps He].
+now apply (H eps).
+Qed.
+
+Lemma closed_not :
+  forall D : T -> Prop,
+  open D -> closed (fun x => not (D x)).
+Proof.
+intros D OD x Lx Dx.
+apply Lx.
+apply: filter_imp (OD _ Dx).
+intros t Dt nDt.
+now apply nDt.
+Qed.
 
 Lemma closed_ext :
   forall D E : T -> Prop,
   (forall x, D x <-> E x) ->
   closed D -> closed E.
 Proof.
-intros D E H.
-apply open_ext.
-intros x.
-specialize (H x).
-intuition.
+intros D E DE CD x Hx.
+apply DE, CD.
+contradict Hx.
+apply: filter_imp Hx.
+move => {x} x Dx Ex.
+now apply Dx, DE.
 Qed.
 
 Lemma closed_and :
@@ -1798,43 +1822,43 @@ Lemma closed_and :
   closed (fun x => D x /\ E x).
 Proof.
 intros D E CD CE x Hx.
-apply locally_not.
-intros He.
-generalize (open_or _ _ CD CE).
-intros H.
-revert Hx.
-cut (not (not (D x) \/ not (E x))).
-now (clear ; intuition).
-intros Hx.
-destruct (H x Hx) as [eps H'].
-apply (He eps).
-intros y Hy Hy'.
-specialize (H' y Hy).
-clear -H' Hy' ; intuition.
+split.
+apply CD.
+contradict Hx.
+apply: filter_imp Hx.
+move => {x} x nDx [Dx _].
+now apply nDx.
+apply CE.
+contradict Hx.
+apply: filter_imp Hx.
+move => {x} x nEx [_ Ex].
+now apply nEx.
 Qed.
 
+(*
 Lemma closed_or :
   forall D E : T -> Prop,
   closed D -> closed E ->
   closed (fun x => D x \/ E x).
 Proof.
-intros D E CD CE.
+intros D E CD CE x Hx.
 generalize (open_and _ _ CD CE).
 apply open_ext.
 clear ; intuition.
 Qed.
+*)
 
 Lemma closed_true :
   closed (fun x : T => True).
 Proof.
-intros x Hx.
-now contradict Hx.
+now intros _ _.
 Qed.
 
 Lemma closed_false :
   closed (fun x : T => False).
 Proof.
-intros x _.
+intros x Hx.
+apply Hx.
 now exists (mkposreal _ Rlt_0_1).
 Qed.
 
@@ -1846,8 +1870,26 @@ Lemma closed_comp :
   closed D -> closed (fun x : T => D (f x)).
 Proof.
 intros T U f D Cf CD x Dfx.
-apply Cf with (P := fun x => not (D x)).
-now apply CD.
+apply CD.
+contradict Dfx.
+exact: Cf Dfx.
+Qed.
+
+Lemma closed_filterlim :
+  forall {T} {U : UniformSpace} {F} {FF : ProperFilter' F} (f : T -> U) (D : U -> Prop),
+  forall y, filterlim f F (locally y) ->
+  (forall x, D (f x)) ->
+  closed D -> D y.
+Proof.
+intros T U F FF f D y Ffy Df CD.
+apply CD.
+intros LD.
+apply filter_not_empty.
+specialize (Ffy _ LD).
+unfold filtermap in Ffy.
+apply: filter_imp Ffy.
+intros x Dfx.
+now apply Dfx.
 Qed.
 
 (** ** Complete uniform spaces *)
