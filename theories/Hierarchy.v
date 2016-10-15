@@ -3082,7 +3082,22 @@ Export CompleteNormedModule.Exports.
 
 Section CompleteNormedModule1.
 
-Context {T : Type} {K : AbsRing} {V : CompleteNormedModule K}.
+Context {K : AbsRing} {V : CompleteNormedModule K}.
+
+Lemma iota_unique :
+  forall (P : V -> Prop) (x : V),
+  (forall y, P y -> y = x) ->
+  P x ->
+  iota P = x.
+Proof.
+intros P x HP Px.
+apply ball_eq.
+intros eps.
+apply: iota_correct_weak Px eps.
+intros x' y Px' Py eps.
+rewrite (HP _ Py) -(HP _ Px').
+apply ball_center.
+Qed.
 
 Lemma iota_correct :
   forall P : V -> Prop,
@@ -3090,17 +3105,27 @@ Lemma iota_correct :
   P (iota P).
 Proof.
 intros P [x [Px HP]].
-replace (iota P) with x.
-exact Px.
-apply eq_sym, ball_eq.
-intros eps.
-apply: iota_correct_weak Px eps.
-intros u v Pu Pv eps.
-replace v with u.
-apply ball_center.
-apply eq_trans with x.
-now apply eq_sym, HP.
-now apply HP.
+rewrite (iota_unique _ x) ; try exact Px.
+intros y Py.
+now apply sym_eq, HP.
+Qed.
+
+Lemma iota_is_filter_lim {F} {FF : ProperFilter' F} (l : V) :
+  is_filter_lim F l ->
+  iota (is_filter_lim F) = l.
+Proof.
+intros Hl.
+apply: iota_unique (Hl) => l' Hl'.
+exact: is_filter_lim_unique Hl' Hl.
+Qed.
+
+Context {T : Type}.
+
+Lemma iota_filterlim_locally {F} {FF : ProperFilter' F} (f : T -> V) l :
+  filterlim f F (locally l) ->
+  iota (fun x => filterlim f F (locally x)) = l.
+Proof.
+apply iota_is_filter_lim.
 Qed.
 
 End CompleteNormedModule1.
