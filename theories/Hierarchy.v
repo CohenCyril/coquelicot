@@ -4404,6 +4404,45 @@ apply open_lt.
 apply open_gt.
 Qed.
 
+(** Some closed sets of [R] *)
+
+Lemma closed_le :
+  forall y : R, closed (fun u : R => u <= y).
+Proof.
+intros y.
+apply closed_ext with (fun u => not (Rlt y u)).
+intros x.
+split.
+apply Rnot_lt_le.
+apply Rle_not_lt.
+apply closed_not.
+apply open_gt.
+Qed.
+
+Lemma closed_ge :
+  forall y : R, closed (fun u : R => y <= u).
+Proof.
+intros y.
+apply closed_ext with (fun u => not (Rlt u y)).
+intros x.
+split.
+apply Rnot_lt_le.
+apply Rle_not_lt.
+apply closed_not.
+apply open_lt.
+Qed.
+
+Lemma closed_eq :
+  forall y : R, closed (fun u : R => u = y).
+Proof.
+intros y.
+apply closed_ext with (fun u => not (u <> y)).
+intros x.
+destruct (Req_dec x y) ; intuition.
+apply closed_not.
+apply open_neq.
+Qed.
+
 (** Local properties in [R] *)
 
 Lemma locally_interval (P : R -> Prop) (x : R) (a b : Rbar) :
