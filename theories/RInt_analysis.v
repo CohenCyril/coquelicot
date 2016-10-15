@@ -145,13 +145,18 @@ Proof.
   rewrite norm_opp (double_var eps).
   apply Rplus_lt_le_compat.
   by [].
-  apply Rle_trans with (norm (Riemann_sum f ptd)).
-  rewrite /sign ; case: Rle_dec => H2.
-  case: Rle_lt_or_eq_dec => H3.
-  rewrite scal_one ; by right.
-  rewrite scal_zero_l norm_zero.
-  by apply norm_ge_0.
-  rewrite scal_opp_l scal_one norm_opp ; by right.
+  apply Rle_trans with (1 := norm_scal (sign (x - a)) _).
+  apply Rle_trans with (1 * norm (Riemann_sum f ptd)).
+  apply Rmult_le_compat_r.
+  apply norm_ge_0.
+  rewrite /abs /= /sign ; case: total_order_T => [[H2|H2]|H2].
+  rewrite Rabs_R1.
+  apply Rle_refl.
+  rewrite Rabs_R0.
+  apply Rle_0_1.
+  rewrite Rabs_Ropp Rabs_R1.
+  apply Rle_refl.
+  rewrite Rmult_1_l.
   apply Rle_trans with (Riemann_sum (fun _ => Mf) ptd).
   apply Riemann_sum_norm.
   apply Hptd.
@@ -524,8 +529,7 @@ Proof.
     by rewrite Rmin_comm Rmax_comm.
     apply opp_minus.
   apply filterlim_locally.
-  rewrite (proj1 (sign_0_lt _)).
-  2: by apply Rminus_lt_0 in Hab.
+  rewrite -> sign_eq_1 by exact: Rlt_Rminus.
   intros.
   eapply filter_imp.
   intros x Hx ; rewrite scal_one ; by apply norm_compat1, Hx.

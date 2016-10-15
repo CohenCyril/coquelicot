@@ -647,13 +647,8 @@ intros f a.
 unfold is_KHInt.
 apply filterlim_ext with (fun ptd : @SF_seq R => @zero V).
 intro ptd.
-rewrite Rminus_eq_0.
-unfold sign.
-case Rle_dec => H0.
-case Rle_lt_or_eq_dec => H1.
-apply Rlt_irrefl in H1 ; destruct H1.
+rewrite Rminus_eq_0 sign_0.
 rewrite scal_zero_l ; easy.
-apply Rnot_le_gt in H0 ; apply Rgt_irrefl in H0 ; destruct H0.
 intros P HP.
 unfold filtermap.
 destruct HP as (eps, HPeps).
@@ -688,29 +683,7 @@ rewrite Hptd1.
 rewrite scal_assoc.
 replace (mult (sign (b - a)) (Rmax a b - Rmin a b)) with (b-a).
 apply ball_center.
-unfold sign.
-case Rle_dec => Hab.
-case Rle_lt_or_eq_dec => Hab2.
-rewrite mult_one_l.
-rewrite Rmin_left.
-rewrite Rmax_right.
-easy.
-apply Rge_le ; apply Rminus_ge ; now apply Rle_ge.
-apply Rge_le ; apply Rminus_ge ; now apply Rle_ge.
-rewrite <- Hab2 ; now rewrite mult_zero_l.
-replace (Rmax a b) with a.
-replace (Rmin a b) with b.
-apply plus_reg_r with (mult 1 (a - b)).
-assert (plus (mult (-1) (a - b)) (mult 1 (a - b)) = mult (plus (-1) 1) (a - b)) as H1.
-now rewrite mult_distr_r.
-rewrite H1 ; rewrite mult_one_l ; rewrite plus_opp_l ; rewrite mult_zero_l.
-replace (b-a) with (opp (a-b)).
-now rewrite plus_opp_l.
-now rewrite opp_minus.
-rewrite Rmin_right ; trivial.
-apply Rnot_le_lt in Hab ; apply Rminus_lt in Hab ; now apply Rlt_le.
-rewrite Rmax_left ; trivial.
-apply Rnot_le_lt in Hab ; apply Rminus_lt in Hab ; now apply Rlt_le.
+apply sym_eq, sign_min_max.
 Qed.
 
 Lemma ex_KHInt_const :

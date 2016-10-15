@@ -140,7 +140,7 @@ Proof.
   move => Hx0.
   case: (Rle_lt_dec 0 x) => Hx.
   case: Hx => //= Hx.
-  rewrite (proj1 (sign_0_lt x)) => //.
+  rewrite sign_eq_1 //.
   eapply is_derive_ext_loc.
   apply locally_interval with 0 p_infty.
   by [].
@@ -150,7 +150,7 @@ Proof.
   by apply Rlt_le.
   by apply @is_derive_id.
   by apply sym_eq in Hx.
-  rewrite (proj1 (sign_lt_0 x)) => //.
+  rewrite sign_eq_m1 //.
   eapply is_derive_ext_loc.
   apply locally_interval with m_infty 0.
   by [].

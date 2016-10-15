@@ -175,10 +175,8 @@ Proof.
   case: Rle_dec (Rlt_le _ _ Hab) => //= _ _ ; field ; apply Rgt_not_eq ;
   by intuition.
   by apply lt_O_Sn.
-  rewrite /sign.
-  case: Rle_dec (Rlt_le _ _ (Rgt_minus _ _ Hab)) => // Hab' _.
-  case: Rle_lt_or_eq_dec (Rlt_not_eq _ _ (Rgt_minus _ _ Hab)) => // {Hab'} _ _.
-  by rewrite scal_one.
+  rewrite -> sign_eq_1 by exact: Rlt_Rminus.
+  exact: scal_one.
   move: H => {Hex} Hex.
 
   assert (exists M, forall g : R -> R -> R,
@@ -472,7 +470,7 @@ Proof.
     eapply Rlt_le_trans, Rmin_r.
     by apply Hstep.
   clear d Hd Hdelta Hf.
-  rewrite (proj1 (sign_0_lt (b - a))).
+  rewrite -> sign_eq_1 by exact: Rlt_Rminus.
   rewrite !scal_one.
   move: Hya Hyb ;
   rewrite /Rmin /Rmax ;
@@ -633,7 +631,6 @@ Focus 2. (* fst x0 = SF_h y *)
   rewrite !plus_assoc.
   apply f_equal2 => //.
   by apply plus_comm.
-  by apply Rminus_lt_0 in Hab.
 Qed.
 
 Lemma ex_RInt_ext :
@@ -661,23 +658,7 @@ rewrite Riemann_sum_const.
 rewrite Hlast Hhead.
 rewrite scal_assoc.
 apply (f_equal (fun x => scal x v)).
-clear.
-unfold sign.
-destruct Rle_dec as [H|H].
-assert (K := proj2 (Rminus_le_0 a b) H).
-rewrite (Rmax_right _ _ K) (Rmin_left _ _ K).
-destruct Rle_lt_or_eq_dec as [H'|H'].
-apply sym_eq, Rmult_1_l.
-rewrite -H'.
-apply sym_eq, Rmult_0_l.
-assert (K : b <= a).
-apply Rnot_lt_le.
-contradict H.
-apply -> Rminus_le_0.
-now apply Rlt_le.
-rewrite (Rmax_left _ _ K) (Rmin_right _ _ K).
-rewrite /mult /=.
-ring.
+apply sym_eq, sign_min_max.
 Qed.
 
 Lemma ex_RInt_const :
@@ -964,11 +945,9 @@ Proof.
   by apply Rlt_le.
   apply f_equal2.
   replace (u * b + v - (u * a + v)) with (u * (b - a)) by ring.
-  rewrite /sign.
-  case: (Rle_dec 0 (b - a)) (proj1 (Rminus_le_0 _ _) (Rlt_le _ _ Hab)) => // H _.
-  case: Rle_dec (Rmult_le_pos _ _ (Rlt_le _ _ Hu) H) => // H0 _.
-  case: (Rle_lt_or_eq_dec 0 (b - a)) (Rlt_not_eq _ _ (proj1 (Rminus_lt_0 _ _) Hab)) => // _ H1.
-  case: Rle_lt_or_eq_dec (sym_not_eq (Rmult_integral_contrapositive_currified _ _ (Rgt_not_eq _ _ Hu) (sym_not_eq H1))) => //.
+  rewrite sign_mult.
+  rewrite (sign_eq_1 _ Hu).
+  apply Rmult_1_l.
 
   revert ptd' ;
   apply SF_cons_ind with (s := ptd) => [x0 | [x0 y0] s IH] //=.
@@ -1034,7 +1013,7 @@ Proof.
   exists (mkposreal _ Hd) => /= ptd Hstep [Hptd [Hh Hl]].
   move: Hh Hl ; rewrite /Rmin /Rmax ;
   case: Rle_dec (Rlt_le _ _ (Rlt_trans _ _ _ Hab Hbc)) => //= _ _ Hh Hl.
-  replace (sign _) with (one : R).
+  rewrite -> sign_eq_1 by now apply Rlt_Rminus, Rlt_trans with b.
   rewrite scal_one.
   rewrite /ball_norm (double_var eps).
   apply Rle_lt_trans
@@ -1104,15 +1083,13 @@ Proof.
     with (plus (minus (scal (sign (b - a)) (Riemann_sum f (SF_cut_down ptd b))) l1)
            (minus (scal (sign (c - b)) (Riemann_sum f (SF_cut_up ptd b))) l2)).
   apply @norm_triangle.
-  replace (sign (b - a)) with (one : R).
-  replace (sign (c - b)) with (one : R).
+  rewrite -> sign_eq_1 by exact: Rlt_Rminus.
+  rewrite -> sign_eq_1 by exact: Rlt_Rminus.
   rewrite 2!scal_one /minus opp_plus -2!plus_assoc.
   apply f_equal.
   rewrite plus_comm -plus_assoc.
   apply f_equal.
   by apply plus_comm.
-  by apply sym_eq, sign_0_lt ; apply -> Rminus_lt_0.
-  by apply sym_eq, sign_0_lt ; apply -> Rminus_lt_0.
   rewrite (double_var (eps / 2)) ; apply Rplus_lt_compat.
   apply H1.
   apply SF_cut_down_step.
@@ -1140,8 +1117,8 @@ Proof.
   move: (SF_cut_up_l ptd b) => /= ->.
   by apply Hl.
   rewrite Hl ; by apply Rlt_le.
-  by apply sym_eq, sign_0_lt ; apply -> Rminus_lt_0 ; by apply Rlt_trans with b.
 Qed.
+
 Lemma ex_RInt_Chasles_0 (f : R -> V) (a b c : R) :
   a <= b <= c -> ex_RInt f a b -> ex_RInt f b c
   -> ex_RInt f a c.
@@ -1213,10 +1190,10 @@ move: Hab Hbc Hh2 H1 H2 ; clear ;
 set c := last (SF_h y2) (unzip1 (SF_t y2)) ;
 set b := last (SF_h y) (unzip1 (SF_t y)) ;
 set a := SF_h y => Hab Hbc Hl.
-replace (sign (c - a)) with (one : R).
-replace (sign (c - b)) with (one : R).
-replace (sign (b - a)) with (one : R).
-rewrite ?scal_one.
+rewrite -> sign_eq_1 by now apply Rlt_Rminus, Rlt_trans with b.
+rewrite -> sign_eq_1 by exact: Rlt_Rminus.
+rewrite -> sign_eq_1 by exact: Rlt_Rminus.
+rewrite 3!scal_one.
 replace (Riemann_sum f y) with (minus (Riemann_sum f y1) (Riemann_sum f y2)).
 move => H1 H2.
 unfold ball_norm.
@@ -1241,10 +1218,6 @@ replace v
   rewrite /minus -plus_assoc.
   apply f_equal.
   by apply IH.
-  apply sym_eq, sign_0_lt ; by apply -> Rminus_lt_0.
-  apply sym_eq, sign_0_lt ; by apply -> Rminus_lt_0.
-  apply sym_eq, sign_0_lt ; apply -> Rminus_lt_0.
-  by apply Rlt_trans with b.
 Qed.
 
 Lemma is_RInt_Chasles_2 (f : R -> V) (a b c : R) l1 l2 :
@@ -1538,8 +1511,8 @@ Proof.
 
   intros.
   specialize (If _ _ (proj1 H) (proj1 H0)).
-  replace (sign (b - a)) with 1.
-  replace (sign (c - a)) with 1 in If.
+  rewrite -> sign_eq_1 by exact: Rlt_Rminus.
+  rewrite -> sign_eq_1 in If by now apply Rlt_Rminus, Rlt_le_trans with b.
   apply: norm_compat1.
   eapply Rlt_le_trans.
   eapply Rle_lt_trans.
@@ -1578,11 +1551,6 @@ Proof.
   fold M.
   apply Req_le ; simpl ; field.
   by apply Rgt_not_eq, norm_factor_gt_0.
-  apply sym_eq, sign_0_lt.
-  apply -> Rminus_lt_0.
-  eapply Rlt_le_trans ; eassumption.
-  apply sym_eq, sign_0_lt.
-  by apply -> Rminus_lt_0.
 Qed.
 
 Lemma ex_RInt_Chasles_2 {V : CompleteNormedModule R_AbsRing}
@@ -1706,7 +1674,7 @@ unfold filtermap ;
 apply filter_imp => x Hx.
 apply HP.
 case => t [Ht [Ha Hb]] /=.
-rewrite (proj1 (sign_0_lt _)).
+rewrite -> sign_eq_1 by exact: Rlt_Rminus.
 rewrite 2!scal_one.
 apply: norm_compat1.
 generalize (Riemann_sum_minus (f x) g t) => <-.
@@ -1731,7 +1699,6 @@ apply norm_factor_gt_0.
 intros t0 Ht0.
 apply Rlt_le.
 apply (norm_compat2 _ _ (mkposreal _ He) (Hx t0)).
-by rewrite -Rminus_lt_0.
 exists If ; split.
 by apply Hh.
 by apply Hg.
@@ -2191,16 +2158,19 @@ Proof.
     (fun ptd : SF_seq => scal (sign (b - a)) (Riemann_sum g ptd)).
   3: apply Hg.
   exists (mkposreal _ Rlt_0_1) => ptd _ [Hptd [Hh Hl]].
-  apply Rminus_le_0 in Hab.
-  rewrite /sign ; case: Rle_dec => // {Hab} Hab.
-  case: Rle_lt_or_eq_dec => // _.
+  destruct Hab as [Hab|Hab].
+  rewrite -> sign_eq_1 by exact: Rlt_Rminus.
   rewrite !scal_one.
   apply Riemann_sum_norm.
   by [].
   move => t.
-  apply Rminus_le_0 in Hab.
-  rewrite Hl Hh /Rmin /Rmax ; case: Rle_dec => // _.
+  rewrite Hl Hh /Rmin /Rmax ; case: Rle_dec => [_|].
   apply H.
+  move => /Rnot_le_lt Hab'.
+  elim (Rlt_not_le _ _ Hab).
+  now apply Rlt_le.
+  rewrite -> Rminus_diag_eq by now apply sym_eq.
+  rewrite sign_0.
   rewrite 2!scal_zero_l.
   rewrite norm_zero ; by right.
   apply filterlim_comp with (locally lf).
@@ -2458,9 +2428,7 @@ Proof.
     clear Hex.
     intros Hex.
     move => eps ; move: (Hex eps) => {Hex}.
-    rewrite Rminus_eq_0 /sign.
-    move: (Rle_refl 0) (Rle_not_lt _ _ (Rle_refl 0)).
-    case: Rle_dec => // H0 _ ; case: Rle_lt_or_eq_dec => // _ _ {H0}.
+    rewrite Rminus_eq_0 sign_0.
     case => alpha Halpha.
     set ptd := @SF_nil R a.
     replace If with (If - 0 * Riemann_sum f ptd) by ring.
@@ -2561,9 +2529,7 @@ Proof.
   by [].
   rewrite Ropp_minus_distr'.
   apply f_equal.
-  rewrite /sign.
-  case: Rle_dec (Rlt_le _ _ (Rgt_minus _ _ Hab)) => // Hab' _.
-  case: Rle_lt_or_eq_dec (Rlt_not_eq _ _ (Rgt_minus _ _ Hab)) => // _ _.
+  rewrite -> sign_eq_1 by exact: Rlt_Rminus.
   rewrite Rmult_1_l.
   by [].
 Qed.
@@ -2911,7 +2877,7 @@ Proof.
   change Hierarchy.norm with Rabs.
   change minus with Rminus.
   change scal with Rmult.
-  rewrite (proj1 (sign_0_lt _)).
+  rewrite -> sign_eq_1 by exact: Rlt_Rminus.
   rewrite Rmult_1_l.
   move/Rabs_lt_between' => Hg.
   field_simplify (Ig + - Ig / 2) in Hg.
@@ -3092,7 +3058,6 @@ Proof.
   apply -> Rminus_le_0.
   eapply Rle_trans ; apply (proj1 Hy' O) ;
   by apply lt_O_Sn.
-  by apply -> Rminus_lt_0.
   by apply Rlt_le.
   by apply Rlt_le.
   rewrite -Hab in Hg.
@@ -3338,8 +3303,7 @@ Proof.
   2: now apply Rlt_le.
   rewrite Rmax_right.
   2: now apply Rlt_le.
-  rewrite (proj1 (sign_0_lt (b - a))).
-  2: now apply Rlt_Rminus.
+  rewrite -> sign_eq_1 by exact: Rlt_Rminus.
 
   cut (forall (phi : StepFun a b) (eps : posreal),
     exists alpha : posreal,
@@ -4822,12 +4786,8 @@ have Hfin' : forall t, is_finite (SF_sup_fun (fun t : R => Rabs (f t - phi t)) a
   apply Rle_lt_trans with (1 := Rabs_triang _ _).
   rewrite Rabs_Ropp (double_var eps) ; apply Rplus_lt_compat ;
   by apply HIf.
-  rewrite /sign /=.
-  move: (proj1 (Rminus_le_0 _ _) (Rlt_le _ _ Hab)) ; case: Rle_dec => //= H0 _.
-  case: Rle_lt_or_eq_dec => //= {H0} H0.
+  rewrite -> sign_eq_1 by exact: Rlt_Rminus.
   ring.
-  contradict H0.
-  by apply Rlt_not_eq, Rgt_minus.
   move: H => {HIf} HIf.
   rewrite /Riemann_sum in HIf.
 (* * oublier If *)

@@ -36,6 +36,7 @@ Ltac evar_last :=
   end.
 
 Require Import Reals mathcomp.ssreflect.ssreflect.
+Require Import Psatz.
 
 Module MyNat.
 
@@ -1169,98 +1170,71 @@ Definition pos_div_2 (eps : posreal) := mkposreal _ (is_pos_div_2 eps).
 (** * The sign function *)
 
 Definition sign (x : R) :=
-  match Rle_dec 0 x with
-    | left H => match Rle_lt_or_eq_dec _ _ H with
-        | left _ => 1
-        | right _ => 0
-      end
-    | right _ => -1
+  match total_order_T 0 x with
+  | inleft (left _) => 1
+  | inleft (right _) => 0
+  | inright _ => -1
   end.
 
 Lemma sign_0 : sign 0 = 0.
 Proof.
 unfold sign.
-destruct Rle_dec as [H|H].
-destruct (Rle_lt_or_eq_dec 0 0 H) as [H'|H'].
-elim (Rlt_irrefl _ H').
-exact H'.
-elim H.
-apply Rle_refl.
+case total_order_T as [[H|H]|H].
+elim (Rlt_irrefl _ H).
+exact H.
+elim (Rlt_irrefl _ H).
 Qed.
 
 Lemma sign_opp (x : R) : sign (-x) = - sign x.
 Proof.
-  rewrite /sign ;
-  case: Rle_dec => H ; case: Rle_dec => H0.
-  have: ~ (0 < - x).
-    apply Rle_not_lt, Ropp_le_cancel ; intuition.
-  have: ~ (0 < x).
-    apply Rle_not_lt, Ropp_le_cancel ; rewrite Ropp_0 ; intuition.
-  case: Rle_lt_or_eq_dec => // ; case: Rle_lt_or_eq_dec => // ; intuition.
-  have: ~ (0 = - x).
-    contradict H0 ; apply Ropp_le_cancel ; rewrite -H0 ; intuition.
-  case: Rle_lt_or_eq_dec => // ; intuition.
-  have: ~ (0 = x).
-    contradict H ; rewrite -H ; intuition.
-  case: Rle_lt_or_eq_dec => // ; intuition.
-  contradict H0 ; apply Ropp_le_cancel, Rlt_le, Rnot_le_lt ; intuition.
+unfold sign.
+case total_order_T as [[H|H]|H] ;
+  case total_order_T as [[H'|H']|H'] ;
+  lra.
 Qed.
 
-Lemma sign_0_lt (x : R) : 0 < x <-> sign x = 1.
+Lemma sign_eq_1 (x : R) : 0 < x -> sign x = 1.
 Proof.
-  split ; rewrite /sign => Hx.
-  case: Rle_dec (Rlt_le _ _ Hx) => // Hx0 _.
-  case: Rle_lt_or_eq_dec (Rlt_not_eq _ _ Hx) => // Hx0 _.
-  case: Rle_dec Hx => // Hx.
-  case: Rle_lt_or_eq_dec => // Hx0.
-  rewrite {1}Hx0 => ->.
-  by apply Rlt_0_1.
-  apply Rnot_le_lt in Hx => Hx0.
-  rewrite -(Rmult_1_l x) -Hx0.
-  ring_simplify.
-  by apply Ropp_0_gt_lt_contravar.
+intros Hx.
+unfold sign.
+case total_order_T as [[H|H]|H] ; lra.
 Qed.
 
-Lemma sign_lt_0 (x : R) : x < 0 <-> sign x = -1.
+Lemma sign_eq_m1 (x : R) : x < 0 -> sign x = -1.
 Proof.
-  rewrite -(Ropp_involutive x) sign_opp Ropp_involutive ; split => Hx.
-  apply f_equal.
-  apply sign_0_lt.
-  by apply Ropp_0_gt_lt_contravar.
-  apply (f_equal Ropp) in Hx ; rewrite ?Ropp_involutive in Hx.
-  apply sign_0_lt in Hx.
-  apply Ropp_lt_cancel ; by rewrite Ropp_0.
+intros Hx.
+unfold sign.
+case total_order_T as [[H|H]|H] ; lra.
 Qed.
 
-Lemma sign_carac (x y : R) : (x * y > 0 \/ (x = 0 /\ y = 0)) -> sign x = sign y.
+Lemma sign_le (x y : R) : x <= y -> sign x <= sign y.
 Proof.
-  case => Hxy.
-  wlog : x y Hxy / (0 < x) => [Hw | Hx].
-    case: (Rle_lt_dec 0 x) => Hx.
-    case: Hx => Hx.
-    by apply Hw.
-    rewrite -Hx Rmult_0_l in Hxy.
-    by apply Rlt_irrefl in Hxy.
-  rewrite -(Ropp_involutive (sign x)) -(Ropp_involutive (sign y)).
-  rewrite -(sign_opp x) -(sign_opp y).
-  apply f_equal, Hw.
-  by ring_simplify.
-  by apply Ropp_0_gt_lt_contravar.
-  have Hy : 0 < y.
-  apply Rnot_le_lt ;
-  contradict Hxy ;
-  apply Rle_not_lt.
-  rewrite -(Rmult_0_r x).
-  apply Rmult_le_compat_l.
-  by apply Rlt_le.
-  by [].
-  rewrite /sign.
-  case: Rle_dec (Rlt_le _ _ Hx) => // Hx0 _.
-  case: Rle_dec (Rlt_le _ _ Hy) => // Hy0 _.
-  case: Rle_lt_or_eq_dec (Rlt_not_eq _ _ Hx) => // _ _.
-  case: Rle_lt_or_eq_dec (Rlt_not_eq _ _ Hy) => // _ _.
-  case: Hxy => -> ->.
-  by [].
+intros Hx.
+unfold sign.
+case total_order_T as [[H|H]|H] ;
+  case total_order_T as [[H'|H']|H'] ;
+  lra.
+Qed.
+
+Lemma sign_ge_0 (x : R) : 0 <= x -> 0 <= sign x.
+Proof.
+intros Hx.
+rewrite <- sign_0.
+now apply sign_le.
+Qed.
+
+Lemma sign_le_0 (x : R) : x <= 0 -> sign x <= 0.
+Proof.
+intros Hx.
+rewrite <- sign_0.
+now apply sign_le.
+Qed.
+
+Lemma sign_neq_0 (x : R) : x <> 0 -> sign x <> 0.
+Proof.
+intros Hx.
+unfold sign.
+case total_order_T as [[H|H]|H] ; lra.
 Qed.
 
 Lemma sign_mult (x y : R) : sign (x * y) = sign x * sign y.
@@ -1270,9 +1244,7 @@ Proof.
     case: Hx => Hx.
     by apply Hw.
     rewrite -Hx Rmult_0_l.
-    rewrite {1 2}/sign.
-    case: Rle_dec (Rle_refl 0) => // H _.
-    case: Rle_lt_or_eq_dec (Rlt_irrefl 0) => // _ _.
+    rewrite sign_0.
     by rewrite Rmult_0_l.
     rewrite -(Ropp_involutive x).
     rewrite sign_opp Ropp_mult_distr_l_reverse sign_opp Hw.
@@ -1283,9 +1255,7 @@ Proof.
     case: Hy => Hy.
     by apply Hw.
     rewrite -Hy Rmult_0_r.
-    rewrite {1 3}/sign.
-    case: Rle_dec (Rle_refl 0) => // H _.
-    case: Rle_lt_or_eq_dec (Rlt_irrefl 0) => // _ _.
+    rewrite sign_0.
     by rewrite Rmult_0_r.
     rewrite -(Ropp_involutive y).
     rewrite sign_opp Ropp_mult_distr_r_reverse sign_opp Hw.
@@ -1293,8 +1263,28 @@ Proof.
     by apply Ropp_0_gt_lt_contravar.
   have Hxy : 0 < x * y.
     by apply Rmult_lt_0_compat.
-  rewrite ?(proj1 (sign_0_lt _)) //.
+  rewrite -> 3!sign_eq_1 by easy.
   by rewrite Rmult_1_l.
+Qed.
+
+Lemma sign_min_max (a b : R) :
+  sign (b - a) * (Rmax a b - Rmin a b) = b - a.
+Proof.
+unfold sign.
+case total_order_T as [[H|H]|H].
+assert (K := proj2 (Rminus_le_0 a b) (Rlt_le _ _ H)).
+rewrite (Rmax_right _ _ K) (Rmin_left _ _ K).
+apply Rmult_1_l.
+rewrite -H.
+apply Rmult_0_l.
+assert (K : b <= a).
+apply Rnot_lt_le.
+contradict H.
+apply Rle_not_lt.
+apply -> Rminus_le_0.
+now apply Rlt_le.
+rewrite (Rmax_left _ _ K) (Rmin_right _ _ K).
+ring.
 Qed.
 
 Lemma sum_INR : forall n, sum_f_R0 INR n = INR n * (INR n + 1) / 2.
