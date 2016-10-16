@@ -494,7 +494,7 @@ Proof.
   intros If Cf.
   apply is_derive_unique, (is_derive_RInt _ _ a) => //.
   move: If ; apply filter_imp => y.
-  by apply RInt_correct.
+  exact: RInt_correct.
 Qed.
 Lemma Derive_RInt' (f : R -> R) (a b : R) :
   locally a (fun a => ex_RInt f a b) -> continuous f a
@@ -503,7 +503,7 @@ Proof.
   intros If Cf.
   eapply is_derive_unique, (is_derive_RInt' (V := R_NormedModule) _ _ a b) => //.
   move: If ; apply filter_imp => y.
-  by apply RInt_correct.
+  exact: RInt_correct.
 Qed.
 
 Section Derive'.
@@ -831,7 +831,7 @@ set (e := mkposreal _ (Rmin_stable_in_posreal ea eb)).
 generalize (filter_and _ _ (filter_and _ _ (Ca e) (Cb e))
   (filter_and _ _ Hab (filter_and _ _ Hae Hbe))).
 apply filter_imp => {Ca Cb Hab Hae Hbe} y [[Hay Hby] [Hab [Hae Hbe]]].
-apply RInt_Chasles.
+apply: RInt_Chasles.
 apply ex_RInt_inside with (1 := Hae).
 apply Rlt_le.
 apply Rlt_le_trans with (1 := Hay).
@@ -972,12 +972,13 @@ rewrite RInt_point.
 apply is_derive_ext with (fun _ => 0).
 simpl => t.
 apply sym_eq.
-apply RInt_point.
+apply: RInt_point.
 apply: is_derive_const.
 simpl => H1 H2 H3 H4.
-apply is_derive_ext with (fun u => - RInt (fun t => f u t) b a).
-simpl => t.
-apply RInt_swap.
+apply is_derive_ext_loc with (fun u => - RInt (fun t => f u t) b a).
+apply: filter_imp H3 => t Ht.
+apply: opp_RInt_swap.
+exact: ex_RInt_swap.
 eapply filterdiff_ext_lin.
 apply @filterdiff_opp_fct ; try by apply locally_filter.
 apply H.
@@ -987,7 +988,8 @@ now rewrite Rmin_comm Rmax_comm.
 move: H3 ; apply filter_imp => y H3.
 now apply ex_RInt_swap.
 now apply ex_RInt_swap.
-rewrite -RInt_swap => /= y.
+rewrite -opp_RInt_swap //=.
+intros y.
 by rewrite -scal_opp_r opp_opp.
 (* *)
 rewrite Rmin_left. 2: now apply Rlt_le.
@@ -1027,10 +1029,7 @@ apply cond_pos.
 assert (D2: ex_RInt (fun t => f x t) a b).
 apply DIf.
 apply ball_center.
-rewrite /minus /plus /opp /=.
-rewrite -!/(Rminus _ _) -RInt_minus //.
-rewrite /scal /= /mult /=.
-rewrite -RInt_scal //.
+rewrite -RInt_minus // -RInt_scal //.
 assert (D3: ex_RInt (fun t => f y t - f x t) a b).
   apply @ex_RInt_minus.
   by apply D1.
@@ -1077,7 +1076,7 @@ apply cond_pos.
 rewrite RiemannInt_P15.
 rewrite Rabs_pos_eq.
 right.
-rewrite /norm /= /abs /=.
+change (norm (minus y x)) with (Rabs (y - x)).
 field.
 apply Rgt_not_eq.
 now apply Rgt_minus.
@@ -1163,7 +1162,7 @@ exists (mkposreal _ (Rmin_stable_in_posreal
                        (mkposreal _ (Rmin_stable_in_posreal d6 (mkposreal _ J2))))))).
 simpl; intros u v Hu Hv.
 rewrite (Derive_ext (fun z : R => RInt (fun t : R => f z t) (a x) (a x)) (fun z => 0)).
-2: intros t; apply RInt_point.
+2: intros t; exact: RInt_point.
 replace (Derive (fun _ : R => 0) x) with 0%R.
 2: apply sym_eq, Derive_const.
 rewrite Rminus_0_r.
@@ -1188,7 +1187,8 @@ apply Rlt_le_trans with (1:=Hv).
 apply Rle_trans with (1:=Rmin_r _ _).
 apply Rle_trans with (1:=Rmin_r _ _).
 apply Rmin_l.
-apply RInt_correct, @ex_RInt_continuous.
+apply: RInt_correct.
+apply: ex_RInt_continuous.
 intros y Hy ; apply continuity_pt_filterlim.
 intros eps Heps.
 assert (Y1:(Rabs (u - x) < d5)).
@@ -1387,7 +1387,7 @@ left; apply cond_pos.
 apply is_derive_RInt' with (a x).
 apply locally_singleton in Ia.
 exists d0 => /= y Hy.
-apply RInt_correct.
+apply: RInt_correct.
 generalize (proj1 (Rabs_lt_between' _ _ _) Hy) => {Hy} Hy.
 eapply ex_RInt_Chasles.
 eapply ex_RInt_Chasles, Ia.
@@ -1459,14 +1459,28 @@ Lemma is_derive_RInt_param_bound_comp_aux3 :
     (RInt (fun t : R => Derive (fun u => f u t) x) a (b x) +f x (b x)*db).
 Proof.
 intros f a b x db If Ib Db Df Cf1 Cf2 Cfb.
-apply is_derive_ext with (fun x0 => - RInt (fun t : R => f x0 t) (b x0) a).
-intros t; apply RInt_swap.
-replace (RInt (fun t : R => Derive (fun u => f u t) x) a (b x) +f x (b x)*db) with
-      (- ((RInt (fun t : R => Derive (fun u : R => f u t) x) (b x) a) + - f x (b x)*db)).
+apply is_derive_ext_loc with (fun x0 => - RInt (fun t : R => f x0 t) (b x0) a).
+  destruct Ib as [eps Ib].
+  cut (locally x (fun t : R => ex_RInt (fun u => f t u) a (b t))).
+  apply: filter_imp.
+  intros y H.
+  apply: opp_RInt_swap.
+  exact: ex_RInt_swap.
+  assert (locally x (fun t : R => Rabs (b t - b x) <= eps)).
+    generalize (ex_derive_continuous b _ (ex_intro _ _ Db)).
+    move /filterlim_locally /(_ eps).
+    apply: filter_imp => t.
+    exact: Rlt_le.
+  generalize (filter_and _ _ If (filter_and _ _ Ib H)).
+  apply: filter_imp => t [Ht1 [Ht2 Ht3]].
+  apply ex_RInt_Chasles with (1 := Ht1).
+  apply: ex_RInt_inside Ht2 _ Ht3.
+  rewrite Rminus_eq_0 Rabs_R0.
+  apply Rlt_le, cond_pos.
+evar_last.
 apply: is_derive_opp.
-apply is_derive_RInt_param_bound_comp_aux2; try easy.
-move: If ; apply filter_imp.
-intros y H.
+apply: is_derive_RInt_param_bound_comp_aux2 Ib Db _ _ Cf2 Cfb.
+apply: filter_imp If => y H.
 now apply ex_RInt_swap.
 destruct Df as (e,H).
 exists e.
@@ -1477,8 +1491,22 @@ now rewrite Rmin_comm Rmax_comm.
 intros t Ht.
 apply Cf1.
 now rewrite Rmin_comm Rmax_comm.
-rewrite <- RInt_swap.
+rewrite -(opp_RInt_swap _ _ a).
+rewrite /opp /=.
 ring.
+apply ex_RInt_swap.
+apply ex_RInt_continuous.
+intros z Hz.
+specialize (Cf1 z Hz).
+apply continuity_2d_pt_filterlim in Cf1.
+intros c Hc.
+destruct (Cf1 c Hc) as [e He].
+exists e.
+intros d Hd.
+apply (He (x,d)).
+split.
+apply ball_center.
+apply Hd.
 Qed.
 
 
@@ -1572,7 +1600,7 @@ apply Rplus_le_reg_l with (-a x); ring_simplify.
 left; apply cond_pos.
 rewrite RInt_point.
 simpl => y.
-rewrite /plus /scal /= /mult /=.
+rewrite /plus /scal /zero /= /mult /=.
 ring.
 Qed.
 
@@ -1678,12 +1706,11 @@ Lemma is_pseries_RInt (a : nat -> R) :
     -> is_pseries (PS_Int a) x (RInt (PSeries a) 0 x).
 Proof.
   move => x Hx.
-  assert (Ha := is_RInt_PSeries _ _ Hx).
-  apply is_RInt_unique in Ha.
-  rewrite Ha.
+  erewrite is_RInt_unique.
   apply PSeries_correct.
   apply CV_radius_inside.
   by rewrite CV_radius_Int.
+  exact: is_RInt_PSeries.
 Qed.
 
 (** * Integration by parts *)
