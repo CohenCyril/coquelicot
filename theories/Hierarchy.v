@@ -115,7 +115,6 @@ constructor.
 - intros P Q HP HQ.
   now apply filter_and.
 - intros P Q H HP.
-  unfold filtermap.
   apply (filter_imp (fun x => P (f x))).
   intros x Hx.
   now apply H.
@@ -147,6 +146,68 @@ split.
 - apply filtermap_filter.
   apply filter_filter.
 Qed.
+
+Definition filtermapi {T U : Type} (f : T -> U -> Prop) (F : (T -> Prop) -> Prop) :=
+  fun P : U -> Prop => F (fun x => (exists y, f x y) /\ forall y, f x y -> P y).
+
+(*
+Global Instance filtermapi_filter :
+  forall T U (f : T -> U -> Prop) (F : (T -> Prop) -> Prop),
+  Filter F -> Filter (filtermapi f F).
+Proof.
+intros T U f F FF.
+unfold filtermapi.
+constructor.
+- apply filter_and.
+  admit.
+  now apply filter_forall.
+- intros P Q HP HQ.
+  apply: filter_imp (filter_and _ _ HP HQ).
+  now intuition.
+- intros P Q H HP.
+  apply: filter_imp HP.
+  now intuition.
+Qed.
+*)
+
+(*
+Global Instance filtermapi_proper_filter' :
+  forall T U (f : T -> U -> Prop),
+  TotalImplicit f ->
+  forall (F : (T -> Prop) -> Prop),
+  ProperFilter' F -> ProperFilter' (filtermapi f F).
+Proof.
+intros T U f Hf F FF.
+unfold filtermapi.
+split.
+- intro H.
+  apply filter_not_empty.
+  apply filter_imp with (2 := H).
+  intros x Hf'.
+  destruct (Hf x) as [y Hy].
+  now apply (Hf' y).
+- apply filtermapi_filter.
+  apply filter_filter'.
+Qed.
+
+Global Instance filtermapi_proper_filter :
+  forall T U (f : T -> U -> Prop),
+  TotalImplicit f ->
+  forall (F : (T -> Prop) -> Prop),
+  ProperFilter F -> ProperFilter (filtermapi f F).
+Proof.
+intros T U f Hf F FF.
+unfold filtermapi.
+split.
+- intros P FP.
+  destruct (filter_ex _ FP) as [x Hx].
+  destruct (Hf x) as [y Hy].
+  exists y.
+  now apply Hx.
+- apply filtermapi_filter.
+  apply filter_filter.
+Qed.
+*)
 
 Definition filterlim {T U : Type} (f : T -> U) F G :=
   filter_le (filtermap f F) G.
@@ -208,6 +269,71 @@ Lemma filterlim_filter_le_2 :
   filter_le G H ->
   filterlim f F G ->
   filterlim f F H.
+Proof.
+intros T U F G H f K Hf P HP.
+apply Hf.
+now apply K.
+Qed.
+
+Definition filterlimi {T U : Type} (f : T -> U -> Prop) F G :=
+  filter_le (filtermapi f F) G.
+
+Lemma filterlimi_comp :
+  forall T U V (f : T -> U) (g : U -> V -> Prop) F G H,
+  filterlim f F G -> filterlimi g G H ->
+  filterlimi (fun x => g (f x)) F H.
+Proof.
+intros T U V f g F G H FG GH P HP.
+apply (FG (fun x => (exists y, g x y) /\ forall y, g x y -> P y)).
+now apply GH.
+Qed.
+
+Lemma filterlimi_ext_loc :
+  forall {T U F G} {FF : Filter F} (f g : T -> U -> Prop),
+  F (fun x => forall y, f x y <-> g x y) ->
+  filterlimi f F G ->
+  filterlimi g F G.
+Proof.
+intros T U F G FF f g Efg Lf P GP.
+specialize (Lf P GP).
+generalize (filter_and _ _ Efg Lf).
+unfold filtermapi.
+apply filter_imp.
+intros x [Hfg [[y Hy] H]].
+split.
+exists y.
+now apply Hfg.
+intros z Hz.
+now apply H, Hfg.
+Qed.
+
+Lemma filterlimi_ext :
+  forall {T U F G} {FF : Filter F} (f g : T -> U -> Prop),
+  (forall x y, f x y <-> g x y) ->
+  filterlimi f F G ->
+  filterlimi g F G.
+Proof.
+intros T U F G FF f g Efg.
+apply filterlimi_ext_loc.
+now apply filter_forall.
+Qed.
+
+Lemma filterlimi_filter_le_1 :
+  forall {T U F G H} (f : T -> U -> Prop),
+  filter_le G F ->
+  filterlimi f F H ->
+  filterlimi f G H.
+Proof.
+intros T U F G H f K Hf P HP.
+apply K.
+now apply Hf.
+Qed.
+
+Lemma filterlimi_filter_le_2 :
+  forall {T U F G H} (f : T -> U -> Prop),
+  filter_le G H ->
+  filterlimi f F G ->
+  filterlimi f F H.
 Proof.
 intros T U F G H f K Hf P HP.
 apply Hf.
@@ -330,6 +456,20 @@ Proof.
 intros T U V W F G H I FF f g h Cf Cg Ch.
 change (fun x => h (f x) (g x)) with (fun x => h (fst (f x, g x)) (snd (f x, g x))).
 apply: filterlim_comp Ch.
+now apply filterlim_pair.
+Qed.
+
+Lemma filterlimi_comp_2 :
+  forall {T U V W F G H I} {FF : Filter F},
+  forall (f : T -> U) (g : T -> V) (h : U -> V -> W -> Prop),
+  filterlim f F G ->
+  filterlim g F H ->
+  filterlimi (fun x => h (fst x) (snd x)) (filter_prod G H) I ->
+  filterlimi (fun x => h (f x) (g x)) F I.
+Proof.
+intros T U V W F G H I FF f g h Cf Cg Ch.
+change (fun x => h (f x) (g x)) with (fun x => h (fst (f x, g x)) (snd (f x, g x))).
+apply: filterlimi_comp Ch.
 now apply filterlim_pair.
 Qed.
 
@@ -1609,6 +1749,26 @@ split.
   apply He.
 Qed.
 
+Lemma filterlimi_locally :
+  forall {F} {FF : Filter F} (f : T -> U -> Prop) y,
+  filterlimi f F (locally y) <->
+  forall eps : posreal, F (fun x => (exists z, f x z) /\ forall z, f x z -> ball y eps z).
+Proof.
+intros F FF f y.
+split.
+- intros Cf eps.
+  apply (Cf (fun x => ball y eps x)).
+  now exists eps.
+- intros Cf P [eps He].
+  unfold filtermapi.
+  apply: filter_imp (Cf eps).
+  intros t [[z Hz] H].
+  split.
+  now exists z.
+  intros z' Hz'.
+  now apply He, H.
+Qed.
+
 Lemma filterlim_locally_close:
   forall {F} {FF: ProperFilter F} (f : T -> U) l l',
   filterlim f F (locally l) ->  filterlim f F (locally l') ->
@@ -1629,6 +1789,28 @@ rewrite (double_var eps).
 apply ball_triangle with (f x).
 by apply H.
 by apply ball_sym, H.
+Qed.
+
+Lemma filterlimi_locally_close:
+  forall {F} {FF: ProperFilter F} (f : T -> U -> Prop) l l',
+  filterlimi f F (locally l) ->  filterlimi f F (locally l') ->
+  forall eps : posreal, ball l eps l'.
+Proof.
+intros F FF f l l' Hl Hl' eps.
+assert (locally l (ball l (pos_div_2 eps))).
+  by apply locally_ball.
+specialize (Hl (ball l (pos_div_2 eps)) H).
+assert (locally l' (ball l' (pos_div_2 eps))).
+  by apply locally_ball.
+specialize (Hl' (ball l' (pos_div_2 eps)) H0).
+unfold filtermapi in Hl, Hl'.
+generalize (filter_and _ _ Hl Hl') => {H H0} H.
+apply filter_ex in H.
+destruct H as [x [[[y H] H1] [_ H2]]].
+rewrite (double_var eps).
+apply ball_triangle with y.
+by apply H1.
+by apply ball_sym, H2.
 Qed.
 
 End Locally_fct.
