@@ -148,7 +148,7 @@ split.
 Qed.
 
 Definition filtermapi {T U : Type} (f : T -> U -> Prop) (F : (T -> Prop) -> Prop) :=
-  fun P : U -> Prop => F (fun x => (exists y, f x y) /\ forall y, f x y -> P y).
+  fun P : U -> Prop => F (fun x => exists y, f x y /\ P y).
 
 (*
 Global Instance filtermapi_filter :
@@ -284,7 +284,7 @@ Lemma filterlimi_comp :
   filterlimi (fun x => g (f x)) F H.
 Proof.
 intros T U V f g F G H FG GH P HP.
-apply (FG (fun x => (exists y, g x y) /\ forall y, g x y -> P y)).
+apply (FG (fun x => exists y, g x y /\ P y)).
 now apply GH.
 Qed.
 
@@ -299,12 +299,10 @@ specialize (Lf P GP).
 generalize (filter_and _ _ Efg Lf).
 unfold filtermapi.
 apply filter_imp.
-intros x [Hfg [[y Hy] H]].
-split.
+intros x [H [y [Hy1 Hy2]]].
 exists y.
-now apply Hfg.
-intros z Hz.
-now apply H, Hfg.
+apply: conj Hy2.
+now apply H.
 Qed.
 
 Lemma filterlimi_ext :
@@ -1752,7 +1750,7 @@ Qed.
 Lemma filterlimi_locally :
   forall {F} {FF : Filter F} (f : T -> U -> Prop) y,
   filterlimi f F (locally y) <->
-  forall eps : posreal, F (fun x => (exists z, f x z) /\ forall z, f x z -> ball y eps z).
+  forall eps : posreal, F (fun x => exists z, f x z /\ ball y eps z).
 Proof.
 intros F FF f y.
 split.
@@ -1762,11 +1760,10 @@ split.
 - intros Cf P [eps He].
   unfold filtermapi.
   apply: filter_imp (Cf eps).
-  intros t [[z Hz] H].
-  split.
-  now exists z.
-  intros z' Hz'.
-  now apply He, H.
+  intros t [z [Hz1 Hz2]].
+  exists z.
+  apply (conj Hz1).
+  now apply He.
 Qed.
 
 Lemma filterlim_locally_close:
@@ -1793,24 +1790,27 @@ Qed.
 
 Lemma filterlimi_locally_close:
   forall {F} {FF: ProperFilter F} (f : T -> U -> Prop) l l',
+  F (fun x => forall y1 y2, f x y1 -> f x y2 -> y1 = y2) ->
   filterlimi f F (locally l) ->  filterlimi f F (locally l') ->
   forall eps : posreal, ball l eps l'.
 Proof.
-intros F FF f l l' Hl Hl' eps.
-assert (locally l (ball l (pos_div_2 eps))).
+intros F FF f l l' Hf Hl Hl' eps.
+assert (H: locally l (ball l (pos_div_2 eps))).
   by apply locally_ball.
 specialize (Hl (ball l (pos_div_2 eps)) H).
-assert (locally l' (ball l' (pos_div_2 eps))).
+assert (H': locally l' (ball l' (pos_div_2 eps))).
   by apply locally_ball.
-specialize (Hl' (ball l' (pos_div_2 eps)) H0).
+specialize (Hl' (ball l' (pos_div_2 eps)) H').
 unfold filtermapi in Hl, Hl'.
-generalize (filter_and _ _ Hl Hl') => {H H0} H.
+generalize (filter_and _ _ Hf (filter_and _ _ Hl Hl')) => {H H' Hl Hl' Hf} H.
 apply filter_ex in H.
-destruct H as [x [[[y H] H1] [_ H2]]].
+destruct H as [x [Hf [[y [H1 H1']] [y' [H2 H2']]]]].
 rewrite (double_var eps).
 apply ball_triangle with y.
-by apply H1.
-by apply ball_sym, H2.
+exact H1'.
+apply ball_sym.
+rewrite (Hf _ _ H1 H2).
+exact H2'.
 Qed.
 
 End Locally_fct.

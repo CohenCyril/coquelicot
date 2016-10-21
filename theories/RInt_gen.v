@@ -43,6 +43,17 @@ Section RInt_gen.
 
 Context {V : CompleteNormedModule R_AbsRing}.
 
+Lemma is_RInt_unique' :
+  forall (f : R -> V) a b i1 i2,
+  is_RInt f a b i1 ->
+  is_RInt f a b i2 ->
+  i1 = i2.
+Proof.
+intros f a b i1 i2 H1 H2.
+rewrite -(is_RInt_unique _ _ _ _ H1).
+now apply is_RInt_unique.
+Qed.
+
 Definition is_RInt_gen (f : R -> V) (Fa Fb : (R -> Prop) -> Prop) (l : V) :=
   filterlimi (fun ab => is_RInt f (fst ab) (snd ab)) (filter_prod Fa Fb) (locally l).
 Definition ex_RInt_gen (f : R -> V) (Fa Fb : (R -> Prop) -> Prop) :=
@@ -60,20 +71,16 @@ split.
   apply at_point_R in Qa.
   apply at_point_R in Rb.
   simpl in H.
-  destruct (H a b Qa Rb) as [[y Hy] H'].
-  now apply Hy, H'.
+  destruct (H a b Qa Rb) as [y [Hy1 Hy2]].
+  now apply Hy1.
 - intros Hl P HP.
   exists (fun x => x = a) (fun x => x = b).
   intros x Hx. now apply eq_sym, ball_eq.
   intros x Hx. now apply eq_sym, ball_eq.
   intros x y -> ->.
-  split.
-  now exists l.
-  simpl.
-  intros y Hy.
-  rewrite -(is_RInt_unique f a b y Hy).
-  rewrite (is_RInt_unique f a b l Hl).
-  exact: locally_singleton HP.
+  exists l.
+  apply (conj Hl).
+  exact: locally_singleton.
 Qed.
 
 (** * Basic properties of integrals *)
@@ -112,14 +119,11 @@ destruct Hf as [Q R HQ HR H].
   exact: filterlim_opp.
 apply: Filter_prod HR HQ _ => a b Ha Hb.
 specialize (H b a Hb Ha).
-destruct H as [[y Hy] H].
-split.
+destruct H as [y [Hy1 Hy2]].
 exists (opp y).
+split.
 exact: is_RInt_swap.
-intros z Hz.
-rewrite -(opp_opp z).
-apply H.
-exact: is_RInt_swap.
+exact Hy2.
 Qed.
 
 Lemma is_RInt_gen_Chasles {Fa Fc : (R -> Prop) -> Prop}
@@ -139,17 +143,12 @@ apply: Filter_prod HQa HRc _.
 intros a c Ha Hc.
 specialize (Hab _ _ Ha (at_point_R _ _ HRa)).
 specialize (Hbc _ _ (at_point_R _ _ HQc) Hc).
-destruct Hab as [[ya Hya] Hab].
-destruct Hbc as [[yc Hyc] Hbc].
-move: (is_RInt_Chasles _ _ _ _ _ _ Hya Hyc) => Hac.
+destruct Hab as [ya [Hya1 Hya2]].
+destruct Hbc as [yc [Hyc1 Hyc2]].
+exists (plus ya yc).
 split.
-now exists (plus ya yc).
-intros y Hy.
-specialize (Hab _ Hya).
-specialize (Hbc _ Hyc).
-specialize (H _ _ Hab Hbc).
-rewrite -(is_RInt_unique f a c y Hy).
-by rewrite (is_RInt_unique f a c _ Hac).
+apply: is_RInt_Chasles Hya1 Hyc1.
+now apply H.
 Qed.
 
 (** * Composition *)
@@ -216,15 +215,10 @@ move /filterlim_scal_r in HP.
 specialize (H _ HP).
 unfold filtermapi in H |- *.
 apply: filter_imp H.
-move => [a b] /= [[y Hy] H].
-specialize (H y Hy).
-apply (is_RInt_scal _ _ _ k) in Hy.
-split.
-eexists.
-exact Hy.
-intros z Hz.
-rewrite -(is_RInt_unique _ a b z Hz).
-by rewrite (is_RInt_unique _ a b _ Hy).
+move => [a b] /= [y [Hy1 Hy2]].
+exists (scal k y).
+apply: conj Hy2.
+exact: is_RInt_scal.
 Qed.
 
 Lemma is_RInt_gen_opp {Fa Fb : (R -> Prop) -> Prop}
@@ -237,15 +231,10 @@ move /filterlim_opp in HP.
 specialize (H _ HP).
 unfold filtermapi in H |- *.
 apply: filter_imp H.
-move => [a b] /= [[y Hy] H].
-specialize (H y Hy).
-apply is_RInt_opp in Hy.
-split.
-eexists.
-exact Hy.
-intros z Hz.
-rewrite -(is_RInt_unique _ a b z Hz).
-by rewrite (is_RInt_unique _ a b _ Hy).
+move => [a b] /= [y [Hy1 Hy2]].
+exists (opp y).
+apply: conj Hy2.
+exact: is_RInt_opp.
 Qed.
 
 Lemma is_RInt_gen_plus {Fa Fb : (R -> Prop) -> Prop}
@@ -261,18 +250,10 @@ specialize (Hf _ HQ).
 specialize (Hg _ HR).
 unfold filtermapi in Hf, Hg |- *.
 apply: filter_imp (filter_and _ _ Hf Hg).
-move => [a b] /= [[[If HIf] Hf'] [[Ig HIg] Hg']].
-specialize (Hf' _ HIf).
-specialize (Hg' _ HIg).
-generalize (is_RInt_plus _ _ _ _ _ _ HIf HIg).
-intros Hz.
-split.
-eexists.
-exact Hz.
-intros y Hy.
-rewrite -(is_RInt_unique _ a b y Hy).
-rewrite (is_RInt_unique _ a b _ Hz).
-exact: H.
+move => [a b] /= [[If [HIf1 HIf2]] [Ig [HIg1 HIg2]]].
+exists (plus If Ig).
+apply: conj (H _ _ HIf2 HIg2).
+exact: is_RInt_plus.
 Qed.
 
 Lemma is_RInt_gen_minus {Fa Fb : (R -> Prop) -> Prop}
@@ -301,25 +282,25 @@ apply (filterlim_le (F := filter_prod Fa Fb) (fun ab => norm (RInt f (fst ab) (s
   specialize (Hg _ (locally_ball lg (mkposreal _ Rlt_0_1))).
   unfold filtermapi in Hf, Hg.
   apply: filter_imp (filter_and _ _ (filter_and  _ _ Hf Hg) (filter_and _ _ Hab Hle)) => {Hf Hg Hab Hle}.
-  move => [a b] /= [[[Hf _] [Hg _]] [H H']].
+  move => [a b] /= [[[If [Hf1 Hf2]] [Ig [Hg1 Hg2]]] [H H']].
   apply: norm_RInt_le H H' _ _.
-  exact: RInt_correct.
-  exact: RInt_correct.
+  apply: RInt_correct.
+  now exists If.
+  apply: RInt_correct.
+  now exists Ig.
 - eapply filterlim_comp, filterlim_norm.
   intros P HP.
   specialize (Hf P HP).
   unfold filtermapi, filtermap in Hf |- *.
   apply: filter_imp Hf.
-  move => [a b] /= [[y Hy] H].
-  rewrite (is_RInt_unique _ a b y Hy).
-  exact: H.
+  move => [a b] /= [y [Hy1 Hy2]].
+  now rewrite (is_RInt_unique _ a b y Hy1).
 - intros P HP.
   specialize (Hg P HP).
   unfold filtermapi, filtermap in Hg |- *.
   apply: filter_imp Hg.
-  move => [a b] /= [[y Hy] H].
-  rewrite (is_RInt_unique _ a b y Hy).
-  exact: H.
+  move => [a b] /= [y [Hy1 Hy2]].
+  now rewrite (is_RInt_unique _ a b y Hy1).
 Qed.
 
 Lemma is_RInt_gen_Derive {Fa Fb : (R -> Prop) -> Prop} {FFa : Filter Fa} {FFb : Filter Fb}
@@ -344,14 +325,9 @@ assert (HP': filter_prod Fa Fb (fun ab => P (f (snd ab) - f (fst ab)))).
   exact HP.
 apply: filter_imp (filter_and _ _ (filter_and _ _ Df Cf) HP').
 move => [a b] /= {Df Cf HP HP'} [[Df Cf] HP].
-assert (is_RInt (Derive f) a b (f b - f a)).
-  apply: (is_RInt_derive f) => x Hx.
-  now apply Derive_correct, Df.
-  exact: Cf.
-split.
 eexists.
-exact H.
-intros y Hy.
-rewrite -(is_RInt_unique _ a b y Hy).
-by rewrite (is_RInt_unique _ a b _ H).
+apply: conj HP.
+apply: is_RInt_derive => x Hx.
+now apply Derive_correct, Df.
+exact: Cf.
 Qed.
