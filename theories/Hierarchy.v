@@ -1849,24 +1849,17 @@ Section at_point.
 
 Context {T : UniformSpace}.
 
-Definition at_point (a : T) (P : T -> Prop) : Prop :=
-  forall y, (forall eps : posreal, ball a eps y) -> P y.
+Definition at_point (a : T) (P : T -> Prop) : Prop := P a.
+
 Global Instance at_point_filter (a : T) :
   ProperFilter (at_point a).
 Proof.
-  split.
-  - move => P Pa.
-    exists a.
-    apply Pa => eps.
-    by apply ball_center.
-  - split.
-  + by [].
-  + move => P Q Pa Qa.
-    split.
-    by apply Pa.
-    by apply Qa.
-  + move => P Q PQ Ha y Hy.
-    by apply PQ, Ha.
+split.
+- intros P Pa.
+  now exists a.
+- split ; try easy.
+  intros P Q PQ Ha.
+  now apply PQ.
 Qed.
 
 End at_point.

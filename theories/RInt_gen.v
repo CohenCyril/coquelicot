@@ -29,14 +29,6 @@ properties are given: Chasles, operations, composition, derivation.*)
 
 Open Scope R_scope.
 
-Lemma at_point_R :
-  forall (P : R -> Prop) (x : R), at_point x P -> P x.
-Proof.
-intros P x Px.
-apply Px.
-apply ball_center.
-Qed.
-
 (** * Improper Riemann integral *)
 
 Section is_RInt_gen.
@@ -57,15 +49,10 @@ split.
   apply locally_locally in HP.
   specialize (H _ HP).
   destruct H as [Q R Qa Rb H].
-  apply at_point_R in Qa.
-  apply at_point_R in Rb.
-  simpl in H.
   destruct (H a b Qa Rb) as [y [Hy1 Hy2]].
   now apply Hy1.
 - intros Hl P HP.
-  exists (fun x => x = a) (fun x => x = b).
-  intros x Hx. now apply eq_sym, ball_eq.
-  intros x Hx. now apply eq_sym, ball_eq.
+  exists (fun x => x = a) (fun x => x = b) ; try easy.
   intros x y -> ->.
   exists l.
   apply (conj Hl).
@@ -130,8 +117,8 @@ destruct Hab as [Qa Ra HQa HRa Hab].
 destruct Hbc as [Qc Rc HQc HRc Hbc].
 apply: Filter_prod HQa HRc _.
 intros a c Ha Hc.
-specialize (Hab _ _ Ha (at_point_R _ _ HRa)).
-specialize (Hbc _ _ (at_point_R _ _ HQc) Hc).
+specialize (Hab _ _ Ha HRa).
+specialize (Hbc _ _ HQc Hc).
 destruct Hab as [ya [Hya1 Hya2]].
 destruct Hbc as [yc [Hyc1 Hyc2]].
 exists (plus ya yc).
