@@ -39,20 +39,9 @@ Qed.
 
 (** * Improper Riemann integral *)
 
-Section RInt_gen.
+Section is_RInt_gen.
 
-Context {V : CompleteNormedModule R_AbsRing}.
-
-Lemma is_RInt_unique' :
-  forall (f : R -> V) a b i1 i2,
-  is_RInt f a b i1 ->
-  is_RInt f a b i2 ->
-  i1 = i2.
-Proof.
-intros f a b i1 i2 H1 H2.
-rewrite -(is_RInt_unique _ _ _ _ H1).
-now apply is_RInt_unique.
-Qed.
+Context {V : NormedModule R_AbsRing}.
 
 Definition is_RInt_gen (f : R -> V) (Fa Fb : (R -> Prop) -> Prop) (l : V) :=
   filterlimi (fun ab => is_RInt f (fst ab) (snd ab)) (filter_prod Fa Fb) (locally l).
@@ -257,7 +246,7 @@ exact: is_RInt_plus.
 Qed.
 
 Lemma is_RInt_gen_minus {Fa Fb : (R -> Prop) -> Prop}
-  {FFa : Filter Fa} {FFb : Filter Fb} (f g : R -> V) (a b : R) (lf lg : V) :
+  {FFa : Filter Fa} {FFb : Filter Fb} (f g : R -> V) (lf lg : V) :
   is_RInt_gen f Fa Fb lf ->
   is_RInt_gen g Fa Fb lg ->
   is_RInt_gen (fun y => minus (f y) (g y)) Fa Fb (minus lf lg).
@@ -267,9 +256,35 @@ apply: is_RInt_gen_plus Hf _.
 exact: is_RInt_gen_opp.
 Qed.
 
-End RInt_gen.
+End is_RInt_gen.
 
-Lemma RInt_gen_norm {V : CompleteNormedModule R_AbsRing} {Fa Fb : (R -> Prop) -> Prop}
+Section RInt_gen.
+
+Context {V : CompleteNormedModule R_AbsRing}.
+
+Definition RInt_gen (f : R -> V) (a b : (R -> Prop) -> Prop) :=
+  iota (is_RInt_gen f a b).
+
+Lemma is_RInt_gen_unique {Fa Fb : (R -> Prop) -> Prop}
+  {FFa : ProperFilter' Fa} {FFb : ProperFilter' Fb} (f : R -> V) (l : V) :
+  is_RInt_gen f Fa Fb l -> RInt_gen f Fa Fb = l.
+Proof.
+apply iota_filterlimi_locally.
+apply filter_forall.
+intros [a b] y1 u2 H1 H2.
+rewrite -(is_RInt_unique _ _ _ _ H1).
+now apply is_RInt_unique.
+Qed.
+
+Lemma RInt_gen_correct {Fa Fb : (R -> Prop) -> Prop}
+  {FFa : ProperFilter' Fa} {FFb : ProperFilter' Fb} (f : R -> V) :
+  ex_RInt_gen f Fa Fb -> is_RInt_gen f Fa Fb (RInt_gen f Fa Fb).
+Proof.
+intros [If HIf].
+erewrite is_RInt_gen_unique ; exact HIf.
+Qed.
+
+Lemma RInt_gen_norm {Fa Fb : (R -> Prop) -> Prop}
   {FFa : ProperFilter Fa} {FFb : ProperFilter Fb} (f : R -> V) (g : R -> R) (lf : V) (lg : R) :
   filter_prod Fa Fb (fun ab => fst ab <= snd ab) ->
   filter_prod Fa Fb (fun ab => forall x, fst ab <= x <= snd ab -> norm (f x) <= g x) ->
@@ -302,6 +317,8 @@ apply (filterlim_le (F := filter_prod Fa Fb) (fun ab => norm (RInt f (fst ab) (s
   move => [a b] /= [y [Hy1 Hy2]].
   now rewrite (is_RInt_unique _ a b y Hy1).
 Qed.
+
+End RInt_gen.
 
 Lemma is_RInt_gen_Derive {Fa Fb : (R -> Prop) -> Prop} {FFa : Filter Fa} {FFb : Filter Fb}
   (f : R -> R) (la lb : R) :
