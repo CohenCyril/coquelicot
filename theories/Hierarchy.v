@@ -153,58 +153,62 @@ Definition filtermapi {T U : Type} (f : T -> U -> Prop) (F : (T -> Prop) -> Prop
 (*
 Global Instance filtermapi_filter :
   forall T U (f : T -> U -> Prop) (F : (T -> Prop) -> Prop),
+  F (fun x => (exists y, f x y) /\ forall y1 y2, f x y1 -> f x y2 -> y1 = y2) ->
   Filter F -> Filter (filtermapi f F).
 Proof.
-intros T U f F FF.
+intros T U f F H FF.
 unfold filtermapi.
 constructor.
-- apply filter_and.
-  admit.
-  now apply filter_forall.
+- apply: filter_imp H.
+  intros x [[y Hf] _].
+  exists y.
+  exact (conj Hf I).
 - intros P Q HP HQ.
-  apply: filter_imp (filter_and _ _ HP HQ).
-  now intuition.
-- intros P Q H HP.
+  apply: filter_imp (filter_and _ _ (filter_and _ _ HP HQ) H).
+  intros x [[[y1 [Hy1 Py]] [y2 [Hy2 Qy]] [[y Hy] Hf]]].
+  exists y.
+  apply (conj Hy).
+  split.
+  now rewrite (Hf y y1).
+  now rewrite (Hf y y2).
+- intros P Q HPQ HP.
   apply: filter_imp HP.
-  now intuition.
+  intros x [y [Hf Py]].
+  exists y.
+  apply (conj Hf).
+  now apply HPQ.
 Qed.
-*)
 
-(*
 Global Instance filtermapi_proper_filter' :
-  forall T U (f : T -> U -> Prop),
-  TotalImplicit f ->
-  forall (F : (T -> Prop) -> Prop),
+  forall T U (f : T -> U -> Prop) (F : (T -> Prop) -> Prop),
+  F (fun x => (exists y, f x y) /\ forall y1 y2, f x y1 -> f x y2 -> y1 = y2) ->
   ProperFilter' F -> ProperFilter' (filtermapi f F).
 Proof.
-intros T U f Hf F FF.
+intros T U f F HF FF.
 unfold filtermapi.
 split.
 - intro H.
   apply filter_not_empty.
   apply filter_imp with (2 := H).
-  intros x Hf'.
-  destruct (Hf x) as [y Hy].
-  now apply (Hf' y).
+  now intros x [y [_ Hy]].
 - apply filtermapi_filter.
+  exact HF.
   apply filter_filter'.
 Qed.
 
 Global Instance filtermapi_proper_filter :
-  forall T U (f : T -> U -> Prop),
-  TotalImplicit f ->
-  forall (F : (T -> Prop) -> Prop),
+  forall T U (f : T -> U -> Prop) (F : (T -> Prop) -> Prop),
+  F (fun x => (exists y, f x y) /\ forall y1 y2, f x y1 -> f x y2 -> y1 = y2) ->
   ProperFilter F -> ProperFilter (filtermapi f F).
 Proof.
-intros T U f Hf F FF.
+intros T U f F HF FF.
 unfold filtermapi.
 split.
 - intros P FP.
-  destruct (filter_ex _ FP) as [x Hx].
-  destruct (Hf x) as [y Hy].
-  exists y.
-  now apply Hx.
+  destruct (filter_ex _ FP) as [x [y [_ Hy]]].
+  now exists y.
 - apply filtermapi_filter.
+  exact HF.
   apply filter_filter.
 Qed.
 *)
@@ -1766,7 +1770,7 @@ split.
   now apply He.
 Qed.
 
-Lemma filterlim_locally_close:
+Lemma filterlim_locally_close :
   forall {F} {FF: ProperFilter F} (f : T -> U) l l',
   filterlim f F (locally l) ->  filterlim f F (locally l') ->
   forall eps : posreal, ball l eps l'.
@@ -1788,7 +1792,7 @@ by apply H.
 by apply ball_sym, H.
 Qed.
 
-Lemma filterlimi_locally_close:
+Lemma filterlimi_locally_close :
   forall {F} {FF: ProperFilter F} (f : T -> U -> Prop) l l',
   F (fun x => forall y1 y2, f x y1 -> f x y2 -> y1 = y2) ->
   filterlimi f F (locally l) ->  filterlimi f F (locally l') ->
@@ -3072,6 +3076,31 @@ intros F FF f x y.
 apply is_filter_lim_unique.
 Qed.
 
+Lemma filterlimi_locally_unique :
+  forall {F} {FF : ProperFilter' F} (f : T -> V -> Prop) (x y : V),
+  F (fun x => forall y1 y2, f x y1 -> f x y2 -> y1 = y2) ->
+  filterlimi f F (locally x) -> filterlimi f F (locally y) ->
+  x = y.
+Proof.
+intros F FF f x y Hf Hx Hy.
+apply ball_norm_eq => eps.
+specialize (Hx (ball_norm x (pos_div_2 eps)) (locally_ball_norm _ _)).
+specialize (Hy (ball_norm y (pos_div_2 eps)) (locally_ball_norm _ _)).
+unfold filtermapi in Hx, Hy.
+apply Rnot_le_lt.
+intros H.
+apply (@filter_not_empty _ F FF).
+apply: filter_imp (filter_and _ _ (filter_and _ _ Hx Hy) Hf).
+clear -H.
+intros z [[[x' [Hx Bx]] [y' [Hy By]]] Hf].
+apply: Rlt_not_le H.
+rewrite (double_var eps).
+change (eps / 2) with (pos (pos_div_2 eps)).
+apply ball_norm_triangle with (1 := Bx).
+apply ball_norm_sym.
+now rewrite (Hf _ _ Hx Hy).
+Qed.
+
 End NormedModule2.
 
 (** Rings with absolute values are normed modules *)
@@ -3361,6 +3390,16 @@ Lemma iota_filterlim_locally {F} {FF : ProperFilter' F} (f : T -> V) l :
   iota (fun x => filterlim f F (locally x)) = l.
 Proof.
 apply iota_is_filter_lim.
+Qed.
+
+Lemma iota_filterlimi_locally {F} {FF : ProperFilter' F} (f : T -> V -> Prop) l :
+  F (fun x => forall y1 y2, f x y1 -> f x y2 -> y1 = y2) ->
+  filterlimi f F (locally l) ->
+  iota (fun x => filterlimi f F (locally x)) = l.
+Proof.
+intros Hf Hl.
+apply: iota_unique (Hl) => l' Hl'.
+exact: filterlimi_locally_unique Hf Hl' Hl.
 Qed.
 
 End CompleteNormedModule1.
