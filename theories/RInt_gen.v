@@ -78,6 +78,27 @@ intros x Hx.
 now apply sym_eq, Heq.
 Qed.
 
+Lemma ex_RInt_gen_ext {Fa Fb : (R -> Prop) -> Prop}
+  {FFa : Filter Fa} {FFb : Filter Fb} (f g : R -> V) :
+  filter_prod Fa Fb (fun ab => forall x, Rmin (fst ab) (snd ab) < x < Rmax (fst ab) (snd ab)
+                               -> f x = g x) ->
+  ex_RInt_gen f Fa Fb -> ex_RInt_gen g Fa Fb.
+Proof.
+move => Heq.
+case => I HI.
+exists I.
+exact: (is_RInt_gen_ext f g).
+Qed.
+
+Lemma ex_RInt_gen_ext_eq {Fa Fb : (R -> Prop) -> Prop}
+  {FFa : Filter Fa} {FFb : Filter Fb} (f g : R -> V) :
+  (forall x, f x = g x) -> ex_RInt_gen f Fa Fb -> ex_RInt_gen g Fa Fb.
+Proof.
+move => Heq.
+apply: ex_RInt_gen_ext.
+exact: filter_forall => bds x _.
+Qed.
+
 Lemma is_RInt_gen_point (f : R -> V) (a : R) :
   is_RInt_gen f (at_point a) (at_point a) zero.
 Proof.
@@ -303,6 +324,28 @@ apply (filterlim_le (F := filter_prod Fa Fb) (fun ab => norm (RInt f (fst ab) (s
   apply: filter_imp Hg.
   move => [a b] /= [y [Hy1 Hy2]].
   now rewrite (is_RInt_unique _ a b y Hy1).
+Qed.
+
+Lemma RInt_gen_ext {Fa Fb : (R -> Prop) -> Prop}
+  {FFa : ProperFilter Fa} {FFb : ProperFilter Fb} (f g : R -> V) :
+  filter_prod Fa Fb (fun ab => forall x, Rmin (fst ab) (snd ab) < x < Rmax (fst ab) (snd ab)
+                               -> f x = g x) ->
+  ex_RInt_gen f Fa Fb -> RInt_gen f Fa Fb = RInt_gen g Fa Fb.
+Proof.
+move => Heq [I HI].
+rewrite (is_RInt_gen_unique f I HI); symmetry.
+apply is_RInt_gen_unique. (* 'apply:' does not work *)
+by apply: is_RInt_gen_ext; first exact: Heq.
+Qed.
+
+Lemma RInt_gen_ext_eq {Fa Fb : (R -> Prop) -> Prop}
+  {FFa : ProperFilter Fa} {FFb : ProperFilter Fb} (f g : R -> V):
+  (forall x, f x = g x) ->
+  ex_RInt_gen f Fa Fb -> RInt_gen f Fa Fb = RInt_gen g Fa Fb.
+Proof.
+move => Heq.
+apply: (RInt_gen_ext f g).
+exact: filter_forall => bnds x _.
 Qed.
 
 End RInt_gen.
