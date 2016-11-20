@@ -205,13 +205,13 @@ Proof.
   now left.
   now right.
   right ; contradict Hn.
-  by apply Rle_not_lt.
+  now apply Rle_not_lt.
   left ; intro n.
-  by apply Rnot_lt_le.
-  left ; by exists (INR M).
+  now apply Rnot_lt_le.
+  left ; now exists (INR M).
   right ; intros M.
   destruct (nfloor_ex (Rbasic_fun.Rmax 0 M)) as [m Hm].
-  by apply Rbasic_fun.Rmax_l.
+  now apply Rbasic_fun.Rmax_l.
   specialize (HM (S m)).
   apply LPO_notforall.
   intros n.
@@ -222,7 +222,7 @@ Proof.
   rewrite S_INR.
   eapply Rle_trans, Rlt_le, Hm.
   eapply Rle_trans, Rbasic_fun.Rmax_r.
-  by apply Rnot_lt_le.
+  now apply Rnot_lt_le.
 Qed.
 
 (** * Excluded-middle and decidability *)
