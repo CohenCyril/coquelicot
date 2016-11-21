@@ -1,9 +1,8 @@
 Prerequisites
 -------------
 
-You will need the Coq proof assistant (>= 8.4) with a Reals theory compiled
-in. You will need the MathComp library to be installed too
-(http://math-comp.github.io/math-comp/).
+You will need the Coq proof assistant (>= 8.5). You will need the MathComp
+library to be installed too (http://math-comp.github.io/math-comp/).
 
 The .tar.gz file is distributed with a working set of configure files. They
 are not in the git repository though. Consequently, if you are building from
