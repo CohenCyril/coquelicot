@@ -191,8 +191,7 @@ Proof.
   move => /= a b Ha Hb.
   by apply is_RInt_comp_opp, H.
   eapply filterlim_comp, Hl.
-  intros P [Q1 Q2] ;
-  unfold filtermap => Q1a Q2b H.
+  intros P [Q1 Q2 Q1a Q2b H].
   eexists ; try eassumption.
   move => /= a b Ha Hb.
   by apply H.
@@ -211,8 +210,7 @@ Proof.
   move => /= a b Ha Hb.
   by apply is_RInt_comp_lin, H.
   eapply filterlim_comp, Hl.
-  intros P [Q1 Q2] ;
-  unfold filtermap => Q1a Q2b H.
+  intros P [Q1 Q2 Q1a Q2b H].
   eexists ; try eassumption.
   move => /= a b Ha Hb.
   by apply H.

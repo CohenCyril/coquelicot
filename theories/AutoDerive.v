@@ -1752,7 +1752,7 @@ Ltac reify fct nb :=
   let rec reify_aux fct l i :=
     match fct with
     | ?f ?a => let e := reify a nb in reify_aux f (e :: l) (S i)
-    | _ => constr:(fct, rev l, i)
+    | _ => constr:((fct, rev l, i))
     end in
   match fct with
   | var ?i =>
