@@ -378,3 +378,25 @@ apply: is_RInt_derive => x Hx.
 now apply Derive_correct, Df.
 exact: Cf.
 Qed.
+
+Section Complements_RInt_gen.
+
+Context {V : CompleteNormedModule R_AbsRing}.
+
+Lemma ex_RInt_gen_at_point f a b : @ex_RInt_gen V f (at_point a) (at_point b) <-> ex_RInt f a b.
+Proof.
+split;  case => I.
+  rewrite is_RInt_gen_at_point => HI.
+  by exists I.
+rewrite -is_RInt_gen_at_point => HI.
+  by exists I.
+Qed.
+
+Lemma RInt_gen_at_point f a b :
+  ex_RInt f a b -> @RInt_gen V f (at_point a) (at_point b) = RInt f a b.
+Proof.
+move => Hfint.
+apply is_RInt_gen_unique.
+apply is_RInt_gen_at_point.
+exact: RInt_correct.
+Qed.
