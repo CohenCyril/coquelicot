@@ -43,6 +43,8 @@ Class Filter {T : Type} (F : (T -> Prop) -> Prop) := {
   filter_imp : forall P Q : T -> Prop, (forall x, P x -> Q x) -> F P -> F Q
 }.
 
+Global Hint Mode Filter + + : typeclass_instances.
+
 Class ProperFilter' {T : Type} (F : (T -> Prop) -> Prop) := {
   filter_not_empty : not (F (fun _ => False)) ;
   filter_filter' :> Filter F
