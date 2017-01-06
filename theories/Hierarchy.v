@@ -152,7 +152,6 @@ Qed.
 Definition filtermapi {T U : Type} (f : T -> U -> Prop) (F : (T -> Prop) -> Prop) :=
   fun P : U -> Prop => F (fun x => exists y, f x y /\ P y).
 
-(*
 Global Instance filtermapi_filter :
   forall T U (f : T -> U -> Prop) (F : (T -> Prop) -> Prop),
   F (fun x => (exists y, f x y) /\ forall y1 y2, f x y1 -> f x y2 -> y1 = y2) ->
@@ -161,13 +160,12 @@ Proof.
 intros T U f F H FF.
 unfold filtermapi.
 constructor.
-- apply: filter_imp H.
-  intros x [[y Hf] _].
+- apply: filter_imp H => x [[y Hy] H].
   exists y.
-  exact (conj Hf I).
+  exact (conj Hy I).
 - intros P Q HP HQ.
   apply: filter_imp (filter_and _ _ (filter_and _ _ HP HQ) H).
-  intros x [[[y1 [Hy1 Py]] [y2 [Hy2 Qy]] [[y Hy] Hf]]].
+  intros x [[[y1 [Hy1 Py]] [y2 [Hy2 Qy]]] [[y Hy] Hf]].
   exists y.
   apply (conj Hy).
   split.
@@ -213,7 +211,6 @@ split.
   exact HF.
   apply filter_filter.
 Qed.
-*)
 
 Definition filterlim {T U : Type} (f : T -> U) F G :=
   filter_le (filtermap f F) G.
@@ -2224,7 +2221,7 @@ split.
   exists (lim (filtermap f F)).
   intros P [eps HP].
   refine (_ (complete_cauchy (filtermap f F) _ _ eps)).
-  + now apply filtermap_proper_filter.
+  + now apply filter_imp.
   + clear eps P HP.
     intros eps.
     destruct (H eps) as [P [FP H']].
@@ -2246,6 +2243,54 @@ split.
   apply ball_sym.
   exact Hu.
   exact Hv.
+Qed.
+
+Lemma filterlimi_locally_cauchy :
+  forall {F} {FF : ProperFilter F} (f : T -> U -> Prop),
+  F (fun x => (exists y, f x y) /\
+    (forall y1 y2, f x y1 -> f x y2 -> y1 = y2)) ->
+  ((forall eps : posreal, exists P, F P /\
+   forall u v : T, P u -> P v -> forall u' v': U, f u u' -> f v v' -> ball u' eps v') <->
+  exists y, filterlimi f F (locally y)).
+Proof.
+intros F FF f Hf.
+assert (FF': ProperFilter (filtermapi f F)).
+  apply filtermapi_proper_filter.
+  exact: filter_imp Hf.
+  exact FF.
+split.
+- intros H.
+  exists (lim (filtermapi f F)).
+  intros P [eps HP].
+  refine (_ (complete_cauchy (filtermapi f F) _ _ eps)).
+  + now apply filter_imp.
+  + clear eps P HP.
+    intros eps.
+    case: (H eps) => {H} [P [FP H]].
+    assert (FfP := filter_and _ _ Hf FP).
+    destruct (filter_ex _ FfP) as [x [[[fx Hfx] _] Px]].
+    exists fx.
+    unfold filtermapi.
+    apply: filter_imp FfP.
+    intros x' [[[fx' Hfx'] _] Px'].
+    exists fx'.
+    apply (conj Hfx').
+    exact: H Hfx Hfx'.
+- intros [y Hy] eps.
+  exists (fun x => forall fx, f x fx -> ball y (pos_div_2 eps) fx).
+  split.
+    assert (Hb: locally y (ball y (pos_div_2 eps))).
+      now exists (pos_div_2 eps).
+    assert (H := filter_and _ _ Hf (Hy _ Hb)).
+    apply: filter_imp H.
+    intros x [[_ H] [fx2 [Hfx2 H']]] fx Hfx.
+    now rewrite <- (H fx2).
+  intros u v Hu Hv fu fv Hfu Hfv.
+  rewrite (double_var eps).
+  apply ball_triangle with y.
+  apply ball_sym.
+  now apply Hu.
+  now apply Hv.
 Qed.
 
 Definition lim_fct (F : ((T -> U) -> Prop) -> Prop) (t : T) :=
