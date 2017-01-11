@@ -2135,127 +2135,6 @@ Proof.
   apply (norm_le_prod_norm_2 (minus (u, v) (x, y))).
 Qed.
 
-Section NullDerivative.
-
-Context {V : NormedModule R_AbsRing}.
-
-Lemma eq_is_derive :
-  forall (f : R -> V) (a b : R),
-  (forall t, a <= t <= b -> is_derive f t zero) ->
-  a < b -> f a = f b.
-Proof.
-intros f a b Hd Hab.
-apply ball_norm_eq => eps2.
-pose eps := pos_div_2 eps2.
-have Heps': 0 < eps / (b - a).
-  apply Rdiv_lt_0_compat.
-  apply eps.
-  exact: Rlt_Rminus.
-pose eps' := mkposreal (eps / (b - a)) Heps'.
-pose P t := norm (minus (f t) (f a)) <= eps' * (t - a).
-pose A x := x <= b /\ forall t, a <= t <= x -> P t.
-have H c : (forall t, a <= t < c -> P t) -> a <= c <= b ->
-    exists delta:posreal, (forall t, a <= t <= Rmin b (c + delta) -> P t).
-  intros HP Hc.
-  destruct (Hd c Hc) as [_ Hd'].
-  refine (_ (Hd' c _ eps')).
-  case => delta H.
-  have Hdelta := cond_pos delta.
-  exists (pos_div_2 delta) => t Ht.
-  destruct (Rlt_le_dec t c) as [Htc|Htc].
-  apply HP.
-  now split.
-  unfold P.
-  replace (minus (f t) (f a)) with (plus (minus (f t) (f c)) (minus (f c) (f a))).
-  apply Rle_trans with (1 := norm_triangle _ _).
-  replace (eps' * (t - a)) with (eps' * (t - c) + eps' * (c - a)) by ring.
-  apply Rplus_le_compat.
-  move: (H t) => {H}.
-  rewrite scal_zero_r minus_zero_r -[norm (minus t c)]/(Rabs (t - c)).
-  rewrite -> Rabs_pos_eq by lra.
-  apply.
-  apply: norm_compat1.
-  change (Rabs (t - c) < delta).
-  apply Rabs_lt_between'.
-  cut (t <= c + delta/2).
-  lra.
-  apply Rle_trans with (1 := proj2 Ht).
-  apply Rmin_r.
-  set (d' := Rmax a (c - delta/2)).
-  replace (minus (f c) (f a)) with (plus (opp (minus (f d') (f c))) (minus (f d') (f a))).
-  apply Rle_trans with (1 := norm_triangle _ _).
-  replace (eps' * (c - a)) with (eps' * (c - d') + eps' * (d' - a)) by ring.
-  apply Rplus_le_compat.
-  move: (H d') => {H}.
-  rewrite scal_zero_r minus_zero_r -[norm (minus d' c)]/(Rabs (d' - c)).
-  rewrite norm_opp -Rabs_Ropp Rabs_pos_eq Ropp_minus_distr.
-  apply.
-  apply: norm_compat1.
-  change (Rabs (d' - c) < delta).
-  apply Rabs_lt_between'.
-  apply Rmax_case_strong ; lra.
-  apply Rmax_case_strong ; lra.
-  destruct (Req_dec a d') as [Had|Had].
-  rewrite Had.
-  rewrite /minus plus_opp_r /Rminus Rplus_opp_r Rmult_0_r norm_zero.
-  apply Rle_refl.
-  apply HP.
-  revert Had.
-  apply Rmax_case_strong ; lra.
-  by rewrite opp_minus /minus plus_assoc -(plus_assoc (f c)) plus_opp_l plus_zero_r.
-  by rewrite /minus plus_assoc -(plus_assoc (f t)) plus_opp_l plus_zero_r.
-  easy.
-assert (Ha : A a).
-  apply (conj (Rlt_le _ _ Hab)).
-  intros t [Ht1 Ht2].
-  rewrite (Rle_antisym _ _ Ht2 Ht1).
-  rewrite /P /minus plus_opp_r /Rminus Rplus_opp_r Rmult_0_r norm_zero.
-  apply Rle_refl.
-destruct (completeness A) as [s [Hs1 Hs2]].
-  now exists b => t [At _].
-  now exists a.
-assert (Hs: forall t, a <= t < s -> P t).
-  intros t Ht.
-  apply Rnot_lt_le => H'.
-  specialize (Hs2 t).
-  apply (Rlt_not_le _ _ (proj2 Ht)), Hs2.
-  intros x [Ax1 Ax2].
-  apply Rnot_lt_le => Hxt.
-  apply (Rlt_not_le _ _ H').
-  apply Ax2.
-  lra.
-destruct (Req_dec s b) as [->|Hsb].
-- destruct (H b) as [delta Hdelta].
-    apply Hs.
-    lra.
-  apply Rle_lt_trans with (eps' * (b - a)).
-  apply: Hdelta.
-  have Hdelta := cond_pos delta.
-  rewrite Rmin_left ; lra.
-  simpl.
-  have Heps2 := cond_pos eps2.
-  field_simplify ; lra.
-- destruct (H s) as [delta Hdelta].
-    apply Hs.
-    split.
-    now apply Hs1.
-    apply Hs2.
-    intros x.
-    by case.
-  eelim Rle_not_lt.
-  apply Hs1.
-  split.
-  apply Rmin_l.
-  apply Hdelta.
-  apply Rmin_case.
-  destruct (Hs2 b) ; try easy.
-  intros x.
-  by case.
-  have Hdelta' := cond_pos delta.
-  lra.
-Qed.
-
-End NullDerivative.
 
 (** * Newton integration *)
 
@@ -2697,6 +2576,130 @@ Proof.
   intros y Hay Hby.
   by apply Derive_correct, Df.
 Qed.
+
+Section NullDerivative.
+
+Context {V : NormedModule R_AbsRing}.
+
+Lemma eq_is_derive :
+  forall (f : R -> V) (a b : R),
+  (forall t, a <= t <= b -> is_derive f t zero) ->
+  a < b -> f a = f b.
+Proof.
+intros f a b Hd Hab.
+apply ball_norm_eq => eps2.
+pose eps := pos_div_2 eps2.
+have Heps': 0 < eps / (b - a).
+  apply Rdiv_lt_0_compat.
+  apply eps.
+  exact: Rlt_Rminus.
+pose eps' := mkposreal (eps / (b - a)) Heps'.
+pose P t := norm (minus (f t) (f a)) <= eps' * (t - a).
+pose A x := x <= b /\ forall t, a <= t <= x -> P t.
+have H c : (forall t, a <= t < c -> P t) -> a <= c <= b ->
+    exists delta:posreal, (forall t, a <= t <= Rmin b (c + delta) -> P t).
+  intros HP Hc.
+  destruct (Hd c Hc) as [_ Hd'].
+  refine (_ (Hd' c _ eps')).
+  case => delta H.
+  have Hdelta := cond_pos delta.
+  exists (pos_div_2 delta) => t Ht.
+  destruct (Rlt_le_dec t c) as [Htc|Htc].
+  apply HP.
+  now split.
+  unfold P.
+  replace (minus (f t) (f a)) with (plus (minus (f t) (f c)) (minus (f c) (f a))).
+  apply Rle_trans with (1 := norm_triangle _ _).
+  replace (eps' * (t - a)) with (eps' * (t - c) + eps' * (c - a)) by ring.
+  apply Rplus_le_compat.
+  move: (H t) => {H}.
+  rewrite scal_zero_r minus_zero_r -[norm (minus t c)]/(Rabs (t - c)).
+  rewrite -> Rabs_pos_eq by lra.
+  apply.
+  apply: norm_compat1.
+  change (Rabs (t - c) < delta).
+  apply Rabs_lt_between'.
+  cut (t <= c + delta/2).
+  lra.
+  apply Rle_trans with (1 := proj2 Ht).
+  apply Rmin_r.
+  set (d' := Rmax a (c - delta/2)).
+  replace (minus (f c) (f a)) with (plus (opp (minus (f d') (f c))) (minus (f d') (f a))).
+  apply Rle_trans with (1 := norm_triangle _ _).
+  replace (eps' * (c - a)) with (eps' * (c - d') + eps' * (d' - a)) by ring.
+  apply Rplus_le_compat.
+  move: (H d') => {H}.
+  rewrite scal_zero_r minus_zero_r -[norm (minus d' c)]/(Rabs (d' - c)).
+  rewrite norm_opp -Rabs_Ropp Rabs_pos_eq Ropp_minus_distr.
+  apply.
+  apply: norm_compat1.
+  change (Rabs (d' - c) < delta).
+  apply Rabs_lt_between'.
+  apply Rmax_case_strong ; lra.
+  apply Rmax_case_strong ; lra.
+  destruct (Req_dec a d') as [Had|Had].
+  rewrite Had.
+  rewrite /minus plus_opp_r /Rminus Rplus_opp_r Rmult_0_r norm_zero.
+  apply Rle_refl.
+  apply HP.
+  revert Had.
+  apply Rmax_case_strong ; lra.
+  by rewrite opp_minus /minus plus_assoc -(plus_assoc (f c)) plus_opp_l plus_zero_r.
+  by rewrite /minus plus_assoc -(plus_assoc (f t)) plus_opp_l plus_zero_r.
+  easy.
+assert (Ha : A a).
+  apply (conj (Rlt_le _ _ Hab)).
+  intros t [Ht1 Ht2].
+  rewrite (Rle_antisym _ _ Ht2 Ht1).
+  rewrite /P /minus plus_opp_r /Rminus Rplus_opp_r Rmult_0_r norm_zero.
+  apply Rle_refl.
+destruct (completeness A) as [s [Hs1 Hs2]].
+  now exists b => t [At _].
+  now exists a.
+assert (Hs: forall t, a <= t < s -> P t).
+  intros t Ht.
+  apply Rnot_lt_le => H'.
+  specialize (Hs2 t).
+  apply (Rlt_not_le _ _ (proj2 Ht)), Hs2.
+  intros x [Ax1 Ax2].
+  apply Rnot_lt_le => Hxt.
+  apply (Rlt_not_le _ _ H').
+  apply Ax2.
+  lra.
+destruct (Req_dec s b) as [->|Hsb].
+- destruct (H b) as [delta Hdelta].
+    apply Hs.
+    lra.
+  apply Rle_lt_trans with (eps' * (b - a)).
+  apply: Hdelta.
+  have Hdelta := cond_pos delta.
+  rewrite Rmin_left ; lra.
+  simpl.
+  have Heps2 := cond_pos eps2.
+  field_simplify ; lra.
+- destruct (H s) as [delta Hdelta].
+    apply Hs.
+    split.
+    now apply Hs1.
+    apply Hs2.
+    intros x.
+    by case.
+  eelim Rle_not_lt.
+  apply Hs1.
+  split.
+  apply Rmin_l.
+  apply Hdelta.
+  apply Rmin_case.
+  destruct (Hs2 b) ; try easy.
+  intros x.
+  by case.
+  have Hdelta' := cond_pos delta.
+  lra.
+Qed.
+
+
+
+End NullDerivative.
 
 (** * Iterated differential *)
 

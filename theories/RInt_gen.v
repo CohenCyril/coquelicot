@@ -78,6 +78,27 @@ intros x Hx.
 now apply sym_eq, Heq.
 Qed.
 
+Lemma ex_RInt_gen_ext {Fa Fb : (R -> Prop) -> Prop}
+  {FFa : Filter Fa} {FFb : Filter Fb} (f g : R -> V) :
+  filter_prod Fa Fb (fun ab => forall x, Rmin (fst ab) (snd ab) < x < Rmax (fst ab) (snd ab)
+                               -> f x = g x) ->
+  ex_RInt_gen f Fa Fb -> ex_RInt_gen g Fa Fb.
+Proof.
+move => Heq.
+case => I HI.
+exists I.
+exact: (is_RInt_gen_ext f g).
+Qed.
+
+Lemma ex_RInt_gen_ext_eq {Fa Fb : (R -> Prop) -> Prop}
+  {FFa : Filter Fa} {FFb : Filter Fb} (f g : R -> V) :
+  (forall x, f x = g x) -> ex_RInt_gen f Fa Fb -> ex_RInt_gen g Fa Fb.
+Proof.
+move => Heq.
+apply: ex_RInt_gen_ext.
+exact: filter_forall => bds x _.
+Qed.
+
 Lemma is_RInt_gen_point (f : R -> V) (a : R) :
   is_RInt_gen f (at_point a) (at_point a) zero.
 Proof.
@@ -303,6 +324,28 @@ apply (filterlim_le (F := filter_prod Fa Fb) (fun ab => norm (RInt f (fst ab) (s
   now rewrite (is_RInt_unique _ a b y Hy1).
 Qed.
 
+Lemma RInt_gen_ext {Fa Fb : (R -> Prop) -> Prop}
+  {FFa : ProperFilter Fa} {FFb : ProperFilter Fb} (f g : R -> V) :
+  filter_prod Fa Fb (fun ab => forall x, Rmin (fst ab) (snd ab) < x < Rmax (fst ab) (snd ab)
+                               -> f x = g x) ->
+  ex_RInt_gen f Fa Fb -> RInt_gen f Fa Fb = RInt_gen g Fa Fb.
+Proof.
+move => Heq [I HI].
+rewrite (is_RInt_gen_unique f I HI); symmetry.
+apply is_RInt_gen_unique. (* 'apply:' does not work *)
+by apply: is_RInt_gen_ext; first exact: Heq.
+Qed.
+
+Lemma RInt_gen_ext_eq {Fa Fb : (R -> Prop) -> Prop}
+  {FFa : ProperFilter Fa} {FFb : ProperFilter Fb} (f g : R -> V):
+  (forall x, f x = g x) ->
+  ex_RInt_gen f Fa Fb -> RInt_gen f Fa Fb = RInt_gen g Fa Fb.
+Proof.
+move => Heq.
+apply: (RInt_gen_ext f g).
+exact: filter_forall => bnds x _.
+Qed.
+
 End RInt_gen.
 
 Lemma is_RInt_gen_Derive {Fa Fb : (R -> Prop) -> Prop} {FFa : Filter Fa} {FFb : Filter Fb}
@@ -333,3 +376,27 @@ apply: is_RInt_derive => x Hx.
 now apply Derive_correct, Df.
 exact: Cf.
 Qed.
+
+Section Complements_RInt_gen.
+
+Context {V : CompleteNormedModule R_AbsRing}.
+
+Lemma ex_RInt_gen_at_point f a b : @ex_RInt_gen V f (at_point a) (at_point b) <-> ex_RInt f a b.
+Proof.
+split;  case => I.
+  rewrite is_RInt_gen_at_point => HI.
+  by exists I.
+rewrite -is_RInt_gen_at_point => HI.
+  by exists I.
+Qed.
+
+Lemma RInt_gen_at_point f a b :
+  ex_RInt f a b -> @RInt_gen V f (at_point a) (at_point b) = RInt f a b.
+Proof.
+move => Hfint.
+apply is_RInt_gen_unique.
+apply is_RInt_gen_at_point.
+exact: RInt_correct.
+Qed.
+
+End Complements_RInt_gen.
