@@ -325,12 +325,14 @@ field_simplify.
 2: exact Zc.
 rewrite Rmult_1_r.
 rewrite /Rdiv Rmult_comm.
-rewrite -RInt_scal.
 rewrite Rmult_assoc (Rmult_comm _ (/2)) -Rmult_assoc.
+rewrite -[Rmult]/(@scal _ R_ModuleSpace) -RInt_scal.
 rewrite -RInt_scal.
 apply RInt_ext => u _.
-unfold Rminus.
+rewrite /scal /= /mult /= /Rminus.
 now field.
+admit.
+admit.
 Admitted.
 
 End Gamma.

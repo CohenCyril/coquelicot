@@ -39,6 +39,20 @@ Ltac pos_rat :=
          || apply Rmult_lt_0_compat) ;
   try by apply Rlt_0_1.
 
+Lemma sign_0_lt : forall x, 0 < x <-> 0 < sign x.
+Proof.
+intros x.
+unfold sign.
+destruct total_order_T as [[H|H]|H] ; lra.
+Qed.
+
+Lemma sign_lt_0 : forall x, x < 0 <-> sign x < 0.
+Proof.
+intros x.
+unfold sign.
+destruct total_order_T as [[H|H]|H] ; lra.
+Qed.
+
 (** * Exercice 2 *)
 (* 8:14 *)
 
@@ -101,18 +115,11 @@ Lemma Signe_df : forall x, 0 < x -> sign (Derive f x) = sign (- ln x).
 Proof.
   move => x Hx.
   rewrite (is_derive_unique f x _ (Dfab 2 2 x Hx)).
-  apply sign_carac.
-  case: (Req_dec x 1) => Hx1 ; [right | left].
-  rewrite Hx1 ln_1 ; simpl ; split ; rewrite /Rdiv ; ring.
-  rewrite /Rdiv ; ring_simplify.
+  replace ((2 - 2 - 2 * ln x) / x ^ 2) with (2 / x ^ 2 * (- ln x)) by (field ; now apply Rgt_not_eq).
+  rewrite sign_mult sign_eq_1.
+  apply Rmult_1_l.
   apply Rdiv_lt_0_compat.
-  apply Rmult_lt_0_compat.
-  by apply Rlt_0_2.
-  apply pow2_gt_0.
-  contradict Hx1.
-  rewrite -ln_1 in Hx1.
-  apply ln_inv => //.
-  by apply Rlt_0_1.
+  apply Rlt_0_2.
   apply pow2_gt_0.
   by apply Rgt_not_eq.
 Qed.
@@ -168,7 +175,7 @@ Proof.
   apply sign_0_lt.
   rewrite -(is_derive_unique _ _ _ (Dfab 2 2 x H0x)).
   rewrite Signe_df.
-  apply sign_0_lt.
+  apply -> sign_0_lt.
   apply Ropp_lt_cancel ; rewrite Ropp_0 Ropp_involutive.
   rewrite -ln_1.
   by apply ln_increasing.
@@ -189,7 +196,7 @@ Proof.
   apply sign_lt_0.
   rewrite -(is_derive_unique _ _ _ (Dfab 2 2 z (Rlt_trans _ _ _ Rlt_0_1 H1z))).
   rewrite Signe_df.
-  apply sign_lt_0.
+  apply -> sign_lt_0.
   apply Ropp_lt_cancel ; rewrite Ropp_0 Ropp_involutive.
   rewrite -ln_1.
   apply ln_increasing.
@@ -307,7 +314,7 @@ Proof.
     apply Rinv_0_lt_compat.
     apply exp_pos.
   evar_last.
-  apply is_RInt_derive.
+  apply: is_RInt_derive.
   move => x Hx.
   apply If.
   apply Rlt_le_trans with (2 := proj1 Hx).
