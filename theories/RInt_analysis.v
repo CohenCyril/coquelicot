@@ -253,7 +253,7 @@ Proof.
       by apply ball_center.
     generalize (filter_and _ _ HIf (filter_and _ _ Ha Hb)).
     apply filter_imp => {HIf Ha Hb} /= x [HIf [Ha Hb]].
-    apply ball_eq.
+    apply eq_close.
     eapply filterlim_locally_close.
     eapply is_RInt_Chasles.
     by apply Hb.

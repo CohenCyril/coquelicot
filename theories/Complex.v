@@ -511,7 +511,7 @@ Qed.
 Definition C_complete_lim (F : (C -> Prop) -> Prop) :=
   (R_complete_lim (fun P => F (fun z => P (Re z))), R_complete_lim (fun P => F (fun z => P (Im z)))).
 
-Lemma C_complete :
+Lemma C_complete_ax1 :
   forall F : (C -> Prop) -> Prop,
   ProperFilter F ->
   (forall eps : posreal, exists x : C, F (ball x eps)) ->
@@ -547,8 +547,22 @@ Proof.
   intros ; by apply H1.
 Qed.
 
+Lemma C_complete_ax2 :
+  forall F1 F2 : (C -> Prop) -> Prop,
+  filter_le F1 F2 ->
+  filter_le F2 F1 ->
+  close (C_complete_lim F1) (C_complete_lim F2).
+Proof.
+intros F1 F2 H12 H21 eps.
+split ; apply R_complete_close ; intros P.
+apply H12.
+apply H21.
+apply H12.
+apply H21.
+Qed.
+
 Definition C_CompleteSpace_mixin :=
-  CompleteSpace.Mixin _ C_complete_lim C_complete.
+  CompleteSpace.Mixin _ C_complete_lim C_complete_ax1 C_complete_ax2.
 
 (* on C *)
 

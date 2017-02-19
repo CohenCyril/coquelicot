@@ -1400,6 +1400,27 @@ by apply Rplus_minus.
 by rewrite <- H.
 Qed.
 
+Definition close (x y : M) : Prop := forall eps : posreal, ball x eps y.
+
+Lemma close_refl (x : M) : close x x.
+Proof.
+intros eps.
+apply ball_center.
+Qed.
+
+Lemma close_sym (x y : M) : close x y -> close y x.
+Proof.
+intros H eps.
+now apply ball_sym.
+Qed.
+
+Lemma close_trans (x y z : M) : close x y -> close y z -> close x z.
+Proof.
+intros H1 H2 eps.
+rewrite (double_var eps) -[eps / 2]/(pos (pos_div_2 eps)).
+now eapply ball_triangle.
+Qed.
+
 End UniformSpace1.
 
 (** ** Specific uniform spaces *)
@@ -1697,7 +1718,7 @@ now apply Fx.
 Qed.
 
 Lemma is_filter_lim_close {F} {FF : ProperFilter F} (x y : T) :
-  is_filter_lim F x -> is_filter_lim F y -> forall eps : posreal, ball x eps y.
+  is_filter_lim F x -> is_filter_lim F y -> close x y.
 Proof.
   intros Hx Hy eps.
   specialize (Hy _ (locally_ball y (pos_div_2 eps))).
@@ -1711,7 +1732,7 @@ Proof.
 Qed.
 
 Lemma is_filter_lim_locally_close (x y : T) :
-  is_filter_lim (locally x) y -> forall eps : posreal, ball x eps y.
+  is_filter_lim (locally x) y -> close x y.
 Proof.
   by apply is_filter_lim_close.
 Qed.
@@ -1772,7 +1793,7 @@ Qed.
 Lemma filterlim_locally_close :
   forall {F} {FF: ProperFilter F} (f : T -> U) l l',
   filterlim f F (locally l) ->  filterlim f F (locally l') ->
-  forall eps : posreal, ball l eps l'.
+  close l l'.
 Proof.
 intros F FF f l l' Hl Hl' eps.
 assert (locally l (ball l (pos_div_2 eps))).
@@ -1795,7 +1816,7 @@ Lemma filterlimi_locally_close :
   forall {F} {FF: ProperFilter F} (f : T -> U -> Prop) l l',
   F (fun x => forall y1 y2, f x y1 -> f x y2 -> y1 = y2) ->
   filterlimi f F (locally l) ->  filterlimi f F (locally l') ->
-  forall eps : posreal, ball l eps l'.
+  close l l'.
 Proof.
 intros F FF f l l' Hf Hl Hl' eps.
 assert (H: locally l (ball l (pos_div_2 eps))).
@@ -2090,7 +2111,8 @@ Module CompleteSpace.
 
 Record mixin_of (T : UniformSpace) := Mixin {
   lim : ((T -> Prop) -> Prop) -> T ;
-  ax1 : forall F, ProperFilter F -> cauchy F -> forall eps : posreal, F (ball (lim F) eps)
+  ax1 : forall F, ProperFilter F -> cauchy F -> forall eps : posreal, F (ball (lim F) eps) ;
+  ax2 : forall F1 F2, filter_le F1 F2 -> filter_le F2 F1 -> close (lim F1) (lim F2)
 }.
 
 Section ClassDef.
@@ -2145,12 +2167,20 @@ Proof.
 apply CompleteSpace.ax1.
 Qed.
 
+Lemma close_lim :
+  forall F1 F2 : (T -> Prop) -> Prop,
+  filter_le F1 F2 -> filter_le F2 F1 ->
+  close (lim F1) (lim F2).
+Proof.
+apply CompleteSpace.ax2.
+Qed.
+
 Definition iota (P : T -> Prop) := lim (fun A => (forall x, P x -> A x)).
 
 Lemma iota_correct_weak :
   forall P : T -> Prop,
-  (forall x y, P x -> P y -> forall eps : posreal, ball x eps y) ->
-  forall x, P x -> forall eps : posreal, ball (iota P) eps x.
+  (forall x y, P x -> P y -> close x y) ->
+  forall x, P x -> close (iota P) x.
 Proof.
 intros P HP x Hx eps.
 set (F := fun A : T -> Prop => forall t : T, P t -> A t).
@@ -2176,6 +2206,15 @@ assert (F (ball (lim F) eps)) as Heps.
 apply HF.
 clear HF.
 now apply Heps.
+Qed.
+
+Lemma close_iota :
+  forall P Q : T -> Prop,
+  (forall x, P x <-> Q x) ->
+  close (iota P) (iota Q).
+Proof.
+intros P Q H.
+apply close_lim ; intros R HR x Hx ; apply HR, H, Hx.
 Qed.
 
 End CompleteSpace1.
@@ -2348,8 +2387,19 @@ Proof.
   by apply H.
 Qed.
 
+Lemma close_lim_fct :
+  forall F1 F2 : ((T -> U) -> Prop) -> Prop,
+  filter_le F1 F2 -> filter_le F2 F1 ->
+  close (lim_fct F1) (lim_fct F2).
+Proof.
+intros F1 F2 H12 H21 eps t.
+apply close_lim => P.
+apply H12.
+apply H21.
+Qed.
+
 Definition fct_CompleteSpace_mixin :=
-  CompleteSpace.Mixin _ lim_fct complete_cauchy_fct.
+  CompleteSpace.Mixin _ lim_fct complete_cauchy_fct close_lim_fct.
 
 Canonical fct_CompleteSpace :=
   CompleteSpace.Pack (T -> U) (CompleteSpace.Class _ _ fct_CompleteSpace_mixin) (T -> U).
@@ -2920,9 +2970,9 @@ Proof.
   by rewrite /minus plus_comm -plus_assoc plus_opp_l plus_zero_r.
 Qed.
 
-Lemma ball_eq :
+Lemma eq_close :
   forall x y : V,
-  (forall eps : posreal, ball x eps y) -> x = y.
+  close x y -> x = y.
 Proof.
 intros x y H.
 apply plus_reg_r with (opp x).
@@ -3097,7 +3147,7 @@ Lemma is_filter_lim_locally_unique :
   is_filter_lim (locally x) y -> x = y.
 Proof.
 intros x y H.
-apply ball_eq.
+apply eq_close.
 now apply is_filter_lim_locally_close.
 Qed.
 
@@ -3395,7 +3445,7 @@ Lemma iota_unique :
   iota P = x.
 Proof.
 intros P x HP Px.
-apply ball_eq.
+apply eq_close.
 intros eps.
 apply: iota_correct_weak Px eps.
 intros x' y Px' Py eps.
@@ -4411,8 +4461,33 @@ apply R_complete_ax1.
 by apply Proper_StrongProper.
 Qed.
 
+Lemma R_complete_ax2 :
+  forall F1 F2 : (R -> Prop) -> Prop,
+  filter_le F1 F2 -> filter_le F2 F1 ->
+  R_complete_lim F1 = R_complete_lim F2.
+Proof.
+intros F1 F2 H12 H21.
+unfold R_complete_lim.
+apply f_equal, Lub_Rbar_eqset.
+split.
+apply H21.
+apply H12.
+Qed.
+
+Lemma R_complete_close :
+  forall F1 F2 : (R -> Prop) -> Prop,
+  filter_le F1 F2 -> filter_le F2 F1 ->
+  close (R_complete_lim F1) (R_complete_lim F2).
+Proof.
+intros F1 F2 H12 H21.
+replace (R_complete_lim F2) with (R_complete_lim F1).
+intros eps.
+apply ball_center.
+exact: R_complete_ax2.
+Qed.
+
 Definition R_CompleteSpace_mixin :=
-  CompleteSpace.Mixin _ R_complete_lim R_complete.
+  CompleteSpace.Mixin _ R_complete_lim R_complete R_complete_close.
 
 Canonical R_CompleteSpace :=
   CompleteSpace.Pack R (CompleteSpace.Class _ _ R_CompleteSpace_mixin) R.
