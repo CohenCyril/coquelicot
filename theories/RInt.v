@@ -2442,15 +2442,14 @@ Qed.
 
 Lemma RInt_ext (f g : R -> V) (a b : R) :
   (forall x, Rmin a b < x < Rmax a b -> f x = g x) ->
-  ex_RInt g a b ->
   RInt f a b = RInt g a b.
 Proof.
-intros Hfg Hg.
-apply is_RInt_unique.
-apply: is_RInt_ext.
-intros x Hx.
+intros Hfg.
+apply eq_close.
+apply: close_iota ; split ; apply is_RInt_ext.
+exact Hfg.
+intros t Ht.
 now apply sym_eq, Hfg.
-exact: RInt_correct.
 Qed.
 
 Lemma RInt_point (a : R) (f : R -> V) :

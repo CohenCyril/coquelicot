@@ -548,12 +548,11 @@ rewrite Rmin_left in Hdf; last by lra.
 rewrite Rmax_right in Hdf; last by lra.
 have Hminab : Rmin a b = a by rewrite Rmin_left; lra.
 have Hmaxab : Rmax a b = b by rewrite Rmax_right; lra.
-assert (HI : ex_RInt df a b).
+evar_last.
+  apply RInt_correct.
   apply (ex_RInt_continuous df) => t Ht.
   rewrite Hminab Hmaxab in Ht.
   exact:Hdf.
-evar_last.
-  now apply RInt_correct.
 apply (plus_inj (opp (f b))).
 rewrite /minus -plus_assoc (plus_comm (opp _)) plus_assoc plus_opp_r.
 rewrite -(RInt_point a df).
@@ -561,7 +560,7 @@ apply: sym_eq.
 have Hext :  forall x : R, Rmin a b < x < Rmax a b -> extension_C0 df a b x = df x.
   move => x; rewrite Hminab Hmaxab => Hx.
   by rewrite extension_C0_ext //=; lra.
-rewrite -(RInt_ext (extension_C0 df a b) df a b) // .
+rewrite -(RInt_ext _ _ _ _ Hext).
 rewrite RInt_point -(RInt_point a (extension_C0 df a b)).
 rewrite -!(extension_C1_ext f df a b) /=; try lra.
 apply: (eq_is_derive (fun t => minus (RInt _ a t) (_ t))) => // t Ht.
@@ -698,21 +697,7 @@ Proof.
       move => t Ht; apply: ex_derive_continuous.
       by exists (dg t); apply Hg.
 
-    have Hint : ex_RInt f (g a) (g b).
-      apply: ex_RInt_continuous.
-      case: (Rle_dec (g a) (g b)) => Hgab.
-        rewrite Rmin_left ?Rmax_right; try lra.
-        move => z Hz.
-        case: (IVT_gen_consistent g a b z cg).
-          by rewrite Rmin_left ?Rmax_right; try lra.
-        move => x [] Hx <-; apply: Hf.
-        by rewrite Rmin_left ?Rmax_right in Hx; lra.
-      move => z Hz.
-      case: (IVT_gen_consistent g a b z cg) => // .
-      rewrite Rmin_left ?Rmax_right; try lra.
-      by move => x [] Hx <-; apply: Hf.
-
-  wlog: f Hf {Hint} / (forall x, continuous f x) => [Hw | {Hf} Hf].
+  wlog: f Hf / (forall x, continuous f x) => [Hw | {Hf} Hf].
     case: (continuous_ab_maj_consistent g a b (Rlt_le _ _ Hab)) => [ | M HM].
       move => x Hx; apply: ex_derive_continuous.
       by exists (dg x); apply Hg.
@@ -737,7 +722,6 @@ Proof.
         by apply Hm ; split ; apply Rlt_le ; apply Hc.
       by apply HM ; split ; apply Rlt_le ; apply Hc.
 
-
     rewrite -(RInt_ext f0).
     + apply Hw.
         by move => x Hx ; apply Hf0.
@@ -751,7 +735,6 @@ Proof.
       apply Hf0; split.
         by apply Hm.
       by apply HM.
-    + exact: Hint.
 
     evar_last.
     + apply (is_RInt_derive (fun x => RInt f (g a) (g x))).
