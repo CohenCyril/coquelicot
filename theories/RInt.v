@@ -2664,7 +2664,6 @@ Proof.
   exact: RInt_correct.
 Qed.
 
-(*
 Lemma RInt_gt_0 (g : R -> R) (a b : R) :
   (a < b) -> (forall x, a < x < b -> (0 < g x)) ->
   (forall x, a <= x <= b -> continuous g x) ->
@@ -2730,7 +2729,7 @@ Proof.
   apply Rplus_le_lt_0_compat.
   apply (is_RInt_ge_0 g a a').
   by apply Rlt_le, Ha'.
-  by apply RInt_correct.
+  exact: RInt_correct.
   intros ; apply Rlt_le, Hg ; split.
   by apply H3.
   eapply Rlt_trans, Ha'.
@@ -2746,7 +2745,7 @@ Proof.
   eapply is_RInt_le.
   apply Rlt_le, Hab'.
   apply @is_RInt_const.
-  by apply RInt_correct.
+  exact: RInt_correct.
   intros ; apply Hd.
   rewrite (double_var d).
   apply Rabs_lt_between' ; split.
@@ -2761,7 +2760,7 @@ Proof.
   apply Rminus_lt_0 ; ring_simplify.
   by apply is_pos_div_2.
   eapply is_RInt_ge_0.
-  2: by apply RInt_correct.
+  2: exact: RInt_correct.
   apply Rlt_le, Hb'.
   intros ; apply Rlt_le, Hg.
   split.
@@ -2795,7 +2794,7 @@ Proof.
     now apply Cf.
     by apply Rlt_le.
     by apply Rlt_le.
-  rewrite -RInt_minus //.
+  rewrite -[Rminus]/(@minus R_AbelianGroup) -RInt_minus //.
   apply RInt_gt_0 => //.
   now intros ; apply -> Rminus_lt_0 ; apply Hfg.
   intros.
@@ -2803,7 +2802,6 @@ Proof.
   by apply Cg.
   by apply Cf.
 Qed.
-*)
 
 Lemma abs_RInt_le_const :
   forall (f : R -> R) a b M,
