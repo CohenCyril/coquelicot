@@ -19,7 +19,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 COPYING file for more details.
 *)
 
-Require Import Reals.
+Require Import Reals Psatz.
 Require Import mathcomp.ssreflect.ssreflect mathcomp.ssreflect.ssrbool mathcomp.ssreflect.eqtype mathcomp.ssreflect.seq.
 Require Import Markov Rcomplements Rbar Lub Lim_seq Derive SF_seq.
 Require Import Continuity Hierarchy Seq_fct RInt PSeries.
@@ -510,17 +510,6 @@ Section Derive'.
 
 Context {V : CompleteNormedModule R_AbsRing}.
 
-Lemma plus_inj : forall a b c: V,
-  plus b a = plus c a ->
-  b = c.
-Proof.
-intros a b c H.
-by rewrite -(plus_zero_r b) -(plus_opp_r a) plus_assoc H -plus_assoc
-plus_opp_r plus_zero_r.
-Qed.
-
-Require Import Psatz.
-
 Lemma is_RInt_derive (f df : R -> V) (a b : R) :
   (forall x : R, Rmin a b <= x <= Rmax a b -> is_derive f x (df x)) ->
   (forall x : R, Rmin a b <= x <= Rmax a b -> continuous df x) ->
@@ -553,7 +542,7 @@ evar_last.
   apply (ex_RInt_continuous df) => t Ht.
   rewrite Hminab Hmaxab in Ht.
   exact:Hdf.
-apply (plus_inj (opp (f b))).
+apply (plus_reg_r (opp (f b))).
 rewrite /minus -plus_assoc (plus_comm (opp _)) plus_assoc plus_opp_r.
 rewrite -(RInt_point a df).
 apply: sym_eq.
@@ -850,79 +839,6 @@ Proof.
 Qed.
 
 End RInt_comp.
-
-(*Lemma is_derive_RInt_bound_comp :
-  forall f a b da db x,
-  ex_RInt f (a x) (b x) ->
-  (exists eps : posreal, ex_RInt f (a x - eps) (a x + eps)) ->
-  (exists eps : posreal, ex_RInt f (b x - eps) (b x + eps)) ->
-  continuous f (a x) ->
-  continuous f (b x) ->
-  is_derive a x da ->
-  is_derive b x db ->
-  is_derive (fun x => RInt f (a x) (b x)) x (db * f (b x) - da * f (a x)).
-Proof.
-intros f a b da db x Hi Ia Ib Ca Cb Da Db.
-apply is_derive_ext_loc with (fun x0 => plus ((fun y => RInt f y (a x)) (a x0))
-  ((fun y => RInt f (a x) y) (b x0))).
-(* *)
-apply RInt_Chasles_bound_comp_loc.
-by apply filter_forall.
-destruct Ia as (d1,H1).
-exists d1.
-by apply filter_forall.
-destruct Ib as (d2,H2).
-exists d2.
-by apply filter_forall.
-apply derivable_continuous_pt.
-eexists ; apply is_derive_Reals, Da.
-apply derivable_continuous_pt.
-eexists ; apply is_derive_Reals, Db.
-(* *)
-eapply filterdiff_ext_lin.
-generalize (filterdiff_plus_fct (F := locally x) (fun x0 => (fun y : R => RInt f y (a x)) (a x0))
-  (fun x0 => (fun y : R => RInt f (a x) y) (b x0))) => /= H.
-apply H ; clear H.
-generalize (filterdiff_comp' a (fun y : R => RInt f y (a x)) x) => /= H ;
-apply H ; clear H.
-exact Da.
-apply (is_derive_RInt' f _ _ (a x)) ; trivial.
-case: Ia => e He.
-exists e => /= y Hy.
-apply RInt_correct.
-generalize (proj1 (Rabs_lt_between' _ _ _) Hy) => {Hy} Hy.
-eapply ex_RInt_Chasles.
-eapply ex_RInt_Chasles, He.
-apply ex_RInt_swap.
-eapply @ex_RInt_Chasles_1, He.
-split ; apply Rlt_le, Hy.
-apply ex_RInt_swap.
-eapply @ex_RInt_Chasles_2, He.
-split ; apply Rminus_le_0 ; ring_simplify ; apply Rlt_le, e.
-by apply continuity_pt_filterlim.
-generalize (filterdiff_comp' b (RInt f (a x)) x) => /= H ; apply H ; clear H.
-exact Db.
-apply (is_derive_RInt f _ (a x)).
-case: Ib => e He.
-exists e => /= y Hy.
-apply RInt_correct.
-eapply ex_RInt_Chasles.
-apply Hi.
-generalize (proj1 (Rabs_lt_between' _ _ _) Hy) => {Hy} Hy.
-eapply ex_RInt_Chasles.
-eapply ex_RInt_Chasles, He.
-apply ex_RInt_swap.
-eapply @ex_RInt_Chasles_1, He.
-split ; apply Rminus_le_0 ; ring_simplify ; apply Rlt_le, e.
-apply ex_RInt_swap.
-eapply @ex_RInt_Chasles_2, He.
-split ; apply Rlt_le, Hy.
-by apply continuity_pt_filterlim.
-
-simpl => y.
-rewrite /plus /scal /= /mult /= /opp /=.
-ring.
-Qed.*)
 
 (** * Parametric integrals *)
 
