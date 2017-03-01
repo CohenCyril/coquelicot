@@ -243,7 +243,8 @@ Qed.
 
 Lemma pow2_pos (n : nat) : (0 < pow2 n)%nat.
 Proof.
-  apply INR_lt ; rewrite pow2_INR ; intuition.
+  apply INR_lt ; rewrite pow2_INR.
+  apply pow_lt, Rlt_0_2.
 Qed.
 
 (** * Rinv *)
@@ -1819,7 +1820,7 @@ Proof.
   intros.
   rewrite <- (Rmult_1_l (RiemannInt pr_g)).
   unfold Rminus. rewrite <- Ropp_mult_distr_l_reverse.
-  rewrite <- (RiemannInt_P13 pr_f pr_g (RiemannInt_P10 (-1) pr_f pr_g)).
+  rewrite -(RiemannInt_P13 pr_f pr_g (RiemannInt_P10 (-1) pr_f pr_g)).
   apply RiemannInt_ext.
   intros ; ring.
 Qed.
@@ -1844,7 +1845,7 @@ Proof.
   intros.
   rewrite <- (Rmult_1_l (RiemannInt pr_f)).
   rewrite <- Ropp_mult_distr_l_reverse.
-  rewrite <- (Rplus_0_l (-1 * RiemannInt pr_f)).
+  rewrite -(Rplus_0_l (-1 * RiemannInt pr_f)).
   assert (0 = RiemannInt (Riemann_integrable_const 0 a b)).
     rewrite RiemannInt_const.
     ring.

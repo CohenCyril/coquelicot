@@ -828,7 +828,7 @@ Qed.
 
 Lemma CV_radius_atan : CV_radius (fun n => (-1)^n / (INR (S (n + n)))) = 1.
 Proof.
-  rewrite -{2}Rinv_1.
+  apply eq_trans with (2 := f_equal Finite Rinv_1).
   apply CV_radius_finite_DAlembert.
   intros n.
   apply Rmult_integral_contrapositive_currified.

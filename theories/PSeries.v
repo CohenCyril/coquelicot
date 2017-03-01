@@ -1601,7 +1601,7 @@ Proof.
     intros x Hx ; apply Hd.
     apply @norm_compat1.
     rewrite /minus /plus /opp /=.
-    replace (x / cv + -1) with ((x - cv) / cv)
+    replace (x / cv + _) with ((x - cv) / cv)
       by (field ; exact: Rgt_not_eq).
     rewrite /norm /= /abs /= Rabs_div ; try by apply Rgt_not_eq.
     rewrite (Rabs_pos_eq cv) ; try by apply Rlt_le.

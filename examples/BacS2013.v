@@ -263,7 +263,7 @@ Qed.
 Lemma f_eq_1_1_p_infty : exists x, 1 <= x /\ f x = 1.
 Proof.
   case: (IVT_Rbar_incr (fun x => - f x) 1 p_infty (-2) 0 (-1)).
-  replace 2 with (f 1).
+  replace (-2) with (-f 1).
   apply (is_lim_continuity (fun x => - f x)).
   apply continuity_pt_opp.
   apply derivable_continuous_pt.
@@ -284,7 +284,7 @@ Proof.
   move => x [H0x [Hx1 Hfx]].
   exists x ; split.
   by apply Rlt_le.
-  rewrite -(Ropp_involutive 1) -Hfx ; ring.
+  rewrite -(Ropp_involutive (f x)) Hfx ; ring.
 Qed.
 
 (** ** Questions 5 *)
