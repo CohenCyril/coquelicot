@@ -779,7 +779,7 @@ Proof.
   by apply Rlt_trans with (1 := Rlt_0_1).
   apply Rlt_le.
   by apply Rlt_trans with (1 := Rlt_0_1).
-  replace 2 with (INR 2) by (simpl ; ring).
+  change 2 with (INR 2).
   rewrite -ln_pow.
   rewrite /= Rmult_1_r.
   rewrite sqrt_sqrt.

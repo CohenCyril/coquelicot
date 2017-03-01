@@ -19,7 +19,8 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 COPYING file for more details.
 *)
 
-Require Import Reals mathcomp.ssreflect.ssreflect.
+Require Import Reals Psatz.
+Require Import mathcomp.ssreflect.ssreflect.
 Require Import Rcomplements.
 Require Import Rbar Lub Markov Hierarchy.
 
@@ -2726,7 +2727,7 @@ Proof.
   apply Req_le ; field.
   by apply Rgt_not_eq.
   apply Rmult_le_0_lt_compat.
-  field_simplify ; rewrite Rdiv_1 ; apply Rlt_le, Rdiv_lt_0_compat ; intuition.
+  lra.
   apply Rmax_l.
   now apply Rabs_lt_between'.
   exact Hv.

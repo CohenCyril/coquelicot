@@ -358,7 +358,6 @@ Proof.
   apply Rmult_le_compat_l.
   lra.
   by apply IH.
-  apply Rminus_le_0 ; field_simplify.
   lra.
 Qed.
 

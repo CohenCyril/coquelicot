@@ -19,7 +19,8 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 COPYING file for more details.
 *)
 
-Require Import Reals mathcomp.ssreflect.ssreflect Rbar.
+Require Import Reals Psatz.
+Require Import mathcomp.ssreflect.ssreflect Rbar.
 Require Import Rcomplements.
 Require Import Lim_seq Continuity Derive Series.
 Require Import Lub Hierarchy.
@@ -240,12 +241,8 @@ Proof.
     have Hy : Rabs (y - x) < d0.
       rewrite /y ; ring_simplify ((x + Rmin (Rmin dn dm) d0 / 2) - x).
       rewrite (Rabs_pos_eq _ (Rlt_le _ _ Hd)).
-      apply Rle_lt_trans with (d0/2).
-      apply Rmult_le_compat_r.
-      by intuition.
-      exact: Rmin_r.
-      rewrite -(Rplus_0_l (d0/2)) {2}(double_var d0).
-      by apply Rplus_lt_compat_r, is_pos_div_2.
+      generalize (Rmin_r (Rmin dn dm) d0).
+      lra.
     move : (Ho y Hy) => {Ho Hy} Hy.
     replace (ln - lm)
       with (- (fn n y - ln) + (fn m y - lm) + (fn n y - fn m y))
@@ -258,32 +255,16 @@ Proof.
     rewrite /y /ball /= /AbsRing_ball /= /minus /plus /opp /abs /=.
     ring_simplify ((x + Rmin (Rmin dn dm) d0 / 2) + - x).
     rewrite (Rabs_pos_eq _ (Rlt_le _ _ Hd)).
-    apply Rle_lt_trans with (Rmin dn dm / 2).
-    apply Rmult_le_compat_r.
-    by intuition.
-    exact: Rmin_l.
-    apply Rle_lt_trans with (dn / 2).
-    apply Rmult_le_compat_r.
-    by intuition.
-    exact: Rmin_l.
-    rewrite -(Rplus_0_l (dn/2)) {2}(double_var dn).
-    by apply Rplus_lt_compat_r, is_pos_div_2.
+    generalize (Rmin_l (Rmin dn dm) d0) (Rmin_l dn dm).
+    lra.
     apply Rgt_not_eq, Rlt_gt, Rminus_lt_0.
     rewrite /y ; by ring_simplify ((x + Rmin (Rmin dn dm) d0 / 2) - x).
     apply Hex_m.
     rewrite /y /ball /= /AbsRing_ball /= /minus /plus /opp /abs /=.
     ring_simplify ((x + Rmin (Rmin dn dm) d0 / 2) + - x).
     rewrite (Rabs_pos_eq _ (Rlt_le _ _ Hd)).
-    apply Rle_lt_trans with (Rmin dn dm / 2).
-    apply Rmult_le_compat_r.
-    by intuition.
-    exact: Rmin_l.
-    apply Rle_lt_trans with (dm / 2).
-    apply Rmult_le_compat_r.
-    by intuition.
-    exact: Rmin_r.
-    rewrite -(Rplus_0_l (dm/2)) {2}(double_var dm).
-    by apply Rplus_lt_compat_r, is_pos_div_2.
+    generalize (Rmin_l (Rmin dn dm) d0) (Rmin_r dn dm).
+    lra.
     apply Rgt_not_eq, Rlt_gt, Rminus_lt_0.
     rewrite /y ; by ring_simplify ((x + Rmin (Rmin dn dm) d0 / 2) - x).
     by apply Hfn.

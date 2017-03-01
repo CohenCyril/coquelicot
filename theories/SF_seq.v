@@ -19,10 +19,10 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 COPYING file for more details.
 *)
 
-Require Import Reals.
+Require Import Reals Psatz.
+Require Import mathcomp.ssreflect.ssreflect mathcomp.ssreflect.seq mathcomp.ssreflect.ssrbool.
 Require Import Rcomplements Rbar Lub.
 Require Import Hierarchy.
-Require Import mathcomp.ssreflect.ssreflect mathcomp.ssreflect.seq mathcomp.ssreflect.ssrbool.
 
 (** This file describes many properties about sequences of real
 numbers. Several formalizations are provided. They are mainly used for
@@ -1273,6 +1273,24 @@ Proof.
   rewrite Rplus_comm ; by apply (proj1 (Rminus_le_0 _ _)).
 Qed.
 
+Lemma head_unif_part x0 (a b : R) (n : nat) :
+  head x0 (unif_part a b n) = a.
+Proof.
+  rewrite /= Rmult_0_l /Rdiv ; ring.
+Qed.
+
+Lemma last_unif_part x0 (a b : R) (n : nat) :
+  last x0 (unif_part a b n) = b.
+Proof.
+  rewrite (last_nth b) size_mkseq.
+  replace (nth b (x0 :: unif_part a b n) (S (S n)))
+    with (nth b (unif_part a b n) (S n)) by auto.
+  rewrite nth_mkseq.
+  rewrite S_INR ; field.
+  by apply Rgt_not_eq, INRp1_pos.
+  by [].
+Qed.
+
 Lemma unif_part_nat (a b : R) (n : nat) (x : R) : (a <= x <= b) ->
   {i : nat |
   nth 0 (unif_part a b n) i <= x < nth 0 (unif_part a b n) (S i) /\
@@ -1285,33 +1303,13 @@ Proof.
     [ apply unif_part_sort, Rle_trans with (r2 := x) ; intuition
     | move: (Hdec Hs) => {Hdec Hs} Hdec].
   have Hx' : (head 0 (unif_part a b n) <= x <= last 0 (unif_part a b n)).
-    rewrite -nth_last size_mkseq nth_mkseq ?S_INR //= /Rdiv.
-    ring_simplify (a + 0 * (b - a) * / (INR n + 1)).
-    field_simplify (a + (INR n + 1) * (b - a) * / (INR n + 1)).
-    by rewrite Rdiv_1.
-    apply Rgt_not_eq, INRp1_pos.
+    by rewrite head_unif_part last_unif_part.
   case: (Hdec Hx') => {Hdec Hx'} [[i Hi]|Hi].
   left ; by exists i.
   right ; rewrite size_mkseq /= in Hi ; intuition.
   by rewrite -minus_n_O in H1.
 Qed.
 
-Lemma head_unif_part x0 (a b : R) (n : nat) :
-  head x0 (unif_part a b n) = a.
-Proof.
-  simpl ; unfold Rdiv ; ring.
-Qed.
-Lemma last_unif_part x0 (a b : R) (n : nat) :
-  last x0 (unif_part a b n) = b.
-Proof.
-  rewrite (last_nth b) size_mkseq.
-  replace (nth b (x0 :: unif_part a b n) (S (S n)))
-    with (nth b (unif_part a b n) (S n)) by auto.
-  rewrite nth_mkseq.
-  rewrite S_INR ; field.
-  by apply Rgt_not_eq, INRp1_pos.
-  by [].
-Qed.
 Lemma seq_step_unif_part (a b : R) (n : nat) :
   seq_step (unif_part a b n) = Rabs ((b - a) / (INR n + 1)).
 Proof.
@@ -1373,9 +1371,9 @@ Proof.
   apply eq_from_nth with 0.
   by rewrite /= !size_map !size_iota.
   case => [ | i] Hi.
-  rewrite /= /Rdiv ; ring.
-  replace (nth 0 (a :: unif_part ((a * INR (S n) + b) / INR (S (S n))) b n) (S i))
-    with (nth 0 (unif_part ((a * INR (S n) + b) / INR (S (S n))) b n) i) by auto.
+  by rewrite nth0 head_unif_part.
+  change (nth 0 (a :: unif_part ((a * INR (S n) + b) / INR (S (S n))) b n) (S i))
+    with (nth 0 (unif_part ((a * INR (S n) + b) / INR (S (S n))) b n) i).
   rewrite /unif_part size_mkseq in Hi.
   rewrite /unif_part !nth_mkseq ; try by intuition.
   rewrite !S_INR ; field.
@@ -1459,36 +1457,18 @@ split ; [|split ; [|split]].
   intros i Hi.
   rewrite SF_ly_f2.
   rewrite nth_behead.
+  apply gt_S_le, SSR_leq in Hi.
   rewrite (nth_pairmap 0).
   change (nth 0 (0 :: unif_part a b n) (S i)) with (nth 0 (unif_part a b n) i).
-  rewrite !nth_mkseq.
   apply Hf.
-  apply Rminus_le_0.
+  rewrite !nth_mkseq //.
   rewrite S_INR.
-  unfold Rdiv.
-  replace (a + (INR i + 1) * (b - a) * / (INR n + 1) - (a + INR i * (b - a) * / (INR n + 1)))
-    with ((b - a) * / (INR n + 1)) by ring.
-  exact Hab'.
-  apply SSR_leq.
-  now apply le_n_S.
-  apply SSR_leq.
-  apply le_n_S.
-  now apply lt_le_weak.
-  rewrite size_mkseq.
-  apply SSR_leq.
-  now apply le_n_S.
-- simpl.
-  unfold Rdiv.
-  ring.
-- rewrite -nth_last.
-  rewrite size_mkseq nth_mkseq.
-  rewrite S_INR.
-  field.
-  apply Rgt_not_eq.
-  apply INRp1_pos.
-  apply SSR_leq.
-  apply le_refl.
-  rewrite size_mkseq ; by apply lt_O_Sn.
+  lra.
+  now apply ssrnat.leqW.
+  by rewrite size_mkseq.
+- apply head_unif_part.
+- apply last_unif_part.
+rewrite size_mkseq ; by apply lt_O_Sn.
 Qed.
 
 Definition Riemann_fine (a b : R) :=
@@ -1920,9 +1900,8 @@ Proof.
   apply unif_part_sort ; apply Rle_refl.
   rewrite size_mkseq ; by apply lt_O_Sn.
   rewrite SF_lx_f2 /=.
-  elim: (iota 2 n) {2}(1) => /= [ | x1 s IH] x0.
+  rewrite -{2}[1]/(INR 1) last_map.
   unfold Rdiv ; ring.
-  by apply IH.
   by apply lt_O_Sn.
 Qed.
 
@@ -1979,9 +1958,7 @@ Proof.
     destruct (fun H0 => Riemann_fine_unif_part (fun x y : R => (x + y) / 2) a b n H0 Hab) as [H [H0 [H1 H2]]].
     clear.
     intros a b Hab.
-    pattern b at 3 ; replace b with ((b+b)/2) by field.
-    pattern a at 1 ; replace a with ((a+a)/2) by field.
-    split ; apply Rmult_le_compat_r ; by intuition.
+    lra.
     fold l in H, H0, H1, H2.
     rewrite -H1 -H2 ; split.
     apply Rle_trans with (head 0 (SF_ly l)).
@@ -2376,20 +2353,10 @@ Qed.
 Lemma ex_Im_fct (f : R -> R) (a b : R) : a <> b ->
   exists x, (fun y => exists x, y = f x /\ Rmin a b < x < Rmax a b) x.
 Proof.
-  wlog : a b /(a < b) => [Hw Hab | Hab _].
-    case: (Rle_lt_dec a b) => Hab'.
-    case: Hab' => Hab'.
-    by apply Hw.
-    by [].
-    rewrite Rmin_comm Rmax_comm ;
-    apply sym_not_eq in Hab ;
-    by apply Hw.
-  rewrite /Rmin /Rmax ; case: Rle_dec (Rlt_le _ _ Hab) => // _ _.
   exists (f ((a+b)/2)) ; exists ((a+b)/2) ; split.
   by [].
-  pattern b at 3 ; replace b with ((b + b)/2) by field ;
-  pattern a at 1 ; replace a with ((a + a)/2) by field.
-  split ; apply Rmult_lt_compat_r ; by intuition.
+  rewrite /Rmin /Rmax.
+  case Rle_dec ; lra.
 Qed.
 
 Definition Sup_fct (f : R -> R) (a b : R) : Rbar :=
@@ -2471,19 +2438,8 @@ Proof.
   case: (lub (f((a+b)/2))) => //.
   exists ((a + b) / 2) ; split.
   by [].
-  move => {Hf lub ub} ;
-  wlog : a b Hab /(a < b) => [ Hw | {Hab} Hab ].
-    case: (Rle_lt_dec a b) => Hab'.
-    case: Hab' => Hab'.
-    by apply Hw.
-    by [].
-    rewrite Rmin_comm Rmax_comm Rplus_comm ;
-    apply sym_not_eq in Hab ;
-    by apply Hw.
-  rewrite /Rmin /Rmax ; case: Rle_dec (Rlt_le _ _ Hab) => // _ _.
-  pattern b at 3 ; replace b with ((b + b)/2) by field ;
-  pattern a at 1 ; replace a with ((a + a)/2) by field.
-  split ; apply Rmult_lt_compat_r ; by intuition.
+  rewrite /Rmin /Rmax.
+  case Rle_dec ; lra.
 Qed.
 Lemma Inf_fct_min (f : R -> R) (a b : R) (m : R) :
   (forall x, Rmin a b < x < Rmax a b -> m <= f x) ->
@@ -2497,19 +2453,8 @@ Proof.
   case: (lub (f((a+b)/2))) => //.
   exists ((a + b) / 2) ; split.
   by [].
-  move => {Hf lub ub} ;
-  wlog : a b Hab /(a < b) => [ Hw | {Hab} Hab ].
-    case: (Rle_lt_dec a b) => Hab'.
-    case: Hab' => Hab'.
-    by apply Hw.
-    by [].
-    rewrite Rmin_comm Rmax_comm Rplus_comm ;
-    apply sym_not_eq in Hab ;
-    by apply Hw.
-  rewrite /Rmin /Rmax ; case: Rle_dec (Rlt_le _ _ Hab) => // _ _.
-  pattern b at 3 ; replace b with ((b + b)/2) by field ;
-  pattern a at 1 ; replace a with ((a + a)/2) by field.
-  split ; apply Rmult_lt_compat_r ; by intuition.
+  rewrite /Rmin /Rmax.
+  case Rle_dec ; lra.
   case: (ub (Finite m)) => //.
   move => _ [x [-> Hx]].
   by apply Hf.
@@ -2724,11 +2669,10 @@ Proof.
     with (unif_part a b n) by intuition.
     by apply unif_part_sort.
     by apply lt_O_Sn.
-  have: a = head 0 (unif_part a b n) ;
-  [ simpl ; field ; apply Rgt_not_eq ; intuition | move => {2}->].
-  have: b = last 0 (unif_part a b n) ;
-  [ rewrite -nth_last size_mkseq nth_mkseq ?S_INR//= ;
-  field ; apply Rgt_not_eq ; intuition | move => {3}->].
+  have {2}<-: head 0 (unif_part a b n) = a.
+    apply head_unif_part.
+  have {3}<-: last 0 (unif_part a b n) = b.
+    apply last_unif_part.
   replace (behead
     (pairmap (fun x y : R => real (Sup_fct f x y)) 0 (unif_part a b n)))
     with (SF_ly (SF_map real (SF_sup_seq f a b n))).
@@ -2840,11 +2784,10 @@ Proof.
     with (unif_part a b n) by intuition.
     by apply unif_part_sort.
     by apply lt_O_Sn.
-  have: a = head 0 (unif_part a b n) ;
-  [ simpl ; field ; apply Rgt_not_eq ; intuition | move => {2}->].
-  have: b = last 0 (unif_part a b n) ;
-  [ rewrite -nth_last size_mkseq nth_mkseq ?S_INR//= ;
-  field ; apply Rgt_not_eq ; intuition | move => {3}->].
+  have {2}<-: head 0 (unif_part a b n) = a.
+    apply head_unif_part.
+  have {3}<-: last 0 (unif_part a b n) = b.
+    apply last_unif_part.
   replace (behead
     (pairmap (fun x y : R => real (Inf_fct f x y)) 0 (unif_part a b n)))
     with (SF_ly (SF_map real (SF_inf_seq f a b n))).

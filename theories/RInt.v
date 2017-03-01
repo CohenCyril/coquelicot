@@ -19,7 +19,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 COPYING file for more details.
 *)
 
-Require Import Reals.
+Require Import Reals Psatz.
 Require Import mathcomp.ssreflect.ssreflect mathcomp.ssreflect.ssrbool mathcomp.ssreflect.eqtype mathcomp.ssreflect.seq.
 Require Import Markov Rcomplements Rbar Lub Lim_seq SF_seq.
 Require Import Continuity Hierarchy.
@@ -164,15 +164,12 @@ Proof.
   by apply Hn'.
   split.
   apply Hg.
+  rewrite -> Rmin_left, Rmax_right by now apply Rlt_le.
   split.
-  clearbody n ; rewrite /Rmin ;
-  case: Rle_dec (Rlt_le _ _ Hab) => //= _ _ ; field ; apply Rgt_not_eq ;
-  by intuition.
+  apply head_unif_part.
   clearbody n ; rewrite /Rmax -nth_last SF_lx_f2.
-  replace (head 0 (unif_part a b n) :: behead (unif_part a b n))
-    with (unif_part a b n) by auto.
-  rewrite size_mkseq nth_mkseq ?S_INR // ;
-  case: Rle_dec (Rlt_le _ _ Hab) => //= _ _ ; field ; apply Rgt_not_eq ;
+  rewrite size_mkseq nth_mkseq ?S_INR //.
+  field ; apply Rgt_not_eq ;
   by intuition.
   by apply lt_O_Sn.
   rewrite -> sign_eq_1 by exact: Rlt_Rminus.
@@ -418,10 +415,8 @@ Proof.
   apply H0 ; by intuition.
   apply Rle_trans with (2 := RmaxLess2 _ _) ;
   apply IH ; by intuition.
-  simpl ; field ; apply Rgt_not_eq ; by intuition.
-  rewrite -nth_last size_mkseq nth_mkseq ?S_INR /=.
-  field ; apply Rgt_not_eq, INRp1_pos.
-  by [].
+  apply head_unif_part.
+  apply last_unif_part.
 Qed.
 
 (** Extensionality *)
@@ -1906,11 +1901,7 @@ Proof.
       by apply lt_O_Sn.
       by apply unif_part_sort, Rlt_le.
       intros x y Hxy.
-      pattern y at 3 ;
-      replace y with ((y+y)/2)%R by field.
-      pattern x at 1 ;
-      replace x with ((x+x)/2)%R by field.
-      split ; apply Rmult_le_compat_r ; intuition.
+      lra.
       rewrite SF_size_f2.
       move: (proj2 (proj2_sig Hi)).
       unfold i.
@@ -1922,11 +1913,7 @@ Proof.
       apply ptd_f2.
       by apply unif_part_sort, Rlt_le.
       intros x y Hxy.
-      pattern y at 3 ;
-      replace y with ((y+y)/2)%R by field.
-      pattern x at 1 ;
-      replace x with ((x+x)/2)%R by field.
-      split ; apply Rmult_le_compat_r ; intuition.
+      lra.
       rewrite SF_size_f2.
       move: (proj2 (proj2_sig Hi)).
       unfold i ;
@@ -1969,47 +1956,14 @@ Proof.
       change norm with Rabs.
       apply Rabs_le_between ; rewrite Rabs_pos_eq.
       change minus with Rminus ; rewrite Ropp_minus_distr'.
-      split ; apply Rplus_le_compat, Ropp_le_contravar.
+      rewrite /i {i}.
+      destruct Hi as [i [[H1 H2] H3]].
+      simpl sval.
+      cut (nth 0 (unif_part a b (n e)) i <= nth 0 (SF_ly (s e)) i <= nth 0 (unif_part a b (n e)) (S i)).
+        lra.
       rewrite SF_ly_f2 nth_behead (nth_pairmap 0).
-      pattern (nth 0 (unif_part a b (n e)) i) at 1.
-      replace (nth 0 (unif_part a b (n e)) i)
-      with ((nth 0 (unif_part a b (n e)) i +
-      nth 0 (unif_part a b (n e)) i) / 2)%R
-      by field.
-      apply Rmult_le_compat_r ; try by intuition.
-      apply Rplus_le_compat_l.
-      simpl ; apply (sorted_nth Rle (unif_part a b (n e))).
-      by apply unif_part_sort, Rlt_le.
-      move: (proj2 (proj2_sig Hi)).
-      unfold i ;
-      case: (size (unif_part a b (n e))) (proj1_sig Hi) => [ | m] j /= Hm.
-      by apply lt_n_O in Hm.
-      apply lt_S_n.
-      eapply lt_trans, Hm.
-      by apply lt_n_Sn.
-      rewrite SSR_leq.
-      apply lt_le_weak, (proj2_sig Hi).
-      by apply Rlt_le, (proj2_sig Hi).
-      rewrite SF_ly_f2 nth_behead (nth_pairmap 0).
-      pattern (nth 0 (unif_part a b (n e)) (S i)) at 2.
-      replace (nth 0 (unif_part a b (n e)) (S i))
-      with ((nth 0 (unif_part a b (n e)) (S i) +
-      nth 0 (unif_part a b (n e)) (S i)) / 2)%R
-      by field.
-      apply Rmult_le_compat_r ; try by intuition.
-      apply Rplus_le_compat_r.
-      simpl ; apply (sorted_nth Rle (unif_part a b (n e))).
-      by apply unif_part_sort, Rlt_le.
-      move: (proj2 (proj2_sig Hi)).
-      unfold i ;
-      case: (size (unif_part a b (n e))) (proj1_sig Hi) => [ | m] j /= Hm.
-      by apply lt_n_O in Hm.
-      apply lt_S_n.
-      eapply lt_trans, Hm.
-      by apply lt_n_Sn.
-      rewrite SSR_leq.
-      apply lt_le_weak, (proj2_sig Hi).
-      by apply (proj2_sig Hi).
+      move: {-2 4}(S i) H2 => Si /= ; clear -H1 H3 ; lra.
+      now apply SSR_leq, lt_le_weak.
       apply -> Rminus_le_0.
       apply (sorted_nth Rle (unif_part a b (n e))).
       by apply unif_part_sort, Rlt_le.
@@ -2056,22 +2010,14 @@ Proof.
       by apply lt_O_Sn.
       by apply unif_part_sort, Rlt_le.
       intros x y Hxy.
-      pattern y at 3 ;
-      replace y with ((y+y)/2)%R by field.
-      pattern x at 1 ;
-      replace x with ((x+x)/2)%R by field.
-      split ; apply Rmult_le_compat_r ; intuition.
+      lra.
       rewrite SF_size_f2.
       rewrite size_mkseq.
       by apply lt_n_Sn.
       apply ptd_f2.
       by apply unif_part_sort, Rlt_le.
       intros x y Hxy.
-      pattern y at 3 ;
-      replace y with ((y+y)/2)%R by field.
-      pattern x at 1 ;
-      replace x with ((x+x)/2)%R by field.
-      split ; apply Rmult_le_compat_r ; intuition.
+      lra.
       rewrite SF_size_f2.
       rewrite size_mkseq.
       by apply lt_n_Sn.
@@ -2088,35 +2034,12 @@ Proof.
       change norm with Rabs.
       apply Rabs_le_between ; rewrite Rabs_pos_eq.
       change minus with Rminus ; rewrite Ropp_minus_distr'.
-      split ; apply Rplus_le_compat, Ropp_le_contravar.
+      cut (nth 0 (unif_part a b (n e)) (n e) <= nth 0 (SF_ly (s e)) (n e) <= nth 0 (unif_part a b (n e)) (S (n e))).
+        lra.
       rewrite SF_ly_f2 nth_behead (nth_pairmap 0).
-      pattern (nth 0 (unif_part a b (n e)) (n e)) at 1.
-      replace (nth 0 (unif_part a b (n e)) (n e))
-      with ((nth 0 (unif_part a b (n e)) (n e) +
-      nth 0 (unif_part a b (n e)) (n e)) / 2)%R
-      by field.
-      apply Rmult_le_compat_r ; try by intuition.
-      apply Rplus_le_compat_l.
-      simpl ; apply (sorted_nth Rle (unif_part a b (n e))).
-      by apply unif_part_sort, Rlt_le.
-      rewrite size_mkseq ; by apply lt_n_Sn.
-      rewrite SSR_leq.
-      rewrite size_mkseq ; by apply le_refl.
-      by apply Hi.
-      rewrite SF_ly_f2 nth_behead (nth_pairmap 0).
-      pattern (nth 0 (unif_part a b (n e)) (S (n e))) at 2.
-      replace (nth 0 (unif_part a b (n e)) (S (n e)))
-      with ((nth 0 (unif_part a b (n e)) (S (n e)) +
-      nth 0 (unif_part a b (n e)) (S (n e))) / 2)%R
-      by field.
-      apply Rmult_le_compat_r ; try by intuition.
-      apply Rplus_le_compat_r.
-      simpl ; apply (sorted_nth Rle (unif_part a b (n e))).
-      by apply unif_part_sort, Rlt_le.
-      rewrite size_mkseq ; by apply lt_n_Sn.
-      rewrite SSR_leq.
-      rewrite size_mkseq ; by apply le_refl.
-      by apply Hi.
+      move: {-2 4}(S (n e)) Hi => Si /= ; clear ; lra.
+      rewrite size_mkseq.
+      apply SSR_leq, le_refl.
       apply -> Rminus_le_0.
       apply (sorted_nth Rle (unif_part a b (n e))).
       by apply unif_part_sort, Rlt_le.
@@ -2496,9 +2419,7 @@ Proof.
     by apply unif_part_sort, Rlt_le.
     by rewrite size_mkseq.
   move : (nth 0 (unif_part a b n) i) (nth 0 (unif_part a b n) (S i)) => x y Hxy.
-  pattern y at 3 ; replace y with ((y+y)/2) by field.
-  pattern x at 1 ; replace x with ((x+x)/2) by field.
-  split ; apply Rmult_le_compat_r ; by intuition.
+  lra.
   apply SSR_leq ; rewrite size_mkseq ; by intuition.
   split.
   rewrite /Rmin /= ; case: Rle_dec (Rlt_le _ _ Hab) => // _ _.
@@ -2753,10 +2674,7 @@ Proof.
   intros Hab Hg Cg.
   set c := (a + b) / 2.
   assert (Hc : a < c < b).
-    replace a with ((a + a) / 2) by field.
-    replace b with ((b + b) / 2) by field.
-    split ; unfold c ;
-    apply Rmult_lt_compat_r ; intuition.
+    unfold c ; lra.
   assert (H : locally c (fun (x : R) => g c / 2 <= g x)).
     specialize (Hg _ Hc).
     specialize (Cg c (conj (Rlt_le _ _ (proj1 Hc)) (Rlt_le _ _ (proj2 Hc)))).
@@ -2781,39 +2699,24 @@ Proof.
   assert (Hab' : a' < b').
     apply Rlt_trans with c.
     apply Rmax_case.
-    apply Rminus_lt_0 ; ring_simplify ; by apply is_pos_div_2.
-    pattern c at 2 ;
-    replace c with ((c + c) / 2) by field ;
-    apply Rmult_lt_compat_r ; intuition.
+    generalize (cond_pos d) ; lra.
+    lra.
     apply Rmin_case.
-    apply Rminus_lt_0 ; ring_simplify ; by apply is_pos_div_2.
-    pattern c at 1 ;
-    replace c with ((c + c) / 2) by field ;
-    apply Rmult_lt_compat_r ; intuition.
+    generalize (cond_pos d) ; lra.
+    lra.
   assert (Ha' : a < a' < b).
     split.
     eapply Rlt_le_trans, Rmax_r.
-    pattern a at 1 ;
-    replace a with ((a + a) / 2) by field ;
-    apply Rmult_lt_compat_r ; intuition.
-    apply Rlt_trans with c.
+    lra.
     apply Rmax_case.
-    apply Rminus_lt_0 ; ring_simplify.
-    by apply is_pos_div_2.
-    pattern c at 2 ;
-    replace c with ((c + c) / 2) by field ;
-    apply Rmult_lt_compat_r ; intuition.
-    by apply Hc.
+    generalize (cond_pos d) ; lra.
+    lra.
   assert (Hb' : a < b' < b).
     split.
-    apply Rlt_trans with a'.
-    by apply Ha'.
-    by apply Hab'.
+    lra.
     eapply Rle_lt_trans.
     apply Rmin_r.
-    pattern b at 2 ;
-    replace b with ((b + b) / 2) by field ;
-    apply Rmult_lt_compat_r ; intuition.
+    lra.
   assert (ex_RInt g a a').
     eapply @ex_RInt_Chasles_1, Ig ; split ; by apply Rlt_le, Ha'.
   assert (ex_RInt g a' b).
@@ -3127,11 +3030,7 @@ Proof.
   rewrite ?unzip1_behead ?unzip2_behead /=.
 
   case => /= [ _ | i Hi] .
-  case: Rle_dec => //= Hx0.
-  pattern lx1 at 3 ; replace lx1 with ((lx1 + lx1)/2) by field.
-  pattern x0 at 1 ; replace x0 with ((x0 + x0)/2) by field.
-  split ; apply Rmult_le_compat_r ; by intuition.
-  split ; apply Req_le ; by field.
+  case: Rle_dec => //= Hx0 ; lra.
   contradict Hi ; apply le_not_lt.
   case: Rle_dec => //= Hx0 ; rewrite /SF_size /= ;
   apply le_n_S, le_O_n.
@@ -3151,10 +3050,8 @@ Proof.
   case: Rle_dec => //= Hx2.
   by apply (Hptd O (lt_O_Sn _)).
   by apply (Hptd O (lt_O_Sn _)).
-  pattern lx1 at 3 ; replace lx1 with ((lx1 + lx1)/2) by field.
-  pattern x0 at 1 ; replace x0 with ((x0 + x0)/2) by field.
-  split ; apply Rmult_le_compat_r ; by intuition.
-  split ; apply Req_le ; by field.
+  lra.
+  lra.
   move: Hi (IH i) => {IH}.
   rewrite ?SF_size_rcons -?SF_size_lx ?SF_lx_rcons ?SF_ly_rcons.
   rewrite /SF_cut_down' /SF_belast /SF_last /SF_rcons /SF_ly /=.
@@ -3258,9 +3155,9 @@ Proof.
   apply Rle_trans with (2 := proj2 Hx1), (Hptd O (lt_O_Sn _)).
   move => _ ; by intuition.
 
-  replace a with ((a+a)/2) by field.
-  replace b with ((b+b)/2) by field.
-  split ; apply Rmult_le_compat_r, Rplus_le_compat ; try by intuition.
+  cut (a <= fst (SF_last 0 ptd_r_belast) <= b).
+  lra.
+  split.
 
   revert ptd_r_belast ptd_r Hab1 Hptd.
   apply SF_cons_ind with (s := ptd) => /= [ x0 | [x0 y0] s IH] // Hab1 Hptd.
@@ -3444,10 +3341,7 @@ Proof.
   move: Hx1 (IH Hx1) => {IH}.
   apply SF_cons_dec with (s := s) => {s} /= [x1 | [x1 y1] s] //= Hx1.
   case: Rle_dec => //= Hx2.
-  pattern (SF_h s) at 3 ; replace (SF_h s) with ((SF_h s+SF_h s)/2) by field.
-  pattern lx1 at 1 ; replace lx1 with ((lx1+lx1)/2) by field.
-  apply Rnot_le_lt, Rlt_le in Hx1 ; split ;
-  apply Rmult_le_compat_r ; by intuition.
+  lra.
   rewrite /ptd_l SF_lx_cons SF_ly_cons SF_size_cons => i Hi ;
   move: i {Hi} (lt_S_n _ _ Hi).
   revert ptd_l_behead ptd_l Hptd ;
@@ -3539,9 +3433,9 @@ Proof.
   apply Rle_trans with (2 := proj2 Hx1), (Hptd O (lt_O_Sn _)).
   move => _ ; by intuition.
 
-  replace a with ((a+a)/2) by field.
-  replace b with ((b+b)/2) by field.
-  split ; apply Rmult_le_compat_r, Rplus_le_compat ; try by intuition.
+  cut (a <= fst (SF_head 0 ptd_l_behead) <= b).
+  lra.
+  split.
 
   revert ptd_l_behead ptd_l Hab1 Hptd.
   apply SF_cons_ind with (s := ptd) => /= [ x0 | [x0 y0] s IH] // Hab1 Hptd.
@@ -4246,11 +4140,7 @@ have Hfin : forall i, (S i < size (unif_part a b n))%nat ->
     Rabs (f ((a0 + b0) / 2) - phi ((a0 + b0) / 2)) = Rabs (f x - phi x) /\
     a0 < x < b0).
   eexists ; split => //.
-  pattern b0 at 3 ;
-  replace b0 with ((b0 + b0) / 2) by field ;
-  pattern a0 at 1 ;
-  replace a0 with ((a0 + a0) / 2) by field.
-  split ; apply Rmult_lt_compat_r ; intuition.
+  lra.
   by [].
 
   apply SSR_leq ; by intuition.
@@ -4356,9 +4246,8 @@ have Hfin' : forall t, is_finite (SF_sup_fun (fun t : R => Rabs (f t - phi t)) a
   exact: Hx1.
   exact: Ht_b.
   move => j Hj ; apply (Hi (S j) (lt_n_S _ _ Hj)).
-  simpl ; field ; apply Rgt_not_eq ; by intuition.
-  rewrite -nth_last size_mkseq nth_mkseq ?S_INR //= ;
-  field ; apply Rgt_not_eq, INRp1_pos.
+  apply head_unif_part.
+  apply last_unif_part.
 
 (* Partie 2 *)
 (* * SF_lx ptd = unif_part a b n *)
@@ -4391,14 +4280,14 @@ have Hfin' : forall t, is_finite (SF_sup_fun (fun t : R => Rabs (f t - phi t)) a
   apply SSR_leq ; by intuition.
   apply SSR_leq ; by intuition.
   by apply lt_0_Sn.
-  simpl ; rewrite /Rmin ; case: Rle_dec (Rlt_le _ _ Hab) => //= _ _ ;
-  field ; apply Rgt_not_eq ; by intuition.
+  rewrite -> Rmin_left by now apply Rlt_le.
+  apply head_unif_part.
   rewrite -nth_last SF_lx_f2.
-  replace (head 0 (unif_part a b n) :: behead (unif_part a b n))
-    with (unif_part a b n) by auto.
+  change (head 0 (unif_part a b n) :: behead (unif_part a b n))
+    with (unif_part a b n).
+  rewrite -> Rmax_right by now apply Rlt_le.
   rewrite size_mkseq nth_mkseq.
-  simpl ssrnat.predn ; rewrite S_INR /Rmax ;
-  case: Rle_dec (Rlt_le _ _ Hab) => //= _ _ ;
+  simpl ssrnat.predn ; rewrite S_INR ;
   field ; apply Rgt_not_eq ; by intuition.
   simpl ; apply SSR_leq, le_refl.
   by apply lt_O_Sn.
@@ -4549,13 +4438,11 @@ have Hfin' : forall t, is_finite (SF_sup_fun (fun t : R => Rabs (f t - phi t)) a
     split ; simpl ; apply Rminus_le_0 ; field_simplify.
     rewrite Rdiv_1 ; apply Rdiv_le_0_compat.
     rewrite Rplus_comm -Rminus_le_0 ; exact: (Rlt_le _ _ Hab).
-    replace (2 * INR n + 2) with (2 * (INR n + 1)) by field.
-    apply Rmult_lt_0_compat ; by intuition.
+    generalize (pos_INR n) ; lra.
     apply Rgt_not_eq ; by intuition.
     rewrite Rdiv_1 ; apply Rdiv_le_0_compat.
     rewrite Rplus_comm -Rminus_le_0 ; exact: (Rlt_le _ _ Hab).
-    replace (2 * INR n + 2) with (2 * (INR n + 1)) by field.
-    apply Rmult_lt_0_compat ; by intuition.
+    generalize (pos_INR n) ; lra.
     apply Rgt_not_eq ; by intuition.
     apply SSR_leq ; rewrite size_mkseq in Hi, Hj ; by intuition.
     apply SSR_leq ; rewrite size_mkseq in Hi, Hj ; by intuition.
@@ -4586,13 +4473,11 @@ have Hfin' : forall t, is_finite (SF_sup_fun (fun t : R => Rabs (f t - phi t)) a
     split ; simpl ; apply Rminus_le_0 ; field_simplify.
     rewrite Rdiv_1 ; apply Rdiv_le_0_compat.
     rewrite Rplus_comm -Rminus_le_0 ; exact: (Rlt_le _ _ Hab).
-    replace (2 * INR n + 2) with (2 * (INR n + 1)) by ring.
-    apply Rmult_lt_0_compat ; by intuition.
+    generalize (pos_INR n) ; lra.
     apply Rgt_not_eq ; by intuition.
     rewrite Rdiv_1 ; apply Rdiv_le_0_compat.
     rewrite Rplus_comm -Rminus_le_0 ; exact: (Rlt_le _ _ Hab).
-    replace (2 * INR n + 2) with (2 * (INR n + 1)) by ring.
-    apply Rmult_lt_0_compat ; by intuition.
+    generalize (pos_INR n) ; lra.
     apply Rgt_not_eq ; by intuition.
     apply SSR_leq ; by intuition.
     apply SSR_leq ; by intuition.

@@ -19,7 +19,8 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 COPYING file for more details.
 *)
 
-Require Import Reals mathcomp.ssreflect.ssreflect.
+Require Import Reals Psatz.
+Require Import mathcomp.ssreflect.ssreflect.
 Require Import Rbar Rcomplements Hierarchy.
 
 (** This file gives definitions of equivalent (g ~ f) and dominant (g
@@ -47,18 +48,8 @@ apply filter_const.
 generalize (filter_and _ _ H Hf) => {H Hf}.
 apply filter_imp.
 intros x [H1 H2].
-apply Rlt_not_le with (2 := H1).
-rewrite -{2}(Rmult_1_l (norm (f x))).
-apply Rmult_lt_compat_r.
-apply Rnot_le_lt.
-contradict H2.
-apply Rle_antisym with (1 := H2).
-apply norm_ge_0.
-rewrite /Rdiv Rmult_1_l.
-rewrite <- Rinv_1 at 3.
-apply Rinv_1_lt_contravar.
-apply Rle_refl.
-apply Rlt_plus_1.
+generalize (norm_ge_0 (f x)).
+lra.
 Qed.
 
 Lemma domin_trans {T} {Ku Kv Kw : AbsRing}
@@ -499,16 +490,11 @@ Proof.
   have Hf : F (fun x => f x <> 0).
     generalize (filter_and _ _ Hg (H (pos_div_2 (mkposreal _ Rlt_0_1)))) => /=.
     apply filter_imp => x {Hg H} [Hg H].
-    case: (Req_dec (f x) 0) => Hf.
+    case: (Req_dec (f x) 0) => Hf //.
     rewrite /minus /plus /opp /= Hf Ropp_0 Rplus_0_r in H.
-    apply Rle_not_lt in H.
-    move => _ ; apply H.
-    apply Rminus_lt ; field_simplify ; rewrite Rdiv_1 /Rdiv Ropp_mult_distr_l_reverse ;
-    apply Ropp_lt_gt_0_contravar.
-    apply Rmult_lt_0_compat.
-    by apply Rabs_pos_lt.
-    by intuition.
-    by[].
+    generalize (norm_ge_0 (g x)) (norm_eq_zero (g x)).
+    rewrite /zero /=.
+    lra.
   apply equiv_sym in H.
   move => eps.
   generalize (filter_and _ _ (filter_and _ _ Hf Hg) (H eps)).

@@ -3533,9 +3533,7 @@ rewrite /minus /plus /opp /zero /scal /= /mult /=.
 field.
 split.
 apply INR_fact_neq_0.
-destruct n.
-apply Rgt_not_eq, Rlt_0_1.
-apply Rgt_not_eq, INRp1_pos.
+now apply not_0_INR.
 (* . *)
 eapply filterdiff_ext_lin.
 apply filterdiff_ext with (fun x0 : R => -c * (y - x0) ^ S n).

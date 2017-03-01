@@ -19,7 +19,8 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 COPYING file for more details.
 *)
 
-Require Import Reals Even Div2 Omega mathcomp.ssreflect.ssreflect.
+Require Import Reals Even Div2 Omega Psatz.
+Require Import mathcomp.ssreflect.ssreflect.
 Require Import Rcomplements Rbar Lim_seq Lub Hierarchy.
 Require Import Continuity Derive Seq_fct Series.
 
@@ -302,36 +303,15 @@ Proof.
     intros.
     apply Hcv.
     apply Rlt_le_trans with (2 := Rle_abs _).
-    rewrite Rabs_pos_eq.
-    rewrite -(Rplus_0_r (r - e)).
-    pattern r at 2 ; replace r with ((r-e)+e) by ring.
-    apply Rplus_lt_compat_l, H0.
-    rewrite -Rminus_le_0 ; by apply H0.
+    rewrite Rabs_pos_eq ; lra.
 
   apply Rnot_lt_le => H1.
   have H2: (c < ((c+r)/2) < r).
-    pattern r at 3 ; replace r with ((r+r)/2) by field.
-    pattern c at 1 ; replace c with ((c+c)/2) by field.
-    split ; apply Rmult_lt_compat_r ; by intuition.
+    lra.
   have H3 : 0 < ((r-c)/2) <= r.
-  split.
-  apply Rdiv_lt_0_compat.
-  by apply -> Rminus_lt_0.
-  by apply Rlt_R0_R2.
-  pattern r at 2 ; replace r with ((r+r)/2) by field.
-  apply Rmult_le_compat_r ; intuition.
-  apply Rplus_le_compat_l.
-  apply Rle_trans with 0.
-  rewrite -(Rminus_eq_0 c).
-  rewrite -(Rplus_0_l (-c)).
-  by apply Rplus_le_compat_r.
-  by apply Rlt_le.
+    unfold Rbar_le in Hc0 ; lra.
   move: (H0 _ H3).
-  apply Rlt_not_le.
-  rewrite -{1}(Rdiv_1 r).
-  rewrite Rdiv_minus ; try by [intuition | apply Rgt_not_eq ; intuition].
-  ring_simplify (r * 2 - (r - c) * 1) ; rewrite Rmult_1_l.
-  rewrite Rplus_comm ; by apply H2.
+  lra.
 
 (* lub *)
   move => b Hb.
@@ -573,11 +553,7 @@ Proof.
     by rewrite sum_O Rmult_1_r.
     by rewrite sum_Sn /= Rmult_0_l Rmult_0_r Rabs_R0 /plus /= Rplus_0_r.
     by apply is_lim_seq_const.
-  pattern (/l) at 3 ;
-  replace (/ l) with ((/l + / l) / 2) by (field ; by apply Rgt_not_eq).
-  pattern (cv) at 1 ;
-  replace (cv) with ((cv + cv) / 2) by field.
-  split ; apply Rmult_lt_compat_r ; by intuition.
+  lra.
   case: (ub 0) => //.
   exists (Rabs (a O)).
   apply (is_lim_seq_ext (fun _ => Rabs (a O)) _ (Rabs (a 0%nat))).
@@ -705,18 +681,9 @@ Proof.
     case: (CV_radius a) H3 H4 => /= [cv | | ] // H3 H4.
     apply Rnot_lt_le => /= H5.
     have H6 : 0 < (cv+r)/2 < r.
-      split.
-      apply Rdiv_lt_0_compat.
-      apply Rplus_le_lt_0_compat.
-      by apply H4.
-      by apply Rle_lt_trans with cv.
-      by apply Rlt_R0_R2.
-      pattern (pos r) at 2 ; replace (pos r) with ((r+r)/2) by field.
-      apply Rmult_lt_compat_r ; by intuition.
+      lra.
     move: (H3 _ H6).
-    apply Rlt_not_le.
-    pattern cv at 1 ; replace cv with ((cv+cv)/2) by field.
-    apply Rmult_lt_compat_r ; by intuition.
+    lra.
 Qed.
 
 Lemma CV_radius_Reals_2 (a : nat -> R) (x : R) :
@@ -727,15 +694,9 @@ Proof.
   have H : exists r : posreal, Rabs x < r /\ Rbar_lt (Finite r) (CV_radius a).
     case: (CV_radius a) Hx => /= [cv | | ] Hx.
     have H : 0 < (Rabs x + cv)/2.
-    apply Rdiv_lt_0_compat.
-    apply Rplus_le_lt_0_compat.
-    by apply Rabs_pos.
-    by apply Rle_lt_trans with (2 := Hx), Rabs_pos.
-    by apply Rlt_R0_R2.
+      generalize (Rabs_pos x) ; lra.
     exists (mkposreal _ H) => /=.
-    pattern cv at 3 ; replace cv with ((cv+cv)/2) by field.
-    pattern (Rabs x) at 1 ; replace (Rabs x) with ((Rabs x + Rabs x)/2) by field.
-    split ; apply Rmult_lt_compat_r ; by intuition.
+    lra.
     have H : 0 < Rabs x + 1.
       apply Rle_lt_0_plus_1, Rabs_pos.
     exists (mkposreal _ H) => /=.

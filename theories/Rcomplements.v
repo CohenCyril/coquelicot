@@ -212,6 +212,7 @@ Proof.
 Qed.
 
 Lemma C_n_n: forall n, C n n = 1.
+Proof.
 intros n; unfold C.
 rewrite minus_diag.
 simpl.
@@ -220,6 +221,7 @@ apply INR_fact_neq_0.
 Qed.
 
 Lemma C_n_0: forall n, C n 0 = 1.
+Proof.
 intros n; unfold C.
 rewrite - minus_n_O.
 simpl.

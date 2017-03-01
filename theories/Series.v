@@ -19,7 +19,8 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 COPYING file for more details.
 *)
 
-Require Import Reals Omega mathcomp.ssreflect.ssreflect.
+Require Import Reals Omega Psatz.
+Require Import mathcomp.ssreflect.ssreflect.
 Require Import Rcomplements.
 Require Import Lim_seq Rbar Hierarchy.
 
@@ -1002,17 +1003,14 @@ Proof.
   apply filterlim_ext with (fun N => / (1 - k0) * (1 - k0 ^ S N)).
   move => n ; rewrite sum_n_Reals; rewrite tech3.
   by apply Rmult_comm.
-  apply Rlt_not_eq.
-  replace 1 with ((1+1)/2) by field ; rewrite /k0.
-  apply Rmult_lt_compat_r ; by intuition.
+  unfold k0 ; lra.
   apply (is_lim_seq_scal_l (fun N0 => (1 - k0 ^ S N0)) (/ (1 - k0)) (Finite (1-k0*0))).
   apply (is_lim_seq_minus _ _ (Finite 1) (Finite (k0*0))).
   by apply is_lim_seq_const.
   simpl pow ; apply (is_lim_seq_scal_l _ _ (Finite 0)).
   apply (is_lim_seq_geom k0).
   rewrite Rabs_pos_eq.
-  replace 1 with ((1+1)/2) by field ; rewrite /k0.
-  apply Rmult_lt_compat_r ; by intuition.
+  unfold k0 ; lra.
   apply Rle_trans with (2 := H N (le_refl _)) ; by apply Rabs_pos.
   easy.
 Qed.
@@ -1025,9 +1023,7 @@ Proof.
   move => Hl Ha Hda Ha0.
   set k := (l+1)/2.
   have Hk1 : 1 < k.
-    apply Rminus_lt ; unfold k ; field_simplify ; rewrite Rdiv_1.
-    rewrite -(Rmult_0_l (/2)) ; apply Rmult_lt_compat_r ; try by intuition.
-    rewrite Rplus_comm ; by apply Rlt_minus.
+    unfold k ; lra.
   have : exists N, forall n, (N <= n)%nat -> k <= Rabs (a (S n) / a n).
     apply is_lim_seq_spec in Hda.
     case: (fun H => Hda (mkposreal ((l-1)/2) H)) => [ | /= {Hda} H N Hda].

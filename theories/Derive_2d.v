@@ -19,7 +19,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 COPYING file for more details.
 *)
 
-Require Import Reals Omega.
+Require Import Reals Omega Psatz.
 Require Import mathcomp.ssreflect.ssreflect.
 Require Import Rcomplements Hierarchy Continuity Derive.
 
@@ -258,8 +258,7 @@ Proof.
   rewrite Rmax_left.
   apply Rmult_lt_compat_r.
   by apply Rabs_pos_lt.
-  apply Rminus_lt_0 ; field_simplify ; rewrite Rdiv_1 ;
-  apply Rdiv_lt_0_compat ; by intuition.
+  lra.
   rewrite Rminus_eq_0 Rabs_R0 ; by apply Rabs_pos.
   by [].
 
@@ -277,8 +276,7 @@ Proof.
   rewrite Rmax_right.
   apply Rmult_lt_compat_r.
   by apply Rabs_pos_lt.
-  apply Rminus_lt_0 ; field_simplify ; rewrite Rdiv_1 ;
-  apply Rdiv_lt_0_compat ; by intuition.
+  lra.
   rewrite Rminus_eq_0 Rabs_R0 ; by apply Rabs_pos.
   by [].
 Qed.

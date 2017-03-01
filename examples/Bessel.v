@@ -19,7 +19,8 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 COPYING file for more details.
 *)
 
-Require Import Reals mathcomp.ssreflect.ssreflect.
+Require Import Reals Psatz.
+Require Import mathcomp.ssreflect.ssreflect.
 Require Import Rcomplements Rbar Hierarchy.
 Require Import Derive Series PSeries Lim_seq.
 Require Import AutoDerive.
@@ -132,26 +133,12 @@ Proof.
   rewrite /Bessel1 plus_INR ?mult_INR ; simpl INR.
   set y := x/2 ; replace x with (2 * y) by (unfold y ; field).
 
-  replace ((2 * y) ^ 2 *
-    (y ^ S (S n) * PSeries (PS_derive (PS_derive (Bessel1_seq n))) (y ^ 2) +
-    (2 * INR n + 1) / 2 * y ^ n * PSeries (PS_derive (Bessel1_seq n)) (y ^ 2) +
-    INR n * INR (pred n) / 4 * y ^ pred (pred n) *
-    PSeries (Bessel1_seq n) (y ^ 2)) +
-    2 * y *
-    (y ^ S n * PSeries (PS_derive (Bessel1_seq n)) (y ^ 2) +
-    INR n / 2 * y ^ pred n * PSeries (Bessel1_seq n) (y ^ 2)) +
-    ((2 * y) ^ 2 - INR n ^ 2) * (y ^ n * PSeries (Bessel1_seq n) (y ^ 2)))
+  replace (_ + _)
   with (4 * y^S (S n) * (y^2 * PSeries (PS_derive (PS_derive (Bessel1_seq n))) (y ^ 2)
     + (INR n + 1) * PSeries (PS_derive (Bessel1_seq n)) (y ^ 2)
     + PSeries (Bessel1_seq n) (y ^ 2))).
   Focus 2.
-  case: n => [ | n] ; rewrite ?S_INR ; simpl INR ; simpl pred ; simpl pow ;
-  field_simplify.
-  field.
-  case: n => [ | n] ; rewrite ?S_INR ; simpl INR ; simpl pred ; simpl pow ;
-  field_simplify.
-  field.
-  field.
+  case: n => [|[|n]] ; rewrite ?S_INR /= ; field.
 
   apply Rmult_eq_0_compat_l.
 
@@ -518,16 +505,13 @@ Proof.
   try (by apply INR_fact_neq_0) ;
   try (by apply (not_INR _ 0), sym_not_eq, O_S).
   apply pow_nonzero, Rgt_not_eq ; apply Rmult_lt_0_compat ; by apply Rlt_0_2.
-  ring_simplify (S (S (n + (p + p)))).
-  replace (INR (n + 2 * p + 2) * INR (n + 2 * p + 2) - INR n * INR n)
-    with ((INR (n + 2 * p + 2) - INR n) * (INR (n + 2 * p + 2) + INR n))
-    by ring.
-  rewrite !plus_INR /=.
-  ring_simplify (INR n + (INR p + (INR p + 0)) + 2 - INR n).
-  ring_simplify (INR n + (INR p + (INR p + 0)) + 2 + INR n).
-  rewrite -!(mult_INR 2) -plus_INR -!(plus_INR _ 2) -!plus_n_Sm plus_0_r.
-  apply Rmult_integral_contrapositive_currified ;
-  by apply (not_INR _ 0), sym_not_eq, O_S.
+  rewrite -Rsqr_plus_minus.
+  apply Rmult_integral_contrapositive_currified.
+  rewrite -plus_INR.
+  apply Rgt_not_eq, lt_0_INR.
+  lia.
+  apply Rminus_eq_contra, not_INR.
+  lia.
 Qed.
 
 Lemma Bessel1_uniqueness (a : nat -> R) (n : nat) :
@@ -609,10 +593,11 @@ Proof.
   rewrite Rabs_Ropp /Rdiv !Rabs_pos_eq.
   field.
   split ; apply (not_INR _ 0), sym_not_eq, O_S.
-  repeat apply Rmult_le_pos ; (replace 2 with (INR 2) by (simpl ; ring)) ; apply pos_INR.
+  change 4 with (INR 2 * INR 2).
+  repeat apply Rmult_le_pos ; apply pos_INR.
   by apply pow2_ge_0.
+  change 4 with (INR 2 * INR 2).
   apply Rgt_not_eq ; repeat apply Rmult_lt_0_compat ;
-  (replace 2 with (INR 2) by (simpl ; ring)) ;
   apply lt_0_INR, lt_O_Sn.
   repeat split.
   apply pow_nonzero, Rgt_not_eq ; repeat apply Rmult_lt_0_compat ; apply Rlt_0_2.
