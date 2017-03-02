@@ -1,3 +1,8 @@
+Version 3.0.0:
+- generalized "RInt" to "CompleteNormedModule"
+- added "filterlimi" to express limits of implicitly-defined functions
+- made "is_RInt_gen" similar to other limits and defined "RInt_gen"
+
 Version 2.1.2:
 - fixed compilation with Coq 8.6; minimal version is now 8.5
 
@@ -14,8 +19,8 @@ Version 2.1.0:
 - renamed "Markov*" lemmas to "LPO*"
 - proved Abel's theorem on power series
 - generalized continuity and differentiability of "RInt" in RInt_analysis
-- added support for improper integrals in RInt_gen
-- renamed Limit into Lim_seq
+- added support for improper integrals in "RInt_gen"
+- renamed "Limit" into "Lim_seq"
 - added example BacS2013_bonus about matrices
 
 Version 2.0.1:
