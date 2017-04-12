@@ -31,13 +31,193 @@ algebraic hierarchy of the Coquelicot library is given: from the
  #<br/># More documentation details can be found in #<a
   href="Coquelicot.Coquelicot.html">Coquelicot.html</a>#. *)
 
+Reserved Notation "A `&` B"  (at level 48, left associativity).
+Reserved Notation "A `*` B"  (at level 46, left associativity).
+Reserved Notation "A `+` B"  (at level 54, left associativity).
+Reserved Notation "A +` B"  (at level 54, left associativity).
+Reserved Notation "A `|` B" (at level 52, left associativity).
+Reserved Notation "a |` A" (at level 52, left associativity).
+Reserved Notation "A `\` B" (at level 50, left associativity).
+Reserved Notation "A `\ b" (at level 50, left associativity).
+
+Definition set A := A -> Prop.
+
+Bind Scope classical_set_scope with set.
+Local Open Scope classical_set_scope.
+
+Notation "[ 'set' x : T | P ]" := ((fun x => P) : set T)
+  (at level 0, x at level 99, only parsing) : classical_set_scope.
+Notation "[ 'set' x | P ]" := [set x : _ | P]
+  (at level 0, x, P at level 99, format "[ 'set'  x  |  P ]") : classical_set_scope.
+
+Notation "[ 'set' E | x 'in' A ]" := [set y | exists2 x, A x & E = y]
+  (at level 0, E, x at level 99,
+   format "[ '[hv' 'set'  E '/ '  |  x  'in'  A ] ']'") : classical_set_scope.
+
+Definition image {A B} (f : A -> B) (X : set A) : set B :=
+  [set f a | a in X].
+
+Definition preimage {A B} (f : A -> B) (X : set B) : set A := [set a | X (f a)].
+Arguments preimage A B f X / a.
+
+Definition setT {A} := [set _ : A | True].
+
+Definition set0 {A} := [set _ : A | False].
+
+Definition set1 {A} (x : A) := [set a : A | a = x].
+
+Definition setI {A} (X Y : set A) := [set a | X a /\ Y a].
+
+Definition setU {A} (X Y : set A) := [set a | X a \/ Y a].
+
+Definition nonempty {A} (X : set A) := exists x, X x.
+
+Definition setC {A} (X : set A) := [set a | ~ X a].
+
+Definition setD {A} (X Y : set A) := [set a | X a /\ ~ Y a].
+
+Notation "[ 'set' a ]" := (set1 a)
+  (at level 0, a at level 99, format "[ 'set'  a ]") : classical_set_scope.
+Notation "[ 'set' a : T ]" := [set (a : T)]
+  (at level 0, a at level 99, format "[ 'set'  a   :  T ]") : classical_set_scope.
+Notation "A `|` B" := (setU A B) : classical_set_scope.
+Notation "a |` A" := ([set a] `|` A) : classical_set_scope.
+Notation "[ 'set' a1 ; a2 ; .. ; an ]" := (setU .. (a1 |` [set a2]) .. [set an])
+  (at level 0, a1 at level 99,
+   format "[ 'set'  a1 ;  a2 ;  .. ;  an ]") : classical_set_scope.
+Notation "A `&` B" := (setI A B) : classical_set_scope.
+Notation "~` A" := (setC A) (at level 35, right associativity) : classical_set_scope.
+Notation "[ 'set' ~ a ]" := (~` [set a])
+  (at level 0, format "[ 'set' ~  a ]") : classical_set_scope.
+Notation "A `\` B" := (setD A B) : classical_set_scope.
+Notation "A `\ a" := (A `\` [set a]) : classical_set_scope.
+
+Definition bigsetI A I (P : set I) (X : I -> set A) :=
+  [set a | forall i, P i -> X i a].
+Definition bigsetU A I (P : set I) (X : I -> set A) :=
+  [set a | exists2 i, P i & X i a].
+
+Notation "\bigcup_ ( i 'in' P ) F" :=
+  (bigsetU P (fun i => F))
+  (at level 41, F at level 41, i, P at level 50,
+           format "'[' \bigcup_ ( i  'in'  P ) '/  '  F ']'")
+ : classical_set_scope.
+Notation "\bigcup_ ( i : T ) F" :=
+  (\bigcup_(i in @setT T) F)
+  (at level 41, F at level 41, i at level 50,
+           format "'[' \bigcup_ ( i  :  T ) '/  '  F ']'")
+ : classical_set_scope.
+Notation "\bigcup_ i F" :=
+  (\bigcup_(i : _) F)
+  (at level 41, F at level 41, i at level 0,
+           format "'[' \bigcup_ i '/  '  F ']'")
+ : classical_set_scope.
+
+Notation "\bigcap_ ( i 'in' P ) F" :=
+  (bigsetI P (fun i => F))
+  (at level 41, F at level 41, i, P at level 50,
+           format "'[' \bigcap_ ( i  'in'  P ) '/  '  F ']'")
+ : classical_set_scope.
+Notation "\bigcap_ ( i : T ) F" :=
+  (\bigcap_(i in @setT T) F)
+  (at level 41, F at level 41, i at level 50,
+           format "'[' \bigcap_ ( i  :  T ) '/  '  F ']'")
+ : classical_set_scope.
+Notation "\bigcap_ i F" :=
+  (\bigcap_(i : _) F)
+  (at level 41, F at level 41, i at level 0,
+           format "'[' \bigcap_ i '/  '  F ']'")
+ : classical_set_scope.
+
+Definition subset {A} (X Y : set A) := forall a, X a -> Y a.
+
+Notation "A `<=` B" := (subset A B) (at level 70, no associativity)
+ : classical_set_scope.
+Notation "f @^-1` A" := (preimage f A) (at level 24) : classical_set_scope.
+Notation "f @` A" := (image f A) (at level 24) : classical_set_scope.
+Notation "A !=set0" := (nonempty A) (at level 80) : classical_set_scope.
+
+Lemma imageP {A B} (f : A -> B) (X : set A) a : X a -> (f @` X) (f a).
+Proof. by exists a. Qed.
+
+Lemma sub_image_setI {A B} (f : A -> B) (X Y : set A) :
+  f @` (X `&` Y) `<=` f @` X `&` f @` Y.
+Proof. by move=> b [x [Xa Ya <-]]; split; apply: imageP. Qed.
+Arguments sub_image_setI {A B f X Y} a _.
+
+Lemma nonempty_image {A B} (f : A -> B) (X : set A) :
+  f @` X !=set0 -> X !=set0.
+Proof. by case=> b [a]; exists a. Qed.
+
+Lemma nonempty_preimage {A B} (f : A -> B) (X : set B) :
+  f @^-1` X !=set0 -> X !=set0.
+Proof. by case=> [a ?]; exists (f a). Qed.
+
+Lemma subset_empty {A} (X Y : set A) : X `<=` Y -> X !=set0 -> Y !=set0.
+Proof. by move=> sXY [x Xx]; exists x; apply: sXY. Qed.
+
+Lemma subset_trans {A} (Y X Z : set A) : X `<=` Y -> Y `<=` Z -> X `<=` Z.
+Proof. by move=> sXY sYZ ? ?; apply/sYZ/sXY. Qed.
+
+Lemma nonempty_preimage_setI {A B} (f : A -> B) (X Y : set B) :
+  (f @^-1` (X `&` Y)) !=set0 <-> (f @^-1` X `&` f @^-1` Y) !=set0.
+Proof. by split; case=> x ?; exists x. Qed.
+
+Lemma subsetC {A} (X Y : set A) : X `<=` Y -> ~` Y `<=` ~` X.
+Proof. by move=> sXY ? nYa ?; apply/nYa/sXY. Qed.
+
+Lemma subsetU {A} (X Y Z : set A) : X `<=` Z -> Y `<=` Z -> X `|` Y `<=` Z.
+Proof. by move=> sXZ sYZ a; apply: or_ind; [apply: sXZ|apply: sYZ]. Qed.
+
+Lemma setDE {A} (X Y : set A) : X `\` Y = X `&` ~` Y.
+Proof. by []. Qed.
+
+Structure canonical_filter_on X Y := CanonicalFilterOn {
+  canonical_filter_term : X;
+  _ : set (set Y)
+}.
+Definition canonical_term_filter {X Y} (F : canonical_filter_on X Y) :=
+  let: CanonicalFilterOn x f := F in f.
+
+Structure canonical_filter Y := CanonicalFilter {
+  canonical_filter_type :> Type;
+  _ : canonical_filter_type -> set (set Y)
+}.
+Definition canonical_type_filter {Y} {F : canonical_filter Y} :
+  F -> set (set Y) :=
+  let: CanonicalFilter X f := F in f.
+
+Canonical default_filter_term Y (X : canonical_filter Y) (x : X) :=
+  @CanonicalFilterOn X Y x (canonical_type_filter x).
+
+Structure canonical_filter_source Z Y := CanonicalFilterSource {
+  canonical_filter_source_type :> Type;
+  _ : (canonical_filter_source_type -> Z) -> set (set Y)
+}.
+Definition canonical_source_filter Z Y (F : canonical_filter_source Z Y) :
+  (F -> Z) -> set (set Y) :=
+  let: CanonicalFilterSource X f := F in f.
+
+Canonical default_arrow_filter Y Z (X : canonical_filter_source Z Y) :=
+  @CanonicalFilter _ (X -> Z) (@canonical_source_filter _ _ X).
+
+Canonical source_filter_filter Y :=
+  @CanonicalFilterSource Prop _ (_ -> Prop) (fun x : (set (set Y)) => x).
+
+Definition filter_of X Y (F : canonical_filter_on X Y)
+  (x : X) (_ : x = canonical_filter_term _ _ F) :=
+  canonical_term_filter F.
+Notation "[ 'filter' 'of' x ]" := (@filter_of _ _ _ x eq_refl)
+  (format "[ 'filter'  'of'  x ]").
+Arguments filter_of _ _ _ _ _ _ /.
+
 Open Scope R_scope.
 
 (** * Filters *)
 
 (** ** Definitions *)
 
-Class Filter {T : Type} (F : (T -> Prop) -> Prop) := {
+Class Filter {T : Type} (F : set (set T)) := {
   filter_true : F (fun _ => True) ;
   filter_and : forall P Q : T -> Prop, F P -> F Q -> F (fun x => P x /\ Q x) ;
   filter_imp : forall P Q : T -> Prop, (forall x, P x -> Q x) -> F P -> F Q
@@ -45,18 +225,18 @@ Class Filter {T : Type} (F : (T -> Prop) -> Prop) := {
 
 Global Hint Mode Filter + + : typeclass_instances.
 
-Class ProperFilter' {T : Type} (F : (T -> Prop) -> Prop) := {
+Class ProperFilter' {T : Type} (F : set (set T)) := {
   filter_not_empty : not (F (fun _ => False)) ;
   filter_filter' :> Filter F
 }.
 
-Class ProperFilter {T : Type} (F : (T -> Prop) -> Prop) := {
+Class ProperFilter {T : Type} (F : set (set T)) := {
   filter_ex : forall P, F P -> exists x, P x ;
   filter_filter :> Filter F
 }.
 
 Global Instance Proper_StrongProper :
-  forall {T : Type} (F : (T -> Prop) -> Prop),
+  forall {T : Type} (F : set (set T)),
   ProperFilter F -> ProperFilter' F.
 Proof.
 intros T F [H1 H2].
@@ -87,30 +267,34 @@ Qed.
 
 (** ** Limits expressed with filters *)
 
-Definition filter_le {T : Type} (F G : (T -> Prop) -> Prop) :=
-  forall P, G P -> F P.
+Definition filter_le {T : Type} (F G : set (set T)) := G `<=` F.
 
-Lemma filter_le_refl :
-  forall T F, @filter_le T F F.
+Notation "F --> G" := (filter_le [filter of F] [filter of G])
+  (at level 70, format "F  -->  G") : classical_set_scope.
+
+Lemma filter_le_refl T (F : set (set T)) : F --> F.
+Proof. exact. Qed.
+
+Lemma filter_le_trans T (F G H : set (set T)) :
+  (F --> G) -> (G --> H) -> (F --> H).
 Proof.
-now intros T F P.
+now intros FG GH P K; apply FG, GH.
 Qed.
 
-Lemma filter_le_trans :
-  forall T F G H, @filter_le T F G -> filter_le G H -> filter_le F H.
-Proof.
-intros T F G H FG GH P K.
-now apply FG, GH.
-Qed.
+Definition filtermap {T U : Type} (f : T -> U) (F : set (set T)) :=
+  [set P | F (f @^-1` P)].
 
-Definition filtermap {T U : Type} (f : T -> U) (F : (T -> Prop) -> Prop) :=
-  fun P => F (fun x => P (f x)).
 
-Global Instance filtermap_filter :
-  forall T U (f : T -> U) (F : (T -> Prop) -> Prop),
-  Filter F -> Filter (filtermap f F).
+Notation "E @[ x --> F ]" := (filtermap (fun x => E) [filter of F])
+  (at level 60, x ident, format "E  @[ x  -->  F ]") : classical_set_scope.
+Notation "f @ F" := (filtermap f [filter of F])
+  (at level 60, format "f  @  F") : classical_set_scope.
+
+
+Global Instance filtermap_filter T U (f : T -> U) (F : set (set T)) :
+  Filter F -> Filter (f @ F).
 Proof.
-intros T U f F FF.
+intros FF.
 unfold filtermap.
 constructor.
 - apply filter_true.
@@ -123,11 +307,10 @@ constructor.
   exact HP.
 Qed.
 
-Global Instance filtermap_proper_filter' :
-  forall T U (f : T -> U) (F : (T -> Prop) -> Prop),
-  ProperFilter' F -> ProperFilter' (filtermap f F).
+Global Instance filtermap_proper_filter' T U (f : T -> U) (F : set (set T)) :
+  ProperFilter' F -> ProperFilter' (f @ F).
 Proof.
-intros T U f F FF.
+intros FF.
 unfold filtermap.
 split.
 - apply filter_not_empty.
@@ -135,11 +318,10 @@ split.
   apply filter_filter'.
 Qed.
 
-Global Instance filtermap_proper_filter :
-  forall T U (f : T -> U) (F : (T -> Prop) -> Prop),
-  ProperFilter F -> ProperFilter (filtermap f F).
+Global Instance filtermap_proper_filter T U (f : T -> U) (F : set (set T)) :
+  ProperFilter F -> ProperFilter (f @ F).
 Proof.
-intros T U f F FF.
+intros FF.
 unfold filtermap.
 split.
 - intros P FP.
@@ -149,15 +331,19 @@ split.
   apply filter_filter.
 Qed.
 
-Definition filtermapi {T U : Type} (f : T -> U -> Prop) (F : (T -> Prop) -> Prop) :=
-  fun P : U -> Prop => F (fun x => exists y, f x y /\ P y).
+Definition filtermapi {T U : Type} (f : T -> set U) (F : set (set T)) :=
+  [set P | F [set x | exists y, f x y /\ P y]].
 
-Global Instance filtermapi_filter :
-  forall T U (f : T -> U -> Prop) (F : (T -> Prop) -> Prop),
-  F (fun x => (exists y, f x y) /\ forall y1 y2, f x y1 -> f x y2 -> y1 = y2) ->
-  Filter F -> Filter (filtermapi f F).
+Notation "E `@[ x --> F ]" := (filtermapi (fun x => E) F)
+  (at level 60, x ident, format "E  `@[ x  -->  F ]") : classical_set_scope.
+Notation "f `@ F" := (filtermapi f [filter of F])
+  (at level 60, format "f  `@  F") : classical_set_scope.
+
+Global Instance filtermapi_filter T U (f : T -> U -> Prop) (F : set (set T)) :
+  F [set x | (exists y, f x y) /\ forall y1 y2, f x y1 -> f x y2 -> y1 = y2] ->
+  Filter F -> Filter (f `@ F).
 Proof.
-intros T U f F H FF.
+intros H FF.
 unfold filtermapi.
 constructor.
 - apply: filter_imp H => x [[y Hy] H].
@@ -179,12 +365,12 @@ constructor.
   now apply HPQ.
 Qed.
 
-Global Instance filtermapi_proper_filter' :
-  forall T U (f : T -> U -> Prop) (F : (T -> Prop) -> Prop),
-  F (fun x => (exists y, f x y) /\ forall y1 y2, f x y1 -> f x y2 -> y1 = y2) ->
-  ProperFilter' F -> ProperFilter' (filtermapi f F).
+Global Instance filtermapi_proper_filter'
+  T U (f : T -> U -> Prop) (F : set (set T)) :
+  F [set x | (exists y, f x y) /\ forall y1 y2, f x y1 -> f x y2 -> y1 = y2] ->
+  ProperFilter' F -> ProperFilter' (f `@ F).
 Proof.
-intros T U f F HF FF.
+intros HF FF.
 unfold filtermapi.
 split.
 - intro H.
@@ -196,12 +382,12 @@ split.
   apply filter_filter'.
 Qed.
 
-Global Instance filtermapi_proper_filter :
-  forall T U (f : T -> U -> Prop) (F : (T -> Prop) -> Prop),
-  F (fun x => (exists y, f x y) /\ forall y1 y2, f x y1 -> f x y2 -> y1 = y2) ->
-  ProperFilter F -> ProperFilter (filtermapi f F).
+Global Instance filtermapi_proper_filter
+  T U (f : T -> U -> Prop) (F : set (set T)) :
+  F [set x | (exists y, f x y) /\ forall y1 y2, f x y1 -> f x y2 -> y1 = y2] ->
+  ProperFilter F -> ProperFilter (f `@ F).
 Proof.
-intros T U f F HF FF.
+intros HF FF.
 unfold filtermapi.
 split.
 - intros P FP.
@@ -212,131 +398,101 @@ split.
   apply filter_filter.
 Qed.
 
-Definition filterlim {T U : Type} (f : T -> U) F G :=
-  filter_le (filtermap f F) G.
 
-Lemma filterlim_id :
-  forall T (F : (T -> Prop) -> Prop), filterlim (fun x => x) F F.
-Proof.
-now intros T F P HP.
-Qed.
+Lemma filterlim_id T (F : set (set T)) : x @[x --> F] --> F.
+Proof. exact. Qed.
 
-Lemma filterlim_comp :
-  forall T U V (f : T -> U) (g : U -> V) F G H,
-  filterlim f F G -> filterlim g G H ->
-  filterlim (fun x => g (f x)) F H.
+Lemma filterlim_comp T U V (f : T -> U) (g : U -> V)
+  (F : set (set T)) (G : set (set U)) (H : set (set V)) :
+  f @ F --> G -> g @ G --> H -> g (f x) @[x --> F] --> H.
 Proof.
-intros T U V f g F G H FG GH P HP.
+intros FG GH P HP.
 apply (FG (fun x => P (g x))).
 now apply GH.
 Qed.
 
-Lemma filterlim_ext_loc :
-  forall {T U F G} {FF : Filter F} (f g : T -> U),
-  F (fun x => f x = g x) ->
-  filterlim f F G ->
-  filterlim g F G.
+Lemma filterlim_ext_loc {T U} {F : set (set T)} {G : set (set U)}
+  {FF : Filter F} (f g : T -> U) :
+  F (fun x => f x = g x) -> f @ F --> G -> g @ F --> G.
 Proof.
-intros T U F G FF f g Efg Lf P GP.
+intros  Efg Lf P GP.
 specialize (Lf P GP).
 generalize (filter_and _ (fun x : T => P (f x)) Efg Lf).
-unfold filtermap.
-apply filter_imp.
+apply: filter_imp.
 now intros x [-> H].
 Qed.
 
-Lemma filterlim_ext :
-  forall {T U F G} {FF : Filter F} (f g : T -> U),
-  (forall x, f x = g x) ->
-  filterlim f F G ->
-  filterlim g F G.
+Lemma filterlim_ext {T U} {F : set (set T)} {G : set (set U)}
+  {FF : Filter F} (f g : T -> U) :
+  (forall x, f x = g x) -> f @ F --> G -> g @ F --> G.
 Proof.
-intros T U F G FF f g Efg.
+intros Efg.
 apply filterlim_ext_loc.
 now apply filter_forall.
 Qed.
 
-Lemma filterlim_filter_le_1 :
-  forall {T U F G H} (f : T -> U),
-  filter_le G F ->
-  filterlim f F H ->
-  filterlim f G H.
+Lemma filterlim_filter_le_1 {T U} {F G : set (set T)} {H : set (set U)}
+  (f : T -> U) : G --> F -> f @ F --> H -> f @ G --> H.
 Proof.
-intros T U F G H f K Hf P HP.
+intros K Hf P HP.
 apply K.
 now apply Hf.
 Qed.
 
-Lemma filterlim_filter_le_2 :
-  forall {T U F G H} (f : T -> U),
-  filter_le G H ->
-  filterlim f F G ->
-  filterlim f F H.
+Lemma filterlim_filter_le_2 {T U} {F : set (set T)} {G H : set (set U)}
+  (f : T -> U) : G --> H -> f @ F --> G -> f @ F --> H.
 Proof.
-intros T U F G H f K Hf P HP.
+intros K Hf P HP.
 apply Hf.
 now apply K.
 Qed.
 
-Definition filterlimi {T U : Type} (f : T -> U -> Prop) F G :=
-  filter_le (filtermapi f F) G.
-
-Lemma filterlimi_comp :
-  forall T U V (f : T -> U) (g : U -> V -> Prop) F G H,
-  filterlim f F G -> filterlimi g G H ->
-  filterlimi (fun x => g (f x)) F H.
+Lemma filterlimi_comp T U V (f : T -> U) (g : U -> set V)
+  (F : set (set T)) (G : set (set U)) (H : set (set V)) :
+  f @ F --> G -> g `@ G --> H -> g (f x) `@[x --> F] --> H.
 Proof.
-intros T U V f g F G H FG GH P HP.
+intros FG GH P HP.
 apply (FG (fun x => exists y, g x y /\ P y)).
 now apply GH.
 Qed.
 
-Lemma filterlimi_ext_loc :
-  forall {T U F G} {FF : Filter F} (f g : T -> U -> Prop),
-  F (fun x => forall y, f x y <-> g x y) ->
-  filterlimi f F G ->
-  filterlimi g F G.
+Lemma filterlimi_ext_loc {T U} {F : set (set T)} {G : set (set U)}
+  {FF : Filter F} (f g : T -> set U) :
+  F [set x : T | forall y, f x y <-> g x y] ->
+  f `@ F --> G -> g `@ F --> G.
 Proof.
-intros T U F G FF f g Efg Lf P GP.
+intros Efg Lf P GP.
 specialize (Lf P GP).
 generalize (filter_and _ _ Efg Lf).
-unfold filtermapi.
-apply filter_imp.
+apply: filter_imp.
 intros x [H [y [Hy1 Hy2]]].
 exists y.
 apply: conj Hy2.
 now apply H.
 Qed.
 
-Lemma filterlimi_ext :
-  forall {T U F G} {FF : Filter F} (f g : T -> U -> Prop),
+Lemma filterlimi_ext  {T U} {F : set (set T)} {G : set (set U)}
+  {FF : Filter F} (f g : T -> set U) :
   (forall x y, f x y <-> g x y) ->
-  filterlimi f F G ->
-  filterlimi g F G.
+  f `@ F --> G -> g `@ F --> G.
 Proof.
-intros T U F G FF f g Efg.
+intros Efg.
 apply filterlimi_ext_loc.
 now apply filter_forall.
 Qed.
 
-Lemma filterlimi_filter_le_1 :
-  forall {T U F G H} (f : T -> U -> Prop),
-  filter_le G F ->
-  filterlimi f F H ->
-  filterlimi f G H.
+Lemma filterlimi_filter_le_1 {T U} {F G : set (set T)} {H : set (set U)}
+  (f : T -> set U) : G --> F -> f `@ F --> H -> f `@ G --> H.
 Proof.
-intros T U F G H f K Hf P HP.
+intros K Hf P HP.
 apply K.
 now apply Hf.
 Qed.
 
-Lemma filterlimi_filter_le_2 :
-  forall {T U F G H} (f : T -> U -> Prop),
-  filter_le G H ->
-  filterlimi f F G ->
-  filterlimi f F H.
+Lemma filterlimi_filter_le_2  {T U} {F : set (set T)} {G H : set (set U)}
+  (f : T -> set U) : G --> H -> f `@ F --> G -> f `@ F --> H.
 Proof.
-intros T U F G H f K Hf P HP.
+intros K Hf P HP.
 apply Hf.
 now apply K.
 Qed.
@@ -350,7 +506,7 @@ Inductive filter_prod {T U : Type} (F G : _ -> Prop) (P : T * U -> Prop) : Prop 
     F Q -> G R -> (forall x y, Q x -> R y -> P (x, y)) -> filter_prod F G P.
 
 Global Instance filter_prod_filter :
-  forall T U (F : (T -> Prop) -> Prop) (G : (U -> Prop) -> Prop),
+  forall T U (F : set (set T)) (G : set (set U)),
   Filter F -> Filter G -> Filter (filter_prod F G).
 Proof.
 intros T U F G FF FG.
@@ -411,34 +567,29 @@ Proof.
   apply FG.
 Qed.
 
-Lemma filterlim_fst :
-  forall {T U F G} {FG : Filter G},
-  filterlim (@fst T U) (filter_prod F G) F.
+Lemma filterlim_fst {T U F G} {FG : Filter G} :
+  (@fst T U) @ filter_prod F G --> F.
 Proof.
-intros T U F G FG P HP.
+intros P HP.
 exists P (fun _ => True) ; try easy.
 apply filter_true.
 Qed.
 
-Lemma filterlim_snd :
-  forall {T U F G} {FF : Filter F},
-  filterlim (@snd T U) (filter_prod F G) G.
+Lemma filterlim_snd {T U F G} {FF : Filter F} :
+  (@snd T U) @ filter_prod F G --> G.
 Proof.
-intros T U F G FF P HP.
+intros P HP.
 exists (fun _ => True) P ; try easy.
 apply filter_true.
 Qed.
 
-Lemma filterlim_pair :
-  forall {T U V F G H} {FF : Filter F},
-  forall (f : T -> U) (g : T -> V),
-  filterlim f F G ->
-  filterlim g F H ->
-  filterlim (fun x => (f x, g x)) F (filter_prod G H).
+Lemma filterlim_pair {T U V F G H} {FF : Filter F} (f : T -> U) (g : T -> V) :
+  f @ F --> G -> g @ F --> H ->
+  (f x, g x) @[x --> F] --> filter_prod G H.
 Proof.
-intros T U V F G H FF f g Cf Cg P [A B GA HB HP].
+intros Cf Cg P [A B GA HB HP].
 unfold filtermap.
-apply (filter_imp (fun x => A (f x) /\ B (g x))).
+apply: (filter_imp (fun x => A (f x) /\ B (g x))).
 intros x [Af Bg].
 now apply HP.
 apply filter_and.
@@ -446,29 +597,25 @@ now apply Cf.
 now apply Cg.
 Qed.
 
-Lemma filterlim_comp_2 :
-  forall {T U V W F G H I} {FF : Filter F},
-  forall (f : T -> U) (g : T -> V) (h : U -> V -> W),
-  filterlim f F G ->
-  filterlim g F H ->
-  filterlim (fun x => h (fst x) (snd x)) (filter_prod G H) I ->
-  filterlim (fun x => h (f x) (g x)) F I.
+Lemma filterlim_comp_2 {T U V W F G H} {I : set (set W)} {FF : Filter F}
+  (f : T -> U) (g : T -> V) (h : U -> V -> W) :
+  f @ F --> G -> g @ F --> H ->
+  h (fst x) (snd x) @[x --> filter_prod G H] --> I ->
+  h (f x) (g x) @[x --> F] --> I.
 Proof.
-intros T U V W F G H I FF f g h Cf Cg Ch.
+intros Cf Cg Ch.
 change (fun x => h (f x) (g x)) with (fun x => h (fst (f x, g x)) (snd (f x, g x))).
 apply: filterlim_comp Ch.
 now apply filterlim_pair.
 Qed.
 
-Lemma filterlimi_comp_2 :
-  forall {T U V W F G H I} {FF : Filter F},
-  forall (f : T -> U) (g : T -> V) (h : U -> V -> W -> Prop),
-  filterlim f F G ->
-  filterlim g F H ->
-  filterlimi (fun x => h (fst x) (snd x)) (filter_prod G H) I ->
-  filterlimi (fun x => h (f x) (g x)) F I.
+Lemma filterlimi_comp_2 {T U V W F G H} {I : set (set W)} {FF : Filter F}
+  (f : T -> U) (g : T -> V) (h : U -> V -> set W) :
+  f @ F --> G -> g @ F --> H ->
+  h (fst x) (snd x) `@[x --> filter_prod G H] --> I ->
+  h (f x) (g x) `@[x --> F] --> I.
 Proof.
-intros T U V W F G H I FF f g h Cf Cg Ch.
+intros Cf Cg Ch.
 change (fun x => h (f x) (g x)) with (fun x => h (fst (f x, g x)) (snd (f x, g x))).
 apply: filterlimi_comp Ch.
 now apply filterlim_pair.
@@ -476,8 +623,8 @@ Qed.
 
 (** Restriction of a filter to a domain *)
 
-Definition within {T : Type} D (F : (T -> Prop) -> Prop) (P : T -> Prop) :=
-  F (fun x => D x -> P x).
+Definition within {T : Type} D (F : set (set T)) (P : T -> Prop) :=
+  F [set x | D x -> P x].
 
 Global Instance within_filter :
   forall T D F, Filter F -> Filter (@within T D F).
@@ -502,29 +649,27 @@ constructor.
   now apply filter_forall.
 Qed.
 
-Lemma filter_le_within :
-  forall {T} {F : (T -> Prop) -> Prop} {FF : Filter F} D,
-  filter_le (within D F) F.
+Lemma filter_le_within {T} {F : set (set T)} {FF : Filter F} D :
+  within D F --> F.
 Proof.
-intros T F D P HP.
-unfold within.
-now apply filter_imp.
+now intros P; apply: filter_imp.
 Qed.
 
-Lemma filterlim_within_ext :
-  forall {T U F G} {FF : Filter F} D (f g : T -> U),
+Lemma filterlim_within_ext {T U F} {G : set (set U)}
+  {FF : Filter F} D (f g : T -> U) :
   (forall x, D x -> f x = g x) ->
-  filterlim f (within D F) G ->
-  filterlim g (within D F) G.
+  f @ within D F --> G ->
+  g @ within D F --> G.
 Proof.
-intros T U F G FF D f g Efg.
+intros Efg.
 apply filterlim_ext_loc.
 unfold within.
 now apply filter_forall.
 Qed.
 
-Definition subset_filter {T} (F : (T -> Prop) -> Prop) (dom : T -> Prop) (P : {x|dom x} -> Prop) : Prop :=
-  F (fun x => forall H : dom x, P (exist _ x H)).
+Definition subset_filter {T} (F : set (set T))
+  (dom : T -> Prop) (P : {x|dom x} -> Prop) : Prop :=
+  F [set x | forall H : dom x, P (exist _ x H)].
 
 Global Instance subset_filter_filter :
   forall T F (dom : T -> Prop),
@@ -1704,7 +1849,7 @@ exfalso.
 now apply (Hd y).
 Qed.
 
-Definition is_filter_lim (F : (T -> Prop) -> Prop) (x : T) :=
+Definition is_filter_lim (F : set (set T)) (x : T) :=
   forall P, locally x P -> F P.
 
 Lemma is_filter_lim_filter_le :
@@ -1739,16 +1884,23 @@ Qed.
 
 End Locally.
 
+Canonical filter_uniform_space (U : UniformSpace) :=
+  @CanonicalFilter _ U (@locally U).
+Definition cvg (U : UniformSpace) (F : set (set U)) : Prop :=
+  exists l : U, F --> l.
+Notation "[ 'cvg' F ]" := (cvg [filter of F])
+  (format "[ 'cvg'  F ]") : classical_set_scope.
+
 Lemma filterlim_const :
-  forall {T} {U : UniformSpace} {F : (T -> Prop) -> Prop} {FF : Filter F},
-  forall a : U, filterlim (fun _ => a) F (locally a).
+  forall {T} {U : UniformSpace} {F : set (set T)} {FF : Filter F},
+  forall a : U, (fun _ => a) @ F --> a.
 Proof.
 intros T U F FF a P [eps HP].
-unfold filtermap.
+unfold filtermap; simpl.
 apply filter_forall.
 intros _.
 apply HP.
-apply ball_center.
+now apply ball_center.
 Qed.
 
 Section Locally_fct.
@@ -1756,9 +1908,9 @@ Section Locally_fct.
 Context {T : Type} {U : UniformSpace}.
 
 Lemma filterlim_locally :
-  forall {F} {FF : Filter F} (f : T -> U) y,
-  filterlim f F (locally y) <->
-  forall eps : posreal, F (fun x => ball y eps (f x)).
+  forall {F} {FF : Filter F} (f : T -> U) (y : U),
+  f @ F --> y <->
+  forall eps : posreal, F [set x | ball y eps (f x)].
 Proof.
 intros F FF f y.
 split.
@@ -1773,16 +1925,16 @@ Qed.
 
 Lemma filterlimi_locally :
   forall {F} {FF : Filter F} (f : T -> U -> Prop) y,
-  filterlimi f F (locally y) <->
-  forall eps : posreal, F (fun x => exists z, f x z /\ ball y eps z).
+  f `@ F --> y <->
+  forall eps : posreal, F [set x | exists z, f x z /\ ball y eps z].
 Proof.
 intros F FF f y.
 split.
 - intros Cf eps.
-  apply (Cf (fun x => ball y eps x)).
+  apply (Cf (ball y eps)).
   now exists eps.
 - intros Cf P [eps He].
-  unfold filtermapi.
+  unfold filtermapi; simpl.
   apply: filter_imp (Cf eps).
   intros t [z [Hz1 Hz2]].
   exists z.
@@ -1791,34 +1943,32 @@ split.
 Qed.
 
 Lemma filterlim_locally_close :
-  forall {F} {FF: ProperFilter F} (f : T -> U) l l',
-  filterlim f F (locally l) ->  filterlim f F (locally l') ->
+  forall {F} {FF: ProperFilter F} (f : T -> U) (l l' : U),
+  f @ F --> l -> f @ F --> l' ->
   close l l'.
 Proof.
 intros F FF f l l' Hl Hl' eps.
-assert (locally l (ball l (pos_div_2 eps))).
-  by apply locally_ball.
-specialize (Hl (ball l (pos_div_2 eps)) H).
-assert (locally l' (ball l' (pos_div_2 eps))).
-  by apply locally_ball.
-specialize (Hl' (ball l' (pos_div_2 eps)) H0).
-unfold filtermap in Hl, Hl'.
-generalize (filter_and _ _ Hl Hl') => {H H0} H.
-apply filter_ex in H.
-case: H => x H.
-rewrite (double_var eps).
-apply ball_triangle with (f x).
-by apply H.
-by apply ball_sym, H.
+have half_l := Hl (ball l (pos_div_2 eps)) (locally_ball _ _).
+have half_l' := Hl' (ball l' (pos_div_2 eps)) (locally_ball _ _).
+generalize (filter_and _ _ half_l half_l').
+move=> /filter_ex [fx [fxl /ball_sym fxl']].
+by rewrite (double_var eps); eapply (ball_triangle _ fx).
 Qed.
 
 Lemma filterlimi_locally_close :
-  forall {F} {FF: ProperFilter F} (f : T -> U -> Prop) l l',
-  F (fun x => forall y1 y2, f x y1 -> f x y2 -> y1 = y2) ->
-  filterlimi f F (locally l) ->  filterlimi f F (locally l') ->
+  forall {F} {FF: ProperFilter F} (f : T -> U -> Prop) (l l' : U),
+  F [set x | forall y1 y2, f x y1 -> f x y2 -> y1 = y2] ->
+  f `@ F --> l ->  f `@ F --> l' ->
   close l l'.
 Proof.
 intros F FF f l l' Hf Hl Hl' eps.
+have half_l := Hl (ball l (pos_div_2 eps)) (locally_ball _ _).
+have half_l' := Hl' (ball l' (pos_div_2 eps)) (locally_ball _ _).
+generalize (filter_and _ _ half_l half_l').
+move=> /filter_ex [fx [fxl /ball_sym fxl']].
+by rewrite (double_var eps); eapply (ball_triangle _ fx).
+
+
 assert (H: locally l (ball l (pos_div_2 eps))).
   by apply locally_ball.
 specialize (Hl (ball l (pos_div_2 eps)) H).
@@ -2104,13 +2254,13 @@ Qed.
 
 (** ** Complete uniform spaces *)
 
-Definition cauchy {T : UniformSpace} (F : (T -> Prop) -> Prop) :=
+Definition cauchy {T : UniformSpace} (F : set (set T)) :=
   forall eps : posreal, exists x, F (ball x eps).
 
 Module CompleteSpace.
 
 Record mixin_of (T : UniformSpace) := Mixin {
-  lim : ((T -> Prop) -> Prop) -> T ;
+  lim : (set (set T)) -> T ;
   ax1 : forall F, ProperFilter F -> cauchy F -> forall eps : posreal, F (ball (lim F) eps) ;
   ax2 : forall F1 F2, filter_le F1 F2 -> filter_le F2 F1 -> close (lim F1) (lim F2)
 }.
@@ -2156,10 +2306,10 @@ Section CompleteSpace1.
 
 Context {T : CompleteSpace}.
 
-Definition lim : ((T -> Prop) -> Prop) -> T := CompleteSpace.lim _ (CompleteSpace.class T).
+Definition lim : (set (set T)) -> T := CompleteSpace.lim _ (CompleteSpace.class T).
 
 Lemma complete_cauchy :
-  forall F : (T -> Prop) -> Prop,
+  forall F : set (set T),
   ProperFilter F -> cauchy F ->
   forall eps : posreal,
   F (ball (lim F) eps).
@@ -2168,7 +2318,7 @@ apply CompleteSpace.ax1.
 Qed.
 
 Lemma close_lim :
-  forall F1 F2 : (T -> Prop) -> Prop,
+  forall F1 F2 : set (set T),
   filter_le F1 F2 -> filter_le F2 F1 ->
   close (lim F1) (lim F2).
 Proof.
@@ -3355,7 +3505,7 @@ Proof.
 Qed.
 
 Lemma filterlim_locally_ball_norm :
-  forall {K : AbsRing} {T} {U : NormedModule K} {F : (T -> Prop) -> Prop} {FF : Filter F} (f : T -> U) (y : U),
+  forall {K : AbsRing} {T} {U : NormedModule K} {F : set (set T)} {FF : Filter F} (f : T -> U) (y : U),
   filterlim f F (locally y) <-> forall eps : posreal, F (fun x => ball_norm y eps (f x)).
 Proof.
 intros K T U F FF f y.
@@ -4649,7 +4799,7 @@ Proof.
 Qed.
 
 Lemma filterlim_norm_zero {U} {K : AbsRing} {V : NormedModule K}
-  {F : (U -> Prop) -> Prop} {FF : Filter F} (f : U -> V) :
+  {F : set (set U)} {FF : Filter F} (f : U -> V) :
   filterlim (fun x => norm (f x)) F (locally 0)
   -> filterlim f F (locally (zero (G := V))).
 Proof.
