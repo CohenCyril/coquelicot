@@ -1,3 +1,6 @@
+Version 3.0.1:
+- ensured compatibility from Coq 8.5 to Coq 8.7
+
 Version 3.0.0:
 - generalized "RInt" to "CompleteNormedModule"
 - added "filterlimi" to express limits of implicitly-defined functions
@@ -35,7 +38,7 @@ Version 2.0.0:
   left-modules
 
 Version 1.1.0:
-- expressed "locally", "Rbar_locally', etc, as filters
+- expressed "locally", "Rbar_locally", etc, as filters
 - defined limits using "filterlim" and modified predicates such as "is_lim"
   accordingly
 - simplified definitions of Rbar operators
