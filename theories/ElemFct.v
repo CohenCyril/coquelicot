@@ -80,7 +80,7 @@ Qed.
 Lemma filterlim_Rabs (x : Rbar) :
   filterlim Rabs (Rbar_locally' x) (Rbar_locally (Rbar_abs x)).
 Proof.
-  destruct x as [x | | ] => //=.
+  destruct x as [x| | ] => //=.
 
   eapply filterlim_filter_le_1, continuous_Rabs.
   intros P [d HP] ; exists d => y Hy _.
@@ -100,7 +100,7 @@ Qed.
 Lemma is_lim_Rabs (f : R -> R) (x l : Rbar) :
   is_lim f x l -> is_lim (fun x => Rabs (f x)) x (Rbar_abs l).
 Proof.
-  destruct l as [l | | ] ; simpl ; intros ; first last.
+  destruct l as [l| | ] ; simpl ; intros ; first last.
   eapply is_lim_comp.
   2: by apply H.
   by apply filterlim_Rabs.

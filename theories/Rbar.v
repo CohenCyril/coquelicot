@@ -447,7 +447,7 @@ Qed.
 
 Lemma Rbar_opp_involutive (x : Rbar) : (Rbar_opp (Rbar_opp x)) = x.
 Proof.
-  destruct x as [x| | ] ; auto ; simpl ; rewrite Ropp_involutive ; auto.
+  destruct x as [x| | ] ; auto ; simpl ; rewrite Ropp_involutive ; auto.
 Qed.
 
 Lemma Rbar_opp_lt (x y : Rbar) : Rbar_lt (Rbar_opp x) (Rbar_opp y) <-> Rbar_lt y x.
