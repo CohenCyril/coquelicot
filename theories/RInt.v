@@ -3823,7 +3823,7 @@ elim: (SF_t ptd) (SF_h ptd, SF_h ptd) => //=.
   apply Rlt_le_trans with (1 := Ha), (Hptd O (lt_O_Sn _)).
   apply Rle_lt_trans with (2 := Hx1), (Hptd O (lt_O_Sn _)).
   rewrite Hx1 Riemann_sum_zero.
-  change zero with R0.
+  change zero with 0.
   rewrite /plus /scal /= /mult /=.
   replace (_ - _) with ((c - phi y0) * (b - x0)) by ring.
   apply Rle_trans with ((fmax - fmin) * alpha).

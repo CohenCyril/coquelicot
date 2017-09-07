@@ -88,14 +88,14 @@ Definition Cmod (x : C) : R := sqrt (fst x ^ 2 + snd x ^ 2).
 
 Definition Cconj (x : C) : C := (fst x, (- snd x)%R).
 
-Lemma Cmod_0 : Cmod 0 = R0.
+Lemma Cmod_0 : Cmod 0 = 0.
 Proof.
 unfold Cmod.
 simpl.
 rewrite Rmult_0_l Rplus_0_l.
 apply sqrt_0.
 Qed.
-Lemma Cmod_1 : Cmod 1 = R1.
+Lemma Cmod_1 : Cmod 1 = 1.
 Proof.
 unfold Cmod.
 simpl.

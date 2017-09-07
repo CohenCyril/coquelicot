@@ -3591,7 +3591,7 @@ apply Rmult_eq_reg_r with (INR (S n) * (y - zeta) ^ n).
 apply Rplus_eq_reg_l with ((- (y - zeta) ^ n / INR (fact n) * Derive_n f (S n) zeta)).
 change (fact (S n)) with (S n * fact n)%nat.
 rewrite mult_INR.
-apply trans_eq with R0.
+apply trans_eq with 0.
 rewrite -Rmult_assoc.
 assert (H: x <= zeta <= y) by (split ; apply Rlt_le ; apply Hzeta1).
 rewrite -(is_derive_unique _ _ _ (Dg _ H)).

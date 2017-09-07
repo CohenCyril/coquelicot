@@ -681,7 +681,7 @@ Proof.
   change scal with Rmult.
   change plus with Cplus.
   change minus with Rminus.
-  change zero with R0.
+  change zero with 0.
   intros y ; apply injective_projections ; simpl ; ring.
 
   rewrite /Rmin /Rmax ; case: Rle_dec Rle_0_1 => // _ _.
