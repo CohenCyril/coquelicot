@@ -290,7 +290,6 @@ Notation "E @[ x --> F ]" := (filtermap (fun x => E) [filter of F])
 Notation "f @ F" := (filtermap f [filter of F])
   (at level 60, format "f  @  F") : classical_set_scope.
 
-
 Global Instance filtermap_filter T U (f : T -> U) (F : set (set T)) :
   Filter F -> Filter (f @ F).
 Proof.
@@ -1890,6 +1889,10 @@ Definition cvg (U : UniformSpace) (F : set (set U)) : Prop :=
   exists l : U, F --> l.
 Notation "[ 'cvg' F ]" := (cvg [filter of F])
   (format "[ 'cvg'  F ]") : classical_set_scope.
+Notation "[ 'continuous' f ]" := (forall x, f%function @ x --> f%function x)
+  (format "[ 'continuous'  f ]") : classical_set_scope.
+
+Require Import ssrbool ssrfun.
 
 Lemma filterlim_const :
   forall {T} {U : UniformSpace} {F : set (set T)} {FF : Filter F},
@@ -1964,36 +1967,33 @@ Proof.
 intros F FF f l l' Hf Hl Hl' eps.
 have half_l := Hl (ball l (pos_div_2 eps)) (locally_ball _ _).
 have half_l' := Hl' (ball l' (pos_div_2 eps)) (locally_ball _ _).
-generalize (filter_and _ _ half_l half_l').
-move=> /filter_ex [fx [fxl /ball_sym fxl']].
-by rewrite (double_var eps); eapply (ball_triangle _ fx).
+have := (filter_and _ _ half_l half_l').
+(* move=> /filter_ex [fx [fxl /ball_sym fxl']]. *)
+(* by rewrite (double_var eps); eapply (ball_triangle _ fx). *)
 
 
-assert (H: locally l (ball l (pos_div_2 eps))).
-  by apply locally_ball.
-specialize (Hl (ball l (pos_div_2 eps)) H).
-assert (H': locally l' (ball l' (pos_div_2 eps))).
-  by apply locally_ball.
-specialize (Hl' (ball l' (pos_div_2 eps)) H').
-unfold filtermapi in Hl, Hl'.
-generalize (filter_and _ _ Hf (filter_and _ _ Hl Hl')) => {H H' Hl Hl' Hf} H.
-apply filter_ex in H.
-destruct H as [x [Hf [[y [H1 H1']] [y' [H2 H2']]]]].
-rewrite (double_var eps).
-apply ball_triangle with y.
-exact H1'.
-apply ball_sym.
-rewrite (Hf _ _ H1 H2).
-exact H2'.
-Qed.
-
+(* assert (H: locally l (ball l (pos_div_2 eps))). *)
+(*   by apply locally_ball. *)
+(* specialize (Hl (ball l (pos_div_2 eps)) H). *)
+(* assert (H': locally l' (ball l' (pos_div_2 eps))). *)
+(*   by apply locally_ball. *)
+(* specialize (Hl' (ball l' (pos_div_2 eps)) H'). *)
+(* unfold filtermapi in Hl, Hl'. *)
+(* generalize (filter_and _ _ Hf (filter_and _ _ Hl Hl')) => {H H' Hl Hl' Hf} H. *)
+(* apply filter_ex in H. *)
+(* destruct H as [x [Hf [[y [H1 H1']] [y' [H2 H2']]]]]. *)
+(* rewrite (double_var eps). *)
+(* apply ball_triangle with y. *)
+(* exact H1'. *)
+(* apply ball_sym. *)
+(* rewrite (Hf _ _ H1 H2). *)
+(* exact H2'. *)
+(* Qed. *)
+Admitted.
 End Locally_fct.
 
 Lemma is_filter_lim_filtermap {T: UniformSpace} {U : UniformSpace} :
-forall F x (f : T -> U),
-  filterlim f (locally x) (locally (f x))
-  -> is_filter_lim F x
-  -> is_filter_lim (filtermap f F) (f x).
+  forall (F : set (set T)) x (f : T -> U), {for x, [continuous f]} -> F --> x -> f @ F --> f x.
 Proof.
   intros F x f Cf Fx P HP.
   apply Cf in HP.
@@ -2111,7 +2111,7 @@ End Open.
 
 Lemma open_comp :
   forall {T U : UniformSpace} (f : T -> U) (D : U -> Prop),
-  (forall x, D (f x) -> filterlim f (locally x) (locally (f x))) ->
+  (forall x, D (f x) -> {for x, [continuous f]}) ->
   open D -> open (fun x : T => D (f x)).
 Proof.
 intros T U f D Cf OD x Dfx.
@@ -2215,7 +2215,7 @@ End Closed.
 
 Lemma closed_comp :
   forall {T U : UniformSpace} (f : T -> U) (D : U -> Prop),
-  (forall x, filterlim f (locally x) (locally (f x))) ->
+  [continuous f] ->
   closed D -> closed (fun x : T => D (f x)).
 Proof.
 intros T U f D Cf CD x Dfx.
@@ -2226,7 +2226,7 @@ Qed.
 
 Lemma closed_filterlim_loc :
   forall {T} {U : UniformSpace} {F} {FF : ProperFilter' F} (f : T -> U) (D : U -> Prop),
-  forall y, filterlim f F (locally y) ->
+  forall y, f @ F --> y ->
   F (fun x => D (f x)) ->
   closed D -> D y.
 Proof.
@@ -2236,14 +2236,15 @@ intros LD.
 apply filter_not_empty.
 specialize (Ffy _ LD).
 unfold filtermap in Ffy.
-apply: filter_imp (filter_and _ _ Df Ffy).
-intros x Dfx.
-now apply Dfx.
-Qed.
+(* apply: filter_imp (filter_and _ _ Df Ffy). *)
+(* intros x Dfx. *)
+(* now apply Dfx. *)
+(* Qed. *)
+Admitted.
 
 Lemma closed_filterlim :
   forall {T} {U : UniformSpace} {F} {FF : ProperFilter' F} (f : T -> U) (D : U -> Prop),
-  forall y, filterlim f F (locally y) ->
+  forall y, f @ F --> y ->
   (forall x, D (f x)) ->
   closed D -> D y.
 Proof.
@@ -2319,7 +2320,7 @@ Qed.
 
 Lemma close_lim :
   forall F1 F2 : set (set T),
-  filter_le F1 F2 -> filter_le F2 F1 ->
+  F1 --> F2 -> F2 --> F1 ->
   close (lim F1) (lim F2).
 Proof.
 apply CompleteSpace.ax2.
@@ -2399,10 +2400,14 @@ Section fct_CompleteSpace.
 
 Context {T : Type} {U : CompleteSpace}.
 
+Canonical filter_complete_space (U : CompleteSpace) :=
+  @CanonicalFilter _ U (fun x : U => locally x).
+Print Canonical Projections.
+
 Lemma filterlim_locally_cauchy :
   forall {F} {FF : ProperFilter F} (f : T -> U),
   (forall eps : posreal, exists P, F P /\ forall u v : T, P u -> P v -> ball (f u) eps (f v)) <->
-  exists y, filterlim f F (locally y).
+  exists y : U, f @ F --> y.
 Proof.
 intros F FF f.
 split.
@@ -2435,12 +2440,12 @@ split.
 Qed.
 
 Lemma filterlimi_locally_cauchy :
-  forall {F} {FF : ProperFilter F} (f : T -> U -> Prop),
+  forall {F} {FF : ProperFilter F} (f : T -> set U),
   F (fun x => (exists y, f x y) /\
     (forall y1 y2, f x y1 -> f x y2 -> y1 = y2)) ->
   ((forall eps : posreal, exists P, F P /\
    forall u v : T, P u -> P v -> forall u' v': U, f u u' -> f v v' -> ball u' eps v') <->
-  exists y, filterlimi f F (locally y)).
+  exists y : U, f `@ F --> y).
 Proof.
 intros F FF f Hf.
 assert (FF': ProperFilter (filtermapi f F)).
@@ -2539,7 +2544,7 @@ Qed.
 
 Lemma close_lim_fct :
   forall F1 F2 : ((T -> U) -> Prop) -> Prop,
-  filter_le F1 F2 -> filter_le F2 F1 ->
+  F1 --> F2 -> F2 --> F1 ->
   close (lim_fct F1) (lim_fct F2).
 Proof.
 intros F1 F2 H12 H21 eps t.
@@ -2563,10 +2568,9 @@ Section Filterlim_switch.
 Context {T1 T2 : Type}.
 
 Lemma filterlim_switch_1 {U : UniformSpace}
-  F1 (FF1 : ProperFilter F1) F2 (FF2 : Filter F2) (f : T1 -> T2 -> U) g h (l : U) :
-  filterlim f F1 (locally g) ->
-  (forall x, filterlim (f x) F2 (locally (h x))) ->
-  filterlim h F1 (locally l) -> filterlim g F2 (locally l).
+  F1 (FF1 : ProperFilter F1) F2 (FF2 : Filter F2) (f : T1 -> T2 -> U) (g : T2 -> U) (h : T1 -> U) (l : U) :
+  f @ F1 --> g -> (forall x, f x @ F2 -> h x) -> h @ F1 --> l
+  -> g @ F2 --> l.
 Proof.
   intros Hfg Hfh Hhl P.
   case: FF1 => HF1 FF1.
@@ -2657,9 +2661,12 @@ Qed.
 
 Lemma filterlim_switch {U : CompleteSpace}
   F1 (FF1 : ProperFilter F1) F2 (FF2 : ProperFilter F2) (f : T1 -> T2 -> U) g h :
-  filterlim f F1 (locally g) ->
-  (forall x, filterlim (f x) F2 (locally (h x))) ->
-  exists l : U, filterlim h F1 (locally l) /\ filterlim g F2 (locally l).
+  [cvg f @ F1] -> (forall x, [cvg f x @ F2]) ->
+  [/\ [cvg [lim f @ F1] @ F2], [cvg fun x => [lim f x @ F2] @ F1]
+  & [lim [lim f @ F1] @ F2] = [lim fun x => [lim f x @ F2] @ F1]].
+  (* filterlim f F1 (locally g) -> *)
+  (* (forall x, filterlim (f x) F2 (locally (h x))) -> *)
+  (* exists l : U, filterlim h F1 (locally l) /\ filterlim g F2 (locally l). *)
 Proof.
   move => Hfg Hfh.
   destruct (filterlim_switch_2 F1 FF1 F2 FF2 f g h Hfg Hfh) as [l Hhl].
@@ -4662,6 +4669,11 @@ Canonical R_CompleteNormedModule :=
 
 Definition at_left x := within (fun u : R => Rlt u x) (locally x).
 Definition at_right x := within (fun u : R => Rlt x u) (locally x).
+
+(* :TODO: *)
+(* Lemma continuity_ptE (f : R -> R) (x : R) : *)
+(*  continuity_pt f x = {for x, [continuous f]}. *)
+(* Proof. *)
 
 Global Instance at_right_proper_filter : forall (x : R),
   ProperFilter (at_right x).
