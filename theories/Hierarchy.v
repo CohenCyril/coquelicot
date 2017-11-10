@@ -19,7 +19,8 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 COPYING file for more details.
 *)
 
-Require Import Reals mathcomp.ssreflect.ssreflect.
+Require Import Reals.
+From Coq Require Import ssreflect ssrfun ssrbool.
 Require Import Rcomplements Rbar Markov Iter Lub.
 
 (** This file first describes [Filter]s that are predicates of type
@@ -172,24 +173,32 @@ Proof. by move=> sXZ sYZ a; apply: or_ind; [apply: sXZ|apply: sYZ]. Qed.
 Lemma setDE {A} (X Y : set A) : X `\` Y = X `&` ~` Y.
 Proof. by []. Qed.
 
+(* Index the filter (2nd proj) on a term (1st proj) *)
 Structure canonical_filter_on X Y := CanonicalFilterOn {
   canonical_filter_term : X;
   _ : set (set Y)
 }.
+(* Defining the 2nd proj, not named before to prevent Warnings *)
+(* when adding a canonical instance of canonical_filter_on *)
 Definition canonical_term_filter {X Y} (F : canonical_filter_on X Y) :=
   let: CanonicalFilterOn x f := F in f.
 
+(* Index a family of filters on a type, one for each element of the type *)
 Structure canonical_filter Y := CanonicalFilter {
   canonical_filter_type :> Type;
   _ : canonical_filter_type -> set (set Y)
 }.
+(* Naming the second proj *)
 Definition canonical_type_filter {Y} {F : canonical_filter Y} :
   F -> set (set Y) :=
   let: CanonicalFilter X f := F in f.
 
+(* The default filter for an arbitrary element is the one obtained *)
+(* from its type *)
 Canonical default_filter_term Y (X : canonical_filter Y) (x : X) :=
   @CanonicalFilterOn X Y x (canonical_type_filter x).
 
+(* filter on arrow sources *)
 Structure canonical_filter_source Z Y := CanonicalFilterSource {
   canonical_filter_source_type :> Type;
   _ : (canonical_filter_source_type -> Z) -> set (set Y)
@@ -203,6 +212,8 @@ Canonical default_arrow_filter Y Z (X : canonical_filter_source Z Y) :=
 
 Canonical source_filter_filter Y :=
   @CanonicalFilterSource Prop _ (_ -> Prop) (fun x : (set (set Y)) => x).
+Canonical source_filter_filter' Y :=
+  @CanonicalFilterSource Prop _ (set _) (fun x : (set (set Y)) => x).
 
 Definition filter_of X Y (F : canonical_filter_on X Y)
   (x : X) (_ : x = canonical_filter_term _ _ F) :=
@@ -429,6 +440,9 @@ intros Efg.
 apply filterlim_ext_loc.
 now apply filter_forall.
 Qed.
+
+Lemma filterlim_trans {T} {F G H : set (set T)} : F --> G -> G --> H -> F --> H.
+Proof. by move=> FG GH P /GH /FG. Qed.
 
 Lemma filterlim_filter_le_1 {T U} {F G : set (set T)} {H : set (set U)}
   (f : T -> U) : G --> F -> f @ F --> H -> f @ G --> H.
@@ -1480,20 +1494,54 @@ Record mixin_of (M : Type) := Mixin {
   ax3 : forall x y z e1 e2, ball x e1 y -> ball y e2 z -> ball x (e1 + e2) z
 }.
 
-Notation class_of := mixin_of (only parsing).
+Definition uniform_filter M (m : mixin_of M) : M -> set (set M) :=
+  fun (x : M) P => exists eps : posreal, forall y, ball _ m x eps y -> P y.
+
+Record locally_mixin_of (M : Type) (m : mixin_of M) (b : M -> set (set M)) := LocallyMixin {
+  locallyE : b = uniform_filter M m
+}.
+
+Record class_of M := Class {
+  base : M -> set (set M); (* UNSTABLE !!!! *)
+  mixin : mixin_of M;
+  locally_mixin : locally_mixin_of M mixin base
+}.
 
 Section ClassDef.
 
+Local Coercion base : class_of >-> Funclass.
 Structure type := Pack { sort; _ : class_of sort ; _ : Type }.
 Local Coercion sort : type >-> Sortclass.
-Definition class (cT : type) := let: Pack _ c _ := cT return class_of cT in c.
+Variables (T : Type) (cT : type).
+Definition class := let: Pack _ c _ := cT return class_of cT in c.
+
+Definition clone c of phant_id class c := @Pack T c T.
+Let xT := let: Pack T _ _ := cT in T.
+Notation xclass := (class : class_of xT).
+
+Definition pack m :=
+  fun b bT & phant_id (@canonical_type_filter T bT) b =>
+  fun erefl => @Pack T (@Class T b m (@LocallyMixin _ _ _ erefl)) T.
+
+Definition type_is_canonical_filter := @CanonicalFilter cT cT xclass.
 
 End ClassDef.
 
 Module Exports.
 
 Coercion sort : type >-> Sortclass.
+Coercion base : class_of >-> Funclass.
+Coercion mixin : class_of >-> mixin_of.
+Coercion type_is_canonical_filter : type >-> canonical_filter.
+Canonical type_is_canonical_filter.
 Notation UniformSpace := type.
+Notation "[ 'UniformSpace' 'of' T 'for' cT ]" :=  (@clone T cT _ idfun)
+  (at level 0, format "[ 'UniformSpace'  'of'  T  'for'  cT ]") : form_scope.
+Notation "[ 'UniformSpace' 'of' T ]" := (@clone T _ _ id)
+  (at level 0, format "[ 'UniformSpace'  'of'  T ]") : form_scope.
+Notation UniformSpacePack T m := (@pack T m  _ _ idfun erefl).
+
+Coercion uniform_filter : mixin_of >-> Funclass.
 
 End Exports.
 
@@ -1614,8 +1662,8 @@ Qed.
 Definition AbsRing_UniformSpace_mixin :=
   UniformSpace.Mixin _ _ AbsRing_ball_center AbsRing_ball_sym AbsRing_ball_triangle.
 
-Canonical AbsRing_UniformSpace :=
-  UniformSpace.Pack K AbsRing_UniformSpace_mixin K.
+Canonical AbsRing_canonical_filter := CanonicalFilter K K AbsRing_UniformSpace_mixin.
+Canonical AbsRing_UniformSpace := UniformSpacePack K AbsRing_UniformSpace_mixin.
 
 End AbsRing_UniformSpace.
 
@@ -1656,8 +1704,9 @@ Qed.
 Definition fct_UniformSpace_mixin :=
   UniformSpace.Mixin _ _ fct_ball_center fct_ball_sym fct_ball_triangle.
 
-Canonical fct_UniformSpace :=
-  UniformSpace.Pack (T -> U) fct_UniformSpace_mixin (T -> U).
+Canonical generic_source_filter :=
+  @CanonicalFilterSource _ _ _ fct_UniformSpace_mixin.
+Canonical fct_UniformSpace := UniformSpacePack (T -> U) fct_UniformSpace_mixin.
 
 End fct_UniformSpace.
 
@@ -1697,14 +1746,22 @@ Section Locally.
 
 Context {T : UniformSpace}.
 
-Definition locally (x : T) (P : T -> Prop) :=
-  exists eps : posreal, forall y, ball x eps y -> P y.
+Definition locally (x : T) := [filter of x].
+
+Lemma locallyE : locally = fun x P => exists eps : posreal, forall y, ball x eps y -> P y.
+Proof.
+rewrite /locally /filter_of /=/ball.
+by case: UniformSpace.class=> //= op mix [-> /=].
+Qed.
+
+Lemma filterE (x : T) :
+  [filter of x] = fun P => exists eps : posreal, forall y, ball x eps y -> P y.
+Proof. by rewrite -/(locally x) locallyE. Qed.
 
 Global Instance locally_filter :
   forall x : T, ProperFilter (locally x).
 Proof.
-intros x.
-constructor ; [idtac|constructor].
+rewrite locallyE; move=> x; constructor ; [idtac|constructor].
 - intros P [eps H].
   exists x.
   apply H.
@@ -1732,7 +1789,7 @@ Lemma locally_locally :
   forall (x : T) (P : T -> Prop),
   locally x P -> locally x (fun y => locally y P).
 Proof.
-intros x P [dp Hp].
+rewrite !locallyE=> x P [dp Hp].
 exists (pos_div_2 dp).
 intros y Hy.
 exists (pos_div_2 dp) => /= z Hz.
@@ -1745,7 +1802,7 @@ Lemma locally_singleton :
   forall (x : T) (P : T -> Prop),
   locally x P -> P x.
 Proof.
-intros x P [dp H].
+rewrite locallyE => x P [dp H].
 apply H.
 by apply ball_center.
 Qed.
@@ -1753,8 +1810,7 @@ Qed.
 Lemma locally_ball :
   forall (x : T) (eps : posreal), locally x (ball x eps).
 Proof.
-  intros x eps.
-  now exists eps.
+by rewrite locallyE => x eps; exists eps.
 Qed.
 
 Lemma locally_not' :
@@ -1812,7 +1868,7 @@ Lemma locally_not :
   not (forall eps : posreal, not (forall y, ball x eps y -> not (P y))) ->
   locally x (fun y => not (P y)).
 Proof.
-intros x P H.
+rewrite !locallyE; intros x P H.
 destruct (locally_not' x P H) as [eps He].
 now exists eps.
 Qed.
@@ -1822,7 +1878,7 @@ Lemma locally_ex_not :
   locally x (fun y => not (P y)) ->
   {d : posreal | forall y, ball x d y -> not (P y)}.
 Proof.
-intros x P H.
+rewrite !locallyE; intros x P H.
 apply locally_not'.
 destruct H as [eps He].
 intros H.
@@ -1848,45 +1904,28 @@ exfalso.
 now apply (Hd y).
 Qed.
 
-Definition is_filter_lim (F : set (set T)) (x : T) :=
-  forall P, locally x P -> F P.
-
-Lemma is_filter_lim_filter_le :
-  forall {F G} (x : T),
-  filter_le G F ->
-  is_filter_lim F x -> is_filter_lim G x.
-Proof.
-intros F G x L Fx P HP.
-apply L.
-now apply Fx.
-Qed.
-
 Lemma is_filter_lim_close {F} {FF : ProperFilter F} (x y : T) :
-  is_filter_lim F x -> is_filter_lim F y -> close x y.
+  F --> x -> F --> y -> close x y.
 Proof.
-  intros Hx Hy eps.
-  specialize (Hy _ (locally_ball y (pos_div_2 eps))).
-  specialize (Hx _ (locally_ball x (pos_div_2 eps))).
-  generalize (filter_and _ _ Hx Hy) => {Hx Hy} H.
-  destruct (filter_ex _ H) as [z Hz].
-  rewrite (double_var eps).
-  apply ball_triangle with z.
-  apply Hz.
-  apply ball_sym, Hz.
+intros Fx Fy eps.
+specialize (Fy _ (locally_ball y (pos_div_2 eps))).
+specialize (Fx _ (locally_ball x (pos_div_2 eps))).
+generalize (filter_and _ _ Fx Fy) => {Fx Fy} Fxy.
+rewrite (double_var eps).
+destruct (filter_ex _ Fxy) as [z Fz].
+apply ball_triangle with z.
+apply Fz.
+apply ball_sym, Fz.
 Qed.
 
 Lemma is_filter_lim_locally_close (x y : T) :
-  is_filter_lim (locally x) y -> close x y.
-Proof.
-  by apply is_filter_lim_close.
-Qed.
+  x --> y -> close x y.
+Proof. exact: is_filter_lim_close. Qed.
 
 End Locally.
 
-Canonical filter_uniform_space (U : UniformSpace) :=
-  @CanonicalFilter _ U (@locally U).
-Definition cvg (U : UniformSpace) (F : set (set U)) : Prop :=
-  exists l : U, F --> l.
+Definition cvg (U : Type) (T : canonical_filter U) (F : set (set U)) : Prop :=
+  exists l : T, F --> l.
 Notation "[ 'cvg' F ]" := (cvg [filter of F])
   (format "[ 'cvg'  F ]") : classical_set_scope.
 Notation "[ 'continuous' f ]" := (forall x, f%function @ x --> f%function x)
@@ -1894,45 +1933,37 @@ Notation "[ 'continuous' f ]" := (forall x, f%function @ x --> f%function x)
 
 Require Import ssrbool ssrfun.
 
-Lemma filterlim_const :
-  forall {T} {U : UniformSpace} {F : set (set T)} {FF : Filter F},
-  forall a : U, (fun _ => a) @ F --> a.
+Lemma appfilter U V (f : U -> V) (F : set (set U)) : f @ F = [set P | F (f @^-1` P)].
+Proof. by []. Qed.
+
+Lemma filterlim_const {T} {U : UniformSpace} {F : set (set T)} {FF : Filter F} (a : U) :
+  a @[_ --> F] --> a.
 Proof.
-intros T U F FF a P [eps HP].
-unfold filtermap; simpl.
-apply filter_forall.
-intros _.
-apply HP.
-now apply ball_center.
+move=> P; rewrite !filterE=> -[eps HP] /=.
+by rewrite appfilter /=; apply: filter_forall=> _; apply/HP/ball_center.
 Qed.
 
 Section Locally_fct.
 
 Context {T : Type} {U : UniformSpace}.
 
-Lemma filterlim_locally :
-  forall {F} {FF : Filter F} (f : T -> U) (y : U),
-  f @ F --> y <->
-  forall eps : posreal, F [set x | ball y eps (f x)].
+Lemma filterlim_locally {F} {FF : Filter F} (f : T -> U) (y : U) :
+  f @ F --> y <-> forall eps : posreal, F [set x | ball y eps (f x)].
 Proof.
-intros F FF f y.
-split.
-- intros Cf eps.
+rewrite !filterE /=; split.
+- move=> Cf eps.
   apply (Cf (fun x => ball y eps x)).
-  now exists eps.
-- intros Cf P [eps He].
-  apply: filter_imp (Cf eps).
-  intros t.
-  apply He.
+  by exists eps.
+- move=> Cf P [eps He].
+  apply: filter_imp (Cf eps) => t.
+  exact: He.
 Qed.
 
-Lemma filterlimi_locally :
-  forall {F} {FF : Filter F} (f : T -> U -> Prop) y,
+Lemma filterlimi_locally {F} {FF : Filter F} (f : T -> U -> Prop) y :
   f `@ F --> y <->
   forall eps : posreal, F [set x | exists z, f x z /\ ball y eps z].
 Proof.
-intros F FF f y.
-split.
+rewrite !filterE; split.
 - intros Cf eps.
   apply (Cf (ball y eps)).
   now exists eps.
@@ -1945,51 +1976,45 @@ split.
   now apply He.
 Qed.
 
-Lemma filterlim_locally_close :
-  forall {F} {FF: ProperFilter F} (f : T -> U) (l l' : U),
-  f @ F --> l -> f @ F --> l' ->
-  close l l'.
-Proof.
-intros F FF f l l' Hl Hl' eps.
-have half_l := Hl (ball l (pos_div_2 eps)) (locally_ball _ _).
-have half_l' := Hl' (ball l' (pos_div_2 eps)) (locally_ball _ _).
-generalize (filter_and _ _ half_l half_l').
-move=> /filter_ex [fx [fxl /ball_sym fxl']].
-by rewrite (double_var eps); eapply (ball_triangle _ fx).
-Qed.
+(* :TODO: remove *)
+Lemma filterlim_locally_close {F} {FF: ProperFilter F} (f : T -> U) (l l' : U) :
+  f @ F --> l -> f @ F --> l' -> close l l'.
+Proof. exact: is_filter_lim_close. Qed.
 
-Lemma filterlimi_locally_close :
-  forall {F} {FF: ProperFilter F} (f : T -> U -> Prop) (l l' : U),
+(* :TODO: refactor *)
+Lemma filterlimi_locally_close
+  {F} {FF: ProperFilter F} (f : T -> U -> Prop) (l l' : U) :
   F [set x | forall y1 y2, f x y1 -> f x y2 -> y1 = y2] ->
-  f `@ F --> l ->  f `@ F --> l' ->
-  close l l'.
+  f `@ F --> l ->  f `@ F --> l' -> close l l'.
 Proof.
-intros F FF f l l' Hf Hl Hl' eps.
-have half_l := Hl (ball l (pos_div_2 eps)) (locally_ball _ _).
-have half_l' := Hl' (ball l' (pos_div_2 eps)) (locally_ball _ _).
-have := (filter_and _ _ half_l half_l').
+(* move=> Fmem; suff fFp : ProperFilter (f `@ F) by exact: @is_filter_lim_close. *)
+(* apply: filtermapi_proper_filter. *)
+(* apply: filter_imp Fmem. *)
+intros Hf Hl Hl' eps.
+(* have half_l := Hl (ball l (pos_div_2 eps)) (locally_ball _ _). *)
+(* have half_l' := Hl' (ball l' (pos_div_2 eps)) (locally_ball _ _). *)
+(* have := (filter_and _ _ half_l half_l'). *)
 (* move=> /filter_ex [fx [fxl /ball_sym fxl']]. *)
 (* by rewrite (double_var eps); eapply (ball_triangle _ fx). *)
+assert (H: locally l (ball l (pos_div_2 eps))).
+  by apply locally_ball.
+specialize (Hl (ball l (pos_div_2 eps)) H).
+assert (H': locally l' (ball l' (pos_div_2 eps))).
+  by apply locally_ball.
+specialize (Hl' (ball l' (pos_div_2 eps)) H').
+unfold filtermapi in Hl, Hl'.
+rewrite /= in Hl Hl'.
+generalize (filter_and _ _ Hf (filter_and _ _ Hl Hl')) => {H H' Hl Hl' Hf} H.
+apply filter_ex in H.
+destruct H as [x [Hf [[y [H1 H1']] [y' [H2 H2']]]]].
+rewrite (double_var eps).
+apply ball_triangle with y.
+exact H1'.
+apply ball_sym.
+rewrite (Hf _ _ H1 H2).
+exact H2'.
+Qed.
 
-
-(* assert (H: locally l (ball l (pos_div_2 eps))). *)
-(*   by apply locally_ball. *)
-(* specialize (Hl (ball l (pos_div_2 eps)) H). *)
-(* assert (H': locally l' (ball l' (pos_div_2 eps))). *)
-(*   by apply locally_ball. *)
-(* specialize (Hl' (ball l' (pos_div_2 eps)) H'). *)
-(* unfold filtermapi in Hl, Hl'. *)
-(* generalize (filter_and _ _ Hf (filter_and _ _ Hl Hl')) => {H H' Hl Hl' Hf} H. *)
-(* apply filter_ex in H. *)
-(* destruct H as [x [Hf [[y [H1 H1']] [y' [H2 H2']]]]]. *)
-(* rewrite (double_var eps). *)
-(* apply ball_triangle with y. *)
-(* exact H1'. *)
-(* apply ball_sym. *)
-(* rewrite (Hf _ _ H1 H2). *)
-(* exact H2'. *)
-(* Qed. *)
-Admitted.
 End Locally_fct.
 
 Lemma is_filter_lim_filtermap {T: UniformSpace} {U : UniformSpace} :
