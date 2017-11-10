@@ -1924,10 +1924,15 @@ Proof. exact: is_filter_lim_close. Qed.
 
 End Locally.
 
-Definition cvg (U : Type) (T : canonical_filter U) (F : set (set U)) : Prop :=
-  exists l : T, F --> l.
-Notation "[ 'cvg' F ]" := (cvg [filter of F])
-  (format "[ 'cvg'  F ]") : classical_set_scope.
+Definition cvg (U : Type) (T : canonical_filter U) :=
+  fun (T' : Type) & canonical_filter_type _ T = T' =>
+  fun F : set (set U) => exists l : T, F --> l.
+
+Notation "[ 'cvg' F 'in' T ]" :=
+  (@cvg _ _ T erefl [filter of F])
+  (format "[ 'cvg'  F  'in' T ]") : classical_set_scope.
+(* Notation "[ 'cvg' F ]" :=  *)
+(*   (format "[ 'cvg'  F ]") : classical_set_scope. *)
 Notation "[ 'continuous' f ]" := (forall x, f%function @ x --> f%function x)
   (format "[ 'continuous'  f ]") : classical_set_scope.
 
@@ -2162,7 +2167,7 @@ intros D CD x Dx.
 apply locally_not.
 intros H.
 apply Dx, CD.
-intros [eps He].
+rewrite locallyE => -[eps He].
 now apply (H eps).
 Qed.
 
@@ -2233,6 +2238,7 @@ Lemma closed_false :
 Proof.
 intros x Hx.
 apply Hx.
+rewrite locallyE.
 now exists (mkposreal _ Rlt_0_1).
 Qed.
 
@@ -2309,6 +2315,7 @@ Definition class := let: Pack _ c _ := cT return class_of cT in c.
 Let xT := let: Pack T _ _ := cT in T.
 Notation xclass := (class : class_of xT).
 
+Definition type_canonical_filter := CanonicalFilter cT cT xclass.
 Definition UniformSpace := UniformSpace.Pack cT xclass xT.
 
 End ClassDef.
@@ -2318,6 +2325,8 @@ Module Exports.
 Coercion base : class_of >-> UniformSpace.class_of.
 Coercion mixin : class_of >-> mixin_of.
 Coercion sort : type >-> Sortclass.
+Coercion type_canonical_filter : type >-> canonical_filter.
+Canonical type_canonical_filter.
 Coercion UniformSpace : type >-> UniformSpace.type.
 Canonical UniformSpace.
 Notation CompleteSpace := type.
@@ -2328,17 +2337,18 @@ End CompleteSpace.
 
 Export CompleteSpace.Exports.
 
+Definition lim {T : CompleteSpace} : set (set T) -> T := CompleteSpace.lim _ (CompleteSpace.class T).
+Notation "[ 'lim' F ]" := (lim [filter of F]) (format "[ 'lim'  F ]") : classical_set_scope.
+
 Section CompleteSpace1.
 
 Context {T : CompleteSpace}.
-
-Definition lim : (set (set T)) -> T := CompleteSpace.lim _ (CompleteSpace.class T).
 
 Lemma complete_cauchy :
   forall F : set (set T),
   ProperFilter F -> cauchy F ->
   forall eps : posreal,
-  F (ball (lim F) eps).
+  F (ball [lim F] eps).
 Proof.
 apply CompleteSpace.ax1.
 Qed.
@@ -2351,14 +2361,13 @@ Proof.
 apply CompleteSpace.ax2.
 Qed.
 
-Definition iota (P : T -> Prop) := lim (fun A => (forall x, P x -> A x)).
+Definition iota (P : T -> Prop) := [lim [set A | P `<=` A]].
 
-Lemma iota_correct_weak :
-  forall P : T -> Prop,
+Lemma iota_correct_weak (P : T -> Prop) :
   (forall x y, P x -> P y -> close x y) ->
   forall x, P x -> close (iota P) x.
 Proof.
-intros P HP x Hx eps.
+intros HP x Hx eps.
 set (F := fun A : T -> Prop => forall t : T, P t -> A t).
 assert (forall eps : posreal, F (ball (lim F) eps)) as HF.
 apply complete_cauchy.
@@ -2425,10 +2434,6 @@ Section fct_CompleteSpace.
 
 Context {T : Type} {U : CompleteSpace}.
 
-Canonical filter_complete_space (U : CompleteSpace) :=
-  @CanonicalFilter _ U (fun x : U => locally x).
-Print Canonical Projections.
-
 Lemma filterlim_locally_cauchy :
   forall {F} {FF : ProperFilter F} (f : T -> U),
   (forall eps : posreal, exists P, F P /\ forall u v : T, P u -> P v -> ball (f u) eps (f v)) <->
@@ -2437,7 +2442,8 @@ Proof.
 intros F FF f.
 split.
 - intros H.
-  exists (lim (filtermap f F)).
+  exists [lim f @ F].
+  rewrite filterE.
   intros P [eps HP].
   refine (_ (complete_cauchy (filtermap f F) _ _ eps)).
   + now apply filter_imp.
@@ -2455,6 +2461,7 @@ split.
   exists (fun x => ball y (pos_div_2 eps) (f x)).
   split.
   apply Hy.
+  rewrite filterE.
   now exists (pos_div_2 eps).
   intros u v Hu Hv.
   rewrite (double_var eps).
@@ -2479,7 +2486,8 @@ assert (FF': ProperFilter (filtermapi f F)).
   exact FF.
 split.
 - intros H.
-  exists (lim (filtermapi f F)).
+  exists [lim f `@ F].
+  rewrite filterE.
   intros P [eps HP].
   refine (_ (complete_cauchy (filtermapi f F) _ _ eps)).
   + now apply filter_imp.
@@ -2499,6 +2507,7 @@ split.
   exists (fun x => forall fx, f x fx -> ball y (pos_div_2 eps) fx).
   split.
     assert (Hb: locally y (ball y (pos_div_2 eps))).
+      rewrite locallyE.
       now exists (pos_div_2 eps).
     assert (H := filter_and _ _ Hf (Hy _ Hb)).
     apply: filter_imp H.
@@ -2594,8 +2603,10 @@ Context {T1 T2 : Type}.
 
 Lemma filterlim_switch_1 {U : UniformSpace}
   F1 (FF1 : ProperFilter F1) F2 (FF2 : Filter F2) (f : T1 -> T2 -> U) (g : T2 -> U) (h : T1 -> U) (l : U) :
-  f @ F1 --> g -> (forall x, f x @ F2 -> h x) -> h @ F1 --> l
-  -> g @ F2 --> l.
+  f @ F1 --> g ->
+  (forall x, f x @ F2 --> h x) ->
+  h @ F1 --> l ->
+  g @ F2 --> l.
 Proof.
   intros Hfg Hfh Hhl P.
   case: FF1 => HF1 FF1.
@@ -2641,16 +2652,17 @@ Proof.
 Qed.
 
 Lemma filterlim_switch_2 {U : CompleteSpace}
-  F1 (FF1 : ProperFilter F1) F2 (FF2 : ProperFilter F2) (f : T1 -> T2 -> U) g h :
-  filterlim f F1 (locally g) ->
-  (forall x, filterlim (f x) F2 (locally (h x))) ->
-  exists l : U, filterlim h F1 (locally l).
+  F1 (FF1 : ProperFilter F1) F2 (FF2 : ProperFilter F2) (f : T1 -> T2 -> U) (g : T2 -> U) (h : T1 -> U) :
+  f @ F1 --> g ->
+  (forall x, f x @ F2 --> h x) ->
+  [cvg h @ F1 in U].
+
 Proof.
   move => Hfg Hfh.
   case : (proj1 (filterlim_locally_cauchy h)).
   move => eps.
   generalize (proj2 (filterlim_locally_cauchy f)) => Hf.
-  assert (exists y : T2 -> U, filterlim f F1 (locally y)).
+  assert (exists y : T2 -> U, f @ F1 --> y).
     exists g => P Hp.
     apply Hfg.
     case: Hp => d Hp.
@@ -2684,14 +2696,17 @@ Proof.
   by exists l.
 Qed.
 
+(* Alternative version *)
+(* Lemma filterlim_switch {U : CompleteSpace} *)
+(*   F1 (FF1 : ProperFilter F1) F2 (FF2 : ProperFilter F2) (f : T1 -> T2 -> U) (g : T2 -> U) (h : T1 -> U) : *)
+(*   [cvg f @ F1 in T2 -> U] -> (forall x, [cvg f x @ F2 in U]) -> *)
+(*   [/\ [cvg [lim f @ F1] @ F2 in U], [cvg (fun x => [lim f x @ F2]) @ F1 in U] *)
+(*   & [lim [lim f @ F1] @ F2] = [lim (fun x => [lim f x @ F2]) @ F1]]. *)
 Lemma filterlim_switch {U : CompleteSpace}
-  F1 (FF1 : ProperFilter F1) F2 (FF2 : ProperFilter F2) (f : T1 -> T2 -> U) g h :
-  [cvg f @ F1] -> (forall x, [cvg f x @ F2]) ->
-  [/\ [cvg [lim f @ F1] @ F2], [cvg fun x => [lim f x @ F2] @ F1]
-  & [lim [lim f @ F1] @ F2] = [lim fun x => [lim f x @ F2] @ F1]].
-  (* filterlim f F1 (locally g) -> *)
-  (* (forall x, filterlim (f x) F2 (locally (h x))) -> *)
-  (* exists l : U, filterlim h F1 (locally l) /\ filterlim g F2 (locally l). *)
+  F1 (FF1 : ProperFilter F1) F2 (FF2 : ProperFilter F2) (f : T1 -> T2 -> U) (g : T2 -> U) (h : T1 -> U) :
+  f @ F1 --> g ->
+  (forall x, f x @ F2 --> h x) ->
+  exists l : U, h @ F1 --> l /\ g @ F2 --> l.
 Proof.
   move => Hfg Hfh.
   destruct (filterlim_switch_2 F1 FF1 F2 FF2 f g h Hfg Hfh) as [l Hhl].
@@ -2706,10 +2721,10 @@ End Filterlim_switch.
 Lemma filterlim_switch_dom {T1 T2 : Type} {U : CompleteSpace}
   F1 (FF1 : ProperFilter F1) F2 (FF2 : Filter F2)
   (dom : T2 -> Prop) (HF2 : forall P, F2 P -> exists x, dom x /\ P x)
-  (f : T1 -> T2 -> U) g h :
-  filterlim (fun x (y : {z : T2 | dom z}) => f x (proj1_sig y)) F1 (locally (T := fct_UniformSpace _ _) (fun y : {z : T2 | dom z} => g (proj1_sig y))) ->
-  (forall x, filterlim (f x) (within dom F2) (locally (h x))) ->
-  exists l : U, filterlim h F1 (locally l) /\ filterlim g (within dom F2) (locally l).
+  (f : T1 -> T2 -> U) (g : T2 -> U) (h : T1 -> U) :
+  (fun x (y : {z : T2 | dom z}) => f x (proj1_sig y)) @ F1 --> (fun y : {z : T2 | dom z} => g (proj1_sig y)) ->
+  (forall x, (f x) @ (within dom F2) --> h x) ->
+  exists l : U, h @ F1 --> l /\ g @ within dom F2 --> l.
 Proof.
 set (T2' := { y : T2 | dom y }).
 set (f' := fun x (y : T2') => f x (proj1_sig y)).
@@ -2942,7 +2957,7 @@ Variable K : AbsRing.
 
 Record class_of (T : Type) := Class {
   base : ModuleSpace.class_of K T ;
-  mixin : UniformSpace.mixin_of T
+  mixin : UniformSpace.class_of T
 }.
 Local Coercion base : class_of >-> ModuleSpace.class_of.
 Local Coercion mixin : class_of >-> UniformSpace.class_of.
@@ -2957,6 +2972,7 @@ Definition class := let: Pack _ c _ := cT return class_of cT in c.
 Let xT := let: Pack T _ _ := cT in T.
 Notation xclass := (class : class_of xT).
 
+Definition type_canonical_filter := CanonicalFilter cT cT xclass.
 Definition AbelianGroup := AbelianGroup.Pack cT xclass xT.
 Definition ModuleSpace := ModuleSpace.Pack _ cT xclass xT.
 Definition UniformSpace := UniformSpace.Pack cT xclass xT.
@@ -2968,6 +2984,8 @@ Module Exports.
 Coercion base : class_of >-> ModuleSpace.class_of.
 Coercion mixin : class_of >-> UniformSpace.class_of.
 Coercion sort : type >-> Sortclass.
+Coercion type_canonical_filter : type >-> canonical_filter.
+Canonical type_canonical_filter.
 Coercion AbelianGroup : type >-> AbelianGroup.type.
 Canonical AbelianGroup.
 Coercion ModuleSpace : type >-> ModuleSpace.type.
@@ -3014,6 +3032,7 @@ Definition class := let: Pack _ c _ := cT return class_of cT in c.
 Let xT := let: Pack T _ _ := cT in T.
 Notation xclass := (class : class_of xT).
 
+Definition type_canonical_filter := CanonicalFilter cT cT xclass.
 Definition AbelianGroup := AbelianGroup.Pack cT xclass xT.
 Definition ModuleSpace := ModuleSpace.Pack _ cT xclass xT.
 Definition UniformSpace := UniformSpace.Pack cT xclass xT.
@@ -3026,6 +3045,8 @@ Module Exports.
 Coercion base : class_of >-> NormedModuleAux.class_of.
 Coercion mixin : class_of >-> mixin_of.
 Coercion sort : type >-> Sortclass.
+Coercion type_canonical_filter : type >-> canonical_filter.
+Canonical type_canonical_filter.
 Coercion AbelianGroup : type >-> AbelianGroup.type.
 Canonical AbelianGroup.
 Coercion ModuleSpace : type >-> ModuleSpace.type.
@@ -3188,6 +3209,7 @@ assert (He : 0 < / norm_factor * eps).
   apply Rinv_0_lt_compat.
   apply norm_factor_gt_0.
   apply cond_pos.
+rewrite locallyE.
 exists (mkposreal _ He).
 intros y By.
 apply H.
@@ -3202,7 +3224,7 @@ Qed.
 Lemma locally_norm_le_locally :
   forall x, filter_le (locally_norm x) (locally x).
 Proof.
-intros x P [eps H].
+rewrite !locallyE => x P [eps H].
 exists eps.
 intros y By.
 apply H.
@@ -3298,11 +3320,10 @@ intros eps He.
 exact (H (mkposreal eps He)).
 Qed.
 
-Lemma is_filter_lim_unique :
-  forall {F} {FF : ProperFilter' F} (x y : V),
-  is_filter_lim F x -> is_filter_lim F y -> x = y.
+Lemma is_filter_lim_unique {F} {FF : ProperFilter' F} (x y : V) :
+  F --> x -> F --> y -> x = y.
 Proof.
-intros F FF x y Hx Hy.
+intros Hx Hy.
 apply ball_norm_eq => eps.
 assert (Hx': F (ball_norm x (pos_div_2 eps))).
   apply Hx.
@@ -3326,7 +3347,7 @@ Qed.
 
 Lemma is_filter_lim_locally_unique :
   forall (x y : V),
-  is_filter_lim (locally x) y -> x = y.
+  x --> y -> x = y.
 Proof.
 intros x y H.
 apply eq_close.
@@ -3341,8 +3362,7 @@ Context {T : Type} {K : AbsRing} {V : NormedModule K}.
 
 Lemma filterlim_locally_unique :
   forall {F} {FF : ProperFilter' F} (f : T -> V) (x y : V),
-  filterlim f F (locally x) -> filterlim f F (locally y) ->
-  x = y.
+  f @ F --> x -> f @ F --> y -> x = y.
 Proof.
 intros F FF f x y.
 apply is_filter_lim_unique.
@@ -3351,7 +3371,7 @@ Qed.
 Lemma filterlimi_locally_unique :
   forall {F} {FF : ProperFilter' F} (f : T -> V -> Prop) (x y : V),
   F (fun x => forall y1 y2, f x y1 -> f x y2 -> y1 = y2) ->
-  filterlimi f F (locally x) -> filterlimi f F (locally y) ->
+  f `@ F --> x -> f `@ F --> y ->
   x = y.
 Proof.
 intros F FF f x y Hf Hx Hy.
@@ -3362,6 +3382,7 @@ unfold filtermapi in Hx, Hy.
 apply Rnot_le_lt.
 intros H.
 apply (@filter_not_empty _ F FF).
+rewrite /= in Hx Hy.
 apply: filter_imp (filter_and _ _ (filter_and _ _ Hx Hy) Hf).
 clear -H.
 intros z [[[x' [Hx Bx]] [y' [Hy By]]] Hf].
@@ -3408,7 +3429,7 @@ Context {K : AbsRing} {V : NormedModule K}.
 
 Lemma filterlim_plus :
   forall x y : V,
-  filterlim (fun z : V * V => plus (fst z) (snd z)) (filter_prod (locally x) (locally y)) (locally (plus x y)).
+  (fun z : V * V => plus (fst z) (snd z)) @ (x, y) --> (plus x y).
 Proof.
 intros x y.
 apply (filterlim_filter_le_1 (F := filter_prod (locally_norm x) (locally_norm y))).
