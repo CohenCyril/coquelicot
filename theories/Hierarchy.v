@@ -518,6 +518,15 @@ Inductive filter_prod {T U : Type} (F G : _ -> Prop) (P : T * U -> Prop) : Prop 
   Filter_prod (Q : T -> Prop) (R : U -> Prop) :
     F Q -> G R -> (forall x y, Q x -> R y -> P (x, y)) -> filter_prod F G P.
 
+Definition canonical_filter_prod {X1 X2 Y1 Y2} (f : Y1 -> set (set X1))
+  (g : Y2 -> set (set X2)) (y1 : Y1) (y2 : Y2) : set (set (X1 * X2)) :=
+  filter_prod (f y1) (g y2).
+
+Canonical canonical_pair_filter X1 X2 (Z1 : canonical_filter X1)
+  (Z2 : canonical_filter X2) : canonical_filter (X1 * X2) :=
+  @CanonicalFilter _ _ (fun x => canonical_filter_prod
+  (@canonical_type_filter _ Z1) (@canonical_type_filter _ Z2) x.1 x.2).
+
 Global Instance filter_prod_filter :
   forall T U (F : set (set T)) (G : set (set U)),
   Filter F -> Filter G -> Filter (filter_prod F G).
@@ -3427,14 +3436,6 @@ Section NVS_continuity.
 
 Context {K : AbsRing} {V : NormedModule K}.
 
-Definition card_prod {X1 X2 Y1 Y2} (f : Y1 -> set (set X1)) (g : Y2 -> set (set X2)) :
-  Y1 -> Y2 -> set (set (X1 * X2)).
-Admitted.
-
-Canonical pair_filter X1 X2 (Z1 : canonical_filter X1) (Z2 : canonical_filter X2) : canonical_filter (X1 * X2) :=
-  @CanonicalFilter _ _ (fun x : canonical_filter_type _ Z1 * canonical_filter_type _ Z2 =>
-  card_prod (@canonical_type_filter _ Z1) (@canonical_type_filter _ Z2) x.1 x.2).
-
 Lemma filterlim_plus :
   forall x y : V,
   (fun z : V * V => plus (fst z) (snd z)) @ (x, y) --> (plus x y).
@@ -3442,7 +3443,6 @@ Proof.
 intros x y.
 apply (filterlim_filter_le_1 (F := filter_prod (locally_norm x) (locally_norm y))).
   intros P [Q R LQ LR H].
-  rewrite /filter_of /=.
   exists Q R.
   now apply locally_le_locally_norm.
   now apply locally_le_locally_norm.
