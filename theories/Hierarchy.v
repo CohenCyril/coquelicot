@@ -182,6 +182,8 @@ Structure canonical_filter_on X Y := CanonicalFilterOn {
 (* when adding a canonical instance of canonical_filter_on *)
 Definition canonical_term_filter {X Y} (F : canonical_filter_on X Y) :=
   let: CanonicalFilterOn x f := F in f.
+(* Coercion canonical_term_filter : canonical_filter_on >-> set. *)
+(* Identity Coercion set >-> Funclass. *)
 
 (* Index a family of filters on a type, one for each element of the type *)
 Structure canonical_filter Y := CanonicalFilter {
@@ -234,18 +236,19 @@ Class Filter {T : Type} (F : set (set T)) := {
   filter_and : forall P Q : T -> Prop, F P -> F Q -> F (fun x => P x /\ Q x) ;
   filter_imp : forall P Q : T -> Prop, (forall x, P x -> Q x) -> F P -> F Q
 }.
-
-Global Hint Mode Filter + + : typeclass_instances.
+Global Hint Mode Filter - + : typeclass_instances.
 
 Class ProperFilter' {T : Type} (F : set (set T)) := {
   filter_not_empty : not (F (fun _ => False)) ;
   filter_filter' :> Filter F
 }.
+Global Hint Mode ProperFilter' - + : typeclass_instances.
 
 Class ProperFilter {T : Type} (F : set (set T)) := {
   filter_ex : forall P, F P -> exists x, P x ;
   filter_filter :> Filter F
 }.
+Global Hint Mode ProperFilter - + : typeclass_instances.
 
 Global Instance Proper_StrongProper :
   forall {T : Type} (F : set (set T)),
@@ -610,7 +613,9 @@ now apply Cf.
 now apply Cg.
 Qed.
 
-Lemma filterlim_comp_2 {T U V W F G H} {I : set (set W)} {FF : Filter F}
+Lemma filterlim_comp_2 {T U V W}
+  {F : set (set T)} {G : set (set U)} {H : set (set V)} {I : set (set W)}
+  {FF : Filter F}
   (f : T -> U) (g : T -> V) (h : U -> V -> W) :
   f @ F --> G -> g @ F --> H ->
   h (fst x) (snd x) @[x --> filter_prod G H] --> I ->
@@ -1836,7 +1841,7 @@ Qed.
 
 (** locally *)
 
-Section Locally.
+Section LocallyDef.
 
 Context {T : UniformSpace}.
 
@@ -1848,14 +1853,18 @@ rewrite /locally /filter_of /=/ball.
 by case: UniformSpace.class=> //= op mix [-> /=].
 Qed.
 
+Lemma locallyxE x : locally x = fun P => exists eps : posreal, forall y, ball x eps y -> P y.
+Proof. by rewrite locallyE. Qed.
+
 Lemma filterE (x : T) :
   [filter of x] = fun P => exists eps : posreal, forall y, ball x eps y -> P y.
-Proof. by rewrite -/(locally x) locallyE. Qed.
+Proof. exact: locallyxE. Qed.
 
 Lemma locally_filter :
   forall x : T, ProperFilter (locally x).
 Proof.
-rewrite locallyE; move=> x; constructor ; [idtac|constructor].
+rewrite locallyE; move=> x; 
+constructor ; [idtac|constructor].
 - intros P [eps H].
   exists x.
   apply H.
@@ -1878,6 +1887,23 @@ rewrite locallyE; move=> x; constructor ; [idtac|constructor].
   apply H.
   now apply HP.
 Qed.
+
+End LocallyDef.
+
+Instance uniform_space_base_filter U c (x : U) :
+  ProperFilter (UniformSpace.base U c x).
+Proof. exact: (@locally_filter (UniformSpace.Pack U c U)). Qed.
+
+Instance uniform_space_filter U m (x : U) :
+  ProperFilter (UniformSpace.uniform_filter U m x).
+Proof.
+rewrite /UniformSpace.uniform_filter.
+rewrite -(@locallyxE (UniformSpacePack (CanonicalFilter U U m) m)).
+exact: uniform_space_base_filter.
+Qed.
+
+Section Locally.
+Context {T : UniformSpace}.
 
 Typeclasses Opaque filter_of.
 Instance canonical_filter_of_UniformSpace (x : T) : ProperFilter [filter of x] | 0.
@@ -2022,18 +2048,9 @@ apply Fz.
 apply ball_sym, Fz.
 Qed.
 
-Opaque filter_of.
-Arguments filter_of : simpl never.
-Hint Mode Filter - + : typeclass_instances.
-Hint Mode ProperFilter - + : typeclass_instances.
-Hint Mode ProperFilter' - + : typeclass_instances.
 Lemma is_filter_lim_locally_close (x y : T) :
   x --> y -> close x y.
-Proof.
-Set Typeclasses Debug.
-Fail apply: is_filter_lim_close.
-
-Fail exact: is_filter_lim_close. Qed.
+Proof. exact: is_filter_lim_close. Qed.
 
 End Locally.
 
@@ -2122,7 +2139,7 @@ assert (H': locally l' (ball l' (pos_div_2 eps))).
   by apply locally_ball.
 specialize (Hl' (ball l' (pos_div_2 eps)) H').
 unfold filtermapi in Hl, Hl'.
-Set Typeclasses Debug.
+rewrite /filter_of /= in Hl Hl'.
 generalize (filter_and _ _ Hf (filter_and _ _ Hl Hl')) => {H H' Hl Hl' Hf} H.
 apply filter_ex in H.
 destruct H as [x [Hf [[y [H1 H1']] [y' [H2 H2']]]]].
@@ -3519,7 +3536,7 @@ unfold filtermapi in Hx, Hy.
 apply Rnot_le_lt.
 intros H.
 apply (@filter_not_empty _ F FF).
-rewrite /= in Hx Hy.
+rewrite /filter_of /= in Hx Hy.
 apply: filter_imp (filter_and _ _ (filter_and _ _ Hx Hy) Hf).
 clear -H.
 intros z [[[x' [Hx Bx]] [y' [Hy By]]] Hf].
@@ -3596,74 +3613,72 @@ by apply plus_comm.
 by [].
 Qed.
 
-Typeclasses Opaque filter_of.
 Lemma filterlim_scal (k : K) (x : V) :
   (fun z => scal (fst z) (snd z)) @ (k, x) --> (scal k x).
 Proof.
-Set Typeclasses Debug.
-rewrite filterlim_locally.
-apply/filterlim_locally.
-  apply/filterlim_locally => /= eps.
-  eapply filter_imp.
-  move => /= u Hu.
-  rewrite (double_var eps).
-  apply ball_triangle with (scal (fst u) x).
-  apply norm_compat1.
-  rewrite -scal_minus_distr_r.
-  eapply Rle_lt_trans.
-  apply norm_scal.
-  eapply Rle_lt_trans.
-  apply Rmult_le_compat_l.
-  by apply abs_ge_0.
-  apply Rlt_le, Rlt_plus_1.
-  apply <- Rlt_div_r.
-  2: apply Rle_lt_0_plus_1, norm_ge_0.
-  by eapply (proj1 Hu).
-  apply norm_compat1.
-  rewrite -scal_minus_distr_l.
-  eapply Rle_lt_trans.
-  apply norm_scal.
-  eapply Rle_lt_trans.
-  apply Rmult_le_compat_r.
-  by apply norm_ge_0.
-  replace (fst u) with (plus k (minus (fst u) k)).
-  eapply Rle_trans.
-  apply abs_triangle.
-  apply Rplus_le_compat_l.
-  apply Rlt_le.
-  instantiate (1 := 1).
-  eapply (proj1 (proj2 Hu)).
-  by rewrite plus_comm -plus_assoc plus_opp_l plus_zero_r.
-  rewrite Rmult_comm.
-  apply <- Rlt_div_r.
-  2: apply Rle_lt_0_plus_1, abs_ge_0.
-  by apply (proj2 (proj2 Hu)).
+apply/filterlim_locally => /= eps.
+apply/locally_prod.
+eapply filter_imp.
+move => /= u Hu.
+rewrite (double_var eps).
+apply ball_triangle with (scal (fst u) x).
+apply norm_compat1.
+rewrite -scal_minus_distr_r.
+eapply Rle_lt_trans.
+apply norm_scal.
+eapply Rle_lt_trans.
+apply Rmult_le_compat_l.
+by apply abs_ge_0.
+apply Rlt_le, Rlt_plus_1.
+apply <- Rlt_div_r.
+2: apply Rle_lt_0_plus_1, norm_ge_0.
+by eapply (proj1 Hu).
+apply norm_compat1.
+rewrite -scal_minus_distr_l.
+eapply Rle_lt_trans.
+apply norm_scal.
+eapply Rle_lt_trans.
+apply Rmult_le_compat_r.
+by apply norm_ge_0.
+replace (fst u) with (plus k (minus (fst u) k)).
+eapply Rle_trans.
+apply abs_triangle.
+apply Rplus_le_compat_l.
+apply Rlt_le.
+instantiate (1 := 1).
+eapply (proj1 (proj2 Hu)).
+by rewrite plus_comm -plus_assoc plus_opp_l plus_zero_r.
+rewrite Rmult_comm.
+apply <- Rlt_div_r.
+2: apply Rle_lt_0_plus_1, abs_ge_0.
+by apply (proj2 (proj2 Hu)).
 
-  repeat apply filter_and.
+repeat apply filter_and.
 
-  assert (Hd : 0 < eps / 2 / (norm x + 1)).
-    apply Rdiv_lt_0_compat.
-    by apply is_pos_div_2.
-    apply Rle_lt_0_plus_1, norm_ge_0.
-  eexists.
-  apply (locally_ball_norm (V := AbsRing_NormedModule K) _ (mkposreal _ Hd)).
-  apply: filter_true.
-  by [].
+assert (Hd : 0 < eps / 2 / (norm x + 1)).
+  apply Rdiv_lt_0_compat.
+  by apply is_pos_div_2.
+  apply Rle_lt_0_plus_1, norm_ge_0.
+eexists.
+apply (locally_ball_norm (V := AbsRing_NormedModule K) _ (mkposreal _ Hd)).
+apply: filter_true.
+by [].
 
-  eexists.
-  apply (locally_ball_norm (V := AbsRing_NormedModule K) _ (mkposreal _ Rlt_0_1)).
-  apply: filter_true.
-  by [].
+eexists.
+apply (locally_ball_norm (V := AbsRing_NormedModule K) _ (mkposreal _ Rlt_0_1)).
+apply: filter_true.
+by [].
 
-  assert (Hd : 0 < eps / 2 / (abs k + 1)).
-    apply Rdiv_lt_0_compat.
-    by apply is_pos_div_2.
-    apply Rle_lt_0_plus_1, abs_ge_0.
-  eexists.
-  apply: filter_true.
-  apply (locally_ball_norm _ (mkposreal _ Hd)).
-  by [].
+assert (Hd : 0 < eps / 2 / (abs k + 1)).
+  apply Rdiv_lt_0_compat.
+  by apply is_pos_div_2.
+  apply Rle_lt_0_plus_1, abs_ge_0.
+eexists.
+apply: filter_true.
+apply (locally_ball_norm _ (mkposreal _ Hd)).
+by [].
 Qed.
+
 Lemma filterlim_scal_r (k : K) (x : V) :
   (fun z : V => scal k z) @ x --> (scal k x).
 Proof.
