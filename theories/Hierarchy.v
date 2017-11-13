@@ -521,6 +521,15 @@ Inductive filter_prod {T U : Type} (F G : _ -> Prop) (P : T * U -> Prop) : Prop 
   Filter_prod (Q : T -> Prop) (R : U -> Prop) :
     F Q -> G R -> (forall x y, Q x -> R y -> P (x, y)) -> filter_prod F G P.
 
+Definition apply_filter_prod {X1 X2 Y1 Y2} (f : Y1 -> set (set X1))
+  (g : Y2 -> set (set X2)) (y1 : Y1) (y2 : Y2) : set (set (X1 * X2)) :=
+  filter_prod (f y1) (g y2).
+
+Canonical canonical_filter_prod X1 X2 (Z1 : canonical_filter X1)
+  (Z2 : canonical_filter X2) : canonical_filter (X1 * X2) :=
+  @CanonicalFilter _ _ (fun x => apply_filter_prod
+  (@canonical_type_filter _ Z1) (@canonical_type_filter _ Z2) x.1 x.2).
+
 Global Instance filter_prod_filter :
   forall T U (F : set (set T)) (G : set (set U)),
   Filter F -> Filter G -> Filter (filter_prod F G).
@@ -1555,7 +1564,7 @@ Definition uniform_filter M (m : mixin_of M) : M -> set (set M) :=
   fun (x : M) P => exists eps : posreal, forall y, ball _ m x eps y -> P y.
 
 Record locally_mixin_of (M : Type) (m : mixin_of M) (b : M -> set (set M)) := LocallyMixin {
-  locallyE : b = uniform_filter M m
+  locallyE : forall x y, b x y <-> (uniform_filter M m) x y
 }.
 
 Record class_of M := Class {
@@ -1596,7 +1605,7 @@ Notation "[ 'UniformSpace' 'of' T 'for' cT ]" :=  (@clone T cT _ idfun)
   (at level 0, format "[ 'UniformSpace'  'of'  T  'for'  cT ]") : form_scope.
 Notation "[ 'UniformSpace' 'of' T ]" := (@clone T _ _ id)
   (at level 0, format "[ 'UniformSpace'  'of'  T ]") : form_scope.
-Notation UniformSpacePack T m := (@pack T m  _ _ idfun erefl).
+Notation UniformSpacePack T m := (@pack T m  _ _ idfun (fun x y => iff_refl (uniform_filter T m x y))).
 
 Coercion uniform_filter : mixin_of >-> Funclass.
 
@@ -1762,10 +1771,11 @@ End prod_UniformSpace.
 Definition prod_UniformSpace_mixin (U V : UniformSpace) :=
   UniformSpace.Mixin (U * V) _ prod_ball_center prod_ball_sym prod_ball_triangle.
 
-Canonical canonical_pair_filter (U V : UniformSpace) :=
-  @CanonicalFilter (U * V) (U * V) (prod_UniformSpace_mixin U V).
+(*Canonical canonical_pair_filter (U V : UniformSpace) :=
+  @CanonicalFilter (U * V) (U * V) (prod_UniformSpace_mixin U V).*)
 Canonical prod_UniformSpace (U V : UniformSpace) :=
-  UniformSpacePack (U * V) (prod_UniformSpace_mixin U V).
+  (*UniformSpacePack (U * V) (prod_UniformSpace_mixin U V).*)
+  (UniformSpace.pack (U * V) (prod_UniformSpace_mixin U V) _ (@CanonicalFilter (U * V) (U * V) (prod_UniformSpace_mixin U V)) idfun (fun x y => iff_refl ((prod_UniformSpace_mixin U V) x y))).
 
 (** Functional metric spaces *)
 
@@ -1841,38 +1851,46 @@ Qed.
 
 (** locally *)
 
+(*Require Import FunctionalExtensionality.
+Notation funext := functional_extensionality.*)
+
 Section LocallyDef.
 
 Context {T : UniformSpace}.
 
 Definition locally (x : T) := [filter of x].
 
+Lemma locallyP x P : locally x P <-> exists eps : posreal, forall y, ball x eps y -> P y.
+Proof.
+rewrite /locally /filter_of /=/ball.
+case: UniformSpace.class=> //= op mix [H /=].
+by rewrite H.
+Qed.
+
 Lemma locallyE : locally = fun x P => exists eps : posreal, forall y, ball x eps y -> P y.
 Proof.
 rewrite /locally /filter_of /=/ball.
-by case: UniformSpace.class=> //= op mix [-> /=].
-Qed.
+case: UniformSpace.class=> //= op mix [H /=].
+Abort.
 
 Lemma locallyxE x : locally x = fun P => exists eps : posreal, forall y, ball x eps y -> P y.
-Proof. by rewrite locallyE. Qed.
+Proof. Abort. (*by rewrite locallyE. Qed.*)
 
-Lemma filterE (x : T) :
+(*Lemma filterE (x : T) :
   [filter of x] = fun P => exists eps : posreal, forall y, ball x eps y -> P y.
-Proof. exact: locallyxE. Qed.
+Proof. exact: locallyxE. Qed.*)
 
 Lemma locally_filter :
   forall x : T, ProperFilter (locally x).
 Proof.
-rewrite locallyE; move=> x; 
-constructor ; [idtac|constructor].
-- intros P [eps H].
+move=> x.
+constructor; [idtac|constructor].
+- move=> P /locallyP [eps H].
   exists x.
-  apply H.
-  apply ball_center.
-- now exists (mkposreal _ Rlt_0_1).
-- intros P Q [dP HP] [dQ HQ].
-  exists (mkposreal _ (Rmin_stable_in_posreal dP dQ)).
-  simpl.
+  by apply/H/ball_center.
+- apply/locallyP; by exists (mkposreal _ Rlt_0_1).
+- move=> P Q /locallyP[dP HP] /locallyP[dQ HQ].
+  apply/locallyP; exists (mkposreal _ (Rmin_stable_in_posreal dP dQ)) => /=.
   intros y Hy.
   split.
   apply HP.
@@ -1881,8 +1899,8 @@ constructor ; [idtac|constructor].
   apply HQ.
   apply ball_le with (2 := Hy).
   apply Rmin_r.
-- intros P Q H [dP HP].
-  exists dP.
+- move=> P Q H /locallyP[dP HP].
+  apply/locallyP; exists dP.
   intros y Hy.
   apply H.
   now apply HP.
@@ -1894,12 +1912,21 @@ Instance uniform_space_base_filter U c (x : U) :
   ProperFilter (UniformSpace.base U c x).
 Proof. exact: (@locally_filter (UniformSpace.Pack U c U)). Qed.
 
+Lemma ProperFilter_ext {T} (F G : set (set T)) : (forall P, F P <-> G P) ->
+  ProperFilter F -> ProperFilter G.
+Proof.
+move=> FG FF.
+constructor; first by move=> P /FG; apply filter_ex.
+constructor; first by apply/FG/filter_true.  
+by move=> P Q /FG FP /FG GQ; apply/FG/filter_and.
+by move=> P Q PQ /FG FP; apply/FG; apply:filter_imp FP.
+Qed.
+
 Instance uniform_space_filter U m (x : U) :
   ProperFilter (UniformSpace.uniform_filter U m x).
 Proof.
 rewrite /UniformSpace.uniform_filter.
-rewrite -(@locallyxE (UniformSpacePack (CanonicalFilter U U m) m)).
-exact: uniform_space_base_filter.
+exact: (ProperFilter_ext (@locally (UniformSpacePack (CanonicalFilter U U m) m) x) _ (locallyP _)).
 Qed.
 
 Section Locally.
@@ -1919,10 +1946,10 @@ Lemma locally_locally :
   forall (x : T) (P : T -> Prop),
   locally x P -> locally x (fun y => locally y P).
 Proof.
-rewrite !locallyE=> x P [dp Hp].
-exists (pos_div_2 dp).
+move=> x P /locallyP[dp Hp].
+apply/locallyP; exists (pos_div_2 dp).
 intros y Hy.
-exists (pos_div_2 dp) => /= z Hz.
+apply/locallyP; exists (pos_div_2 dp) => /= z Hz.
 apply Hp.
 rewrite (double_var dp).
 now apply ball_triangle with y.
@@ -1932,16 +1959,13 @@ Lemma locally_singleton :
   forall (x : T) (P : T -> Prop),
   locally x P -> P x.
 Proof.
-rewrite locallyE => x P [dp H].
+move=> x P /locallyP[dp H].
 apply H.
 by apply ball_center.
 Qed.
 
-Lemma locally_ball :
-  forall (x : T) (eps : posreal), locally x (ball x eps).
-Proof.
-by rewrite locallyE => x eps; exists eps.
-Qed.
+Lemma locally_ball (x : T) (eps : posreal) : locally x (ball x eps).
+Proof. by apply/locallyP; exists eps. Qed.
 
 Lemma locally_not' :
   forall (x : T) (P : T -> Prop),
@@ -1998,9 +2022,9 @@ Lemma locally_not :
   not (forall eps : posreal, not (forall y, ball x eps y -> not (P y))) ->
   locally x (fun y => not (P y)).
 Proof.
-rewrite !locallyE; intros x P H.
+move=> x P H; apply/locallyP.
 destruct (locally_not' x P H) as [eps He].
-now exists eps.
+by exists eps.
 Qed.
 
 Lemma locally_ex_not :
@@ -2008,7 +2032,7 @@ Lemma locally_ex_not :
   locally x (fun y => not (P y)) ->
   {d : posreal | forall y, ball x d y -> not (P y)}.
 Proof.
-rewrite !locallyE; intros x P H.
+move=> x P /locallyP H.
 apply locally_not'.
 destruct H as [eps He].
 intros H.
@@ -2075,8 +2099,9 @@ Proof. by []. Qed.
 Lemma filterlim_const {T} {U : UniformSpace} {F : set (set T)} {FF : Filter F} (a : U) :
   a @[_ --> F] --> a.
 Proof.
-move=> P; rewrite !filterE /filter_of => -[eps HP] /=.
-by rewrite appfilter /=; apply: filter_forall=> ?; apply/HP/ball_center.
+move=> P /locallyP[eps HP].
+rewrite /filter_of /= appfilter /=.
+by apply: filter_forall=> ?; apply/HP/ball_center.
 Qed.
 
 Section Locally_fct.
@@ -2086,11 +2111,11 @@ Context {T : Type} {U : UniformSpace}.
 Lemma filterlim_locally {F} {FF : Filter F} (f : T -> U) (y : U) :
   f @ F --> y <-> forall eps : posreal, F [set x | ball y eps (f x)].
 Proof.
-rewrite !filterE /=; split.
+split.
 - move=> Cf eps.
   apply (Cf (fun x => ball y eps x)).
-  by exists eps.
-- move=> Cf P [eps He].
+  by apply/locallyP; exists eps.
+- move=> Cf P /locallyP[eps He].
   apply: filter_imp (Cf eps) => t.
   exact: He.
 Qed.
@@ -2099,11 +2124,11 @@ Lemma filterlimi_locally {F} {FF : Filter F} (f : T -> U -> Prop) y :
   f `@ F --> y <->
   forall eps : posreal, F [set x | exists z, f x z /\ ball y eps z].
 Proof.
-rewrite !filterE; split.
+split.
 - intros Cf eps.
   apply (Cf (ball y eps)).
-  now exists eps.
-- intros Cf P [eps He].
+  by apply/locallyP; exists eps.
+- move=> Cf P /locallyP[eps He].
   rewrite /filtermapi /filter_of /=.
   apply: filter_imp (Cf eps).
   intros t [z [Hz1 Hz2]].
@@ -2182,22 +2207,23 @@ Proof. exact: Rmin_pos. Qed.
 Canonical Rmin_posreal (x : posreal) (y : posreal) :=
   mkposreal (Rmin x y) (@Rmin_positive x y).
 
-Section prod_UniformSpaceE.
+(* Section prod_UniformSpaceE. *)
 
-Context {U V : UniformSpace}.
+(* Context {U V : UniformSpace}. *)
 
-Lemma locally_prod (x : U) (y : V) P:
-  [filter of (x, y)] P <-> filter_prod [filter of x] [filter of y] P.
-Proof.
-rewrite !filterE; split => [[eps Peps]|[Q R [epsQ Qeps] [epsR Reps] PQR]].
-  exists (ball x eps) (ball y eps); do ?by exists eps.
-  by move=> ????; apply: Peps.
-exists (Rmin_posreal epsQ epsR) => -[x' y'] [/=].
-move=> /(ball_le _ _ _ (Rmin_l _ _)) /Qeps Qx'.
-by move=> /(ball_le _ _ _ (Rmin_r _ _)) /Reps /PQR; exact.
-Qed.
+(* Lemma locally_prod (x : U) (y : V) P: *)
+(*   [filter of (x, y)] P <-> filter_prod [filter of x] [filter of y] P. *)
+(* Proof. *)
+(* by []. *)
+(* split => [/locallyP [eps Peps]|[Q R /locallyP[epsQ Qeps] /locallyP[epsR Reps] PQR]]. *)
+(*   exists (ball x eps) (ball y eps); do ?by apply/locallyP; exists eps. *)
+(*   by move=> ????; apply: Peps. *)
+(* exists (Rmin_posreal epsQ epsR) => -[x' y'] [/=]. *)
+(* move=> /(ball_le _ _ _ (Rmin_l _ _)) /Qeps Qx'. *)
+(* by move=> /(ball_le _ _ _ (Rmin_r _ _)) /Reps /PQR; exact. *)
+(* Qed. *)
 
-End prod_UniformSpaceE.
+(* End prod_UniformSpaceE. *)
 
 Section at_point.
 
@@ -2321,8 +2347,8 @@ intros D CD x Dx.
 apply locally_not.
 intros H.
 apply Dx, CD.
-rewrite locallyE => -[eps He].
-now apply (H eps).
+move/locallyP => [eps He].
+by apply (H eps).
 Qed.
 
 Lemma closed_not :
@@ -2391,9 +2417,8 @@ Lemma closed_false :
   closed (fun x : T => False).
 Proof.
 intros x Hx.
-apply Hx.
-rewrite locallyE.
-now exists (mkposreal _ Rlt_0_1).
+apply: Hx.
+apply/locallyP; now exists (mkposreal _ Rlt_0_1).
 Qed.
 
 End Closed.
@@ -2421,11 +2446,10 @@ intros LD.
 apply filter_not_empty.
 specialize (Ffy _ LD).
 unfold filtermap in Ffy.
-(* apply: filter_imp (filter_and _ _ Df Ffy). *)
-(* intros x Dfx. *)
-(* now apply Dfx. *)
-(* Qed. *)
-Admitted.
+set P := [set x | D (f x) /\ ~ D (f x)].
+suff : F P by apply filter_imp => x [].
+by apply: filter_and.
+Qed.
 
 Lemma closed_filterlim :
   forall {T} {U : UniformSpace} {F} {FF : ProperFilter' F} (f : T -> U) (D : U -> Prop),
@@ -2597,8 +2621,7 @@ intros F FF f.
 split.
 - intros H.
   exists [lim f @ F].
-  rewrite filterE.
-  intros P [eps HP].
+  move=> P /locallyP[eps HP].
   refine (_ (complete_cauchy (filtermap f F) _ _ eps)).
   + now apply filter_imp.
   + clear eps P HP.
@@ -2615,9 +2638,8 @@ split.
   exists (fun x => ball y (pos_div_2 eps) (f x)).
   split.
   apply Hy.
-  rewrite filterE.
-  now exists (pos_div_2 eps).
-  intros u v Hu Hv.
+  apply/locallyP;   now exists (pos_div_2 eps).
+- intros u v Hu Hv.
   rewrite (double_var eps).
   apply ball_triangle with y.
   apply ball_sym.
@@ -2640,9 +2662,7 @@ assert (FF': ProperFilter (filtermapi f F)).
   exact FF.
 split.
 - intros H.
-  exists [lim f `@ F].
-  rewrite filterE.
-  intros P [eps HP].
+  exists [lim f `@ F] => P /locallyP[eps HP].
   refine (_ (complete_cauchy (filtermapi f F) _ _ eps)).
   + now apply filter_imp.
   + clear eps P HP.
@@ -2661,8 +2681,7 @@ split.
   exists (fun x => forall fx, f x fx -> ball y (pos_div_2 eps) fx).
   split.
     assert (Hb: locally y (ball y (pos_div_2 eps))).
-      rewrite locallyE.
-      now exists (pos_div_2 eps).
+      apply/locallyP; now exists (pos_div_2 eps).
     assert (H := filter_and _ _ Hf (Hy _ Hb)).
     apply: filter_imp H.
     intros x [[_ H] [fx2 [Hfx2 H']]] fx Hfx.
@@ -3362,9 +3381,8 @@ assert (He : 0 < / norm_factor * eps).
   apply Rmult_lt_0_compat.
   apply Rinv_0_lt_compat.
   apply norm_factor_gt_0.
-  apply cond_pos.
-rewrite locallyE.
-exists (mkposreal _ He).
+  by apply cond_pos.
+apply/locallyP; exists (mkposreal _ He).
 intros y By.
 apply H.
 unfold ball_norm.
@@ -3378,7 +3396,7 @@ Qed.
 Lemma locally_norm_le_locally :
   forall x, filter_le (locally_norm x) (locally x).
 Proof.
-rewrite !locallyE => x P [eps H].
+move=> x P /locallyP[eps H].
 exists eps.
 intros y By.
 apply H.
@@ -3588,7 +3606,6 @@ Proof.
 intros x y.
 apply (filterlim_filter_le_1 (F := filter_prod (locally_norm x) (locally_norm y))).
   intros P [Q R LQ LR H].
-  apply/locally_prod.
   exists Q R.
   now apply locally_le_locally_norm.
   now apply locally_le_locally_norm.
@@ -3617,7 +3634,6 @@ Lemma filterlim_scal (k : K) (x : V) :
   (fun z => scal (fst z) (snd z)) @ (k, x) --> (scal k x).
 Proof.
 apply/filterlim_locally => /= eps.
-apply/locally_prod.
 eapply filter_imp.
 move => /= u Hu.
 rewrite (double_var eps).
@@ -4402,7 +4418,7 @@ Proof.
 Qed.
 
 Definition Mmult {n m k} (A : @matrix T n m) (B : @matrix T m k) :=
-  mk_matrix n k (fun i j => sum_n (fun l => mult (coeff_mat zero A i l) (coeff_mat zero B l j)) (pred m)).
+  mk_matrix n k (fun i j => sum_n (fun l => mult (coeff_mat zero A i l) (coeff_mat zero B l j)) (Nat.pred m)).
 
 Lemma Mmult_assoc {n m k l} :
   forall (A : matrix n m) (B : matrix m k) (C : matrix k l),
@@ -4412,7 +4428,7 @@ Proof.
   apply mk_matrix_ext => n' l' Hn' Hl'.
   unfold Mmult at 1.
   - transitivity (sum_n (fun l0 : nat => mult (coeff_mat zero A n' l0)
-      (sum_n (fun l1 : nat => mult (coeff_mat zero B l0 l1) (coeff_mat zero C l1 l')) (pred k))) (pred m)).
+      (sum_n (fun l1 : nat => mult (coeff_mat zero B l0 l1) (coeff_mat zero C l1 l')) (Nat.pred k))) (Nat.pred m)).
     destruct m ; simpl.
     unfold coeff_mat ; simpl.
     by rewrite 2!mult_zero_l.
@@ -4421,7 +4437,7 @@ Proof.
     rewrite coeff_mat_bij //.
     by apply le_lt_n_Sm, Hm'.
   - transitivity (sum_n (fun l0 : nat => sum_n
-      (fun l1 : nat => mult (coeff_mat zero A n' l0) (mult (coeff_mat zero B l0 l1) (coeff_mat zero C l1 l'))) (pred k)) (pred m)).
+      (fun l1 : nat => mult (coeff_mat zero A n' l0) (mult (coeff_mat zero B l0 l1) (coeff_mat zero C l1 l'))) (Nat.pred k)) (Nat.pred m)).
     destruct m ; simpl.
     rewrite /sum_n !sum_n_n.
     unfold coeff_mat ; simpl.
@@ -4437,7 +4453,7 @@ Proof.
   rewrite /sum_n sum_n_m_mult_r.
   by rewrite mult_zero_r.
   apply sum_n_m_ext_loc => k' [_ Hk'].
-  transitivity (mult (sum_n (fun l1 : nat => mult (coeff_mat zero A n' l1) (coeff_mat zero B l1 k')) (pred m))
+  transitivity (mult (sum_n (fun l1 : nat => mult (coeff_mat zero A n' l1) (coeff_mat zero B l1 k')) (Nat.pred m))
     (coeff_mat zero C k' l')).
   rewrite -sum_n_m_mult_r.
   apply sum_n_m_ext_loc => m' [_ Hm'].
@@ -4630,8 +4646,10 @@ Canonical R_AbsRing :=
 Definition R_UniformSpace_mixin :=
   AbsRing_UniformSpace_mixin R_AbsRing.
 
+Canonical R_canonical_filter := CanonicalFilter R R R_UniformSpace_mixin.
+
 Canonical R_UniformSpace :=
-  UniformSpace.Pack R R_UniformSpace_mixin R.
+  UniformSpacePack R R_UniformSpace_mixin.
 
 Definition R_complete_lim (F : (R -> Prop) -> Prop) : R :=
   Lub_Rbar (fun x : R => F (ball (x + 1) (mkposreal _ Rlt_0_1))).
@@ -4908,11 +4926,11 @@ Qed.
 (** Continuity of norm *)
 
 Lemma filterlim_norm {K : AbsRing} {V : NormedModule K} :
-  forall (x : V), filterlim norm (locally x) (locally (norm x)).
+  forall (x : V), norm @ x --> (norm x).
 Proof.
   intros x.
   apply (filterlim_filter_le_1 _ (locally_le_locally_norm x)).
-  apply filterlim_locally => eps /=.
+  apply/filterlim_locally => eps /=.
   exists eps ; move => /= y Hy.
   apply Rle_lt_trans with (2 := Hy).
   apply norm_triangle_inv.
@@ -4920,8 +4938,8 @@ Qed.
 
 Lemma filterlim_norm_zero {U} {K : AbsRing} {V : NormedModule K}
   {F : set (set U)} {FF : Filter F} (f : U -> V) :
-  filterlim (fun x => norm (f x)) F (locally 0)
-  -> filterlim f F (locally (zero (G := V))).
+  (fun x => norm (f x)) @ F --> 0
+  -> f @ F --> (zero (G := V)).
 Proof.
   intros Hf.
   apply filterlim_locally_ball_norm => eps.
@@ -4932,12 +4950,15 @@ Proof.
   by apply norm_ge_0.
 Qed.
 
+Canonical eventually_filter_source X :=
+  @CanonicalFilterSource X _ nat (fun f => f @ eventually).
+
 Lemma filterlim_bounded {K : AbsRing} {V : NormedModule K} (a : nat -> V) :
-  (exists x, filterlim a eventually (locally x))
+  (exists x : V, a --> x)
  -> {M : R | forall n, norm (a n) <= M}.
 Proof.
   intros Ha.
-  assert (exists x : R, filterlim (fun n => norm (a n)) eventually (locally x)).
+  assert (exists x : R, (fun n => norm (a n)) @ eventually --> x).
     destruct Ha as [l Hl].
     exists (norm l).
     eapply filterlim_comp.
@@ -5272,7 +5293,7 @@ apply locally_2d_1d_strong in H.
 apply: locally_2d_impl H.
 apply locally_2d_forall => u v H t Ht.
 specialize (H t Ht).
-apply locally_singleton with (1 := H).
+by apply: locally_singleton H.
 Qed.
 
 Lemma locally_2d_ex_dec :
@@ -5461,7 +5482,7 @@ Definition Rbar_loc_seq (x : Rbar) (n : nat) := match x with
   end.
 
 Lemma filterlim_Rbar_loc_seq :
-  forall x, filterlim (Rbar_loc_seq x) eventually (Rbar_locally' x).
+  forall x, (Rbar_loc_seq x) --> (Rbar_locally' x).
 Proof.
   intros x P.
   unfold Rbar_loc_seq.
@@ -5561,7 +5582,7 @@ Qed.
 Lemma continuity_pt_filterlim :
   forall (f : R -> R) (x : R),
   continuity_pt f x <->
-  filterlim f (locally x) (locally (f x)).
+  f @ x --> (f x).
 Proof.
 intros f x.
 eapply iff_trans.
@@ -5573,7 +5594,7 @@ Qed.
 Lemma continuity_pt_filterlim' :
   forall f x,
   continuity_pt f x <->
-  filterlim f (locally' x) (locally (f x)).
+  f @ (locally' x) --> (f x).
 Proof.
 intros f x.
 eapply iff_trans.
