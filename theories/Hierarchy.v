@@ -3468,9 +3468,9 @@ by [].
 Qed.
 
 Lemma filterlim_scal (k : K) (x : V) :
-  filterlim (fun z => scal (fst z) (snd z)) (filter_prod (locally k) (locally x)) (locally (scal k x)).
+  (fun z => scal (fst z) (snd z)) @ (k, x) --> (scal k x).
 Proof.
-  apply filterlim_locally => /= eps.
+  apply/filterlim_locally => /= eps.
   eapply filter_imp.
   move => /= u Hu.
   rewrite (double_var eps).
@@ -3514,12 +3514,12 @@ Proof.
     apply Rle_lt_0_plus_1, norm_ge_0.
   eexists.
   apply (locally_ball_norm (V := AbsRing_NormedModule K) _ (mkposreal _ Hd)).
-  apply filter_true.
+  apply: filter_true.
   by [].
 
   eexists.
   apply (locally_ball_norm (V := AbsRing_NormedModule K) _ (mkposreal _ Rlt_0_1)).
-  apply filter_true.
+  apply: filter_true.
   by [].
 
   assert (Hd : 0 < eps / 2 / (abs k + 1)).
@@ -3527,12 +3527,12 @@ Proof.
     by apply is_pos_div_2.
     apply Rle_lt_0_plus_1, abs_ge_0.
   eexists.
-  apply filter_true.
+  apply: filter_true.
   apply (locally_ball_norm _ (mkposreal _ Hd)).
   by [].
 Qed.
 Lemma filterlim_scal_r (k : K) (x : V) :
-  filterlim (fun z : V => scal k z) (locally x) (locally (scal k x)).
+  (fun z : V => scal k z) @ x --> (scal k x).
 Proof.
   eapply filterlim_comp_2.
   by apply filterlim_const.
@@ -3540,7 +3540,7 @@ Proof.
   by apply filterlim_scal.
 Qed.
 Lemma filterlim_scal_l (k : K) (x : V) :
-  filterlim (fun z => scal z x) (locally k) (locally (scal k x)).
+  (fun z => scal z x) @ k --> (scal k x).
 Proof.
   eapply filterlim_comp_2.
   by apply filterlim_id.
@@ -3548,11 +3548,8 @@ Proof.
   by apply filterlim_scal.
 Qed.
 
-Lemma filterlim_opp :
-  forall x : V,
-  filterlim opp (locally x) (locally (opp x)).
+Lemma filterlim_opp (x : V) : opp @ x --> (opp x).
 Proof.
-intros x.
 rewrite -scal_opp_one.
 apply filterlim_ext with (2 := filterlim_scal_r _ _).
 apply: scal_opp_one.
@@ -3561,16 +3558,15 @@ Qed.
 End NVS_continuity.
 
 Lemma filterlim_mult {K : AbsRing} (x y : K) :
-  filterlim (fun z => mult (fst z) (snd z)) (filter_prod (locally x) (locally y)) (locally (mult x y)).
+  (fun z => mult (fst z) (snd z)) @ (x , y) --> (mult x y).
 Proof.
   by apply @filterlim_scal.
 Qed.
 
-Lemma filterlim_locally_ball_norm :
-  forall {K : AbsRing} {T} {U : NormedModule K} {F : set (set T)} {FF : Filter F} (f : T -> U) (y : U),
-  filterlim f F (locally y) <-> forall eps : posreal, F (fun x => ball_norm y eps (f x)).
+Lemma filterlim_locally_ball_norm {K : AbsRing} {T} {U : NormedModule K}
+  {F : set (set T)} {FF : Filter F} (f : T -> U) (y : U) :
+  f @ F --> y <-> forall eps : posreal, F (fun x => ball_norm y eps (f x)).
 Proof.
-intros K T U F FF f y.
 split.
 - intros Cf eps.
   apply (Cf (fun x => ball_norm y eps x)).
@@ -3677,8 +3673,7 @@ now apply sym_eq, HP.
 Qed.
 
 Lemma iota_is_filter_lim {F} {FF : ProperFilter' F} (l : V) :
-  is_filter_lim F l ->
-  iota (is_filter_lim F) = l.
+  F --> l -> iota [set l | F --> l] = l.
 Proof.
 intros Hl.
 apply: iota_unique (Hl) => l' Hl'.
