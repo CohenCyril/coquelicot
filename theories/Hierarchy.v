@@ -215,12 +215,26 @@ Canonical source_filter_filter Y :=
 Canonical source_filter_filter' Y :=
   @CanonicalFilterSource Prop _ (set _) (fun x : (set (set Y)) => x).
 
+Module Type FilterSig.
+Parameter filter_of : forall X Y (F : canonical_filter_on X Y)
+  (x : X) (_ : x = canonical_filter_term _ _ F), (set (set Y)).
+Parameter filter_ofE : forall X Y (F : canonical_filter_on X Y)
+  (x : X) (e : x = canonical_filter_term _ _ F),
+  @filter_of X Y F x e = canonical_term_filter F.
+End FilterSig.
+Module FilterAbstraction : FilterSig.
 Definition filter_of X Y (F : canonical_filter_on X Y)
   (x : X) (_ : x = canonical_filter_term _ _ F) :=
   canonical_term_filter F.
-Notation "[ 'filter' 'of' x ]" := (@filter_of _ _ _ x eq_refl)
+Lemma filter_ofE : forall X Y (F : canonical_filter_on X Y)
+  (x : X) (e : x = canonical_filter_term _ _ F),
+  @filter_of X Y F x e = canonical_term_filter F.
+Proof. by []. Qed.
+End FilterAbstraction.
+
+Notation "[ 'filter' 'of' x ]" := (@FilterAbstraction.filter_of _ _ _ x eq_refl)
   (format "[ 'filter'  'of'  x ]").
-Arguments filter_of _ _ _ _ _ _ /.
+Definition filter_ofE := FilterAbstraction.filter_ofE.
 
 Open Scope R_scope.
 
@@ -295,7 +309,6 @@ Qed.
 Definition filtermap {T U : Type} (f : T -> U) (F : set (set T)) :=
   [set P | F (f @^-1` P)].
 
-
 Notation "E @[ x --> F ]" := (filtermap (fun x => E) [filter of F])
   (at level 60, x ident, format "E  @[ x  -->  F ]") : classical_set_scope.
 Notation "f @ F" := (filtermap f [filter of F])
@@ -307,10 +320,10 @@ Proof.
 intros FF.
 unfold filtermap.
 constructor.
-- apply filter_true.
-- intros P Q HP HQ.
-  now apply filter_and.
-- intros P Q H HP.
+- by rewrite !filter_ofE /=; apply filter_true.
+- move=> P Q; rewrite !filter_ofE /= => HP HQ.
+  exact: filter_and.
+- intros P Q H; rewrite !filter_ofE /= => HP.
   apply (filter_imp (fun x => P (f x))).
   intros x Hx.
   now apply H.
@@ -320,12 +333,9 @@ Qed.
 Global Instance filtermap_proper_filter' T U (f : T -> U) (F : set (set T)) :
   ProperFilter' F -> ProperFilter' (f @ F).
 Proof.
-intros FF.
-unfold filtermap.
-split.
-- apply filter_not_empty.
-- apply filtermap_filter.
-  apply filter_filter'.
+move=> FF; rewrite /filtermap.
+apply: Build_ProperFilter'.
+by rewrite !filter_ofE; apply filter_not_empty.
 Qed.
 
 Global Instance filtermap_proper_filter T U (f : T -> U) (F : set (set T)) :
@@ -333,12 +343,9 @@ Global Instance filtermap_proper_filter T U (f : T -> U) (F : set (set T)) :
 Proof.
 intros FF.
 unfold filtermap.
-split.
-- intros P FP.
-  destruct (filter_ex _ FP) as [x Hx].
-  now exists (f x).
-- apply filtermap_filter.
-  apply filter_filter.
+apply: Build_ProperFilter => P.
+rewrite filter_ofE /= => FP.
+by destruct (filter_ex _ FP) as [x Hx]; exists (f x).
 Qed.
 
 Definition filtermapi {T U : Type} (f : T -> set U) (F : set (set T)) :=
@@ -356,10 +363,11 @@ Proof.
 intros H FF.
 unfold filtermapi.
 constructor.
-- apply: filter_imp H => x [[y Hy] H].
+- rewrite !filter_ofE /=.
+  apply: filter_imp H => x [[y Hy] H].
   exists y.
   exact (conj Hy I).
-- intros P Q HP HQ.
+- intros P Q; rewrite !filter_ofE => /= HP HQ.
   apply: filter_imp (filter_and _ _ (filter_and _ _ HP HQ) H).
   intros x [[[y1 [Hy1 Py]] [y2 [Hy2 Qy]]] [[y Hy] Hf]].
   exists y.
@@ -367,7 +375,7 @@ constructor.
   split.
   now rewrite (Hf y y1).
   now rewrite (Hf y y2).
-- intros P Q HPQ HP.
+- intros P Q; rewrite !filter_ofE /= => HPQ HP.
   apply: filter_imp HP.
   intros x [y [Hf Py]].
   exists y.
@@ -383,7 +391,7 @@ Proof.
 intros HF FF.
 unfold filtermapi.
 split.
-- intro H.
+- rewrite filter_ofE /= => H.
   apply filter_not_empty.
   apply filter_imp with (2 := H).
   now intros x [y [_ Hy]].
@@ -400,7 +408,7 @@ Proof.
 intros HF FF.
 unfold filtermapi.
 split.
-- intros P FP.
+- intros P; rewrite !filter_ofE => /= FP.
   destruct (filter_ex _ FP) as [x [y [_ Hy]]].
   now exists y.
 - apply filtermapi_filter.
@@ -410,14 +418,14 @@ Qed.
 
 
 Lemma filterlim_id T (F : set (set T)) : x @[x --> F] --> F.
-Proof. exact. Qed.
+Proof. rewrite filter_ofE /=; exact. Qed.
 
 Lemma filterlim_comp T U V (f : T -> U) (g : U -> V)
   (F : set (set T)) (G : set (set U)) (H : set (set V)) :
   f @ F --> G -> g @ G --> H -> g (f x) @[x --> F] --> H.
 Proof.
-intros FG GH P HP.
-apply (FG (fun x => P (g x))).
+rewrite !filter_ofE /= => FG GH P HP.
+apply: (FG (fun x => P (g x))).
 now apply GH.
 Qed.
 
@@ -425,8 +433,7 @@ Lemma filterlim_ext_loc {T U} {F : set (set T)} {G : set (set U)}
   {FF : Filter F} (f g : T -> U) :
   F (fun x => f x = g x) -> f @ F --> G -> g @ F --> G.
 Proof.
-intros  Efg Lf P GP.
-specialize (Lf P GP).
+move=> Efg Lf P GP; have {Lf}Lf := Lf P GP.
 generalize (filter_and _ (fun x : T => P (f x)) Efg Lf).
 apply: filter_imp.
 now intros x [-> H].
@@ -517,15 +524,6 @@ Qed.
 Inductive filter_prod {T U : Type} (F G : _ -> Prop) (P : T * U -> Prop) : Prop :=
   Filter_prod (Q : T -> Prop) (R : U -> Prop) :
     F Q -> G R -> (forall x y, Q x -> R y -> P (x, y)) -> filter_prod F G P.
-
-Definition canonical_filter_prod {X1 X2 Y1 Y2} (f : Y1 -> set (set X1))
-  (g : Y2 -> set (set X2)) (y1 : Y1) (y2 : Y2) : set (set (X1 * X2)) :=
-  filter_prod (f y1) (g y2).
-
-Canonical canonical_pair_filter X1 X2 (Z1 : canonical_filter X1)
-  (Z2 : canonical_filter X2) : canonical_filter (X1 * X2) :=
-  @CanonicalFilter _ _ (fun x => canonical_filter_prod
-  (@canonical_type_filter _ Z1) (@canonical_type_filter _ Z2) x.1 x.2).
 
 Global Instance filter_prod_filter :
   forall T U (F : set (set T)) (G : set (set U)),
@@ -1104,6 +1102,58 @@ Qed.
 
 End Sums.
 
+Section prod_AbelianGroup.
+
+Context {U V : AbelianGroup}.
+
+Definition prod_plus (x y : U * V) :=
+  (plus (fst x) (fst y), plus (snd x) (snd y)).
+
+Definition prod_opp (x : U * V) :=
+  (opp (fst x), opp (snd x)).
+
+Definition prod_zero : U * V := (zero, zero).
+
+Lemma prod_plus_comm :
+  forall x y : U * V,
+  prod_plus x y = prod_plus y x.
+Proof.
+intros x y.
+apply (f_equal2 pair) ; apply plus_comm.
+Qed.
+
+Lemma prod_plus_assoc :
+  forall x y z : U * V,
+  prod_plus x (prod_plus y z) = prod_plus (prod_plus x y) z.
+Proof.
+intros x y z.
+apply (f_equal2 pair) ; apply plus_assoc.
+Qed.
+
+Lemma prod_plus_zero_r :
+  forall x : U * V,
+  prod_plus x prod_zero = x.
+Proof.
+intros [u v].
+apply (f_equal2 pair) ; apply plus_zero_r.
+Qed.
+
+Lemma prod_plus_opp_r :
+  forall x : U * V,
+  prod_plus x (prod_opp x) = prod_zero.
+Proof.
+intros x.
+apply (f_equal2 pair) ; apply plus_opp_r.
+Qed.
+
+End prod_AbelianGroup.
+
+Definition prod_AbelianGroup_mixin (U V : AbelianGroup) :=
+  AbelianGroup.Mixin (U * V) _ _ _ prod_plus_comm prod_plus_assoc prod_plus_zero_r prod_plus_opp_r.
+
+Canonical prod_AbelianGroup (U V : AbelianGroup) :=
+  AbelianGroup.Pack (U * V) (prod_AbelianGroup_mixin U V) (U * V).
+
 (** ** Noncommutative rings *)
 
 Module Ring.
@@ -1676,6 +1726,49 @@ Canonical AbsRing_UniformSpace := UniformSpacePack K AbsRing_UniformSpace_mixin.
 
 End AbsRing_UniformSpace.
 
+
+Section prod_UniformSpace.
+
+Context {U V : UniformSpace}.
+
+Definition prod_ball (x : U * V) (eps : R) (y : U * V) :=
+  ball (fst x) eps (fst y) /\ ball (snd x) eps (snd y).
+
+Lemma prod_ball_center :
+  forall (x : U * V) (eps : posreal),
+  prod_ball x eps x.
+Proof.
+intros x eps.
+split ; apply ball_center.
+Qed.
+
+Lemma prod_ball_sym :
+  forall (x y : U * V) (eps : R),
+  prod_ball x eps y -> prod_ball y eps x.
+Proof.
+intros x y eps [H1 H2].
+split ; now apply ball_sym.
+Qed.
+
+Lemma prod_ball_triangle :
+  forall (x y z : U * V) (e1 e2 : R),
+  prod_ball x e1 y -> prod_ball y e2 z ->
+  prod_ball x (e1 + e2) z.
+Proof.
+intros x y z e1 e2 [H1 H2] [H3 H4].
+split ; eapply ball_triangle ; eassumption.
+Qed.
+
+End prod_UniformSpace.
+
+Definition prod_UniformSpace_mixin (U V : UniformSpace) :=
+  UniformSpace.Mixin (U * V) _ prod_ball_center prod_ball_sym prod_ball_triangle.
+
+Canonical canonical_pair_filter (U V : UniformSpace) :=
+  @CanonicalFilter (U * V) (U * V) (prod_UniformSpace_mixin U V).
+Canonical prod_UniformSpace (U V : UniformSpace) :=
+  UniformSpacePack (U * V) (prod_UniformSpace_mixin U V).
+
 (** Functional metric spaces *)
 
 Section fct_UniformSpace.
@@ -1708,7 +1801,6 @@ Proof.
   intros x y z e1 e2 H1 H2 t.
   now apply ball_triangle with (y t).
 Qed.
-
 
 Definition fct_UniformSpace_mixin :=
   UniformSpace.Mixin _ _ fct_ball_center fct_ball_sym fct_ball_triangle.
@@ -1767,7 +1859,7 @@ Lemma filterE (x : T) :
   [filter of x] = fun P => exists eps : posreal, forall y, ball x eps y -> P y.
 Proof. by rewrite -/(locally x) locallyE. Qed.
 
-Global Instance locally_filter :
+Lemma locally_filter :
   forall x : T, ProperFilter (locally x).
 Proof.
 rewrite locallyE; move=> x; constructor ; [idtac|constructor].
@@ -1794,6 +1886,16 @@ rewrite locallyE; move=> x; constructor ; [idtac|constructor].
   now apply HP.
 Qed.
 
+Typeclasses Opaque filter_of.
+Instance canonical_filter_of_UniformSpace (x : T) : ProperFilter [filter of x] | 0.
+Proof. exact: locally_filter. Qed.
+Instance canonical_filter_of_filter (F : set (set T)) : Filter F -> Filter [filter of F].
+Proof. exact. Qed.
+Instance canonical_filter_of_proper_filter (F : set (set T)) :
+  ProperFilter F -> ProperFilter [filter of F].
+Proof. exact. Qed.
+
+(* TODO replace locally by filter of *)
 Lemma locally_locally :
   forall (x : T) (P : T -> Prop),
   locally x P -> locally x (fun y => locally y P).
@@ -1927,11 +2029,21 @@ apply Fz.
 apply ball_sym, Fz.
 Qed.
 
+Opaque filter_of.
+Arguments filter_of : simpl never.
+Hint Mode Filter - + : typeclass_instances.
+Hint Mode ProperFilter - + : typeclass_instances.
+Hint Mode ProperFilter' - + : typeclass_instances.
 Lemma is_filter_lim_locally_close (x y : T) :
   x --> y -> close x y.
-Proof. exact: is_filter_lim_close. Qed.
+Proof.
+Set Typeclasses Debug.
+Fail apply: is_filter_lim_close.
+
+Fail exact: is_filter_lim_close. Qed.
 
 End Locally.
+
 
 Definition cvg (U : Type) (T : canonical_filter U) :=
   fun (T' : Type) & canonical_filter_type _ T = T' =>
@@ -1953,8 +2065,8 @@ Proof. by []. Qed.
 Lemma filterlim_const {T} {U : UniformSpace} {F : set (set T)} {FF : Filter F} (a : U) :
   a @[_ --> F] --> a.
 Proof.
-move=> P; rewrite !filterE=> -[eps HP] /=.
-by rewrite appfilter /=; apply: filter_forall=> _; apply/HP/ball_center.
+move=> P; rewrite !filterE /filter_of => -[eps HP] /=.
+by rewrite appfilter /=; apply: filter_forall=> ?; apply/HP/ball_center.
 Qed.
 
 Section Locally_fct.
@@ -1982,7 +2094,7 @@ rewrite !filterE; split.
   apply (Cf (ball y eps)).
   now exists eps.
 - intros Cf P [eps He].
-  unfold filtermapi; simpl.
+  rewrite /filtermapi /filter_of /=.
   apply: filter_imp (Cf eps).
   intros t [z [Hz1 Hz2]].
   exists z.
@@ -2017,7 +2129,7 @@ assert (H': locally l' (ball l' (pos_div_2 eps))).
   by apply locally_ball.
 specialize (Hl' (ball l' (pos_div_2 eps)) H').
 unfold filtermapi in Hl, Hl'.
-rewrite /= in Hl Hl'.
+Set Typeclasses Debug.
 generalize (filter_and _ _ Hf (filter_and _ _ Hl Hl')) => {H H' Hl Hl' Hf} H.
 apply filter_ex in H.
 destruct H as [x [Hf [[y [H1 H1']] [y' [H2 H2']]]]].
@@ -2053,6 +2165,29 @@ apply locally_filter.
 Qed.
 
 (** Pointed filter *)
+
+Hint Resolve cond_pos.
+Lemma Rmin_positive (x : posreal) (y : posreal) : Rmin x y > 0.
+Proof. exact: Rmin_pos. Qed.
+Canonical Rmin_posreal (x : posreal) (y : posreal) :=
+  mkposreal (Rmin x y) (@Rmin_positive x y).
+
+Section prod_UniformSpaceE.
+
+Context {U V : UniformSpace}.
+
+Lemma locally_prod (x : U) (y : V) P:
+  [filter of (x, y)] P <-> filter_prod [filter of x] [filter of y] P.
+Proof.
+rewrite !filterE; split => [[eps Peps]|[Q R [epsQ Qeps] [epsR Reps] PQR]].
+  exists (ball x eps) (ball y eps); do ?by exists eps.
+  by move=> ????; apply: Peps.
+exists (Rmin_posreal epsQ epsR) => -[x' y'] [/=].
+move=> /(ball_le _ _ _ (Rmin_l _ _)) /Qeps Qx'.
+by move=> /(ball_le _ _ _ (Rmin_r _ _)) /Reps /PQR; exact.
+Qed.
+
+End prod_UniformSpaceE.
 
 Section at_point.
 
@@ -3443,6 +3578,7 @@ Proof.
 intros x y.
 apply (filterlim_filter_le_1 (F := filter_prod (locally_norm x) (locally_norm y))).
   intros P [Q R LQ LR H].
+  apply/locally_prod.
   exists Q R.
   now apply locally_le_locally_norm.
   now apply locally_le_locally_norm.
@@ -3467,9 +3603,13 @@ by apply plus_comm.
 by [].
 Qed.
 
+Typeclasses Opaque filter_of.
 Lemma filterlim_scal (k : K) (x : V) :
   (fun z => scal (fst z) (snd z)) @ (k, x) --> (scal k x).
 Proof.
+Set Typeclasses Debug.
+rewrite filterlim_locally.
+apply/filterlim_locally.
   apply/filterlim_locally => /= eps.
   eapply filter_imp.
   move => /= u Hu.
@@ -3707,98 +3847,6 @@ End CompleteNormedModule1.
 
 (** ** Pairs *)
 
-Section prod_AbelianGroup.
-
-Context {U V : AbelianGroup}.
-
-Definition prod_plus (x y : U * V) :=
-  (plus (fst x) (fst y), plus (snd x) (snd y)).
-
-Definition prod_opp (x : U * V) :=
-  (opp (fst x), opp (snd x)).
-
-Definition prod_zero : U * V := (zero, zero).
-
-Lemma prod_plus_comm :
-  forall x y : U * V,
-  prod_plus x y = prod_plus y x.
-Proof.
-intros x y.
-apply (f_equal2 pair) ; apply plus_comm.
-Qed.
-
-Lemma prod_plus_assoc :
-  forall x y z : U * V,
-  prod_plus x (prod_plus y z) = prod_plus (prod_plus x y) z.
-Proof.
-intros x y z.
-apply (f_equal2 pair) ; apply plus_assoc.
-Qed.
-
-Lemma prod_plus_zero_r :
-  forall x : U * V,
-  prod_plus x prod_zero = x.
-Proof.
-intros [u v].
-apply (f_equal2 pair) ; apply plus_zero_r.
-Qed.
-
-Lemma prod_plus_opp_r :
-  forall x : U * V,
-  prod_plus x (prod_opp x) = prod_zero.
-Proof.
-intros x.
-apply (f_equal2 pair) ; apply plus_opp_r.
-Qed.
-
-End prod_AbelianGroup.
-
-Definition prod_AbelianGroup_mixin (U V : AbelianGroup) :=
-  AbelianGroup.Mixin (U * V) _ _ _ prod_plus_comm prod_plus_assoc prod_plus_zero_r prod_plus_opp_r.
-
-Canonical prod_AbelianGroup (U V : AbelianGroup) :=
-  AbelianGroup.Pack (U * V) (prod_AbelianGroup_mixin U V) (U * V).
-
-Section prod_UniformSpace.
-
-Context {U V : UniformSpace}.
-
-Definition prod_ball (x : U * V) (eps : R) (y : U * V) :=
-  ball (fst x) eps (fst y) /\ ball (snd x) eps (snd y).
-
-Lemma prod_ball_center :
-  forall (x : U * V) (eps : posreal),
-  prod_ball x eps x.
-Proof.
-intros x eps.
-split ; apply ball_center.
-Qed.
-
-Lemma prod_ball_sym :
-  forall (x y : U * V) (eps : R),
-  prod_ball x eps y -> prod_ball y eps x.
-Proof.
-intros x y eps [H1 H2].
-split ; now apply ball_sym.
-Qed.
-
-Lemma prod_ball_triangle :
-  forall (x y z : U * V) (e1 e2 : R),
-  prod_ball x e1 y -> prod_ball y e2 z ->
-  prod_ball x (e1 + e2) z.
-Proof.
-intros x y z e1 e2 [H1 H2] [H3 H4].
-split ; eapply ball_triangle ; eassumption.
-Qed.
-
-
-End prod_UniformSpace.
-
-Definition prod_UniformSpace_mixin (U V : UniformSpace) :=
-  UniformSpace.Mixin (U * V) _ prod_ball_center prod_ball_sym prod_ball_triangle.
-
-Canonical prod_UniformSpace (U V : UniformSpace) :=
-  UniformSpace.Pack (U * V) (prod_UniformSpace_mixin U V) (U * V).
 
 Section prod_ModuleSpace.
 
