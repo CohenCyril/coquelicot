@@ -3607,6 +3607,7 @@ Definition class := let: Pack _ c _ := cT return class_of cT in c.
 Let xT := let: Pack T _ _ := cT in T.
 Notation xclass := (class : class_of xT).
 
+Definition type_canonical_filter := CanonicalFilter cT cT xclass.
 Definition AbelianGroup := AbelianGroup.Pack cT xclass xT.
 Definition ModuleSpace := ModuleSpace.Pack _ cT xclass xT.
 Definition NormedModuleAux := NormedModuleAux.Pack _ cT xclass xT.
@@ -3622,6 +3623,8 @@ Coercion base : class_of >-> NormedModule.class_of.
 Coercion mixin : class_of >-> CompleteSpace.mixin_of.
 Coercion base2 : class_of >-> CompleteSpace.class_of.
 Coercion sort : type >-> Sortclass.
+Coercion type_canonical_filter : type >-> canonical_filter.
+Canonical type_canonical_filter.
 Coercion AbelianGroup : type >-> AbelianGroup.type.
 Canonical AbelianGroup.
 Coercion ModuleSpace : type >-> ModuleSpace.type.
@@ -3683,16 +3686,15 @@ Qed.
 Context {T : Type}.
 
 Lemma iota_filterlim_locally {F} {FF : ProperFilter' F} (f : T -> V) l :
-  filterlim f F (locally l) ->
-  iota (fun x => filterlim f F (locally x)) = l.
+  f @ F --> l -> iota (fun x => f @ F --> x) = l.
 Proof.
 apply iota_is_filter_lim.
 Qed.
 
 Lemma iota_filterlimi_locally {F} {FF : ProperFilter' F} (f : T -> V -> Prop) l :
   F (fun x => forall y1 y2, f x y1 -> f x y2 -> y1 = y2) ->
-  filterlimi f F (locally l) ->
-  iota (fun x => filterlimi f F (locally x)) = l.
+  f `@ F --> l ->
+  iota (fun x => f `@ F --> x) = l.
 Proof.
 intros Hf Hl.
 apply: iota_unique (Hl) => l' Hl'.
