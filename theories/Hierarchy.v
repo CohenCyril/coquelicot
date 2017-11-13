@@ -21,7 +21,7 @@ COPYING file for more details.
 
 Require Import Reals.
 From Coq Require Import ssreflect ssrfun ssrbool.
-Require Import Rcomplements Rbar Markov Iter Lub.
+From Coquelicot Require Import Rcomplements Rbar Markov Iter Lub.
 
 (** This file first describes [Filter]s that are predicates of type
 [(T -> Prop) -> Prop] used for limits and neighborhoods.  Then the
@@ -3427,6 +3427,14 @@ Section NVS_continuity.
 
 Context {K : AbsRing} {V : NormedModule K}.
 
+Definition card_prod {X1 X2 Y1 Y2} (f : Y1 -> set (set X1)) (g : Y2 -> set (set X2)) :
+  Y1 -> Y2 -> set (set (X1 * X2)).
+Admitted.
+
+Canonical pair_filter X1 X2 (Z1 : canonical_filter X1) (Z2 : canonical_filter X2) : canonical_filter (X1 * X2) :=
+  @CanonicalFilter _ _ (fun x : canonical_filter_type _ Z1 * canonical_filter_type _ Z2 =>
+  card_prod (@canonical_type_filter _ Z1) (@canonical_type_filter _ Z2) x.1 x.2).
+
 Lemma filterlim_plus :
   forall x y : V,
   (fun z : V * V => plus (fst z) (snd z)) @ (x, y) --> (plus x y).
@@ -3434,6 +3442,7 @@ Proof.
 intros x y.
 apply (filterlim_filter_le_1 (F := filter_prod (locally_norm x) (locally_norm y))).
   intros P [Q R LQ LR H].
+  rewrite /filter_of /=.
   exists Q R.
   now apply locally_le_locally_norm.
   now apply locally_le_locally_norm.
