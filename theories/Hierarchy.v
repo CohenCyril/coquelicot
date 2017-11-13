@@ -215,26 +215,13 @@ Canonical source_filter_filter Y :=
 Canonical source_filter_filter' Y :=
   @CanonicalFilterSource Prop _ (set _) (fun x : (set (set Y)) => x).
 
-Module Type FilterSig.
-Parameter filter_of : forall X Y (F : canonical_filter_on X Y)
-  (x : X) (_ : x = canonical_filter_term _ _ F), (set (set Y)).
-Parameter filter_ofE : forall X Y (F : canonical_filter_on X Y)
-  (x : X) (e : x = canonical_filter_term _ _ F),
-  @filter_of X Y F x e = canonical_term_filter F.
-End FilterSig.
-Module FilterAbstraction : FilterSig.
 Definition filter_of X Y (F : canonical_filter_on X Y)
   (x : X) (_ : x = canonical_filter_term _ _ F) :=
   canonical_term_filter F.
-Lemma filter_ofE : forall X Y (F : canonical_filter_on X Y)
-  (x : X) (e : x = canonical_filter_term _ _ F),
-  @filter_of X Y F x e = canonical_term_filter F.
-Proof. by []. Qed.
-End FilterAbstraction.
 
-Notation "[ 'filter' 'of' x ]" := (@FilterAbstraction.filter_of _ _ _ x eq_refl)
+Notation "[ 'filter' 'of' x ]" := (@filter_of _ _ _ x eq_refl)
   (format "[ 'filter'  'of'  x ]").
-Definition filter_ofE := FilterAbstraction.filter_ofE.
+Arguments filter_of _ _ _ _ _ _ : simpl never.
 
 Open Scope R_scope.
 
@@ -320,10 +307,10 @@ Proof.
 intros FF.
 unfold filtermap.
 constructor.
-- by rewrite !filter_ofE /=; apply filter_true.
-- move=> P Q; rewrite !filter_ofE /= => HP HQ.
-  exact: filter_and.
-- intros P Q H; rewrite !filter_ofE /= => HP.
+- apply filter_true.
+- intros P Q HP HQ.
+  now apply filter_and.
+- intros P Q H HP.
   apply (filter_imp (fun x => P (f x))).
   intros x Hx.
   now apply H.
@@ -333,9 +320,12 @@ Qed.
 Global Instance filtermap_proper_filter' T U (f : T -> U) (F : set (set T)) :
   ProperFilter' F -> ProperFilter' (f @ F).
 Proof.
-move=> FF; rewrite /filtermap.
-apply: Build_ProperFilter'.
-by rewrite !filter_ofE; apply filter_not_empty.
+intros FF.
+unfold filtermap.
+split.
+- apply filter_not_empty.
+- apply filtermap_filter.
+  apply filter_filter'.
 Qed.
 
 Global Instance filtermap_proper_filter T U (f : T -> U) (F : set (set T)) :
@@ -343,9 +333,12 @@ Global Instance filtermap_proper_filter T U (f : T -> U) (F : set (set T)) :
 Proof.
 intros FF.
 unfold filtermap.
-apply: Build_ProperFilter => P.
-rewrite filter_ofE /= => FP.
-by destruct (filter_ex _ FP) as [x Hx]; exists (f x).
+split.
+- intros P FP.
+  destruct (filter_ex _ FP) as [x Hx].
+  now exists (f x).
+- apply filtermap_filter.
+  apply filter_filter.
 Qed.
 
 Definition filtermapi {T U : Type} (f : T -> set U) (F : set (set T)) :=
@@ -363,11 +356,10 @@ Proof.
 intros H FF.
 unfold filtermapi.
 constructor.
-- rewrite !filter_ofE /=.
-  apply: filter_imp H => x [[y Hy] H].
+- apply: filter_imp H => x [[y Hy] H].
   exists y.
   exact (conj Hy I).
-- intros P Q; rewrite !filter_ofE => /= HP HQ.
+- intros P Q HP HQ.
   apply: filter_imp (filter_and _ _ (filter_and _ _ HP HQ) H).
   intros x [[[y1 [Hy1 Py]] [y2 [Hy2 Qy]]] [[y Hy] Hf]].
   exists y.
@@ -375,7 +367,7 @@ constructor.
   split.
   now rewrite (Hf y y1).
   now rewrite (Hf y y2).
-- intros P Q; rewrite !filter_ofE /= => HPQ HP.
+- intros P Q HPQ HP.
   apply: filter_imp HP.
   intros x [y [Hf Py]].
   exists y.
@@ -391,7 +383,7 @@ Proof.
 intros HF FF.
 unfold filtermapi.
 split.
-- rewrite filter_ofE /= => H.
+- intro H.
   apply filter_not_empty.
   apply filter_imp with (2 := H).
   now intros x [y [_ Hy]].
@@ -408,7 +400,7 @@ Proof.
 intros HF FF.
 unfold filtermapi.
 split.
-- intros P; rewrite !filter_ofE => /= FP.
+- intros P FP.
   destruct (filter_ex _ FP) as [x [y [_ Hy]]].
   now exists y.
 - apply filtermapi_filter.
@@ -418,14 +410,14 @@ Qed.
 
 
 Lemma filterlim_id T (F : set (set T)) : x @[x --> F] --> F.
-Proof. rewrite filter_ofE /=; exact. Qed.
+Proof. exact. Qed.
 
 Lemma filterlim_comp T U V (f : T -> U) (g : U -> V)
   (F : set (set T)) (G : set (set U)) (H : set (set V)) :
   f @ F --> G -> g @ G --> H -> g (f x) @[x --> F] --> H.
 Proof.
-rewrite !filter_ofE /= => FG GH P HP.
-apply: (FG (fun x => P (g x))).
+intros FG GH P HP.
+apply (FG (fun x => P (g x))).
 now apply GH.
 Qed.
 
@@ -433,7 +425,8 @@ Lemma filterlim_ext_loc {T U} {F : set (set T)} {G : set (set U)}
   {FF : Filter F} (f g : T -> U) :
   F (fun x => f x = g x) -> f @ F --> G -> g @ F --> G.
 Proof.
-move=> Efg Lf P GP; have {Lf}Lf := Lf P GP.
+intros  Efg Lf P GP.
+specialize (Lf P GP).
 generalize (filter_and _ (fun x : T => P (f x)) Efg Lf).
 apply: filter_imp.
 now intros x [-> H].
