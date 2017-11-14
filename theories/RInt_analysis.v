@@ -329,7 +329,7 @@ Context {V : NormedModule R_AbsRing}.
 
 Lemma is_derive_RInt_0 (f If : R -> V) (a : R) :
   locally a (fun b => is_RInt f a b (If b))
-  -> continuous f a
+  -> {for a, continuous f}
   -> is_derive If a (f a).
 Proof.
   intros HIf Hf.
@@ -389,7 +389,7 @@ Qed.
 
 Lemma is_derive_RInt (f If : R -> V) (a b : R) :
   locally b (fun b => is_RInt f a b (If b))
-  -> continuous f b
+  -> {for b, continuous f}
   -> is_derive If b (f b).
 Proof.
   intros HIf Hf.
@@ -416,7 +416,7 @@ Qed.
 
 Lemma is_derive_RInt' (f If : R -> V) (a b : R) :
   locally a (fun a => is_RInt f a b (If a))
-  -> continuous f a
+  -> {for a, continuous f}
   -> is_derive If a (opp (f a)).
 Proof.
   intros.
@@ -431,7 +431,7 @@ Qed.
 
 Lemma filterdiff_RInt (f : R -> V) (If : R -> R -> V) (a b : R) :
   locally (a,b) (fun u : R * R => is_RInt f (fst u) (snd u) (If (fst u) (snd u)))
-  -> continuous f a -> continuous f b
+  -> {for a, continuous f} -> {for b, continuous f}
   -> filterdiff (fun u : R * R => If (fst u) (snd u)) (locally (a,b))
                 (fun u : R * R => minus (scal (snd u) (f b)) (scal (fst u) (f a))).
 Proof.
@@ -495,7 +495,7 @@ Qed.
 End Derive.
 
 Lemma Derive_RInt (f : R -> R) (a b : R) :
-  locally b (ex_RInt f a) -> continuous f b
+  locally b (ex_RInt f a) -> {for b, continuous f}
   -> Derive (RInt f a) b = f b.
 Proof.
   intros If Cf.
@@ -504,7 +504,7 @@ Proof.
   exact: RInt_correct.
 Qed.
 Lemma Derive_RInt' (f : R -> R) (a b : R) :
-  locally a (fun a => ex_RInt f a b) -> continuous f a
+  locally a (fun a => ex_RInt f a b) -> {for a, continuous f}
   -> Derive (fun a => RInt f a b) a = - f a.
 Proof.
   intros If Cf.
@@ -519,7 +519,7 @@ Context {V : CompleteNormedModule R_AbsRing}.
 
 Lemma is_RInt_derive (f df : R -> V) (a b : R) :
   (forall x : R, Rmin a b <= x <= Rmax a b -> is_derive f x (df x)) ->
-  (forall x : R, Rmin a b <= x <= Rmax a b -> continuous df x) ->
+  (forall x : R, Rmin a b <= x <= Rmax a b -> {for x, continuous df}) ->
   is_RInt df a b (minus (f b) (f a)).
 Proof.
 intros Hf Hdf.
@@ -578,7 +578,7 @@ End Derive'.
 
 Lemma RInt_Derive (f : R -> R) (a b : R):
   (forall x, Rmin a b <= x <= Rmax a b -> ex_derive f x) ->
-  (forall x, Rmin a b <= x <= Rmax a b -> continuous (Derive f) x) ->
+  (forall x, Rmin a b <= x <= Rmax a b -> {for x, continuous (Derive f)}) ->
   RInt (Derive f) a b = f b - f a.
 Proof.
 intros Df Cdf.
@@ -596,7 +596,7 @@ Context {V : CompleteNormedModule R_AbsRing}.
 (* Notation consistent version of the lemmas used in is_RInt_comp *)
 
 Lemma IVT_gen_consistent (f : R -> R) (a b y : R) :
-  (forall x, continuous f x)
+  (forall x, {for x, continuous f})
   -> Rmin (f a) (f b) <= y <= Rmax (f a) (f b)
   -> { x : R | Rmin a b <= x <= Rmax a b /\ f x = y }.
 Proof.
@@ -608,7 +608,7 @@ Qed.
 Lemma continuous_ab_maj_consistent :
 forall (f : R -> R) (a b : R),
 a <= b ->
-(forall c : R, a <= c <= b -> continuous f c) ->
+(forall c : R, a <= c <= b -> {for c, continuous f}) ->
 exists Mx : R, (forall c : R, a <= c <= b -> f c <= f Mx) /\ a <= Mx <= b.
 Proof.
   move => f a b Hab Hc.
@@ -619,7 +619,7 @@ Qed.
 Lemma continuous_ab_min_consistent :
 forall (f : R -> R) (a b : R),
 a <= b ->
-(forall c : R, a <= c <= b -> continuous f c) ->
+(forall c : R, a <= c <= b -> {for c, continuous f}) ->
 exists mx : R, (forall c : R, a <= c <= b -> f mx <= f c) /\ a <= mx <= b.
 Proof.
   move => f a b Hab Hc.
@@ -628,8 +628,8 @@ Proof.
 Qed.
 
 Lemma is_RInt_comp (f : R -> V) (g dg : R -> R) (a b : R) :
-  (forall x, Rmin a b <= x <= Rmax a b -> continuous f (g x)) ->
-  (forall x, Rmin a b <= x <= Rmax a b -> is_derive g x (dg x) /\ continuous dg x) ->
+  (forall x, Rmin a b <= x <= Rmax a b -> {for (g x), continuous f}) ->
+  (forall x, Rmin a b <= x <= Rmax a b -> is_derive g x (dg x) /\ {for x, continuous dg}) ->
   is_RInt (fun y => scal (dg y) (f (g y))) a b (RInt f (g a) (g b)).
 Proof.
   wlog: a b / (a < b) => [Hw|Hab].
@@ -660,7 +660,7 @@ Proof.
       rewrite -> Rmin_left by now apply Rlt_le.
       rewrite -> Rmax_right by now apply Rlt_le.
 
-  wlog: g dg / (forall x : R, is_derive g x (dg x) /\ continuous dg x) => [Hw Hf Hg | Hg Hf _].
+  wlog: g dg / (forall x : R, is_derive g x (dg x) /\ {for x, continuous dg}) => [Hw Hf Hg | Hg Hf _].
     rewrite -?(extension_C1_ext g dg a b) ; try by [left | right].
     set g0 := extension_C1 g dg a b.
     set dg0 := extension_C0 dg a b.
@@ -689,11 +689,11 @@ Proof.
       by apply Rlt_le.
     by intros ; apply Hg ; by split.
 
-    have cg : forall x, continuous g x.
+    have cg : forall x, {for x, continuous g}.
       move => t Ht; apply: ex_derive_continuous.
       by exists (dg t); apply Hg.
 
-  wlog: f Hf / (forall x, continuous f x) => [Hw | {Hf} Hf].
+  wlog: f Hf / (forall x, {for x, continuous f}) => [Hw | {Hf} Hf].
     case: (continuous_ab_maj_consistent g a b (Rlt_le _ _ Hab)) => [ | M HM].
       move => x Hx; apply: ex_derive_continuous.
       by exists (dg x); apply Hg.
@@ -755,8 +755,8 @@ Proof.
 Qed.
 
 Lemma RInt_comp (f : R -> V) (g dg : R -> R) (a b : R) :
-  (forall x, Rmin a b <= x <= Rmax a b -> continuous f (g x)) ->
-  (forall x, Rmin a b <= x <= Rmax a b -> is_derive g x (dg x) /\ continuous dg x) ->
+  (forall x, Rmin a b <= x <= Rmax a b -> {for (g x), continuous f}) ->
+  (forall x, Rmin a b <= x <= Rmax a b -> is_derive g x (dg x) /\ {for x, continuous dg}) ->
   RInt (fun y => scal (dg y) (f (g y))) a b = RInt f (g a) (g b).
 Proof.
   move => Hfg Hg.
@@ -769,7 +769,7 @@ End Comp.
 Lemma RInt_Chasles_bound_comp_l_loc (f : R -> R -> R) (a : R -> R) (b x : R) :
   locally x (fun y => ex_RInt (f y) (a x) b) ->
   (exists eps : posreal, locally x (fun y => ex_RInt (f y) (a x - eps) (a x + eps))) ->
-  continuous a x ->
+  {for x, continuous a} ->
   locally x (fun x' => RInt (f x') (a x') (a x) + RInt (f x') (a x) b =
     RInt (f x') (a x') b).
 Proof.
@@ -788,8 +788,8 @@ Lemma RInt_Chasles_bound_comp_loc (f : R -> R -> R) (a b : R -> R) (x : R) :
   locally x (fun y => ex_RInt (f y) (a x) (b x)) ->
   (exists eps : posreal, locally x (fun y => ex_RInt (f y) (a x - eps) (a x + eps))) ->
   (exists eps : posreal, locally x (fun y => ex_RInt (f y) (b x - eps) (b x + eps))) ->
-  continuous a x ->
-  continuous b x ->
+  {for x, continuous a} ->
+  {for x, continuous b} ->
   locally x (fun x' => RInt (f x') (a x') (a x) + RInt (f x') (a x) (b x') =
     RInt (f x') (a x') (b x')).
 Proof.
@@ -823,8 +823,8 @@ Context {V : NormedModule R_AbsRing}.
 Lemma is_derive_RInt_bound_comp (f : R -> V) (If : R -> R -> V) (a b : R -> R) (da db x : R) :
   locally (a x, b x)
     (fun u : R * R => is_RInt f (fst u) (snd u) (If (fst u) (snd u))) ->
-  continuous f (a x) ->
-  continuous f (b x) ->
+  {for (a x), continuous f} ->
+  {for (b x), continuous f} ->
   is_derive a x da ->
   is_derive b x db ->
   is_derive (fun x => If (a x) (b x)) x (minus (scal db (f (b x))) (scal da (f (a x)))).
@@ -924,7 +924,7 @@ apply Rlt_eps2_eps.
 apply cond_pos.
 assert (D2: ex_RInt (fun t => f x t) a b).
 apply DIf.
-apply ball_center.
+by move: (ball_center x d2).
 rewrite -RInt_minus // -RInt_scal //.
 assert (D3: ex_RInt (fun t => f y t - f x t) a b).
   apply @ex_RInt_minus.
@@ -1085,7 +1085,8 @@ apply Rle_trans with (1:=Rmin_r _ _).
 apply Rmin_l.
 apply: RInt_correct.
 apply: ex_RInt_continuous.
-intros y Hy ; apply continuity_pt_filterlim.
+intros y Hy.
+  apply: (proj1 (continuity_pt_filterlim _ _)).
 intros eps Heps.
 assert (Y1:(Rabs (u - x) < d5)).
 apply Rlt_le_trans with (1:=Hu).
@@ -1131,7 +1132,7 @@ exists (pos_div_2 d4).
 intros y Hy t Ht.
 apply Df.
 rewrite (double_var d4).
-apply ball_triangle with u.
+apply (ball_triangle _ u).
 apply Rlt_le_trans with (1:=Hu).
 apply Rle_trans with (1:=Rmin_r _ _).
 apply Rle_trans with (1:=Rmin_l _ _).
@@ -1161,7 +1162,7 @@ intros y Hy.
 apply (ex_RInt_inside (f y)) with (a x) d1.
 apply Ia.
 rewrite (double_var d2).
-apply ball_triangle with u.
+apply (ball_triangle _ u).
 apply Rlt_le_trans with (1:=Hu).
 apply Rle_trans with (1:=Rmin_l _ _).
 apply Rle_trans with (1:=Rmin_r _ _).
@@ -1297,8 +1298,8 @@ rewrite /Rminus Rplus_opp_r Rabs_R0.
 left; apply cond_pos.
 by apply continuity_pt_filterlim, Cfa.
 (* . *)
-apply (continuity_2d_pt_filterlim (fun u v =>
-   Derive (fun z : R => RInt (fun t0 : R => f z t0) v (a x)) u)).
+apply: (proj1 (continuity_2d_pt_filterlim (fun u v =>
+   Derive (fun z : R => RInt (fun t0 : R => f z t0) v (a x)) u) _ _)).
 simpl.
 apply is_derive_RInt_param_bound_comp_aux1; try easy.
 exists d0; exact Ia.
@@ -1619,8 +1620,8 @@ Lemma is_RInt_scal_derive :
   forall (f : R -> R) (g : R -> V) (f' : R -> R) (g' : R -> V) (a b : R),
   (forall t, Rmin a b <= t <= Rmax a b -> is_derive f t (f' t)) ->
   (forall t, Rmin a b <= t <= Rmax a b -> is_derive g t (g' t)) ->
-  (forall t, Rmin a b <= t <= Rmax a b -> continuous f' t) ->
-  (forall t, Rmin a b <= t <= Rmax a b -> continuous g' t) ->
+  (forall t, Rmin a b <= t <= Rmax a b -> {for t, continuous f'}) ->
+  (forall t, Rmin a b <= t <= Rmax a b -> {for t, continuous g'}) ->
   is_RInt (fun t => plus (scal (f' t) (g t)) (scal (f t) (g' t))) a b (minus (scal (f b) (g b)) (scal (f a) (g a))).
 Proof.
 intros f g f' g' a b Df Dg Cf' Cg' If'g.
