@@ -154,8 +154,8 @@ Qed.
 Lemma ex_lub_Rbar (E : R -> Prop) : {l : Rbar | is_lub_Rbar E l}.
 Proof.
   destruct (is_ub_Rbar_dec E)  as [[M HM] | HM] ; first last.
-(* sup = p_infty *)
-  exists p_infty ; split.
+(* sup = +oo *)
+  exists +oo ; split.
   by [].
   case => [l | | ] // Hl.
   by specialize (HM l).
@@ -221,7 +221,7 @@ rename E into F.
     specialize (Hn n).
     case: (Req_dec (u n) (- INR n)) => // H.
     clear Hn.
-  exists m_infty ; split => // x Hx.
+  exists -oo ; split => // x Hx.
   destruct (nfloor_ex (Rmax 0 (- x))) as [n Hn].
   by apply Rmax_l.
   specialize (H (S n)).
@@ -374,12 +374,12 @@ Qed.
 (** Basic properties *)
 
 Lemma Rbar_ub_p_infty (E : Rbar -> Prop) :
-  Rbar_is_upper_bound E p_infty.
+  Rbar_is_upper_bound E +oo.
 Proof.
   now intros [x| |] Hx.
 Qed.
 Lemma Rbar_lb_m_infty (E : Rbar -> Prop) :
-  Rbar_is_lower_bound E m_infty.
+  Rbar_is_lower_bound E -oo.
 Proof.
   easy.
 Qed.
@@ -401,13 +401,13 @@ Proof.
 Qed.
 
 Lemma Rbar_ub_m_infty (E : Rbar -> Prop) :
-  Rbar_is_upper_bound E m_infty -> forall x, E x -> x = m_infty.
+  Rbar_is_upper_bound E -oo -> forall x, E x -> x = -oo.
 Proof.
   intros H [x| |] Hx ;
   now specialize (H _ Hx).
 Qed.
 Lemma Rbar_lb_p_infty (E : Rbar -> Prop) :
-  Rbar_is_lower_bound E p_infty -> (forall x, E x -> x = p_infty).
+  Rbar_is_lower_bound E +oo -> (forall x, E x -> x = +oo).
 Proof.
   intros H x ;
   case x ; auto ; clear x ; [intros x| ] ; intros Hx.
@@ -430,7 +430,7 @@ Qed.
 
 (** Decidability *)
 
-Lemma Rbar_ub_dec (E : Rbar -> Prop) (Hp : ~ E p_infty) :
+Lemma Rbar_ub_dec (E : Rbar -> Prop) (Hp : ~ E +oo) :
   {M : R | Rbar_is_upper_bound E M}
     + {(forall (M : R), ~Rbar_is_upper_bound E M)}.
 Proof.
@@ -442,7 +442,7 @@ Proof.
   contradict HM => x Hx.
   by apply HM.
 Qed.
-Lemma Rbar_lb_dec (E : Rbar -> Prop) (Hm : ~ E m_infty) :
+Lemma Rbar_lb_dec (E : Rbar -> Prop) (Hm : ~ E -oo) :
   {M : R | Rbar_is_lower_bound E (Finite M)}
     + {(forall M, ~Rbar_is_lower_bound E (Finite M))}.
 Proof.
@@ -518,8 +518,8 @@ Qed.
 Lemma Rbar_ex_lub (E : Rbar -> Prop) :
   {l : Rbar | Rbar_is_lub E l}.
 Proof.
-  destruct (EM_dec (E p_infty)) as [Hp|Hp].
-  exists p_infty ; split.
+  destruct (EM_dec (E +oo)) as [Hp|Hp].
+  exists +oo ; split.
   by case.
   intros b Hb.
   apply Rbar_not_lt_le.

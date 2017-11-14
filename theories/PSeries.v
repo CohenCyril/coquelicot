@@ -566,7 +566,7 @@ Qed.
 Lemma CV_radius_infinite_DAlembert (a : nat -> R) :
   (forall n:nat, a n <> 0) ->
   is_lim_seq (fun n:nat => Rabs (a (S n) / a n)) 0 ->
-  CV_radius a = p_infty.
+  CV_radius a = +oo.
 Proof.
   move => Ha Hda.
   rewrite /CV_radius /Lub_Rbar ;
@@ -1467,7 +1467,7 @@ Proof.
   rewrite sum_Sn /= /plus /= IH ; ring.
 Qed.
 
-Lemma CV_radius_const_0 : CV_radius (fun _ => 0) = p_infty.
+Lemma CV_radius_const_0 : CV_radius (fun _ => 0) = +oo.
 Proof.
   suff : forall x, Rbar_le (Rabs x) (CV_radius (fun _ : nat => 0)).
   case H : (CV_radius (fun _ : nat => 0)) => [cv | | ] //= H0.
@@ -1580,7 +1580,7 @@ Qed.
 (** ** Abel's theorem for power series *)
 
 Lemma Abel (a : nat -> R) :
-  Rbar_lt 0 (CV_radius a) -> Rbar_lt (CV_radius a) p_infty
+  Rbar_lt 0 (CV_radius a) -> Rbar_lt (CV_radius a) +oo
   -> ex_pseries a (CV_radius a)
   -> filterlim (PSeries a) (at_left (CV_radius a)) (locally (PSeries a (CV_radius a))).
 Proof.
@@ -2394,7 +2394,7 @@ Proof.
   by rewrite CV_radius_derive.
   transitivity (Derive_n (Derive (PSeries a)) n 0).
   apply Derive_n_ext_loc.
-  case: (Rbar_eq_dec (CV_radius a) p_infty) => H.
+  case: (Rbar_eq_dec (CV_radius a) +oo) => H.
   exists (mkposreal _ Rlt_0_1) => /= x Hx.
   apply sym_eq ; apply Derive_PSeries.
   by rewrite H.
@@ -2546,7 +2546,7 @@ Proof.
     apply Rlt_le, Rdiv_lt_0_compat ; by apply H0.
     rewrite -(Rmult_0_r r) ; apply (is_lim_seq_scal_l _ _ 0) => //.
     apply (is_lim_seq_incr_1 (fun n => / INR n)).
-    replace (Finite 0) with (Rbar_inv p_infty) by auto.
+    replace (Finite 0) with (Rbar_inv +oo) by auto.
     apply is_lim_seq_inv.
     by apply is_lim_seq_INR.
     by [].

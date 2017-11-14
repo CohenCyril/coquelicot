@@ -19,7 +19,7 @@ library, we provide correspondence theorems between the two libraries.
 
 
 - [R]: the set of real numbers defined by Coq's standard library.
-- [Rbar]: [R] extended with signed infinities [p_infty] and [m_infty]. There is
+- [Rbar]: [R] extended with signed infinities [+oo] and [-oo]. There is
   a coercion from [R] to [Rbar].
 - [C]: the set of complex numbers, defined as pairs of real numbers. There is a
   coercion from [R] to [C].
@@ -73,7 +73,7 @@ The supported filters are as follows:
   matter.
 - [Rbar_locally x] is defined for x in [Rbar]. It is [locally x] if x is finite,
   otherwise it is the set of half-bounded open intervals extending to either
-  [m_infty] or [p_infty], depending on which infinity x is. In the latter case,
+  [-oo] or [+oo], depending on which infinity x is. In the latter case,
   the limit described by the filter is plus or minus infinity.
 - [Rbar_locally' x] is to [Rbar_locally x] what [locally' x] is to [locally x].
 - [at_left x] restricts the balls of [locally x] to points strictly less
@@ -116,7 +116,7 @@ Examples:
   it, since x is necessarily in the preimage of f x and thus can be ignored.
 - [filterlim f (at_right x) (locally y)] means that f t tends to y when t tends
   to x from the right.
-- [filterlim exp (Rbar_locally m_infty) (at_right 0)] means that [exp] tends
+- [filterlim exp (Rbar_locally -oo) (at_right 0)] means that [exp] tends
   to 0 at minus infinity but only takes positive values there.
 - [forall x y : R, filterlim (fun z => fst z + snd z) (filter_prod (locally x)
   (locally y)) (locally (x + y))] states that [Rplus] is continuous.
@@ -131,8 +131,8 @@ The following predicates specialize [filterlim] to the usual cases of
 real-valued sequences and functions:
 - [is_lim_seq : (nat -> R) -> Rbar -> Prop], e.g. [is_lim_seq (fun n => 1 + /
   INR n) 1].
-- [is_lim : (R -> R) -> Rbar -> Rbar -> Prop], e.g. [is_lim exp p_infty
-  p_infty].
+- [is_lim : (R -> R) -> Rbar -> Rbar -> Prop], e.g. [is_lim exp +oo
+  +oo].
 
 
 The unicity of the limits is given by lemmas [is_lim_seq_unique] and

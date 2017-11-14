@@ -5258,14 +5258,14 @@ Qed.
 Definition Rbar_locally' (a : Rbar) (P : R -> Prop) :=
   match a with
     | Finite a => locally' a P
-    | p_infty => exists M : R, forall x, M < x -> P x
-    | m_infty => exists M : R, forall x, x < M -> P x
+    | +oo => exists M : R, forall x, M < x -> P x
+    | -oo => exists M : R, forall x, x < M -> P x
   end.
 Definition Rbar_locally (a : Rbar) (P : R -> Prop) :=
   match a with
     | Finite a => locally a P
-    | p_infty => exists M : R, forall x, M < x -> P x
-    | m_infty => exists M : R, forall x, x < M -> P x
+    | +oo => exists M : R, forall x, M < x -> P x
+    | -oo => exists M : R, forall x, x < M -> P x
   end.
 
 Canonical Rbar_canonical_filter := CanonicalFilter R Rbar (Rbar_locally).
@@ -5350,8 +5350,8 @@ Global Instance Rbar_locally_filter :
 Proof.
 intros [x| |].
 - apply locally_filter.
-- exact (Rbar_locally'_filter p_infty).
-- exact (Rbar_locally'_filter m_infty).
+- exact (Rbar_locally'_filter +oo).
+- exact (Rbar_locally'_filter -oo).
 Qed.
 
 (** Open sets in [Rbar] *)
@@ -5414,8 +5414,8 @@ Qed.
 
 Definition Rbar_loc_seq (x : Rbar) (n : nat) := match x with
     | Finite x => x + / (INR n + 1)
-    | p_infty => INR n
-    | m_infty => - INR n
+    | +oo => INR n
+    | -oo => - INR n
   end.
 
 Lemma filterlim_Rbar_loc_seq :
@@ -5445,7 +5445,7 @@ Proof.
   apply Rgt_not_eq, Rminus_lt_0.
   ring_simplify.
   by apply RinvN_pos.
-(* x = p_infty *)
+(* x = +oo *)
   case: (nfloor_ex (Rmax 0 delta)) => [ | N [_ HN]].
   by apply Rmax_l.
   exists (S N) => n Hn.
@@ -5453,7 +5453,7 @@ Proof.
   apply Rle_lt_trans with (1 := Rmax_r 0 _).
   apply Rlt_le_trans with (1 := HN).
   rewrite -S_INR ; by apply le_INR.
-(* x = m_infty *)
+(* x = -oo *)
   case: (nfloor_ex (Rmax 0 (-delta))) => [ | N [_ HN]].
   by apply Rmax_l.
   exists (S N) => n Hn.

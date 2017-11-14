@@ -590,7 +590,7 @@ intros T F FF f g [l| |] Hfg Hf P [eps HP] ;
   apply Rabs_pos.
   apply Rlt_0_1.
 - pose ineq (y : R) := Rmax 0 (2 * eps) < y.
-  assert (Hl: Rbar_locally' p_infty ineq).
+  assert (Hl: Rbar_locally' +oo ineq).
   now exists (Rmax 0 (2 * eps)).
   generalize (filter_and _ (fun (x : T) => ineq (f x)) (Hfg (mkposreal _ pos_half_prf)) (Hf _ Hl)).
   apply: filter_imp.
@@ -611,7 +611,7 @@ intros T F FF f g [l| |] Hfg Hf P [eps HP] ;
   apply Rle_lt_trans with (2 := H2).
   apply Rmax_l.
 - pose ineq (y : R) := y < Rmin 0 (2 * eps).
-  assert (Hl: Rbar_locally' m_infty ineq).
+  assert (Hl: Rbar_locally' -oo ineq).
   now exists (Rmin 0 (2 * eps)).
   generalize (filter_and _ (fun (x : T) => ineq (f x)) (Hfg (mkposreal _ pos_half_prf)) (Hf _ Hl)).
   apply: filter_imp.

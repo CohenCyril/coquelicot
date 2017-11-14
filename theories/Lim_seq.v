@@ -43,15 +43,15 @@ Definition is_sup_seq (u : nat -> Rbar) (l : Rbar) :=
   match l with
     | Finite l => forall (eps : posreal), (forall n, Rbar_lt (u n) (l+eps))
                                        /\ (exists n, Rbar_lt (l-eps) (u n))
-    | p_infty => forall M : R, exists n, Rbar_lt M (u n)
-    | m_infty => forall M : R, forall n, Rbar_lt (u n) M
+    | +oo => forall M : R, exists n, Rbar_lt M (u n)
+    | -oo => forall M : R, forall n, Rbar_lt (u n) M
   end.
 Definition is_inf_seq (u : nat -> Rbar) (l : Rbar) :=
   match l with
     | Finite l => forall (eps : posreal), (forall n, Rbar_lt (Finite (l-eps)) (u n))
                                        /\ (exists n, Rbar_lt (u n) (Finite (l+eps)))
-    | p_infty => forall M : R, forall n, Rbar_lt (Finite M) (u n)
-    | m_infty => forall M : R, exists n, Rbar_lt (u n) (Finite M)
+    | +oo => forall M : R, forall n, Rbar_lt (Finite M) (u n)
+    | -oo => forall M : R, exists n, Rbar_lt (u n) (Finite M)
   end.
 
 (** Equivalent forms *)
@@ -73,11 +73,11 @@ Proof.
   exists n ; assert (Rw : -(l-eps) = -l+eps).
   ring.
   simpl ; rewrite <-Rw ; apply (Rbar_opp_lt (u n) (Finite (l-eps))) ; auto.
-(* l = p_infty *)
+(* l = +oo *)
   intro M ; case (Hl (-M)) ; clear Hl ; intros n Hl ; exists n ; apply Rbar_opp_lt ; auto.
   intro M ; case (Hl (-M)) ; clear Hl ; intros n Hl ; exists n ; apply Rbar_opp_lt ;
   rewrite Rbar_opp_involutive ; auto.
-(* l = m_infty *)
+(* l = -oo *)
   intros M n ; apply Rbar_opp_lt, Hl.
   intros M n ; apply Rbar_opp_lt ; rewrite Rbar_opp_involutive ; apply Hl.
 Qed.
@@ -96,10 +96,10 @@ Proof.
   move => /= <- ; by apply (Rbar_opp_lt (u n0) (Finite (l-eps))).
   exists n ; rewrite /Rminus -(Ropp_plus_distr l eps) ;
   by apply (Rbar_opp_lt (Finite (l+eps)) (u n)).
-(* l = p_infty *)
+(* l = +oo *)
   move => M n ; apply Rbar_opp_lt, Hl.
   move => M n ; apply Rbar_opp_lt ; rewrite Rbar_opp_involutive ; apply Hl.
-(* l = m_infty *)
+(* l = -oo *)
   move => M ; case: (Hl (-M)) => {Hl} n Hl ; exists n ; by apply Rbar_opp_lt.
   move => M ; case: (Hl (-M)) => {Hl} n Hl ; exists n ; apply Rbar_opp_lt ;
   by rewrite Rbar_opp_involutive.
@@ -126,7 +126,7 @@ Proof.
   assert (H : (exists n0 : nat, u n = u n0)).
   exists n ; auto.
   generalize (Hb (u n) H) Hl ; clear Hb ; now case (u n).
-(* l = p_infty *)
+(* l = +oo *)
   apply Rbar_ub_p_infty.
   intro b ; destruct b as [b | | ] ; simpl ; intro Hb.
   case (Hl b) ; clear Hl ; intros n Hl.
@@ -137,7 +137,7 @@ Proof.
   assert (H : (exists n0 : nat, u n = u n0)).
   exists n ; auto.
   generalize (Hb (u n) H) Hl ; clear Hl ; now case (u n).
-(* l = m_infty *)
+(* l = -oo *)
   intro x ; destruct x as [x | | ] ; intros (n, Hx).
   generalize (Hl x n) ; clear Hl ; intro Hl ; rewrite <-Hx in Hl ; apply Rlt_irrefl in Hl ; intuition.
   generalize (Hl 0 n) ; rewrite <-Hx ; intuition.
@@ -165,7 +165,7 @@ Proof.
   generalize (lub _ H0) ; clear lub ; apply Rbar_lt_not_le ; pattern l at 2 ;
   rewrite <-(Rplus_0_r l) ;
   apply Rplus_lt_compat_l, Ropp_lt_gt_0_contravar, eps.
-(* l = p_infty *)
+(* l = +oo *)
   intro M ; apply LPO_notforall.
   intro n.
   destruct (Rbar_lt_dec M (u n)) as [H|H].
@@ -175,9 +175,9 @@ Proof.
   assert (H0 : Rbar_is_upper_bound (fun x : Rbar => exists n : nat, x = u n) (Finite M)).
   intros x (n,Hn) ; rewrite Hn ; clear Hn ; apply Rbar_not_lt_le, H.
   generalize (lub _ H0) ; clear lub ; apply Rbar_lt_not_le ; simpl ; auto.
-(* l = m_infty *)
+(* l = -oo *)
   intros M n.
-  apply Rbar_le_lt_trans with (y := m_infty) ; simpl ; auto.
+  apply Rbar_le_lt_trans with (y := -oo) ; simpl ; auto.
   apply ub ; exists n ; auto.
 Qed.
 
@@ -216,9 +216,9 @@ Proof.
   move => eps ; case: (Hu eps) => {Hu} Hu1 Hu2 ; split.
   move => n ; by rewrite -Heq.
   case: Hu2 => n Hu2 ; exists n ; by rewrite -Heq.
-(* l = p_infty *)
+(* l = +oo *)
   move => M ; case: (Hu M) => {Hu} n Hu ; exists n ; by rewrite -Heq.
-(* l = m_infty *)
+(* l = -oo *)
   move => M n ; by rewrite -Heq.
 Qed.
 Lemma is_inf_seq_ext (u v : nat -> Rbar) (l : Rbar) :
@@ -230,9 +230,9 @@ Proof.
   move => eps ; case: (Hu eps) => {Hu} Hu1 Hu2 ; split.
   move => n ; by rewrite -Heq.
   case: Hu2 => n Hu2 ; exists n ; by rewrite -Heq.
-(* l = p_infty *)
+(* l = +oo *)
   move => M n ; by rewrite -Heq.
-(* l = m_infty *)
+(* l = -oo *)
   move => M ; case: (Hu M) => {Hu} n Hu ; exists n ; by rewrite -Heq.
 Qed.
 
@@ -240,12 +240,12 @@ Qed.
 
 Lemma ex_sup_seq (u : nat -> Rbar) : {l : Rbar | is_sup_seq u l}.
 Proof.
-  case (LPO (fun n => p_infty = u n)) => [/= |  [np Hnp] | Hnp].
+  case (LPO (fun n => +oo = u n)) => [/= |  [np Hnp] | Hnp].
     intro n0 ; destruct (u n0) as [r | | ].
     now right.
     left ; auto.
     now right.
-  exists p_infty => M.
+  exists +oo => M.
   exists np ; by rewrite -Hnp.
   case (Rbar_ex_lub (fun x => exists n, x = u n)).
   intros l Hl ; exists l ; apply Rbar_is_lub_sup_seq ; auto.
@@ -516,13 +516,13 @@ Proof.
   move => -> ; have : (su+e = su + e/2 + e/2) ; first by field.
   by move => -> ; apply Rplus_lt_compat_r,
   (Rbar_lt_trans (Finite (iu - e/2)) (u O) (Finite (su + e/2))).
-(* Finite, m_infty *)
+(* Finite, -oo *)
   set eps := mkposreal _ Rlt_0_1 ; case: (Hiu eps) => {Hiu} Hiu _ ;
   move: (Hiu O) => {Hiu} ; apply Rbar_le_not_lt, Rbar_lt_le, Hsu.
-(* p_infty, Finite *)
+(* +oo, Finite *)
   set eps := mkposreal _ Rlt_0_1 ; case: (Hsu eps) => {Hsu} Hsu _ ;
   move: (Hsu O) => {Hsu} ; apply Rbar_le_not_lt, Rbar_lt_le, Hiu.
-(* p_infty, m_infty *)
+(* +oo, -oo *)
   move: (Hiu 0 O) => {Hiu} ; apply Rbar_le_not_lt, Rbar_lt_le, Hsu.
 Qed.
 
@@ -579,8 +579,8 @@ Definition is_LimSup_seq (u : nat -> R) (l : Rbar) :=
     | Finite l => forall eps : posreal,
         (forall N : nat, exists n : nat, (N <= n)%nat /\ l - eps < u n)
         /\ (exists N : nat, forall n : nat, (N <= n)%nat -> u n < l + eps)
-    | p_infty => forall M : R, (forall N : nat, exists n : nat, (N <= n)%nat /\ M < u n)
-    | m_infty => forall M : R, (exists N : nat, forall n : nat, (N <= n)%nat -> u n < M)
+    | +oo => forall M : R, (forall N : nat, exists n : nat, (N <= n)%nat /\ M < u n)
+    | -oo => forall M : R, (exists N : nat, forall n : nat, (N <= n)%nat -> u n < M)
   end.
 
 Definition is_LimInf_seq (u : nat -> R) (l : Rbar) :=
@@ -588,8 +588,8 @@ Definition is_LimInf_seq (u : nat -> R) (l : Rbar) :=
     | Finite l => forall eps : posreal,
         (forall N : nat, exists n : nat, (N <= n)%nat /\ u n < l + eps)
         /\ (exists N : nat, forall n : nat, (N <= n)%nat -> l - eps < u n)
-    | p_infty => forall M : R, (exists N : nat, forall n : nat, (N <= n)%nat -> M < u n)
-    | m_infty => forall M : R, (forall N : nat, exists n : nat, (N <= n)%nat /\ u n < M)
+    | +oo => forall M : R, (exists N : nat, forall n : nat, (N <= n)%nat -> M < u n)
+    | -oo => forall M : R, (forall N : nat, exists n : nat, (N <= n)%nat /\ u n < M)
   end.
 
 
@@ -623,7 +623,7 @@ Proof.
   exists N => n Hn.
   apply Ropp_lt_cancel ; rewrite Ropp_involutive.
   apply Rlt_le_trans with (1 := H2 _ Hn) ; right ; ring.
-(* l = p_infty *)
+(* l = +oo *)
   move => M N.
   case: (Hl (-M) N) => {Hl} n [Hn Hl].
   exists n ; split.
@@ -634,7 +634,7 @@ Proof.
   exists n ; split.
   by [].
   apply Ropp_lt_cancel ; by rewrite Ropp_involutive.
-(* l = m_infty *)
+(* l = -oo *)
   move => M.
   case: (Hl (-M)) => {Hl} N Hl.
   exists N => n Hn.
@@ -674,7 +674,7 @@ Proof.
   exists N => n Hn.
   apply Ropp_lt_cancel ; rewrite Ropp_involutive.
   apply Rle_lt_trans with (2 := H2 _ Hn) ; right ; ring.
-(* l = p_infty *)
+(* l = +oo *)
   move => M.
   case: (Hl (-M)) => {Hl} N Hl.
   exists N => n Hn.
@@ -685,7 +685,7 @@ Proof.
   exists N => n Hn.
   apply Ropp_lt_cancel ; rewrite Ropp_involutive.
   by apply Hl.
-(* l = m_infty *)
+(* l = -oo *)
   move => M N.
   case: (Hl (-M) N) => {Hl} n [Hn Hl].
   exists n ; split.
@@ -737,7 +737,7 @@ Proof.
   apply Rbar_le_not_lt.
   apply Sup_seq_minor_le with (n - N)%nat.
   by rewrite MyNat.sub_add.
-(* l = p_infty *)
+(* l = +oo *)
   move => M N.
   case: (Hl M N) => {Hl} n Hl.
   apply Sup_seq_minor_lt.
@@ -748,7 +748,7 @@ Proof.
   apply Sup_seq_minor_lt in Hl.
   case: Hl => /= n Hl.
   exists (n + N)%nat ; intuition.
-(* l = m_infty *)
+(* l = -oo *)
   move => M.
   case: (Hl (M-1)) => {Hl} N Hl.
   exists N ; rewrite /Sup_seq ; case: ex_sup_seq => un Hun ; simpl proj1_sig.
@@ -1143,7 +1143,7 @@ Proof.
   case: (n) Hn => /= [ | m] Hm.
   by apply le_Sn_O in Hm.
   apply H2 ; intuition.
-(* l = p_infty *)
+(* l = +oo *)
   move => M N.
   case: (Hu M (S N)) => {Hu} n [Hn Hu].
   exists (pred n).
@@ -1155,7 +1155,7 @@ Proof.
   move => M N.
   case: (Hu M N) => {Hu} n [Hn Hu].
   exists (S n) ; intuition.
-(* l = m_infty *)
+(* l = -oo *)
   move => M.
   case: (Hu M) => {Hu} N Hu.
   exists N => n Hn.
@@ -1203,8 +1203,8 @@ Proof. by []. Qed.
 Definition is_lim_seq' (u : nat -> R) (l : Rbar) :=
   match l with
     | Finite l => forall eps : posreal, eventually (fun n => Rabs (u n - l) < eps)
-    | p_infty => forall M : R, eventually (fun n => M < u n)
-    | m_infty => forall M : R, eventually (fun n => u n < M)
+    | +oo => forall M : R, eventually (fun n => M < u n)
+    | -oo => forall M : R, eventually (fun n => u n < M)
   end.
 
 Definition Lim_seq (u : nat -> R) : Rbar :=
@@ -1261,7 +1261,7 @@ Proof.
   by apply (Hl n Hn).
 Qed.
 Lemma is_lim_seq_p_infty_Reals (u : nat -> R) :
-  u --> p_infty <-> cv_infty u.
+  u --> +oo <-> cv_infty u.
 Proof.
   split => Hl.
   move => M.
@@ -1521,7 +1521,7 @@ Qed.
 (** Identity *)
 
 Lemma is_lim_seq_INR :
-  INR --> p_infty.
+  INR --> +oo.
 Proof.
   apply is_lim_seq_spec.
   move => M.
@@ -1536,10 +1536,10 @@ Proof.
 Qed.
 Lemma ex_lim_seq_INR : [cvg INR in Rbar].
 Proof.
-  exists p_infty ; by apply is_lim_seq_INR.
+  exists +oo ; by apply is_lim_seq_INR.
 Qed.
 Lemma Lim_seq_INR :
-  Lim_seq INR = p_infty.
+  Lim_seq INR = +oo.
 Proof.
   intros.
   apply is_lim_seq_unique.
@@ -1862,7 +1862,7 @@ destruct lf as [lf| |] ; destruct lg as [lg| |] ; try easy.
     apply Rabs_lt_between'.
     rewrite /Rminus Rplus_opp_r Rabs_R0.
     apply Rlt_0_1.
-  assert (Hlg : Rbar_locally m_infty (fun y => Rbar_lt y (lf - 1))).
+  assert (Hlg : Rbar_locally -oo (fun y => Rbar_lt y (lf - 1))).
     now apply open_Rbar_lt'.
   specialize (Hf _ Hlf).
   specialize (Hg _ Hlg).
@@ -1872,7 +1872,7 @@ destruct lf as [lf| |] ; destruct lg as [lg| |] ; try easy.
   intros x [[H1 H2] H3].
   apply Rle_not_lt with (1 := H3).
   now apply Rlt_trans with (lf - 1).
-- assert (Hlf : Rbar_locally p_infty (fun y => Rbar_lt (lg + 1) y)).
+- assert (Hlf : Rbar_locally +oo (fun y => Rbar_lt (lg + 1) y)).
     now apply open_Rbar_gt'.
   assert (Hlg : locally lg (fun y => y < lg + 1)).
     apply open_lt.
@@ -1887,9 +1887,9 @@ destruct lf as [lf| |] ; destruct lg as [lg| |] ; try easy.
   intros x [[H1 H2] H3].
   apply Rle_not_lt with (1 := H3).
   now apply Rlt_trans with (lg + 1).
-- assert (Hlf : Rbar_locally p_infty (fun y => Rbar_lt 0 y)).
+- assert (Hlf : Rbar_locally +oo (fun y => Rbar_lt 0 y)).
     now apply open_Rbar_gt'.
-  assert (Hlg : Rbar_locally m_infty (fun y => Rbar_lt y 0)).
+  assert (Hlg : Rbar_locally -oo (fun y => Rbar_lt y 0)).
     now apply open_Rbar_lt'.
   specialize (Hf _ Hlf).
   specialize (Hg _ Hlg).
@@ -1936,12 +1936,12 @@ Qed.
 Lemma filterlim_ge_p_infty :
   forall {T F} {FF : Filter F} (f g : T -> R),
   F (fun x => f x <= g x) ->
-  f @ F --> p_infty ->
-  g @ F --> p_infty.
+  f @ F --> +oo ->
+  g @ F --> +oo.
 Proof.
 intros T F FF f g H Hf.
 intros P [M HM].
-assert (H' : Rbar_locally p_infty (fun y => M < y)).
+assert (H' : Rbar_locally +oo (fun y => M < y)).
   now exists M.
 unfold filtermap.
 generalize (filter_and (fun x : T => f x <= g x) _ H (Hf (fun y : R => M < y) H')).
@@ -1954,13 +1954,13 @@ Qed.
 Lemma filterlim_le_m_infty :
   forall {T F} {FF : Filter F} (f g : T -> R),
   F (fun x => g x <= f x) ->
-  f @ F --> m_infty ->
-  g @ F --> m_infty.
+  f @ F --> -oo ->
+  g @ F --> -oo.
 Proof.
 intros T F FF f g H Hf.
 intros P [M HM].
 pose ineq (y : R) := y < M.
-assert (H' : Rbar_locally m_infty ineq).
+assert (H' : Rbar_locally -oo ineq).
   now exists M.
 unfold filtermap.
 generalize (filter_and _ (fun x : T => ineq (f x)) H (Hf ineq H')).
@@ -2018,14 +2018,14 @@ Qed.
 
 Lemma is_lim_seq_le_p_loc (u v : nat -> R) :
   eventually (fun n => u n <= v n) ->
-  u --> p_infty ->
-  v --> p_infty.
+  u --> +oo ->
+  v --> +oo.
 Proof. exact: filterlim_ge_p_infty. Qed.
 
 Lemma is_lim_seq_le_m_loc (u v : nat -> R) :
   eventually (fun n => v n <= u n) ->
-  u --> m_infty ->
-  v --> m_infty.
+  u --> -oo ->
+  v --> -oo.
 Proof. exact: filterlim_le_m_infty. Qed.
 
 Lemma is_lim_seq_decr_compare (u : nat -> R) (l : R) :
@@ -2309,12 +2309,12 @@ Proof.
   now apply Hu.
   now apply Hv.
 
-(* x + y = p_infty *)
+(* x + y = +oo *)
   wlog: x y Hp {Hz} / (is_finite x) => [Hw|Hx].
     case: x y Hp {Hz} => [x| |] ;
     case => [y| |] // _.
-    now apply (Hw x p_infty).
-    assert (Hw': (fun z => fst z + snd z) @ (filter_prod (Rbar_locally y) (Rbar_locally p_infty)) --> p_infty).
+    now apply (Hw x +oo).
+    assert (Hw': (fun z => fst z + snd z) @ (filter_prod (Rbar_locally y) (Rbar_locally +oo)) --> +oo).
     exact: Hw.
     intros P HP.
     specialize (Hw' P HP).
@@ -2520,7 +2520,7 @@ Proof.
   apply cond_pos.
   now apply Rmult_lt_0_compat.
   exact H1.
-  (* l = p_infty *)
+  (* l = +oo *)
   intros P [eps HP].
   exists (/eps) => n Hn.
   apply HP.
@@ -2693,7 +2693,7 @@ Proof.
   apply Rplus_le_lt_0_compat.
   now apply Rplus_le_le_0_compat.
   apply Rlt_0_1.
-(* x \in R and y = p_infty *)
+(* x \in R and y = +oo *)
   move: Hp ; unfold is_Rbar_mult, Rbar_mult'.
   case: Rle_dec => // Hx'.
   case: Rle_lt_or_eq_dec => {Hl Hx Hy Hx'} // Hx.
@@ -2722,7 +2722,7 @@ Proof.
   move: Hp ; unfold is_Rbar_mult, Rbar_mult'.
   case: Rle_dec => // Hx'.
   case: Rle_lt_or_eq_dec => {Hl Hx Hy Hx'} // Hx.
-(* l1 = l2 = p_infty *)
+(* l1 = l2 = +oo *)
   clear.
   intros P [N HN].
   exists (fun u => 1 < u) (fun v => Rabs N < v).
@@ -3096,7 +3096,7 @@ Proof.
 Qed.
 
 Lemma is_lim_seq_geom_p (q : R) :
-  1 < q -> (fun n => q ^ n) --> p_infty.
+  1 < q -> (fun n => q ^ n) --> +oo.
 Proof.
   intros Hq.
   apply is_lim_seq_spec.
@@ -3113,10 +3113,10 @@ Qed.
 Lemma ex_lim_seq_geom_p (q : R) :
   1 < q -> [cvg (fun n => q ^ n) in Rbar].
 Proof.
-  move => Hq ; exists p_infty ; by apply is_lim_seq_geom_p.
+  move => Hq ; exists +oo ; by apply is_lim_seq_geom_p.
 Qed.
 Lemma Lim_seq_geom_p (q : R) :
-  1 < q -> Lim_seq (fun n => q ^ n) = p_infty.
+  1 < q -> Lim_seq (fun n => q ^ n) = +oo.
 Proof.
   intros.
   apply is_lim_seq_unique.
@@ -3154,7 +3154,7 @@ Proof.
   pattern 1 at 2 ; replace (1) with ((-1)+2) by ring.
   replace (l+1) with ((l-1)+2) by ring.
   by apply Rplus_lt_compat_r.
-(* ~ Rbar_is_lim_seq (q^n) p_infty *)
+(* ~ Rbar_is_lim_seq (q^n) +oo *)
   case: (H 0) => {H} N H.
   have H0 : (N <= S (2 * N))%nat.
     by apply le_trans with (1 := le_n_2n _), le_n_Sn.
@@ -3166,7 +3166,7 @@ Proof.
   apply Ropp_le_contravar in Hq ; rewrite Ropp_involutive in Hq.
   rewrite pow_sqr -Rmult_opp_opp ; apply pow_le, Rmult_le_pos ;
   apply Rle_trans with (2 := Hq), Rle_0_1.
-(* ~ Rbar_is_lim_seq (q^n) m_infty *)
+(* ~ Rbar_is_lim_seq (q^n) -oo *)
   case: (H 0) => {H} N H.
   move: (H _ (le_n_2n _)).
   apply Rle_not_lt.

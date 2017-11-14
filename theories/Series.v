@@ -60,11 +60,11 @@ Proof.
   case: (Lim_seq (sum_n a)) H => [l | | ] H.
   left ; by exists l.
   right ; case => l H0.
-  absurd (p_infty = Finite l) => //.
+  absurd (+oo = Finite l) => //.
   rewrite -(is_lim_seq_unique _ _ H).
   by apply is_lim_seq_unique.
   right ; case => l H0.
-  absurd (m_infty = Finite l) => //.
+  absurd (-oo = Finite l) => //.
   rewrite -(is_lim_seq_unique _ _ H).
   by apply is_lim_seq_unique.
   right ; case => l.
@@ -1057,7 +1057,7 @@ Proof.
     by apply H, le_plus_r.
     by apply IH.
   move => {H} H.
-  have : Finite 0 = p_infty.
+  have : Finite 0 = +oo.
     rewrite -(Lim_seq_geom_p k Hk1).
     apply sym_equal.
     apply is_lim_seq_unique.

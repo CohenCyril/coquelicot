@@ -2277,7 +2277,7 @@ Proof.
   case: (Rbar_lt_le_dec x a) => Hax.
 
   eapply continuous_ext_loc.
-  apply locally_interval with m_infty a.
+  apply locally_interval with -oo a.
   by [].
   by [].
   move => y _ Hay.
@@ -2307,7 +2307,7 @@ Proof.
   apply Rbar_le_lt_or_eq_dec in Hbx ; case: Hbx => Hbx.
 
   eapply continuous_ext_loc.
-  apply locally_interval with b p_infty.
+  apply locally_interval with b +oo.
   by [].
   by [].
   move => y Hby _.
@@ -2324,7 +2324,7 @@ Proof.
   injection Hbx => {Hbx} Hbx.
   rewrite -Hbx {x Hbx} in Hax |- *.
   apply continuous_ext_loc with (extension_cont f (fun _ => f (real b)) b).
-  apply locally_interval with a p_infty => //.
+  apply locally_interval with a +oo => //.
   move => y Hay _.
   rewrite /extension_cont /extension_C0.
   case: Rle_dec => H ;
@@ -2342,7 +2342,7 @@ Proof.
   injection Hax => {Hax} Hax.
   rewrite -Hax {x Hax}.
   apply continuous_ext_loc with (extension_cont (fun _ => f (real a)) f a).
-  apply locally_interval with m_infty b => //.
+  apply locally_interval with -oo b => //.
   move => y _ Hbx.
   rewrite /extension_cont /extension_C0.
   case: Rle_dec => H ;
@@ -2409,7 +2409,7 @@ Proof.
 
   evar_last.
   eapply is_derive_ext_loc.
-  apply locally_interval with m_infty a.
+  apply locally_interval with -oo a.
   by [].
   by [].
   move => y _ Hay.
@@ -2450,7 +2450,7 @@ Proof.
 
   evar_last.
   eapply is_derive_ext_loc.
-  apply locally_interval with b p_infty.
+  apply locally_interval with b +oo.
   by [].
   by [].
   move => y Hby _.
@@ -2479,7 +2479,7 @@ Proof.
   rewrite -Hbx {x Hbx} in Hax |- *.
   evar_last.
   apply is_derive_ext_loc with (extension_cont f (fun x => plus (f (real b)) (scal (x - real b) (df (real b)))) b).
-  apply locally_interval with a p_infty => //.
+  apply locally_interval with a +oo => //.
   move => y Hay _.
   rewrite /extension_cont /extension_C1.
   case: Rle_dec => H ;
@@ -2510,7 +2510,7 @@ Proof.
   rewrite -Hax {x Hax}.
   evar_last.
   apply is_derive_ext_loc with (extension_cont (fun x => plus (f (real a)) (scal (x - real a) (df (real a)))) f a).
-  apply locally_interval with m_infty b => //.
+  apply locally_interval with -oo b => //.
   move => y _ Hbx.
   rewrite /extension_cont /extension_C1.
   case: Rle_dec => H ;

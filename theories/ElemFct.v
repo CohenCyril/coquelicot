@@ -95,7 +95,7 @@ Proof.
   exists 0 => y Hy.
   rewrite -Rabs_Ropp Rabs_pos_eq // -Ropp_0 ;
   by apply Ropp_le_contravar, Rlt_le.
-  apply (is_lim_opp id m_infty m_infty), is_lim_id.
+  apply (is_lim_opp id -oo -oo), is_lim_id.
 Qed.
 Lemma is_lim_Rabs (f : R -> R) (x l : Rbar) :
   is_lim f x l -> is_lim (fun x => Rabs (f x)) x (Rbar_abs l).
@@ -142,7 +142,7 @@ Proof.
   case: Hx => //= Hx.
   rewrite sign_eq_1 //.
   eapply is_derive_ext_loc.
-  apply locally_interval with 0 p_infty.
+  apply locally_interval with 0 +oo.
   by [].
   by [].
   move => /= y Hy _.
@@ -152,7 +152,7 @@ Proof.
   by apply sym_eq in Hx.
   rewrite sign_eq_m1 //.
   eapply is_derive_ext_loc.
-  apply locally_interval with m_infty 0.
+  apply locally_interval with -oo 0.
   by [].
   by [].
   move => /= y _ Hy.
@@ -175,7 +175,7 @@ Qed.
 (** * Inverse function *)
 
 Lemma filterlim_Rinv_0_right :
-  filterlim Rinv (at_right 0) (Rbar_locally p_infty).
+  filterlim Rinv (at_right 0) (Rbar_locally +oo).
 Proof.
   intros P [M HM].
   have Hd : 0 < / Rmax 1 M.
@@ -196,7 +196,7 @@ Proof.
 Qed.
 Lemma is_lim_Rinv_0_right (f : R -> R) (x : Rbar) :
   is_lim f x 0 -> Rbar_locally' x (fun x => 0 < f x) ->
-  is_lim (fun x => / (f x)) x p_infty.
+  is_lim (fun x => / (f x)) x +oo.
 Proof.
   intros.
   eapply filterlim_comp, filterlim_Rinv_0_right.
@@ -209,7 +209,7 @@ Proof.
 Qed.
 
 Lemma filterlim_Rinv_0_left :
-  filterlim Rinv (at_left 0) (Rbar_locally m_infty).
+  filterlim Rinv (at_left 0) (Rbar_locally -oo).
 Proof.
   eapply filterlim_ext_loc.
   exists (mkposreal _ Rlt_0_1) => /= y _ Hy0.
@@ -228,7 +228,7 @@ Proof.
 Qed.
 Lemma is_lim_Rinv_0_left (f : R -> R) (x : Rbar) :
   is_lim f x 0 -> Rbar_locally' x (fun x => f x < 0) ->
-  is_lim (fun x => / (f x)) x m_infty.
+  is_lim (fun x => / (f x)) x -oo.
 Proof.
   intros.
   eapply filterlim_comp, filterlim_Rinv_0_left.
@@ -242,7 +242,7 @@ Qed.
 
 (** * Square root function *)
 
-Lemma filterlim_sqrt_p : filterlim sqrt (Rbar_locally' p_infty) (Rbar_locally p_infty).
+Lemma filterlim_sqrt_p : filterlim sqrt (Rbar_locally' +oo) (Rbar_locally +oo).
 Proof.
   apply is_lim_spec.
   move => M.
@@ -256,8 +256,8 @@ Proof.
   apply Rmax_l.
 Qed.
 Lemma is_lim_sqrt_p (f : R -> R) (x : Rbar) :
-  is_lim f x p_infty
-  -> is_lim (fun x => sqrt (f x)) x p_infty.
+  is_lim f x +oo
+  -> is_lim (fun x => sqrt (f x)) x +oo.
 Proof.
   intros.
   eapply filterlim_comp, filterlim_sqrt_p.
@@ -522,28 +522,28 @@ Qed.
 
 (** Limits *)
 
-Lemma is_lim_exp_p : is_lim (fun y => exp y) p_infty p_infty.
+Lemma is_lim_exp_p : is_lim (fun y => exp y) +oo +oo.
 Proof.
   apply is_lim_le_p_loc with (fun y => 1 + y).
   exists 0 => y Hy.
   by apply Rlt_le, exp_ineq1.
-  pattern p_infty at 2.
-  replace p_infty with (Rbar_plus 1 p_infty) by auto.
+  pattern +oo at 2.
+  replace +oo with (Rbar_plus 1 +oo) by auto.
   eapply is_lim_plus.
   apply is_lim_const.
   apply is_lim_id.
   by [].
 Qed.
-Lemma is_lim_exp_m : is_lim (fun y => exp y) m_infty 0.
+Lemma is_lim_exp_m : is_lim (fun y => exp y) -oo 0.
 Proof.
   evar_last.
   apply is_lim_ext with (fun y => /(exp (- y))).
   move => y ; rewrite exp_Ropp ; apply Rinv_involutive.
   apply Rgt_not_eq, exp_pos.
   apply is_lim_inv.
-  apply is_lim_comp with p_infty.
+  apply is_lim_comp with +oo.
   apply is_lim_exp_p.
-  replace p_infty with (Rbar_opp m_infty) by auto.
+  replace +oo with (Rbar_opp -oo) by auto.
   apply is_lim_opp.
   apply is_lim_id.
   by apply filter_forall.
@@ -556,15 +556,15 @@ Proof.
   case: x => [x | | ].
   apply ex_finite_lim_correct, ex_lim_continuity.
   apply derivable_continuous_pt, derivable_pt_exp.
-  exists p_infty ; by apply is_lim_exp_p.
+  exists +oo ; by apply is_lim_exp_p.
   exists 0 ; by apply is_lim_exp_m.
 Qed.
 Lemma Lim_exp (x : Rbar) :
   Lim (fun y => exp y) x =
     match x with
       | Finite x => exp x
-      | p_infty => p_infty
-      | m_infty => 0
+      | +oo => +oo
+      | -oo => 0
     end.
 Proof.
   apply is_lim_unique.
@@ -575,7 +575,7 @@ Proof.
   by apply is_lim_exp_m.
 Qed.
 
-Lemma is_lim_div_exp_p : is_lim (fun y => exp y / y) p_infty p_infty.
+Lemma is_lim_div_exp_p : is_lim (fun y => exp y / y) +oo +oo.
 Proof.
   apply is_lim_le_p_loc with (fun y => (1 + y + y^2 / 2)/y).
   exists 0 => y Hy.
@@ -623,7 +623,7 @@ Proof.
   case: Rle_lt_or_eq_dec (Rlt_not_eq _ _ (Rinv_0_lt_compat 2 (Rlt_0_2))) => //= H _.
 Qed.
 
-Lemma is_lim_mul_exp_m : is_lim (fun y => y * exp y) m_infty 0.
+Lemma is_lim_mul_exp_m : is_lim (fun y => y * exp y) -oo 0.
 Proof.
   evar_last.
   apply is_lim_ext_loc with (fun y => - / (exp (-y) / (- y))).
@@ -635,7 +635,7 @@ Proof.
   by apply Rlt_not_eq.
   apply is_lim_opp.
   apply is_lim_inv.
-  apply (is_lim_comp (fun y => exp y / y)) with p_infty.
+  apply (is_lim_comp (fun y => exp y / y)) with +oo.
   by apply is_lim_div_exp_p.
   evar_last.
   apply is_lim_opp.
@@ -676,7 +676,7 @@ Qed.
 
 (** * Natural logarithm *)
 
-Lemma is_lim_ln_p : is_lim (fun y => ln y) p_infty p_infty.
+Lemma is_lim_ln_p : is_lim (fun y => ln y) +oo +oo.
 Proof.
   apply is_lim_spec.
   move => M.
@@ -688,7 +688,7 @@ Proof.
 Qed.
 
 Lemma is_lim_ln_0 :
-  filterlim ln (at_right 0) (Rbar_locally m_infty).
+  filterlim ln (at_right 0) (Rbar_locally -oo).
 Proof.
 intros P [M HM].
 exists (mkposreal (exp M) (exp_pos _)) => x /= Hx Hx0.
@@ -702,7 +702,7 @@ exact Hx.
 now apply Rlt_le.
 Qed.
 
-Lemma is_lim_div_ln_p : is_lim (fun y => ln y / y) p_infty 0.
+Lemma is_lim_div_ln_p : is_lim (fun y => ln y / y) +oo 0.
 Proof.
   have H : forall x, 0 < x -> ln x < x.
     move => x Hx.

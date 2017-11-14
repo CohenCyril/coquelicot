@@ -43,8 +43,8 @@ Definition is_lim' (f : R -> R) (x l : Rbar) :=
   match l with
     | Finite l =>
       forall eps : posreal, Rbar_locally' x (fun y => Rabs (f y - l) < eps)
-    | p_infty => forall M : R, Rbar_locally' x (fun y => M < f y)
-    | m_infty => forall M : R, Rbar_locally' x (fun y => f y < M)
+    | +oo => forall M : R, Rbar_locally' x (fun y => M < f y)
+    | -oo => forall M : R, Rbar_locally' x (fun y => f y < M)
   end.
 Definition ex_lim (f : R -> R) (x : Rbar) := exists l : Rbar, is_lim f x l.
 Definition ex_finite_lim (f : R -> R) (x : Rbar) := exists l : R, is_lim f x l.
@@ -686,7 +686,7 @@ Proof.
   intros c Hac.
   case: (Rlt_le_dec c b) ; (try case) => Hbc.
   - apply filterlim_ext_loc with f.
-    apply locally_interval with m_infty b => //= y _ Hyb.
+    apply locally_interval with -oo b => //= y _ Hyb.
     by apply sym_eq, Gab.
     rewrite Gab //.
     apply H ; by split.
@@ -694,7 +694,7 @@ Proof.
     2: by apply Rlt_le.
     eapply filterlim_ext_loc.
     2: by apply filterlim_const.
-    apply locally_interval with b p_infty => //= y Hby _.
+    apply locally_interval with b +oo => //= y Hby _.
     apply sym_eq, Gb.
     by apply Rlt_le.
   - rewrite -Hbc => {c Hbc Hac}.
@@ -796,7 +796,7 @@ Proof.
   rewrite Hab.
   eapply filterlim_ext_loc.
   2: apply Cg.
-  apply locally_interval with m_infty b => //.
+  apply locally_interval with -oo b => //.
   by eapply Rle_lt_trans, H.
   intros y _ Hy ; by apply sym_eq, Hab.
   by eapply Rle_lt_trans, H.
@@ -969,16 +969,16 @@ Qed.
 
 Lemma is_lim_le_p_loc (f g : R -> R) (x : Rbar) :
   Rbar_locally' x (fun y => f y <= g y) ->
-  is_lim f x p_infty ->
-  is_lim g x p_infty.
+  is_lim f x +oo ->
+  is_lim g x +oo.
 Proof.
   apply filterlim_ge_p_infty.
 Qed.
 
 Lemma is_lim_le_m_loc (f g : R -> R) (x : Rbar) :
   Rbar_locally' x (fun y => g y <= f y) ->
-  is_lim f x m_infty ->
-  is_lim g x m_infty.
+  is_lim f x -oo ->
+  is_lim g x -oo.
 Proof.
   apply filterlim_le_m_infty.
 Qed.
