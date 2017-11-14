@@ -938,7 +938,7 @@ assert (D6: ex_RInt (fun t => Rabs (f y t - f x t - (y - x) * Derive (fun u => f
 apply Rle_trans with (1 := RiemannInt_P17 _ (ex_RInt_Reals_0 _ _ _ D6) (Rlt_le _ _ H)).
 refine (Rle_trans _ _ _ (RiemannInt_P19 _ (RiemannInt_P14 a b (eps / Rabs (b - a) * Rabs (y - x))) (Rlt_le _ _ H) _) _).
 intros u Hu.
-destruct (MVT_cor4 (fun t => f t u) (Derive (fun t => f t u)) x) with (eps := pos_div_2 d2) (b := y) as (z,Hz).
+destruct (MVT_cor4 (fun t => f t u) (Derive (fun t => f t u)) x) with (eps := [posreal of d2 / 2]) (b := y) as (z,Hz).
 intros z Hz.
 apply Derive_correct, DIf.
 apply Rle_lt_trans with (1 := Hz).

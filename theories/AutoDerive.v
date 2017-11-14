@@ -1205,7 +1205,7 @@ exists e => y Hy t Ht.
 assert (Ht': Rmin (interp l e2) (interp l e3) - e < t < Rmax (interp l e2) (interp l e3) + e).
 split.
 apply Rlt_le_trans with (2 := proj1 Ht).
-apply Rlt_le_trans with (Rmin (interp l e2) (interp l e3) - pos_div_2 e).
+apply Rlt_le_trans with (Rmin (interp l e2) (interp l e3) - [posreal of e / 2]).
 apply Rplus_lt_compat_l.
 apply Ropp_lt_contravar.
 rewrite -(Rplus_0_r [posreal of e / 2]) /= {2}(double_var e).
@@ -1218,7 +1218,7 @@ apply Rplus_le_compat_l.
 apply Ropp_le_contravar.
 apply Rlt_le, cond_pos.
 apply Rle_lt_trans with (1 := proj2 Ht).
-apply Rle_lt_trans with (Rmax (interp l e2) (interp l e3) + pos_div_2 e).
+apply Rle_lt_trans with (Rmax (interp l e2) (interp l e3) + [posreal of e / 2]).
 rewrite /Rminus Rplus_max_distr_r.
 apply Rle_max_compat_r.
 rewrite -{1}[interp l e2]Rplus_0_r.
@@ -1296,7 +1296,7 @@ exists e => y Hy t Ht.
 assert (Ht': Rmin (interp l e2) (interp l e3) - e < t < Rmax (interp l e2) (interp l e3) + e).
 split.
 apply Rlt_le_trans with (2 := proj1 Ht).
-apply Rlt_le_trans with (Rmin (interp l e2) (interp l e3) - pos_div_2 e).
+apply Rlt_le_trans with (Rmin (interp l e2) (interp l e3) - [posreal of e / 2]).
 apply Rplus_lt_compat_l.
 apply Ropp_lt_contravar.
 rewrite -(Rplus_0_r [posreal of e / 2]) /= {2}(double_var e).
@@ -1309,7 +1309,7 @@ apply Rplus_le_compat_l.
 apply Ropp_le_contravar.
 apply Rlt_le, cond_pos.
 apply Rle_lt_trans with (1 := proj2 Ht).
-apply Rle_lt_trans with (Rmax (interp l e2) (interp l e3) + pos_div_2 e).
+apply Rle_lt_trans with (Rmax (interp l e2) (interp l e3) + [posreal of e / 2]).
 rewrite /Rminus Rplus_max_distr_r.
 apply Rle_max_compat_l.
 rewrite -{1}[interp l e3]Rplus_0_r.
