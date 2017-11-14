@@ -36,7 +36,7 @@ Section Definitions.
 
 Context {K : AbsRing} {V : NormedModule K}.
 
-Definition is_series (a : nat -> V) (l : V) :=(sum_n a) @ eventually --> l.
+Definition is_series (a : nat -> V) (l : V) := (sum_n a) --> l.
 
 Definition ex_series (a : nat -> V) :=
    exists l : V, is_series a l.
@@ -874,11 +874,15 @@ Proof.
     by repeat apply le_n_S.
 
     apply is_lim_seq_mult'.
-    apply filterlim_ext with (2:=Hla); apply sum_n_Reals.
-    apply filterlim_ext with (2:=Hlb); apply sum_n_Reals.
+    have := Hla; rewrite /is_series.
+    apply: filterlim_ext; apply: sum_n_Reals.
+    have := Hlb; rewrite /is_series.
+    apply: filterlim_ext; apply sum_n_Reals.
     apply is_lim_seq_mult'.
-    apply filterlim_ext with (2:=Hla); apply sum_n_Reals.
-    apply filterlim_ext with (2:=Hlb); apply sum_n_Reals.
+    have := Hla; rewrite /is_series.
+    apply: filterlim_ext; apply sum_n_Reals.
+    have := Hlb; rewrite /is_series.
+    apply: filterlim_ext; apply sum_n_Reals.
 Qed.
 
 Lemma is_series_mult (a b : nat -> R) (la lb : R) :
@@ -1079,7 +1083,7 @@ Qed.
 
 Lemma partial_summation_R (a b : nat -> R) :
   (exists M, forall n, norm (sum_n b n) <= M)
-  -> a @ eventually --> locally 0
+  -> a --> locally 0
   -> ex_series (fun n => norm (minus (a (S n)) (a n)))
   -> ex_series (fun n => scal (a n) (b n)).
 Proof.

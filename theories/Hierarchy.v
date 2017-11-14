@@ -4510,6 +4510,8 @@ End MatrixRing.
 Definition eventually (P : nat -> Prop) :=
   exists N : nat, forall n, (N <= n)%nat -> P n.
 
+Notation "'\oo'" := eventually : classical_set_scope.
+
 Global Instance eventually_filter : ProperFilter eventually.
 Proof.
 constructor.
@@ -4866,14 +4868,14 @@ Proof.
 Qed.
 
 Canonical eventually_filter_source X :=
-  @CanonicalFilterSource X _ nat (fun f => f @ eventually).
+  @CanonicalFilterSource X _ nat (fun f => f @ \oo).
 
 Lemma filterlim_bounded {K : AbsRing} {V : NormedModule K} (a : nat -> V) :
   (exists x : V, a --> x)
  -> {M : R | forall n, norm (a n) <= M}.
 Proof.
   intros Ha.
-  assert (exists x : R, (fun n => norm (a n)) @ eventually --> x).
+  assert (exists x : R, (fun n => norm (a n)) --> x).
     destruct Ha as [l Hl].
     exists (norm l).
     eapply filterlim_comp.

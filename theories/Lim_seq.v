@@ -1568,7 +1568,7 @@ Qed.
 Lemma eventually_subseq_loc :
   forall phi,
   eventually (fun n => (phi n < phi (S n))%nat) ->
-  phi --> eventually.
+  phi --> \oo.
 Proof.
 intros phi [M Hphi] P [N HP].
 exists (N+M)%nat.
@@ -1603,7 +1603,7 @@ Qed.
 Lemma eventually_subseq :
   forall phi,
   (forall n, (phi n < phi (S n))%nat) ->
-  phi --> eventually.
+  phi --> \oo.
 Proof.
 intros phi Hphi.
 apply eventually_subseq_loc.
@@ -1611,13 +1611,13 @@ by apply filter_forall.
 Qed.
 
 Lemma is_lim_seq_subseq (u : nat -> R) (l : Rbar) (phi : nat -> nat) :
-  phi --> eventually -> u --> l -> (fun n => u (phi n)) --> l.
+  phi --> \oo -> u --> l -> (fun n => u (phi n)) --> l.
 Proof.
 intros Hphi.
 exact: filterlim_comp.
 Qed.
 Lemma ex_lim_seq_subseq (u : nat -> R) (phi : nat -> nat) :
-  phi --> eventually ->
+  phi --> \oo ->
   [cvg u in Rbar] ->
   [cvg (fun n => u (phi n)) in Rbar].
 Proof.
@@ -1626,7 +1626,7 @@ Proof.
   by apply is_lim_seq_subseq.
 Qed.
 Lemma Lim_seq_subseq (u : nat -> R) (phi : nat -> nat) :
-  phi --> eventually ->
+  phi --> \oo ->
   [cvg u in Rbar] ->
   Lim_seq (fun n => u (phi n)) = Lim_seq u.
 Proof.
