@@ -602,7 +602,7 @@ apply Req_lt_aux.
 intros e.
 destruct (HC1 (pos_div_2 e)) as (d1,Hc1).
 destruct (HC2 (pos_div_2 e)) as (d2,Hc2).
-set (d := Rmin (Rmin (pos_div_2 d1) (pos_div_2 d2)) (pos_div_2 eps)).
+set (d := Rmin (Rmin (pos_div_2 d1) (pos_div_2 d2)) ([posreal of eps / 2])).
 assert (Hd: d > 0).
 apply Rmin_glb_lt.
 apply Rmin_stable_in_posreal.

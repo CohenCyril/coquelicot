@@ -2073,7 +2073,7 @@ Proof.
   simpl => u Hu.
   replace u with (x,y) by now apply is_filter_lim_locally_unique.
   move => {u Hu} eps /=.
-  set (eps' := pos_div_2 eps).
+  set (eps' := [posreal of eps / 2]).
   generalize (proj1 (filterlim_locally _ _) Cx eps') => {Cx} /= Cx.
   generalize (filter_and _ _ Dx Cx) => {Dx Cx}.
   intros (d1,Hd1).
@@ -2590,7 +2590,7 @@ Lemma eq_is_derive :
 Proof.
 intros f a b Hd Hab.
 apply ball_norm_eq => eps2.
-pose eps := pos_div_2 eps2.
+pose eps := [posreal of eps / 2]2.
 have Heps': 0 < eps / (b - a).
   apply Rdiv_lt_0_compat.
   apply eps.
@@ -2605,7 +2605,7 @@ have H c : (forall t, a <= t < c -> P t) -> a <= c <= b ->
   refine (_ (Hd' c _ eps')).
   case => delta H.
   have Hdelta := cond_pos delta.
-  exists (pos_div_2 delta) => t Ht.
+  exists ([posreal of delta / 2]) => t Ht.
   destruct (Rlt_le_dec t c) as [Htc|Htc].
   apply HP.
   now split.

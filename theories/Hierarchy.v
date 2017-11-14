@@ -2108,8 +2108,8 @@ Proof.
 (* apply: filtermapi_proper_filter. *)
 (* apply: filter_imp Fmem. *)
 intros Hf Hl Hl' eps.
-(* have half_l := Hl (ball l (pos_div_2 eps)) (locally_ball _ _). *)
-(* have half_l' := Hl' (ball l' (pos_div_2 eps)) (locally_ball _ _). *)
+(* have half_l := Hl (ball l ([posreal of eps / 2])) (locally_ball _ _). *)
+(* have half_l' := Hl' (ball l' ([posreal of eps / 2])) (locally_ball _ _). *)
 (* have := (filter_and _ _ half_l half_l'). *)
 (* move=> /filter_ex [fx [fxl /ball_sym fxl']]. *)
 (* by rewrite (double_var eps); eapply (ball_triangle _ fx). *)

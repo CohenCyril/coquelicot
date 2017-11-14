@@ -67,8 +67,8 @@ Proof.
   apply filterlim_locally_ball_norm.
   cut (forall eps : posreal, locally a (fun x : R => norm (If x) < eps)).
     move => H0 eps.
-    specialize (H (pos_div_2 eps)).
-    specialize (H0 (pos_div_2 eps)).
+    specialize (H ([posreal of eps / 2])).
+    specialize (H0 ([posreal of eps / 2])).
     destruct H0 as [d Hd].
     exists d => /= y Hy.
     apply Rle_lt_trans with (norm (If y) + norm (If a))%R.
@@ -107,7 +107,7 @@ Proof.
     eapply Rle_trans.
     2: apply (HMf (a - d1 / 2)%R) ; split => // ; by apply Rle_refl.
     by apply norm_ge_0.
-  generalize (fun y Hy => proj1 (filterlim_locally_ball_norm _ _) (CIf y Hy) (pos_div_2 eps))
+  generalize (fun y Hy => proj1 (filterlim_locally_ball_norm _ _) (CIf y Hy) ([posreal of eps / 2]))
     => /= {CIf} CIf.
   assert (0 < Rmin (d1 / 2) (eps / (2 * (Mf + 1)))).
     apply Rmin_case.

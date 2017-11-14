@@ -964,7 +964,7 @@ destruct (D e3 n) as (a3,b3).
 (* . *)
 assert (HexI: forall f x, locally x (fun x => continuity_pt f x) -> exists eps : posreal, ex_RInt f (x - eps) (x + eps)).
 clear => f x [eps H].
-exists (pos_div_2 eps).
+exists ([posreal of eps / 2]).
 apply ex_RInt_Reals_1.
 apply RiemannInt_P6.
 apply Rplus_lt_compat_l.
@@ -975,12 +975,12 @@ apply Rlt_le.
 apply cond_pos.
 intros u Hu.
 apply H.
-apply Rle_lt_trans with (pos_div_2 eps).
+apply Rle_lt_trans with ([posreal of eps / 2]).
 now apply Rabs_le_between'.
 rewrite (double_var eps).
-rewrite -(Rplus_0_r (pos_div_2 eps)).
+rewrite -(Rplus_0_r ([posreal of eps / 2])).
 apply Rplus_lt_compat_l.
-apply (cond_pos (pos_div_2 eps)).
+apply (cond_pos ([posreal of eps / 2])).
 (* . *)
 assert (HexD:
   ( exists d : posreal, forall t u, Rmin (interp l e2) (interp l e3) - d < t < Rmax (interp l e2) (interp l e3) + d ->

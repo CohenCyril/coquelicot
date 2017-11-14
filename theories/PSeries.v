@@ -1754,7 +1754,7 @@ Proof.
   field.
   by apply Rgt_not_eq ; apply -> Rminus_lt_0.
   apply: (proj2 (@filterlim_locally _ _ _ _ _ _)) => eps.
-  destruct (Ha1 (ball 0 (pos_div_2 eps))) as [N HN].
+  destruct (Ha1 (ball 0 [posreal of eps / 2])) as [N HN].
   apply/locallyP/locally_ball.
 
   eapply filter_imp.

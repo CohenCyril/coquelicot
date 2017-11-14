@@ -96,7 +96,7 @@ Lemma CVU_dom_cauchy (fn : nat -> R -> R) (D : R -> Prop) :
 Proof.
   split => H eps.
 (* CVU_dom -> CVU_cauchy *)
-  case: (H (pos_div_2 eps)) => {H} N /= H.
+  case: (H ([posreal of eps / 2])) => {H} N /= H.
   exists N => n m x Hx Hn Hm.
   rewrite (double_var eps).
   replace (fn n x - fn m x)
@@ -107,7 +107,7 @@ Proof.
   apply Rplus_lt_compat ; by apply H.
 (* CVU_cauchy -> CVU_dom *)
   rewrite /Lim_seq.
-  case: (H (pos_div_2 eps)) => {H} N /= H.
+  case: (H ([posreal of eps / 2])) => {H} N /= H.
   exists N => n Hn x Hx.
   rewrite /LimSup_seq ; case: ex_LimSup_seq ; case => [ls | | ] /= Hls.
   rewrite /LimInf_seq ; case: ex_LimInf_seq ; case => [li | | ] /= Hli.
@@ -120,7 +120,7 @@ Proof.
   apply Rle_lt_trans with (1 := Rabs_triang _ _).
   replace (eps * 2) with (eps + eps) by ring.
   apply Rplus_lt_compat ; apply Rabs_lt_between'.
-  case: (Hls (pos_div_2 eps)) => {Hls Hli} /= H0 [N0 H1] ; split.
+  case: (Hls ([posreal of eps / 2])) => {Hls Hli} /= H0 [N0 H1] ; split.
   case: (H0 N) => {H0} m [Hm H0].
   apply Rlt_trans with (fn m x - eps/2).
   replace (ls - eps)
@@ -139,7 +139,7 @@ Proof.
   replace (ls + eps) with ((ls + eps/2) + eps/2) by field.
   apply Rplus_lt_compat_r.
   apply H1 ; by intuition.
-  case: (Hli (pos_div_2 eps)) => {Hls Hli} /= H0 [N0 H1] ; split.
+  case: (Hli ([posreal of eps / 2])) => {Hls Hli} /= H0 [N0 H1] ; split.
   apply Rlt_trans with (fn (n+N0)%nat x - eps/2).
   replace (li - eps) with ((li - eps/2) - eps/2) by field.
   apply Rplus_lt_compat_r.
@@ -223,7 +223,7 @@ Proof.
   have H : [cvg (fun n : nat => real (Lim (fn n) x)) in R].
     apply CVU_dom_cauchy in Hfn.
     apply ex_lim_seq_cauchy_corr => eps.
-    case: (Hfn (pos_div_2 eps)) => {Hfn} /= N Hfn.
+    case: (Hfn ([posreal of eps / 2])) => {Hfn} /= N Hfn.
     exists N => n m Hn Hm.
     case: (Hex x n Hx) => ln Hex_n ;
     rewrite (is_lim_unique _ _ _ Hex_n).
@@ -231,8 +231,8 @@ Proof.
     rewrite (is_lim_unique _ _ _ Hex_m).
     apply is_lim_spec in Hex_n.
     apply is_lim_spec in Hex_m.
-    case: (Hex_n (pos_div_2 (pos_div_2 eps))) => {Hex_n} /= dn Hex_n.
-    case: (Hex_m (pos_div_2 (pos_div_2 eps))) => {Hex_m} /= dm Hex_m.
+    case: (Hex_n (pos_div_2 ([posreal of eps / 2]))) => {Hex_n} /= dn Hex_n.
+    case: (Hex_m (pos_div_2 ([posreal of eps / 2]))) => {Hex_m} /= dm Hex_m.
     case: (Ho x Hx) => {Ho} d0 Ho.
     set y := x + Rmin (Rmin dn dm) d0 / 2.
     have Hd : 0 < Rmin (Rmin dn dm) d0 / 2.
@@ -278,15 +278,15 @@ Proof.
     apply is_lim_spec.
     move => eps.
     apply (proj2 (is_lim_seq_spec (fun n : nat => real (Lim (fn n) x)) l)) in H.
-    case: (Hfn (pos_div_2 (pos_div_2 eps))) => {Hfn} /= n1 Hfn.
-    case: (H (pos_div_2 (pos_div_2 eps))) => {H} /= n2 H.
+    case: (Hfn (pos_div_2 ([posreal of eps / 2]))) => {Hfn} /= n1 Hfn.
+    case: (H (pos_div_2 ([posreal of eps / 2]))) => {H} /= n2 H.
     set n := (n1 + n2)%nat.
     move: (fun y Hy => Hfn n (le_plus_l _ _) y Hy) => {Hfn} Hfn.
     move: (H n (le_plus_r _ _)) => {H} H.
     move: (Hex x n Hx) => {Hex} Hex.
     apply Lim_correct' in Hex.
     apply is_lim_spec in Hex.
-    case: (Hex (pos_div_2 eps)) => {Hex} /= d1 Hex.
+    case: (Hex ([posreal of eps / 2])) => {Hex} /= d1 Hex.
     case: (Ho x Hx) => {Ho} /= d0 Ho.
     have Hd : 0 < Rmin d0 d1.
       apply Rmin_case ; [by apply d0 | by apply d1].

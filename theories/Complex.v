@@ -665,7 +665,7 @@ Proof.
 move=> [_ /(_ _ (fun P H => H)) Df].
 apply is_C_lim_unique.
 move=> p; rewrite filter_ofE => /locallyP [eps HP].
-have /locallyP [eps' Df'] := Df (pos_div_2 eps).
+have /locallyP [eps' Df'] := Df ([posreal of eps / 2]).
 unfold filtermap, locally', within.
 apply/locally_C/locallyP.
 exists eps' => y Hy Hyz.
