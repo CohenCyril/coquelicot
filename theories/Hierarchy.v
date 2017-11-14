@@ -21,7 +21,7 @@ COPYING file for more details.
 
 Require Import Reals.
 From Coq Require Import ssreflect ssrfun ssrbool.
-From Coquelicot Require Import Rcomplements Rbar Markov Iter Lub.
+Require Import Rcomplements Rbar Markov Iter Lub.
 
 (** This file first describes [Filter]s that are predicates of type
 [(T -> Prop) -> Prop] used for limits and neighborhoods.  Then the
@@ -2065,7 +2065,7 @@ Definition cvg (U : Type) (T : canonical_filter U) :=
 
 Notation "[ 'cvg' F 'in' T ]" :=
   (@cvg _ _ T erefl [filter of F])
-  (format "[ 'cvg'  F  'in' T ]") : classical_set_scope.
+  (format "[ 'cvg'  F  'in'  T ]") : classical_set_scope.
 (* Notation "[ 'cvg' F ]" :=  *)
 (*   (format "[ 'cvg'  F ]") : classical_set_scope. *)
 Notation "[ 'continuous' f ]" := (forall x, f%function @ x --> f%function x)

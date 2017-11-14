@@ -21,8 +21,8 @@ COPYING file for more details.
 
 Require Import Reals Psatz.
 Require Import mathcomp.ssreflect.ssreflect.
-From Coquelicot Require Import Rcomplements.
-From Coquelicot Require Import Rbar Lub Markov Hierarchy.
+Require Import Rcomplements.
+Require Import Rbar Lub Markov Hierarchy.
 
 (** This file describes properties and definitions about limits of
 real sequences. This includes properties about the predicates
