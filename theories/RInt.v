@@ -28,6 +28,8 @@ Require Import Continuity Hierarchy.
 integral, defined on a normed module on [R]. For real functions, a
 total function [RInt] is available. *)
 
+Local Open Scope classical_set_scope.
+
 Section is_RInt.
 
 (** * Definition of Riemann integral *)
@@ -35,7 +37,7 @@ Section is_RInt.
 Context {V : NormedModule R_AbsRing}.
 
 Definition is_RInt (f : R -> V) (a b : R) (If : V) :=
-  filterlim (fun ptd => scal (sign (b-a)) (Riemann_sum f ptd)) (Riemann_fine a b) (locally If).
+  (fun ptd => scal (sign (b-a)) (Riemann_sum f ptd)) @ (Riemann_fine a b) --> If.
 
 Definition ex_RInt (f : R -> V) (a b : R) :=
   exists If : V, is_RInt f a b If.
@@ -48,7 +50,7 @@ Lemma is_RInt_point :
   is_RInt f a a zero.
 Proof.
 intros f a.
-apply filterlim_locally.
+apply/filterlim_locally.
 move => eps ; exists (mkposreal _ Rlt_0_1) => ptd _ [Hptd [Hh Hl]].
 rewrite Riemann_sum_zero.
 rewrite scal_zero_r.
@@ -452,7 +454,6 @@ Proof.
     by apply Rlt_0_1.
   assert (Hdelta : 0 < Rmin d (Rmin (dx a) (dx b))).
     repeat apply Rmin_case => //.
-    by apply d.
   exists (mkposreal _ Hdelta) => /= y Hstep [Hptd [Hya Hyb]].
   rewrite (double_var eps).
   eapply ball_norm_triangle.
@@ -647,7 +648,7 @@ Lemma is_RInt_const :
 Proof.
 intros a b v.
 apply filterlim_within_ext with (fun _ => scal (b - a) v).
-2: apply filterlim_const.
+2: apply: filterlim_const.
 intros ptd [_ [Hhead Hlast]].
 rewrite Riemann_sum_const.
 rewrite Hlast Hhead.
@@ -673,7 +674,7 @@ Lemma is_RInt_comp_opp :
   is_RInt (fun y => opp (f (- y))) a b l.
 Proof.
 intros f a b l Hf.
-apply filterlim_locally => eps.
+apply/filterlim_locally => eps.
 generalize (proj1 (filterlim_locally _ _) Hf eps) ; clear Hf ; intros [delta Hf].
 exists delta.
 intros ptd Hstep [Hptd [Hh Hl]].
@@ -882,7 +883,7 @@ Proof.
     apply filterlim_locally_unique with (2 := If).
     apply is_RInt_point.
   intros If.
-  apply filterlim_locally.
+  apply/filterlim_locally.
   generalize (proj1 (filterlim_locally _ l) If).
   move => {If} If eps.
   case: (If eps) => {If} alpha If.
