@@ -1139,11 +1139,9 @@ exists d1 ; simpl ; intros y Hstep [Hptd [Hh Hl]].
 assert (exists y, seq_step (SF_lx y) < Rmin d1 d2 /\
   pointed_subdiv y /\
   SF_h y = Rmin b c /\ last (SF_h y) (unzip1 (SF_t y)) = Rmax b c).
-  apply filter_ex.
+  apply (@filter_ex _ _ (Riemann_fine_filter b c)).
   exists (mkposreal _ (Rmin_stable_in_posreal d1 d2)) ; intros y0 H3 [H4 [H5 H6]].
-  repeat (split => //=).
-  by apply H5.
-  by apply H6.
+  by repeat (split => //=).
 case: H => y2 [Hstep2 H].
 specialize (H2 y2 (Rlt_le_trans _ _ _ Hstep2 (Rmin_r _ _)) H).
 case: H => Hptd2 [Hh2 Hl2].
@@ -1307,11 +1305,9 @@ Proof.
     assert (exists y, seq_step (SF_lx y) < Rmin d1 d2 /\
       pointed_subdiv y /\
       SF_h y = Rmin a b /\ last (SF_h y) (unzip1 (SF_t y)) = Rmax a b).
-      apply filter_ex.
+      apply (@filter_ex _ _ (Riemann_fine_filter a b)).
       exists (mkposreal _ (Rmin_stable_in_posreal d1 d2)) ; intros y0 H3 [H4 [H5 H6]].
-      repeat (split => //=).
-      by apply H5.
-      by apply H6.
+      by repeat (split => //=).
     case: H => y [Hstep Hy].
     specialize (H1 _ (Rlt_le_trans _ _ _ Hstep (Rmin_l _ _)) Hy).
     specialize (H2 _ (Rlt_le_trans _ _ _ Hstep (Rmin_r _ _)) Hy).
@@ -1592,10 +1588,10 @@ Qed.
 
 Lemma filterlim_RInt {U} {V : CompleteNormedModule R_AbsRing} :
   forall (f : U -> R -> V) (a b : R) F (FF : ProperFilter F)
-    g h,
+    (g : R -> V) (h : U -> V),
   (forall x, is_RInt (f x) a b (h x))
-  -> (filterlim f F (locally g))
-  -> exists If, filterlim h F (locally If) /\ is_RInt g a b If.
+  -> f @ F --> g
+  -> exists If, h @ F --> If /\ is_RInt g a b If.
 Proof.
 intros f a b F FF g h Hfh Hfg.
 wlog: a b h Hfh / (a <= b) => [Hw | Hab].
@@ -1666,7 +1662,7 @@ have He: 0 < (eps / (b - a)) / (2 * M).
   by apply Rlt_0_2.
   apply norm_factor_gt_0.
 generalize (Hfg _ (locally_ball g (mkposreal _ He))) => {Hfg Hfh}.
-unfold filtermap ;
+unfold filtermap; rewrite /filter_of /=.
 apply filter_imp => x Hx.
 apply HP.
 case => t [Ht [Ha Hb]] /=.
@@ -1705,8 +1701,8 @@ split.
 apply filterlim_ext with (fun _ => zero).
 intros x.
 apply filterlim_locally_unique with (2 := Hfh x).
-apply is_RInt_point.
-apply filterlim_const.
+apply: is_RInt_point.
+apply: filterlim_const.
 apply is_RInt_point.
 Qed.
 
@@ -1773,10 +1769,10 @@ Qed.
 End StepFun.
 
 Lemma ex_RInt_continuous {V : CompleteNormedModule R_AbsRing} (f : R -> V) (a b : R) :
-  (forall z, Rmin a b <= z <= Rmax a b -> continuous f z)
+  (forall z, Rmin a b <= z <= Rmax a b -> {for z, continuous f})
   -> ex_RInt f a b.
 Proof.
-  wlog: f / (forall z : R, continuous f z) => [ Hw Cf | Cf _ ].
+  wlog: f / (continuous f) => [ Hw Cf | Cf _ ].
     destruct (C0_extension_le f (Rmin a b) (Rmax a b)) as [g [Cg Hg]].
     by apply Cf.
     apply ex_RInt_ext with g.
@@ -2154,12 +2150,12 @@ Lemma is_RInt_fct_extend_fst
   (f : R -> U * V) (a b : R) (l : U * V) :
   is_RInt f a b l -> is_RInt (fun t => fst (f t)) a b (fst l).
 Proof.
-  intros Hf P [eP HP].
+  move=> Hf P /locallyP [eP HP].
   destruct (Hf (fun u : U * V => P (fst u))) as [ef Hf'].
     exists eP => y Hy.
     apply HP.
     apply Hy.
-  exists ef => y H1 H2.
+  exists ef => y H1 H2; rewrite /preimage.
   replace (Riemann_sum (fun t : R => fst (f t)) y)
     with (fst (Riemann_sum f y)).
   by apply Hf'.
@@ -2173,12 +2169,12 @@ Lemma is_RInt_fct_extend_snd
   (f : R -> U * V) (a b : R) (l : U * V) :
   is_RInt f a b l -> is_RInt (fun t => snd (f t)) a b (snd l).
 Proof.
-  intros Hf P [eP HP].
+  move=> Hf P /locallyP [eP HP].
   destruct (Hf (fun u : U * V => P (snd u))) as [ef Hf'].
     exists eP => y Hy.
     apply HP.
     apply Hy.
-  exists ef => y H1 H2.
+  exists ef => y H1 H2; rewrite /preimage.
   replace (Riemann_sum (fun t : R => snd (f t)) y)
     with (snd (Riemann_sum f y)).
   by apply Hf'.
@@ -2195,7 +2191,7 @@ Lemma is_RInt_fct_extend_pair
     -> is_RInt f a b (lu,lv).
 Proof.
   move => H1 H2.
-  apply filterlim_locally => eps.
+  apply/filterlim_locally => eps.
   generalize (proj1 (filterlim_locally _ _) H1 eps) => {H1} ; intros [d1 H1].
   generalize (proj1 (filterlim_locally _ _) H2 eps) => {H2} ; intros [d2 H2].
   simpl in H1, H2.
@@ -2667,7 +2663,7 @@ Qed.
 
 Lemma RInt_gt_0 (g : R -> R) (a b : R) :
   (a < b) -> (forall x, a < x < b -> (0 < g x)) ->
-  (forall x, a <= x <= b -> continuous g x) ->
+  (forall x, a <= x <= b -> {for x, continuous g}) ->
   0 < RInt g a b.
 Proof.
   intros Hab Hg Cg.
@@ -2772,8 +2768,8 @@ Qed.
 
 Lemma RInt_lt (f g : R -> R) (a b : R) :
   a < b ->
-  (forall x : R, a <= x <= b ->continuous g x) ->
-  (forall x : R, a <= x <= b ->continuous f x) ->
+  (forall x : R, a <= x <= b -> {for x, continuous g}) ->
+  (forall x : R, a <= x <= b -> {for x, continuous f}) ->
   (forall x : R, a < x < b -> f x < g x) ->
   RInt f a b < RInt g a b.
 Proof.
@@ -2832,7 +2828,7 @@ Proof.
     apply Hw => //.
   rewrite /is_RInt.
   intros pr.
-  apply filterlim_locally.
+  apply/filterlim_locally.
   unfold Riemann_fine.
   rewrite Rmin_left.
   2: now apply Rlt_le.
