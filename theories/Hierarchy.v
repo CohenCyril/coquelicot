@@ -2229,72 +2229,49 @@ Section Open.
 
 Context {T : UniformSpace}.
 
-Definition open (D : T -> Prop) :=
-  forall x, D x -> [filter of x] D.
+Definition open (D : T -> Prop) := forall x, D x -> [filter of x] D.
 
-Lemma locally_open :
-  forall (D E : T -> Prop),
-  open D ->
+Lemma locally_open (D E : T -> Prop) (OD : open D) :
   (forall x : T, D x -> E x) ->
   forall x : T, D x ->
-  locally x E.
+  [filter of x] E.
 Proof.
-intros D E OD H x Dx.
+intros H x Dx.
 apply filter_imp with (1 := H).
 now apply OD.
 Qed.
 
-Lemma open_ext :
-  forall D E : T -> Prop,
-  (forall x, D x <-> E x) ->
+Lemma open_ext (D E : T -> Prop) : (forall x, D x <-> E x) ->
   open D -> open E.
 Proof.
-intros D E H OD x Ex.
-generalize (OD x (proj2 (H x) Ex)).
-apply filter_imp.
-intros y.
-apply H.
+intros H OD x Ex.
+move: (OD x (proj2 (H x) Ex)).
+apply filter_imp => y.
+by apply H.
 Qed.
 
-Lemma open_and :
-  forall D E : T -> Prop,
-  open D -> open E ->
+Lemma open_and (D E : T -> Prop) : open D -> open E ->
   open (fun x => D x /\ E x).
 Proof.
-intros D E OD OE x [Dx Ex].
+intros OD OE x [Dx Ex].
 apply filter_and.
 now apply OD.
 now apply OE.
 Qed.
 
-Lemma open_or :
-  forall D E : T -> Prop,
-  open D -> open E ->
+Lemma open_or (D E : T -> Prop) : open D -> open E ->
   open (fun x => D x \/ E x).
 Proof.
-intros D E OD OE x [Dx|Ex].
-generalize (OD x Dx).
-apply filter_imp.
-intros y Dy.
-now left.
-generalize (OE x Ex).
-apply filter_imp.
-intros y Ey.
-now right.
+move=> OD OE x [Dx|Ex].
+- move/filter_imp : (OD x Dx); apply; by left.
+- move/filter_imp : (OE x Ex); apply; by right.
 Qed.
 
-Lemma open_true :
-  open (fun x : T => True).
-Proof.
-intros x _.
-apply filter_true.
-Qed.
+Lemma open_true : open (fun x : T => True).
+Proof. intros x _; by apply filter_true. Qed.
 
-Lemma open_false :
-  open (fun x : T => False).
-Proof.
-now intros x Hx.
-Qed.
+Lemma open_false : open (fun x : T => False).
+Proof. by []. Qed.
 
 End Open.
 
@@ -2316,13 +2293,11 @@ Section Closed.
 Context {T : UniformSpace}.
 
 Definition closed (D : T -> Prop) :=
-  forall x, not (locally x (fun x : T => not (D x))) -> D x.
+  forall x, not ([filter of x] (fun x : T => not (D x))) -> D x.
 
-Lemma open_not :
-  forall D : T -> Prop,
-  closed D -> open (fun x => not (D x)).
+Lemma open_not (D : T -> Prop) : closed D -> open (fun x => not (D x)).
 Proof.
-intros D CD x Dx.
+intros CD x Dx.
 apply locally_not.
 intros H.
 apply Dx, CD.
@@ -2330,23 +2305,19 @@ move/locallyP => [eps He].
 by apply (H eps).
 Qed.
 
-Lemma closed_not :
-  forall D : T -> Prop,
-  open D -> closed (fun x => not (D x)).
+Lemma closed_not (D : T -> Prop) : open D -> closed (fun x => not (D x)).
 Proof.
-intros D OD x Lx Dx.
+intros OD x Lx Dx.
 apply Lx.
 apply: filter_imp (OD _ Dx).
 intros t Dt nDt.
 now apply nDt.
 Qed.
 
-Lemma closed_ext :
-  forall D E : T -> Prop,
-  (forall x, D x <-> E x) ->
+Lemma closed_ext (D E : T -> Prop) : (forall x, D x <-> E x) ->
   closed D -> closed E.
 Proof.
-intros D E DE CD x Hx.
+intros DE CD x Hx.
 apply DE, CD.
 contradict Hx.
 apply: filter_imp Hx.
@@ -2354,23 +2325,20 @@ move => {x} x Dx Ex.
 now apply Dx, DE.
 Qed.
 
-Lemma closed_and :
-  forall D E : T -> Prop,
-  closed D -> closed E ->
+Lemma closed_and (D E : T -> Prop) : closed D -> closed E ->
   closed (fun x => D x /\ E x).
 Proof.
-intros D E CD CE x Hx.
-split.
-apply CD.
-contradict Hx.
-apply: filter_imp Hx.
-move => {x} x nDx [Dx _].
-now apply nDx.
-apply CE.
-contradict Hx.
-apply: filter_imp Hx.
-move => {x} x nEx [_ Ex].
-now apply nEx.
+intros CD CE x Hx; split.
+- apply CD.
+  contradict Hx.
+  apply: filter_imp Hx.
+  move => {x} x nDx [Dx _].
+  now apply nDx.
+- apply CE.
+  contradict Hx.
+  apply: filter_imp Hx.
+  move => {x} x nEx [_ Ex].
+  now apply nEx.
 Qed.
 
 (*
@@ -2386,14 +2354,10 @@ clear ; intuition.
 Qed.
 *)
 
-Lemma closed_true :
-  closed (fun x : T => True).
-Proof.
-now intros _ _.
-Qed.
+Lemma closed_true : closed (fun x : T => True).
+Proof. by []. Qed.
 
-Lemma closed_false :
-  closed (fun x : T => False).
+Lemma closed_false : closed (fun x : T => False).
 Proof.
 intros x Hx.
 apply: Hx.
@@ -2659,8 +2623,7 @@ split.
 - intros [y Hy] eps.
   exists (fun x => forall fx, f x fx -> ball y (pos_div_2 eps) fx).
   split.
-    assert (Hb: locally y (ball y (pos_div_2 eps))).
-      apply/locallyP; now exists (pos_div_2 eps).
+    have Hb := locally_ball y (pos_div_2 eps).
     assert (H := filter_and _ _ Hf (Hy _ Hb)).
     apply: filter_imp H.
     intros x [[_ H] [fx2 [Hfx2 H']]] fx Hfx.
@@ -2668,9 +2631,8 @@ split.
   intros u v Hu Hv fu fv Hfu Hfv.
   rewrite (double_var eps).
   apply ball_triangle with y.
-  apply ball_sym.
-  now apply Hu.
-  now apply Hv.
+  by apply/ball_sym/Hu.
+  by apply Hv.
 Qed.
 
 Definition lim_fct (F : ((T -> U) -> Prop) -> Prop) (t : T) :=
@@ -3352,14 +3314,12 @@ Definition ball_norm (x : V) (eps : R) (y : V) := norm (minus y x) < eps.
 Definition locally_norm (x : V) (P : V -> Prop) :=
   exists eps : posreal, forall y, ball_norm x eps y -> P y.
 
-Lemma locally_le_locally_norm :
-  forall x, filter_le (locally x) (locally_norm x).
+Lemma locally_le_locally_norm x : filter_le [filter of x] (locally_norm x).
 Proof.
-intros x P [eps H].
-assert (He : 0 < / norm_factor * eps).
+intros P [eps H].
+have He : 0 < / norm_factor * eps.
   apply Rmult_lt_0_compat.
-  apply Rinv_0_lt_compat.
-  apply norm_factor_gt_0.
+  by apply/Rinv_0_lt_compat/norm_factor_gt_0.
   by apply cond_pos.
 apply/locallyP; exists (mkposreal _ He).
 intros y By.
@@ -3372,10 +3332,9 @@ apply Rgt_not_eq.
 apply norm_factor_gt_0.
 Qed.
 
-Lemma locally_norm_le_locally :
-  forall x, filter_le (locally_norm x) (locally x).
+Lemma locally_norm_le_locally x : filter_le (locally_norm x) [filter of x].
 Proof.
-move=> x P /locallyP[eps H].
+move=> P /locallyP[eps H].
 exists eps.
 intros y By.
 apply H.
@@ -3396,7 +3355,7 @@ Lemma locally_norm_ball :
 Proof.
 intros x eps.
 apply locally_norm_le_locally.
-apply locally_ball.
+by apply: locally_ball.
 Qed.
 
 Lemma locally_ball_norm :
