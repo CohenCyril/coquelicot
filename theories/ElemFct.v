@@ -31,10 +31,13 @@ square root, power, exponential and so on.*)
 
 (** ** in an [AbsRing] *)
 
-Lemma continuous_abs {K : AbsRing} (x : K) :
-  continuous abs x.
+Local Open Scope classical_set_scope.
+
+Lemma continuous_abs {K : AbsRing} :
+  continuous (@abs K).
 Proof.
-  apply filterlim_locally => /= eps.
+move=> x.
+  apply/filterlim_locally => /= eps.
   exists eps => /= y Hy.
   eapply Rle_lt_trans, Hy.
   wlog: x y Hy / (abs x <= abs y) => [Hw | Hxy].
@@ -42,7 +45,7 @@ Proof.
     by apply Hw.
     rewrite abs_minus (abs_minus y).
     apply Hw, Rlt_le, Hxy.
-    by apply ball_sym.
+    by apply: (ball_sym x y eps).
   rewrite {1}/abs /=.
   rewrite Rabs_pos_eq.
   apply Rle_minus_l.
@@ -53,7 +56,7 @@ Proof.
 Qed.
 Lemma filterlim_abs_0 {K : AbsRing} :
   (forall x : K, abs x = 0 -> x = zero) ->
-  filterlim (abs (K := K)) (locally' (zero (G := K))) (at_right 0).
+  (abs (K := K)) @ (locally' (zero (G := K))) --> (at_right 0).
 Proof.
 intros H P [eps HP].
 exists eps.
@@ -71,14 +74,13 @@ Qed.
 
 (** ** in [R] *)
 
-Lemma continuous_Rabs (x : R) :
-  continuous Rabs x.
+Lemma continuous_Rabs : continuous Rabs.
 Proof.
   by apply @continuous_abs.
 Qed.
 
 Lemma filterlim_Rabs (x : Rbar) :
-  filterlim Rabs (Rbar_locally' x) (Rbar_locally (Rbar_abs x)).
+  Rabs @ (Rbar_locally' x) --> (Rbar_abs x).
 Proof.
   destruct x as [x| | ] => //=.
 
@@ -114,21 +116,21 @@ Proof.
 Qed.
 
 Lemma filterlim_Rabs_0 :
-  filterlim Rabs (Rbar_locally' 0) (at_right 0).
+  Rabs @ (Rbar_locally' 0) --> (at_right 0).
 Proof.
   apply @filterlim_abs_0.
   by apply Rabs_eq_0.
 Qed.
 Lemma is_lim_Rabs_0 (f : R -> R) (x : Rbar) :
   is_lim f x 0 -> Rbar_locally' x (fun x => f x <> 0)
-    -> filterlim (fun x => Rabs (f x)) (Rbar_locally' x) (at_right 0).
+    -> (fun x => Rabs (f x)) @ (Rbar_locally' x) --> (at_right 0).
 Proof.
   intros.
   eapply filterlim_comp, filterlim_Rabs_0.
   intros P HP.
   apply H in HP.
   generalize (filter_and _ _ H0 HP).
-  rewrite /filtermap /= ; apply filter_imp.
+  rewrite /filtermap /= ; apply: filter_imp.
   intros y Hy.
   apply Hy, Hy.
 Qed.
@@ -175,7 +177,7 @@ Qed.
 (** * Inverse function *)
 
 Lemma filterlim_Rinv_0_right :
-  filterlim Rinv (at_right 0) (Rbar_locally +oo).
+  Rinv @ (at_right 0) --> +oo.
 Proof.
   intros P [M HM].
   have Hd : 0 < / Rmax 1 M.
@@ -204,12 +206,11 @@ Proof.
   apply H in HP.
   generalize (filter_and _ _ H0 HP).
   rewrite /filtermap ;
-  apply filter_imp => y Hy.
+  apply: filter_imp => y Hy.
   by apply Hy, Hy.
 Qed.
 
-Lemma filterlim_Rinv_0_left :
-  filterlim Rinv (at_left 0) (Rbar_locally -oo).
+Lemma filterlim_Rinv_0_left : Rinv @ (at_left 0) --> -oo.
 Proof.
   eapply filterlim_ext_loc.
   exists (mkposreal _ Rlt_0_1) => /= y _ Hy0.
@@ -236,13 +237,13 @@ Proof.
   apply H in HP.
   generalize (filter_and _ _ H0 HP).
   rewrite /filtermap ;
-  apply filter_imp => y Hy.
+  apply: filter_imp => y Hy.
   by apply Hy, Hy.
 Qed.
 
 (** * Square root function *)
 
-Lemma filterlim_sqrt_p : filterlim sqrt (Rbar_locally' +oo) (Rbar_locally +oo).
+Lemma filterlim_sqrt_p : sqrt @ (Rbar_locally' +oo) --> +oo.
 Proof.
   apply is_lim_spec.
   move => M.
@@ -332,9 +333,11 @@ Proof.
     eexists ; by apply Hg.
   exists (mkposreal _ (Rmin_stable_in_posreal d1 d2)) => /= y Hy.
   apply Hd ; split => /=.
-  eapply (Hd1 y), ball_le, Hy.
+  apply/(Hd1 y).
+  apply: (ball_le x _ d1) Hy.
   by apply Rmin_l.
-  eapply (Hd2 y), ball_le, Hy.
+  apply/(Hd2 y).
+  apply: (ball_le x _ d2) Hy.
   by apply Rmin_r.
   by apply Hmult.
   simpl => [[y1 y2]] /=.
@@ -687,8 +690,7 @@ Proof.
   by apply Hx.
 Qed.
 
-Lemma is_lim_ln_0 :
-  filterlim ln (at_right 0) (Rbar_locally -oo).
+Lemma is_lim_ln_0 : ln @ (at_right 0) --> -oo.
 Proof.
 intros P [M HM].
 exists (mkposreal (exp M) (exp_pos _)) => x /= Hx Hx0.
@@ -836,7 +838,7 @@ Proof.
   apply Rlt_not_eq, Rminus_lt_0 ; ring_simplify ; apply Rlt_0_1.
   rewrite S_INR ; by apply Rgt_not_eq, RinvN_pos.
   by apply Rlt_0_1.
-  apply is_lim_seq_ext with (fun n => 1 - 2 / (2 * INR n + 3)).
+  apply (is_lim_seq_ext (fun n => 1 - 2 / (2 * INR n + 3)) _ (Finite 1)).
   intros n.
   rewrite -plus_n_Sm plus_Sn_m !S_INR plus_INR.
   assert (0 < INR n + INR n + 1).
@@ -855,11 +857,12 @@ Proof.
   rewrite -plus_INR ; by apply Rgt_not_eq, RinvN_pos.
   evar_last.
   apply is_lim_seq_minus'.
-  apply filterlim_const.
-  eapply is_lim_seq_div.
-  apply is_lim_seq_const.
-  eapply is_lim_seq_plus.
-  eapply is_lim_seq_mult.
+  apply: filterlim_const.
+  rewrite is_finite_lim_seqE.
+  apply: (@is_lim_seq_div _ _ (Finite 2)).
+  apply: is_lim_seq_const.
+  apply: (@is_lim_seq_plus _ _ _ (Finite 3)).
+  apply: (@is_lim_seq_mult _ _ (Finite 2)).
   apply is_lim_seq_const.
   apply is_lim_seq_INR.
   apply is_Rbar_mult_sym, is_Rbar_mult_p_infty_pos.
@@ -868,7 +871,7 @@ Proof.
   reflexivity ; simpl.
   by [].
   reflexivity.
-  simpl ; apply f_equal ; ring.
+  by rewrite Rmult_0_r Rminus_0_r.
 Qed.
 Lemma atan_Reals (x : R) : Rabs x < 1
   -> atan x = x * PSeries (fun n => (-1)^n / (INR (S (n + n)))) (x ^ 2).
@@ -891,7 +894,9 @@ Proof.
   rewrite -Series.Series_scal_l.
   apply Series.is_series_unique.
   apply is_lim_seq_Reals in Hps.
-  move: Hps ; apply is_lim_seq_ext => n.
+  move: Hps.
+  rewrite is_finite_lim_seqE.
+  apply: is_lim_seq_ext => n.
   rewrite -sum_n_Reals.
   apply sum_n_ext => k.
   rewrite /tg_alt /Ratan_seq S_INR !plus_INR.
