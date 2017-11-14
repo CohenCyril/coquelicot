@@ -2717,7 +2717,7 @@ Proof.
   by apply Hl.
   eapply lt_trans, Hi.
   by apply lt_n_Sn.
-  eapply (IH (proj2 Hl) (Sup_fct f x0 x1) (Sup_fct f x0 x1)).
+  eapply (IH (proj2 Hl) (real (Sup_fct f x0 x1)) (real (Sup_fct f x0 x1))).
   2: apply Hx.
   simpl ; by apply lt_S_n.
 Qed.
@@ -2832,7 +2832,7 @@ Proof.
   by apply Hl.
   eapply lt_trans, Hi.
   by apply lt_n_Sn.
-  eapply (IH (proj2 Hl) (Inf_fct f x0 x1) (Inf_fct f x0 x1)).
+  eapply (IH (proj2 Hl) (real (Inf_fct f x0 x1)) (real (Inf_fct f x0 x1))).
   2: apply Hx.
   simpl ; by apply lt_S_n.
 Qed.
