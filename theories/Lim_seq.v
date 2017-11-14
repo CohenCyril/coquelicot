@@ -114,7 +114,7 @@ Proof.
   apply le_epsilon ; intros e He ; set (eps := mkposreal e He).
   change (Rbar_le x (l + e)).
   rewrite Hn ; apply Rbar_lt_le, (Hl eps).
-  now generalize (proj1 (Hl (mkposreal _ Rlt_0_1)) n) ; clear Hl ; simpl ; intros Hl ; rewrite <-Hn in Hl.
+  now generalize (proj1 (Hl [posreal of 1]) n) ; clear Hl ; simpl ; intros Hl ; rewrite <-Hn in Hl.
   easy.
   intros b ; destruct b as [b | | ] ; intros Hb ; apply Rbar_not_lt_le ; auto ; intros He.
   set (eps := mkposreal _ (Rlt_Rminus _ _ He)) ; case (proj2 (Hl eps)) ; clear Hl ; intros n.
@@ -122,7 +122,7 @@ Proof.
   simpl ; ring.
   rewrite H ; clear H ; apply Hb ; exists n ; auto.
   generalize (Rbar_ub_m_infty _ Hb) ; clear Hb ; intros Hb.
-  case (proj2 (Hl (mkposreal _ Rlt_0_1))) ; clear Hl ; simpl ; intros n Hl.
+  case (proj2 (Hl [posreal of 1])) ; clear Hl ; simpl ; intros n Hl.
   assert (H : (exists n0 : nat, u n = u n0)).
   exists n ; auto.
   generalize (Hb (u n) H) Hl ; clear Hb ; now case (u n).
@@ -270,8 +270,8 @@ Proof.
   case: l Hl => [l | | ] Hl ; case: l0 Hl0 => [l0 | | ] Hl0 //.
   apply Rbar_finite_eq, Rle_antisym ; apply le_epsilon => e He ;
   set eps := mkposreal e He ; apply Rlt_le ;
-  case: (Hl (pos_div_2 eps)) => {Hl} Hl [n Hn] ;
-  case: (Hl0 (pos_div_2 eps)) => {Hl0} Hl0 [n0 Hn0].
+  case: (Hl [posreal of eps / 2]) => {Hl} Hl [n Hn] ;
+  case: (Hl0 [posreal of eps / 2]) => {Hl0} Hl0 [n0 Hn0].
   have: (l0 = (l0 - eps/2) + eps/2) ; [by field | move => -> ] ;
   have : (l + e = (l + eps/2) + eps/2) ; [ simpl ; field | move => -> ] ;
   apply Rplus_lt_compat_r, (Rbar_lt_trans
@@ -281,14 +281,14 @@ Proof.
   apply Rplus_lt_compat_r, (Rbar_lt_trans
     (Finite (l - eps/2)) (u n) (Finite (l0 + eps/2)) Hn (Hl0 _)).
   case: (Hl0 (l + 1)) => n {Hl0} Hl0 ; contradict Hl0 ;
-    apply Rbar_le_not_lt, Rbar_lt_le, (Hl (mkposreal _ Rlt_0_1)).
-  case: (Hl (mkposreal _ Rlt_0_1)) => {Hl} _ [n Hl] ; contradict Hl ;
+    apply Rbar_le_not_lt, Rbar_lt_le, (Hl [posreal of 1]).
+  case: (Hl [posreal of 1]) => {Hl} _ [n Hl] ; contradict Hl ;
     apply Rbar_le_not_lt, Rbar_lt_le, Hl0.
   case: (Hl (l0 + 1)) => n {Hl} Hl ; contradict Hl ;
-    apply Rbar_le_not_lt, Rbar_lt_le, (Hl0 (mkposreal _ Rlt_0_1)).
+    apply Rbar_le_not_lt, Rbar_lt_le, (Hl0 [posreal of 1]).
   case: (Hl 0) => n {Hl} Hl ; contradict Hl ;
     apply Rbar_le_not_lt, Rbar_lt_le, Hl0.
-  case: (Hl0 (mkposreal _ Rlt_0_1)) => {Hl0} _ [n Hl0] ; contradict Hl0 ;
+  case: (Hl0 [posreal of 1]) => {Hl0} _ [n Hl0] ; contradict Hl0 ;
     apply Rbar_le_not_lt, Rbar_lt_le, Hl.
   case: (Hl0 0) => n {Hl0} Hl0 ; contradict Hl0 ;
     apply Rbar_le_not_lt, Rbar_lt_le, Hl.
@@ -305,8 +305,8 @@ Proof.
   case: l Hl => [l | | ] Hl ; case: l0 Hl0 => [l0 | | ] Hl0 //.
   apply Rbar_finite_eq, Rle_antisym ; apply le_epsilon => e He ;
   set eps := mkposreal e He ; apply Rlt_le ;
-  case: (Hl (pos_div_2 eps)) => {Hl} Hl [n Hn] ;
-  case: (Hl0 (pos_div_2 eps)) => {Hl0} Hl0 [n0 Hn0].
+  case: (Hl [posreal of eps / 2]) => {Hl} Hl [n Hn] ;
+  case: (Hl0 [posreal of eps / 2]) => {Hl0} Hl0 [n0 Hn0].
   have: (l0 = (l0 - eps/2) + eps/2) ; [by field | move => -> ] ;
   have : (l + e = (l + eps/2) + eps/2) ; [ simpl ; field | move => -> ] ;
   apply Rplus_lt_compat_r, (Rbar_lt_trans
@@ -315,16 +315,16 @@ Proof.
   have : (l0 + e = (l0 + eps/2) + eps/2) ; [ simpl ; field | move => -> ] ;
   apply Rplus_lt_compat_r, (Rbar_lt_trans
     (Finite (l - eps/2)) (u n0) (Finite (l0 + eps/2)) (Hl _) Hn0).
-  case: (Hl (mkposreal _ Rlt_0_1)) => {Hl} _ [n Hl] ; contradict Hl ;
+  case: (Hl [posreal of 1]) => {Hl} _ [n Hl] ; contradict Hl ;
     apply Rbar_le_not_lt, Rbar_lt_le, Hl0.
   case: (Hl0 (l - 1)) => n {Hl0} Hl0 ; contradict Hl0 ;
-    apply Rbar_le_not_lt, Rbar_lt_le, (Hl (mkposreal _ Rlt_0_1)).
-  case: (Hl0 (mkposreal _ Rlt_0_1)) => {Hl0} _ [n Hl0] ; contradict Hl0 ;
+    apply Rbar_le_not_lt, Rbar_lt_le, (Hl [posreal of 1]).
+  case: (Hl0 [posreal of 1]) => {Hl0} _ [n Hl0] ; contradict Hl0 ;
     apply Rbar_le_not_lt, Rbar_lt_le, Hl.
   case: (Hl0 0) => n {Hl0} Hl0 ; contradict Hl0 ;
     apply Rbar_le_not_lt, Rbar_lt_le, Hl.
   case: (Hl (l0 - 1)) => n {Hl} Hl ; contradict Hl ;
-    apply Rbar_le_not_lt, Rbar_lt_le, (Hl0 (mkposreal _ Rlt_0_1)).
+    apply Rbar_le_not_lt, Rbar_lt_le, (Hl0 [posreal of 1]).
   case: (Hl 0) => n {Hl} Hl ; contradict Hl ;
     apply Rbar_le_not_lt, Rbar_lt_le, Hl0.
 Qed.
@@ -509,8 +509,8 @@ Proof.
   rewrite /Sup_seq ; case: (ex_sup_seq _) ; case => [su | | ] Hsu //=.
 (* Finite, Finite *)
   apply le_epsilon => e He ; set eps := mkposreal e He ;
-  case: (Hiu (pos_div_2 eps)) => {Hiu} Hiu _ ;
-  case: (Hsu (pos_div_2 eps)) => {Hsu} Hsu _ ;
+  case: (Hiu [posreal of eps / 2]) => {Hiu} Hiu _ ;
+  case: (Hsu [posreal of eps / 2]) => {Hsu} Hsu _ ;
   apply Rlt_le.
   have : (iu = iu - e/2 + e/2) ; first by ring.
   move => -> ; have : (su+e = su + e/2 + e/2) ; first by field.
@@ -534,7 +534,7 @@ Proof.
   case: (u n) => [un | | ] //= Hun.
   apply le_epsilon => e He ; apply Rlt_le.
   apply: Hun (mkposreal e He).
-  by move: (Hun (mkposreal _ Rlt_0_1)).
+  by move: (Hun [posreal of 1]).
   case: (u n) => [un | | ] //.
   move: (Hl (real (u n)) n) ; case: (u n) => [un | | ] //= {Hl} Hl.
   by apply Rlt_irrefl in Hl.
@@ -712,10 +712,10 @@ Proof.
   case: (proj1 (Hl eps) N) => {Hl} n Hl.
   exists (n - N)%nat.
   rewrite MyNat.sub_add ; intuition.
-  case: (proj2 (Hl (pos_div_2 eps))) => /= {Hl} N Hl.
+  case: (proj2 (Hl [posreal of eps / 2])) => /= {Hl} N Hl.
   exists N ; rewrite /Sup_seq ; case: ex_sup_seq => un Hun ; simpl proj1_sig.
   case: un Hun => [un | | ] /= Hun.
-  case: (proj2 (Hun (pos_div_2 eps))) => {Hun} /= n Hun.
+  case: (proj2 (Hun [posreal of eps / 2])) => {Hun} /= n Hun.
   apply Rlt_minus_l in Hun.
   apply Rlt_trans with (1 := Hun).
   apply Rlt_minus_r.
@@ -753,7 +753,7 @@ Proof.
   case: (Hl (M-1)) => {Hl} N Hl.
   exists N ; rewrite /Sup_seq ; case: ex_sup_seq => un Hun ; simpl proj1_sig.
   case: un Hun => [un | | ] /= Hun.
-  case: (proj2 (Hun (mkposreal _ Rlt_0_1))) => {Hun} /= n Hun.
+  case: (proj2 (Hun [posreal of 1])) => {Hun} /= n Hun.
   apply Rlt_minus_l in Hun.
   apply Rlt_trans with (1 := Hun).
   apply Rlt_minus_r.
@@ -905,7 +905,7 @@ Lemma is_LimSup_LimInf_seq_le (u : nat -> R) (ls li : Rbar) :
 Proof.
   case: ls => [ls | | ] ; case: li => [li | | ] //= Hls Hli.
   apply le_epsilon => e He ;
-  set eps := pos_div_2 (mkposreal e He).
+  set eps := [posreal of mkposreal e He / 2].
   replace li with ((li - eps) + eps) by ring.
   replace (ls + e) with ((ls + eps) + eps) by (simpl ; field).
   apply Rplus_le_compat_r, Rlt_le.
@@ -914,12 +914,12 @@ Proof.
   apply Rlt_trans with (u (Ns + Ni)%nat).
   apply Hli ; by intuition.
   apply Hls ; by intuition.
-  case: (proj2 (Hls (mkposreal _ Rlt_0_1))) => {Hls} /= Ns Hls.
+  case: (proj2 (Hls [posreal of 1])) => {Hls} /= Ns Hls.
   case: (Hli (ls + 1)) => {Hli} Ni Hli.
   absurd (ls + 1 < u (Ns + Ni)%nat).
   apply Rle_not_lt, Rlt_le, Hls ; by intuition.
   apply Hli ; by intuition.
-  case: (proj2 (Hli (mkposreal _ Rlt_0_1))) => {Hli} /= Ni Hli.
+  case: (proj2 (Hli [posreal of 1])) => {Hli} /= Ni Hli.
   case: (Hls (li - 1)) => {Hls} Ns Hls.
   absurd (li - 1 < u (Ns + Ni)%nat).
   apply Rle_not_lt, Rlt_le, Hls ; by intuition.
@@ -1007,8 +1007,8 @@ Proof.
   case: ex_LimSup_seq ; case => [lv | | ] //= Hlv.
   apply Rnot_lt_le => Hl.
   apply Rminus_lt_0 in Hl.
-  case: (Hlv (pos_div_2 (mkposreal _ Hl))) => {Hlv} /= _ [n Hlv].
-  case: (proj1 (Hlu (pos_div_2 (mkposreal _ Hl))) (N + n)%nat) => {Hlu} m /= [Hm Hlu].
+  case: (Hlv [posreal of mkposreal _ Hl / 2]) => {Hlv} /= _ [n Hlv].
+  case: (proj1 (Hlu [posreal of  mkposreal _ Hl / 2]) (N + n)%nat) => {Hlu} m /= [Hm Hlu].
   move: (H _ (le_trans _ _ _ (le_plus_l _ _) Hm)).
   apply Rlt_not_le.
   eapply Rlt_trans, Hlu.
@@ -1018,14 +1018,14 @@ Proof.
   apply Req_le ; field.
 
   case: (Hlv (lu - 1)) => {Hlv} n Hlv.
-  case: (proj1 (Hlu (mkposreal _ Rlt_0_1)) (N + n)%nat) => {Hlu} m /= [Hm Hlu].
+  case: (proj1 (Hlu [posreal of 1]) (N + n)%nat) => {Hlu} m /= [Hm Hlu].
   move: (H _ (le_trans _ _ _ (le_plus_l _ _) Hm)).
   apply Rlt_not_le.
   eapply Rlt_trans, Hlu.
   eapply Hlv, le_trans, Hm.
   by apply le_plus_r.
 
-  case: (Hlv (mkposreal _ Rlt_0_1)) => {Hlv} /= _ [n Hlv].
+  case: (Hlv [posreal of 1]) => {Hlv} /= _ [n Hlv].
   case: (Hlu (lv + 1) (N + n)%nat) => {Hlu} /= m [Hm Hlu].
   move: (H _ (le_trans _ _ _ (le_plus_l _ _) Hm)).
   apply Rlt_not_le.
@@ -1477,7 +1477,7 @@ Proof.
   rewrite is_finite_lim_seqE in Hcv.
   apply is_lim_seq_spec in Hcv.
   move => eps.
-  case: (Hcv (pos_div_2 eps)) => /= {Hcv} N H.
+  case: (Hcv [posreal of eps / 2]) => /= {Hcv} N H.
   exists N => n m Hn Hm.
   replace (u n - u m) with ((u n - (real (Lim_seq u))) - (u m - (real (Lim_seq u)))) by ring.
   apply Rle_lt_trans with (1 := Rabs_triang _ _).
@@ -1489,9 +1489,9 @@ Proof.
   apply is_lim_seq_spec.
   intros eps.
   rewrite /LimSup_seq ; case: ex_LimSup_seq => /= l Hl.
-  case: (Hcv (pos_div_2 eps)) => {Hcv} /= Ncv Hcv.
+  case: (Hcv [posreal of eps / 2]) => {Hcv} /= Ncv Hcv.
   case: l Hl => [l | | ] /= Hl.
-  case: (Hl (pos_div_2 eps)) => {Hl} /= H1 [Nl H2].
+  case: (Hl [posreal of eps / 2]) => {Hl} /= H1 [Nl H2].
   exists (Ncv + Nl)%nat => n Hn.
   apply Rabs_lt_between' ; split.
   case: (H1 Ncv) => {H1} m [Hm H1].
@@ -1502,8 +1502,7 @@ Proof.
   apply Hcv ; intuition.
   apply Rlt_trans with (l + eps / 2).
   apply H2 ; intuition.
-  apply Rminus_lt_0 ; field_simplify ; rewrite ?Rdiv_1.
-  by apply is_pos_div_2.
+  by apply Rminus_lt_0 ; field_simplify ; rewrite ?Rdiv_1.
   move: (fun n Hn => proj2 (proj1 (Rabs_lt_between' _ _ _) (Hcv n Ncv Hn (le_refl _))))
   => {Hcv} Hcv.
   case: (Hl (u Ncv + eps / 2) Ncv) => {Hl} n [Hn Hl].
@@ -1676,8 +1675,8 @@ Proof.
   apply Rbar_finite_eq, Rle_antisym ;
   apply le_epsilon => e He ; set eps := mkposreal e He ;
   apply Rlt_le.
-  case: (proj2 (H1 (pos_div_2 eps))) => /= {H1} N H1.
-  case: (proj1 (H2 (pos_div_2 eps)) N) => /= {H2} n [Hn H2].
+  case: (proj2 (H1 [posreal of eps / 2])) => /= {H1} N H1.
+  case: (proj1 (H2 [posreal of eps / 2]) N) => /= {H2} n [Hn H2].
   apply Rlt_trans with (u (S n) + e/2).
   replace l1 with ((l1-e/2)+e/2) by ring.
   apply Rplus_lt_compat_r.
@@ -1686,8 +1685,8 @@ Proof.
   apply le_n_Sn.
   replace (l2+e) with ((l2+e/2)+e/2) by field.
   by apply Rplus_lt_compat_r, H2.
-  case: (proj2 (H2 (pos_div_2 eps))) => /= {H2} N H2.
-  case: (proj1 (H1 (pos_div_2 eps)) (S N)) => /= {H1} .
+  case: (proj2 (H2 [posreal of eps / 2])) => /= {H2} N H2.
+  case: (proj1 (H1 [posreal of eps / 2]) (S N)) => /= {H1} .
   case => [ | n] [Hn H1].
   by apply le_Sn_0 in Hn.
   apply Rlt_trans with (u (S n) + e/2).
@@ -1699,19 +1698,19 @@ Proof.
   by apply Rplus_lt_compat_r, H1.
   have : False => //.
   case: (H2 (l1+1)) => {H2} N /= H2.
-  case: (proj1 (H1 (mkposreal _ Rlt_0_1)) (S N)) ;
+  case: (proj1 (H1 [posreal of 1]) (S N)) ;
   case => /= {H1} [ | n] [Hn].
   by apply le_Sn_0 in Hn.
   apply Rle_not_lt, Rlt_le, H2.
   by apply le_S_n.
   have : False => //.
-  case: (proj2 (H1 (mkposreal _ Rlt_0_1))) => {H1} N /= H1.
+  case: (proj2 (H1 [posreal of 1])) => {H1} N /= H1.
   case: ((H2 (l1-1)) N) => /= {H2}  n [Hn].
   apply Rle_not_lt, Rlt_le, H1.
   by apply le_trans with (2 := le_n_Sn _).
   have : False => //.
   case: (H1 (l2+1)) => {H1} N /= H1.
-  case: (proj1 (H2 (mkposreal _ Rlt_0_1)) N) => /= {H2}  n [Hn].
+  case: (proj1 (H2 [posreal of 1]) N) => /= {H2}  n [Hn].
   apply Rle_not_lt, Rlt_le, H1.
   by apply le_trans with (2 := le_n_Sn _).
   by [].
@@ -1721,7 +1720,7 @@ Proof.
   apply Rle_not_lt, Rlt_le, H1.
   by apply le_trans with (2 := le_n_Sn _).
   have : False => //.
-  case: (proj2 (H2 (mkposreal _ Rlt_0_1))) => /= {H2} N H2.
+  case: (proj2 (H2 [posreal of 1])) => /= {H2} N H2.
   case: (H1 (l2-1) (S N)) ;
   case => [ | n] [Hn].
   by apply le_Sn_0 in Hn.
@@ -1742,8 +1741,8 @@ Proof.
   apply Rbar_finite_eq, Rle_antisym ;
   apply le_epsilon => e He ; set eps := mkposreal e He ;
   apply Rlt_le.
-  case: (proj2 (H2 (pos_div_2 eps))) => /= {H2} N H2.
-  case: ((proj1 (H1 (pos_div_2 eps))) (S N)) ;
+  case: (proj2 (H2 [posreal of eps / 2])) => /= {H2} N H2.
+  case: ((proj1 (H1 [posreal of eps / 2])) (S N)) ;
   case => /= {H1} [ | n] [Hn H1].
   by apply le_Sn_0 in Hn.
   replace l1 with ((l1-e/2)+e/2) by ring.
@@ -1751,25 +1750,25 @@ Proof.
   apply Rplus_lt_compat_r.
   apply Rlt_trans with (1 := H1).
   by apply H2, le_S_n.
-  case: (proj2 (H1 (pos_div_2 eps))) => /= {H1} N H1.
-  case: ((proj1 (H2 (pos_div_2 eps))) N) => /= {H2} n [Hn H2].
+  case: (proj2 (H1 [posreal of eps / 2])) => /= {H1} N H1.
+  case: ((proj1 (H2 [posreal of eps / 2])) N) => /= {H2} n [Hn H2].
   replace l2 with ((l2-e/2)+e/2) by ring.
   replace (l1+e) with ((l1+e/2)+e/2) by field.
   apply Rplus_lt_compat_r.
   apply Rlt_trans with (1 := H2).
   by apply H1, le_trans with (2 := le_n_Sn _).
   have : False => //.
-  case: (proj2 (H1 (mkposreal _ Rlt_0_1))) => /= {H1} N H1.
+  case: (proj2 (H1 [posreal of 1])) => /= {H1} N H1.
   case: (H2 (l1+1) N) => n [Hn].
   by apply Rle_not_lt, Rlt_le, H1, le_trans with (2 := le_n_Sn _).
   have : False => //.
   case: (H2 (l1-1)) => {H2} N H2.
-  case: (proj1 (H1 (mkposreal _ Rlt_0_1)) (S N)) ;
+  case: (proj1 (H1 [posreal of 1]) (S N)) ;
   case => [ | n] [Hn] /= .
   by apply le_Sn_0 in Hn.
   by apply Rle_not_lt, Rlt_le, H2, le_S_n.
   have : False => //.
-  case: (proj2 (H2 (mkposreal _ Rlt_0_1))) => {H2} /= N H2.
+  case: (proj2 (H2 [posreal of 1])) => {H2} /= N H2.
   case: (H1 (l2+1) (S N)) ;
   case => [ | n] [Hn] /= .
   by apply le_Sn_0 in Hn.
@@ -1783,7 +1782,7 @@ Proof.
   by apply Rle_not_lt, Rlt_le, H2, le_S_n.
   have : False => //.
   case: (H1 (l2-1)) => {H1} N H1.
-  case: (proj1 (H2 (mkposreal _ Rlt_0_1)) N) => /= {H2} n [Hn].
+  case: (proj1 (H2 [posreal of 1]) N) => /= {H2} n [Hn].
   by apply Rle_not_lt, Rlt_le, H1, le_trans with (2 := le_n_Sn _).
   have : False => //.
   case: (H1 0) => {H1} N H1.
@@ -2297,9 +2296,9 @@ Proof.
 (* x + y \in R *)
   case: x y Hp Hz => [x| |] ; case => [y| |] //= ; case => <- Hz.
   intros P [eps He].
-  exists (fun u => Rabs (u - x) < pos_div_2 eps) (fun v => Rabs (v - y) < pos_div_2 eps).
-  now exists (pos_div_2 eps).
-  now exists (pos_div_2 eps).
+  exists (fun u => Rabs (u - x) < eps / 2) (fun v => Rabs (v - y) < eps / 2).
+  now exists [posreal of eps / 2].
+  now exists [posreal of eps / 2].
   intros u v Hu Hv.
   apply He.
   rewrite /ball /= /AbsRing_ball /abs /minus /plus /opp /=.
@@ -2337,7 +2336,7 @@ Proof.
   case => [y| | ] //= _ _.
   intros P [N HN].
   exists (fun u => Rabs (u - x) < 1) (fun v => N - x + 1 < v).
-  now exists (mkposreal _ Rlt_0_1).
+  now exists [posreal of 1].
   now exists (N - x + 1).
   intros u v Hu Hv.
   simpl.
@@ -2658,7 +2657,7 @@ Proof.
   apply Rplus_le_lt_0_compat.
   now apply Rplus_le_le_0_compat.
   apply Rlt_0_1.
-  set (d := mkposreal _ (Rmin_stable_in_posreal (mkposreal _ Rlt_0_1) (mkposreal _ He))).
+  set (d := mkposreal _ (Rmin_stable_in_posreal [posreal of 1] (mkposreal _ He))).
   exists (fun u => Rabs (u - x) < d) (fun v => Rabs (v - y) < d).
   now exists d.
   now exists d.
@@ -2702,7 +2701,7 @@ Proof.
   case: Rle_lt_or_eq_dec => {Hl Hx Hy Hx'} // Hx _.
   intros P [N HN].
   exists (fun u => Rabs (u - x) < x / 2) (fun v => Rmax 0 (N / (x / 2)) < v).
-  now exists (pos_div_2 (mkposreal _ Hx)).
+  now exists [posreal of mkposreal _ Hx / 2].
   now exists (Rmax 0 (N / (x / 2))).
   intros u v Hu Hv.
   simpl.
@@ -2711,7 +2710,6 @@ Proof.
   apply Rmax_case_strong => H.
   rewrite Rmult_0_r ; apply Rnot_lt_le ; contradict H ; apply Rlt_not_le.
   repeat apply Rdiv_lt_0_compat => //.
-  by apply Rlt_R0_R2.
   apply Req_le ; field.
   by apply Rgt_not_eq.
   apply Rmult_le_0_lt_compat.
@@ -3131,7 +3129,7 @@ Proof.
   destruct l as [l| |].
   case: Hq => Hq.
 (* ~ is_lim_seq (q^n) l *)
-  case: (H (mkposreal _ Rlt_0_1)) => /= {H} N H.
+  case: (H [posreal of 1]) => /= {H} N H.
   move: (fun n Hn => Rabs_lt_between_Rmax _ _ _ (proj1 (Rabs_lt_between' _ _ _) (H n Hn))).
   set M := Rmax (l + 1) (- (l - 1)) => H0.
   case: (fun Hq => Pow_x_infinity q Hq M) => [ | N0 H1].
@@ -3144,7 +3142,7 @@ Proof.
   move: (H0 _ (le_plus_l N N0)).
   by apply Rle_not_lt, Rge_le, H1, le_plus_r.
 (* ~ is_lim_seq ((-1)^n) l *)
-  case: (H (mkposreal _ Rlt_0_1)) => /= {H} N H.
+  case: (H [posreal of 1]) => /= {H} N H.
   rewrite Hq in H => {q Hq}.
   move: (H _ (le_n_2n _)) ; rewrite pow_1_even ; case/Rabs_lt_between' => _ H1.
   have H2 : (N <= S (2 * N))%nat.

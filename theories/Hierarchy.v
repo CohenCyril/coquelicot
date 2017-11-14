@@ -1656,11 +1656,7 @@ now apply ball_sym.
 Qed.
 
 Lemma close_trans (x y z : M) : close x y -> close y z -> close x z.
-Proof.
-intros H1 H2 eps.
-rewrite (double_var eps) -[eps / 2]/(pos (pos_div_2 eps)).
-now eapply ball_triangle.
-Qed.
+Proof. by move=> ?? eps; rewrite (double_var eps); apply: ball_triangle. Qed.
 
 End UniformSpace1.
 
@@ -1813,11 +1809,9 @@ Global Instance locally_dist_filter :
 Proof.
 intros T d.
 constructor.
-- now exists (mkposreal _ Rlt_0_1).
+- now exists [posreal of 1].
 - intros P Q [dP HP] [dQ HQ].
-  exists (mkposreal _ (Rmin_stable_in_posreal dP dQ)).
-  simpl.
-  intros y Hy.
+  exists [posreal of (Rmin dP dQ)] => y /= Hy.
   split.
   apply HP.
   apply Rlt_le_trans with (1 := Hy).
@@ -1871,9 +1865,9 @@ constructor; [idtac|constructor].
 - move=> P /locallyP [eps H].
   exists x.
   by apply/H/ball_center.
-- apply/locallyP; by exists (mkposreal _ Rlt_0_1).
+- apply/locallyP; by exists [posreal of 1].
 - move=> P Q /locallyP[dP HP] /locallyP[dQ HQ].
-  apply/locallyP; exists (mkposreal _ (Rmin_stable_in_posreal dP dQ)) => /=.
+  apply/locallyP; exists [posreal of Rmin dP dQ].
   intros y Hy.
   split.
   apply HP.
@@ -1928,8 +1922,8 @@ Lemma locally_locally (x : T) (P : T -> Prop) :
   locally x P -> locally x (fun y => locally y P).
 Proof.
 move=> /locallyP[dp Hp].
-apply/locallyP; exists (pos_div_2 dp) => y xy.
-apply/locallyP; exists (pos_div_2 dp) => z yz.
+apply/locallyP; exists [posreal of dp / 2] => y xy.
+apply/locallyP; exists [posreal of dp / 2] => z yz.
 by apply Hp; rewrite (double_var dp); apply: ball_triangle xy yz.
 Qed.
 
@@ -1976,7 +1970,7 @@ assert (Zd : 0 < d).
   apply Rmin_case.
   apply Rlt_0_1.
   apply cond_pos.
-exists (mkposreal _ (is_pos_div_2 (mkposreal _ Zd))).
+exists [posreal of mkposreal _ Zd / 2].
 simpl.
 intros y Hy HP.
 apply (Rlt_not_le _ _ (Rlt_eps2_eps _ Zd)).
@@ -2026,8 +2020,8 @@ Lemma is_filter_lim_close {F} {FF : ProperFilter F} (x y : T) :
   F --> x -> F --> y -> close x y.
 Proof.
 intros Fx Fy eps.
-specialize (Fy _ (locally_ball y (pos_div_2 eps))).
-specialize (Fx _ (locally_ball x (pos_div_2 eps))).
+specialize (Fy _ (locally_ball y [posreal of eps / 2])).
+specialize (Fx _ (locally_ball x [posreal of eps / 2])).
 generalize (filter_and _ _ Fx Fy) => {Fx Fy} Fxy.
 rewrite (double_var eps).
 destruct (filter_ex _ Fxy) as [z Fz].
@@ -2119,10 +2113,10 @@ intros Hf Hl Hl' eps.
 (* have := (filter_and _ _ half_l half_l'). *)
 (* move=> /filter_ex [fx [fxl /ball_sym fxl']]. *)
 (* by rewrite (double_var eps); eapply (ball_triangle _ fx). *)
-have H := locally_ball l (pos_div_2 eps).
-specialize (Hl (ball l (pos_div_2 eps)) H).
-have H' := locally_ball l' (pos_div_2 eps).
-specialize (Hl' (ball l' (pos_div_2 eps)) H').
+have H := locally_ball l [posreal of eps / 2].
+specialize (Hl (ball l [posreal of eps / 2]) H).
+have H' := locally_ball l' [posreal of eps / 2].
+specialize (Hl' (ball l' [posreal of eps / 2]) H').
 unfold filtermapi in Hl, Hl'.
 rewrite /filter_of /= in Hl Hl'.
 generalize (filter_and _ _ Hf (filter_and _ _ Hl Hl')) => {H H' Hl Hl' Hf} H.
@@ -2158,33 +2152,6 @@ intros T x.
 apply within_filter.
 apply locally_filter.
 Qed.
-
-(** Pointed filter *)
-
-(* :TODO: move to Rcomplements *)
-Hint Resolve cond_pos.
-Lemma Rmin_positive (x : posreal) (y : posreal) : Rmin x y > 0.
-Proof. exact: Rmin_pos. Qed.
-Canonical Rmin_posreal (x : posreal) (y : posreal) :=
-  mkposreal (Rmin x y) (@Rmin_positive x y).
-
-(* Section prod_UniformSpaceE. *)
-
-(* Context {U V : UniformSpace}. *)
-
-(* Lemma locally_prod (x : U) (y : V) P: *)
-(*   [filter of (x, y)] P <-> filter_prod [filter of x] [filter of y] P. *)
-(* Proof. *)
-(* by []. *)
-(* split => [/locallyP [eps Peps]|[Q R /locallyP[epsQ Qeps] /locallyP[epsR Reps] PQR]]. *)
-(*   exists (ball x eps) (ball y eps); do ?by apply/locallyP; exists eps. *)
-(*   by move=> ????; apply: Peps. *)
-(* exists (Rmin_posreal epsQ epsR) => -[x' y'] [/=]. *)
-(* move=> /(ball_le _ _ _ (Rmin_l _ _)) /Qeps Qx'. *)
-(* by move=> /(ball_le _ _ _ (Rmin_r _ _)) /Reps /PQR; exact. *)
-(* Qed. *)
-
-(* End prod_UniformSpaceE. *)
 
 Section at_point.
 
@@ -2343,7 +2310,7 @@ Lemma closed_false : closed (fun x : T => False).
 Proof.
 intros x Hx.
 apply: Hx.
-apply/locallyP; now exists (mkposreal _ Rlt_0_1).
+apply/locallyP; now exists [posreal of 1].
 Qed.
 
 End Closed.
@@ -2515,8 +2482,8 @@ Proof.
 intros T F FF.
 split.
 - intros H eps.
-  case: (H (pos_div_2 eps)) => {H} x Hx.
-  exists (ball x (pos_div_2 eps)).
+  case: (H [posreal of eps / 2]) => {H} x Hx.
+  exists (ball x [posreal of eps / 2]).
   split.
   by [].
   move => u v Hu Hv.
@@ -2560,10 +2527,10 @@ split.
     intros x' Hx'.
     now apply H'.
 - intros [y Hy] eps.
-  exists (fun x => ball y (pos_div_2 eps) (f x)).
+  exists (fun x => ball y [posreal of eps / 2] (f x)).
   split.
   apply Hy.
-  apply/locallyP;   now exists (pos_div_2 eps).
+  apply/locallyP;   now exists [posreal of eps / 2].
 - intros u v Hu Hv.
   rewrite (double_var eps).
   apply ball_triangle with y.
@@ -2603,9 +2570,9 @@ split.
     apply (conj Hfx').
     exact: H Hfx Hfx'.
 - intros [y Hy] eps.
-  exists (fun x => forall fx, f x fx -> ball y (pos_div_2 eps) fx).
+  exists (fun x => forall fx, f x fx -> ball y [posreal of eps / 2] fx).
   split.
-    have Hb := locally_ball y (pos_div_2 eps).
+    have Hb := locally_ball y [posreal of eps / 2].
     assert (H := filter_and _ _ Hf (Hy _ Hb)).
     apply: filter_imp H.
     intros x [[_ H] [fx2 [Hfx2 H']]] fx Hfx.
@@ -2658,11 +2625,11 @@ Proof.
 
   generalize (proj1 cauchy_distance HFc) => {HFc} HFc.
 
-  case: (HFc (pos_div_2 eps)) => {HFc} P ; simpl ; case => HP H0.
+  case: (HFc [posreal of eps / 2]) => {HFc} P ; simpl ; case => HP H0.
   apply filter_imp with (2 := HP).
   move => g Hg t.
   move: (fun h => H0 g h Hg) => {H0} H0.
-  move: (H t (pos_div_2 eps)) ; simpl => {H} H.
+  move: (H t [posreal of eps / 2]) ; simpl => {H} H.
   unfold Fr in H ; generalize (filter_and _ _ H HP) => {H} H.
   apply filter_ex in H ; case: H => h H.
   rewrite (double_var eps).
@@ -2713,7 +2680,8 @@ Proof.
 
   assert (filter_prod F1 F2 (fun x => ball (g (snd x)) (eps / 2 / 2) (f (fst x) (snd x)))).
     apply Filter_prod with (fun x : T1 => ball g (eps / 2 / 2) (f x)) (fun _ => True).
-    move: (proj1 (@filterlim_locally _ _ F1 FF1 f g) Hfg (pos_div_2 (pos_div_2 eps))) => {Hfg} /= Hfg.
+    move: (proj1 (@filterlim_locally _ _ F1 FF1 f g) Hfg [posreal of (eps / 2) / 2]) 
+      => {Hfg} /= Hfg.
     by [].
     by apply FF2.
     simpl ; intros.
@@ -2722,7 +2690,7 @@ Proof.
 
   assert (filter_prod F1 F2 (fun x : T1 * T2 => ball l (eps / 2) (h (fst x)))).
     apply Filter_prod with (fun x : T1 => ball l (eps / 2) (h x)) (fun _ => True).
-    move: (proj1 (@filterlim_locally _ _ F1 FF1 h l) Hhl (pos_div_2 eps)) => {Hhl} /= Hhl.
+    move: (proj1 (@filterlim_locally _ _ F1 FF1 h l) Hhl [posreal of eps / 2]) => {Hhl} /= Hhl.
     by [].
     by apply FF2.
     by [].
@@ -2730,7 +2698,7 @@ Proof.
 
   case: (@filter_and _ _ FF _ _ Hhl Hfg) => {Hhl Hfg} /= ; intros.
 
-  move: (fun x => proj1 (@filterlim_locally _ _ F2 FF2 (f x) (h x)) (Hfh x) (pos_div_2 (pos_div_2 eps))) => {Hfh} /= Hfh.
+  move: (fun x => proj1 (@filterlim_locally _ _ F2 FF2 (f x) (h x)) (Hfh x) ([posreal of eps / 2 / 2])) => {Hfh} /= Hfh.
   case: (HF1 Q f0) => x Hx.
   move: (@filter_and _ _ FF2 _ _ (Hfh x) g0) => {Hfh}.
   apply filter_imp => y Hy.
@@ -2767,10 +2735,10 @@ Proof.
     by apply Hy.
 
   move: H => {Hfg} Hfg.
-  move: (Hf Hfg (pos_div_2 eps)) => {Hf Hfg} /= Hf.
+  move: (Hf Hfg [posreal of eps / 2]) => {Hf Hfg} /= Hf.
 
   case: FF2 => HF2 FF2.
-  generalize (fun x => proj1 (filterlim_locally (f x) (h x)) (Hfh x) (pos_div_2 (pos_div_2 eps)))
+  generalize (fun x => proj1 (filterlim_locally (f x) (h x)) (Hfh x) ([posreal of eps / 2 / 2]))
     => {Hfh} Hfh.
 
   case: Hf => P [Hp Hf].
@@ -3220,7 +3188,7 @@ Proof.
 rewrite <- (Rmult_1_r norm_factor).
 rewrite <- norm_zero.
 rewrite <- (plus_opp_r zero).
-apply (norm_compat2 _ _ (mkposreal _ Rlt_0_1)).
+apply (norm_compat2 _ _ [posreal of 1]).
 apply ball_center.
 Qed.
 
@@ -3417,10 +3385,10 @@ Lemma is_filter_lim_unique {F} {FF : ProperFilter' F} (x y : V) :
 Proof.
 intros Hx Hy.
 apply ball_norm_eq => eps.
-assert (Hx': F (ball_norm x (pos_div_2 eps))).
+assert (Hx': F (ball_norm x [posreal of eps / 2])).
   apply Hx.
   apply locally_ball_norm.
-assert (Hy': F (ball_norm y (pos_div_2 eps))).
+assert (Hy': F (ball_norm y [posreal of eps / 2])).
   apply Hy.
   apply locally_ball_norm.
 apply Rnot_le_lt.
@@ -3432,7 +3400,7 @@ intros z [Bx By].
 revert H.
 apply Rlt_not_le.
 rewrite (double_var eps).
-change (eps / 2) with (pos (pos_div_2 eps)).
+change (eps / 2) with (pos [posreal of eps / 2]).
 apply ball_norm_triangle with (1 := Bx).
 now apply ball_norm_sym.
 Qed.
@@ -3468,8 +3436,8 @@ Lemma filterlimi_locally_unique :
 Proof.
 intros F FF f x y Hf Hx Hy.
 apply ball_norm_eq => eps.
-specialize (Hx (ball_norm x (pos_div_2 eps)) (locally_ball_norm _ _)).
-specialize (Hy (ball_norm y (pos_div_2 eps)) (locally_ball_norm _ _)).
+specialize (Hx (ball_norm x [posreal of eps / 2]) (locally_ball_norm _ _)).
+specialize (Hy (ball_norm y [posreal of eps / 2]) (locally_ball_norm _ _)).
 unfold filtermapi in Hx, Hy.
 apply Rnot_le_lt.
 intros H.
@@ -3480,7 +3448,7 @@ clear -H.
 intros z [[[x' [Hx Bx]] [y' [Hy By]]] Hf].
 apply: Rlt_not_le H.
 rewrite (double_var eps).
-change (eps / 2) with (pos (pos_div_2 eps)).
+change (eps / 2) with (pos [posreal of eps / 2]).
 apply ball_norm_triangle with (1 := Bx).
 apply ball_norm_sym.
 now rewrite (Hf _ _ Hx Hy).
@@ -3533,7 +3501,7 @@ apply (filterlim_filter_le_1 (F := filter_prod (locally_norm x) (locally_norm y)
 apply (filterlim_filter_le_2 (G := locally_norm (plus x y))).
   apply locally_norm_le_locally.
 intros P [eps HP].
-exists (ball_norm x (pos_div_2 eps)) (ball_norm y (pos_div_2 eps)).
+exists (ball_norm x [posreal of eps / 2]) (ball_norm y [posreal of eps / 2]).
 by apply locally_norm_ball_norm.
 by apply locally_norm_ball_norm.
 intros u v Hu Hv.
@@ -3590,10 +3558,8 @@ apply <- Rlt_div_r.
 by apply (proj2 (proj2 Hu)).
 
 repeat apply filter_and.
-
 assert (Hd : 0 < eps / 2 / (norm x + 1)).
-  apply Rdiv_lt_0_compat.
-  by apply is_pos_div_2.
+  apply: Rdiv_lt_0_compat => //.
   apply Rle_lt_0_plus_1, norm_ge_0.
 eexists.
 apply (locally_ball_norm (V := AbsRing_NormedModule K) _ (mkposreal _ Hd)).
@@ -3601,13 +3567,12 @@ apply: filter_true.
 by [].
 
 eexists.
-apply (locally_ball_norm (V := AbsRing_NormedModule K) _ (mkposreal _ Rlt_0_1)).
+apply (locally_ball_norm (V := AbsRing_NormedModule K) _ [posreal of 1]).
 apply: filter_true.
 by [].
 
 assert (Hd : 0 < eps / 2 / (abs k + 1)).
-  apply Rdiv_lt_0_compat.
-  by apply is_pos_div_2.
+  apply: Rdiv_lt_0_compat => //.
   apply Rle_lt_0_plus_1, abs_ge_0.
 eexists.
 apply: filter_true.
@@ -4148,7 +4113,7 @@ Proof.
     rewrite Rplus_0_l ; by apply Rle_refl.
     move => l _ ; rewrite Rmult_0_r ; by apply Rle_refl.
     easy.
-    exists (mkposreal _ Rlt_0_1).
+    exists [posreal of 1].
     intros x y eps _.
     rewrite Rmult_1_l.
     apply cond_pos.
@@ -4574,7 +4539,7 @@ Canonical R_UniformSpace :=
   UniformSpacePack R R_UniformSpace_mixin.
 
 Definition R_complete_lim (F : (R -> Prop) -> Prop) : R :=
-  real (Lub_Rbar (fun x : R => F (ball (x + 1) (mkposreal _ Rlt_0_1)))).
+  real (Lub_Rbar (fun x : R => F (ball (x + 1) [posreal of 1]))).
 
 Lemma R_complete_ax1 :
   forall F : (R -> Prop) -> Prop,
@@ -4584,11 +4549,11 @@ Lemma R_complete_ax1 :
 Proof.
 intros F FF HF eps.
 unfold R_complete_lim.
-generalize (Lub_Rbar_correct (fun x : R => F (ball (x + 1) (mkposreal _ Rlt_0_1)))).
-generalize (Lub_Rbar (fun x : R => F (ball (x + 1) (mkposreal _ Rlt_0_1)))).
+generalize (Lub_Rbar_correct (fun x : R => F (ball (x + 1) [posreal of 1]))).
+generalize (Lub_Rbar (fun x : R => F (ball (x + 1) [posreal of 1]))).
 intros [x| |] [Hx1 Hx2].
 -
-set (eps' := pos_div_2 (mkposreal _ (Rmin_case _ _ _ Rlt_R0_R2 (cond_pos eps)))).
+set (eps' := [posreal of Rmin 2 eps / 2]).
 destruct (HF eps') as [z Hz].
 assert (H1 : z - Rmin 2 eps / 2 + 1 <= x + 1).
   apply Rplus_le_compat_r.
@@ -4629,7 +4594,7 @@ clear -H1 H2 Hu H3 H4.
 destruct Hu.
 split ; Fourier.fourier.
 -
-  destruct (HF (mkposreal _ Rlt_0_1)) as [y Fy].
+  destruct (HF [posreal of 1]) as [y Fy].
   elim (Hx2 (y + 1)).
   intros x Fx.
   apply Rbar_not_lt_le => Hlt.
@@ -4650,7 +4615,7 @@ split ; Fourier.fourier.
   apply ball_sym in Hz2.
   apply Hz2.
 -
-  destruct (HF (mkposreal _ Rlt_0_1)) as [y Fy].
+  destruct (HF [posreal of 1]) as [y Fy].
   elim (Hx1 (y - 1)).
   now replace (y - 1 + 1) with y by ring.
 Qed.
@@ -4731,8 +4696,8 @@ Proof.
   apply Rlt_div_l.
   by apply Rlt_0_2.
   apply Rminus_lt_0 ; ring_simplify ; by apply d.
-  apply Rlt_le, is_pos_div_2.
-  apply Rminus_lt_0 ; ring_simplify ; by apply is_pos_div_2.
+  apply Rlt_le => //.
+  apply Rminus_lt_0 ; ring_simplify => //.
   apply within_filter, locally_filter.
 Qed.
 Global Instance at_left_proper_filter : forall (x : R),
@@ -4748,8 +4713,8 @@ Proof.
   apply Rlt_div_l.
   by apply Rlt_0_2.
   apply Rminus_lt_0 ; ring_simplify ; by apply d.
-  apply Rlt_le, is_pos_div_2.
-  apply Rminus_lt_0 ; ring_simplify ; by apply is_pos_div_2.
+  apply Rlt_le => //.
+  apply Rminus_lt_0 ; ring_simplify=> //.
   apply within_filter, locally_filter.
 Qed.
 
@@ -4887,7 +4852,7 @@ Proof.
   now exists M.
   elimtype False.
   case: H => l Hl.
-  assert (H := proj1 (filterlim_locally (F := eventually) _ l) Hl (mkposreal _ Rlt_0_1)).
+  assert (H := proj1 (filterlim_locally (F := eventually) _ l) Hl [posreal of 1]).
   clear Hl ; simpl in H ; rewrite /ball /= /AbsRing_ball in H.
   destruct H as [N HN].
   specialize (HM (seq.foldr Rmax (1 + norm l) (seq.map (fun n => norm (a n)) (seq.iota 0 N)))).
@@ -5067,7 +5032,7 @@ Lemma locally_2d_forall :
   forall (P : R -> R -> Prop) x y, (forall u v, P u v) -> locally_2d P x y.
 Proof.
 intros P x y Hp.
-now exists (mkposreal _ Rlt_0_1) => u v _ _.
+now exists [posreal of 1] => u v _ _.
 Qed.
 
 Lemma locally_2d_and :
@@ -5131,18 +5096,17 @@ destruct Zm as [Zm|Zm].
 assert (H1: Rmax (Rabs (u - x)) (Rabs (v - y)) < eps).
 now apply Rmax_case.
 set (d1 := mkposreal _ (Rlt_Rminus _ _ H1)).
-assert (H2: 0 < pos_div_2 d1 / Rmax (Rabs (u - x)) (Rabs (v - y))).
-apply Rmult_lt_0_compat.
-apply cond_pos.
+assert (H2: 0 < d1 / 2 / Rmax (Rabs (u - x)) (Rabs (v - y))).
+apply Rmult_lt_0_compat => //.
 now apply Rinv_0_lt_compat.
 set (d2 := mkposreal _ H2).
 exists d2 => z Hz.
-exists (pos_div_2 d1) => p q Hp Hq.
+exists [posreal of d1 / 2] => p q Hp Hq.
 apply HP.
 (* . *)
 replace (p - x) with (p - (x + z * (u - x)) + (z - t + t) * (u - x)) by ring.
 apply Rle_lt_trans with (1 := Rabs_triang _ _).
-replace (pos eps) with (pos_div_2 d1 + (eps - pos_div_2 d1)) by ring.
+replace (pos eps) with (d1 / 2 + (eps - d1 / 2)) by ring.
 apply Rplus_lt_le_compat with (1 := Hp).
 rewrite Rabs_mult.
 apply Rle_trans with ((d2 + 1) * Rmax (Rabs (u - x)) (Rabs (v - y))).
@@ -5161,7 +5125,7 @@ now apply Rgt_not_eq.
 (* . *)
 replace (q - y) with (q - (y + z * (v - y)) + (z - t + t) * (v - y)) by ring.
 apply Rle_lt_trans with (1 := Rabs_triang _ _).
-replace (pos eps) with (pos_div_2 d1 + (eps - pos_div_2 d1)) by ring.
+replace (pos eps) with (d1 / 2 + (eps - d1 / 2)) by ring.
 apply Rplus_lt_le_compat with (1 := Hq).
 rewrite Rabs_mult.
 apply Rle_trans with ((d2 + 1) * Rmax (Rabs (u - x)) (Rabs (v - y))).
@@ -5257,18 +5221,16 @@ intros [x| |] ; (constructor ; [idtac | constructor]).
 - intros P [eps HP].
   exists (x + eps / 2).
   apply HP.
-  rewrite /ball /= /AbsRing_ball /abs /minus /plus /opp /=.
-  ring_simplify (x + eps / 2 + - x).
-  rewrite Rabs_pos_eq.
-  apply Rminus_lt_0.
-  replace (eps - eps / 2) with (eps / 2) by field.
-  apply is_pos_div_2.
-  apply Rlt_le, is_pos_div_2.
-  apply Rgt_not_eq, Rminus_lt_0 ; ring_simplify.
-  apply is_pos_div_2.
-- now exists (mkposreal _ Rlt_0_1).
+    rewrite /ball /= /AbsRing_ball /abs /minus /plus /opp /=.
+    ring_simplify (x + eps / 2 + - x).
+    rewrite Rabs_pos_eq.
+      apply Rminus_lt_0.
+      by rewrite (_ : _ - _ = eps / 2)//; field.
+    exact: Rlt_le.
+  apply Rgt_not_eq, Rminus_lt_0 ; ring_simplify => //.
+- now exists [posreal of 1].
 - intros P Q [dP HP] [dQ HQ].
-  exists (mkposreal _ (Rmin_stable_in_posreal dP dQ)).
+  exists [posreal of Rmin dP dQ].
   simpl.
   intros y Hy H.
   split.
