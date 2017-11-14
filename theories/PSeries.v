@@ -164,6 +164,8 @@ Qed.
 (** * Convergence circle *)
 (** A power series is always defined at 0 *)
 
+Local Open Scope classical_set_scope.
+
 Section ConvergenceCircle.
 
 Context {K : AbsRing} {V : NormedModule K}.
@@ -177,7 +179,7 @@ Proof.
   rewrite sum_Sn -IH /=.
   rewrite mult_zero_l.
   now rewrite scal_zero_l plus_zero_r.
-  apply filterlim_const.
+  apply: filterlim_const.
 Qed.
 
 Lemma ex_pseries_0 (a : nat -> V) :
@@ -318,7 +320,7 @@ Proof.
   apply lub => x Hx.
   apply Hb.
   apply ex_series_lim_0 in Hx.
-  apply is_lim_seq_spec in Hx.
+  apply (proj2 (is_lim_seq_spec (fun n : nat => Rabs (a n * x ^ n)) 0)) in Hx.
   case: (Hx (mkposreal _ Rlt_0_1)) => /= {Hx} N Hx.
 
   set M := fix f N := match N with
@@ -368,7 +370,7 @@ Qed.
 
 Lemma CV_disk_outside (a : nat -> R) (x : R) :
   Rbar_lt (CV_radius a) (Finite (Rabs x))
-    -> ~ is_lim_seq (fun n => a n * x ^ n) 0.
+    -> ~ (fun n => a n * x ^ n) --> 0.
 Proof.
   case: (CV_radius_bounded a) => ub lub.
   move => Hx.
@@ -379,8 +381,7 @@ Proof.
     exists M => n.
     by rewrite Rabs_mult RPow_abs Rabs_Rabsolu -Rabs_mult.
   contradict H.
-
-  apply is_lim_seq_spec in H.
+  apply (proj2 (is_lim_seq_spec (fun n : nat => a n * x ^ n) 0)) in H.
   case: (H (mkposreal _ Rlt_0_1)) => /= {Hx} N Hx.
 
   set M := fix f N := match N with
@@ -422,13 +423,13 @@ Qed.
 
 Lemma CV_disk_DAlembert_aux (a : nat -> R) (x k : R) :
   x <> 0 -> (forall n, a n <> 0) ->
-  (is_lim_seq (fun n => Rabs (a (S n) / a n)) k
-    <-> is_lim_seq (fun n => Rabs ((a (S n) * x^(S n)) / (a n * x ^ n))) (Rabs x * k)).
+  ((fun n => Rabs (a (S n) / a n)) --> k
+    <-> (fun n => Rabs ((a (S n) * x^(S n)) / (a n * x ^ n))) --> (Rabs x * k)).
 Proof.
   move => Hx Ha ; split => H.
   evar (l : Rbar).
   replace (Finite (Rabs x * k)) with l.
-  apply is_lim_seq_ext with (fun n => Rabs x * Rabs (a (S n) / a n)).
+  apply: (is_lim_seq_ext (fun n => Rabs x * Rabs (a (S n) / a n)) (fun n : nat => Rabs (a (S n) * x ^ S n / (a n * x ^ n))) (Rabs x * k)).
   move => n ; rewrite ?Rabs_div => //=.
   rewrite ?Rabs_mult.
   field.
@@ -436,12 +437,12 @@ Proof.
   by apply pow_nonzero.
   apply Rmult_integral_contrapositive_currified => //.
   by apply pow_nonzero.
-  apply is_lim_seq_scal_l.
-  apply H.
-  by simpl.
+  by apply: (is_lim_seq_scal_l (fun n : nat => Rabs (a (S n) / a n)) (Rabs x) k) => //.
+  rewrite /l.
+  reflexivity.
   evar (l : Rbar).
   replace (Finite k) with l.
-  apply is_lim_seq_ext with (fun n : nat => /Rabs x * Rabs (a (S n) * x ^ S n / (a n * x ^ n))).
+  apply: (is_lim_seq_ext (fun n : nat => /Rabs x * Rabs (a (S n) * x ^ S n / (a n * x ^ n))) (fun n : nat => Rabs (a (S n) / a n)) k).
   move => n ; rewrite /= ?Rabs_div ?Rabs_mult.
   field.
   repeat split ; apply Rabs_no_R0 => //.
@@ -449,15 +450,18 @@ Proof.
   by apply Ha.
   apply Rmult_integral_contrapositive_currified => //.
   by apply pow_nonzero.
-  apply is_lim_seq_scal_l.
-  apply H.
-  apply Rbar_finite_eq ; field.
-  apply Rabs_no_R0 => //.
+  move: (is_lim_seq_scal_l (fun n : nat => Rabs (a (S n) * x ^ S n / (a n * x ^ n))) (/ Rabs x) (Rabs x * k) H).
+  rewrite /=.
+  rewrite -Rmult_assoc -Rinv_l_sym; last first.
+    by apply Rabs_no_R0 => //.
+  by rewrite Rmult_1_l.
+  rewrite /l.
+  reflexivity.
 Qed.
 
 Lemma CV_disk_DAlembert (a : nat -> R) (x:R) l :
   (forall n:nat, a n <> 0) ->
-  is_lim_seq (fun n:nat => Rabs (a (S n) / a n)) (Finite l) ->
+  (fun n:nat => Rabs (a (S n) / a n)) --> (Finite l) ->
   (l = 0 \/ (l <> 0 /\ Rabs x < / l))
     -> CV_disk a x.
 Proof.
@@ -487,12 +491,12 @@ Proof.
   move => n ; apply Rmult_integral_contrapositive_currified.
   by apply Ha.
   by apply pow_nonzero.
-  by apply CV_disk_DAlembert_aux.
+  by apply: (proj1 (CV_disk_DAlembert_aux _ _ _ Hx Ha)).
 Qed.
 
 Lemma CV_radius_finite_DAlembert (a : nat -> R) (l : R) :
   (forall n:nat, a n <> 0) -> 0 < l ->
-  is_lim_seq (fun n:nat => Rabs (a (S n) / a n)) l ->
+  (fun n:nat => Rabs (a (S n) / a n)) --> l ->
   CV_radius a = Finite (/l).
 Proof.
   move => Ha Hl Hda.
@@ -511,7 +515,7 @@ Proof.
   by apply Rlt_le, Rinv_0_lt_compat.
   apply Rnot_lt_le.
   contradict Hax.
-  have : CV_disk a x -> is_lim_seq (fun n => a n * x ^ n) 0.
+  have : CV_disk a x -> (fun n => a n * x ^ n) --> 0.
     move => H.
     apply ex_series_lim_0.
     by apply ex_series_Rabs.
@@ -521,9 +525,8 @@ Proof.
   move => n.
   apply Rmult_integral_contrapositive_currified => //.
   by apply pow_nonzero, Rgt_not_eq.
-  apply CV_disk_DAlembert_aux.
+  apply: (proj1 (CV_disk_DAlembert_aux _ _ _ _ Ha)).
   by apply Rgt_not_eq.
-  by apply Ha.
   by apply Hda.
 
   apply Rbar_not_lt_le.
@@ -565,7 +568,7 @@ Qed.
 
 Lemma CV_radius_infinite_DAlembert (a : nat -> R) :
   (forall n:nat, a n <> 0) ->
-  is_lim_seq (fun n:nat => Rabs (a (S n) / a n)) 0 ->
+  (fun n:nat => Rabs (a (S n) / a n)) --> 0 ->
   CV_radius a = +oo.
 Proof.
   move => Ha Hda.
@@ -621,7 +624,7 @@ Proof.
   apply Lim_seq_correct' in Hr ;
   rewrite -/(Series (fun n : nat => Rabs (a n * r ^ n))) in Hr.
   move => e He.
-  apply is_lim_seq_spec in Hr.
+  apply (proj2 (is_lim_seq_spec (sum_n (fun n : nat => Rabs (a n * r ^ n))) (Series (fun n : nat => Rabs (a n * r ^ n))))) in Hr.
   case: (Hr (mkposreal e He)) => /= {Hr} N Hr.
   exists N => n Hn.
   replace (sum_f_R0 (fun k : nat => Rabs (Rabs (a k * r ^ k))) n)
@@ -811,9 +814,10 @@ Proof.
   move: (Rbar_lt_le_trans _ _ _ Hac Hle) => Hbc.
 
   eapply Rbar_le_not_lt.
-  apply (Hc ((c + Rbar_min (c + 1) (CV_radius a)) / 2)).
 
-  assert (Rbar_lt (Rabs ((c + Rbar_min (c + 1) (CV_radius a)) / 2)) (CV_radius a)).
+  apply (Hc ((c + (real (Rbar_min (c + 1) (CV_radius a)))) / 2)).
+
+  assert (Rbar_lt (Rabs ((c + real (Rbar_min (c + 1) (CV_radius a))) / 2)) (CV_radius a)).
     case: (CV_radius a) Hac => //= l Hl.
     rewrite Rabs_pos_eq.
     apply Rlt_div_l.
@@ -1089,7 +1093,7 @@ Proof.
   apply filterlim_comp_2 with (3 := filterlim_plus _ _).
   apply filterlim_comp with (f:= fun x => S x) (2:=Ha).
   apply eventually_subseq; intros n; omega.
-  apply filterlim_const.
+  apply: filterlim_const.
 Qed.
 
 Lemma ex_pseries_decr_1 (a : nat -> V) (x : K) :
@@ -1484,7 +1488,7 @@ Proof.
   move => x ; apply Rbar_not_lt_le => Hx.
   apply CV_disk_outside in Hx.
   apply: Hx.
-  apply is_lim_seq_ext with (fun _ => 0).
+  apply: (is_lim_seq_ext (fun _ => 0) (fun n : nat => 0 * x ^ n) 0).
   move => n ; ring.
   by apply is_lim_seq_const.
 Qed.
@@ -1581,8 +1585,8 @@ Qed.
 
 Lemma Abel (a : nat -> R) :
   Rbar_lt 0 (CV_radius a) -> Rbar_lt (CV_radius a) +oo
-  -> ex_pseries a (CV_radius a)
-  -> filterlim (PSeries a) (at_left (CV_radius a)) (locally (PSeries a (CV_radius a))).
+  -> ex_pseries a (real (CV_radius a))
+  -> (PSeries a) @ (at_left (real (CV_radius a))) --> (PSeries a (real (CV_radius a))).
 Proof.
   case Hcv : (CV_radius a) => [cv | | ] //= Hcv0 _ Ha1.
 
@@ -1596,12 +1600,12 @@ Proof.
     field ; by apply Rgt_not_eq.
     apply filterlim_comp with (at_left 1).
     intros P [d Hd].
-    unfold filtermap.
+    rewrite /filtermap /filter_of /=.
     eapply filter_imp.
     intros x Hx ; apply Hd.
     apply @norm_compat1.
     rewrite /minus /plus /opp /=.
-    replace (x / cv + _) with ((x - cv) / cv)
+    replace (x / cv + _) with ((x - cv) / cv)      
       by (field ; exact: Rgt_not_eq).
     rewrite /norm /= /abs /= Rabs_div ; try by apply Rgt_not_eq.
     rewrite (Rabs_pos_eq cv) ; try by apply Rlt_le.
@@ -1657,7 +1661,7 @@ Proof.
       reflexivity.
     assert (ex_pseries b 1).
       apply ex_series_incr_1.
-      apply ex_series_incr_1 in Ha1.
+      apply (proj1 (ex_series_incr_1 _)) in Ha1.
       move: Ha1 ; apply ex_series_ext => n.
       reflexivity.
     assert (PSeries b 1 = 0).
@@ -1680,7 +1684,7 @@ Proof.
     rewrite H Rabs_pos_eq.
     by [].
     by apply Rlt_le, Hx0.
-    rewrite -{2}(Rplus_0_l (PSeries a 1)).
+    rewrite -[in X in _ --> X](Rplus_0_l (PSeries a 1)).
     eapply filterlim_comp_2.
     by apply Hw.
     by apply filterlim_const.
@@ -1705,17 +1709,22 @@ Proof.
     by apply Hx.
     rewrite (is_pseries_unique _ _ _ Hl).
     rewrite /is_pseries /is_series.
-    replace (@locally R_NormedModule (l / (1 - x)))
-      with (Rbar_locally (Rbar_mult (l - ((Rbar_mult x 0) * 0)) (/ (1 - x)))).
+    replace ((l / (1 - x)))
+      with (((l - ((x * 0) * 0)) * (/ (1 - x)))).
     apply (is_lim_seq_ext
-      (fun n => (sum_n (fun k : nat => scal (pow_n (K := R_AbsRing) x k) (a k)) n
-                     - scal (pow_n (K := R_AbsRing) x (S n)) (Sa n)) / (1 - x))
-       (sum_n (fun k : nat => scal (pow_n (K := R_AbsRing) x k) (Sa k)))).
+      (fun n => (sum_n (fun k : nat => scal (pow_n x k) (a k)) n
+                     - scal (pow_n x (S n)) (Sa n)) / (1 - x))
+       (sum_n (fun k : nat => scal (pow_n x k) (Sa k))) (Finite ((l - x * 0 * 0) * / (1 - x)))).
        intros n ; rewrite H.
-       field.
+       rewrite (_ : _ + _ - _ = (1 - x) * sum_n (fun k : nat => scal (pow_n x k) (Sa k)) n); last first.
+         set tmp := sum_n _.
+         set tmp' := scal _ _.
+         field.
+       rewrite Rmult_comm /Rdiv Rmult_assoc Rinv_r; last first.
        apply Rgt_not_eq ; apply -> Rminus_lt_0.
        by apply Rabs_lt_between, Hx.
-    apply is_lim_seq_scal_r.
+       by rewrite Rmult_1_r.
+    apply: is_lim_seq_scal_r.
     apply is_lim_seq_minus'.
     apply Hl.
     apply is_lim_seq_mult'.
