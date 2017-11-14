@@ -1206,10 +1206,7 @@ Definition is_lim_seq' (u : nat -> R) (l : Rbar) :=
     | p_infty => forall M : R, eventually (fun n => M < u n)
     | m_infty => forall M : R, eventually (fun n => u n < M)
   end.
-Definition ex_lim_seq (u : nat -> R) :=
-  exists l : Rbar, u --> l.
-Definition ex_finite_lim_seq (u : nat -> R) :=
-  exists l : R, u --> l.
+
 Definition Lim_seq (u : nat -> R) : Rbar :=
   Rbar_div_pos (Rbar_plus (LimSup_seq u) (LimInf_seq u))
     {| pos := 2; cond_pos := Rlt_R0_R2 |}.
@@ -1332,7 +1329,7 @@ Proof.
 Qed.
 
 Lemma ex_lim_LimSup_LimInf_seq (u : nat -> R) :
-  ex_lim_seq u <-> LimSup_seq u = LimInf_seq u.
+  [cvg u in Rbar] <-> LimSup_seq u = LimInf_seq u.
 Proof.
   split => Hl.
   case: Hl => l Hu.
@@ -1356,7 +1353,7 @@ Proof. exact: filterlim_ext_loc. Qed.
 
 Lemma ex_lim_seq_ext_loc (u v : nat -> R) :
   eventually (fun n => u n = v n) ->
-  ex_lim_seq u -> ex_lim_seq v.
+  [cvg u in Rbar] -> [cvg v in Rbar].
 Proof.
   move => H [l H0].
   exists l ; by apply is_lim_seq_ext_loc with u.
@@ -1387,7 +1384,7 @@ Proof.
   by exists O.
 Qed.
 Lemma ex_lim_seq_ext (u v : nat -> R) :
-  (forall n, u n = v n) -> ex_lim_seq u -> ex_lim_seq v.
+  (forall n, u n = v n) -> [cvg u in Rbar] -> [cvg v in Rbar].
 Proof.
   move => H [l H0].
   exists l ; by apply is_lim_seq_ext with u.
@@ -1418,7 +1415,7 @@ Proof.
   by apply is_lim_LimInf_seq.
 Qed.
 Lemma Lim_seq_correct (u : nat -> R) :
-  ex_lim_seq u -> u --> (Lim_seq u).
+  [cvg u in Rbar] -> u --> (Lim_seq u).
 Proof.
   intros (l,H).
   cut (Lim_seq u = l).
@@ -1426,7 +1423,7 @@ Proof.
   apply is_lim_seq_unique, H.
 Qed.
 Lemma Lim_seq_correct' (u : nat -> R) :
-  ex_finite_lim_seq u -> u --> (real (Lim_seq u)).
+  [cvg u in R] -> u --> (real (Lim_seq u)).
 Proof.
   intros (l,H).
   cut (real (Lim_seq u) = l).
@@ -1436,17 +1433,17 @@ Proof.
 Qed.
 
 Lemma ex_finite_lim_seq_correct (u : nat -> R) :
-  ex_finite_lim_seq u <-> ex_lim_seq u /\ is_finite (Lim_seq u).
+  [cvg u in R] <-> [cvg u in Rbar] /\ is_finite (Lim_seq u).
 Proof.
 split => [[l Hl]|[[l Hl] H]].
-  by split; [exists l|rewrite (is_lim_seq_unique _ l)].
+  by split; [exists (Finite l)|rewrite (is_lim_seq_unique _ l)].
 exists (real l).
 rewrite is_finite_lim_seqE -(is_lim_seq_unique _ _ Hl).
 by rewrite H (is_lim_seq_unique _ _ Hl).
 Qed.
 
 Lemma ex_lim_seq_dec (u : nat -> R) :
-  {ex_lim_seq u} + {~ex_lim_seq u}.
+  {[cvg u in Rbar]} + {~[cvg u in Rbar]}.
 Proof.
   case: (Rbar_eq_dec (LimSup_seq u) (LimInf_seq u)) => H.
   left ; by apply ex_lim_LimSup_LimInf_seq.
@@ -1454,7 +1451,7 @@ Proof.
 Qed.
 
 Lemma ex_finite_lim_seq_dec (u : nat -> R) :
-  {ex_finite_lim_seq u} + {~ ex_finite_lim_seq u}.
+  {[cvg u in R]} + {~ [cvg u in R]}.
 Proof.
   case: (ex_lim_seq_dec u) => H.
   apply Lim_seq_correct in H.
@@ -1472,7 +1469,7 @@ Definition ex_lim_seq_cauchy (u : nat -> R) :=
   forall eps : posreal, exists N : nat, forall n m,
     (N <= n)%nat -> (N <= m)%nat -> Rabs (u n - u m) < eps.
 Lemma ex_lim_seq_cauchy_corr (u : nat -> R) :
-  (ex_finite_lim_seq u) <-> ex_lim_seq_cauchy u.
+  [cvg u in R] <-> ex_lim_seq_cauchy u.
 Proof.
   split => Hcv.
 
@@ -1487,7 +1484,7 @@ Proof.
   rewrite Rabs_Ropp (double_var eps).
   apply Rplus_lt_compat ; by apply H.
 
-  exists (LimSup_seq u).
+  exists (real (LimSup_seq u)).
   rewrite is_finite_lim_seqE.
   apply is_lim_seq_spec.
   intros eps.
@@ -1537,8 +1534,7 @@ Proof.
   by apply Hn.
   apply Rmax_l.
 Qed.
-Lemma ex_lim_seq_INR :
-  ex_lim_seq INR.
+Lemma ex_lim_seq_INR : [cvg INR in Rbar].
 Proof.
   exists p_infty ; by apply is_lim_seq_INR.
 Qed.
@@ -1555,10 +1551,9 @@ Qed.
 Lemma is_lim_seq_const (a : R) :
   (fun n : nat => a) --> a.
 Proof. exact: filterlim_const. Qed.
-Lemma ex_lim_seq_const (a : R) :
-  ex_lim_seq (fun n => a).
+Lemma ex_lim_seq_const (a : R) : [cvg (fun n : nat => a) in Rbar].
 Proof.
-  exists a ; by apply is_lim_seq_const.
+  exists (Finite a) ; by apply is_lim_seq_const.
 Qed.
 Lemma Lim_seq_const (a : R) :
   Lim_seq (fun n => a) = a.
@@ -1623,8 +1618,8 @@ exact: filterlim_comp.
 Qed.
 Lemma ex_lim_seq_subseq (u : nat -> R) (phi : nat -> nat) :
   phi --> eventually ->
-  ex_lim_seq u ->
-  ex_lim_seq (fun n => u (phi n)).
+  [cvg u in Rbar] ->
+  [cvg (fun n => u (phi n)) in Rbar].
 Proof.
   move => Hphi [l Hu].
   exists l.
@@ -1632,7 +1627,7 @@ Proof.
 Qed.
 Lemma Lim_seq_subseq (u : nat -> R) (phi : nat -> nat) :
   phi --> eventually ->
-  ex_lim_seq u ->
+  [cvg u in Rbar] ->
   Lim_seq (fun n => u (phi n)) = Lim_seq u.
 Proof.
   move => Hphi Hu.
@@ -1657,7 +1652,7 @@ split ; intros H P HP ; destruct (H P HP) as [N HN].
   now apply le_S_n.
 Qed.
 Lemma ex_lim_seq_incr_1 (u : nat -> R) :
-  ex_lim_seq u <-> ex_lim_seq (fun n => u (S n)).
+  [cvg u in Rbar] <-> [cvg (fun n => u (S n)) in Rbar].
 Proof.
   split ; move => [l H] ; exists l.
   by apply -> is_lim_seq_incr_1.
@@ -1811,7 +1806,7 @@ Proof.
   move: Hu ; by apply is_lim_seq_ext => n ; by rewrite plus_n_Sm.
 Qed.
 Lemma ex_lim_seq_incr_n (u : nat -> R) (N : nat) :
-  ex_lim_seq u <-> ex_lim_seq (fun n => u (n + N)%nat).
+  [cvg u in Rbar] <-> [cvg (fun n => u (n + N)%nat) in Rbar].
 Proof.
   split ; move => [l H] ; exists l.
   by apply -> is_lim_seq_incr_n.
@@ -2077,7 +2072,7 @@ Proof.
 Qed.
 
 Lemma ex_lim_seq_decr (u : nat -> R) :
-  (forall n, (u (S n)) <= (u n)) -> ex_lim_seq u.
+  (forall n, (u (S n)) <= (u n)) -> [cvg u in Rbar].
 Proof.
   move => H.
   exists (Inf_seq u).
@@ -2106,7 +2101,7 @@ Proof.
   by apply H.
 Qed.
 Lemma ex_lim_seq_incr (u : nat -> R) :
-  (forall n, (u n) <= (u (S n))) -> ex_lim_seq u.
+  (forall n, (u n) <= (u (S n))) -> [cvg u in Rbar].
 Proof.
   move => H.
   exists (Sup_seq u).
@@ -2134,12 +2129,12 @@ Qed.
 
 Lemma ex_finite_lim_seq_decr (u : nat -> R) (M : R) :
   (forall n, (u (S n)) <= (u n)) -> (forall n, M <= u n) ->
-  ex_finite_lim_seq u.
+  [cvg u in R].
 Proof.
   intros.
   apply ex_finite_lim_seq_correct.
-  have H1 : ex_lim_seq u.
-  exists (real (Inf_seq u)).
+  have H1 : [cvg u in Rbar].
+  exists (Inf_seq u).
   apply is_lim_seq_spec.
   rewrite /Inf_seq ; case: ex_inf_seq ; case => [l | | ] //= Hl.
   move => eps ; case: (Hl eps) => Hl1 [N Hl2].
@@ -2176,7 +2171,7 @@ Proof.
 Qed.
 Lemma ex_finite_lim_seq_incr (u : nat -> R) (M : R) :
   (forall n, (u n) <= (u (S n))) -> (forall n, u n <= M) ->
-  ex_finite_lim_seq u.
+  [cvg u in R].
 Proof.
   intros.
   case: (ex_finite_lim_seq_decr (fun n => - u n) (- M)).
@@ -2237,7 +2232,7 @@ Proof.
 Qed.
 
 Lemma ex_lim_seq_opp (u : nat -> R) :
-  ex_lim_seq u <-> ex_lim_seq (fun n => -u n).
+  [cvg u in Rbar] <-> [cvg (fun n => -u n) in Rbar].
 Proof.
   split ; case => l Hl ; exists (Rbar_opp l).
   by apply -> is_lim_seq_opp.
@@ -2377,9 +2372,9 @@ by [].
 Qed.
 
 Lemma ex_lim_seq_plus (u v : nat -> R) :
-  ex_lim_seq u -> ex_lim_seq v ->
+  [cvg u in Rbar] -> [cvg v in Rbar] ->
   ex_Rbar_plus (Lim_seq u) (Lim_seq v) ->
-  ex_lim_seq (fun n => u n + v n).
+  [cvg (fun n => u n + v n) in Rbar].
 Proof.
   intros [lu Hu] [lv Hv] Hl ; exists (Rbar_plus lu lv).
   apply is_lim_seq_plus with lu lv ; try assumption.
@@ -2389,7 +2384,7 @@ Proof.
 Qed.
 
 Lemma Lim_seq_plus (u v : nat -> R) :
-  ex_lim_seq u -> ex_lim_seq v ->
+  [cvg u in Rbar] -> [cvg v in Rbar] ->
   ex_Rbar_plus (Lim_seq u) (Lim_seq v) ->
   Lim_seq (fun n => u n + v n) = Rbar_plus (Lim_seq u) (Lim_seq v).
 Proof.
@@ -2421,9 +2416,9 @@ by [].
 Qed.
 
 Lemma ex_lim_seq_minus (u v : nat -> R) :
-  ex_lim_seq u -> ex_lim_seq v ->
+  [cvg u in Rbar] -> [cvg v in Rbar] ->
   ex_Rbar_minus (Lim_seq u) (Lim_seq v) ->
-  ex_lim_seq (fun n => u n - v n).
+  [cvg (fun n => u n - v n) in Rbar].
 Proof.
   intros [lu Hu] [lv Hv] Hl ; exists (Rbar_minus lu lv).
   eapply is_lim_seq_minus ; try eassumption.
@@ -2433,7 +2428,7 @@ Proof.
 Qed.
 
 Lemma Lim_seq_minus (u v : nat -> R) :
-  ex_lim_seq u -> ex_lim_seq v ->
+  [cvg u in Rbar] -> [cvg v in Rbar] ->
   ex_Rbar_minus (Lim_seq u) (Lim_seq v) ->
   Lim_seq (fun n => u n - v n) = Rbar_minus (Lim_seq u) (Lim_seq v).
 Proof.
@@ -2556,9 +2551,9 @@ now apply filterlim_Rbar_inv.
 Qed.
 
 Lemma ex_lim_seq_inv (u : nat -> R) :
-  ex_lim_seq u ->
+  [cvg u in Rbar] ->
   Lim_seq u <> 0 ->
-  ex_lim_seq (fun n => / u n).
+  [cvg (fun n => / u n) in Rbar].
 Proof.
   intros.
   apply Lim_seq_correct in H.
@@ -2567,7 +2562,7 @@ Proof.
 Qed.
 
 Lemma Lim_seq_inv (u : nat -> R) :
-  ex_lim_seq u -> (Lim_seq u <> 0) ->
+  [cvg u in Rbar] -> (Lim_seq u <> 0) ->
   Lim_seq (fun n => / u n) = Rbar_inv (Lim_seq u).
 Proof.
   move => Hl Hu.
@@ -2767,9 +2762,9 @@ by [].
 Qed.
 
 Lemma ex_lim_seq_mult (u v : nat -> R) :
-  ex_lim_seq u -> ex_lim_seq v ->
+  [cvg u in Rbar] -> [cvg v in Rbar] ->
   ex_Rbar_mult (Lim_seq u) (Lim_seq v) ->
-  ex_lim_seq (fun n => u n * v n).
+  [cvg (fun n => u n * v n) in Rbar].
 Proof.
   intros [lu Hu] [lv Hv] H ; exists (Rbar_mult lu lv).
   eapply is_lim_seq_mult ; try eassumption.
@@ -2779,7 +2774,7 @@ Proof.
 Qed.
 
 Lemma Lim_seq_mult (u v : nat -> R) :
-  ex_lim_seq u -> ex_lim_seq v ->
+  [cvg u in Rbar] -> [cvg v in Rbar] ->
   ex_Rbar_mult (Lim_seq u) (Lim_seq v) ->
   Lim_seq (fun n => u n * v n) = Rbar_mult (Lim_seq u) (Lim_seq v).
 Proof.
@@ -2830,7 +2825,7 @@ by apply filterlim_Rbar_mult_l.
 Qed.
 
 Lemma ex_lim_seq_scal_l (u : nat -> R) (a : R) :
-  ex_lim_seq u -> ex_lim_seq (fun n => a * u n).
+  [cvg u in Rbar] -> [cvg (fun n => a * u n) in Rbar].
 Proof.
   move => [l H].
   exists (Rbar_mult a l).
@@ -2888,7 +2883,7 @@ Proof.
 Qed.
 
 Lemma ex_lim_seq_scal_r (u : nat -> R) (a : R) :
-  ex_lim_seq u -> ex_lim_seq (fun n => u n * a).
+  [cvg u in Rbar] -> [cvg (fun n => u n * a) in Rbar].
 Proof.
   move => Hu.
   apply ex_lim_seq_ext with ((fun n : nat => a * u n)) ; try by intuition.
@@ -2925,9 +2920,9 @@ Proof.
   by [].
 Qed.
 Lemma ex_lim_seq_div (u v : nat -> R) :
-  ex_lim_seq u -> ex_lim_seq v -> Lim_seq v <> 0 ->
+  [cvg u in Rbar] -> [cvg v in Rbar] -> Lim_seq v <> 0 ->
   ex_Rbar_div (Lim_seq u) (Lim_seq v) ->
-  ex_lim_seq (fun n => u n / v n).
+  [cvg (fun n => u n / v n) in Rbar].
 Proof.
   intros.
   apply Lim_seq_correct in H.
@@ -2937,7 +2932,7 @@ Proof.
   by apply Rbar_mult_correct.
 Qed.
 Lemma Lim_seq_div (u v : nat -> R) :
-  ex_lim_seq u -> ex_lim_seq v -> (Lim_seq v <> 0) ->
+  [cvg u in Rbar] -> [cvg v in Rbar] -> (Lim_seq v <> 0) ->
   ex_Rbar_div (Lim_seq u) (Lim_seq v) ->
   Lim_seq (fun n => u n / v n) = Rbar_div (Lim_seq u) (Lim_seq v).
 Proof.
@@ -2952,13 +2947,13 @@ Qed.
 Lemma ex_lim_seq_adj (u v : nat -> R) :
   (forall n, u n <= u (S n)) -> (forall n, v (S n) <= v n) ->
   (fun n => v n - u n) --> 0 ->
-  ex_finite_lim_seq u /\ ex_finite_lim_seq v /\ Lim_seq u = Lim_seq v.
+  [cvg u in R] /\ [cvg v in R] /\ Lim_seq u = Lim_seq v.
 Proof.
   move => Hu Hv H0.
   suff H : forall n, u n <= v n.
-  suff Eu : ex_finite_lim_seq u.
+  suff Eu : [cvg u in R].
     split ; try auto.
-  suff Ev : ex_finite_lim_seq v.
+  suff Ev : [cvg v in R].
     split ; try auto.
 
   rewrite is_finite_lim_seqE in H0.
@@ -3043,13 +3038,13 @@ apply: filterlim_comp Hu _.
 apply filterlim_Rabs.
 Qed.
 Lemma ex_lim_seq_abs (u : nat -> R) :
-  ex_lim_seq u -> ex_lim_seq (fun n => Rabs (u n)).
+  [cvg u in Rbar] -> [cvg (fun n => Rabs (u n)) in Rbar].
 Proof.
   move => [l Hu].
   exists (Rbar_abs l) ; by apply is_lim_seq_abs.
 Qed.
 Lemma Lim_seq_abs (u : nat -> R) :
-  ex_lim_seq u ->
+  [cvg u in Rbar] ->
   Lim_seq (fun n => Rabs (u n)) = Rbar_abs (Lim_seq u).
 Proof.
   intros.
@@ -3088,9 +3083,9 @@ Proof.
   rewrite Rminus_0_r ; by apply H.
 Qed.
 Lemma ex_lim_seq_geom (q : R) :
-  Rabs q < 1 -> ex_lim_seq (fun n => q ^ n).
+  Rabs q < 1 -> [cvg (fun n => q ^ n) in Rbar].
 Proof.
-  move => Hq ; exists 0 ; by apply is_lim_seq_geom.
+  move => Hq ; exists (Finite 0) ; by apply is_lim_seq_geom.
 Qed.
 Lemma Lim_seq_geom (q : R) :
   Rabs q < 1 -> Lim_seq (fun n => q ^ n) = 0.
@@ -3116,7 +3111,7 @@ Proof.
   by apply pow_le, Rlt_le, Rlt_trans with (1 := Rlt_0_1).
 Qed.
 Lemma ex_lim_seq_geom_p (q : R) :
-  1 < q -> ex_lim_seq (fun n => q ^ n).
+  1 < q -> [cvg (fun n => q ^ n) in Rbar].
 Proof.
   move => Hq ; exists p_infty ; by apply is_lim_seq_geom_p.
 Qed.
@@ -3129,7 +3124,7 @@ Proof.
 Qed.
 
 Lemma ex_lim_seq_geom_m (q : R) :
-  q <= -1 -> ~ ex_lim_seq (fun n => q ^ n).
+  q <= -1 -> ~ [cvg (fun n => q ^ n) in Rbar].
 Proof.
   intros Hq [l H].
   apply is_lim_seq_spec in H.
