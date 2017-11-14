@@ -627,7 +627,7 @@ Lemma filterlim_comp_2 {T U V W}
   {FF : Filter F}
   (f : T -> U) (g : T -> V) (h : U -> V -> W) :
   f @ F --> G -> g @ F --> H ->
-  h (fst x) (snd x) @[x --> filter_prod G H] --> I ->
+  h (fst x) (snd x) @[x --> (G, H)] --> I ->
   h (f x) (g x) @[x --> F] --> I.
 Proof.
 intros Cf Cg Ch.

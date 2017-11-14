@@ -21,8 +21,8 @@ COPYING file for more details.
 
 Require Import Reals Psatz.
 Require Import mathcomp.ssreflect.ssreflect.
-Require Import Rcomplements.
-Require Import Rbar Lub Markov Hierarchy.
+From Coquelicot Require Import Rcomplements.
+From Coquelicot Require Import Rbar Lub Markov Hierarchy.
 
 (** This file describes properties and definitions about limits of
 real sequences. This includes properties about the predicates
@@ -1195,8 +1195,12 @@ Qed.
 
 (** ** Definition *)
 
+Local Open Scope classical_set_scope.
+
+Canonical filter_Rbar := CanonicalFilter R Rbar Rbar_locally.
+
 Definition is_lim_seq (u : nat -> R) (l : Rbar) :=
-  filterlim u eventually (Rbar_locally l).
+  u @ eventually --> l.
 
 Definition is_lim_seq' (u : nat -> R) (l : Rbar) :=
   match l with
@@ -1578,7 +1582,7 @@ Qed.
 Lemma eventually_subseq_loc :
   forall phi,
   eventually (fun n => (phi n < phi (S n))%nat) ->
-  filterlim phi eventually eventually.
+  phi @ eventually --> eventually.
 Proof.
 intros phi [M Hphi] P [N HP].
 exists (N+M)%nat.
@@ -1613,7 +1617,7 @@ Qed.
 Lemma eventually_subseq :
   forall phi,
   (forall n, (phi n < phi (S n))%nat) ->
-  filterlim phi eventually eventually.
+  phi @ eventually --> eventually.
 Proof.
 intros phi Hphi.
 apply eventually_subseq_loc.
@@ -1621,7 +1625,7 @@ by apply filter_forall.
 Qed.
 
 Lemma is_lim_seq_subseq (u : nat -> R) (l : Rbar) (phi : nat -> nat) :
-  filterlim phi eventually eventually ->
+  phi @ eventually --> eventually ->
   is_lim_seq u l ->
   is_lim_seq (fun n => u (phi n)) l.
 Proof.
@@ -1629,7 +1633,7 @@ intros Hphi.
 now apply filterlim_comp.
 Qed.
 Lemma ex_lim_seq_subseq (u : nat -> R) (phi : nat -> nat) :
-  filterlim phi eventually eventually ->
+  phi @ eventually --> eventually ->
   ex_lim_seq u ->
   ex_lim_seq (fun n => u (phi n)).
 Proof.
@@ -1638,7 +1642,7 @@ Proof.
   by apply is_lim_seq_subseq.
 Qed.
 Lemma Lim_seq_subseq (u : nat -> R) (phi : nat -> nat) :
-  filterlim phi eventually eventually ->
+  phi @ eventually --> eventually ->
   ex_lim_seq u ->
   Lim_seq (fun n => u (phi n)) = Lim_seq u.
 Proof.
@@ -1838,8 +1842,8 @@ Qed.
 Lemma filterlim_le :
   forall {T F} {FF : ProperFilter' F} (f g : T -> R) (lf lg : Rbar),
   F (fun x => f x <= g x) ->
-  filterlim f F (Rbar_locally lf) ->
-  filterlim g F (Rbar_locally lg) ->
+  f @ F --> lf ->
+  g @ F --> lg ->
   Rbar_le lf lg.
 Proof.
 intros T F FF f g lf lg H Hf Hg.
@@ -1863,7 +1867,7 @@ destruct lf as [lf| |] ; destruct lg as [lg| |] ; try easy.
     by rewrite /Rminus Rplus_opp_r Rabs_R0.
   specialize (Hf _ Hlf).
   specialize (Hg _ Hlg).
-  unfold filtermap in Hf, Hg.
+  rewrite /filtermap /filter_of /= in Hf, Hg.
   generalize (filter_and _ _ (filter_and _ _ Hf Hg) H).
   apply filter_imp.
   intros x [[H1 H2] H3].
@@ -1878,7 +1882,7 @@ destruct lf as [lf| |] ; destruct lg as [lg| |] ; try easy.
     now apply open_Rbar_lt'.
   specialize (Hf _ Hlf).
   specialize (Hg _ Hlg).
-  unfold filtermap in Hf, Hg.
+  rewrite /filtermap /filter_of /= in Hf, Hg.
   generalize (filter_and _ _ (filter_and _ _ Hf Hg) H).
   apply filter_imp.
   intros x [[H1 H2] H3].
@@ -1893,7 +1897,7 @@ destruct lf as [lf| |] ; destruct lg as [lg| |] ; try easy.
     apply Rlt_0_1.
   specialize (Hf _ Hlf).
   specialize (Hg _ Hlg).
-  unfold filtermap in Hf, Hg.
+  rewrite /filtermap /filter_of /= in Hf, Hg.
   generalize (filter_and _ _ (filter_and _ _ Hf Hg) H).
   apply filter_imp.
   intros x [[H1 H2] H3].
@@ -1905,7 +1909,7 @@ destruct lf as [lf| |] ; destruct lg as [lg| |] ; try easy.
     now apply open_Rbar_lt'.
   specialize (Hf _ Hlf).
   specialize (Hg _ Hlg).
-  unfold filtermap in Hf, Hg.
+  rewrite /filtermap /filter_of /= in Hf, Hg.
   generalize (filter_and _ _ (filter_and _ _ Hf Hg) H).
   apply filter_imp.
   intros x [[H1 H2] H3].
@@ -1950,8 +1954,8 @@ Qed.
 Lemma filterlim_ge_p_infty :
   forall {T F} {FF : Filter F} (f g : T -> R),
   F (fun x => f x <= g x) ->
-  filterlim f F (Rbar_locally p_infty) ->
-  filterlim g F (Rbar_locally p_infty).
+  f @ F --> p_infty ->
+  g @ F --> p_infty.
 Proof.
 intros T F FF f g H Hf.
 intros P [M HM].
@@ -1959,7 +1963,7 @@ assert (H' : Rbar_locally p_infty (fun y => M < y)).
   now exists M.
 unfold filtermap.
 generalize (filter_and (fun x : T => f x <= g x) _ H (Hf (fun y : R => M < y) H')).
-apply filter_imp.
+apply: filter_imp.
 intros x [H1 H2].
 apply HM.
 now apply Rlt_le_trans with (f x).
@@ -1968,8 +1972,8 @@ Qed.
 Lemma filterlim_le_m_infty :
   forall {T F} {FF : Filter F} (f g : T -> R),
   F (fun x => g x <= f x) ->
-  filterlim f F (Rbar_locally m_infty) ->
-  filterlim g F (Rbar_locally m_infty).
+  f @ F --> m_infty ->
+  g @ F --> m_infty.
 Proof.
 intros T F FF f g H Hf.
 intros P [M HM].
@@ -1978,7 +1982,7 @@ assert (H' : Rbar_locally m_infty ineq).
   now exists M.
 unfold filtermap.
 generalize (filter_and _ (fun x : T => ineq (f x)) H (Hf ineq H')).
-apply filter_imp.
+apply: filter_imp.
 intros x [H1 H2].
 apply HM.
 now apply Rle_lt_trans with (f x).
@@ -1987,18 +1991,21 @@ Qed.
 Lemma filterlim_le_le :
   forall {T F} {FF : Filter F} (f g h : T -> R) (l : Rbar),
   F (fun x => f x <= g x <= h x) ->
-  filterlim f F (Rbar_locally l) ->
-  filterlim h F (Rbar_locally l) ->
-  filterlim g F (Rbar_locally l).
+  f @ F --> l ->
+  h @ F --> l ->
+  g @ F --> l.
 Proof.
 intros T F FF f g h l H Hf Hh.
 destruct l as [l| |].
 - intros P [eps He].
   assert (H' : Rbar_locally l (fun y => Rabs (y - l) < eps)).
     now exists eps.
-  unfold filterlim, filter_le, filtermap in Hf, Hh |- *.
-  generalize (filter_and _ _ H (filter_and _ _ (Hf _ H') (Hh _ H'))).
-  apply filter_imp.
+  unfold filter_le, filtermap in Hf, Hh |- *.
+  specialize (Hf _ H').
+  specialize (Hh _ H').
+  rewrite /filter_of /= in Hf Hh *.
+  generalize (filter_and _ _ H (filter_and _ _ Hf Hh)).
+  apply: filter_imp.
   intros x [H1 [H2 H3]].
   apply He.
   apply Rabs_lt_between'.
@@ -2209,9 +2216,8 @@ Qed.
 
 (** Opposite *)
 
-Lemma filterlim_Rbar_opp :
-  forall x,
-  filterlim Ropp (Rbar_locally x) (Rbar_locally (Rbar_opp x)).
+Lemma filterlim_Rbar_opp : forall x,
+  Ropp @ x --> (Rbar_opp x).
 Proof.
 intros [x| |] P [eps He].
 - exists eps.
@@ -2272,7 +2278,7 @@ Qed.
 Lemma filterlim_Rbar_plus :
   forall x y z,
   is_Rbar_plus x y z ->
-  filterlim (fun z => fst z + snd z) (filter_prod (Rbar_locally x) (Rbar_locally y)) (Rbar_locally z).
+  (fun z => fst z + snd z) @ (x, y) --> z.
 Proof.
   intros x y z.
   wlog: x y z / (Rbar_le 0 z).
@@ -2285,7 +2291,7 @@ Proof.
     rewrite -(Rbar_opp_involutive z).
     eapply filterlim_comp.
     2: apply filterlim_Rbar_opp.
-    assert (Hw' : filterlim (fun z => fst z + snd z) (filter_prod (Rbar_locally (Rbar_opp x)) (Rbar_locally (Rbar_opp y))) (Rbar_locally (Rbar_opp z))).
+    assert (Hw' : (fun z => fst z + snd z) @ (filter_prod (Rbar_locally (Rbar_opp x)) (Rbar_locally (Rbar_opp y))) --> (Rbar_opp z)).
     apply Hw.
     rewrite -Ropp_0 -/(Rbar_opp 0).
     apply <- Rbar_opp_le.
@@ -2330,14 +2336,14 @@ Proof.
     case: x y Hp {Hz} => [x| |] ;
     case => [y| |] // _.
     now apply (Hw x p_infty).
-    assert (Hw': filterlim (fun z => fst z + snd z) (filter_prod (Rbar_locally y) (Rbar_locally p_infty)) (Rbar_locally p_infty)).
+    assert (Hw': (fun z => fst z + snd z) @ (filter_prod (Rbar_locally y) (Rbar_locally p_infty)) --> p_infty).
     exact: Hw.
     intros P HP.
     specialize (Hw' P HP).
     destruct Hw' as [Q R H1 H2 H3].
     exists R Q ; try assumption.
     intros u v Hu Hv.
-    rewrite Rplus_comm.
+    rewrite /= Rplus_comm.
     now apply (H3 v u).
     clear Hw.
     intros P [N HN].
@@ -2370,8 +2376,10 @@ Lemma is_lim_seq_plus (u v : nat -> R) (l1 l2 l : Rbar) :
   is_lim_seq (fun n => u n + v n) l.
 Proof.
 intros Hu Hv Hl.
-eapply filterlim_comp_2 ; try eassumption.
-now apply filterlim_Rbar_plus.
+apply: filterlim_comp_2.
+exact: Hu.
+exact: Hv.
+exact: filterlim_Rbar_plus.
 Qed.
 Lemma is_lim_seq_plus' (u v : nat -> R) (l1 l2 : R) :
   is_lim_seq u l1 -> is_lim_seq v l2 ->
@@ -2456,7 +2464,7 @@ Qed.
 
 Lemma filterlim_Rbar_inv :
   forall l : Rbar, l <> 0 ->
-  filterlim Rinv (Rbar_locally l) (Rbar_locally (Rbar_inv l)).
+  Rinv @ l --> (Rbar_inv l).
 Proof.
   intros l.
   wlog: l / (Rbar_lt 0 l).
@@ -2589,7 +2597,7 @@ Qed.
 Lemma filterlim_Rbar_mult :
   forall x y z,
   is_Rbar_mult x y z ->
-  filterlim (fun z => fst z * snd z) (filter_prod (Rbar_locally x) (Rbar_locally y)) (Rbar_locally z).
+  (fun z => fst z * snd z) @ (x, y) --> z.
 Proof.
   intros x y z.
   wlog: x y z / (Rbar_le 0 x).
@@ -2602,7 +2610,7 @@ Proof.
     rewrite -(Rbar_opp_involutive z).
     eapply filterlim_comp.
     2: apply filterlim_Rbar_opp.
-    assert (Hw' : filterlim (fun z => fst z * snd z) (filter_prod (Rbar_locally (Rbar_opp x)) (Rbar_locally y)) (Rbar_locally (Rbar_opp z))).
+    assert (Hw' : (fun z => fst z * snd z) @ (Rbar_opp x, y) --> (Rbar_opp z)).
     apply Hw.
     replace (Finite 0) with (Rbar_opp 0) by apply (f_equal Finite), Ropp_0.
     apply Rbar_opp_le.
@@ -2627,7 +2635,7 @@ Proof.
     rewrite -(Rbar_opp_involutive z).
     eapply filterlim_comp.
     2: apply filterlim_Rbar_opp.
-    assert (Hw' : filterlim (fun z => fst z * snd z) (filter_prod (Rbar_locally x) (Rbar_locally (Rbar_opp y))) (Rbar_locally (Rbar_opp z))).
+    assert (Hw' : (fun z => fst z * snd z) @ (x, Rbar_opp y) --> (Rbar_opp z)).
     apply Hw.
     replace (Finite 0) with (Rbar_opp 0) by apply (f_equal Finite), Ropp_0.
     apply Rbar_opp_le.
@@ -2647,7 +2655,7 @@ Proof.
     intros Hw.
     case: (Rbar_le_lt_dec x y) => Hl Hx Hy Hp.
     by apply Hw.
-    assert (Hw' : filterlim (fun z => fst z * snd z) (filter_prod (Rbar_locally y) (Rbar_locally x)) (Rbar_locally z)).
+    assert (Hw' : (fun z => fst z * snd z) @ (y, x) --> z).
     apply Hw ; try assumption.
     by apply Rbar_lt_le.
     by apply is_Rbar_mult_sym.
@@ -2758,8 +2766,10 @@ Lemma is_lim_seq_mult (u v : nat -> R) (l1 l2 l : Rbar) :
   is_lim_seq (fun n => u n * v n) l.
 Proof.
 intros Hu Hv Hp.
-eapply filterlim_comp_2 ; try eassumption.
-now apply filterlim_Rbar_mult.
+apply: filterlim_comp_2.
+exact Hu.
+exact Hv.
+exact: filterlim_Rbar_mult.
 Qed.
 Lemma is_lim_seq_mult' (u v : nat -> R) (l1 l2 : R) :
   is_lim_seq u l1 -> is_lim_seq v l2 ->
@@ -2797,7 +2807,7 @@ Qed.
 
 Lemma filterlim_Rbar_mult_l :
   forall (a : R) (l : Rbar),
-  filterlim (Rmult a) (Rbar_locally l) (Rbar_locally (Rbar_mult a l)).
+  (Rmult a) @ l --> (Rbar_mult a l).
 Proof.
   intros a l.
   case: (Req_dec a 0) => [->|Ha].
@@ -2815,7 +2825,7 @@ Qed.
 
 Lemma filterlim_Rbar_mult_r :
   forall (a : R) (l : Rbar),
-  filterlim (fun x => Rmult x a) (Rbar_locally l) (Rbar_locally (Rbar_mult l a)).
+  (fun x => Rmult x a) @ l --> (Rbar_mult l a).
 Proof.
 intros a l.
 apply (filterlim_ext (fun x => a * x)).
@@ -3017,7 +3027,7 @@ Qed.
 
 Lemma filterlim_Rabs :
   forall l : Rbar,
-  filterlim Rabs (Rbar_locally l) (Rbar_locally (Rbar_abs l)).
+  Rabs @ l --> (Rbar_abs l).
 Proof.
   case => [l| |] /=.
 
