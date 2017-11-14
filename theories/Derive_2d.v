@@ -29,6 +29,8 @@ Require Import Rcomplements Hierarchy Continuity Derive.
 
 (** * Differentiability *)
 
+Local Open Scope classical_set_scope.
+
 Definition differentiable_pt_lim (f : R -> R -> R) (x y : R) (lx ly : R) :=
   forall eps : posreal, locally_2d (fun u v =>
     Rabs (f u v - f x y - (lx * (u - x) + ly * (v - y))) <= eps * Rmax (Rabs (u - x)) (Rabs (v - y))) x y.
@@ -40,7 +42,7 @@ Proof.
   split => Df.
   move => eps.
   case: Df => _ Df.
-  assert (is_filter_lim (locally (x, y)) (x, y)) by now intro.
+  have H : (locally (x, y)) --> locally (x, y) by [].
   specialize (Df (x,y) H) => {H}.
   apply locally_2d_locally.
   assert (0 < eps / sqrt 2).
@@ -1234,7 +1236,7 @@ apply ex_diff_n_ex_deriv_inf_2 with (S n).
 now rewrite - le_plus_minus.
 apply HH.
 apply locally_2d_singleton in HH.
-apply continuity_2d_pt_filterlim.
+apply/continuity_2d_pt_filterlim.
 apply ex_diff_n_continuity_inf_1 with (S n).
 now rewrite - le_plus_minus.
 apply HH.

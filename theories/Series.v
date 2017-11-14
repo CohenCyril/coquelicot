@@ -28,14 +28,15 @@ Require Import Lim_seq Rbar Hierarchy.
 a normed module. An equivalence with the standard library and several
 convergence criteria are provided. *)
 
+Local Open Scope classical_set_scope.
+
 Section Definitions.
 
 (** * Definitions *)
 
 Context {K : AbsRing} {V : NormedModule K}.
 
-Definition is_series (a : nat -> V) (l : V) :=
-   filterlim (sum_n a) (eventually) (locally l).
+Definition is_series (a : nat -> V) (l : V) :=(sum_n a) @ eventually --> l.
 
 Definition ex_series (a : nat -> V) :=
    exists l : V, is_series a l.
@@ -246,12 +247,14 @@ Proof.
   apply filterlim_comp with (f:= fun x => S x) (2:=H).
   apply eventually_subseq; intros n; omega.
   (* . *)
-  pattern l at 2; replace l with (plus (plus l (a 0%nat)) (opp (a 0%nat))).
+  rewrite [in X in _ --> X](_ : l = (plus (plus l (a 0%nat)) (opp (a 0%nat)))); last first.
+    rewrite <- plus_assoc, plus_opp_r.
+    by rewrite plus_zero_r.
+(*  pattern l at 2.
+  replace l with (plus (plus l (a 0%nat)) (opp (a 0%nat))).*)
   apply filterlim_comp_2 with (3 := filterlim_plus _ _).
   apply filterlim_id.
-  apply filterlim_const.
-  rewrite <- plus_assoc, plus_opp_r.
-  apply plus_zero_r.
+  apply: filterlim_const.
 Qed.
 
 Lemma is_series_incr_n (a : nat -> V) (n : nat) (l : V) :
@@ -289,7 +292,7 @@ Proof.
   replace l with (plus (a 0%nat) (plus l (opp (a 0%nat)))).
   apply filterlim_comp_2 with (3 := filterlim_plus _ _).
   apply filterlim_id.
-  apply filterlim_const.
+  apply: filterlim_const.
   apply filterlim_comp with (f:= fun x => pred x) (2:=H).
   intros P (N1,HN1).
   exists (S N1).
@@ -1036,7 +1039,8 @@ Proof.
     replace (k) with (l - (l - 1) / 2) by (unfold k ; field).
     by apply Rlt_le, Hda.
   case => N H.
-  apply is_lim_seq_abs_0, (is_lim_seq_incr_n _ N) in Ha0.
+  move/is_lim_seq_abs_0 in Ha0.
+  move/(is_lim_seq_incr_n _ N) in Ha0.
   have : forall n, Rabs (a N) * k ^ n <= Rabs (a (n + N)%nat).
     elim => /= [ | n IH].
     rewrite Rmult_1_r ; by apply Rle_refl.
@@ -1075,7 +1079,7 @@ Qed.
 
 Lemma partial_summation_R (a b : nat -> R) :
   (exists M, forall n, norm (sum_n b n) <= M)
-  -> filterlim a eventually (locally 0)
+  -> a @ eventually --> locally 0
   -> ex_series (fun n => norm (minus (a (S n)) (a n)))
   -> ex_series (fun n => scal (a n) (b n)).
 Proof.
@@ -1085,9 +1089,10 @@ Proof.
   unfold is_series.
   replace (@locally R_NormedModule)
     with (fun x => Rbar_locally (Finite x)) by auto.
-  apply is_lim_seq_ext with (fun N =>
+  evar (tmp : R).
+  apply: (is_lim_seq_ext (fun N =>
     plus (scal (a N) (B N))
-    (match N with | O => zero | S N => sum_n (fun n => scal (minus (a n) (a (S n))) (B n)) N end)).
+    (match N with | O => zero | S N => sum_n (fun n => scal (minus (a n) (a (S n))) (B n)) N end)) (sum_n (fun n : nat => scal (a n) (b n))) tmp).
   case => /= [ | N].
     rewrite /B /= !sum_O ; by apply plus_zero_r.
   rewrite sum_Sn plus_comm.
