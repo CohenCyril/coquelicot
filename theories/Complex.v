@@ -29,6 +29,8 @@ complete space. *)
 
 (** * The set of complex numbers *)
 
+Local Open Scope classical_set_scope.
+
 Definition C := (R * R)%type.
 
 Definition RtoC (x : R) : C := (x,0).
@@ -447,8 +449,11 @@ Add Field C_field_field : C_field_theory.
 
 (** * C is a NormedModule *)
 
-Canonical C_UniformSpace :=
-  UniformSpace.Pack C (UniformSpace.class (prod_UniformSpace _ _)) C.
+Definition C_UniformMixin : UniformSpace.mixin_of C :=
+  UniformSpace.class (prod_UniformSpace R_UniformSpace R_UniformSpace).
+
+Canonical C_canonical_filter := CanonicalFilter C C C_UniformMixin.
+Canonical C_UniformSpace := UniformSpacePack C C_UniformMixin.
 
 (** on C (with the balls of R^2) *)
 
@@ -611,7 +616,7 @@ Definition C_lim (f : C -> C) (z : C) : C :=
   real (Lim (fun x => snd (f (x, snd z))) (fst z))).
 
 Lemma is_C_lim_unique (f : C -> C) (z l : C) :
-  filterlim f (locally' z) (locally l) -> C_lim f z = l.
+  f @ locally' z --> locally l -> C_lim f z = l.
 Proof.
   case: l => lx ly H.
   apply injective_projections ; simpl.
@@ -657,43 +662,40 @@ Definition C_derive (f : C -> C) (z : C) := C_lim (fun x => (f x - f z) / (x - z
 Lemma is_C_derive_unique (f : C -> C) (z l : C) :
   is_derive f z l -> C_derive f z = l.
 Proof.
-  intros [_ Df].
-  specialize (Df _ (fun P H => H)).
-  apply is_C_lim_unique.
-  intros P HP.
-  destruct HP as [eps HP].
-  destruct (Df (pos_div_2 eps)) as [eps' Df'].
-  unfold filtermap, locally', within.
-
-  apply locally_C.
-  exists eps'.
-  intros y Hy Hyz.
-  apply HP.
+move=> [_ /(_ _ (fun P H => H)) Df].
+apply is_C_lim_unique.
+move=> p; rewrite filter_ofE => /locallyP [eps HP].
+have /locallyP [eps' Df'] := Df (pos_div_2 eps).
+unfold filtermap, locally', within.
+apply/locally_C/locallyP.
+exists eps' => y Hy Hyz.
+apply HP.
   assert (y - z <> 0).
   contradict Hyz.
-  replace y with (y - z + z) by ring.
-  rewrite Hyz.
-  apply Cplus_0_l.
-  apply: norm_compat1.
-  rewrite /minus /plus /opp /=.
-  replace ((f y - f z) / (y - z) + - l) with
-    ((f y + - f z + - ((y + - z) * l)) / (y + - z)).
+replace y with (y - z + z) by ring.
+rewrite Hyz.
+apply Cplus_0_l.
+apply: norm_compat1.
+rewrite /minus /plus /opp /=.
+replace ((f y - f z) / (y - z) + - l) with
+  ((f y + - f z + - ((y + - z) * l)) / (y + - z)).
   2: by field.
-  rewrite /norm /= Cmod_div => //.
-  apply Rlt_div_l.
+rewrite /norm /= Cmod_div => //.
+apply Rlt_div_l.
   by apply Cmod_gt_0.
-  eapply Rle_lt_trans.
+eapply Rle_lt_trans.
   apply (Df' y Hy).
   simpl.
   rewrite /Rdiv Rmult_assoc.
   apply Rmult_lt_compat_l.
   by apply eps.
-  rewrite Rmult_comm Rlt_div_l.
-  rewrite /norm /minus /plus /opp /= /abs /=.
-  apply Rminus_lt_0 ; ring_simplify.
+rewrite Rmult_comm Rlt_div_l.
+rewrite /norm /minus /plus /opp /= /abs /=.
+apply Rminus_lt_0 ; ring_simplify.
   by apply Cmod_gt_0.
-  by apply Rlt_0_2.
+by apply Rlt_0_2.
 Qed.
+
 Lemma C_derive_correct (f : C -> C) (z l : C) :
   ex_derive f z -> is_derive f z (C_derive f z).
 Proof.
