@@ -1724,22 +1724,23 @@ Proof.
        apply Rgt_not_eq ; apply -> Rminus_lt_0.
        by apply Rabs_lt_between, Hx.
        by rewrite Rmult_1_r.
-    apply: is_lim_seq_scal_r.
+    suff : (fun n : nat =>
+   (sum_n (fun k : nat => scal (pow_n x k) (a k)) n - scal (pow_n x (S n)) (Sa n)) / (1 - x)) --> Rbar_mult (Finite (l - x * 0 * 0)) (/ (1 - x)).
+      done.
+    apply is_lim_seq_scal_r.
     apply is_lim_seq_minus'.
     apply Hl.
     apply is_lim_seq_mult'.
     apply is_lim_seq_mult'.
     apply is_lim_seq_const.
-    eapply is_lim_seq_ext.
+    apply: (@is_lim_seq_ext _ _ (Finite 0)).
     intros n ; by apply sym_eq, pow_n_pow.
     apply is_lim_seq_geom.
     by apply Hx.
     move: Ha1 ; apply (is_lim_seq_ext _ _ 0).
     intros n ; apply sum_n_ext => k.
     by rewrite pow_n_pow pow1 scal_one.
-    by replace (Rbar_mult (l - Rbar_mult x 0 * 0) (/ (1 - x)))
-      with (Finite (l / (1 - x)))
-      by (simpl ; apply f_equal ; unfold Rdiv ; ring).
+    by rewrite Rmult_0_r Rminus_0_r.
   apply filterlim_ext_loc with (fun x => (1-x) * PSeries Sa x).
   exists (mkposreal _ Rlt_0_1) ; simpl ; intros x Hx Hx1.
   apply (Rabs_lt_between' x 1 1) in Hx.
@@ -1752,9 +1753,9 @@ Proof.
   rewrite (is_pseries_unique _ _ _ H0).
   field.
   by apply Rgt_not_eq ; apply -> Rminus_lt_0.
-  apply filterlim_locally => eps.
+  apply: (proj2 (@filterlim_locally _ _ _ _ _ _)) => eps.
   destruct (Ha1 (ball 0 (pos_div_2 eps))) as [N HN].
-  apply locally_ball.
+  apply/locallyP/locally_ball.
 
   eapply filter_imp.
   intros x Hx.
@@ -1969,7 +1970,7 @@ Proof.
     by apply Rlt_R0_R2.
   move => y Hy.
   apply H0 ; rewrite /PS_derive.
-  have H2 : is_lim_seq (fun n => INR (S n) / x * (y/x) ^ n) 0.
+  have H2 : (fun n => INR (S n) / x * (y/x) ^ n) --> 0.
     apply ex_series_lim_0.
     apply ex_series_Rabs.
     apply CV_disk_DAlembert with 1.
@@ -2020,7 +2021,7 @@ Proof.
     apply Rlt_le, Rdiv_lt_0_compat.
     by apply Hy.
     apply Rlt_trans with y ; by apply Hy.
-    apply is_lim_seq_spec in H2.
+    move/(proj2 (@is_lim_seq_spec _ (Finite 0))) in H2.
     case: (H2 (mkposreal _ (Rlt_0_1))) ;
     simpl pos => {H2} N HN.
     set My := fix f n := match n with
@@ -2529,7 +2530,7 @@ Proof.
 
   move => P [eps Heps].
   have : exists N, forall n, (N <= n)%nat -> r ^ (S n) * M / INR (fact (S n)) < eps.
-    have H : is_lim_seq (fun n => r ^ n * M / INR (fact n)) 0.
+    have H : (fun n => r ^ n * M / INR (fact n)) --> 0.
     case: (Rlt_dec 0 M) => H.
     have H0 : forall n : nat, 0 < r ^ n * M / INR (fact n).
       move => n.
@@ -2544,7 +2545,7 @@ Proof.
     exact: Rlt_0_1.
     move => n ; apply Rgt_not_eq, Rlt_gt, H0.
 
-    apply is_lim_seq_ext with (fun n => r / INR (S n)).
+    apply: (is_lim_seq_ext (fun n => r / INR (S n)) _ (Finite 0)).
     move => n ; rewrite Rabs_pos_eq.
     rewrite /fact -/fact /pow -/pow ?mult_INR ; field.
     repeat split ; apply Rgt_not_eq, Rlt_gt.
@@ -2566,10 +2567,10 @@ Proof.
     by apply Rabs_pos.
     by apply Hd.
     rewrite H.
-    apply is_lim_seq_ext with (fun _ => 0).
+    apply: (is_lim_seq_ext (fun _ => 0) _ (Finite 0)).
     move => n ; rewrite /Rdiv ; ring.
     exact: is_lim_seq_const.
-    apply is_lim_seq_incr_1 in H.
+    move/(@is_lim_seq_incr_1 _ (Finite 0)) in H.
     apply is_lim_seq_spec in H.
     case: (H eps) => {H} N H.
     exists N => n Hn.
