@@ -516,6 +516,8 @@ Qed.
 
 (** * Domination and composition *)
 
+Local Open Scope classical_set_scope.
+
 Section Domin_comp.
 
 Context {T1 T2 : Type} {Ku Kv : AbsRing}
@@ -524,7 +526,7 @@ Context {T1 T2 : Type} {Ku Kv : AbsRing}
   (G : (T2 -> Prop) -> Prop) {FG : Filter G}.
 
 Lemma domin_comp (f : T2 -> U) (g : T2 -> V) (l : T1 -> T2) :
-  filterlim l F G -> is_domin G f g
+  l @ F --> G -> is_domin G f g
     -> is_domin F (fun t => f (l t)) (fun t => g (l t)).
 Proof.
   intros Hl Hg eps.
@@ -539,8 +541,8 @@ End Domin_comp.
 Lemma filterlim_equiv :
   forall {T} {F : (T -> Prop) -> Prop} {FF : Filter F} (f g : T -> R) (l : Rbar),
   is_equiv F f g ->
-  filterlim f F (Rbar_locally l) ->
-  filterlim g F (Rbar_locally l).
+  f @ F --> (Rbar_locally l) ->
+  g @ F --> (Rbar_locally l).
 Proof.
 intros T F FF f g [l| |] Hfg Hf P [eps HP] ;
   apply equiv_sym in Hfg ;
@@ -569,7 +571,7 @@ intros T F FF f g [l| |] Hfg Hf P [eps HP] ;
   apply Rlt_le_trans with (1 := Hx).
   apply Rmin_r.
   generalize (filter_and  _  (fun (x : T) =>  ineqs (f x))  (Hfg (mkposreal _ He))  (Hf _ Hl)).
-  apply filter_imp.
+  apply: filter_imp.
   simpl.
   intros x [H1 [H2 H3]].
   apply HP.
@@ -591,7 +593,7 @@ intros T F FF f g [l| |] Hfg Hf P [eps HP] ;
   assert (Hl: Rbar_locally' p_infty ineq).
   now exists (Rmax 0 (2 * eps)).
   generalize (filter_and _ (fun (x : T) => ineq (f x)) (Hfg (mkposreal _ pos_half_prf)) (Hf _ Hl)).
-  apply filter_imp.
+  apply: filter_imp.
   simpl.
   intros x [H1 H2].
   apply HP.
@@ -612,7 +614,7 @@ intros T F FF f g [l| |] Hfg Hf P [eps HP] ;
   assert (Hl: Rbar_locally' m_infty ineq).
   now exists (Rmin 0 (2 * eps)).
   generalize (filter_and _ (fun (x : T) => ineq (f x)) (Hfg (mkposreal _ pos_half_prf)) (Hf _ Hl)).
-  apply filter_imp.
+  apply: filter_imp.
   simpl.
   intros x [H1 H2].
   apply HP.

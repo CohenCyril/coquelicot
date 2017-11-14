@@ -312,19 +312,21 @@ End Linear_domin.
 
 (** * Differentiability using filters *)
 
+Local Open Scope classical_set_scope.
+
 Section Diff.
 
 Context {K : AbsRing} {U : NormedModule K} {V : NormedModule K}.
 
 Definition filterdiff (f : U -> V) F (l : U -> V) :=
-  is_linear l /\ forall x, is_filter_lim F x ->
+  is_linear l /\ forall x, F --> x ->
   is_domin F (fun y : U => minus y x) (fun y => minus (minus (f y) (f x)) (l (minus y x))).
 
 Definition ex_filterdiff (f : U -> V) F :=
   exists (l : U -> V), filterdiff f F l.
 
 Lemma filterdiff_continuous_aux {F} {FF : Filter F} (f : U -> V) :
-  ex_filterdiff f F -> forall x, is_filter_lim F x -> filterlim f F (locally (f x)).
+  ex_filterdiff f F -> forall x, F --> x -> f @ F --> (f x).
 Proof.
   intros [l [Hl Df]] x Hx.
   specialize (Df x Hx).
@@ -366,7 +368,7 @@ Proof.
 Qed.
 
 Lemma filterdiff_locally {F} {FF : ProperFilter F} (f : U -> V) x l :
-  is_filter_lim F x ->
+  F --> x ->
   filterdiff f (locally x) l ->
   filterdiff f F l.
 Proof.
@@ -381,7 +383,7 @@ now apply is_domin_le with (2 := Fz).
 Qed.
 
 Lemma ex_filterdiff_locally {F} {FF : ProperFilter F} (f : U -> V) x :
-  is_filter_lim F x ->
+  F --> x ->
   ex_filterdiff f (locally x) ->
   ex_filterdiff f F.
 Proof.
@@ -413,7 +415,7 @@ Proof.
 Qed.
 
 Lemma filterdiff_ext_loc {F} {FF : Filter F} (f g : U -> V) (l : U -> V) :
-  F (fun y => f y = g y) -> (forall x, is_filter_lim F x -> f x = g x)
+  F (fun y => f y = g y) -> (forall x, F --> x -> f x = g x)
   -> filterdiff f F l -> filterdiff g F l.
 Proof.
   move => H H0 [Hl Df].
@@ -427,7 +429,7 @@ Proof.
   by apply Req_le ; rewrite Hy H0.
 Qed.
 Lemma ex_filterdiff_ext_loc {F} {FF : Filter F} (f g : U -> V) :
-  F (fun y => f y = g y) -> (forall x, is_filter_lim F x -> f x = g x)
+  F (fun y => f y = g y) -> (forall x, F --> x -> f x = g x)
   -> ex_filterdiff f F -> ex_filterdiff g F.
 Proof.
   intros H H0 [l Hl].
@@ -441,7 +443,7 @@ Proof.
   move => H.
   apply filterdiff_ext_loc with (1 := H).
   move => y Hy.
-  destruct H as [d Hd].
+  case/locallyP : H => [d Hd].
   apply Hd.
   replace y with x.
   apply ball_center.
@@ -528,7 +530,7 @@ Proof.
     by apply Df.
     by apply Dg.
   intros x Hx.
-  assert (Cf : filterlim f F (locally (f x))).
+  assert (Cf : f @ F --> (f x)).
     apply filterdiff_continuous_aux with (2 := Hx).
     eexists ; by apply Df.
   assert (is_domin (filtermap f F) (fun y : V => minus y (f x))
@@ -745,7 +747,7 @@ Proof.
   by apply is_linear_id.
 
   move => x Hx eps.
-  apply Hx ; exists eps => y /= Hy.
+  apply/Hx/locallyP; exists eps => y /= Hy.
   rewrite /minus plus_opp_r norm_zero.
   apply Rmult_le_pos.
   by apply Rlt_le, eps.
@@ -765,8 +767,7 @@ Proof.
   split.
   by apply is_linear_opp.
   move => x Hx eps.
-  apply Hx.
-  exists eps => y /= Hy.
+  apply/Hx/locallyP; exists eps => y /= Hy.
   rewrite /minus -!opp_plus plus_opp_r norm_opp norm_zero.
   apply Rmult_le_pos.
   by apply Rlt_le, eps.
@@ -841,7 +842,7 @@ Local Ltac plus_grab e :=
 
 Lemma filterdiff_scal :
   forall {F : (K * V -> Prop) -> Prop} {FF : ProperFilter F} (x : K * V),
-  is_filter_lim F x ->
+  F --> locally(* TODO: shouldn't this be inferred? *) x ->
   (forall (n m : K), mult n m = mult m n) ->
   filterdiff (fun t : K * V => scal (fst t) (snd t)) F
     (fun t => plus (scal (fst t) (snd x)) (scal (fst x) (snd t))).
@@ -890,7 +891,7 @@ Proof.
 Qed.
 
 Lemma ex_filterdiff_scal : forall {F} {FF : ProperFilter F} (x : K * V),
-  is_filter_lim F x ->
+  F --> locally(* TODO: shouldn't this be inferred? *) x ->
   (forall (n m : K), mult n m = mult m n) ->
   ex_filterdiff (fun t : K * V => scal (fst t) (snd t)) F.
 Proof.
@@ -934,7 +935,7 @@ End Operations.
 
 Lemma filterdiff_mult {K : AbsRing} :
  forall {F} {FF : ProperFilter F} (x : K * K),
-  is_filter_lim F x ->
+  F --> locally (* TODO: shouldn't this be inferred *) x ->
   (forall (n m : K), mult n m = mult m n) ->
   filterdiff (fun t : K * K => mult (fst t) (snd t)) F
     (fun t => plus (mult (fst t) (snd x)) (mult (fst x) (snd t))).
@@ -945,7 +946,7 @@ Qed.
 
 Lemma ex_filterdiff_mult {K : AbsRing} :
  forall {F} {FF : ProperFilter F} (x : K * K),
-  is_filter_lim F x ->
+  F --> locally(* TODO *) x ->
   (forall (n m : K), mult n m = mult m n) ->
   ex_filterdiff (fun t : K * K => mult (fst t) (snd t)) F.
 Proof.
@@ -2206,7 +2207,7 @@ Proof.
   generalize (proj1 (filterlim_locally _ _) Cf eps) => {Cf} Cf.
   generalize (proj1 (filterlim_locally _ _) Cg eps) => {Cg} Cg.
   generalize (filter_and _ _ Cf Cg).
-  apply filter_imp => {Cf Cg} x [Cf Cg].
+  apply: filter_imp => {Cf Cg} x [Cf Cg].
   rewrite /extension_cont.
   case: Rle_dec (Rle_refl a) => // _ _.
   case: Rle_dec => // H.
@@ -2616,13 +2617,14 @@ have H c : (forall t, a <= t < c -> P t) -> a <= c <= b ->
   rewrite scal_zero_r minus_zero_r -[norm (minus t c)]/(Rabs (t - c)).
   rewrite -> Rabs_pos_eq by lra.
   apply.
-  apply: norm_compat1.
-  change (Rabs (t - c) < delta).
-  apply Rabs_lt_between'.
-  cut (t <= c + delta/2).
-  lra.
-  apply Rle_trans with (1 := proj2 Ht).
-  apply Rmin_r.
+  have : (Rabs (t - c) < delta).
+    apply Rabs_lt_between'.
+    cut (t <= c + delta/2).
+    lra.
+    apply Rle_trans with (1 := proj2 Ht).
+    by apply Rmin_r.
+  done.
+(*  by apply: norm_compat1.*)
   set (d' := Rmax a (c - delta/2)).
   replace (minus (f c) (f a)) with (plus (opp (minus (f d') (f c))) (minus (f d') (f a))).
   apply Rle_trans with (1 := norm_triangle _ _).
@@ -2632,7 +2634,7 @@ have H c : (forall t, a <= t < c -> P t) -> a <= c <= b ->
   rewrite scal_zero_r minus_zero_r -[norm (minus d' c)]/(Rabs (d' - c)).
   rewrite norm_opp -Rabs_Ropp Rabs_pos_eq Ropp_minus_distr.
   apply.
-  apply: norm_compat1.
+(*  apply: norm_compat1.*)
   change (Rabs (d' - c) < delta).
   apply Rabs_lt_between'.
   apply Rmax_case_strong ; lra.
@@ -2944,10 +2946,10 @@ Proof.
   apply Rlt_le_trans with (1 := Hz) => /= ; by apply Rmin_r.
   by apply le_trans with (1 := Hk), le_n_Sn.
   apply Hf with (k := (S n)).
-  by apply ball_center.
+  by move: (ball_center x rf).
   by apply le_refl.
   apply Hg with (k := S n).
-  by apply ball_center.
+  by move: (ball_center x rg).
   by apply le_refl.
 Qed.
 
