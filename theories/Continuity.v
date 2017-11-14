@@ -600,7 +600,7 @@ Proof.
   apply Rbar_plus_correct.
   case: (Rbar_mult a x) => //.
   case: x {Hf} => [x | | ] //=.
-  exists (mkposreal _ Rlt_0_1) => y _ Hy.
+  exists [posreal of 1] => y _ Hy.
   apply Rbar_finite_neq, Rminus_not_eq ; ring_simplify (a * y + b - (a * x + b)).
   rewrite -Rmult_minus_distr_l.
   apply Rmult_integral_contrapositive ; split.
@@ -868,7 +868,7 @@ Proof.
   assert (forall x : R, locally x (fun y : R => Rabs (norm (f y) - norm (f x)) < 1)).
     intro x.
     generalize (proj1 (filterlim_locally_ball_norm _ _) (Cf x)) => {Cf} Cf.
-    apply: filter_imp (Cf (mkposreal _ Rlt_0_1)) => y Hy.
+    apply: filter_imp (Cf [posreal of 1]) => y Hy.
     apply Rle_lt_trans with (2 := Hy).
     apply norm_triangle_inv.
   assert (forall x y : R, Rabs (norm (f y) - norm (f x)) < 1 \/ ~ Rabs (norm (f y) - norm (f x)) < 1).
@@ -1102,8 +1102,7 @@ assert (Hex : exists x : R, Rbar_lt a x /\ Rbar_lt x b /\ f x <= y).
     exists (a + eps / 2).
     assert (Ha : a < a + eps / 2).
       apply Rminus_lt_0.
-      replace (a + eps / 2 - a) with (eps / 2) by ring.
-      apply is_pos_div_2.
+      by replace (a + eps / 2 - a) with (eps / 2) by ring.
     split.
     exact Ha.
     assert (H : Rbar_lt (a + eps / 2) b /\ (f (a + eps / 2) < y)).
@@ -1113,8 +1112,7 @@ assert (Hex : exists x : R, Rbar_lt a x /\ Rbar_lt x b /\ f x <= y).
       rewrite Rabs_pos_eq.
       apply Rlt_eps2_eps.
       apply cond_pos.
-      apply Rlt_le.
-      apply is_pos_div_2.
+      by apply Rlt_le.
       now apply Rgt_not_eq.
     destruct H as [H1 H2].
     split.
@@ -1167,16 +1165,14 @@ destruct (total_order_T (f x) y) as [[H|H]|H].
   rewrite Rabs_pos_eq.
   apply Rlt_eps2_eps.
   apply cond_pos.
-  apply Rlt_le.
-  apply is_pos_div_2.
+  by apply Rlt_le.
   split.
   exact H1.
   split.
   exact H2.
   now apply Rlt_le.
   apply Rminus_lt_0.
-  replace (x + eps / 2 - x) with (eps / 2) by ring.
-  apply is_pos_div_2.
+  by replace (x + eps / 2 - x) with (eps / 2) by ring.
 - exact H.
 - assert (H': locally x (fun u => y < f u)).
     apply (Cf (fun u => y < u)).
@@ -1260,14 +1256,14 @@ Lemma uniform_continuity_2d :
   Rabs (f u v - f x y) < eps.
 Proof.
 intros f a b c d Cf eps.
-set (P x y u v := Rabs (f u v - f x y) < pos_div_2 eps).
+set (P x y u v := Rabs (f u v - f x y) < eps / 2).
 refine (_ (fun x y Hx Hy => locally_2d_ex_dec (P x y) x y _ (Cf x y Hx Hy _))).
 intros delta1.
 set (delta2 x y := match Rle_dec a x, Rle_dec x b, Rle_dec c y, Rle_dec y d with
-  left Ha, left Hb, left Hc, left Hd => pos_div_2 (proj1_sig (delta1 x y (conj Ha Hb) (conj Hc Hd))) |
-  _, _, _, _ => mkposreal _ Rlt_0_1 end).
+  left Ha, left Hb, left Hc, left Hd => [posreal of proj1_sig (delta1 x y (conj Ha Hb) (conj Hc Hd)) / 2] |
+  _, _, _, _ => [posreal of 1] end).
 destruct (compactness_value_2d a b c d delta2) as (delta,Hdelta).
-exists (pos_div_2 delta) => x y u v Hx Hy Hu Hv Hux Hvy.
+exists [posreal of delta / 2] => x y u v Hx Hy Hu Hv Hux Hvy.
 specialize (Hdelta x y Hx Hy).
 apply Rnot_le_lt.
 apply: false_not_not Hdelta => Hdelta.
@@ -1312,7 +1308,7 @@ apply Rlt_eps2_eps.
 apply cond_pos.
 intros u v.
 unfold P.
-destruct (Rlt_dec (Rabs (f u v - f x y)) (pos_div_2 eps)) ; [left|right]; assumption.
+destruct (Rlt_dec (Rabs (f u v - f x y)) [posreal of eps / 2]) ; [left|right]; assumption.
 Qed.
 
 Lemma uniform_continuity_2d_1d :
@@ -1326,14 +1322,14 @@ Lemma uniform_continuity_2d_1d :
   Rabs (f u v - f x y) < eps.
 Proof.
 intros f a b c Cf eps.
-set (P x y u v := Rabs (f u v - f x y) < pos_div_2 eps).
+set (P x y u v := Rabs (f u v - f x y) < eps / 2).
 refine (_ (fun x Hx => locally_2d_ex_dec (P x c) x c _ (Cf x Hx _))).
 intros delta1.
 set (delta2 x := match Rle_dec a x, Rle_dec x b with
-  left Ha, left Hb => pos_div_2 (proj1_sig (delta1 x (conj Ha Hb))) |
-  _, _ => mkposreal _ Rlt_0_1 end).
+  left Ha, left Hb => [posreal of proj1_sig (delta1 x (conj Ha Hb)) / 2] |
+  _, _ => [posreal of 1] end).
 destruct (compactness_value_1d a b delta2) as (delta,Hdelta).
-exists (pos_div_2 delta) => x y u v Hx Hy Hu Hv Hux.
+exists [posreal of delta / 2] => x y u v Hx Hy Hu Hv Hux.
 specialize (Hdelta x Hx).
 apply Rnot_le_lt.
 apply: false_not_not Hdelta => Hdelta.
@@ -1358,7 +1354,7 @@ apply Rlt_le_trans with (2 := Hd).
 apply Rlt_trans with (1 := Hux).
 apply: Rlt_eps2_eps.
 apply cond_pos.
-apply Rle_lt_trans with (pos_div_2 delta).
+apply Rle_lt_trans with [posreal of delta / 2].
 now apply Rabs_le_between'.
 apply Rlt_le_trans with(1 := Rlt_eps2_eps _ (cond_pos delta)).
 apply Rle_trans with (1 := Hd).
@@ -1370,7 +1366,7 @@ apply Hr.
 apply Rlt_trans with (1 := Hxp).
 apply Rlt_eps2_eps.
 apply cond_pos.
-apply Rle_lt_trans with (pos_div_2 delta).
+apply Rle_lt_trans with [posreal of delta / 2].
 now apply Rabs_le_between'.
 apply Rlt_le_trans with(1 := Rlt_eps2_eps _ (cond_pos delta)).
 apply Rle_trans with (1 := Hd).
@@ -1379,7 +1375,7 @@ apply Rlt_eps2_eps.
 apply cond_pos.
 intros u v.
 unfold P.
-destruct (Rlt_dec (Rabs (f u v - f x c)) (pos_div_2 eps)); [left|right] ; assumption.
+destruct (Rlt_dec (Rabs (f u v - f x c)) [posreal of eps / 2]); [left|right] ; assumption.
 Qed.
 
 Lemma uniform_continuity_2d_1d' :
@@ -1822,8 +1818,8 @@ Proof.
     by apply Hd.
 
   assert (forall (x : R), {delta : posreal | forall y : R,
-    ball x delta y -> ~~ ball (f x) (pos_div_2 eps) (f y)}).
-    move: (pos_div_2 eps) => {eps} eps x.
+    ball x delta y -> ~~ ball (f x) [posreal of eps / 2] (f y)}).
+    move: [posreal of eps / 2] => {eps} eps x.
     assert (Rbar_lt 0 (Lub.Lub_Rbar (fun d => forall y : R, ball x d y -> ball (f x) eps (f y)))).
       case: (Lub.Lub_Rbar_correct (fun d => forall y : R, ball x d y -> ball (f x) eps (f y))).
       move: (Lub.Lub_Rbar _) => l H1 H2.
@@ -1833,9 +1829,7 @@ Proof.
       by apply Hd.
     assert (0 < real (Rbar_min 1 (Lub.Lub_Rbar (fun d => forall y : R, ball x d y -> ball (f x) eps (f y))))).
       move: H ; case: (Lub.Lub_Rbar (fun d => forall y : R, ball x d y -> ball (f x) eps (f y))) => [l | | ] //= H0.
-      apply Rmin_case => //.
-      by apply Rlt_0_1.
-      by apply Rlt_0_1.
+      by apply Rmin_case => //.
     set d := mkposreal _ H0.
     exists d.
     unfold d ; clear d ; simpl.
@@ -1849,7 +1843,7 @@ Proof.
     apply H2 => d /= Hd.
     apply Rnot_lt_le ; contradict Hy.
     by apply Hd.
-  destruct (compactness_value_1d a b (fun x => pos_div_2 (proj1_sig (H x)))) as [d Hd].
+  destruct (compactness_value_1d a b (fun x => [posreal of proj1_sig (H x) / 2])) as [d Hd].
   exists d => x y Hx Hy Hxy Hf.
   apply (Hd x Hx).
   case => {Hd} t [Ht].
@@ -1858,7 +1852,7 @@ Proof.
     eapply ball_le, Htx.
     rewrite {2}(double_var delta).
     apply Rminus_le_0 ; ring_simplify.
-    apply Rlt_le, is_pos_div_2.
+    by apply Rlt_le.
   intro Hftx.
   apply (Hdelta y).
     rewrite (double_var delta).
