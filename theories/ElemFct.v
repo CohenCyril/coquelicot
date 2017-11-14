@@ -719,20 +719,17 @@ Proof.
       apply derivable_pt_lim_id.
       apply derivable_pt_lim_ln.
       eapply Rlt_trans, Hz.
-      apply Rmin_case => //.
-      by apply Rlt_0_1.
+      by apply Rmin_case.
       rewrite /l ; field.
       apply Rgt_not_eq ; eapply Rlt_trans, Hz.
-      apply Rmin_case => //.
-      by apply Rlt_0_1.
+      by apply Rmin_case.
     move => y Hy.
     apply continuity_pt_minus.
     apply continuity_pt_id.
     apply derivable_continuous_pt ;
     eexists ; apply derivable_pt_lim_ln.
     eapply Rlt_le_trans, Hy.
-      apply Rmin_case => //.
-      by apply Rlt_0_1.
+      by apply Rmin_case.
     move => c [Hc H0].
     replace 1 with (1 - ln 1) by (rewrite ln_1 Rminus_0_r //).
     apply Rminus_le_0.

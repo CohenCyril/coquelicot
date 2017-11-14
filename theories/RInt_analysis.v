@@ -106,7 +106,7 @@ Proof.
   generalize (fun y Hy => proj1 (filterlim_locally_ball_norm _ _) (CIf y Hy) ([posreal of eps / 2]))
     => /= {CIf} CIf.
   assert (0 < Rmin (d1 / 2) (eps / (2 * (Mf + 1)))).
-    by apply Rmin_case.
+    apply Rmin_case => //.
     apply Rdiv_lt_0_compat.
     by apply eps.
     apply Rmult_lt_0_compat => //.

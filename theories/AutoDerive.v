@@ -975,12 +975,11 @@ apply Rlt_le.
 apply cond_pos.
 intros u Hu.
 apply H.
-apply Rle_lt_trans with ([posreal of eps / 2]).
-now apply Rabs_le_between'.
-rewrite (double_var eps).
-rewrite -(Rplus_0_r ([posreal of eps / 2])).
-apply Rplus_lt_compat_l.
-apply (cond_pos ([posreal of eps / 2])).
+apply Rle_lt_trans with (eps / 2).
+  now apply Rabs_le_between'.
+rewrite [X in _ < X](double_var eps).
+rewrite -[X in X < _](Rplus_0_r (eps / 2)).
+now apply Rplus_lt_compat_l.
 (* . *)
 assert (HexD:
   ( exists d : posreal, forall t u, Rmin (interp l e2) (interp l e3) - d < t < Rmax (interp l e2) (interp l e3) + d ->
