@@ -321,7 +321,7 @@ Proof.
   apply Hb.
   apply ex_series_lim_0 in Hx.
   apply (proj2 (is_lim_seq_spec (fun n : nat => Rabs (a n * x ^ n)) 0)) in Hx.
-  case: (Hx (mkposreal _ Rlt_0_1)) => /= {Hx} N Hx.
+  case: (Hx [posreal of 1]) => /= {Hx} N Hx.
 
   set M := fix f N := match N with
     | O => Rabs (a O * x ^ O)
@@ -382,7 +382,7 @@ Proof.
     by rewrite Rabs_mult RPow_abs Rabs_Rabsolu -Rabs_mult.
   contradict H.
   apply (proj2 (is_lim_seq_spec (fun n : nat => a n * x ^ n) 0)) in H.
-  case: (H (mkposreal _ Rlt_0_1)) => /= {Hx} N Hx.
+  case: (H [posreal of 1]) => /= {Hx} N Hx.
 
   set M := fix f N := match N with
     | O => Rabs (a O * x ^ O)
@@ -1670,7 +1670,7 @@ Proof.
       ring.
     specialize (Hw b H H0 H1).
     apply filterlim_ext_loc with (fun x => PSeries b x + PSeries a 1).
-    exists (mkposreal _ Rlt_0_1) => x Hx0 Hx.
+    exists [posreal of 1] => x Hx0 Hx.
     apply (Rabs_lt_between' x 1 1) in Hx0.
     rewrite Rminus_eq_0 in Hx0.
     rewrite PSeries_decr_1.
@@ -1742,7 +1742,7 @@ Proof.
     by rewrite pow_n_pow pow1 scal_one.
     by rewrite Rmult_0_r Rminus_0_r.
   apply filterlim_ext_loc with (fun x => (1-x) * PSeries Sa x).
-  exists (mkposreal _ Rlt_0_1) ; simpl ; intros x Hx Hx1.
+  exists [posreal of 1] ; simpl ; intros x Hx Hx1.
   apply (Rabs_lt_between' x 1 1) in Hx.
   rewrite Rminus_eq_0 in Hx.
   assert (Rabs x < 1).
@@ -2310,7 +2310,7 @@ Proof.
   replace y with ((y-x) + x) by ring.
   apply Rle_lt_trans with (1 := Rabs_triang _ _).
   by apply Rlt_minus_r.
-  exists (mkposreal _ Rlt_0_1) => /= y Hy.
+  exists [posreal of 1] => /= y Hy.
   apply sym_eq.
   apply is_derive_n_unique.
   apply IH.
@@ -2405,7 +2405,7 @@ Proof.
   transitivity (Derive_n (Derive (PSeries a)) n 0).
   apply Derive_n_ext_loc.
   case: (Rbar_eq_dec (CV_radius a) +oo) => H.
-  exists (mkposreal _ Rlt_0_1) => /= x Hx.
+  exists [posreal of 1] => /= x Hx.
   apply sym_eq ; apply Derive_PSeries.
   by rewrite H.
   have Hc : 0 < real (CV_radius a).

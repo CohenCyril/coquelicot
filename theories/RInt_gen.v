@@ -296,8 +296,8 @@ Lemma RInt_gen_norm {Fa Fb : (R -> Prop) -> Prop}
 Proof.
 intros Hab Hle Hf Hg.
 apply (filterlim_le (F := filter_prod Fa Fb) (fun ab => norm (RInt f (fst ab) (snd ab))) (fun ab => RInt g (fst ab) (snd ab)) (norm lf) lg).
-- specialize (Hf _ (locally_ball lf (mkposreal _ Rlt_0_1))).
-  specialize (Hg _ (locally_ball lg (mkposreal _ Rlt_0_1))).
+- specialize (Hf _ (locally_ball lf [posreal of 1])).
+  specialize (Hg _ (locally_ball lg [posreal of 1])).
   rewrite /filtermapi filter_ofE in Hf Hg *.
   apply: filter_imp (filter_and _ _ (filter_and  _ _ Hf Hg) (filter_and _ _ Hab Hle)) => {Hf Hg Hab Hle}.
   move => [a b] /= [[[If [Hf1 Hf2]] [Ig [Hg1 Hg2]]] [H H']].

@@ -332,7 +332,7 @@ Proof.
   intros [l [Hl Df]] x Hx.
   specialize (Df x Hx).
   apply filterlim_locally_ball_norm => eps.
-  specialize (Df (mkposreal _ Rlt_0_1)) ; simpl in Df.
+  specialize (Df [posreal of 1]) ; simpl in Df.
   destruct (linear_norm _ Hl) as [M Hm].
   assert (F (fun y => norm (minus (f y) (f x)) <= (M + 1) * norm (minus y x))).
     move: Df ; apply filter_imp => y Hy.
@@ -559,7 +559,7 @@ Proof.
   intros eps.
   destruct (linear_norm _ Hf) as [mf [Hmf Hnf]].
   assert (F (fun y => norm (minus (f y) (f x)) <= (1 + mf) * norm  (minus y x))).
-    specialize (Df x Hx (mkposreal _ Rlt_0_1)).
+    specialize (Df x Hx [posreal of 1]).
     move: Df ; apply filter_imp.
     move => y /= Hy.
     replace (minus (f y) (f x))

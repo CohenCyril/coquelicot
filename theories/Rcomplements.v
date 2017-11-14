@@ -1697,7 +1697,7 @@ Lemma Riemann_integrable_bound (f : R -> R) (a b : R) :
   Riemann_integrable f a b -> exists s : R, forall x, Rmin a b <= x <= Rmax a b -> f x <= s.
 Proof.
   move => pr ;
-  case (pr (mkposreal _ Rlt_0_1)) => {pr} phi [psi [pr _]] ;
+  case (pr [posreal of 1]) => {pr} phi [psi [pr _]] ;
   case: (StepFun_bound phi) => M_phi H_phi ;
   case: (StepFun_bound psi) => M_psi H_psi ;
   exists (M_psi + M_phi) => x Hx.

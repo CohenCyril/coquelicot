@@ -904,7 +904,7 @@ Proof.
   exists (mkposreal _ Hb) => y /= Hy ; split => //.
   apply Rplus_lt_reg_r with (-x).
   by apply (Rabs_lt_between (y - x)).
-  exists (mkposreal _ Rlt_0_1) ; by split.
+  exists [posreal of 1] ; by split.
 Qed.
 
 Lemma Rbar_min_comm (x y : Rbar) : Rbar_min x y = Rbar_min y x.

@@ -517,10 +517,10 @@ Proof.
   by move => -> ; apply Rplus_lt_compat_r,
   (Rbar_lt_trans (Finite (iu - e/2)) (u O) (Finite (su + e/2))).
 (* Finite, -oo *)
-  set eps := mkposreal _ Rlt_0_1 ; case: (Hiu eps) => {Hiu} Hiu _ ;
+  set eps := [posreal of 1] ; case: (Hiu eps) => {Hiu} Hiu _ ;
   move: (Hiu O) => {Hiu} ; apply Rbar_le_not_lt, Rbar_lt_le, Hsu.
 (* +oo, Finite *)
-  set eps := mkposreal _ Rlt_0_1 ; case: (Hsu eps) => {Hsu} Hsu _ ;
+  set eps := [posreal of 1] ; case: (Hsu eps) => {Hsu} Hsu _ ;
   move: (Hsu O) => {Hsu} ; apply Rbar_le_not_lt, Rbar_lt_le, Hiu.
 (* +oo, -oo *)
   move: (Hiu 0 O) => {Hiu} ; apply Rbar_le_not_lt, Rbar_lt_le, Hsu.

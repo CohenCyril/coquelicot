@@ -106,11 +106,11 @@ Proof.
   eapply is_lim_comp.
   2: by apply H.
   by apply filterlim_Rabs.
-  destruct x ; by exists (mkposreal _ Rlt_0_1).
+  destruct x ; by exists [posreal of 1].
   eapply is_lim_comp.
   2: by apply H.
   by apply filterlim_Rabs.
-  destruct x ; by exists (mkposreal _ Rlt_0_1).
+  destruct x ; by exists [posreal of 1].
   apply is_lim_comp_continuous => //.
   by apply continuous_Rabs.
 Qed.
@@ -213,7 +213,7 @@ Qed.
 Lemma filterlim_Rinv_0_left : Rinv @ (at_left 0) --> -oo.
 Proof.
   eapply filterlim_ext_loc.
-  exists (mkposreal _ Rlt_0_1) => /= y _ Hy0.
+  exists [posreal of 1] => /= y _ Hy0.
   rewrite -{2}(Ropp_involutive y).
   rewrite -Ropp_inv_permute.
   reflexivity.

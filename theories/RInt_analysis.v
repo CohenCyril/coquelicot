@@ -1042,7 +1042,7 @@ intros f a x (d1,(d2,Ia)) (d3,(d4,Df)) Cdf e.
 assert (J1:(continuity_2d_pt (fun u v : R => Derive (fun z : R => f z v) u) x (a x)))
    by now apply locally_2d_singleton in Cdf.
 destruct Cdf as (d5,Cdf).
-destruct (J1 (mkposreal _ Rlt_0_1)) as (d6,Df1); simpl in Df1.
+destruct (J1 [posreal of 1]) as (d6,Df1); simpl in Df1.
 assert (J2: 0 < e / (Rabs (Derive (fun z : R => f z (a x)) x)+1)).
 apply Rdiv_lt_0_compat.
 apply cond_pos.
@@ -1447,7 +1447,7 @@ apply @filterdiff_plus_fct.
 by apply locally_filter.
 (* *)
 apply is_derive_RInt_param_bound_comp_aux2; try easy.
-exists (mkposreal _ Rlt_0_1).
+exists [posreal of 1].
 intros y Hy.
 apply ex_RInt_point.
 by apply Da.

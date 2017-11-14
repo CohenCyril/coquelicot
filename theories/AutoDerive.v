@@ -1635,7 +1635,7 @@ destruct (simplify_domain d) ; try (apply HH ; fail).
 easy.
 simpl.
 intros H _.
-exists (mkposreal _ Rlt_0_1) => t Ht.
+exists [posreal of 1] => t Ht.
 now apply H.
 (* Locally2 *)
 revert IHd.
@@ -1650,7 +1650,7 @@ destruct (simplify_domain d) ; try (apply HH ; fail).
 easy.
 simpl.
 intros H _.
-exists (mkposreal _ Rlt_0_1) => u v Hu Hv.
+exists [posreal of 1] => u v Hu Hv.
 now apply H.
 (* ForallWide *)
 revert IHd.
@@ -1665,7 +1665,7 @@ destruct (simplify_domain d) ; try (apply HH ; fail).
 easy.
 simpl.
 intros H _.
-exists (mkposreal _ Rlt_0_1) => u v Hu Hv.
+exists [posreal of 1] => u v Hu Hv.
 now apply H.
 Qed.
 

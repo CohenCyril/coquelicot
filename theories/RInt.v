@@ -51,7 +51,7 @@ Lemma is_RInt_point :
 Proof.
 intros f a.
 apply/filterlim_locally.
-move => eps ; exists (mkposreal _ Rlt_0_1) => ptd _ [Hptd [Hh Hl]].
+move => eps ; exists [posreal of 1] => ptd _ [Hptd [Hh Hl]].
 rewrite Riemann_sum_zero.
 rewrite scal_zero_r.
 by apply ball_center.
@@ -121,7 +121,7 @@ Proof.
 
   case: Hex => If Hex.
   generalize (proj1 (filterlim_locally_ball_norm _ If) Hex) => {Hex} /= Hex.
-  case: (Hex (mkposreal _ Rlt_0_1)) => {Hex} alpha Hex.
+  case: (Hex [posreal of 1]) => {Hex} alpha Hex.
   have Hn : 0 <= ((b-a)/alpha).
     apply Rdiv_le_0_compat.
     apply -> Rminus_le_0 ; apply Rlt_le, Hab.
@@ -1296,7 +1296,7 @@ Proof.
   - rewrite -Hac' in H1 Hbc' H2 Hac |- * => {c Hac'}.
     apply is_RInt_swap in H2.
     apply filterlim_locally_ball_norm => /= eps.
-    exists (mkposreal _ Rlt_0_1) => y Hstep Hy.
+    exists [posreal of 1] => y Hstep Hy.
     rewrite Rminus_eq_0 sign_0.
     assert (H := scal_zero_l (Riemann_sum f y)).
     rewrite /ball_norm H /minus plus_zero_l opp_plus => {H y Hstep Hy}.
@@ -1826,7 +1826,7 @@ Proof.
       destruct (H1 _ HP) as [x [Hx Px]].
       by exists (mkposreal x Hx).
       destruct H2 ; split.
-    + by exists (mkposreal _ Rlt_0_1).
+    + by exists [posreal of 1].
     + intros.
       apply H0.
       eapply filter_imp.
@@ -2077,7 +2077,7 @@ Proof.
     (fun ptd : SF_seq => norm (scal (sign (b - a)) (Riemann_sum f ptd)))
     (fun ptd : SF_seq => scal (sign (b - a)) (Riemann_sum g ptd)).
   3: apply Hg.
-  exists (mkposreal _ Rlt_0_1) => ptd _ [Hptd [Hh Hl]].
+  exists [posreal of 1] => ptd _ [Hptd [Hh Hl]].
   destruct Hab as [Hab|Hab].
   rewrite -> sign_eq_1 by exact: Rlt_Rminus.
   rewrite !scal_one.
