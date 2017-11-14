@@ -1950,14 +1950,8 @@ apply/locallyP; exists (pos_div_2 dp) => z yz.
 by apply Hp; rewrite (double_var dp); apply: ball_triangle xy yz.
 Qed.
 
-Lemma locally_singleton :
-  forall (x : T) (P : T -> Prop),
-  locally x P -> P x.
-Proof.
-move=> x P /locallyP[dp H].
-apply H.
-by apply ball_center.
-Qed.
+Lemma locally_singleton (x : T) (P : T -> Prop) : [filter of x] P -> P x.
+Proof. move=> /locallyP[dp H]; by apply/H/ball_center. Qed.
 
 Lemma locally_ball (x : T) (eps : posreal) : locally x (ball x eps).
 Proof. by apply/locallyP; exists eps. Qed.
@@ -5124,12 +5118,10 @@ apply H1.
 now apply locally_2d_locally.
 Qed.
 
-Lemma locally_2d_singleton :
-  forall (P : R -> R -> Prop) x y, locally_2d P x y -> P x y.
+Lemma locally_2d_singleton (P : R -> R -> Prop) x y : locally_2d P x y -> P x y.
 Proof.
-intros P x y LP.
-apply locally_2d_locally in LP.
-apply locally_singleton with (1 := LP).
+move/locally_2d_locally => LP.
+by apply locally_singleton with (1 := LP).
 Qed.
 
 Lemma locally_2d_impl :
@@ -5278,17 +5270,17 @@ apply Rmax_l.
 apply Rabs_pos.
 Qed.
 
-Lemma locally_2d_1d :
-  forall (P : R -> R -> Prop) x y,
+Lemma locally_2d_1d (P : R -> R -> Prop) x y :
   locally_2d P x y ->
   locally_2d (fun u v => forall t, 0 <= t <= 1 -> locally_2d P (x + t * (u - x)) (y + t * (v - y))) x y.
 Proof.
-intros P x y H.
-apply locally_2d_1d_strong in H.
-apply: locally_2d_impl H.
+move/locally_2d_1d_strong.
+apply: locally_2d_impl.
 apply locally_2d_forall => u v H t Ht.
 specialize (H t Ht).
-by apply: locally_singleton H.
+have : [filter of t] (fun z => locally_2d P (x + z * (u - x)) (y + z * (v - y))).
+  by apply/locallyP.
+by apply: locally_singleton.
 Qed.
 
 Lemma locally_2d_ex_dec :
