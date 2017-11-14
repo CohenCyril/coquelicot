@@ -1941,18 +1941,15 @@ Instance canonical_filter_of_proper_filter (F : set (set T)) :
   ProperFilter F -> ProperFilter [filter of F].
 Proof. exact. Qed.
 
-(* TODO replace locally by filter of *)
-Lemma locally_locally :
-  forall (x : T) (P : T -> Prop),
-  locally x P -> locally x (fun y => locally y P).
+Lemma locally_locally (x : T) (P : T -> Prop) :
+  [filter of x] P -> [filter of x] (fun y => locally y P).
 Proof.
-move=> x P /locallyP[dp Hp].
-apply/locallyP; exists (pos_div_2 dp).
-intros y Hy.
-apply/locallyP; exists (pos_div_2 dp) => /= z Hz.
+move=> /locallyP[dp Hp].
+apply/locallyP; exists (pos_div_2 dp) => y xy.
+apply/locallyP; exists (pos_div_2 dp) => /= z yz.
 apply Hp.
 rewrite (double_var dp).
-now apply ball_triangle with y.
+apply (ball_triangle _ _ _ _ _ xy yz).
 Qed.
 
 Lemma locally_singleton :
