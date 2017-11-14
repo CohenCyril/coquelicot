@@ -141,7 +141,7 @@ Qed.
 Lemma is_lim_comp_seq (f : R -> R) (u : nat -> R) (x l : Rbar) :
   is_lim f x l ->
   eventually (fun n => Finite (u n) <> x) ->
-  is_lim_seq u x -> is_lim_seq (fun n => f (u n)) l.
+  u --> x -> (fun n => f (u n)) --> l.
 Proof.
 intros Lf Hu Lu.
 exact (is_lim_comp' u f x l Lu Lf Hu).
@@ -1831,7 +1831,7 @@ Proof.
       eapply Rbar_lt_le_trans, H1.
       by apply d.
       by apply Hd.
-    assert (0 < Rbar_min 1 (Lub.Lub_Rbar (fun d => forall y : R, ball x d y -> ball (f x) eps (f y)))).
+    assert (0 < real (Rbar_min 1 (Lub.Lub_Rbar (fun d => forall y : R, ball x d y -> ball (f x) eps (f y))))).
       move: H ; case: (Lub.Lub_Rbar (fun d => forall y : R, ball x d y -> ball (f x) eps (f y))) => [l | | ] //= H0.
       apply Rmin_case => //.
       by apply Rlt_0_1.

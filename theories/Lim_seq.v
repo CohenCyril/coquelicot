@@ -536,7 +536,7 @@ Proof.
   apply: Hun (mkposreal e He).
   by move: (Hun (mkposreal _ Rlt_0_1)).
   case: (u n) => [un | | ] //.
-  move: (Hl (u n) n) ; case: (u n) => [un | | ] //= {Hl} Hl.
+  move: (Hl (real (u n)) n) ; case: (u n) => [un | | ] //= {Hl} Hl.
   by apply Rlt_irrefl in Hl.
 Qed.
 

@@ -4589,7 +4589,7 @@ Canonical R_UniformSpace :=
   UniformSpacePack R R_UniformSpace_mixin.
 
 Definition R_complete_lim (F : (R -> Prop) -> Prop) : R :=
-  Lub_Rbar (fun x : R => F (ball (x + 1) (mkposreal _ Rlt_0_1))).
+  real (Lub_Rbar (fun x : R => F (ball (x + 1) (mkposreal _ Rlt_0_1)))).
 
 Lemma R_complete_ax1 :
   forall F : (R -> Prop) -> Prop,

@@ -92,10 +92,10 @@ Lemma is_lb_Rbar_dec (E : R -> Prop) :
   {l : R | is_lb_Rbar E l} + {(forall l : R, ~is_lb_Rbar E l)}.
 Proof.
   destruct (is_ub_Rbar_dec (fun x => E (- x))) as [ [l Hl] | Hl ].
-  left ; exists (Rbar_opp l).
+  left ; exists (real (Rbar_opp l)).
   by apply is_ub_Rbar_opp ; rewrite (Rbar_opp_involutive l).
   right => l.
-  specialize (Hl (Rbar_opp l)).
+  specialize (Hl (real (Rbar_opp l))).
   contradict Hl.
   by apply (is_ub_Rbar_opp E l).
 Qed.
@@ -359,13 +359,13 @@ Proof.
 Qed.
 
 Lemma is_ub_Rbar_correct (E : R -> Prop) (l : Rbar) :
-  is_ub_Rbar E l <-> Rbar_is_upper_bound (fun x => is_finite x /\ E x) l.
+  is_ub_Rbar E l <-> Rbar_is_upper_bound (fun x => is_finite x /\ E (real x)) l.
 Proof.
   split => [H x [<- Hx] | H x Hx] ; apply H => // ;
   by exists x.
 Qed.
 Lemma is_lb_Rbar_correct (E : R -> Prop) (l : Rbar) :
-  is_lb_Rbar E l <-> Rbar_is_lower_bound (fun x => is_finite x /\ E x) l.
+  is_lb_Rbar E l <-> Rbar_is_lower_bound (fun x => is_finite x /\ E (real x)) l.
 Proof.
   split => [H x [<- Hx] | H x Hx] ; apply H => // ;
   by exists x.
@@ -501,14 +501,14 @@ Proof.
 Qed.
 
 Lemma is_lub_Rbar_correct (E : R -> Prop) (l : Rbar) :
-  is_lub_Rbar E l <-> Rbar_is_lub (fun x => is_finite x /\ E x) l.
+  is_lub_Rbar E l <-> Rbar_is_lub (fun x => is_finite x /\ E (real x)) l.
 Proof.
   split => [[Hub Hlub]|[Hub Hlub]].
   split ; [ | move => b Hb ; apply Hlub ] ; by apply is_ub_Rbar_correct.
   split ; [ | move => b Hb ; apply Hlub ] ; by apply is_ub_Rbar_correct.
 Qed.
 Lemma is_glb_Rbar_correct (E : R -> Prop) (l : Rbar) :
-  is_glb_Rbar E l <-> Rbar_is_glb (fun x => is_finite x /\ E x) l.
+  is_glb_Rbar E l <-> Rbar_is_glb (fun x => is_finite x /\ E (real x)) l.
 Proof.
   split => [[Hub Hlub]|[Hub Hlub]].
   split ; [ | move => b Hb ; apply Hlub ] ; by apply is_lb_Rbar_correct.
@@ -766,7 +766,7 @@ Qed.
 Lemma uniqueness_dec P : (exists ! x : R, P x) -> {x : R | P x}.
 Proof.
   move => H.
-  exists (Lub_Rbar P).
+  exists (real (Lub_Rbar P)).
   case: H => x Hx.
   replace (real (Lub_Rbar P)) with (real (Finite x)).
   by apply Hx.
