@@ -1953,7 +1953,7 @@ Qed.
 Lemma locally_singleton (x : T) (P : T -> Prop) : [filter of x] P -> P x.
 Proof. move=> /locallyP[dp H]; by apply/H/ball_center. Qed.
 
-Lemma locally_ball (x : T) (eps : posreal) : locally x (ball x eps).
+Lemma locally_ball (x : T) (eps : posreal) : [filter of x] (ball x eps).
 Proof. by apply/locallyP; exists eps. Qed.
 
 Lemma locally_not' :
@@ -2006,45 +2006,37 @@ apply ball_le with (2 := Hy).
 now apply Rlt_le.
 Qed.
 
-Lemma locally_not :
-  forall (x : T) (P : T -> Prop),
+Lemma locally_not (x : T) (P : T -> Prop) :
   not (forall eps : posreal, not (forall y, ball x eps y -> not (P y))) ->
-  locally x (fun y => not (P y)).
+  [filter of x] (fun y => not (P y)).
 Proof.
-move=> x P H; apply/locallyP.
-destruct (locally_not' x P H) as [eps He].
-by exists eps.
+move=> H; apply/locallyP.
+case: (locally_not' x P H) => eps He; by exists eps.
 Qed.
 
-Lemma locally_ex_not :
-  forall (x : T) (P : T -> Prop),
-  locally x (fun y => not (P y)) ->
+Lemma locally_ex_not (x : T) (P : T -> Prop) :
+  [filter of x] (fun y => not (P y)) ->
   {d : posreal | forall y, ball x d y -> not (P y)}.
 Proof.
-move=> x P /locallyP H.
+move=> /locallyP H.
 apply locally_not'.
-destruct H as [eps He].
-intros H.
-now apply (H eps).
+case: H => eps He.
+by move/(_ eps).
 Qed.
 
-Lemma locally_ex_dec :
-  forall (x : T) (P : T -> Prop),
-  (forall x, P x \/ ~P x) ->
-  locally x P ->
+Lemma locally_ex_dec (x : T) (P : T -> Prop) :
+  (forall x, P x \/ ~ P x) ->
+  [filter of x] P ->
   {d : posreal | forall y, ball x d y -> P y}.
 Proof.
-intros x P P_dec H.
+intros P_dec H.
 destruct (locally_ex_not x (fun y => not (P y))) as [d Hd].
-apply: filter_imp H.
-intros y Py HP.
-now apply HP.
-exists d.
-intros y Hy.
-destruct (P_dec y) as [HP|HP].
-exact HP.
+  apply: filter_imp H => y Py.
+  by apply.
+exists d => y Hy.
+case: (P_dec y) => // HP.
 exfalso.
-now apply (Hd y).
+by apply: (Hd y).
 Qed.
 
 Lemma is_filter_lim_close {F} {FF : ProperFilter F} (x y : T) :
@@ -2146,11 +2138,9 @@ intros Hf Hl Hl' eps.
 (* have := (filter_and _ _ half_l half_l'). *)
 (* move=> /filter_ex [fx [fxl /ball_sym fxl']]. *)
 (* by rewrite (double_var eps); eapply (ball_triangle _ fx). *)
-assert (H: locally l (ball l (pos_div_2 eps))).
-  by apply locally_ball.
+have H := locally_ball l (pos_div_2 eps).
 specialize (Hl (ball l (pos_div_2 eps)) H).
-assert (H': locally l' (ball l' (pos_div_2 eps))).
-  by apply locally_ball.
+have H' := locally_ball l' (pos_div_2 eps).
 specialize (Hl' (ball l' (pos_div_2 eps)) H').
 unfold filtermapi in Hl, Hl'.
 rewrite /filter_of /= in Hl Hl'.
@@ -2178,7 +2168,7 @@ Qed.
 (** locally' *)
 
 Definition locally' {T : UniformSpace} (x : T) :=
-  within (fun y => y <> x) (locally x).
+  within (fun y => y <> x) [filter of x].
 
 Global Instance locally'_filter :
   forall {T : UniformSpace} (x : T), Filter (locally' x).
@@ -2240,7 +2230,7 @@ Section Open.
 Context {T : UniformSpace}.
 
 Definition open (D : T -> Prop) :=
-  forall x, D x -> locally x D.
+  forall x, D x -> [filter of x] D.
 
 Lemma locally_open :
   forall (D E : T -> Prop),
