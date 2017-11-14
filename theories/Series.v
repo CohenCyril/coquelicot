@@ -974,9 +974,7 @@ Proof.
   have : exists N, forall n, (N <= n)%nat -> Rabs (a (S n) / a n) <= (k+1)/2.
     move/(is_lim_seq_spec (fun n : nat => Rabs (a (S n) / a n)) (Finite k)) in H.
     case: (fun He => H (mkposreal ((1-k)/2) He)).
-      move: (fun He => is_pos_div_2 (mkposreal (1-k) He)) => /= He ;
-      apply: He.
-      by apply -> Rminus_lt_0.
+      by apply: Rdiv_lt_0_compat => //; rewrite -Rminus_lt_0.
     move => {H} /= Hk1 N H.
     exists N => n Hn.
     move: (H n Hn) => {H} H.
