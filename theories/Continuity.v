@@ -34,8 +34,10 @@ real. *)
 
 (** ** Definition *)
 
+Local Open Scope classical_set_scope.
+
 Definition is_lim (f : R -> R) (x l : Rbar) :=
-  filterlim f (Rbar_locally' x) (Rbar_locally l).
+  f @ (Rbar_locally' x) --> l.
 
 Definition is_lim' (f : R -> R) (x l : Rbar) :=
   match l with
@@ -56,27 +58,27 @@ destruct l as [l| |] ; split.
 - intros H P [eps LP].
   unfold filtermap.
   generalize (H eps).
-  apply filter_imp.
+  apply: filter_imp.
   intros u.
-  apply LP.
+  by apply LP.
 - intros H eps.
   apply (H (fun y => Rabs (y - l) < eps)).
   now exists eps.
 - intros H P [M LP].
   unfold filtermap.
   generalize (H M).
-  apply filter_imp.
+  apply: filter_imp.
   intros u.
-  apply LP.
+  by apply LP.
 - intros H M.
   apply (H (fun y => M < y)).
   now exists M.
 - intros H P [M LP].
   unfold filtermap.
   generalize (H M).
-  apply filter_imp.
+  apply: filter_imp.
   intros u.
-  apply LP.
+  by apply LP.
 - intros H M.
   apply (H (fun y => y < M)).
   now exists M.
@@ -117,9 +119,9 @@ Qed.
 
 Lemma is_lim_comp' :
   forall {T} {F} {FF : @Filter T F} (f : T -> R) (g : R -> R) (x l : Rbar),
-  filterlim f F (Rbar_locally x) -> is_lim g x l ->
+  f @ F --> x -> is_lim g x l ->
   F (fun y => Finite (f y) <> x) ->
-  filterlim (fun y => g (f y)) F (Rbar_locally l).
+  (fun y => g (f y)) @ F --> l.
 Proof.
 intros T F FF f g x l Lf Lg Hf.
 revert Lg.
@@ -127,7 +129,7 @@ apply filterlim_comp.
 intros P HP.
 destruct x as [x| |] ; try now apply Lf.
 specialize (Lf _ HP).
-unfold filtermap in Lf |- *.
+rewrite /filtermap /filter_of /= in Lf |- *.
 generalize (filter_and _ _ Hf Lf).
 apply filter_imp.
 intros y [H Hi].
@@ -356,8 +358,10 @@ Lemma is_lim_plus (f g : R -> R) (x lf lg l : Rbar) :
   is_lim (fun y => f y + g y) x l.
 Proof.
 intros Cf Cg Hp.
-eapply filterlim_comp_2 ; try eassumption.
-by apply filterlim_Rbar_plus.
+apply: filterlim_comp_2.
+exact: Cf.
+exact: Cg.
+exact: filterlim_Rbar_plus.
 Qed.
 Lemma is_lim_plus' (f g : R -> R) (x : Rbar) (lf lg : R) :
   is_lim f x lf -> is_lim g x lg ->
@@ -470,8 +474,10 @@ Lemma is_lim_mult (f g : R -> R) (x lf lg : Rbar) :
   is_lim (fun y => f y * g y) x (Rbar_mult lf lg).
 Proof.
 intros Cf Cg Hp.
-eapply filterlim_comp_2 ; try eassumption.
-by apply filterlim_Rbar_mult, Rbar_mult_correct.
+apply: filterlim_comp_2.
+exact: Cf.
+exact: Cg.
+by apply/filterlim_Rbar_mult/Rbar_mult_correct.
 Qed.
 Lemma ex_lim_mult (f g : R -> R) (x : Rbar) :
   ex_lim f x -> ex_lim g x ->
@@ -656,9 +662,9 @@ Qed.
 
 Lemma C0_extension_right {T : UniformSpace} (f : R -> T) lb (a b : R) :
    a < b ->
-   (forall c : R, a < c < b -> filterlim f (locally c) (locally (f c))) ->
-   (filterlim f (at_left b) (locally lb)) ->
-   {g : R -> T | (forall c, a < c -> filterlim g (locally c) (locally (g c)))
+   (forall c : R, a < c < b -> f @ c --> (f c)) ->
+   (f @ (at_left b) --> lb) ->
+   {g : R -> T | (forall c, a < c -> g @ c --> (g c))
      /\ (forall c : R, c < b -> g c = f c) /\ g b = lb}.
 Proof.
   intros Hab ; intros.
@@ -708,7 +714,7 @@ Proof.
     apply Gb ; by apply Rle_refl.
 Qed.
 Lemma filterlim_Ropp_left (x : R) :
-  filterlim Ropp (at_left x) (at_right (- x)).
+  Ropp @ (at_left x) --> (at_right (- x)).
 Proof.
   move => P [d /= Hd].
   exists d => y /= Hy Hy'.
@@ -719,7 +725,7 @@ Proof.
   by apply Ropp_lt_contravar.
 Qed.
 Lemma filterlim_Ropp_right (x : R) :
-  filterlim Ropp (at_right x) (at_left (- x)).
+  Ropp @ (at_right x) --> (at_left (- x)).
 Proof.
   move => P [d /= Hd].
   exists d => y /= Hy Hy'.
@@ -732,9 +738,9 @@ Qed.
 
 Lemma C0_extension_left {T : UniformSpace} (f : R -> T) la (a b : R) :
    a < b ->
-   (forall c : R, a < c < b -> filterlim f (locally c) (locally (f c))) ->
-   (filterlim f (at_right a) (locally la)) ->
-   {g : R -> T | (forall c, c < b -> filterlim g (locally c) (locally (g c)))
+   (forall c : R, a < c < b -> f @ c --> (f c)) ->
+   (f @ (at_right a) --> la) ->
+   {g : R -> T | (forall c, c < b -> g @ c --> (g c))
      /\ (forall c : R, a < c -> g c = f c) /\ g a = la}.
 Proof.
   intros.
@@ -763,10 +769,10 @@ Qed.
 
 Lemma C0_extension_lt {T : UniformSpace} (f : R -> T) la lb (a b : R) :
   a < b ->
-   (forall c : R, a < c < b -> filterlim f (locally c) (locally (f c))) ->
-   (filterlim f (at_right a) (locally la)) ->
-   (filterlim f (at_left b) (locally lb)) ->
-   {g : R -> T | (forall c, filterlim g (locally c) (locally (g c)))
+   (forall c : R, a < c < b -> f @ c --> f c) ->
+   (f @ (at_right a) --> la) ->
+   (f @ (at_left b) --> lb) ->
+   {g : R -> T | (forall c, g @ c --> g c)
      /\ (forall c : R, a < c < b -> g c = f c) /\ g a = la /\ g b = lb}.
 Proof.
   intros.
@@ -803,8 +809,8 @@ Proof.
 Qed.
 
 Lemma C0_extension_le {T : UniformSpace} (f : R -> T) (a b : R) :
-   (forall c : R, a <= c <= b -> filterlim f (locally c) (locally (f c))) ->
-   {g : R -> T | (forall c, filterlim g (locally c) (locally (g c)))
+   (forall c : R, a <= c <= b -> f @ c --> f c) ->
+   {g : R -> T | (forall c, g @ c --> g c)
      /\ (forall c : R, a <= c <= b -> g c = f c)}.
 Proof.
   intros.
@@ -838,7 +844,7 @@ Qed.
 
 Lemma bounded_continuity {K : AbsRing} {V : NormedModule K}
   (f : R -> V) a b :
-  (forall x, a <= x <= b -> filterlim f (locally x) (locally (f x)))
+  (forall x, a <= x <= b -> f @ x --> (f x))
   -> {M : R | forall x, a <= x <= b -> norm (f x) < M}.
 Proof.
   destruct (Rle_dec b a) as [Hab|Hab].
@@ -851,7 +857,7 @@ Proof.
     now apply Rle_trans with b.
   apply Rnot_le_lt in Hab.
 
-  wlog: f / (forall x, filterlim f (locally x) (locally (f x))) => [ Hw Cf | Cf _ ].
+  wlog: f / (forall x, f @ x --> (f x)) => [ Hw Cf | Cf _ ].
     destruct (C0_extension_le f a b) as [g [Cg Hg]].
     by apply Cf.
     destruct (Hw g) as [M HM] => //.
@@ -1226,15 +1232,15 @@ Definition continuity_2d_pt f x y :=
 Lemma continuity_2d_pt_filterlim :
   forall f x y,
   continuity_2d_pt f x y <->
-  filterlim (fun z : R * R => f (fst z) (snd z)) (locally (x,y)) (locally (f x y)).
+  (fun z : R * R => f (fst z) (snd z)) @ (locally(* TODO: shouldn't this be inferred? *) (x, y)) --> (f x y).
 Proof.
 split.
 - intros Cf P [eps He].
   specialize (Cf eps).
-  apply locally_2d_locally in Cf.
-  apply filter_imp with (2 := Cf).
-  intros [u v].
+  apply: filter_imp.
   apply He.
+  move/locally_2d_locally : Cf.
+  by apply.
 - intros Cf eps.
   apply locally_2d_locally.
   specialize (Cf (fun z => Rabs (z - f x y) < eps)).
@@ -1584,10 +1590,9 @@ Section Continuity.
 Context {T U : UniformSpace}.
 
 Definition continuous_on (D : T -> Prop) (f : T -> U) :=
-  forall x, D x -> filterlim f (within D (locally x)) (locally (f x)).
+  forall x, D x -> f @ (within D (locally x)) --> (f x).
 
-Definition continuous (f : T -> U) (x : T) :=
-  filterlim f (locally x) (locally (f x)).
+Definition continuous (f : T -> U) (x : T) := f @ x --> (f x).
 
 Lemma continuous_continuous_on :
   forall (D : T -> Prop) (f : T -> U) (x : T),
@@ -1599,7 +1604,7 @@ intros D f x Dx CD P Pfx.
 assert (Dx' := locally_singleton _ _ Dx).
 generalize (filter_and _ _ Dx (CD x Dx' P Pfx)).
 unfold filtermap, within.
-apply filter_imp.
+apply: filter_imp.
 intros t [H1 H2].
 now apply H2.
 Qed.
@@ -1612,8 +1617,8 @@ Lemma continuous_on_subset :
 Proof.
 intros D E f H CD x Ex P Pfx.
 generalize (CD x (H x Ex) P Pfx).
-unfold filtermap, within.
-apply filter_imp.
+rewrite /filtermap /within /filter_of /=.
+apply: filter_imp.
 intros t H' Et.
 now apply H', H.
 Qed.
@@ -1625,8 +1630,8 @@ Lemma continuous_on_forall :
 Proof.
 intros D f H x Dx P Pfx.
 generalize (H x Dx P Pfx).
-unfold filtermap, within.
-now apply filter_imp.
+rewrite /filtermap /within /filter_of /=.
+now apply: filter_imp.
 Qed.
 
 Lemma continuous_ext_loc (f g : T -> U) (x : T) :
@@ -1700,20 +1705,20 @@ Proof.
   eapply filter_imp.
   intros y Hy.
   apply He, Hy.
-  by apply Hf, locally_ball.
+  by apply/Hf/locally_ball.
 Qed.
 
 Lemma continuous_fst {U V : UniformSpace} (x : U) (y : V) :
   continuous (fst (B:=V)) (x, y).
 Proof.
-  intros P [d Hd].
+  move=> P /locallyP [d Hd].
   exists d => z [/= Hz1 Hz2].
   by apply Hd => /=.
 Qed.
 Lemma continuous_snd {U V : UniformSpace} (x : U) (y : V) :
   continuous (snd (B:=V)) (x, y).
 Proof.
-  intros P [d Hd].
+  move=> P /locallyP[d Hd].
   exists d => z [/= Hz1 Hz2].
   by apply Hd => /=.
 Qed.
