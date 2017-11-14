@@ -225,6 +225,9 @@ Notation "[ 'filter' 'of' x ]" := (@filter_of _ _ _ x eq_refl)
   (format "[ 'filter'  'of'  x ]").
 Arguments filter_of _ _ _ _ _ _ : simpl never.
 
+Lemma filter_ofE  T (F : set (set T)) : [filter of F] = F.
+Proof. by []. Qed.
+
 Open Scope R_scope.
 
 (** * Filters *)
@@ -254,31 +257,24 @@ Global Instance Proper_StrongProper :
   forall {T : Type} (F : set (set T)),
   ProperFilter F -> ProperFilter' F.
 Proof.
-intros T F [H1 H2].
-constructor.
-intros H.
-now destruct (H1 _ H) as [x Hx].
-exact H2.
+move=> T F FF; apply: Build_ProperFilter' => FsetF.
+by have [] := filter_ex _ FsetF.
 Qed.
 
-Lemma filter_forall :
-  forall {T : Type} {F} {FF: @Filter T F} (P : T -> Prop),
+Lemma filterP T (F : set (set T)) {FF : Filter F} (P : set T) :
+  (exists2 Q : set T, F Q & forall x, Q x -> P x) <-> F P.
+Proof.
+split; last by exists P.
+by move=> [Q FQ QP]; apply: (filter_imp Q P QP).
+Qed.
+
+Lemma filter_forall {T : Type} {F} {FF: @Filter T F} (P : T -> Prop) :
   (forall x, P x) -> F P.
-Proof.
-intros T F FF P H.
-apply filter_imp with (fun _ => True).
-easy.
-apply filter_true.
-Qed.
+Proof. by move=> ?; apply/filterP; exists setT => //; apply: filter_true. Qed.
 
-Lemma filter_const :
-  forall {T : Type} {F} {FF: @ProperFilter T F} (P : Prop),
-  F (fun _ => P) -> P.
-Proof.
-intros T F FF P H.
-destruct (filter_ex (fun _ => P) H) as [_ H'].
-exact H'.
-Qed.
+Lemma filter_const {T : Type} {F} {FF: @ProperFilter T F} (P : Prop) :
+  F (fun=> P) -> P.
+Proof. by move=> FP; case: (filter_ex (fun=> P) FP). Qed.
 
 (** ** Limits expressed with filters *)
 
@@ -292,12 +288,14 @@ Proof. exact. Qed.
 
 Lemma filter_le_trans T (F G H : set (set T)) :
   (F --> G) -> (G --> H) -> (F --> H).
-Proof.
-now intros FG GH P K; apply FG, GH.
-Qed.
+Proof. by move=> FG GH P /GH /FG. Qed.
 
 Definition filtermap {T U : Type} (f : T -> U) (F : set (set T)) :=
   [set P | F (f @^-1` P)].
+
+Lemma filtermapE {U V : Type} (f : U -> V)
+  (F : set (set U)) (P : set V) : filtermap f F P = F (f @^-1` P).
+Proof. by []. Qed.
 
 Notation "E @[ x --> F ]" := (filtermap (fun x => E) [filter of F])
   (at level 60, x ident, format "E  @[ x  -->  F ]") : classical_set_scope.
@@ -307,41 +305,24 @@ Notation "f @ F" := (filtermap f [filter of F])
 Global Instance filtermap_filter T U (f : T -> U) (F : set (set T)) :
   Filter F -> Filter (f @ F).
 Proof.
-intros FF.
-unfold filtermap.
-constructor.
-- apply filter_true.
-- intros P Q HP HQ.
-  now apply filter_and.
-- intros P Q H HP.
-  apply (filter_imp (fun x => P (f x))).
-  intros x Hx.
-  now apply H.
-  exact HP.
+move=> FF; constructor => [|P Q|P Q PQ]; rewrite ?filtermapE ?filter_ofE //=.
+- exact: filter_true.
+- exact: filter_and.
+- by apply: filter_imp=> ?/PQ.
 Qed.
 
 Global Instance filtermap_proper_filter' T U (f : T -> U) (F : set (set T)) :
   ProperFilter' F -> ProperFilter' (f @ F).
 Proof.
-intros FF.
-unfold filtermap.
-split.
-- apply filter_not_empty.
-- apply filtermap_filter.
-  apply filter_filter'.
+move=> FF; apply: Build_ProperFilter'.
+by rewrite filtermapE; apply: filter_not_empty.
 Qed.
 
 Global Instance filtermap_proper_filter T U (f : T -> U) (F : set (set T)) :
   ProperFilter F -> ProperFilter (f @ F).
 Proof.
-intros FF.
-unfold filtermap.
-split.
-- intros P FP.
-  destruct (filter_ex _ FP) as [x Hx].
-  now exists (f x).
-- apply filtermap_filter.
-  apply filter_filter.
+move=> FF; apply: Build_ProperFilter => P; rewrite filtermapE => /= FP.
+by have [x Pfx] := filter_ex _ FP; exists (f x).
 Qed.
 
 Definition filtermapi {T U : Type} (f : T -> set U) (F : set (set T)) :=
@@ -352,18 +333,20 @@ Notation "E `@[ x --> F ]" := (filtermapi (fun x => E) F)
 Notation "f `@ F" := (filtermapi f [filter of F])
   (at level 60, format "f  `@  F") : classical_set_scope.
 
+Lemma filtermapiE {U V : Type} (f : U -> set V)
+  (F : set (set U)) (P : set V) : filtermapi f F P = F [set x | exists y, f x y /\ P y].
+Proof. by []. Qed.
+
 Global Instance filtermapi_filter T U (f : T -> U -> Prop) (F : set (set T)) :
   F [set x | (exists y, f x y) /\ forall y1 y2, f x y1 -> f x y2 -> y1 = y2] ->
   Filter F -> Filter (f `@ F).
 Proof.
-intros H FF.
-unfold filtermapi.
-constructor.
-- apply: filter_imp H => x [[y Hy] H].
+move=> FP FF; rewrite /filtermapi; apply: Build_Filter.
+- apply: filter_imp FP => x [[y Hy] H].
   exists y.
   exact (conj Hy I).
 - intros P Q HP HQ.
-  apply: filter_imp (filter_and _ _ (filter_and _ _ HP HQ) H).
+  apply: filter_imp (filter_and _ _ (filter_and _ _ HP HQ) FP).
   intros x [[[y1 [Hy1 Py]] [y2 [Hy2 Qy]]] [[y Hy] Hf]].
   exists y.
   apply (conj Hy).
@@ -1917,7 +1900,7 @@ Lemma ProperFilter_ext {T} (F G : set (set T)) : (forall P, F P <-> G P) ->
 Proof.
 move=> FG FF.
 constructor; first by move=> P /FG; apply filter_ex.
-constructor; first by apply/FG/filter_true.  
+constructor; first by apply/FG/filter_true.
 by move=> P Q /FG FP /FG GQ; apply/FG/filter_and.
 by move=> P Q PQ /FG FP; apply/FG; apply:filter_imp FP.
 Qed.
@@ -2068,8 +2051,7 @@ Notation "[ 'cvg' F 'in' T ]" :=
   (format "[ 'cvg'  F  'in'  T ]") : classical_set_scope.
 (* Notation "[ 'cvg' F ]" :=  *)
 (*   (format "[ 'cvg'  F ]") : classical_set_scope. *)
-Notation "[ 'continuous' f ]" := (forall x, f%function @ x --> f%function x)
-  (format "[ 'continuous'  f ]") : classical_set_scope.
+Notation continuous f := (forall x, f%function @ locally x --> f%function x).
 
 Require Import ssrbool ssrfun.
 
@@ -2093,7 +2075,7 @@ Lemma filterlim_locally {F} {FF : Filter F} (f : T -> U) (y : U) :
 Proof.
 split.
 - move=> Cf eps.
-  apply (Cf (fun x => ball y eps x)).
+  apply: (Cf (fun x => ball y eps x)).
   by apply/locallyP; exists eps.
 - move=> Cf P /locallyP[eps He].
   apply: filter_imp (Cf eps) => t.
@@ -2157,7 +2139,7 @@ Qed.
 End Locally_fct.
 
 Lemma is_filter_lim_filtermap {T: UniformSpace} {U : UniformSpace} :
-  forall (F : set (set T)) x (f : T -> U), {for x, [continuous f]} -> F --> x -> f @ F --> f x.
+  forall (F : set (set T)) x (f : T -> U), {for x, continuous f} -> F --> x -> f @ F --> f x.
 Proof.
   intros F x f Cf Fx P HP.
   apply Cf in HP.
@@ -2179,6 +2161,7 @@ Qed.
 
 (** Pointed filter *)
 
+(* :TODO: move to Rcomplements *)
 Hint Resolve cond_pos.
 Lemma Rmin_positive (x : posreal) (y : posreal) : Rmin x y > 0.
 Proof. exact: Rmin_pos. Qed.
@@ -2276,7 +2259,7 @@ End Open.
 
 Lemma open_comp :
   forall {T U : UniformSpace} (f : T -> U) (D : U -> Prop),
-  (forall x, D (f x) -> {for x, [continuous f]}) ->
+  (forall x, D (f x) -> {for x, continuous f}) ->
   open D -> open (fun x : T => D (f x)).
 Proof.
 intros T U f D Cf OD x Dfx.
@@ -2367,7 +2350,7 @@ End Closed.
 
 Lemma closed_comp :
   forall {T U : UniformSpace} (f : T -> U) (D : U -> Prop),
-  [continuous f] ->
+  continuous f ->
   closed D -> closed (fun x : T => D (f x)).
 Proof.
 intros T U f D Cf CD x Dfx.
@@ -4733,11 +4716,6 @@ Canonical R_CompleteNormedModule :=
 Definition at_left x := within (fun u : R => Rlt u x) (locally x).
 Definition at_right x := within (fun u : R => Rlt x u) (locally x).
 
-(* :TODO: *)
-(* Lemma continuity_ptE (f : R -> R) (x : R) : *)
-(*  continuity_pt f x = {for x, [continuous f]}. *)
-(* Proof. *)
-
 Global Instance at_right_proper_filter : forall (x : R),
   ProperFilter (at_right x).
 Proof.
@@ -5398,17 +5376,11 @@ intros [x| |] y Hxy.
 - now destruct y as [y| |].
 Qed.
 
-Lemma Rbar_locally'_le :
-  forall x, filter_le (Rbar_locally' x) (Rbar_locally x).
-Proof.
-intros [x| |] P [eps HP] ; exists eps ; intros ; now apply HP.
-Qed.
+Lemma Rbar_locally'_le x : Rbar_locally' x --> Rbar_locally x.
+Proof. by move: x; move=> [x| | ] P [eps HP]; exists eps => *; apply: HP. Qed.
 
-Lemma Rbar_locally'_le_finite :
-  forall x : R, filter_le (Rbar_locally' x) (locally x).
-Proof.
-intros x P [eps HP] ; exists eps ; intros ; now apply HP.
-Qed.
+Lemma Rbar_locally'_le_finite (x : R) : Rbar_locally' x --> locally x.
+Proof. by move=> P [eps HP]; exists eps => *; apply: HP. Qed.
 
 (** * Some limits on real functions *)
 
@@ -5418,10 +5390,9 @@ Definition Rbar_loc_seq (x : Rbar) (n : nat) := match x with
     | -oo => - INR n
   end.
 
-Lemma filterlim_Rbar_loc_seq :
-  forall x, (Rbar_loc_seq x) --> (Rbar_locally' x).
+Lemma filterlim_Rbar_loc_seq  x : Rbar_loc_seq x --> Rbar_locally' x.
 Proof.
-  intros x P.
+  intros P.
   unfold Rbar_loc_seq.
   case: x => /= [x | | ] [delta Hp].
 (* x \in R *)
@@ -5465,12 +5436,11 @@ Proof.
   rewrite -S_INR ; by apply le_INR.
 Qed.
 
-Lemma continuity_pt_locally :
-  forall f x,
+
+Lemma continuity_pt_locally f x :
   continuity_pt f x <->
   forall eps : posreal, locally x (fun u => Rabs (f u - f x) < eps).
 Proof.
-intros f x.
 split.
 intros H eps.
 move: (H eps (cond_pos eps)) => {H} [d [H1 H2]].
@@ -5489,55 +5459,42 @@ intros h [Zh Hh].
 exact: H.
 Qed.
 
-Lemma continuity_pt_locally' :
-  forall f x,
-  continuity_pt f x <->
-  forall eps : posreal, locally' x (fun u => Rabs (f u - f x) < eps).
+Lemma continuity_pt_filterlim (f : R -> R) (x : R) :
+  continuity_pt f x <-> f @ x --> f x.
 Proof.
-intros f x.
-split.
-intros H eps.
-move: (H eps (cond_pos eps)) => {H} [d [H1 H2]].
-rewrite /= /R_dist /D_x /no_cond in H2.
-exists (mkposreal d H1) => y H H'.
-destruct (Req_dec x y) as [<-|Hxy].
-rewrite /Rminus Rplus_opp_r Rabs_R0.
-apply cond_pos.
-by apply H2.
-intros H eps He.
-move: (H (mkposreal _ He)) => {H} [d H].
-exists d.
-split.
-apply cond_pos.
-intros h [Zh Hh].
-apply H.
-exact Hh.
-apply proj2 in Zh.
-now contradict Zh.
-Qed.
-
-Lemma continuity_pt_filterlim :
-  forall (f : R -> R) (x : R),
-  continuity_pt f x <->
-  f @ x --> (f x).
-Proof.
-intros f x.
 eapply iff_trans.
 apply continuity_pt_locally.
 apply iff_sym.
 exact (filterlim_locally f (f x)).
 Qed.
 
-Lemma continuity_pt_filterlim' :
-  forall f x,
-  continuity_pt f x <->
-  f @ (locally' x) --> (f x).
+Lemma continuity_ptE (f : R -> R) (x : R) :
+ continuity_pt f x <-> {for x, continuous f}.
+Proof. exact: continuity_pt_filterlim. Qed.
+
+Lemma continuous_withinNx {U V : UniformSpace} (Ueqdec : forall x y : U, x = y \/ x <> y)
+  (f : U -> V) x :
+  {for x, continuous f} <-> f @ locally' x --> f x.
 Proof.
-intros f x.
-eapply iff_trans.
-apply continuity_pt_locally'.
-apply iff_sym.
-exact (filterlim_locally f (f x)).
+split=> - cfx P; rewrite !filter_ofE => fxP.
+  by rewrite filtermapE; apply/filter_le_within/cfx.
+rewrite filtermapE; have := cfx P fxP.
+rewrite !filter_ofE filtermapE => /filterP [] //= Q Qx QP.
+apply/filterP; exists (fun y => y <> x -> Q y) => // y Qy.
+by have [->|/Qy /QP //] := Ueqdec y x; apply: locally_singleton.
+Qed.
+
+Lemma continuity_pt_filterlim' f x :
+   continuity_pt f x <-> f @ locally' x --> f x.
+Proof. by rewrite continuity_ptE continuous_withinNx //; exact: Req_dec. Qed.
+
+
+Lemma continuity_pt_locally' f x :
+  continuity_pt f x <->
+  forall eps : posreal, locally' x (fun u => Rabs (f u - f x) < eps).
+Proof.
+rewrite continuity_ptE continuous_withinNx; last exact: Req_dec.
+exact: filterlim_locally.
 Qed.
 
 Lemma locally_pt_comp (P : R -> Prop) (f : R -> R) (x : R) :
