@@ -37,7 +37,7 @@ Context {V : NormedModule R_AbsRing}.
 Lemma continuous_RInt_0 :
   forall (f : R -> V) (a : R) If,
     locally a (fun x => is_RInt f a x (If x))
-    -> continuous If a.
+    -> {for a, continuous If}.
 Proof.
   move => f a If [d1 /= CIf].
   assert (forall eps : posreal, norm (If a) < eps).
@@ -52,7 +52,7 @@ Proof.
         seq_step (SF_lx y) < d /\
         pointed_subdiv y /\
         SF_h y = Rmin a a /\ seq.last (SF_h y) (SF_lx y) = Rmax a a).
-        apply filter_ex.
+        apply (@filter_ex _ _ (Riemann_fine_filter a a)).
         exists d => y Hy Hy'.
         now split.
       case: H0 => {CIf H} ptd [Hstep Hptd].
@@ -129,7 +129,7 @@ Proof.
   assert (exists y0, seq_step (SF_lx y0) < d' /\
       pointed_subdiv y0 /\
       SF_h y0 = Rmin a x /\ seq.last (SF_h y0) (SF_lx y0) = Rmax a x).
-    apply filter_ex.
+    apply (@filter_ex _ _ (Riemann_fine_filter a x)).
     exists d' => y Hy Hy'.
     now split.
     case: H2 => ptd [Hstep Hptd].
@@ -198,7 +198,7 @@ Qed.
 
 Lemma continuous_RInt_1 (f : R -> V) (a b : R) (If : R -> V) :
   locally b (fun z : R => is_RInt f a z (If z))
-  -> continuous If b.
+  -> {for b, continuous If}.
 Proof.
   intros.
   generalize (locally_singleton _ _ H) => /= Hab.
@@ -206,7 +206,7 @@ Proof.
   intros x.
   by rewrite plus_comm -plus_assoc plus_opp_l plus_zero_r.
   eapply filterlim_comp_2, filterlim_plus.
-  apply filterlim_const.
+  apply: filterlim_const.
   apply (continuous_RInt_0 f _ (fun x : R_UniformSpace => minus (If x) (If b))).
   apply: filter_imp H => x Hx.
   rewrite /minus plus_comm.
@@ -215,7 +215,7 @@ Proof.
 Qed.
 Lemma continuous_RInt_2 (f : R -> V) (a b : R) (If : R -> V) :
   locally a (fun z : R => is_RInt f z b (If z))
-  -> continuous If a.
+  -> {for a, continuous If}.
 Proof.
   intros.
   generalize (locally_singleton _ _ H) => /= Hab.
@@ -225,7 +225,7 @@ Proof.
   apply continuous_opp.
   apply continuous_plus.
   apply filterlim_const.
-  apply (continuous_RInt_0 f _ (fun x : R_UniformSpace => minus (If a) (If x))).
+  apply: (continuous_RInt_0 f _ (fun x : R_UniformSpace => minus (If a) (If x))).
   apply: filter_imp H => x Hx.
   eapply is_RInt_Chasles.
   by apply Hab.
@@ -233,7 +233,7 @@ Proof.
 Qed.
 Lemma continuous_RInt (f : R -> V) (a b : R) (If : R -> R -> V) :
   locally (a,b) (fun z : R * R => is_RInt f (fst z) (snd z) (If (fst z) (snd z)))
-  -> continuous (fun z : R * R => If (fst z) (snd z)) (a,b).
+  -> {for (a, b), continuous (fun z : R * R => If (fst z) (snd z))}.
 Proof.
   intros HIf.
   move: (locally_singleton _ _ HIf) => /= Hab.
@@ -264,14 +264,19 @@ Proof.
   eapply filterlim_comp_2, filterlim_plus ; simpl.
   apply (continuous_comp (fun x => fst x) (fun x => If x b)) ; simpl.
   apply continuous_fst.
-  eapply (continuous_RInt_2 f _ b).
+  apply: (continuous_RInt_2 f _ b).
     case: HIf => /= d HIf.
     exists d => x /= Hx.
     apply (HIf (x,b)).
     split => //=.
     by apply ball_center.
-  eapply filterlim_comp_2, filterlim_plus ; simpl.
-  apply filterlim_const.
+  set tmp := [filter of fun P : set (R * R) => _].
+  rewrite (_ : tmp = locally (a, b)) //.
+  eapply filterlim_comp_2, filterlim_plus; simpl.
+  clear tmp.
+  set tmp := [filter of fun P : set (R * R) => _].
+  rewrite (_ : tmp = locally (a, b)) //.
+  apply: filterlim_const.
   apply (continuous_comp (fun x => snd x) (fun x => If a x)) ; simpl.
   apply continuous_snd.
   eapply (continuous_RInt_1 f a b).
@@ -280,6 +285,8 @@ Proof.
     apply (HIf (a,x)).
     split => //=.
     by apply ball_center.
+  Unshelve.
+  by apply Riemann_fine_filter.
 Qed.
 
 End Continuity.
