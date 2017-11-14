@@ -20,7 +20,7 @@ COPYING file for more details.
 *)
 
 Require Import Reals.
-Require Import mathcomp.ssreflect.ssreflect.
+From Coq Require Import ssreflect ssrfun ssrbool.
 Require Import Rcomplements Rbar Hierarchy.
 Require Import Compactness Lim_seq.
 
@@ -1592,13 +1592,11 @@ Context {T U : UniformSpace}.
 Definition continuous_on (D : T -> Prop) (f : T -> U) :=
   forall x, D x -> f @ (within D (locally x)) --> (f x).
 
-Definition continuous (f : T -> U) (x : T) := f @ x --> (f x).
-
 Lemma continuous_continuous_on :
   forall (D : T -> Prop) (f : T -> U) (x : T),
   locally x D ->
   continuous_on D f ->
-  continuous f x.
+  {for x, continuous f}.
 Proof.
 intros D f x Dx CD P Pfx.
 assert (Dx' := locally_singleton _ _ Dx).
@@ -1625,7 +1623,7 @@ Qed.
 
 Lemma continuous_on_forall :
   forall (D : T -> Prop) (f : T -> U),
-  (forall x, D x -> continuous f x) ->
+  (forall x, D x -> {for x, continuous f}) ->
   continuous_on D f.
 Proof.
 intros D f H x Dx P Pfx.
@@ -1636,7 +1634,7 @@ Qed.
 
 Lemma continuous_ext_loc (f g : T -> U) (x : T) :
   locally x (fun y : T => g y = f y)
-  -> continuous g x -> continuous f x.
+  -> {for x, continuous g} -> {for x, continuous f}.
 Proof.
   intros.
   eapply filterlim_ext_loc.
@@ -1646,8 +1644,8 @@ Qed.
 Lemma continuous_ext :
   forall (f g : T -> U) (x : T),
   (forall x, f x = g x) ->
-  continuous f x ->
-  continuous g x.
+  {for x, continuous f} ->
+  {for x, continuous g}.
 Proof.
 intros f g x H Cf.
 apply filterlim_ext with (1 := H).
@@ -1669,16 +1667,16 @@ Qed.
 End Continuity.
 
 Lemma continuous_comp {U V W : UniformSpace} (f : U -> V) (g : V -> W) (x : U) :
-  continuous f x -> continuous g (f x)
-  -> continuous (fun x => g (f x)) x.
+  {for x, continuous f} -> {for (f x), continuous g}
+  -> {for x, continuous (fun x => g (f x))}.
 Proof.
   by apply filterlim_comp.
 Qed.
 Lemma continuous_comp_2 {U V W X : UniformSpace}
   (f : U -> V) (g : U -> W) (h : V -> W -> X) (x : U) :
-  continuous f x -> continuous g x
-  -> continuous (fun (x : V * W) => h (fst x) (snd x)) (f x,g x)
-  -> continuous (fun x => h (f x) (g x)) x.
+  {for x, continuous f} -> {for x, continuous g}
+  -> {for (f x, g x), continuous (fun (x : V * W) => h (fst x) (snd x))}
+  -> {for x, continuous (fun x => h (f x) (g x))}.
 Proof.
   intros Cf Cg Ch.
   eapply filterlim_comp_2.
@@ -1696,7 +1694,7 @@ Proof.
 Qed.
 
 Lemma is_lim_comp_continuous (f g : R -> R) (x : Rbar) (l : R) :
-  is_lim f x l -> continuous g l
+  is_lim f x l -> {for l, continuous g}
     -> is_lim (fun x => g (f x)) x (g l).
 Proof.
   intros Hf Hg.
@@ -1709,39 +1707,34 @@ Proof.
 Qed.
 
 Lemma continuous_fst {U V : UniformSpace} (x : U) (y : V) :
-  continuous (fst (B:=V)) (x, y).
+  {for (x, y), continuous (fst (B:=V))}.
 Proof.
   move=> P /locallyP [d Hd].
   exists d => z [/= Hz1 Hz2].
   by apply Hd => /=.
 Qed.
 Lemma continuous_snd {U V : UniformSpace} (x : U) (y : V) :
-  continuous (snd (B:=V)) (x, y).
+  {for (x, y), continuous (snd (B:=V))}.
 Proof.
   move=> P /locallyP[d Hd].
   exists d => z [/= Hz1 Hz2].
   by apply Hd => /=.
 Qed.
 
-Lemma continuous_const {U V : UniformSpace} (c : V) (x : U) :
-  continuous (fun _ => c) x.
-Proof.
-  apply filterlim_const.
-Qed.
+Lemma continuous_const {U V : UniformSpace} (c : V) :
+  continuous (fun _ : U => c).
+Proof. by move=> ?; apply filterlim_const. Qed.
 
-Lemma continuous_id {U : UniformSpace} (x : U) :
-  continuous (fun y => y) x.
-Proof.
-  apply filterlim_id.
-Qed.
+Lemma continuous_id {U : UniformSpace} : continuous (fun y : U => y).
+Proof. move=> ?; apply filterlim_id. Qed.
 
 Section Continuity_op.
 
 Context {U : UniformSpace} {K : AbsRing} {V : NormedModule K}.
 
 Lemma continuous_opp (f : U -> V) (x : U) :
-  continuous f x ->
-  continuous (fun x : U => opp (f x)) x.
+  {for x, continuous f} ->
+  {for x, continuous (fun x : U => opp (f x))}.
 Proof.
   intros.
   eapply filterlim_comp.
@@ -1750,8 +1743,8 @@ Proof.
 Qed.
 
 Lemma continuous_plus (f g : U -> V) (x : U) :
-  continuous f x -> continuous g x ->
-  continuous (fun x : U => plus (f x) (g x)) x.
+  {for x, continuous f} -> {for x, continuous g} ->
+  {for x, continuous (fun x : U => plus (f x) (g x))}.
 Proof.
   intros.
   eapply filterlim_comp_2.
@@ -1761,8 +1754,8 @@ Proof.
 Qed.
 
 Lemma continuous_minus (f g : U -> V) (x : U) :
-  continuous f x -> continuous g x ->
-  continuous (fun x : U => minus (f x) (g x)) x.
+  {for x, continuous f} -> {for x, continuous g} ->
+  {for x, continuous (fun x : U => minus (f x) (g x))}.
 Proof.
   intros.
   apply continuous_plus.
@@ -1771,19 +1764,20 @@ Proof.
 Qed.
 
 Lemma continuous_scal (k : U -> K) (f : U -> V) (x : U) :
-  continuous k x -> continuous f x -> continuous (fun y => scal (k y) (f y)) x.
+  {for x, continuous k} -> {for x, continuous f} ->
+  {for x, continuous (fun y => scal (k y) (f y))}.
 Proof.
   intros.
   by eapply filterlim_comp_2, filterlim_scal.
 Qed.
 Lemma continuous_scal_r (k : K) (f : U -> V) (x : U) :
-  continuous f x -> continuous (fun y => scal k (f y)) x.
+  {for x, continuous f} -> {for x, continuous (fun y => scal k (f y))}.
 Proof.
-  intros.
-  by apply continuous_comp, filterlim_scal_r.
+  intros; apply: continuous_comp => //.
+  exact: filterlim_scal_r.
 Qed.
 Lemma continuous_scal_l (f : U -> K) (k : V) (x : U) :
-  continuous f x -> continuous (fun y => scal (f y) k) x.
+  {for x, continuous f} -> {for x, continuous (fun y => scal (f y) k)}.
 Proof.
   intros.
   apply (continuous_comp f (fun y => scal y k)) => //.
@@ -1794,8 +1788,8 @@ End Continuity_op.
 
 Lemma continuous_mult {U : UniformSpace} {K : AbsRing}
   (f g : U -> K) (x : U) :
-  continuous f x -> continuous g x
-  -> continuous (fun y => mult (f y) (g y)) x.
+  {for x, continuous f} -> {for x, continuous g}
+  -> {for x, continuous (fun y => mult (f y) (g y))}.
 Proof.
   intros.
   by eapply filterlim_comp_2, filterlim_mult.
@@ -1806,12 +1800,12 @@ Section UnifCont.
 Context {V : UniformSpace}.
 
 Lemma unifcont_1d (f : R -> V) a b :
-  (forall x, a <= x <= b -> continuous f x) ->
+  (forall x, a <= x <= b -> {for x, continuous f}) ->
   forall eps : posreal, {delta : posreal | forall x y,
-    a <= x <= b -> a <= y <= b -> ball x delta y -> ~~ ball (f x) eps (f y)}.
+    a <= x <= b -> a <= y <= b -> ball x delta y -> ~ ~ ball (f x) eps (f y)}.
 Proof.
   intros Cf eps.
-  wlog: f Cf / (forall z : R, continuous f z) => [ Hw | {Cf} Cf ].
+  wlog: f Cf / (continuous f) => [ Hw | {Cf} Cf ].
     destruct (C0_extension_le f a b) as [g [Cg Hg]].
     by apply Cf.
     destruct (Hw g) as [d Hd].
@@ -1822,7 +1816,7 @@ Proof.
     by apply Hd.
 
   assert (forall (x : R), {delta : posreal | forall y : R,
-    ball x delta y -> ~~ ball (f x) (pos_div_2 eps) (f y)}).
+    ball x delta y -> ~ ~ ball (f x) (pos_div_2 eps) (f y)}).
     move: (pos_div_2 eps) => {eps} eps x.
     assert (Rbar_lt 0 (Lub.Lub_Rbar (fun d => forall y : R, ball x d y -> ball (f x) eps (f y)))).
       case: (Lub.Lub_Rbar_correct (fun d => forall y : R, ball x d y -> ball (f x) eps (f y))).
@@ -1878,7 +1872,7 @@ Section UnifCont_N.
 Context {K : AbsRing} {V : NormedModule K}.
 
 Lemma unifcont_normed_1d (f : R -> V) a b :
-  (forall x, a <= x <= b -> continuous f x) ->
+  (forall x, a <= x <= b -> {for x, continuous f}) ->
   forall eps : posreal, {delta : posreal | forall x y,
     a <= x <= b -> a <= y <= b -> ball x delta y -> ball_norm (f x) eps (f y)}.
 Proof.
