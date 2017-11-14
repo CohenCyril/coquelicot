@@ -24,6 +24,8 @@ COPYING file for more details.
 Require Import Reals mathcomp.ssreflect.ssreflect mathcomp.ssreflect.ssrbool mathcomp.ssreflect.seq.
 Require Import Rcomplements Hierarchy SF_seq RInt.
 
+Local Open Scope classical_set_scope.
+
 (** This file describes the definition and properties of the
 Henstock–Kurzweil (KH) integral. *)
 
@@ -634,7 +636,7 @@ Section is_KHInt.
 Context {V : NormedModule R_AbsRing}.
 
 Definition is_KHInt (f : R -> V) (a b : R) (If : V) :=
-  filterlim (fun ptd => scal (sign (b-a)) (Riemann_sum f ptd)) (KH_fine a b) (locally If).
+  (fun ptd => scal (sign (b-a)) (Riemann_sum f ptd)) @ (KH_fine a b) --> If.
 
 Definition ex_KHInt f a b :=
   exists If : V, is_KHInt f a b If.
@@ -649,7 +651,7 @@ apply filterlim_ext with (fun ptd : @SF_seq R => @zero V).
 intro ptd.
 rewrite Rminus_eq_0 sign_0.
 rewrite scal_zero_l ; easy.
-intros P HP.
+move=> P /locallyP HP.
 unfold filtermap.
 destruct HP as (eps, HPeps).
 exists (fun x : R => {| pos := 1 ; cond_pos := Rlt_0_1 |}).
@@ -670,7 +672,7 @@ Lemma is_KHInt_const :
   is_KHInt (fun x : R => c) a b (scal (b-a) c).
 Proof.
 intros a b c.
-intros P HP.
+move=> P /locallyP HP.
 destruct HP as (eps, HPeps).
 exists (fun x : R => eps).
 intros ptd Hptd Hptd2.
