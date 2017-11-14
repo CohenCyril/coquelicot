@@ -19,7 +19,8 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 COPYING file for more details.
 *)
 
-Require Import Reals mathcomp.ssreflect.ssreflect.
+Require Import Reals.
+From Coq Require Import ssreflect ssrfun ssrbool.
 Require Import Rbar Hierarchy RInt Lim_seq Continuity Derive.
 Require Import Rcomplements RInt_analysis.
 
@@ -28,7 +29,7 @@ infinity endpoint or integrals of a function with a singularity. A few
 properties are given: Chasles, operations, composition, derivation.*)
 
 Open Scope R_scope.
-
+Local Open Scope classical_set_scope.
 (** * Improper Riemann integral *)
 
 Section is_RInt_gen.
@@ -36,17 +37,15 @@ Section is_RInt_gen.
 Context {V : NormedModule R_AbsRing}.
 
 Definition is_RInt_gen (f : R -> V) (Fa Fb : (R -> Prop) -> Prop) (l : V) :=
-  filterlimi (fun ab => is_RInt f (fst ab) (snd ab)) (filter_prod Fa Fb) (locally l).
+  (fun ab => is_RInt f (fst ab) (snd ab)) `@ (Fa, Fb) --> l.
 Definition ex_RInt_gen (f : R -> V) (Fa Fb : (R -> Prop) -> Prop) :=
   exists l : V, is_RInt_gen f Fa Fb l.
 
 Definition is_RInt_gen_at_point f a b l :
-  is_RInt_gen f (at_point a) (at_point b) l
-    <-> is_RInt f a b l.
+  is_RInt_gen f (at_point a) (at_point b) l <-> is_RInt f a b l.
 Proof.
 split.
-- intros H P HP.
-  apply locally_locally in HP.
+- move=> H P /locally_locally HP.
   specialize (H _ HP).
   destruct H as [Q R Qa Rb H].
   destruct (H a b Qa Rb) as [y [Hy1 Hy2]].
@@ -205,10 +204,10 @@ Lemma is_RInt_gen_scal {Fa Fb : (R -> Prop) -> Prop}
   is_RInt_gen f Fa Fb l ->
   is_RInt_gen (fun y => scal k (f y)) Fa Fb (scal k l).
 Proof.
-intros H P HP.
-move /filterlim_scal_r in HP.
+move=> H P /filterlim_scal_r HP.
 specialize (H _ HP).
-unfold filtermapi in H |- *.
+rewrite /filtermapi filter_ofE in H *.
+rewrite filter_ofE.
 apply: filter_imp H.
 move => [a b] /= [y [Hy1 Hy2]].
 exists (scal k y).
@@ -221,10 +220,10 @@ Lemma is_RInt_gen_opp {Fa Fb : (R -> Prop) -> Prop}
   is_RInt_gen f Fa Fb l ->
   is_RInt_gen (fun y => opp (f y)) Fa Fb (opp l).
 Proof.
-intros H P HP.
-move /filterlim_opp in HP.
+move=> H P /filterlim_opp HP.
 specialize (H _ HP).
-unfold filtermapi in H |- *.
+rewrite /filtermapi filter_ofE in H *.
+rewrite filter_ofE.
 apply: filter_imp H.
 move => [a b] /= [y [Hy1 Hy2]].
 exists (opp y).
@@ -238,12 +237,10 @@ Lemma is_RInt_gen_plus {Fa Fb : (R -> Prop) -> Prop}
   is_RInt_gen g Fa Fb lg ->
   is_RInt_gen (fun y => plus (f y) (g y)) Fa Fb (plus lf lg).
 Proof.
-intros Hf Hg P HP.
-move /filterlim_plus in HP.
-destruct HP as [Q R HQ HR H].
+move=> Hf Hg P /filterlim_plus [Q R HQ HR H].
 specialize (Hf _ HQ).
 specialize (Hg _ HR).
-unfold filtermapi in Hf, Hg |- *.
+rewrite /filtermapi filter_ofE in Hf Hg *.
 apply: filter_imp (filter_and _ _ Hf Hg).
 move => [a b] /= [[If [HIf1 HIf2]] [Ig [HIg1 HIg2]]].
 exists (plus If Ig).
@@ -301,7 +298,7 @@ intros Hab Hle Hf Hg.
 apply (filterlim_le (F := filter_prod Fa Fb) (fun ab => norm (RInt f (fst ab) (snd ab))) (fun ab => RInt g (fst ab) (snd ab)) (norm lf) lg).
 - specialize (Hf _ (locally_ball lf (mkposreal _ Rlt_0_1))).
   specialize (Hg _ (locally_ball lg (mkposreal _ Rlt_0_1))).
-  unfold filtermapi in Hf, Hg.
+  rewrite /filtermapi filter_ofE in Hf Hg *.
   apply: filter_imp (filter_and _ _ (filter_and  _ _ Hf Hg) (filter_and _ _ Hab Hle)) => {Hf Hg Hab Hle}.
   move => [a b] /= [[[If [Hf1 Hf2]] [Ig [Hg1 Hg2]]] [H H']].
   apply: norm_RInt_le H H' _ _.
@@ -310,15 +307,15 @@ apply (filterlim_le (F := filter_prod Fa Fb) (fun ab => norm (RInt f (fst ab) (s
   apply: RInt_correct.
   now exists Ig.
 - eapply filterlim_comp, filterlim_norm.
-  intros P HP.
+  intros P; rewrite !filter_ofE => HP.
   specialize (Hf P HP).
-  unfold filtermapi, filtermap in Hf |- *.
+  rewrite /filtermapi /filtermap !filter_ofE in Hf *.
   apply: filter_imp Hf.
   move => [a b] /= [y [Hy1 Hy2]].
   now rewrite (is_RInt_unique _ a b y Hy1).
-- intros P HP.
+- intros P; rewrite !filter_ofE => HP.
   specialize (Hg P HP).
-  unfold filtermapi, filtermap in Hg |- *.
+  rewrite /filtermapi /filtermap !filter_ofE in Hg *.
   apply: filter_imp Hg.
   move => [a b] /= [y [Hy1 Hy2]].
   now rewrite (is_RInt_unique _ a b y Hy1).
@@ -353,8 +350,10 @@ Lemma is_RInt_gen_Derive {Fa Fb : (R -> Prop) -> Prop} {FFa : Filter Fa} {FFb : 
   filter_prod Fa Fb
     (fun ab => forall x : R, Rmin (fst ab) (snd ab) <= x <= Rmax (fst ab) (snd ab) -> ex_derive f x)
   -> filter_prod Fa Fb
-    (fun ab => forall x : R, Rmin (fst ab) (snd ab) <= x <= Rmax (fst ab) (snd ab) -> continuous (Derive f) x)
-  -> filterlim f Fa (locally la) -> filterlim f Fb (locally lb)
+    (fun ab => forall x : R, Rmin (fst ab) (snd ab) <= x <= Rmax (fst ab) (snd ab) -> 
+      {for x, continuous (Derive f)})
+  -> f @ Fa --> la
+  -> f @ Fb --> lb
   -> is_RInt_gen (Derive f) Fa Fb (lb - la).
 Proof.
 intros Df Cf Lfa Lfb P HP.
