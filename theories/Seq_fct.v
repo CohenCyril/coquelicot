@@ -30,12 +30,14 @@ their convergence. *)
 
 Open Scope R_scope.
 
+Local Open Scope classical_set_scope.
+
 (** * Sequence of functions *)
 
 (** ** Definitions *)
 
 Definition CVS_dom (fn : nat -> R -> R) (D : R -> Prop) :=
-  forall x : R, D x -> ex_finite_lim_seq (fun n => fn n x).
+  forall x : R, D x -> [cvg (fun n => fn n x) in R].
 
 Definition CVU_dom (fn : nat -> R -> R) (D : R -> Prop) :=
   forall eps : posreal, eventually (fun n => forall x : R,
@@ -52,9 +54,9 @@ Lemma CVU_dom_Reals (fn : nat -> R -> R) (f : R -> R) (x : R) (r : posreal) :
   (CVU fn f x r <-> CVU_dom fn (Boule x r)).
 Proof.
   split ; move => Hcvu.
-  have Hf : forall y, Boule x r y -> is_lim_seq (fun n => fn n y) (f y).
+  have Hf : forall y, Boule x r y -> (fun n => fn n y) --> Finite (f y).
     move => y Hy.
-    apply is_lim_seq_spec.
+    apply/is_lim_seq_spec.
     move => [e He] /=.
     case: (Hcvu e He) => {Hcvu} N Hcvu.
     exists N => n Hn.
@@ -83,7 +85,7 @@ Lemma CVU_CVS_dom (fn : nat -> R -> R) (D : R -> Prop) :
 Proof.
   move => Hcvu x Hx.
   exists (real (Lim_seq (fun n => fn n x))).
-  apply is_lim_seq_spec.
+  apply: (proj1 (is_lim_seq_spec (fun n => fn n x) (real (Lim_seq (fun n => fn n x))))).
   intros eps.
   case: (Hcvu eps) => {Hcvu} N Hcvu.
   exists N => n Hn.
@@ -212,13 +214,13 @@ Lemma CVU_limits_open (fn : nat -> R -> R) (D : R -> Prop) :
   open D
   -> CVU_dom fn D
   -> (forall x n, D x -> ex_finite_lim (fn n) x)
-  -> forall x, D x -> ex_finite_lim_seq (fun n => real (Lim (fn n) x))
+  -> forall x, D x -> [cvg (fun n => real (Lim (fn n) x)) in R]
     /\ ex_finite_lim (fun y => real (Lim_seq (fun n => fn n y))) x
     /\ real (Lim_seq (fun n => real (Lim (fn n) x)))
       = real (Lim (fun y => real (Lim_seq (fun n => fn n y))) x).
 Proof.
   move => Ho Hfn Hex x Hx.
-  have H : ex_finite_lim_seq (fun n : nat => real (Lim (fn n) x)).
+  have H : [cvg (fun n : nat => real (Lim (fn n) x)) in R].
     apply CVU_dom_cauchy in Hfn.
     apply ex_lim_seq_cauchy_corr => eps.
     case: (Hfn (pos_div_2 eps)) => {Hfn} /= N Hfn.
@@ -275,7 +277,7 @@ Proof.
   have H0 : is_lim (fun y : R => real (Lim_seq (fun n : nat => fn n y))) x l.
     apply is_lim_spec.
     move => eps.
-    apply is_lim_seq_spec in H.
+    apply (proj2 (is_lim_seq_spec (fun n : nat => real (Lim (fn n) x)) l)) in H.
     case: (Hfn (pos_div_2 (pos_div_2 eps))) => {Hfn} /= n1 Hfn.
     case: (H (pos_div_2 (pos_div_2 eps))) => {H} /= n2 H.
     set n := (n1 + n2)%nat.
@@ -540,7 +542,7 @@ Proof.
   apply ex_finite_lim_seq_correct, CVU_CVS_dom with D.
   exact: Hfn.
   apply Hd.
-  apply ball_center.
+  by move: (ball_center x dx).
   apply (CVU_CVS_dom fn D) in Hfn ; rewrite /CVS_dom in Hfn.
   move: (fun H => Lim_seq_correct' _ (Hfn (x+h) (Hd _ H))) => F.
   move: (fun H => Lim_seq_correct' _ (Hfn (x) (Hd _ H))) => F0.
@@ -548,7 +550,7 @@ Proof.
   rewrite (is_lim_seq_unique  (fun n : nat => fn n (x)) (real (Lim_seq (fun n : nat => fn n (x))))).
   easy.
   apply F0.
-  apply ball_center.
+  by move: (ball_center x dx).
   apply F.
   rewrite /ball /= /AbsRing_ball /= /minus /plus /opp /=.
   ring_simplify (x + h + - x).
@@ -560,7 +562,7 @@ Proof.
   rewrite (is_lim_seq_unique  (fun n : nat => fn n (x)) (real (Lim_seq (fun n : nat => fn n (x))))).
   by [].
   apply F0.
-  apply ball_center.
+  by move: (ball_center x dx).
   apply F.
   rewrite /ball /= /AbsRing_ball /= /minus /plus /opp /=.
   ring_simplify (x + h + - x).
@@ -614,7 +616,7 @@ Proof.
   apply ex_finite_lim_seq_correct, CVU_CVS_dom with D.
   exact: Hfn.
   apply Hd.
-  apply ball_center.
+  by move: (ball_center x dx).
   apply (CVU_CVS_dom fn D) in Hfn ; rewrite /CVS_dom in Hfn.
   move: (fun H => Lim_seq_correct' _ (Hfn (x+h) (Hd _ H))) => F.
   move: (fun H => Lim_seq_correct' _ (Hfn (x) (Hd _ H))) => F0.
@@ -622,7 +624,7 @@ Proof.
   rewrite (is_lim_seq_unique  (fun n : nat => fn n (x)) (real (Lim_seq (fun n : nat => fn n (x))))).
   easy.
   apply F0.
-  apply ball_center.
+  by move: (ball_center x dx).
   apply F.
   rewrite /ball /= /AbsRing_ball /= /minus /plus /opp /=.
   ring_simplify (x + h + - x).
@@ -636,7 +638,7 @@ Proof.
   rewrite (is_lim_seq_unique  (fun n : nat => fn n (x)) (real (Lim_seq (fun n : nat => fn n (x))))).
   by [].
   apply F0.
-  apply ball_center.
+  by move: (ball_center x dx).
   apply F.
   rewrite /ball /= /AbsRing_ball /= /minus /plus /opp /=.
   ring_simplify (x + h + - x).
@@ -667,12 +669,12 @@ Qed.
 Lemma Dini (fn : nat -> R -> R) (a b : R) :
   a < b -> CVS_dom fn (fun x => a <= x <= b)
   -> (forall (n : nat) (x : R), a <= x <= b -> continuity_pt (fn n) x)
-  -> (forall (x : R), a <= x <= b -> continuity_pt (fun y => Lim_seq (fun n => fn n y)) x)
+  -> (forall (x : R), a <= x <= b -> continuity_pt (fun y => real (Lim_seq (fun n => fn n y))) x)
   -> (forall (n : nat) (x y : R), a <= x -> x <= y -> y <= b -> fn n x <= fn n y)
   -> CVU_dom fn (fun x => a <= x <= b).
 Proof.
   set AB := fun x => a <= x <= b.
-  set f : R -> R := (fun y : R => Lim_seq (fun n : nat => fn n y)).
+  set f : R -> R := (fun y : R => real (Lim_seq (fun n : nat => fn n y))).
   move => Hab Hcvs Cfn Cf Hfn.
 
   have CUf : uniform_continuity f AB.
@@ -681,7 +683,7 @@ Proof.
     by apply Cf.
   suff H : forall eps : posreal, exists N : nat,
     forall n : nat, (N <= n)%nat -> forall x : R, AB x ->
-    Rabs (fn n x - Lim_seq (fun n0 : nat => fn n0 x)) < 5 * eps.
+    Rabs (fn n x - real (Lim_seq (fun n0 : nat => fn n0 x))) < 5 * eps.
     move => eps.
     replace (pos eps) with (5 * (eps / 5)) by field.
     suff He : 0 < eps / 5.
@@ -704,7 +706,7 @@ Proof.
     elim: (a_) (a0) Ha_0 => /= [ | x1 l IH] x0 Hl.
     move: (Hcvs x0 (Hl O (lt_n_Sn _))) ;
     move/Lim_seq_correct' => {Hcvs} Hcvs.
-    apply is_lim_seq_spec in Hcvs.
+    apply (proj2 (is_lim_seq_spec (fun n : nat => fn n x0) (real (Lim_seq (fun n : nat => fn n x0))))) in Hcvs.
     case: (Hcvs eps) => {Hcvs} N Hcvs.
     exists N => n i Hn Hi.
     case: i Hi => /= [ | i] Hi.
@@ -716,7 +718,7 @@ Proof.
     move => N0 HN0.
     move: (Hcvs x0 (Hl O (lt_O_Sn _))) ;
     move/Lim_seq_correct' => {Hcvs} Hcvs.
-    apply is_lim_seq_spec in Hcvs.
+    apply (proj2 (is_lim_seq_spec (fun n : nat => fn n x0) (real (Lim_seq (fun n : nat => fn n x0))))) in Hcvs.
     case: (Hcvs eps) => {Hcvs} N Hcvs.
     exists (N + N0)%nat => n i Hn Hi.
     case: i Hi => /= [ | i ] Hi.
@@ -750,7 +752,7 @@ Proof.
     move => i [Hi Hx0].
     exists (S i) ; by intuition.
   case => i [Hi Hx'].
-  replace (fn n x - Lim_seq (fun n0 : nat => fn n0 x))
+  replace (fn n x - real (Lim_seq (fun n0 : nat => fn n0 x)))
     with ((f (seq.nth 0 a_ i) - f x) + (fn n x - f (seq.nth 0 a_ i)))
     by (rewrite /f ; ring).
   replace (5 * eps) with (eps + 4 * eps) by ring.
@@ -843,7 +845,7 @@ Proof.
     by apply Rabs_pos.
     apply H0 ; rewrite /Boule Rminus_0_r Rabs_R0 ; by apply r.
 
-  have H2 : is_lim_seq (fun n => Series (fun k => An (n + k)%nat)) 0.
+  have H2 : (fun n => Series (fun k => An (n + k)%nat)) --> Finite 0.
     apply is_lim_seq_incr_1.
     apply is_lim_seq_ext with (fun n => Series An - sum_f_R0 An n).
     move => n ; rewrite (Series_incr_n An (S n)) /=.
