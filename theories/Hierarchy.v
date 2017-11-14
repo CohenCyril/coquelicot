@@ -1942,7 +1942,7 @@ Instance canonical_filter_of_proper_filter (F : set (set T)) :
 Proof. exact. Qed.
 
 Lemma locally_locally (x : T) (P : T -> Prop) :
-  [filter of x] P -> [filter of x] (fun y => [filter of y] P).
+  locally x P -> locally x (fun y => locally y P).
 Proof.
 move=> /locallyP[dp Hp].
 apply/locallyP; exists (pos_div_2 dp) => y xy.
@@ -1950,10 +1950,10 @@ apply/locallyP; exists (pos_div_2 dp) => z yz.
 by apply Hp; rewrite (double_var dp); apply: ball_triangle xy yz.
 Qed.
 
-Lemma locally_singleton (x : T) (P : T -> Prop) : [filter of x] P -> P x.
+Lemma locally_singleton (x : T) (P : T -> Prop) : locally x P -> P x.
 Proof. move=> /locallyP[dp H]; by apply/H/ball_center. Qed.
 
-Lemma locally_ball (x : T) (eps : posreal) : [filter of x] (ball x eps).
+Lemma locally_ball (x : T) (eps : posreal) : locally x (ball x eps).
 Proof. by apply/locallyP; exists eps. Qed.
 
 Lemma locally_not' :
@@ -2008,14 +2008,14 @@ Qed.
 
 Lemma locally_not (x : T) (P : T -> Prop) :
   not (forall eps : posreal, not (forall y, ball x eps y -> not (P y))) ->
-  [filter of x] (fun y => not (P y)).
+  locally x (fun y => not (P y)).
 Proof.
 move=> H; apply/locallyP.
 case: (locally_not' x P H) => eps He; by exists eps.
 Qed.
 
 Lemma locally_ex_not (x : T) (P : T -> Prop) :
-  [filter of x] (fun y => not (P y)) ->
+  locally x (fun y => not (P y)) ->
   {d : posreal | forall y, ball x d y -> not (P y)}.
 Proof.
 move=> /locallyP H.
@@ -2026,7 +2026,7 @@ Qed.
 
 Lemma locally_ex_dec (x : T) (P : T -> Prop) :
   (forall x, P x \/ ~ P x) ->
-  [filter of x] P ->
+  locally x P ->
   {d : posreal | forall y, ball x d y -> P y}.
 Proof.
 intros P_dec H.
@@ -2058,7 +2058,6 @@ Lemma is_filter_lim_locally_close (x y : T) :
 Proof. exact: is_filter_lim_close. Qed.
 
 End Locally.
-
 
 Definition cvg (U : Type) (T : canonical_filter U) :=
   fun (T' : Type) & canonical_filter_type _ T = T' =>
@@ -2168,7 +2167,7 @@ Qed.
 (** locally' *)
 
 Definition locally' {T : UniformSpace} (x : T) :=
-  within (fun y => y <> x) [filter of x].
+  within (fun y => y <> x) (locally x).
 
 Global Instance locally'_filter :
   forall {T : UniformSpace} (x : T), Filter (locally' x).
@@ -2229,12 +2228,12 @@ Section Open.
 
 Context {T : UniformSpace}.
 
-Definition open (D : T -> Prop) := forall x, D x -> [filter of x] D.
+Definition open (D : T -> Prop) := forall x, D x -> locally x D.
 
 Lemma locally_open (D E : T -> Prop) (OD : open D) :
   (forall x : T, D x -> E x) ->
   forall x : T, D x ->
-  [filter of x] E.
+  locally x E.
 Proof.
 intros H x Dx.
 apply filter_imp with (1 := H).
@@ -2293,7 +2292,7 @@ Section Closed.
 Context {T : UniformSpace}.
 
 Definition closed (D : T -> Prop) :=
-  forall x, not ([filter of x] (fun x : T => not (D x))) -> D x.
+  forall x, not ((locally x) (fun x : T => not (D x))) -> D x.
 
 Lemma open_not (D : T -> Prop) : closed D -> open (fun x => not (D x)).
 Proof.
@@ -3314,7 +3313,7 @@ Definition ball_norm (x : V) (eps : R) (y : V) := norm (minus y x) < eps.
 Definition locally_norm (x : V) (P : V -> Prop) :=
   exists eps : posreal, forall y, ball_norm x eps y -> P y.
 
-Lemma locally_le_locally_norm x : filter_le [filter of x] (locally_norm x).
+Lemma locally_le_locally_norm x : filter_le (locally x) (locally_norm x).
 Proof.
 intros P [eps H].
 have He : 0 < / norm_factor * eps.
@@ -3332,7 +3331,7 @@ apply Rgt_not_eq.
 apply norm_factor_gt_0.
 Qed.
 
-Lemma locally_norm_le_locally x : filter_le (locally_norm x) [filter of x].
+Lemma locally_norm_le_locally x : filter_le (locally_norm x) (locally x).
 Proof.
 move=> P /locallyP[eps H].
 exists eps.
@@ -5227,7 +5226,7 @@ move/locally_2d_1d_strong.
 apply: locally_2d_impl.
 apply locally_2d_forall => u v H t Ht.
 specialize (H t Ht).
-have : [filter of t] (fun z => locally_2d P (x + z * (u - x)) (y + z * (v - y))).
+have : locally t (fun z => locally_2d P (x + z * (u - x)) (y + z * (v - y))).
   by apply/locallyP.
 by apply: locally_singleton.
 Qed.
