@@ -2673,7 +2673,7 @@ Proof.
   assert (H : locally c (fun (x : R) => g c / 2 <= g x)).
     specialize (Hg _ Hc).
     specialize (Cg c (conj (Rlt_le _ _ (proj1 Hc)) (Rlt_le _ _ (proj2 Hc)))).
-    case: (proj1 (filterlim_locally _ _) Cg (pos_div_2 (mkposreal _ Hg))) => /= d Hd.
+    case: (proj1 (filterlim_locally _ _) Cg [posreal of mkposreal _ Hg / 2]) => /= d Hd.
     exists d => /= x Hx.
     specialize (Hd _ Hx).
     rewrite /ball /= /AbsRing_ball in Hd.

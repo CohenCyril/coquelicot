@@ -1197,7 +1197,7 @@ Proof.
   + move => e He.
     destruct Hf as [_ Hf].
     specialize (Hf x (fun P H => H)).
-    destruct (Hf (pos_div_2 (mkposreal _ He))) as [delta Hd].
+    destruct (Hf [posreal of mkposreal _ He / 2]) as [delta Hd].
     exists delta => h Hh0 Hh.
     apply Rle_lt_trans with (e / 2).
     simpl in Hd.

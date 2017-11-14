@@ -243,7 +243,7 @@ Lemma differentiable_pt_lim_unique (f : R -> R -> R) (x y : R) (lx ly : R) :
     -> Derive (fun x => f x y) x = lx /\ Derive (fun y => f x y) y = ly.
 Proof.
   move => Df ; split ; apply is_derive_unique, is_derive_Reals => e He ;
-  case: (Df (pos_div_2 (mkposreal e He))) => {Df} delta /= Df ;
+  case: (Df [posreal of mkposreal e He / 2]) => {Df} delta /= Df ;
   exists delta => h Hh0 Hh.
 
   replace ((f (x + h) y - f x y) / h - lx)
