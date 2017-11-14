@@ -2146,7 +2146,7 @@ Lemma is_RInt_fct_extend_fst
   (f : R -> U * V) (a b : R) (l : U * V) :
   is_RInt f a b l -> is_RInt (fun t => fst (f t)) a b (fst l).
 Proof.
-  move=> Hf P /locallyP [eP HP].
+  move=> Hf P [eP HP].
   destruct (Hf (fun u : U * V => P (fst u))) as [ef Hf'].
     exists eP => y Hy.
     apply HP.
@@ -2165,7 +2165,7 @@ Lemma is_RInt_fct_extend_snd
   (f : R -> U * V) (a b : R) (l : U * V) :
   is_RInt f a b l -> is_RInt (fun t => snd (f t)) a b (snd l).
 Proof.
-  move=> Hf P /locallyP [eP HP].
+  move=> Hf P [eP HP].
   destruct (Hf (fun u : U * V => P (snd u))) as [ef Hf'].
     exists eP => y Hy.
     apply HP.

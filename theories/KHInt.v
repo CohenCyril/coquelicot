@@ -650,7 +650,7 @@ apply filterlim_ext with (fun ptd : @SF_seq R => @zero V).
 intro ptd.
 rewrite Rminus_eq_0 sign_0.
 rewrite scal_zero_l ; easy.
-move=> P /locallyP HP.
+move=> P HP.
 unfold filtermap.
 destruct HP as (eps, HPeps).
 exists (fun x : R => {| pos := 1 ; cond_pos := Rlt_0_1 |}).
@@ -671,7 +671,7 @@ Lemma is_KHInt_const :
   is_KHInt (fun x : R => c) a b (scal (b-a) c).
 Proof.
 intros a b c.
-move=> P /locallyP HP.
+move=> P HP.
 destruct HP as (eps, HPeps).
 exists (fun x : R => eps).
 intros ptd Hptd Hptd2.

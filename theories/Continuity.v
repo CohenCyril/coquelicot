@@ -1705,14 +1705,14 @@ Qed.
 Lemma continuous_fst {U V : UniformSpace} (x : U) (y : V) :
   {for (x, y), continuous (fst (B:=V))}.
 Proof.
-  move=> P /locallyP [d Hd].
+  move=> P [d Hd].
   exists d => z [/= Hz1 Hz2].
   by apply Hd => /=.
 Qed.
 Lemma continuous_snd {U V : UniformSpace} (x : U) (y : V) :
   {for (x, y), continuous (snd (B:=V))}.
 Proof.
-  move=> P /locallyP[d Hd].
+  move=> P [d Hd].
   exists d => z [/= Hz1 Hz2].
   by apply Hd => /=.
 Qed.

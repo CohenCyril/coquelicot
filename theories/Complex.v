@@ -452,8 +452,8 @@ Add Field C_field_field : C_field_theory.
 Definition C_UniformMixin : UniformSpace.mixin_of C :=
   UniformSpace.class (prod_UniformSpace R_UniformSpace R_UniformSpace).
 
-Canonical C_canonical_filter := CanonicalFilter C C C_UniformMixin.
 Canonical C_UniformSpace := UniformSpacePack C C_UniformMixin.
+Canonical C_canonical_filter := CanonicalFilter C C locally.
 
 (** on C (with the balls of R^2) *)
 
@@ -582,7 +582,7 @@ Canonical C_R_CompleteNormedModule :=
 (** * Locally compat *)
 
 Lemma locally_C x P :
-  locally (T := C_UniformSpace) x P <-> locally (T := AbsRing_UniformSpace C_AbsRing) x P.
+  locally (M := C_UniformSpace) x P <-> locally (M := AbsRing_UniformSpace C_AbsRing) x P.
 Proof.
   split => [[e He] | [e He]].
   - exists e => /= y Hy.
@@ -664,10 +664,10 @@ Lemma is_C_derive_unique (f : C -> C) (z l : C) :
 Proof.
 move=> [_ /(_ _ (fun P H => H)) Df].
 apply is_C_lim_unique.
-move=> p; rewrite filter_ofE => /locallyP [eps HP].
-have /locallyP [eps' Df'] := Df ([posreal of eps / 2]).
+move=> p /= [eps HP].
+have [eps' Df'] := Df ([posreal of eps / 2]).
 unfold filtermap, locally', within.
-apply/locally_C/locallyP.
+apply/locally_C.
 exists eps' => y Hy Hyz.
 apply HP.
   assert (y - z <> 0).

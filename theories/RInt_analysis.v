@@ -482,6 +482,9 @@ Proof.
   simpl => y.
   rewrite scal_opp_r plus_zero_r.
   apply plus_comm.
+Unshelve.
+eapply @filter_filter.
+exact: locally_filter.
 Qed.
 
 End Derive.
@@ -835,6 +838,9 @@ Proof.
   by case => y z /=.
   simpl => y.
   by rewrite -!scal_assoc scal_minus_distr_l.
+Unshelve.
+eapply @filter_filter.
+exact: locally_filter.
 Qed.
 
 End RInt_comp.
@@ -1325,6 +1331,9 @@ apply Rle_trans with (1:=proj2 Ht).
 apply Rle_max_compat_r.
 apply Rplus_le_reg_l with (-a x); ring_simplify.
 left; apply cond_pos.
+Unshelve.
+eapply @filter_filter.
+exact: locally_filter.
 Qed.
 
 Lemma is_derive_RInt_param_bound_comp_aux3 :

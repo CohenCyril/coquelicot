@@ -1452,6 +1452,9 @@ apply Htw.
 now split ; apply Rlt_le.
 rewrite /Rminus Rplus_opp_r Rabs_R0.
 apply cond_pos.
+Unshelve.
+eapply @filter_filter.
+exact: locally_filter.
 Qed.
 
 Fixpoint simplify_domain (d : domain) : domain :=

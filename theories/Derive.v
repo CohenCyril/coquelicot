@@ -444,7 +444,7 @@ Proof.
   move => H.
   apply filterdiff_ext_loc with (1 := H).
   move => y Hy.
-  case/locallyP : H => [d Hd].
+  case: H => [d Hd].
   apply Hd.
   replace y with x.
   apply ball_center.
@@ -721,6 +721,8 @@ Proof.
   by [].
 Qed.
 
+Typeclasses Opaque locally.
+Existing Instance locally_filter.
 Lemma ex_filterdiff_comp'_2 :
   forall (f : T -> U) (g : T -> V) (h : U -> V -> W) x,
     ex_filterdiff f (locally x) ->
@@ -731,8 +733,17 @@ Proof.
   intros f g h x [lf Df] [lg Dg] [lh Dh].
   exists (fun x => lh (lf x,lg x)).
   apply (filterdiff_comp'_2 f g h x lf lg (fun x y => lh (x,y))) ; try eassumption.
-  eapply filterdiff_ext_lin ; try eassumption.
+  eapply filterdiff_ext_lin.
+    exact: Dh.
   by case.
+Unshelve.
+(* :TODO: DEBUG ! *)
+(* Set Debug Typeclasses. *)
+(* Fail typeclasses eauto. *)
+eapply @filter_filter.
+(* Set Printing All. *)
+(* Fail typeclasses eauto. *)
+exact: locally_filter. (*WHY*)
 Qed.
 
 End Diff_comp2.
@@ -748,7 +759,7 @@ Proof.
   by apply is_linear_id.
 
   move => x Hx eps.
-  apply/Hx/locallyP; exists eps => y /= Hy.
+  apply/Hx; exists eps => y /= Hy.
   rewrite /minus plus_opp_r norm_zero.
   apply Rmult_le_pos.
   by apply Rlt_le, eps.
@@ -768,7 +779,7 @@ Proof.
   split.
   by apply is_linear_opp.
   move => x Hx eps.
-  apply/Hx/locallyP; exists eps => y /= Hy.
+  apply/Hx; exists eps => y /= Hy.
   rewrite /minus -!opp_plus plus_opp_r norm_opp norm_zero.
   apply Rmult_le_pos.
   by apply Rlt_le, eps.

@@ -32,6 +32,14 @@ algebraic hierarchy of the Coquelicot library is given: from the
  #<br/># More documentation details can be found in #<a
   href="Coquelicot.Coquelicot.html">Coquelicot.html</a>#. *)
 
+(** WARNING: disclamer about the filter automatic inference !
+
+    Automatically inferred filters can be different on the same type
+    according to the structure which is observable when invoquing it,
+    please be cautious about pairs in particular.
+*)
+
+
 Reserved Notation "A `&` B"  (at level 48, left associativity).
 Reserved Notation "A `*` B"  (at level 46, left associativity).
 Reserved Notation "A `+` B"  (at level 54, left associativity).
@@ -223,7 +231,7 @@ Definition filter_of X Y (F : canonical_filter_on X Y)
 
 Notation "[ 'filter' 'of' x ]" := (@filter_of _ _ _ x eq_refl)
   (format "[ 'filter'  'of'  x ]").
-Arguments filter_of _ _ _ _ _ _ : simpl never.
+Arguments filter_of _ _ _ _ _ _ /.
 
 Lemma filter_ofE  T (F : set (set T)) : [filter of F] = F.
 Proof. by []. Qed.
@@ -1543,22 +1551,10 @@ Record mixin_of (M : Type) := Mixin {
   ax3 : forall x y z e1 e2, ball x e1 y -> ball y e2 z -> ball x (e1 + e2) z
 }.
 
-Definition uniform_filter M (m : mixin_of M) : M -> set (set M) :=
-  fun (x : M) P => exists eps : posreal, forall y, ball _ m x eps y -> P y.
-
-Record locally_mixin_of (M : Type) (m : mixin_of M) (b : M -> set (set M)) := LocallyMixin {
-  locallyE : forall x y, b x y <-> (uniform_filter M m) x y
-}.
-
-Record class_of M := Class {
-  base : M -> set (set M); (* UNSTABLE !!!! *)
-  mixin : mixin_of M;
-  locally_mixin : locally_mixin_of M mixin base
-}.
+Notation class_of := mixin_of.
 
 Section ClassDef.
 
-Local Coercion base : class_of >-> Funclass.
 Structure type := Pack { sort; _ : class_of sort ; _ : Type }.
 Local Coercion sort : type >-> Sortclass.
 Variables (T : Type) (cT : type).
@@ -1568,29 +1564,19 @@ Definition clone c of phant_id class c := @Pack T c T.
 Let xT := let: Pack T _ _ := cT in T.
 Notation xclass := (class : class_of xT).
 
-Definition pack m :=
-  fun b bT & phant_id (@canonical_type_filter T bT) b =>
-  fun erefl => @Pack T (@Class T b m (@LocallyMixin _ _ _ erefl)) T.
-
-Definition type_is_canonical_filter := @CanonicalFilter cT cT xclass.
+Definition pack m := @Pack T m T.
 
 End ClassDef.
 
 Module Exports.
 
 Coercion sort : type >-> Sortclass.
-Coercion base : class_of >-> Funclass.
-Coercion mixin : class_of >-> mixin_of.
-Coercion type_is_canonical_filter : type >-> canonical_filter.
-Canonical type_is_canonical_filter.
 Notation UniformSpace := type.
 Notation "[ 'UniformSpace' 'of' T 'for' cT ]" :=  (@clone T cT _ idfun)
   (at level 0, format "[ 'UniformSpace'  'of'  T  'for'  cT ]") : form_scope.
 Notation "[ 'UniformSpace' 'of' T ]" := (@clone T _ _ id)
   (at level 0, format "[ 'UniformSpace'  'of'  T ]") : form_scope.
-Notation UniformSpacePack T m := (@pack T m  _ _ idfun (fun x y => iff_refl (uniform_filter T m x y))).
-
-Coercion uniform_filter : mixin_of >-> Funclass.
+Notation UniformSpacePack T m := (@pack T m).
 
 End Exports.
 
@@ -1598,18 +1584,19 @@ End UniformSpace.
 
 Export UniformSpace.Exports.
 
-Section UniformSpace1.
+Definition ball {M : UniformSpace} := UniformSpace.ball _ (UniformSpace.class M).
+Definition locally {M : UniformSpace} : M -> set (set M) :=
+  fun (x : M) P => exists eps : posreal, forall y, ball x eps y -> P y.
+Definition UniformSpace_is_canonical_filter {M : UniformSpace} :=
+   @CanonicalFilter M M locally.
+Coercion UniformSpace_is_canonical_filter : UniformSpace >-> canonical_filter.
+Canonical UniformSpace_is_canonical_filter.
 
+Section UniformSpace1.
 Context {M : UniformSpace}.
 
-Definition ball := UniformSpace.ball _ (UniformSpace.class M).
-
-Lemma ball_center :
-  forall (x : M) (e : posreal),
-  ball x e x.
-Proof.
-apply UniformSpace.ax1.
-Qed.
+Lemma ball_center (x : M) (e : posreal) : ball x e x.
+Proof. by apply UniformSpace.ax1. Qed.
 
 Lemma ball_sym :
   forall (x y : M) (e : R),
@@ -1707,8 +1694,8 @@ Qed.
 Definition AbsRing_UniformSpace_mixin :=
   UniformSpace.Mixin _ _ AbsRing_ball_center AbsRing_ball_sym AbsRing_ball_triangle.
 
-Canonical AbsRing_canonical_filter := CanonicalFilter K K AbsRing_UniformSpace_mixin.
 Canonical AbsRing_UniformSpace := UniformSpacePack K AbsRing_UniformSpace_mixin.
+Canonical AbsRing_canonical_filter := CanonicalFilter K K locally.
 
 End AbsRing_UniformSpace.
 
@@ -1750,11 +1737,8 @@ End prod_UniformSpace.
 Definition prod_UniformSpace_mixin (U V : UniformSpace) :=
   UniformSpace.Mixin (U * V) _ prod_ball_center prod_ball_sym prod_ball_triangle.
 
-(*Canonical canonical_pair_filter (U V : UniformSpace) :=
-  @CanonicalFilter (U * V) (U * V) (prod_UniformSpace_mixin U V).*)
 Canonical prod_UniformSpace (U V : UniformSpace) :=
-  (*UniformSpacePack (U * V) (prod_UniformSpace_mixin U V).*)
-  (UniformSpace.pack (U * V) (prod_UniformSpace_mixin U V) _ (@CanonicalFilter (U * V) (U * V) (prod_UniformSpace_mixin U V)) idfun (fun x y => iff_refl ((prod_UniformSpace_mixin U V) x y))).
+  UniformSpacePack (U * V) (prod_UniformSpace_mixin U V).
 
 (** Functional metric spaces *)
 
@@ -1792,9 +1776,8 @@ Qed.
 Definition fct_UniformSpace_mixin :=
   UniformSpace.Mixin _ _ fct_ball_center fct_ball_sym fct_ball_triangle.
 
-Canonical generic_source_filter :=
-  @CanonicalFilterSource _ _ _ fct_UniformSpace_mixin.
 Canonical fct_UniformSpace := UniformSpacePack (T -> U) fct_UniformSpace_mixin.
+Canonical generic_source_filter := @CanonicalFilterSource _ _ _ locally.
 
 End fct_UniformSpace.
 
@@ -1834,40 +1817,18 @@ Notation funext := functional_extensionality.*)
 Section LocallyDef.
 
 Context {T : UniformSpace}.
+Implicit Types x y : T.
 
-Definition locally (x : T) := [filter of x].
-
-Lemma locallyP x P : locally x P <-> exists eps : posreal, forall y, ball x eps y -> P y.
-Proof.
-rewrite /locally /filter_of /=/ball.
-case: UniformSpace.class=> //= op mix [H /=].
-by rewrite H.
-Qed.
-
-Lemma locallyE : locally = fun x P => exists eps : posreal, forall y, ball x eps y -> P y.
-Proof.
-rewrite /locally /filter_of /=/ball.
-case: UniformSpace.class=> //= op mix [H /=].
-Abort.
-
-Lemma locallyxE x : locally x = fun P => exists eps : posreal, forall y, ball x eps y -> P y.
-Proof. Abort. (*by rewrite locallyE. Qed.*)
-
-(*Lemma filterE (x : T) :
-  [filter of x] = fun P => exists eps : posreal, forall y, ball x eps y -> P y.
-Proof. exact: locallyxE. Qed.*)
-
-Lemma locally_filter :
+Global Instance locally_filter :
   forall x : T, ProperFilter (locally x).
 Proof.
 move=> x.
 constructor; [idtac|constructor].
-- move=> P /locallyP [eps H].
+- move=> P [eps H].
   exists x.
   by apply/H/ball_center.
-- apply/locallyP; by exists [posreal of 1].
-- move=> P Q /locallyP[dP HP] /locallyP[dQ HQ].
-  apply/locallyP; exists [posreal of Rmin dP dQ].
+- by exists [posreal of 1].
+- move=> P Q [dP HP] [dQ HQ]; exists [posreal of Rmin dP dQ] => /=.
   intros y Hy.
   split.
   apply HP.
@@ -1876,18 +1837,14 @@ constructor; [idtac|constructor].
   apply HQ.
   apply ball_le with (2 := Hy).
   apply Rmin_r.
-- move=> P Q H /locallyP[dP HP].
-  apply/locallyP; exists dP.
+- move=> P Q H [dP HP].
+  exists dP.
   intros y Hy.
   apply H.
   now apply HP.
 Qed.
 
 End LocallyDef.
-
-Instance uniform_space_base_filter U c (x : U) :
-  ProperFilter (UniformSpace.base U c x).
-Proof. exact: (@locally_filter (UniformSpace.Pack U c U)). Qed.
 
 Lemma ProperFilter_ext {T} (F G : set (set T)) : (forall P, F P <-> G P) ->
   ProperFilter F -> ProperFilter G.
@@ -1899,39 +1856,32 @@ by move=> P Q /FG FP /FG GQ; apply/FG/filter_and.
 by move=> P Q PQ /FG FP; apply/FG; apply:filter_imp FP.
 Qed.
 
-Instance uniform_space_filter U m (x : U) :
-  ProperFilter (UniformSpace.uniform_filter U m x).
-Proof.
-rewrite /UniformSpace.uniform_filter.
-exact: (ProperFilter_ext (@locally (UniformSpacePack (CanonicalFilter U U m) m) x) _ (locallyP _)).
-Qed.
-
 Section Locally.
 Context {T : UniformSpace}.
 
-Typeclasses Opaque filter_of.
-Instance canonical_filter_of_UniformSpace (x : T) : ProperFilter [filter of x] | 0.
-Proof. exact: locally_filter. Qed.
-Instance canonical_filter_of_filter (F : set (set T)) : Filter F -> Filter [filter of F].
-Proof. exact. Qed.
-Instance canonical_filter_of_proper_filter (F : set (set T)) :
-  ProperFilter F -> ProperFilter [filter of F].
-Proof. exact. Qed.
+Typeclasses Transparent filter_of.
+(* Global Instance canonical_filter_of_UniformSpace (x : T) : ProperFilter [filter of x] | 0. *)
+(* Proof. exact: locally_filter. Qed. *)
+(* Global Instance canonical_filter_of_filter (F : set (set T)) : Filter F -> Filter [filter of F]. *)
+(* Proof. exact. Qed. *)
+(* Global Instance canonical_filter_of_proper_filter (F : set (set T)) : *)
+(*   ProperFilter F -> ProperFilter [filter of F]. *)
+(* Proof. exact. Qed. *)
 
 Lemma locally_locally (x : T) (P : T -> Prop) :
   locally x P -> locally x (fun y => locally y P).
 Proof.
-move=> /locallyP[dp Hp].
-apply/locallyP; exists [posreal of dp / 2] => y xy.
-apply/locallyP; exists [posreal of dp / 2] => z yz.
+move=> [dp Hp].
+exists [posreal of dp / 2] => y xy.
+exists [posreal of dp / 2] => z yz.
 by apply Hp; rewrite (double_var dp); apply: ball_triangle xy yz.
 Qed.
 
 Lemma locally_singleton (x : T) (P : T -> Prop) : locally x P -> P x.
-Proof. move=> /locallyP[dp H]; by apply/H/ball_center. Qed.
+Proof. move=> [dp H]; by apply/H/ball_center. Qed.
 
 Lemma locally_ball (x : T) (eps : posreal) : locally x (ball x eps).
-Proof. by apply/locallyP; exists eps. Qed.
+Proof. by exists eps. Qed.
 
 Lemma locally_not' :
   forall (x : T) (P : T -> Prop),
@@ -1987,7 +1937,7 @@ Lemma locally_not (x : T) (P : T -> Prop) :
   not (forall eps : posreal, not (forall y, ball x eps y -> not (P y))) ->
   locally x (fun y => not (P y)).
 Proof.
-move=> H; apply/locallyP.
+move=> H.
 case: (locally_not' x P H) => eps He; by exists eps.
 Qed.
 
@@ -1995,7 +1945,7 @@ Lemma locally_ex_not (x : T) (P : T -> Prop) :
   locally x (fun y => not (P y)) ->
   {d : posreal | forall y, ball x d y -> not (P y)}.
 Proof.
-move=> /locallyP H.
+move=> H.
 apply locally_not'.
 case: H => eps He.
 by move/(_ eps).
@@ -2006,14 +1956,9 @@ Lemma locally_ex_dec (x : T) (P : T -> Prop) :
   locally x P ->
   {d : posreal | forall y, ball x d y -> P y}.
 Proof.
-intros P_dec H.
-destruct (locally_ex_not x (fun y => not (P y))) as [d Hd].
-  apply: filter_imp H => y Py.
-  by apply.
-exists d => y Hy.
-case: (P_dec y) => // HP.
-exfalso.
-by apply: (Hd y).
+move=> P_dec H; have [|d Hd] := locally_ex_not x (fun y => not (P y)).
+  by apply: filter_imp H => y Py /(_ Py).
+by exists d => y Hy; have [|/(Hd y)] := P_dec y.
 Qed.
 
 Lemma is_filter_lim_close {F} {FF : ProperFilter F} (x y : T) :
@@ -2055,7 +2000,7 @@ Proof. by []. Qed.
 Lemma filterlim_const {T} {U : UniformSpace} {F : set (set T)} {FF : Filter F} (a : U) :
   a @[_ --> F] --> a.
 Proof.
-move=> P /locallyP[eps HP].
+move=> P [eps HP].
 rewrite /filter_of /= appfilter /=.
 by apply: filter_forall=> ?; apply/HP/ball_center.
 Qed.
@@ -2070,8 +2015,8 @@ Proof.
 split.
 - move=> Cf eps.
   apply: (Cf (fun x => ball y eps x)).
-  by apply/locallyP; exists eps.
-- move=> Cf P /locallyP[eps He].
+  by exists eps.
+- move=> Cf P [eps He]; rewrite appfilter /=.
   apply: filter_imp (Cf eps) => t.
   exact: He.
 Qed.
@@ -2083,8 +2028,8 @@ Proof.
 split.
 - intros Cf eps.
   apply (Cf (ball y eps)).
-  by apply/locallyP; exists eps.
-- move=> Cf P /locallyP[eps He].
+  by exists eps.
+- move=> Cf P [eps He].
   rewrite /filtermapi /filter_of /=.
   apply: filter_imp (Cf eps).
   intros t [z [Hz1 Hz2]].
@@ -2096,7 +2041,9 @@ Qed.
 (* :TODO: remove *)
 Lemma filterlim_locally_close {F} {FF: ProperFilter F} (f : T -> U) (l l' : U) :
   f @ F --> l -> f @ F --> l' -> close l l'.
-Proof. exact: is_filter_lim_close. Qed.
+Proof.
+
+ exact: is_filter_lim_close. Qed.
 
 (* :TODO: refactor *)
 Lemma filterlimi_locally_close
@@ -2250,7 +2197,7 @@ intros CD x Dx.
 apply locally_not.
 intros H.
 apply Dx, CD.
-move/locallyP => [eps He].
+move=> [eps He].
 by apply (H eps).
 Qed.
 
@@ -2310,7 +2257,7 @@ Lemma closed_false : closed (fun x : T => False).
 Proof.
 intros x Hx.
 apply: Hx.
-apply/locallyP; now exists [posreal of 1].
+now exists [posreal of 1].
 Qed.
 
 End Closed.
@@ -2385,7 +2332,6 @@ Definition class := let: Pack _ c _ := cT return class_of cT in c.
 Let xT := let: Pack T _ _ := cT in T.
 Notation xclass := (class : class_of xT).
 
-Definition type_canonical_filter := CanonicalFilter cT cT xclass.
 Definition UniformSpace := UniformSpace.Pack cT xclass xT.
 
 End ClassDef.
@@ -2395,10 +2341,11 @@ Module Exports.
 Coercion base : class_of >-> UniformSpace.class_of.
 Coercion mixin : class_of >-> mixin_of.
 Coercion sort : type >-> Sortclass.
-Coercion type_canonical_filter : type >-> canonical_filter.
-Canonical type_canonical_filter.
 Coercion UniformSpace : type >-> UniformSpace.type.
 Canonical UniformSpace.
+Definition type_canonical_filter (T : type):= CanonicalFilter T T locally.
+Coercion type_canonical_filter : type >-> canonical_filter.
+Canonical type_canonical_filter.
 Notation CompleteSpace := type.
 
 End Exports.
@@ -2513,7 +2460,7 @@ intros F FF f.
 split.
 - intros H.
   exists [lim f @ F].
-  move=> P /locallyP[eps HP].
+  move=> P [eps HP].
   refine (_ (complete_cauchy (filtermap f F) _ _ eps)).
   + now apply filter_imp.
   + clear eps P HP.
@@ -2530,7 +2477,7 @@ split.
   exists (fun x => ball y [posreal of eps / 2] (f x)).
   split.
   apply Hy.
-  apply/locallyP;   now exists [posreal of eps / 2].
+  now exists [posreal of eps / 2].
 - intros u v Hu Hv.
   rewrite (double_var eps).
   apply ball_triangle with y.
@@ -2554,7 +2501,7 @@ assert (FF': ProperFilter (filtermapi f F)).
   exact FF.
 split.
 - intros H.
-  exists [lim f `@ F] => P /locallyP[eps HP].
+  exists [lim f `@ F] => P [eps HP].
   refine (_ (complete_cauchy (filtermapi f F) _ _ eps)).
   + now apply filter_imp.
   + clear eps P HP.
@@ -3036,7 +2983,6 @@ Definition class := let: Pack _ c _ := cT return class_of cT in c.
 Let xT := let: Pack T _ _ := cT in T.
 Notation xclass := (class : class_of xT).
 
-Definition type_canonical_filter := CanonicalFilter cT cT xclass.
 Definition AbelianGroup := AbelianGroup.Pack cT xclass xT.
 Definition ModuleSpace := ModuleSpace.Pack _ cT xclass xT.
 Definition UniformSpace := UniformSpace.Pack cT xclass xT.
@@ -3048,14 +2994,15 @@ Module Exports.
 Coercion base : class_of >-> ModuleSpace.class_of.
 Coercion mixin : class_of >-> UniformSpace.class_of.
 Coercion sort : type >-> Sortclass.
-Coercion type_canonical_filter : type >-> canonical_filter.
-Canonical type_canonical_filter.
 Coercion AbelianGroup : type >-> AbelianGroup.type.
 Canonical AbelianGroup.
 Coercion ModuleSpace : type >-> ModuleSpace.type.
 Canonical ModuleSpace.
 Coercion UniformSpace : type >-> UniformSpace.type.
 Canonical UniformSpace.
+Definition type_canonical_filter R (T : type R):= CanonicalFilter T T locally.
+Coercion type_canonical_filter : type >-> canonical_filter.
+Canonical type_canonical_filter.
 Notation NormedModuleAux := type.
 
 End Exports.
@@ -3096,7 +3043,6 @@ Definition class := let: Pack _ c _ := cT return class_of cT in c.
 Let xT := let: Pack T _ _ := cT in T.
 Notation xclass := (class : class_of xT).
 
-Definition type_canonical_filter := CanonicalFilter cT cT xclass.
 Definition AbelianGroup := AbelianGroup.Pack cT xclass xT.
 Definition ModuleSpace := ModuleSpace.Pack _ cT xclass xT.
 Definition UniformSpace := UniformSpace.Pack cT xclass xT.
@@ -3109,8 +3055,6 @@ Module Exports.
 Coercion base : class_of >-> NormedModuleAux.class_of.
 Coercion mixin : class_of >-> mixin_of.
 Coercion sort : type >-> Sortclass.
-Coercion type_canonical_filter : type >-> canonical_filter.
-Canonical type_canonical_filter.
 Coercion AbelianGroup : type >-> AbelianGroup.type.
 Canonical AbelianGroup.
 Coercion ModuleSpace : type >-> ModuleSpace.type.
@@ -3119,6 +3063,10 @@ Coercion UniformSpace : type >-> UniformSpace.type.
 Canonical UniformSpace.
 Coercion NormedModuleAux : type >-> NormedModuleAux.type.
 Canonical NormedModuleAux.
+Definition type_canonical_filter R (T : type R):= CanonicalFilter T T locally.
+Coercion type_canonical_filter : type >-> canonical_filter.
+Canonical type_canonical_filter.
+
 Notation NormedModule := type.
 
 End Exports.
@@ -3271,7 +3219,7 @@ have He : 0 < / norm_factor * eps.
   apply Rmult_lt_0_compat.
   by apply/Rinv_0_lt_compat/norm_factor_gt_0.
   by apply cond_pos.
-apply/locallyP; exists (mkposreal _ He).
+exists (mkposreal _ He).
 intros y By.
 apply H.
 unfold ball_norm.
@@ -3284,7 +3232,7 @@ Qed.
 
 Lemma locally_norm_le_locally x : filter_le (locally_norm x) (locally x).
 Proof.
-move=> P /locallyP[eps H].
+move=> P [eps H].
 exists eps.
 intros y By.
 apply H.
@@ -3656,7 +3604,6 @@ Definition class := let: Pack _ c _ := cT return class_of cT in c.
 Let xT := let: Pack T _ _ := cT in T.
 Notation xclass := (class : class_of xT).
 
-Definition type_canonical_filter := CanonicalFilter cT cT xclass.
 Definition AbelianGroup := AbelianGroup.Pack cT xclass xT.
 Definition ModuleSpace := ModuleSpace.Pack _ cT xclass xT.
 Definition NormedModuleAux := NormedModuleAux.Pack _ cT xclass xT.
@@ -3672,8 +3619,6 @@ Coercion base : class_of >-> NormedModule.class_of.
 Coercion mixin : class_of >-> CompleteSpace.mixin_of.
 Coercion base2 : class_of >-> CompleteSpace.class_of.
 Coercion sort : type >-> Sortclass.
-Coercion type_canonical_filter : type >-> canonical_filter.
-Canonical type_canonical_filter.
 Coercion AbelianGroup : type >-> AbelianGroup.type.
 Canonical AbelianGroup.
 Coercion ModuleSpace : type >-> ModuleSpace.type.
@@ -3686,6 +3631,9 @@ Coercion UniformSpace : type >-> UniformSpace.type.
 Canonical UniformSpace.
 Coercion CompleteSpace : type >-> CompleteSpace.type.
 Canonical CompleteSpace.
+Definition type_canonical_filter R (T : type R):= CanonicalFilter T T locally.
+Coercion type_canonical_filter : type >-> canonical_filter.
+Canonical type_canonical_filter.
 Notation CompleteNormedModule := type.
 
 End Exports.
@@ -4533,10 +4481,9 @@ Canonical R_AbsRing :=
 Definition R_UniformSpace_mixin :=
   AbsRing_UniformSpace_mixin R_AbsRing.
 
-Canonical R_canonical_filter := CanonicalFilter R R R_UniformSpace_mixin.
-
 Canonical R_UniformSpace :=
   UniformSpacePack R R_UniformSpace_mixin.
+Canonical R_canonical_filter := CanonicalFilter R R locally.
 
 Definition R_complete_lim (F : (R -> Prop) -> Prop) : R :=
   real (Lub_Rbar (fun x : R => F (ball (x + 1) [posreal of 1]))).
@@ -5170,8 +5117,7 @@ move/locally_2d_1d_strong.
 apply: locally_2d_impl.
 apply locally_2d_forall => u v H t Ht.
 specialize (H t Ht).
-have : locally t (fun z => locally_2d P (x + z * (u - x)) (y + z * (v - y))).
-  by apply/locallyP.
+have : locally t (fun z => locally_2d P (x + z * (u - x)) (y + z * (v - y))) by [].
 by apply: locally_singleton.
 Qed.
 
@@ -5440,10 +5386,11 @@ Lemma continuous_withinNx {U V : UniformSpace} (Ueqdec : forall x y : U, x = y \
   (f : U -> V) x :
   {for x, continuous f} <-> f @ locally' x --> f x.
 Proof.
-split=> - cfx P; rewrite !filter_ofE => fxP.
-  by rewrite filtermapE; apply/filter_le_within/cfx.
-rewrite filtermapE; have := cfx P fxP.
-rewrite !filter_ofE filtermapE => /filterP [] //= Q Qx QP.
+split=> - cfx P /= fxP.
+  by rewrite appfilter; apply filter_le_within; apply/cfx. 
+ (* :BUG: ssr apply: does not work,
+    because the type of the filter is not infered *)
+have /= := cfx P fxP; rewrite !appfilter => /filterP[//= Q Qx QP].
 apply/filterP; exists (fun y => y <> x -> Q y) => // y Qy.
 by have [->|/Qy /QP //] := Ueqdec y x; apply: locally_singleton.
 Qed.
