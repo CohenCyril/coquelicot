@@ -86,18 +86,14 @@ Proof.
     rewrite /ball /= /AbsRing_ball /= /abs /minus /plus /opp /=.
     field_simplify (a - d1 / 2 + - a)%R.
     rewrite Rabs_left.
-    apply Rminus_lt_0 ; field_simplify ; rewrite Rdiv_1.
-    by apply is_pos_div_2.
-    apply Ropp_lt_cancel ; field_simplify ; rewrite Rdiv_1.
-    by apply is_pos_div_2.
+    by apply Rminus_lt_0 ; field_simplify ; rewrite Rdiv_1.
+    by apply Ropp_lt_cancel ; field_simplify ; rewrite Rdiv_1.
     eexists ; apply CIf.
     rewrite /ball /= /AbsRing_ball /= /abs /minus /plus /opp /=.
     field_simplify (a + d1 / 2 + - a)%R.
     rewrite Rabs_pos_eq.
-    apply Rminus_lt_0 ; field_simplify ; rewrite Rdiv_1.
-    by apply is_pos_div_2.
-    apply Rlt_le ; field_simplify ; rewrite Rdiv_1.
-    by apply is_pos_div_2.
+    by apply Rminus_lt_0 ; field_simplify ; rewrite Rdiv_1.
+    by apply Rlt_le ; field_simplify ; rewrite Rdiv_1.
   assert ((a - d1 / 2) <= (a + d1 / 2)).
     apply Rminus_le_0.
     replace (a + d1 / 2 - (a - d1 / 2))%R with (d1 : R) by field.
@@ -110,22 +106,18 @@ Proof.
   generalize (fun y Hy => proj1 (filterlim_locally_ball_norm _ _) (CIf y Hy) ([posreal of eps / 2]))
     => /= {CIf} CIf.
   assert (0 < Rmin (d1 / 2) (eps / (2 * (Mf + 1)))).
-    apply Rmin_case.
-    by apply is_pos_div_2.
+    by apply Rmin_case.
     apply Rdiv_lt_0_compat.
     by apply eps.
-    apply Rmult_lt_0_compat.
-    by apply Rlt_0_2.
-    apply Rplus_le_lt_0_compat.
-    by [].
-    by apply Rlt_0_1.
+    apply Rmult_lt_0_compat => //.
+    by apply Rplus_le_lt_0_compat.
   set (d2 := mkposreal _ H1).
   exists d2 => x /= Hx.
   specialize (CIf x).
   destruct CIf as [d' CIf].
   apply Rlt_trans with (1 := Hx).
   apply Rle_lt_trans with (1 := Rmin_l _ _).
-  apply Rminus_lt_0 ; field_simplify ; rewrite Rdiv_1 ; by apply is_pos_div_2.
+  by apply Rminus_lt_0 ; field_simplify ; rewrite Rdiv_1.
   assert (exists y0, seq_step (SF_lx y0) < d' /\
       pointed_subdiv y0 /\
       SF_h y0 = Rmin a x /\ seq.last (SF_h y0) (SF_lx y0) = Rmax a x).
@@ -164,12 +156,12 @@ Proof.
   rewrite (proj2 (proj2 Hptd)) (proj1 (proj2 Hptd)) => Ht.
   apply HMf ; split ; eapply Rle_trans ; try apply Ht.
   apply Rmin_case.
-  apply Rlt_le, Rminus_lt_0 ; field_simplify ; rewrite Rdiv_1 ; by apply is_pos_div_2.
+  by apply Rlt_le, Rminus_lt_0 ; field_simplify ; rewrite Rdiv_1.
   apply Rlt_le, Rabs_lt_between'.
   apply Rlt_le_trans with (1 := Hx).
   by apply Rmin_l.
   apply Rmax_case.
-  apply Rlt_le, Rminus_lt_0 ; field_simplify ; rewrite Rdiv_1 ; by apply is_pos_div_2.
+  by apply Rlt_le, Rminus_lt_0 ; field_simplify ; rewrite Rdiv_1.
   apply Rlt_le, Rabs_lt_between'.
   apply Rlt_le_trans with (1 := Hx).
   by apply Rmin_l.

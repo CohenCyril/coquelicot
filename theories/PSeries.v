@@ -1850,12 +1850,9 @@ Proof.
   by rewrite Rabs_Rabsolu.
   eexists ; apply H0, Hx.
   assert (0 < Rmin (eps / 2 / Rmax 1 (sum_f_R0 (fun n : nat => Rabs (Sa n) * 1 ^ n) N)) 1).
-    apply Rmin_case.
-    apply Rdiv_lt_0_compat.
-    by apply is_pos_div_2.
-    eapply Rlt_le_trans, Rmax_l.
-    by apply Rlt_0_1.
-    by apply Rlt_0_1.
+    apply Rmin_case => //.
+    apply Rdiv_lt_0_compat => //.
+    by eapply Rlt_le_trans, Rmax_l.
   exists (mkposreal _ H1) => /= y Hy Hy1.
   split.
   apply (Rabs_lt_between'

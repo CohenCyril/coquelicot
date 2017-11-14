@@ -1209,8 +1209,7 @@ apply Rlt_le_trans with (Rmin (interp l e2) (interp l e3) - [posreal of e / 2]).
 apply Rplus_lt_compat_l.
 apply Ropp_lt_contravar.
 rewrite -(Rplus_0_r [posreal of e / 2]) /= {2}(double_var e).
-apply Rplus_lt_compat_l.
-apply is_pos_div_2.
+apply Rplus_lt_compat_l => //.
 rewrite /Rminus Rplus_min_distr_r.
 apply Rle_min_compat_r.
 rewrite -{2}[interp l e2]Rplus_0_r -Ropp_0.
@@ -1226,8 +1225,7 @@ apply Rplus_le_compat_l.
 apply Rlt_le, cond_pos.
 apply Rplus_lt_compat_l.
 rewrite -(Rplus_0_r [posreal of e / 2]) /= {2}(double_var e).
-apply Rplus_lt_compat_l.
-apply is_pos_div_2.
+apply Rplus_lt_compat_l => //.
 eexists.
 move: (IHe1 _ (H11 t y Ht' Hy)) => {IHe1} /=.
 rewrite nth_set_nth /= eqtype.eq_refl.
@@ -1300,8 +1298,7 @@ apply Rlt_le_trans with (Rmin (interp l e2) (interp l e3) - [posreal of e / 2]).
 apply Rplus_lt_compat_l.
 apply Ropp_lt_contravar.
 rewrite -(Rplus_0_r [posreal of e / 2]) /= {2}(double_var e).
-apply Rplus_lt_compat_l.
-apply is_pos_div_2.
+apply Rplus_lt_compat_l => //.
 rewrite /Rminus Rplus_min_distr_r.
 apply Rle_min_compat_l.
 rewrite -{2}[interp l e3]Rplus_0_r -Ropp_0.
@@ -1317,8 +1314,7 @@ apply Rplus_le_compat_l.
 apply Rlt_le, cond_pos.
 apply Rplus_lt_compat_l.
 rewrite -(Rplus_0_r [posreal of e / 2]) /= {2}(double_var e).
-apply Rplus_lt_compat_l.
-apply is_pos_div_2.
+apply Rplus_lt_compat_l => //.
 eexists.
 move: (IHe1 _ (H11 t y Ht' Hy)) => {IHe1} /=.
 rewrite nth_set_nth /= eqtype.eq_refl.
@@ -1391,14 +1387,12 @@ rewrite /Rminus -Rplus_min_distr_r.
 apply Rplus_lt_compat_l.
 apply Ropp_lt_contravar.
 rewrite -(Rplus_0_r [posreal of e / 2]) /= {2}(double_var e).
-apply Rplus_lt_compat_l.
-apply is_pos_div_2.
+apply Rplus_lt_compat_l => //.
 apply Rle_lt_trans with (1 := proj2 Ht).
 rewrite -Rplus_max_distr_r.
 apply Rplus_lt_compat_l.
 rewrite -(Rplus_0_r [posreal of e / 2]) /= {2}(double_var e).
-apply Rplus_lt_compat_l.
-apply is_pos_div_2.
+apply Rplus_lt_compat_l => //.
 eexists.
 move: (IHe1 _ (H11 t y Ht' Hy)) => {IHe1} /=.
 rewrite nth_set_nth /= eqtype.eq_refl.

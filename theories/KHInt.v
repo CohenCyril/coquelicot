@@ -569,8 +569,7 @@ unfold Rminus.
 rewrite Rplus_assoc ; rewrite Rplus_opp_r ; rewrite Rplus_0_r.
 apply Rle_lt_trans with (delta b' / 2).
 assumption.
-apply Rminus_lt_0 ; field_simplify ; rewrite Rdiv_1.
-by apply is_pos_div_2.
+by apply Rminus_lt_0 ; field_simplify ; rewrite Rdiv_1.
 replace (SF_size s') with (Peano.pred (size (rcons (SF_ly s') (snd (b' + e, b'))))).
 rewrite nth_last.
 rewrite last_rcons.
