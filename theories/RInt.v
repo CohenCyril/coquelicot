@@ -445,13 +445,11 @@ Proof.
     move: Heq ; rewrite /Rmin /Rmax ; case: Rle_dec (Rlt_le _ _ Hab) => // _ _ Heq.
   apply filterlim_locally_ball_norm => eps.
   destruct (proj1 (filterlim_locally_ball_norm _ _) Hf ([posreal of eps / 2])) as [d Hd].
-  set dx := fun x => pos_div_2 ([posreal of eps / 2]) / Rmax 1 (norm (minus (g x) (f x))).
+  set dx := fun x => [posreal of eps / 2 / 2] / Rmax 1 (norm (minus (g x) (f x))).
   assert (forall x, 0 < dx x).
     intros x.
-    apply Rdiv_lt_0_compat.
-    apply is_pos_div_2.
-    eapply Rlt_le_trans, Rmax_l.
-    by apply Rlt_0_1.
+    apply Rdiv_lt_0_compat => //.
+    by eapply Rlt_le_trans, Rmax_l.
   assert (Hdelta : 0 < Rmin d (Rmin (dx a) (dx b))).
     repeat apply Rmin_case => //.
   exists (mkposreal _ Hdelta) => /= y Hstep [Hptd [Hya Hyb]].
@@ -523,8 +521,7 @@ Focus 2. (* fst x0 = SF_h y *)
     apply (Hptd O), lt_O_Sn.
   case: Hb => //= Hb.
   rewrite Heq.
-  rewrite minus_eq_zero norm_zero Rmult_0_r.
-  apply (is_pos_div_2 ([posreal of eps / 2])).
+  by rewrite minus_eq_zero norm_zero Rmult_0_r.
   by split.
   rewrite Hb.
   eapply Rle_lt_trans.
@@ -564,8 +561,7 @@ Focus 2. (* fst x0 = SF_h y *)
   revert b Heq Hptd Hstep ;
   apply SF_cons_ind with (s := y)
   => {y} [x0 | x0 y IH] b Heq Hptd Hstep.
-  rewrite !Riemann_sum_zero // minus_eq_zero norm_zero.
-  apply (is_pos_div_2 (pos_div_2 _)).
+  by rewrite !Riemann_sum_zero // minus_eq_zero norm_zero.
 
   rewrite !Riemann_sum_cons.
   replace (minus (plus (scal (SF_h y - fst x0) (g (snd x0))) (Riemann_sum g y))
@@ -604,8 +600,8 @@ Focus 2. (* fst x0 = SF_h y *)
     apply (Hptd O (lt_O_Sn _)).
   case: H0 => Hb'.
   rewrite Heq.
-  rewrite minus_eq_zero norm_zero Rmult_0_r.
-  apply (is_pos_div_2 (pos_div_2 _)).
+  by rewrite minus_eq_zero norm_zero Rmult_0_r.
+
   split.
   apply (Hptd O (lt_O_Sn _)).
   by [].
@@ -983,8 +979,8 @@ Proof.
   rewrite /Rmin /Rmax ; case: Rle_dec (Rlt_le _ _ Hbc) => //= _ _ M2 HM2.
 
   apply filterlim_locally_ball_norm => eps.
-  generalize (proj1 (filterlim_locally_ball_norm _ _) H1 (pos_div_2 ([posreal of eps / 2]))) => {H1} H1.
-  generalize (proj1 (filterlim_locally_ball_norm _ _) H2 (pos_div_2 ([posreal of eps / 2]))) => {H2} H2.
+  generalize (proj1 (filterlim_locally_ball_norm _ _) H1 [posreal of eps / 2 / 2]) => {H1} H1.
+  generalize (proj1 (filterlim_locally_ball_norm _ _) H2 [posreal of eps / 2 / 2]) => {H2} H2.
   case: H1 => d1 H1.
   case: H2 => d2 H2.
   move: H1 ; rewrite /Rmin /Rmax ; case: Rle_dec (Rlt_le _ _ Hab) => //= _ _ H1.
@@ -2737,8 +2733,7 @@ Proof.
   specialize (Hg _ Hc).
   apply Rmult_lt_0_compat.
   by apply -> Rminus_lt_0.
-  apply Rdiv_lt_0_compat => //.
-  by apply Rlt_0_2.
+  by apply Rdiv_lt_0_compat.
   eapply is_RInt_le.
   apply Rlt_le, Hab'.
   apply @is_RInt_const.
@@ -2748,14 +2743,12 @@ Proof.
   apply Rabs_lt_between' ; split.
   eapply Rlt_trans, H3.
   eapply Rlt_le_trans, Rmax_l.
-  apply Rminus_lt_0 ; ring_simplify.
-  by apply is_pos_div_2.
+  by apply Rminus_lt_0 ; ring_simplify.
   eapply Rlt_trans.
   apply H3.
   eapply Rle_lt_trans.
   apply Rmin_l.
-  apply Rminus_lt_0 ; ring_simplify.
-  by apply is_pos_div_2.
+  by apply Rminus_lt_0 ; ring_simplify.
   eapply is_RInt_ge_0.
   2: exact: RInt_correct.
   apply Rlt_le, Hb'.
@@ -2848,7 +2841,7 @@ Proof.
   intros H.
   rewrite /RiemannInt /= -/(Rminus _ _) => eps ; case: RiemannInt_exists => If HIf.
   set eps2 := [posreal of eps / 2].
-  set eps4 := [posreal of eps / 2]2.
+  set eps4 := [posreal of eps2 / 2].
 (* RInt (f-phi) < eps/4 *)
   case: (HIf _ (cond_pos eps4)) => {HIf} N HIf.
   case: (nfloor_ex (/eps4) (Rlt_le _ _ (Rinv_0_lt_compat _ (cond_pos eps4)))) => n Hn.
@@ -2925,7 +2918,7 @@ Proof.
   rewrite /SF_lx /= Hb Ha ; case: Had => {Ha Hb} _ [Ha [Hb _]] ; move: Ha Hb ;
   rewrite /Rmin /Rmax ; case: Rle_dec => // _ <- <- //.
 (* lx = [:: lx0, lx1 & lx] *)
-  set eps2 := [posreal of eps / 2] ; set eps4 := [posreal of eps / 2]2.
+  set eps2 := [posreal of eps / 2] ; set eps4 := [posreal of eps2 / 2].
 (* * alpha1 from IH *)
   case: (IH ly eps4 lx1 b) => {IH}.
 
