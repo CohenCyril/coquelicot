@@ -69,7 +69,7 @@ Proof.
   by apply is_lim_seq_unique.
   right ; case => l.
   contradict H.
-  by exists l.
+  by exists (Finite l).
 Qed.
 
 Lemma is_series_unique (a : nat -> R) (l : R) :
@@ -423,9 +423,10 @@ Proof.
 Qed.
 
 Lemma ex_series_lim_0 (a : nat -> R) :
-  ex_series a -> is_lim_seq a 0.
+  ex_series a -> a --> 0.
 Proof.
   intros Hs.
+  rewrite is_finite_lim_seqE.
   apply is_lim_seq_spec.
   intros eps.
   apply (Cauchy_ex_series (V := R_CompleteNormedModule)) in Hs.
@@ -525,7 +526,8 @@ Proof.
   have Ha := (ex_series_le a b).
   apply Lim_seq_correct' in Ha.
   apply Lim_seq_correct' in Hb.
-  move: Ha Hb ; apply is_lim_seq_le.
+  move: Ha Hb.
+  rewrite 2!is_finite_lim_seqE; apply: is_lim_seq_le.
   elim => [ | n IH] /=.
   rewrite !sum_O.
   by apply Hn.
@@ -846,16 +848,14 @@ Proof.
       apply Rminus_le_0 ; rewrite -sum_f_rw ; try by intuition.
       rewrite /sum_f minus_diag /sum_f_R0 -/sum_f_R0.
       apply cond_pos_sum => l ; by apply Rmult_le_pos.
-
-    change (is_lim_seq (sum_n (fun n : nat => sum_f_R0 (fun k : nat => a k * b (n - k)%nat) n)) (Finite (la * lb))).
+    
+    change ((sum_n (fun n : nat => sum_f_R0 (fun k : nat => a k * b (n - k)%nat) n)) --> (Finite (la * lb))).
     apply is_lim_seq_le_le with (u := fun n => sum_f_R0 a (Div2.div2 n) * sum_f_R0 b (Div2.div2 n))
     (w := fun n => sum_f_R0 a n * sum_f_R0 b n).
     intros n; rewrite sum_n_Reals.
     by split.
     replace (Finite (la * lb)) with (Rbar_mult la lb) by auto.
-    suff H : is_lim_seq
-      (fun n : nat => sum_f_R0 a n * sum_f_R0 b n)
-      (Rbar_mult la lb).
+    suff H : (fun n : nat => sum_f_R0 a n * sum_f_R0 b n) --> (Rbar_mult la lb).
     apply is_lim_seq_spec in H.
     apply is_lim_seq_spec.
     move => eps.
@@ -963,12 +963,12 @@ Qed.
 
 Lemma ex_series_DAlembert (a : nat -> R) (k : R) :
   k < 1 -> (forall n, a n <> 0)
-    -> is_lim_seq (fun n => Rabs (a (S n) / a n)) k
+    -> (fun n => Rabs (a (S n) / a n)) --> k
       -> ex_series  (fun n => Rabs (a n)).
 Proof.
   move => Hk Ha H.
   have : exists N, forall n, (N <= n)%nat -> Rabs (a (S n) / a n) <= (k+1)/2.
-    apply is_lim_seq_spec in H.
+    move/(is_lim_seq_spec (fun n : nat => Rabs (a (S n) / a n)) (Finite k)) in H.
     case: (fun He => H (mkposreal ((1-k)/2) He)).
       move: (fun He => is_pos_div_2 (mkposreal (1-k) He)) => /= He ;
       apply: He.
@@ -1020,15 +1020,15 @@ Qed.
 
 Lemma not_ex_series_DAlembert (a : nat -> R) (l : R) :
   l > 1 -> (forall n, a n <> 0)
-    -> is_lim_seq (fun n => Rabs (a (S n) / a n)) l
-      -> ~ is_lim_seq a 0.
+    -> (fun n => Rabs (a (S n) / a n)) --> l
+      -> ~ a --> 0.
 Proof.
   move => Hl Ha Hda Ha0.
   set k := (l+1)/2.
   have Hk1 : 1 < k.
     unfold k ; lra.
   have : exists N, forall n, (N <= n)%nat -> k <= Rabs (a (S n) / a n).
-    apply is_lim_seq_spec in Hda.
+    move/(is_lim_seq_spec (fun n : nat => Rabs (a (S n) / a n)) l ) in Hda.
     case: (fun H => Hda (mkposreal ((l-1)/2) H)) => [ | /= {Hda} H N Hda].
     apply Rdiv_lt_0_compat.
     by apply -> Rminus_lt_0.
@@ -1040,7 +1040,7 @@ Proof.
     by apply Rlt_le, Hda.
   case => N H.
   move/is_lim_seq_abs_0 in Ha0.
-  move/(is_lim_seq_incr_n _ N) in Ha0.
+  move/(is_lim_seq_incr_n _ N (Finite 0)) in Ha0.
   have : forall n, Rabs (a N) * k ^ n <= Rabs (a (n + N)%nat).
     elim => /= [ | n IH].
     rewrite Rmult_1_r ; by apply Rle_refl.
@@ -1115,7 +1115,7 @@ Proof.
   by rewrite plus_assoc plus_opp_l plus_zero_l.
   apply is_lim_seq_plus'.
   instantiate (1 := 0).
-  apply filterlim_locally => eps.
+  apply: (proj2 (@filterlim_locally _ _ _ _ _ _)) => eps.
   destruct Hb as [M Hb].
   eapply filter_imp.
   intros n Hn.
@@ -1143,7 +1143,7 @@ Proof.
   eapply Rle_lt_trans, HN, Hn.
   rewrite /minus opp_zero plus_zero_r.
   by apply Rle_refl.
-  apply is_lim_seq_incr_1.
+  apply: (proj2 (is_lim_seq_incr_1 _ (Finite _))).
   apply (Lim_seq_correct' (fun n : nat =>
     sum_n (fun n0 : nat => scal (minus (a n0) (a (S n0))) (B n0)) n)).
   case: Hb => M Hb.
@@ -1172,13 +1172,13 @@ Proof.
   apply Rlt_not_eq.
   apply Rle_lt_trans with (2 := Hq).
   apply Rle_abs.
-  change (is_lim_seq (fun n : nat => (1 - q ^ S n) / (1 - q)) (/(1-q))).
+  change ((fun n : nat => (1 - q ^ S n) / (1 - q)) --> (/(1-q))).
   replace ((/ (1 - q))) with (real (Rbar_mult (Rbar_minus 1 0) (/ (1 - q)))).
   unfold Rdiv.
   apply (is_lim_seq_scal_r (fun n : nat => (1 - q ^ S n)) (/ (1 - q)) (Rbar_minus 1 0)).
   apply is_lim_seq_minus'.
   by apply is_lim_seq_const.
-  apply (is_lim_seq_incr_1 (fun n => q^n)).
+  apply: (proj1 (is_lim_seq_incr_1 (fun n => q^n) (Finite _))).
   by apply is_lim_seq_geom.
   simpl; ring.
 Qed.
