@@ -1200,7 +1200,7 @@ now rewrite interp_set_nth.
 now apply IHe3.
 rewrite interp_set_nth.
 destruct H11 as (e&H11).
-exists (pos_div_2 e).
+exists [posreal of e / 2].
 exists e => y Hy t Ht.
 assert (Ht': Rmin (interp l e2) (interp l e3) - e < t < Rmax (interp l e2) (interp l e3) + e).
 split.
@@ -1208,7 +1208,7 @@ apply Rlt_le_trans with (2 := proj1 Ht).
 apply Rlt_le_trans with (Rmin (interp l e2) (interp l e3) - pos_div_2 e).
 apply Rplus_lt_compat_l.
 apply Ropp_lt_contravar.
-rewrite -(Rplus_0_r (pos_div_2 e)) /= {2}(double_var e).
+rewrite -(Rplus_0_r [posreal of e / 2]) /= {2}(double_var e).
 apply Rplus_lt_compat_l.
 apply is_pos_div_2.
 rewrite /Rminus Rplus_min_distr_r.
@@ -1225,7 +1225,7 @@ rewrite -{1}[interp l e2]Rplus_0_r.
 apply Rplus_le_compat_l.
 apply Rlt_le, cond_pos.
 apply Rplus_lt_compat_l.
-rewrite -(Rplus_0_r (pos_div_2 e)) /= {2}(double_var e).
+rewrite -(Rplus_0_r [posreal of e / 2]) /= {2}(double_var e).
 apply Rplus_lt_compat_l.
 apply is_pos_div_2.
 eexists.
@@ -1291,7 +1291,7 @@ now rewrite interp_set_nth.
 now apply IHe2.
 rewrite interp_set_nth.
 destruct H11 as (e&H11).
-exists (pos_div_2 e).
+exists [posreal of e / 2].
 exists e => y Hy t Ht.
 assert (Ht': Rmin (interp l e2) (interp l e3) - e < t < Rmax (interp l e2) (interp l e3) + e).
 split.
@@ -1299,7 +1299,7 @@ apply Rlt_le_trans with (2 := proj1 Ht).
 apply Rlt_le_trans with (Rmin (interp l e2) (interp l e3) - pos_div_2 e).
 apply Rplus_lt_compat_l.
 apply Ropp_lt_contravar.
-rewrite -(Rplus_0_r (pos_div_2 e)) /= {2}(double_var e).
+rewrite -(Rplus_0_r [posreal of e / 2]) /= {2}(double_var e).
 apply Rplus_lt_compat_l.
 apply is_pos_div_2.
 rewrite /Rminus Rplus_min_distr_r.
@@ -1316,7 +1316,7 @@ rewrite -{1}[interp l e3]Rplus_0_r.
 apply Rplus_le_compat_l.
 apply Rlt_le, cond_pos.
 apply Rplus_lt_compat_l.
-rewrite -(Rplus_0_r (pos_div_2 e)) /= {2}(double_var e).
+rewrite -(Rplus_0_r [posreal of e / 2]) /= {2}(double_var e).
 apply Rplus_lt_compat_l.
 apply is_pos_div_2.
 eexists.
@@ -1382,7 +1382,7 @@ now apply IHe2.
 now apply IHe3.
 rewrite 2!interp_set_nth.
 destruct H11 as (e&H11).
-exists (pos_div_2 e).
+exists [posreal of e / 2].
 exists e => y Hy t Ht.
 assert (Ht': Rmin (interp l e2) (interp l e3) - e < t < Rmax (interp l e2) (interp l e3) + e).
 split.
@@ -1390,13 +1390,13 @@ apply Rlt_le_trans with (2 := proj1 Ht).
 rewrite /Rminus -Rplus_min_distr_r.
 apply Rplus_lt_compat_l.
 apply Ropp_lt_contravar.
-rewrite -(Rplus_0_r (pos_div_2 e)) /= {2}(double_var e).
+rewrite -(Rplus_0_r [posreal of e / 2]) /= {2}(double_var e).
 apply Rplus_lt_compat_l.
 apply is_pos_div_2.
 apply Rle_lt_trans with (1 := proj2 Ht).
 rewrite -Rplus_max_distr_r.
 apply Rplus_lt_compat_l.
-rewrite -(Rplus_0_r (pos_div_2 e)) /= {2}(double_var e).
+rewrite -(Rplus_0_r [posreal of e / 2]) /= {2}(double_var e).
 apply Rplus_lt_compat_l.
 apply is_pos_div_2.
 eexists.

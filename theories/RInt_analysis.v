@@ -914,7 +914,7 @@ apply Rgt_not_eq.
 now apply Rgt_minus.
 move: (Cdf' (mkposreal _ H')) => {Cdf'} [d1 Cdf].
 generalize (filter_and _ _ Df If). move => {Df If} [d2 DIf].
-exists (mkposreal _ (Rmin_stable_in_posreal d1 (pos_div_2 d2))) => /= y Hy.
+exists (mkposreal _ (Rmin_stable_in_posreal d1 [posreal of d2 / 2])) => /= y Hy.
 assert (D1: ex_RInt (fun t => f y t) a b).
 apply DIf.
 apply Rlt_le_trans with (1 := Hy).
@@ -1052,9 +1052,9 @@ apply Rplus_le_compat_r; apply Rabs_pos.
 exists (mkposreal _ (Rmin_stable_in_posreal
                   (mkposreal _ (Rmin_stable_in_posreal
                         d1
-                       (mkposreal _ (Rmin_stable_in_posreal (pos_div_2 d2) d3))))
+                       (mkposreal _ (Rmin_stable_in_posreal [posreal of d2 / 2] d3))))
                   (mkposreal _ (Rmin_stable_in_posreal
-                       (mkposreal _ (Rmin_stable_in_posreal (pos_div_2 d4) d5))
+                       (mkposreal _ (Rmin_stable_in_posreal [posreal of d4 / 2] d5))
                        (mkposreal _ (Rmin_stable_in_posreal d6 (mkposreal _ J2))))))).
 simpl; intros u v Hu Hv.
 rewrite (Derive_ext (fun z : R => RInt (fun t : R => f z t) (a x) (a x)) (fun z => 0)).
@@ -1128,7 +1128,7 @@ apply Rplus_le_compat_r; apply Rabs_pos.
 (* *)
 apply sym_eq, is_derive_unique.
 apply is_derive_RInt_param.
-exists (pos_div_2 d4).
+exists [posreal of d4 / 2].
 intros y Hy t Ht.
 apply Df.
 rewrite (double_var d4).
@@ -1157,7 +1157,7 @@ apply Rlt_le_trans with (1:=Hv).
 apply Rle_trans with (1:=Rmin_r _ _).
 apply Rle_trans with (1:=Rmin_l _ _).
 apply Rmin_r.
-exists (pos_div_2 d2).
+exists [posreal of d2 / 2].
 intros y Hy.
 apply (ex_RInt_inside (f y)) with (a x) d1.
 apply Ia.
@@ -1220,13 +1220,13 @@ destruct Df as (d2,Df).
 destruct Cdf2 as (d3,Cdf2).
 destruct Ia as (d4,Ia).
 exists (mkposreal _ (Rmin_stable_in_posreal
-                (mkposreal _ (Rmin_stable_in_posreal d1 (pos_div_2 d2)))
+                (mkposreal _ (Rmin_stable_in_posreal d1 [posreal of d2 / 2]))
                 (mkposreal _ (Rmin_stable_in_posreal d3
-                            (mkposreal _ (Rmin_stable_in_posreal d0 (pos_div_2 d4))))))).
+                            (mkposreal _ (Rmin_stable_in_posreal d0 [posreal of d4 / 2])))))).
 intros [u v] [Hu Hv] ; simpl in *.
 apply: Derive_correct.
 eexists ; apply is_derive_RInt_param.
-exists (pos_div_2 d2).
+exists [posreal of d2 / 2].
 intros y Hy t Ht.
 apply Df.
 rewrite (double_var d2).
@@ -1264,7 +1264,7 @@ now apply Rabs_le_between_min_max.
 apply Rlt_le_trans with (1:=Hv).
 apply Rle_trans with (1:=Rmin_r _ _).
 apply Rmin_l.
-exists (pos_div_2 d4).
+exists [posreal of d4 / 2].
 intros y Hy.
 apply (ex_RInt_inside (f y)) with (a x) d0.
 apply Ia.

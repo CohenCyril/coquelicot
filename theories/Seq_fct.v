@@ -695,7 +695,7 @@ Proof.
   move => eps.
   case: (CUf eps) => {CUf} eta CUf.
   move: (interval_finite_subdiv_between  a b [posreal of eta / 2] (Rlt_le _ _ Hab)).
-  case: (interval_finite_subdiv a b (pos_div_2 eta) (Rlt_le _ _ Hab)) =>
+  case: (interval_finite_subdiv a b [posreal of eta / 2] (Rlt_le _ _ Hab)) =>
     a_ Ha_ /= Ha_0.
   have : exists N, forall n i, (N <= n)%nat -> (i < seq.size a_)%nat
     -> Rabs (fn n (seq.nth 0 a_ i) - f (seq.nth 0 a_ i)) < eps.

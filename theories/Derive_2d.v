@@ -600,9 +600,9 @@ refine ((fun H2 => _ )(Schwarz_aux (fun x y => f y x) y x eps _)).
 simpl in H1, H2.
 apply Req_lt_aux.
 intros e.
-destruct (HC1 (pos_div_2 e)) as (d1,Hc1).
-destruct (HC2 (pos_div_2 e)) as (d2,Hc2).
-set (d := Rmin (Rmin (pos_div_2 d1) (pos_div_2 d2)) ([posreal of eps / 2])).
+destruct (HC1 [posreal of e / 2]) as (d1,Hc1).
+destruct (HC2 [posreal of e / 2]) as (d2,Hc2).
+set (d := Rmin (Rmin [posreal of d1 / 2] [posreal of d2 / 2]) ([posreal of eps / 2])).
 assert (Hd: d > 0).
 apply Rmin_glb_lt.
 apply Rmin_stable_in_posreal.
