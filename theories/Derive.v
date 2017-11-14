@@ -21,6 +21,7 @@ COPYING file for more details.
 
 Require Import Reals Psatz.
 Require Import mathcomp.ssreflect.ssreflect.
+From mathcomp Require Import ssrfun ssrbool.
 Require Import Rcomplements Rbar Lim_seq Iter.
 Require Import Hierarchy Continuity Equiv.
 Open Scope R_scope.
@@ -60,10 +61,10 @@ Proof.
   exact Hl.
 Qed.
 
-Lemma linear_cont (l : U -> V) (x : U) :
-  is_linear l -> continuous l x.
+Lemma linear_cont (l : U -> V) :
+  is_linear l -> continuous l.
 Proof.
-  intros Hl.
+  intros Hl x.
   apply filterlim_locally_ball_norm => eps.
   apply locally_le_locally_norm.
   case: (linear_norm _ Hl) => M Hn.
@@ -361,7 +362,7 @@ Proof.
 Qed.
 
 Lemma filterdiff_continuous (f : U -> V) x :
-  ex_filterdiff f (locally x) -> continuous f x.
+  ex_filterdiff f (locally x) -> {for x, continuous f}.
 Proof.
   intros.
   by apply filterdiff_continuous_aux.
@@ -1151,7 +1152,7 @@ split ; case => d Df.
 Qed.
 
 Lemma ex_derive_continuous (f : K -> V) (x : K) :
-  ex_derive f x -> continuous f x.
+  ex_derive f x -> {for x, continuous f}.
 Proof.
   intros.
   apply @filterdiff_continuous.
@@ -1754,7 +1755,7 @@ Proof.
 Qed.
 
 Lemma is_derive_pow (f : R -> R) (n : nat) (x : R) (l : R) :
-  is_derive f x l -> is_derive (fun x : R => (f x)^n) x (INR n * l * (f x)^(pred n)).
+  is_derive f x l -> is_derive (fun x : R => (f x)^n) x (INR n * l * (f x)^(Nat.pred n)).
 Proof.
   move => H.
   rewrite (Rmult_comm _ l) Rmult_assoc Rmult_comm.
@@ -1768,12 +1769,12 @@ Lemma ex_derive_pow (f : R -> R) (n : nat) (x : R) :
   ex_derive f x -> ex_derive (fun x : R => (f x)^n) x.
 Proof.
   case => l H.
-  exists (INR n * l * (f x)^(pred n)).
+  exists (INR n * l * (f x)^(Nat.pred n)).
   by apply is_derive_pow.
 Qed.
 
 Lemma Derive_pow (f : R -> R) (n : nat) (x : R) :
-  ex_derive f x -> Derive (fun x => (f x)^n) x = (INR n * Derive f x * (f x)^(pred n)).
+  ex_derive f x -> Derive (fun x => (f x)^n) x = (INR n * Derive f x * (f x)^(Nat.pred n)).
 Proof.
   move => H.
   apply is_derive_unique.
@@ -1890,7 +1891,7 @@ Proof.
   exists c ; split.
   split ; by apply Rlt_le, Hc.
   replace (df c) with (derive_pt f c (pr1 c Hc)).
-  move: H ; rewrite {1 2}/id /a0 /b0 /Rmin /Rmax ;
+  move: H ; rewrite /a0 /b0 /Rmin /Rmax ;
   case: Rle_dec => Hab0 H.
   rewrite Rmult_comm H -(pr_nu _ _ (derivable_pt_id _)) derive_pt_id.
   ring.
@@ -2054,7 +2055,7 @@ Qed.
 Lemma is_derive_filterdiff (f : R -> R -> R) (x y : R) (dfx : R -> R -> R) (dfy : R) :
   locally (x,y) (fun u : R * R => is_derive (fun z => f z (snd u)) (fst u) (dfx (fst u) (snd u))) ->
   is_derive (fun z : R => f x z) y dfy ->
-  continuous (fun u : R * R => dfx (fst u) (snd u)) (x,y) ->
+  {for (x, y), continuous (fun u : R * R => dfx (fst u) (snd u))} ->
   filterdiff (fun u : R * R => f (fst u) (snd u)) (locally (x,y)) (fun u : R * R => plus (scal (fst u) (dfx x y)) (scal (snd u) dfy)).
 Proof.
   intros Dx Dy Cx.
@@ -2199,9 +2200,9 @@ Definition extension_cont (f g : R -> U) (a x : R) : U :=
   end.
 
 Lemma extension_cont_continuous (f g : R -> U) (a : R) :
-  continuous f a -> continuous g a
+  {for a, continuous f} -> {for a, continuous g}
   -> f a = g a
-  -> continuous (extension_cont f g a) a.
+  -> {for a, continuous (extension_cont f g a)}.
 Proof.
   simpl => Cf Cg Heq ; apply filterlim_locally => /= eps.
   generalize (proj1 (filterlim_locally _ _) Cf eps) => {Cf} Cf.
@@ -2267,8 +2268,8 @@ Qed.
 
 Lemma extension_C0_continuous (f : R -> V) (a b : Rbar) :
   Rbar_le a b
-  -> (forall x : R, Rbar_le a x -> Rbar_le x b -> continuous f x)
-  -> forall x, continuous (extension_C0 f a b) x.
+  -> (forall x : R, Rbar_le a x -> Rbar_le x b -> {for x, continuous f})
+  -> continuous (extension_C0 f a b).
 Proof.
   intros Hab Cf x.
 
@@ -2276,7 +2277,7 @@ Proof.
 
   case: (Rbar_lt_le_dec x a) => Hax.
 
-  eapply continuous_ext_loc.
+  apply: continuous_ext_loc.
   apply locally_interval with -oo a.
   by [].
   by [].
@@ -2291,7 +2292,7 @@ Proof.
 
   case: (Rbar_lt_le_dec x b) => Hbx.
 
-  eapply continuous_ext_loc.
+  apply: continuous_ext_loc.
   apply locally_interval with a b.
   by [].
   by [].
@@ -2306,7 +2307,7 @@ Proof.
 
   apply Rbar_le_lt_or_eq_dec in Hbx ; case: Hbx => Hbx.
 
-  eapply continuous_ext_loc.
+  apply: continuous_ext_loc.
   apply locally_interval with b +oo.
   by [].
   by [].
@@ -2359,7 +2360,7 @@ Proof.
   by apply Rbar_lt_le.
 
   rewrite -Hab {b Hab Cf}.
-  eapply continuous_ext.
+  apply: continuous_ext.
   intros y.
   rewrite /extension_C0.
   case: Rbar_le_dec => H.

@@ -224,7 +224,7 @@ Proof.
   by rewrite /minus plus_assoc plus_opp_l plus_zero_l opp_opp.
   apply continuous_opp.
   apply continuous_plus.
-  apply filterlim_const.
+  apply: filterlim_const.
   apply: (continuous_RInt_0 f _ (fun x : R_UniformSpace => minus (If a) (If x))).
   apply: filter_imp H => x Hx.
   eapply is_RInt_Chasles.
@@ -747,7 +747,7 @@ Proof.
       intros x Hx.
       apply: @continuous_scal.
         by apply Hg.
-      apply continuous_comp.
+      apply: continuous_comp.
         apply @ex_derive_continuous.
         by eexists ; apply Hg.
       by apply Hf.
@@ -1650,8 +1650,8 @@ Lemma is_RInt_scal_derive_r :
   forall (f : R -> R) (g : R -> V) (f' : R -> R) (g' : R -> V) (a b : R) (l : V),
   (forall t, Rmin a b <= t <= Rmax a b -> is_derive f t (f' t)) ->
   (forall t, Rmin a b <= t <= Rmax a b -> is_derive g t (g' t)) ->
-  (forall t, Rmin a b <= t <= Rmax a b -> continuous f' t) ->
-  (forall t, Rmin a b <= t <= Rmax a b -> continuous g' t) ->
+  (forall t, Rmin a b <= t <= Rmax a b -> {for t, continuous f'}) ->
+  (forall t, Rmin a b <= t <= Rmax a b -> {for t, continuous g'}) ->
   is_RInt (fun t => scal (f' t) (g t)) a b l ->
   is_RInt (fun t => scal (f t) (g' t)) a b (minus (minus (scal (f b) (g b)) (scal (f a) (g a))) l).
 Proof.
@@ -1668,8 +1668,8 @@ Lemma is_RInt_scal_derive_l :
   forall (f : R -> R) (g : R -> V) (f' : R -> R) (g' : R -> V) (a b : R) (l : V),
   (forall t, Rmin a b <= t <= Rmax a b -> is_derive f t (f' t)) ->
   (forall t, Rmin a b <= t <= Rmax a b -> is_derive g t (g' t)) ->
-  (forall t, Rmin a b <= t <= Rmax a b -> continuous f' t) ->
-  (forall t, Rmin a b <= t <= Rmax a b -> continuous g' t) ->
+  (forall t, Rmin a b <= t <= Rmax a b -> {for t, continuous f'}) ->
+  (forall t, Rmin a b <= t <= Rmax a b -> {for t, continuous g'}) ->
   is_RInt (fun t => scal (f t) (g' t)) a b l ->
   is_RInt (fun t => scal (f' t) (g t)) a b (minus (minus (scal (f b) (g b)) (scal (f a) (g a))) l).
 Proof.
