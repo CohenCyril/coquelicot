@@ -31,6 +31,8 @@ functions using the Limited Principle of Omniscience. These total
 functions on [R] sequences are [Sup_seq], [Inf_seq], [LimSup_seq],
 [LimInf_seq] and of course [Lim_seq]. *)
 
+Local Open Scope classical_set_scope.
+
 Open Scope R_scope.
 
 (** * Sup and Inf of sequences in Rbar *)
@@ -1195,12 +1197,8 @@ Qed.
 
 (** ** Definition *)
 
-Local Open Scope classical_set_scope.
-
-Canonical filter_Rbar := CanonicalFilter R Rbar Rbar_locally.
-
-Definition is_lim_seq (u : nat -> R) (l : Rbar) :=
-  u @ eventually --> l.
+Lemma is_finite_lim_seqE (u : nat -> R) (l : R) : u --> l = (u --> Finite l).
+Proof. by []. Qed.
 
 Definition is_lim_seq' (u : nat -> R) (l : Rbar) :=
   match l with
@@ -1209,16 +1207,16 @@ Definition is_lim_seq' (u : nat -> R) (l : Rbar) :=
     | m_infty => forall M : R, eventually (fun n => u n < M)
   end.
 Definition ex_lim_seq (u : nat -> R) :=
-  exists l, is_lim_seq u l.
+  exists l : Rbar, u --> l.
 Definition ex_finite_lim_seq (u : nat -> R) :=
-  exists l : R, is_lim_seq u l.
+  exists l : R, u --> l.
 Definition Lim_seq (u : nat -> R) : Rbar :=
   Rbar_div_pos (Rbar_plus (LimSup_seq u) (LimInf_seq u))
     {| pos := 2; cond_pos := Rlt_R0_R2 |}.
 
 Lemma is_lim_seq_spec :
   forall u l,
-  is_lim_seq' u l <-> is_lim_seq u l.
+  is_lim_seq' u l <-> u --> l.
 Proof.
 destruct l as [l| |] ; split.
 - intros H P [eps LP].
@@ -1253,22 +1251,20 @@ Qed.
 (** Equivalence with standard library Reals *)
 
 Lemma is_lim_seq_Reals (u : nat -> R) (l : R) :
-  is_lim_seq u l <-> Un_cv u l.
+  u --> l <-> Un_cv u l.
 Proof.
   split => Hl.
   move => e He.
   apply (Hl (fun y => R_dist y l < e)).
   now exists (mkposreal _ He).
-  unfold is_lim_seq.
   change (Rbar_locally l) with (locally l).
-  apply (filterlim_locally u l).
-  case => e He.
+  apply/filterlim_locally => -[e He].
   case: (Hl e He) => {Hl} /= N Hl.
   exists N => n Hn.
   by apply (Hl n Hn).
 Qed.
 Lemma is_lim_seq_p_infty_Reals (u : nat -> R) :
-  is_lim_seq u p_infty <-> cv_infty u.
+  u --> p_infty <-> cv_infty u.
 Proof.
   split => Hl.
   move => M.
@@ -1283,7 +1279,7 @@ Proof.
 Qed.
 
 Lemma is_lim_LimSup_seq (u : nat -> R) (l : Rbar) :
-  is_lim_seq u l -> is_LimSup_seq u l.
+  u --> l -> is_LimSup_seq u l.
 Proof.
   move /is_lim_seq_spec.
   case: l => [l | | ] /= Hu.
@@ -1302,7 +1298,7 @@ Proof.
   by [].
 Qed.
 Lemma is_lim_LimInf_seq (u : nat -> R) (l : Rbar) :
-  is_lim_seq u l -> is_LimInf_seq u l.
+  u --> l -> is_LimInf_seq u l.
 Proof.
   move /is_lim_seq_spec.
   case: l => [l | | ] /= Hu.
@@ -1321,7 +1317,7 @@ Proof.
   by apply Hu, le_plus_l.
 Qed.
 Lemma is_LimSup_LimInf_lim_seq (u : nat -> R) (l : Rbar) :
-  is_LimSup_seq u l -> is_LimInf_seq u l -> is_lim_seq u l.
+  is_LimSup_seq u l -> is_LimInf_seq u l -> u --> l.
 Proof.
   case: l => [l | | ] /= Hs Hi ; apply is_lim_seq_spec.
   move => eps.
@@ -1355,10 +1351,9 @@ Qed.
 
 Lemma is_lim_seq_ext_loc (u v : nat -> R) (l : Rbar) :
   eventually (fun n => u n = v n) ->
-  is_lim_seq u l -> is_lim_seq v l.
-Proof.
-  apply filterlim_ext_loc.
-Qed.
+  u --> l -> v --> l.
+Proof. exact: filterlim_ext_loc. Qed.
+
 Lemma ex_lim_seq_ext_loc (u v : nat -> R) :
   eventually (fun n => u n = v n) ->
   ex_lim_seq u -> ex_lim_seq v.
@@ -1385,7 +1380,7 @@ Proof.
 Qed.
 
 Lemma is_lim_seq_ext (u v : nat -> R) (l : Rbar) :
-  (forall n, u n = v n) -> is_lim_seq u l -> is_lim_seq v l.
+  (forall n, u n = v n) -> u --> l -> v --> l.
 Proof.
   move => Hext.
   apply is_lim_seq_ext_loc.
@@ -1409,7 +1404,7 @@ Qed.
 (** Unicity *)
 
 Lemma is_lim_seq_unique (u : nat -> R) (l : Rbar) :
-  is_lim_seq u l -> Lim_seq u = l.
+  u --> l -> Lim_seq u = l.
 Proof.
   move => Hu.
   rewrite /Lim_seq.
@@ -1423,7 +1418,7 @@ Proof.
   by apply is_lim_LimInf_seq.
 Qed.
 Lemma Lim_seq_correct (u : nat -> R) :
-  ex_lim_seq u -> is_lim_seq u (Lim_seq u).
+  ex_lim_seq u -> u --> (Lim_seq u).
 Proof.
   intros (l,H).
   cut (Lim_seq u = l).
@@ -1431,7 +1426,7 @@ Proof.
   apply is_lim_seq_unique, H.
 Qed.
 Lemma Lim_seq_correct' (u : nat -> R) :
-  ex_finite_lim_seq u -> is_lim_seq u (real (Lim_seq u)).
+  ex_finite_lim_seq u -> u --> (real (Lim_seq u)).
 Proof.
   intros (l,H).
   cut (real (Lim_seq u) = l).
@@ -1443,15 +1438,11 @@ Qed.
 Lemma ex_finite_lim_seq_correct (u : nat -> R) :
   ex_finite_lim_seq u <-> ex_lim_seq u /\ is_finite (Lim_seq u).
 Proof.
-  split.
-  case => l Hl.
-  split.
-  by exists l.
-  by rewrite (is_lim_seq_unique _ _ Hl).
-  case ; case => l Hl H.
-  exists l.
-  rewrite -(is_lim_seq_unique _ _ Hl).
-  by rewrite H (is_lim_seq_unique _ _ Hl).
+split => [[l Hl]|[[l Hl] H]].
+  by split; [exists l|rewrite (is_lim_seq_unique _ l)].
+exists (real l).
+rewrite is_finite_lim_seqE -(is_lim_seq_unique _ _ Hl).
+by rewrite H (is_lim_seq_unique _ _ Hl).
 Qed.
 
 Lemma ex_lim_seq_dec (u : nat -> R) :
@@ -1486,6 +1477,7 @@ Proof.
   split => Hcv.
 
   apply Lim_seq_correct' in Hcv.
+  rewrite is_finite_lim_seqE in Hcv.
   apply is_lim_seq_spec in Hcv.
   move => eps.
   case: (Hcv (pos_div_2 eps)) => /= {Hcv} N H.
@@ -1496,6 +1488,7 @@ Proof.
   apply Rplus_lt_compat ; by apply H.
 
   exists (LimSup_seq u).
+  rewrite is_finite_lim_seqE.
   apply is_lim_seq_spec.
   intros eps.
   rewrite /LimSup_seq ; case: ex_LimSup_seq => /= l Hl.
@@ -1531,7 +1524,7 @@ Qed.
 (** Identity *)
 
 Lemma is_lim_seq_INR :
-  is_lim_seq INR p_infty.
+  INR --> p_infty.
 Proof.
   apply is_lim_seq_spec.
   move => M.
@@ -1560,10 +1553,8 @@ Qed.
 (** Constants *)
 
 Lemma is_lim_seq_const (a : R) :
-  is_lim_seq (fun n => a) a.
-Proof.
-apply filterlim_const.
-Qed.
+  (fun n : nat => a) --> a.
+Proof. exact: filterlim_const. Qed.
 Lemma ex_lim_seq_const (a : R) :
   ex_lim_seq (fun n => a).
 Proof.
@@ -1582,7 +1573,7 @@ Qed.
 Lemma eventually_subseq_loc :
   forall phi,
   eventually (fun n => (phi n < phi (S n))%nat) ->
-  phi @ eventually --> eventually.
+  phi --> eventually.
 Proof.
 intros phi [M Hphi] P [N HP].
 exists (N+M)%nat.
@@ -1617,7 +1608,7 @@ Qed.
 Lemma eventually_subseq :
   forall phi,
   (forall n, (phi n < phi (S n))%nat) ->
-  phi @ eventually --> eventually.
+  phi --> eventually.
 Proof.
 intros phi Hphi.
 apply eventually_subseq_loc.
@@ -1625,15 +1616,13 @@ by apply filter_forall.
 Qed.
 
 Lemma is_lim_seq_subseq (u : nat -> R) (l : Rbar) (phi : nat -> nat) :
-  phi @ eventually --> eventually ->
-  is_lim_seq u l ->
-  is_lim_seq (fun n => u (phi n)) l.
+  phi --> eventually -> u --> l -> (fun n => u (phi n)) --> l.
 Proof.
 intros Hphi.
-now apply filterlim_comp.
+exact: filterlim_comp.
 Qed.
 Lemma ex_lim_seq_subseq (u : nat -> R) (phi : nat -> nat) :
-  phi @ eventually --> eventually ->
+  phi --> eventually ->
   ex_lim_seq u ->
   ex_lim_seq (fun n => u (phi n)).
 Proof.
@@ -1642,7 +1631,7 @@ Proof.
   by apply is_lim_seq_subseq.
 Qed.
 Lemma Lim_seq_subseq (u : nat -> R) (phi : nat -> nat) :
-  phi @ eventually --> eventually ->
+  phi --> eventually ->
   ex_lim_seq u ->
   Lim_seq (fun n => u (phi n)) = Lim_seq u.
 Proof.
@@ -1654,7 +1643,7 @@ Proof.
 Qed.
 
 Lemma is_lim_seq_incr_1 (u : nat -> R) (l : Rbar) :
-  is_lim_seq u l <-> is_lim_seq (fun n => u (S n)) l.
+  u --> l <-> (fun n => u (S n)) --> l.
 Proof.
 split ; intros H P HP ; destruct (H P HP) as [N HN].
 - exists N.
@@ -1809,16 +1798,16 @@ Proof.
 Qed.
 
 Lemma is_lim_seq_incr_n (u : nat -> R) (N : nat) (l : Rbar) :
-  is_lim_seq u l <-> is_lim_seq (fun n => u (n + N)%nat) l.
+  u --> l <-> (fun n => u (n + N)%nat) --> l.
 Proof.
   split.
-  elim: N u => [ | N IH] u Hu.
-  move: Hu ; apply is_lim_seq_ext => n ; by rewrite plus_0_r.
-  apply is_lim_seq_incr_1, IH in Hu.
-  move: Hu ; by apply is_lim_seq_ext => n ; by rewrite plus_n_Sm.
-  elim: N u => [ | N IH] u Hu.
-  move: Hu ; apply is_lim_seq_ext => n ; by rewrite plus_0_r.
-  apply is_lim_seq_incr_1, IH.
+  elim: N u => [ | N IH] u.
+    apply is_lim_seq_ext => n ; by rewrite plus_0_r.
+  move=> /is_lim_seq_incr_1 /IH.
+  by apply is_lim_seq_ext => n ; by rewrite plus_n_Sm.
+  elim: N u => [ | N IH] u.
+    apply is_lim_seq_ext => n ; by rewrite plus_0_r.
+  move=> Hu; apply/is_lim_seq_incr_1/IH.
   move: Hu ; by apply is_lim_seq_ext => n ; by rewrite plus_n_Sm.
 Qed.
 Lemma ex_lim_seq_incr_n (u : nat -> R) (N : nat) :
@@ -1919,11 +1908,9 @@ Qed.
 
 Lemma is_lim_seq_le_loc (u v : nat -> R) (l1 l2 : Rbar) :
   eventually (fun n => u n <= v n) ->
-  is_lim_seq u l1 -> is_lim_seq v l2 ->
+  u --> l1 -> v --> l2 ->
   Rbar_le l1 l2.
-Proof.
-  apply filterlim_le.
-Qed.
+Proof. exact: filterlim_le. Qed.
 Lemma Lim_seq_le_loc (u v : nat -> R) :
   eventually (fun n => u n <= v n) ->
   Rbar_le (Lim_seq u) (Lim_seq v).
@@ -1944,10 +1931,10 @@ Proof.
 Qed.
 
 Lemma is_lim_seq_le (u v : nat -> R) (l1 l2 : Rbar) :
-  (forall n, u n <= v n) -> is_lim_seq u l1 -> is_lim_seq v l2 -> Rbar_le l1 l2.
+  (forall n, u n <= v n) -> u --> l1 -> v --> l2 -> Rbar_le l1 l2.
 Proof.
   intros H.
-  apply filterlim_le.
+  apply: filterlim_le.
   now apply filter_forall.
 Qed.
 
@@ -2023,40 +2010,35 @@ destruct l as [l| |].
 Qed.
 
 Lemma is_lim_seq_le_le_loc (u v w : nat -> R) (l : Rbar) :
-  eventually (fun n => u n <= v n <= w n) -> is_lim_seq u l -> is_lim_seq w l -> is_lim_seq v l.
-Proof.
-  apply filterlim_le_le.
-Qed.
+  eventually (fun n => u n <= v n <= w n) -> u --> l -> w --> l -> v --> l.
+Proof. exact: filterlim_le_le. Qed.
 
 Lemma is_lim_seq_le_le (u v w : nat -> R) (l : Rbar) :
-  (forall n, u n <= v n <= w n) -> is_lim_seq u l -> is_lim_seq w l -> is_lim_seq v l.
+  (forall n, u n <= v n <= w n) -> u --> l -> w --> l -> v --> l.
 Proof.
   intros H.
-  apply filterlim_le_le.
+  apply: filterlim_le_le.
   now apply filter_forall.
 Qed.
 
 Lemma is_lim_seq_le_p_loc (u v : nat -> R) :
   eventually (fun n => u n <= v n) ->
-  is_lim_seq u p_infty ->
-  is_lim_seq v p_infty.
-Proof.
-  apply filterlim_ge_p_infty.
-Qed.
+  u --> p_infty ->
+  v --> p_infty.
+Proof. exact: filterlim_ge_p_infty. Qed.
 
 Lemma is_lim_seq_le_m_loc (u v : nat -> R) :
   eventually (fun n => v n <= u n) ->
-  is_lim_seq u m_infty ->
-  is_lim_seq v m_infty.
-Proof.
-  apply filterlim_le_m_infty.
-Qed.
+  u --> m_infty ->
+  v --> m_infty.
+Proof. exact: filterlim_le_m_infty. Qed.
 
 Lemma is_lim_seq_decr_compare (u : nat -> R) (l : R) :
-  is_lim_seq u l
-  -> (forall n, (u (S n)) <= (u n))
-  -> forall n, l <= u n.
+  u --> l ->
+  (forall n, (u (S n)) <= (u n)) ->
+  forall n, l <= u n.
 Proof.
+  rewrite is_finite_lim_seqE.
   move /is_lim_seq_spec => Hu H n.
   apply Rnot_lt_le => H0.
   apply Rminus_lt_0 in H0.
@@ -2074,10 +2056,11 @@ Proof.
   by apply H.
 Qed.
 Lemma is_lim_seq_incr_compare (u : nat -> R) (l : R) :
-  is_lim_seq u l
-  -> (forall n, (u n) <= (u (S n)))
-  -> forall n, u n <= l.
+  u --> l ->
+  (forall n, (u n) <= (u (S n))) ->
+  forall n, u n <= l.
 Proof.
+  rewrite is_finite_lim_seqE.
   move /is_lim_seq_spec => Hu H n.
   apply Rnot_lt_le => H0.
   apply Rminus_lt_0 in H0.
@@ -2094,8 +2077,7 @@ Proof.
 Qed.
 
 Lemma ex_lim_seq_decr (u : nat -> R) :
-  (forall n, (u (S n)) <= (u n))
-    -> ex_lim_seq u.
+  (forall n, (u (S n)) <= (u n)) -> ex_lim_seq u.
 Proof.
   move => H.
   exists (Inf_seq u).
@@ -2124,8 +2106,7 @@ Proof.
   by apply H.
 Qed.
 Lemma ex_lim_seq_incr (u : nat -> R) :
-  (forall n, (u n) <= (u (S n)))
-    -> ex_lim_seq u.
+  (forall n, (u n) <= (u (S n))) -> ex_lim_seq u.
 Proof.
   move => H.
   exists (Sup_seq u).
@@ -2152,8 +2133,8 @@ Proof.
 Qed.
 
 Lemma ex_finite_lim_seq_decr (u : nat -> R) (M : R) :
-  (forall n, (u (S n)) <= (u n)) -> (forall n, M <= u n)
-    -> ex_finite_lim_seq u.
+  (forall n, (u (S n)) <= (u n)) -> (forall n, M <= u n) ->
+  ex_finite_lim_seq u.
 Proof.
   intros.
   apply ex_finite_lim_seq_correct.
@@ -2194,8 +2175,8 @@ Proof.
   contradict Hu ; by apply Rle_not_lt.
 Qed.
 Lemma ex_finite_lim_seq_incr (u : nat -> R) (M : R) :
-  (forall n, (u n) <= (u (S n))) -> (forall n, u n <= M)
-    -> ex_finite_lim_seq u.
+  (forall n, (u n) <= (u (S n))) -> (forall n, u n <= M) ->
+  ex_finite_lim_seq u.
 Proof.
   intros.
   case: (ex_finite_lim_seq_decr (fun n => - u n) (- M)).
@@ -2203,7 +2184,9 @@ Proof.
   move => n ; by apply Ropp_le_contravar.
   move => l ; move => Hu.
   exists (- l).
+  rewrite is_finite_lim_seqE in Hu.
   apply is_lim_seq_spec in Hu.
+  rewrite is_finite_lim_seqE.
   apply is_lim_seq_spec.
   intros eps.
   case: (Hu eps) => {Hu} N Hu.
@@ -2238,7 +2221,7 @@ intros [x| |] P [eps He].
 Qed.
 
 Lemma is_lim_seq_opp (u : nat -> R) (l : Rbar) :
-  is_lim_seq u l <-> is_lim_seq (fun n => -u n) (Rbar_opp l).
+  u --> l <-> (fun n => -u n) --> (Rbar_opp l).
 Proof.
   split ; move => Hu.
   apply is_LimSup_LimInf_lim_seq.
@@ -2371,9 +2354,9 @@ Proof.
 Qed.
 
 Lemma is_lim_seq_plus (u v : nat -> R) (l1 l2 l : Rbar) :
-  is_lim_seq u l1 -> is_lim_seq v l2 ->
+  u --> l1 -> v --> l2 ->
   is_Rbar_plus l1 l2 l ->
-  is_lim_seq (fun n => u n + v n) l.
+  (fun n => u n + v n) --> l.
 Proof.
 intros Hu Hv Hl.
 apply: filterlim_comp_2.
@@ -2382,9 +2365,10 @@ exact: Hv.
 exact: filterlim_Rbar_plus.
 Qed.
 Lemma is_lim_seq_plus' (u v : nat -> R) (l1 l2 : R) :
-  is_lim_seq u l1 -> is_lim_seq v l2 ->
-  is_lim_seq (fun n => u n + v n) (l1 + l2).
+  u --> l1 -> v --> l2 ->
+  (fun n => u n + v n) --> (l1 + l2).
 Proof.
+rewrite !is_finite_lim_seqE.
 intros Hu Hv.
 eapply is_lim_seq_plus.
 by apply Hu.
@@ -2418,18 +2402,19 @@ Qed.
 (** Subtraction *)
 
 Lemma is_lim_seq_minus (u v : nat -> R) (l1 l2 l : Rbar) :
-  is_lim_seq u l1 -> is_lim_seq v l2 ->
+  u --> l1 -> v --> l2 ->
   is_Rbar_minus l1 l2 l ->
-  is_lim_seq (fun n => u n - v n) l.
+  (fun n => u n - v n) --> l.
 Proof.
   intros H1 H2 Hl.
   eapply is_lim_seq_plus ; try eassumption.
   apply -> is_lim_seq_opp ; apply H2.
 Qed.
 Lemma is_lim_seq_minus' (u v : nat -> R) (l1 l2 : R) :
-  is_lim_seq u l1 -> is_lim_seq v l2 ->
-  is_lim_seq (fun n => u n - v n) (l1 - l2).
+  u --> l1 -> v --> l2 ->
+  (fun n => u n - v n) --> (l1 - l2).
 Proof.
+rewrite !is_finite_lim_seqE.
 intros Hu Hv.
 eapply is_lim_seq_minus ; try eassumption.
 by [].
@@ -2562,18 +2547,18 @@ Proof.
 Qed.
 
 Lemma is_lim_seq_inv (u : nat -> R) (l : Rbar) :
-  is_lim_seq u l -> l <> 0 ->
-  is_lim_seq (fun n => / u n) (Rbar_inv l).
+  u --> l -> l <> 0 ->
+  (fun n => / u n) --> (Rbar_inv l).
 Proof.
 intros Hu Hl.
-apply filterlim_comp with (1 := Hu).
+apply: filterlim_comp Hu _.
 now apply filterlim_Rbar_inv.
 Qed.
 
 Lemma ex_lim_seq_inv (u : nat -> R) :
-  ex_lim_seq u
-  -> Lim_seq u <> 0
-    -> ex_lim_seq (fun n => / u n).
+  ex_lim_seq u ->
+  Lim_seq u <> 0 ->
+  ex_lim_seq (fun n => / u n).
 Proof.
   intros.
   apply Lim_seq_correct in H.
@@ -2582,8 +2567,8 @@ Proof.
 Qed.
 
 Lemma Lim_seq_inv (u : nat -> R) :
-  ex_lim_seq u -> (Lim_seq u <> 0)
-    -> Lim_seq (fun n => / u n) = Rbar_inv (Lim_seq u).
+  ex_lim_seq u -> (Lim_seq u <> 0) ->
+  Lim_seq (fun n => / u n) = Rbar_inv (Lim_seq u).
 Proof.
   move => Hl Hu.
   apply is_lim_seq_unique.
@@ -2761,9 +2746,9 @@ Proof.
 Qed.
 
 Lemma is_lim_seq_mult (u v : nat -> R) (l1 l2 l : Rbar) :
-  is_lim_seq u l1 -> is_lim_seq v l2 ->
+  u --> l1 -> v --> l2 ->
   is_Rbar_mult l1 l2 l ->
-  is_lim_seq (fun n => u n * v n) l.
+  (fun n => u n * v n) --> l.
 Proof.
 intros Hu Hv Hp.
 apply: filterlim_comp_2.
@@ -2772,9 +2757,10 @@ exact Hv.
 exact: filterlim_Rbar_mult.
 Qed.
 Lemma is_lim_seq_mult' (u v : nat -> R) (l1 l2 : R) :
-  is_lim_seq u l1 -> is_lim_seq v l2 ->
-  is_lim_seq (fun n => u n * v n) (l1 * l2).
+  u --> l1 -> v --> l2 ->
+  (fun n => u n * v n) --> (l1 * l2).
 Proof.
+rewrite !is_finite_lim_seqE.
 intros Hu Hv.
 eapply is_lim_seq_mult ; try eassumption.
 by [].
@@ -2835,11 +2821,11 @@ apply filterlim_Rbar_mult_l.
 Qed.
 
 Lemma is_lim_seq_scal_l (u : nat -> R) (a : R) (lu : Rbar) :
-  is_lim_seq u lu ->
-  is_lim_seq (fun n => a * u n) (Rbar_mult a lu).
+  u --> lu ->
+  (fun n => a * u n) --> (Rbar_mult a lu).
 Proof.
 intros Hu H.
-apply filterlim_comp with (1 := Hu).
+apply: filterlim_comp Hu _ _.
 by apply filterlim_Rbar_mult_l.
 Qed.
 
@@ -2890,8 +2876,8 @@ Proof.
 Qed.
 
 Lemma is_lim_seq_scal_r (u : nat -> R) (a : R) (lu : Rbar) :
-  is_lim_seq u lu ->
-    is_lim_seq (fun n => u n * a) (Rbar_mult lu a).
+  u --> lu ->
+  (fun n => u n * a) --> (Rbar_mult lu a).
 Proof.
   move => Hu Ha.
   apply is_lim_seq_ext with ((fun n : nat => a * u n)).
@@ -2920,18 +2906,19 @@ Qed.
 (** Division *)
 
 Lemma is_lim_seq_div (u v : nat -> R) (l1 l2 l : Rbar) :
-  is_lim_seq u l1 -> is_lim_seq v l2 -> l2 <> 0 ->
+  u --> l1 -> v --> l2 -> l2 <> 0 ->
   is_Rbar_div l1 l2 l ->
-  is_lim_seq (fun n => u n / v n) l.
+  (fun n => u n / v n) --> l.
 Proof.
   intros.
   eapply is_lim_seq_mult ; try eassumption.
   now apply is_lim_seq_inv.
 Qed.
 Lemma is_lim_seq_div' (u v : nat -> R) (l1 l2 : R) :
-  is_lim_seq u l1 -> is_lim_seq v l2 -> l2 <> 0 ->
-  is_lim_seq (fun n => u n / v n) (l1 / l2).
+  u --> l1 -> v --> l2 -> l2 <> 0 ->
+  (fun n => u n / v n) --> (l1 / l2).
 Proof.
+  rewrite !is_finite_lim_seqE.
   intros.
   eapply is_lim_seq_div ; try eassumption.
   now contradict H1 ; case: H1 => ->.
@@ -2963,9 +2950,9 @@ Qed.
 (** *** Additional limits *)
 
 Lemma ex_lim_seq_adj (u v : nat -> R) :
-  (forall n, u n <= u (S n)) -> (forall n, v (S n) <= v n)
-  -> is_lim_seq (fun n => v n - u n) 0
-  -> ex_finite_lim_seq u /\ ex_finite_lim_seq v /\ Lim_seq u = Lim_seq v.
+  (forall n, u n <= u (S n)) -> (forall n, v (S n) <= v n) ->
+  (fun n => v n - u n) --> 0 ->
+  ex_finite_lim_seq u /\ ex_finite_lim_seq v /\ Lim_seq u = Lim_seq v.
 Proof.
   move => Hu Hv H0.
   suff H : forall n, u n <= v n.
@@ -2974,6 +2961,7 @@ Proof.
   suff Ev : ex_finite_lim_seq v.
     split ; try auto.
 
+  rewrite is_finite_lim_seqE in H0.
   apply is_lim_seq_unique in H0.
   rewrite Lim_seq_minus in H0 ; try by intuition.
   apply ex_finite_lim_seq_correct in Eu.
@@ -2997,6 +2985,7 @@ Proof.
   by apply Rle_refl.
   by apply Rle_trans with (1 := Hv _).
   move => n0 ; apply Rnot_lt_le ; move/Rminus_lt_0 => H.
+  rewrite is_finite_lim_seqE in H0.
   apply is_lim_seq_spec in H0.
   case: (H0 (mkposreal _ H)) => /= {H0} N H0.
   move: (H0 _ (le_plus_r n0 N)) ; apply Rle_not_lt.
@@ -3014,12 +3003,12 @@ Qed.
 (** Image by a continuous function *)
 
 Lemma is_lim_seq_continuous (f : R -> R) (u : nat -> R) (l : R) :
-  continuity_pt f l -> is_lim_seq u l
-  -> is_lim_seq (fun n => f (u n)) (f l).
+  continuity_pt f l -> u --> l ->
+  (fun n => f (u n)) --> (f l).
 Proof.
   move => Cf Hu.
   apply continuity_pt_filterlim in Cf.
-  apply filterlim_comp with (1 := Hu).
+  apply: filterlim_comp Hu _.
   exact Cf.
 Qed.
 
@@ -3047,10 +3036,10 @@ Proof.
 Qed.
 
 Lemma is_lim_seq_abs (u : nat -> R) (l : Rbar) :
-  is_lim_seq u l -> is_lim_seq (fun n => Rabs (u n)) (Rbar_abs l).
+  u --> l -> (fun n => Rabs (u n)) --> (Rbar_abs l).
 Proof.
 intros Hu.
-apply filterlim_comp with (1 := Hu).
+apply: filterlim_comp Hu _.
 apply filterlim_Rabs.
 Qed.
 Lemma ex_lim_seq_abs (u : nat -> R) :
@@ -3070,8 +3059,9 @@ Proof.
 Qed.
 
 Lemma is_lim_seq_abs_0 (u : nat -> R) :
-  is_lim_seq u 0 <-> is_lim_seq (fun n => Rabs (u n)) 0.
+  u --> 0 <-> (fun n => Rabs (u n)) --> 0.
 Proof.
+  rewrite !is_finite_lim_seqE.
   split => Hu.
   rewrite -Rabs_R0.
   by apply (is_lim_seq_abs _ 0).
@@ -3087,9 +3077,10 @@ Qed.
 (** Geometric sequences *)
 
 Lemma is_lim_seq_geom (q : R) :
-  Rabs q < 1 -> is_lim_seq (fun n => q ^ n) 0.
+  Rabs q < 1 -> (fun n => q ^ n) --> 0.
 Proof.
   intros Hq.
+  rewrite is_finite_lim_seqE.
   apply is_lim_seq_spec.
   move => [e He] /=.
   case: (pow_lt_1_zero q Hq e He) => N H.
@@ -3110,7 +3101,7 @@ Proof.
 Qed.
 
 Lemma is_lim_seq_geom_p (q : R) :
-  1 < q -> is_lim_seq (fun n => q ^ n) p_infty.
+  1 < q -> (fun n => q ^ n) --> p_infty.
 Proof.
   intros Hq.
   apply is_lim_seq_spec.
@@ -3192,7 +3183,7 @@ Qed.
 (** Rbar_loc_seq converges *)
 
 Lemma is_lim_seq_Rbar_loc_seq (x : Rbar) :
-  is_lim_seq (Rbar_loc_seq x) x.
+  (Rbar_loc_seq x) --> x.
 Proof.
   intros P HP.
   apply filterlim_Rbar_loc_seq.

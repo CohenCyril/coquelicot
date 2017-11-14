@@ -5268,6 +5268,8 @@ Definition Rbar_locally (a : Rbar) (P : R -> Prop) :=
     | m_infty => exists M : R, forall x, x < M -> P x
   end.
 
+Canonical Rbar_canonical_filter := CanonicalFilter R Rbar (Rbar_locally).
+
 Global Instance Rbar_locally'_filter :
   forall x, ProperFilter (Rbar_locally' x).
 Proof.
