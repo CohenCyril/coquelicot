@@ -231,8 +231,8 @@ Proof.
     rewrite (is_lim_unique _ _ _ Hex_m).
     apply is_lim_spec in Hex_n.
     apply is_lim_spec in Hex_m.
-    case: (Hex_n (pos_div_2 ([posreal of eps / 2]))) => {Hex_n} /= dn Hex_n.
-    case: (Hex_m (pos_div_2 ([posreal of eps / 2]))) => {Hex_m} /= dm Hex_m.
+    case: (Hex_n [posreal of eps / 2 / 2]) => {Hex_n} /= dn Hex_n.
+    case: (Hex_m [posreal of eps / 2 / 2]) => {Hex_m} /= dm Hex_m.
     case: (Ho x Hx) => {Ho} d0 Ho.
     set y := x + Rmin (Rmin dn dm) d0 / 2.
     have Hd : 0 < Rmin (Rmin dn dm) d0 / 2.
@@ -278,8 +278,8 @@ Proof.
     apply is_lim_spec.
     move => eps.
     apply (proj2 (is_lim_seq_spec (fun n : nat => real (Lim (fn n) x)) l)) in H.
-    case: (Hfn (pos_div_2 ([posreal of eps / 2]))) => {Hfn} /= n1 Hfn.
-    case: (H (pos_div_2 ([posreal of eps / 2]))) => {H} /= n2 H.
+    case: (Hfn [posreal of eps / 2 / 2]) => {Hfn} /= n1 Hfn.
+    case: (H [posreal of eps / 2 / 2]) => {H} /= n2 H.
     set n := (n1 + n2)%nat.
     move: (fun y Hy => Hfn n (le_plus_l _ _) y Hy) => {Hfn} Hfn.
     move: (H n (le_plus_r _ _)) => {H} H.
@@ -694,7 +694,7 @@ Proof.
 
   move => eps.
   case: (CUf eps) => {CUf} eta CUf.
-  move: (interval_finite_subdiv_between  a b (pos_div_2 eta) (Rlt_le _ _ Hab)).
+  move: (interval_finite_subdiv_between  a b [posreal of eta / 2] (Rlt_le _ _ Hab)).
   case: (interval_finite_subdiv a b (pos_div_2 eta) (Rlt_le _ _ Hab)) =>
     a_ Ha_ /= Ha_0.
   have : exists N, forall n i, (N <= n)%nat -> (i < seq.size a_)%nat
