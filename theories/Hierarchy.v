@@ -3429,6 +3429,22 @@ Canonical AbsRing_NormedModule :=
 
 End AbsRing_NormedModule.
 
+(* Quick fix for non inferred instances *)
+(* This does not fix everything, see below *)
+Instance NormedModule_locally_filter (K : AbsRing) (V : NormedModule K)
+  (p : V) :
+  @ProperFilter (NormedModule.sort K V)
+  (@locally (NormedModule.UniformSpace _ _)  p).
+Proof. exact: locally_filter. Qed.
+
+(* Lemma bla (K : AbsRing) (x : K) : *)
+(*   @ProperFilter (NormedModuleAux.sort K (AbsRing_NormedModuleAux K)) *)
+(*   (@locally (AbsRing_UniformSpace K) x). *)
+(* Proof. *)
+(* Fail typeclasses eauto. *)
+(* exact: locally_filter. *)
+(* Abort. *)
+
 (** Normed vector spaces have some continuous functions *)
 
 Section NVS_continuity.

@@ -733,17 +733,18 @@ Proof.
   intros f g h x [lf Df] [lg Dg] [lh Dh].
   exists (fun x => lh (lf x,lg x)).
   apply (filterdiff_comp'_2 f g h x lf lg (fun x y => lh (x,y))) ; try eassumption.
-  eapply filterdiff_ext_lin.
-    exact: Dh.
-  by case.
-Unshelve.
-(* :TODO: DEBUG ! *)
-(* Set Debug Typeclasses. *)
-(* Fail typeclasses eauto. *)
-eapply @filter_filter.
-(* Set Printing All. *)
-(* Fail typeclasses eauto. *)
-exact: locally_filter. (*WHY*)
+  by apply: filterdiff_ext_lin Dh _; case.
+(*   eapply filterdiff_ext_lin. *)
+(*     exact: Dh. *)
+(*   by case. *)
+(* Unshelve. *)
+(* (* :TODO: DEBUG ! *) *)
+(* (* Set Debug Typeclasses. *) *)
+(* (* Fail typeclasses eauto. *) *)
+(* eapply @filter_filter. *)
+(* (* Set Printing All. *) *)
+(* (* Fail typeclasses eauto. *) *)
+(* exact: locally_filter. (*WHY*) *)
 Qed.
 
 End Diff_comp2.

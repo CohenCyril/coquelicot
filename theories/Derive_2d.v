@@ -1408,7 +1408,7 @@ rewrite 2!Rmult_0_l 2!Rplus_0_r pow1.
 unfold differential, Rdiv; ring.
 now apply le_S.
 split; [apply Rle_refl | apply Rle_0_1].
-Unshelve.
-eapply @filter_filter.
-exact: locally_filter.
+(* Unshelve. *)
+(* eapply @filter_filter. *)
+(* exact: locally_filter. *)
 Qed.
