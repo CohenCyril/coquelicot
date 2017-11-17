@@ -1554,11 +1554,19 @@ Structure type := Pack { sort; _ : class_of sort ; _ : Type }.
 Local Coercion sort : type >-> Sortclass.
 Definition class (cT : type) := let: Pack _ c _ := cT return class_of cT in c.
 
+Variable cT : type.
+
+Definition type_is_canonical_filter :=
+  @CanonicalFilter cT cT (locally cT (class cT)).
+
 End ClassDef.
 
 Module Exports.
 
 Coercion sort : type >-> Sortclass.
+Coercion type_is_canonical_filter : type >-> canonical_filter.
+Canonical type_is_canonical_filter.
+Coercion locally : mixin_of >-> Funclass.
 Notation TopologicalSpace := type.
 
 End Exports.
@@ -1697,61 +1705,6 @@ Defined.
 
 End TopologyOfOpen.
 
-(* Specific topological spaces *)
-
-Hint Resolve cond_pos.
-
-Section AbsRing_TopologicalSpace.
-
-Variable K : AbsRing.
-
-Definition AbsRing_ball (x : K) (eps : R) (y : K) := abs (minus y x) < eps.
-
-Definition AbsRing_loc (x : K) (A : set K) :=
-  exists eps : posreal, AbsRing_ball x eps `<=` A.
-
-Lemma AbsRing_ball_center (x : K) (e : posreal) : AbsRing_ball x e x.
-Proof. by rewrite /AbsRing_ball /minus plus_opp_r abs_zero. Qed.
-
-Lemma AbsRing_ball_triangle (x y z : K) (e1 e2 : R) :
-  AbsRing_ball x e1 y -> AbsRing_ball y e2 z ->
-  AbsRing_ball x (e1 + e2) z.
-Proof.
-move=> xe1_y ye2_z; rewrite /AbsRing_ball (minus_trans y) plus_comm.
-by apply: Rle_lt_trans (abs_triangle _ _) _; apply: Rplus_lt_compat.
-Qed.
-
-Lemma AbsRing_loc_filter (x : K) : ProperFilter (AbsRing_loc x).
-Proof.
-split; first by move=> A [e xe_A]; exists x; apply/xe_A/AbsRing_ball_center.
-split; first by exists [posreal of 1].
-  move=> A B [e1 xe1_A] [e2 xe2_B]; exists [posreal of Rmin e1 e2] => y xmin_y.
-  split.
-  - by apply: xe1_A; apply: Rlt_le_trans xmin_y _; apply: Rmin_l.
-  - by apply: xe2_B; apply: Rlt_le_trans xmin_y _; apply: Rmin_r.
-by move=> A B sAB [e xe_A]; exists e => y /xe_A/sAB.
-Qed.
-
-Lemma AbsRing_loc_singleton (x : K) (A : set K) : AbsRing_loc x A -> A x.
-Proof. by move=> [?]; apply; apply: AbsRing_ball_center. Qed.
-
-Lemma AbsRing_loc_loc (x : K) (A : set K) :
-  AbsRing_loc x A -> AbsRing_loc x (AbsRing_loc^~ A).
-Proof.
-move=> [e xe_A]; exists [posreal of e / 2] => y xhe_y.
-exists [posreal of e / 2] => z yhe_z.
-by apply: xe_A; rewrite [_ e]double_var; apply: AbsRing_ball_triangle yhe_z.
-Qed.
-
-Definition AbsRing_TopologicalSpace_Mixin :=
-  topologyOfFilterMixin AbsRing_loc_filter AbsRing_loc_singleton
-  AbsRing_loc_loc.
-
-Canonical AbsRing_TopologicalSpace :=
-  TopologicalSpace.Pack _ AbsRing_TopologicalSpace_Mixin K.
-
-End AbsRing_TopologicalSpace.
-
 (** * Uniform spaces defined using balls *)
 
 Module UniformSpace.
@@ -1766,19 +1719,21 @@ Record mixin_of (M : Type) := Mixin {
 Definition uniform_filter M (m : mixin_of M) : M -> set (set M) :=
   fun (x : M) P => exists eps : posreal, forall y, ball _ m x eps y -> P y.
 
-Record locally_mixin_of (M : Type) (m : mixin_of M) (b : M -> set (set M)) := LocallyMixin {
-  locallyE : forall x y, b x y <-> (uniform_filter M m) x y
+Record locally_mixin_of (M : Type) (m : mixin_of M) (loc : M -> set (set M)) :=
+  LocallyMixin {
+  locallyE : forall x y, loc x y <-> (uniform_filter M m) x y
 }.
 
 Record class_of M := Class {
-  base : M -> set (set M); (* UNSTABLE !!!! *)
+  base : TopologicalSpace.class_of M;
   mixin : mixin_of M;
-  locally_mixin : locally_mixin_of M mixin base
+  locally_mixin :
+    locally_mixin_of M mixin (@locally (TopologicalSpace.Pack _ base M))
 }.
 
 Section ClassDef.
 
-Local Coercion base : class_of >-> Funclass.
+Local Coercion base : class_of >-> TopologicalSpace.class_of.
 Structure type := Pack { sort; _ : class_of sort ; _ : Type }.
 Local Coercion sort : type >-> Sortclass.
 Variables (T : Type) (cT : type).
@@ -1789,7 +1744,7 @@ Let xT := let: Pack T _ _ := cT in T.
 Notation xclass := (class : class_of xT).
 
 Definition pack m :=
-  fun b bT & phant_id (@canonical_type_filter T bT) b =>
+  fun b bT & phant_id (TopologicalSpace.class bT) b =>
   fun erefl => @Pack T (@Class T b m (@LocallyMixin _ _ _ erefl)) T.
 
 Definition type_is_canonical_filter := @CanonicalFilter cT cT xclass.
@@ -1799,7 +1754,7 @@ End ClassDef.
 Module Exports.
 
 Coercion sort : type >-> Sortclass.
-Coercion base : class_of >-> Funclass.
+Coercion base : class_of >-> TopologicalSpace.mixin_of.
 Coercion mixin : class_of >-> mixin_of.
 Coercion type_is_canonical_filter : type >-> canonical_filter.
 Canonical type_is_canonical_filter.
@@ -1808,7 +1763,9 @@ Notation "[ 'UniformSpace' 'of' T 'for' cT ]" :=  (@clone T cT _ idfun)
   (at level 0, format "[ 'UniformSpace'  'of'  T  'for'  cT ]") : form_scope.
 Notation "[ 'UniformSpace' 'of' T ]" := (@clone T _ _ id)
   (at level 0, format "[ 'UniformSpace'  'of'  T ]") : form_scope.
-Notation UniformSpacePack T m := (@pack T m  _ _ idfun (fun x y => iff_refl (uniform_filter T m x y))).
+Notation TopologicalUniformSpacePack T m locP := (@pack T m _ _ idfun locP).
+Notation UniformSpacePack T m := (TopologicalUniformSpacePack T m
+  (fun x y => iff_refl (uniform_filter T m x y))).
 
 Coercion uniform_filter : mixin_of >-> Funclass.
 
@@ -1817,6 +1774,65 @@ End Exports.
 End UniformSpace.
 
 Export UniformSpace.Exports.
+
+Section Uniform_TopologicalSpace.
+
+Lemma my_ball_le (M : Type) (m : UniformSpace.mixin_of M) :
+  forall (x : M) (e1 e2 : R), e1 <= e2 ->
+  forall (y : M), UniformSpace.ball _ m x e1 y -> UniformSpace.ball _ m x e2 y.
+Proof.
+intros x e1 e2 H y H1.
+destruct H.
+assert (e2 - e1 > 0).
+by apply Rgt_minus.
+assert (UniformSpace.ball _ m y {| pos := (e2-e1); cond_pos := (H0) |} y).
+apply UniformSpace.ax1.
+replace e2 with (e1 + (e2 - e1)).
+apply UniformSpace.ax3 with y ; assumption.
+by apply Rplus_minus.
+by rewrite <- H.
+Qed.
+
+Definition uniformTopologicalSpaceMixin (T : Type)
+  (m : UniformSpace.mixin_of T) : TopologicalSpace.mixin_of T.
+Proof.
+exists (fun (p : T) (A : set T) =>
+  exists e : posreal, UniformSpace.ball _ m p e `<=` A)
+  (fun A : set T => forall p, A p ->
+  exists e : posreal, UniformSpace.ball _ m p e `<=` A) => //.
+  move=> x.
+  constructor; [idtac|constructor].
+  - move=> P [eps H].
+    exists x.
+    by apply/H/UniformSpace.ax1.
+  - by exists [posreal of 1].
+  - move=> P Q [dP HP] [dQ HQ].
+    exists [posreal of Rmin dP dQ].
+    intros y Hy.
+    split.
+    apply HP.
+    apply my_ball_le with (2 := Hy).
+    apply Rmin_l.
+    apply HQ.
+    apply my_ball_le with (2 := Hy).
+    apply Rmin_r.
+  - move=> P Q H [dP HP].
+    exists dP.
+    intros y Hy.
+    apply H.
+    now apply HP.
+move=> p A; split=> [[e pe_A]|[B [Bop [Bp sBA]]]]; last first.
+  by have /Bop [e pe_B] := Bp; exists e; apply: subset_trans sBA.
+exists [set q | exists e' : posreal, UniformSpace.ball _ m q e' `<=` A].
+split; last first.
+  split; first by exists e.
+  by move=> q [e']; apply; apply: UniformSpace.ax1.
+move=> q [e' qe'_A]; exists [posreal of e' / 2] => r qhe'_r.
+exists [posreal of e' / 2] => s rhe'_s.
+by apply: qe'_A; rewrite [_ e']double_var; apply: UniformSpace.ax3 rhe'_s.
+Defined.
+
+End Uniform_TopologicalSpace.
 
 Section UniformSpace1.
 
@@ -1848,18 +1864,7 @@ Qed.
 Lemma ball_le :
   forall (x : M) (e1 e2 : R), e1 <= e2 ->
   forall (y : M), ball x e1 y -> ball x e2 y.
-Proof.
-intros x e1 e2 H y H1.
-destruct H.
-assert (e2 - e1 > 0).
-by apply Rgt_minus.
-assert (ball y {| pos := (e2-e1); cond_pos := (H0) |} y).
-apply ball_center.
-replace e2 with (e1 + (e2 - e1)).
-apply ball_triangle with y ; assumption.
-by apply Rplus_minus.
-by rewrite <- H.
-Qed.
+Proof. exact: my_ball_le. Qed.
 
 Definition close (x y : M) : Prop := forall eps : posreal, ball x eps y.
 
@@ -1884,9 +1889,16 @@ End UniformSpace1.
 
 (** Rings with absolute value *)
 
+Hint Resolve cond_pos.
+
 Section AbsRing_UniformSpace.
 
 Variable K : AbsRing.
+
+Definition AbsRing_ball (x : K) (eps : R) (y : K) := abs (minus y x) < eps.
+
+Lemma AbsRing_ball_center (x : K) (e : posreal) : AbsRing_ball x e x.
+Proof. by rewrite /AbsRing_ball /minus plus_opp_r abs_zero. Qed.
 
 Lemma AbsRing_ball_sym :
   forall (x y : K) (e : R),
@@ -1896,15 +1908,27 @@ Proof.
   by rewrite /AbsRing_ball abs_minus.
 Qed.
 
+Lemma AbsRing_ball_triangle (x y z : K) (e1 e2 : R) :
+  AbsRing_ball x e1 y -> AbsRing_ball y e2 z ->
+  AbsRing_ball x (e1 + e2) z.
+Proof.
+move=> xe1_y ye2_z; rewrite /AbsRing_ball (minus_trans y) plus_comm.
+by apply: Rle_lt_trans (abs_triangle _ _) _; apply: Rplus_lt_compat.
+Qed.
 
 Definition AbsRing_UniformSpace_mixin :=
   UniformSpace.Mixin _ _ AbsRing_ball_center AbsRing_ball_sym AbsRing_ball_triangle.
 
+Definition AbsRing_TopologicalSpace_Mixin :=
+  uniformTopologicalSpaceMixin K AbsRing_UniformSpace_mixin.
+Canonical AbsRing_TopologicalSpace :=
+  TopologicalSpace.Pack _ AbsRing_TopologicalSpace_Mixin K.
+
 Canonical AbsRing_canonical_filter := CanonicalFilter K K AbsRing_UniformSpace_mixin.
+
 Canonical AbsRing_UniformSpace := UniformSpacePack K AbsRing_UniformSpace_mixin.
 
 End AbsRing_UniformSpace.
-
 
 Section prod_UniformSpace.
 
@@ -2049,32 +2073,6 @@ Proof. Abort. (*by rewrite locallyE. Qed.*)
 (*Lemma filterE (x : T) :
   [filter of x] = fun P => exists eps : posreal, forall y, ball x eps y -> P y.
 Proof. exact: locallyxE. Qed.*)
-
-Lemma locally_filter :
-  forall x : T, ProperFilter (locally x).
-Proof.
-move=> x.
-constructor; [idtac|constructor].
-- move=> P /locallyP [eps H].
-  exists x.
-  by apply/H/ball_center.
-- apply/locallyP; by exists [posreal of 1].
-- move=> P Q /locallyP[dP HP] /locallyP[dQ HQ].
-  apply/locallyP; exists [posreal of Rmin dP dQ].
-  intros y Hy.
-  split.
-  apply HP.
-  apply ball_le with (2 := Hy).
-  apply Rmin_l.
-  apply HQ.
-  apply ball_le with (2 := Hy).
-  apply Rmin_r.
-- move=> P Q H /locallyP[dP HP].
-  apply/locallyP; exists dP.
-  intros y Hy.
-  apply H.
-  now apply HP.
-Qed.
 
 End LocallyDef.
 
