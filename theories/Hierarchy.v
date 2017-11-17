@@ -93,9 +93,9 @@ Notation "[ 'set' ~ a ]" := (~` [set a])
 Notation "A `\` B" := (setD A B) : classical_set_scope.
 Notation "A `\ a" := (A `\` [set a]) : classical_set_scope.
 
-Definition bigsetI A I (P : set I) (X : I -> set A) :=
+Definition bigsetI {A I} (P : set I) (X : I -> set A) :=
   [set a | forall i, P i -> X i a].
-Definition bigsetU A I (P : set I) (X : I -> set A) :=
+Definition bigsetU {A I} (P : set I) (X : I -> set A) :=
   [set a | exists2 i, P i & X i a].
 
 Notation "\bigcup_ ( i 'in' P ) F" :=
@@ -1532,6 +1532,171 @@ Qed.
 
 End AbsRing1.
 
+(** * Topological spaces *)
+
+Module TopologicalSpace.
+
+Record mixin_of (T : Type) := Mixin {
+  locally : T -> set (set T) ;
+  open : set T -> Prop ;
+  _ : forall p : T, ProperFilter (locally p) ;
+  _ : forall (p : T) (A : set T),
+      locally p A <-> exists B : set T, open B /\ B p /\ B `<=` A ;
+  _ : forall (A : set T),
+      open A <-> forall p : T, A p -> locally p A
+}.
+
+Notation class_of := mixin_of (only parsing).
+
+Section ClassDef.
+
+Structure type := Pack { sort; _ : class_of sort ; _ : Type }.
+Local Coercion sort : type >-> Sortclass.
+Definition class (cT : type) := let: Pack _ c _ := cT return class_of cT in c.
+
+End ClassDef.
+
+Module Exports.
+
+Coercion sort : type >-> Sortclass.
+Notation TopologicalSpace := type.
+
+End Exports.
+
+End TopologicalSpace.
+
+Export TopologicalSpace.Exports.
+
+Section TopologicalSpaceTheory.
+
+Context {T : TopologicalSpace}.
+
+Definition locally := TopologicalSpace.locally _ (TopologicalSpace.class T).
+
+Definition open := TopologicalSpace.open _ (TopologicalSpace.class T).
+
+Definition neigh (p : T) (A : set T) := open A /\ A p.
+
+Global Instance locally_filter (p : T) : ProperFilter (locally p).
+Proof. by rewrite /locally; case: T p => ? []. Qed.
+
+Lemma locallyP (p : T) (A : set T) :
+  locally p A <-> exists B : set T, neigh p B /\ B `<=` A.
+Proof.
+rewrite /neigh.
+suff locP : locally p A <-> exists B, open B /\ B p /\ B `<=` A.
+  by apply: iff_trans locP _; split=> [[B [? []]]|[B [[]]]]; exists B.
+by rewrite /locally /open; case: T p A => ? [].
+Qed.
+
+Lemma openP (A : set T) : open A <-> forall p, A p -> locally p A.
+Proof. by rewrite /open /locally; case: T A => ? []. Qed.
+
+Lemma locally_singleton (p : T) (A : set T) :
+  locally p A -> A p.
+Proof. by move=> /locallyP [B [[_ Bp]]]; apply. Qed.
+
+Lemma locally_locally (p : T) (A : set T) :
+  locally p A -> locally p (locally^~ A).
+Proof.
+move=> /locallyP [B [[Bop Bp] sBA]].
+apply/locallyP; exists B; split=> // q Bq.
+apply: filter_imp sBA _.
+by have /openP := Bop; apply.
+Qed.
+
+Lemma open_set0 : open set0.
+Proof. by apply/openP. Qed.
+
+Lemma open_setT : open setT.
+Proof. by apply/openP => ??; apply: filter_true. Qed.
+
+Lemma open_setI (A B : set T) :
+  open A -> open B -> open (A `&` B).
+Proof.
+move=> /openP Aop /openP Bop; apply/openP => p [Ap Bp].
+by apply: filter_and; [apply: Aop|apply: Bop].
+Qed.
+
+Lemma open_setU (I : Type) (f : I -> set T) :
+  (forall i, open (f i)) -> open (\bigcup_i f i).
+Proof.
+move=> fop; apply/openP => p [i _].
+have /openP fiop := fop i.
+by move=> /fiop; apply: filter_imp => ??; exists i.
+Qed.
+
+Lemma open_ext (A B : set T) : (forall p, A p <-> B p) -> open A -> open B.
+Proof.
+move=> AB /openP Aop.
+by apply/openP => p /AB/Aop; apply: filter_imp => ? /AB.
+Qed.
+
+Lemma neigh_setT (p : T) : neigh p setT.
+Proof. by split=> //; apply: open_setT. Qed.
+
+Lemma neigh_setI (p : T) (A B : set T) :
+  neigh p A -> neigh p B -> neigh p (A `&` B).
+Proof.
+by move=> [Aop Ap] [Bop Bp]; split; [apply: open_setI|split].
+Qed.
+
+Lemma neigh_locally (p : T) (A : set T) : neigh p A -> locally p A.
+Proof.
+by move=> p_A; apply/locallyP; exists A; split.
+Qed.
+
+End TopologicalSpaceTheory.
+
+Section TopologyOfFilter.
+
+Variable (T : Type) (loc : T -> set (set T)).
+Hypothesis (loc_filter : forall p : T, ProperFilter (loc p)).
+Hypothesis (loc_singleton : forall (p : T) (A : set T), loc p A -> A p).
+Hypothesis (loc_loc : forall (p : T) (A : set T), loc p A -> loc p (loc^~ A)).
+
+Definition topologyOfFilterMixin : TopologicalSpace.mixin_of T.
+Proof.
+exists loc (fun A : set T => forall p, A p -> loc p A) => // p A.
+split; last first.
+  by move=> [B [Bop [Bp sBA]]]; apply: filter_imp sBA _; apply: Bop.
+move=> p_A; exists (loc^~ A); split; first by move=> ?; apply: loc_loc.
+by split => // q /loc_singleton.
+Defined.
+
+End TopologyOfFilter.
+
+Section TopologyOfOpen.
+
+Variable (T : Type) (op : set T -> Prop).
+Hypothesis (op_setT : op setT).
+Hypothesis (op_setI : forall (A B : set T), op A -> op B -> op (A `&` B)).
+Hypothesis (op_setU : forall (I : Type) (f : I -> set T),
+  (forall i, op (f i)) -> op (\bigcup_i f i)).
+Hypothesis (op_ext : forall (A B : set T),
+  (forall p, A p <-> B p) -> op A -> op B).
+
+Definition topologyOfOpenMixin : TopologicalSpace.mixin_of T.
+Proof.
+exists (fun (p : T) (A : set T) => exists B : set T, op B /\ B p /\ B `<=` A)
+  op => //.
+  move=> p.
+  split; first by move=> A [B [_ [Bp sBA]]]; exists p; apply: sBA.
+  split; first by exists setT.
+    move=> A B [C [Cop [Cp sCA]]] [D [Dop [Dp sDB]]].
+    exists (C `&` D); split; first exact: op_setI.
+    by split=> // q [/sCA Aq /sDB Bq].
+  move=> A B sAB [C [Cop [p_C sCA]]].
+  by exists C; split=> //; split=> //; apply: subset_trans sAB.
+move=> A; split=> [Aop p Ap|Aop]; first by exists A; split=> //; split.
+have /op_setU : forall B : {B : set T & op B /\ B `<=` A}, op (projT1 B).
+  by move=> B; have [] := projT2 B.
+apply: op_ext => p; split=> [[B _ Bp]|]; first by have [_] := projT2 B; apply.
+by move=> /Aop [B [Bop [Bp sBA]]]; exists (existT _ B (conj Bop sBA)).
+Defined.
+
+End TopologyOfOpen.
+
 (** * Uniform spaces defined using balls *)
 
 Module UniformSpace.
@@ -1918,18 +2083,6 @@ Instance canonical_filter_of_proper_filter (F : set (set T)) :
   ProperFilter F -> ProperFilter [filter of F].
 Proof. exact. Qed.
 
-Lemma locally_locally (x : T) (P : T -> Prop) :
-  locally x P -> locally x (fun y => locally y P).
-Proof.
-move=> /locallyP[dp Hp].
-apply/locallyP; exists [posreal of dp / 2] => y xy.
-apply/locallyP; exists [posreal of dp / 2] => z yz.
-by apply Hp; rewrite (double_var dp); apply: ball_triangle xy yz.
-Qed.
-
-Lemma locally_singleton (x : T) (P : T -> Prop) : locally x P -> P x.
-Proof. move=> /locallyP[dp H]; by apply/H/ball_center. Qed.
-
 Lemma locally_ball (x : T) (eps : posreal) : locally x (ball x eps).
 Proof. by apply/locallyP; exists eps. Qed.
 
@@ -2173,56 +2326,6 @@ Qed.
 End at_point.
 
 (** ** Open sets in uniform spaces *)
-
-Section Open.
-
-Context {T : UniformSpace}.
-
-Definition open (D : T -> Prop) := forall x, D x -> locally x D.
-
-Lemma locally_open (D E : T -> Prop) (OD : open D) :
-  (forall x : T, D x -> E x) ->
-  forall x : T, D x ->
-  locally x E.
-Proof.
-intros H x Dx.
-apply filter_imp with (1 := H).
-now apply OD.
-Qed.
-
-Lemma open_ext (D E : T -> Prop) : (forall x, D x <-> E x) ->
-  open D -> open E.
-Proof.
-intros H OD x Ex.
-move: (OD x (proj2 (H x) Ex)).
-apply filter_imp => y.
-by apply H.
-Qed.
-
-Lemma open_and (D E : T -> Prop) : open D -> open E ->
-  open (fun x => D x /\ E x).
-Proof.
-intros OD OE x [Dx Ex].
-apply filter_and.
-now apply OD.
-now apply OE.
-Qed.
-
-Lemma open_or (D E : T -> Prop) : open D -> open E ->
-  open (fun x => D x \/ E x).
-Proof.
-move=> OD OE x [Dx|Ex].
-- move/filter_imp : (OD x Dx); apply; by left.
-- move/filter_imp : (OE x Ex); apply; by right.
-Qed.
-
-Lemma open_true : open (fun x : T => True).
-Proof. intros x _; by apply filter_true. Qed.
-
-Lemma open_false : open (fun x : T => False).
-Proof. by []. Qed.
-
-End Open.
 
 Lemma open_comp :
   forall {T U : UniformSpace} (f : T -> U) (D : U -> Prop),
