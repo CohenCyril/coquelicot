@@ -3015,12 +3015,11 @@ Module NormedModule.
 
 Record mixin_of (K : AbsRing) (V : NormedModuleAux K) := Mixin {
   norm : V -> R ;
-  norm_factor : R ;
   ax1 : forall (x y : V), norm (plus x y) <= norm x + norm y ;
   ax2 : forall (l : K) (x : V), norm (scal l x) <= abs l * norm x ;
-  ax3 : forall (x y : V) (eps : R), norm (minus y x) < eps -> ball x eps y ;
-  ax4 : forall (x y : V) (eps : posreal), ball x eps y -> norm (minus y x) < norm_factor * eps ;
-  ax5 : forall x : V, norm x = 0 -> x = zero
+  ax3 : forall (x : V) (A : set V), locally x A <->
+    exists eps : posreal, forall y, norm (minus y x) < eps -> A y ;
+  ax4 : forall x : V, norm x = 0 -> x = zero
 }.
 
 Section ClassDef.
@@ -3081,8 +3080,6 @@ Context {K : AbsRing} {V : NormedModule K}.
 
 Definition norm : V -> R := NormedModule.norm K _ (NormedModule.class K V).
 
-Definition norm_factor : R := NormedModule.norm_factor K _ (NormedModule.class K V).
-
 Lemma norm_triangle :
   forall x y : V,
   norm (plus x y) <= norm x + norm y.
@@ -3097,23 +3094,16 @@ Proof.
 apply NormedModule.ax2.
 Qed.
 
-Lemma norm_compat1 :
-  forall (x y : V) (eps : R),
-  norm (minus y x) < eps -> ball x eps y.
+Lemma norm_compat (x : V) (A : set V) :
+  locally x A <-> exists eps : posreal, forall y, norm (minus y x) < eps -> A y.
 Proof.
-apply NormedModule.ax3.
-Qed.
-
-Lemma norm_compat2 :
-  forall (x y : V) (eps : posreal), ball x eps y -> norm (minus y x) < norm_factor * eps.
-Proof.
-apply: NormedModule.ax4.
+apply: NormedModule.ax3.
 Qed.
 
 Lemma norm_eq_zero :
   forall x : V, norm x = 0 -> x = zero.
 Proof.
-apply NormedModule.ax5.
+apply NormedModule.ax4.
 Qed.
 
 Lemma norm_zero :
@@ -3128,16 +3118,6 @@ apply Rle_antisym.
   rewrite Rplus_0_l.
   rewrite -{1}[zero]plus_zero_r.
   exact (norm_triangle zero zero).
-Qed.
-
-Lemma norm_factor_gt_0 :
-  0 < norm_factor.
-Proof.
-rewrite <- (Rmult_1_r norm_factor).
-rewrite <- norm_zero.
-rewrite <- (plus_opp_r zero).
-apply (norm_compat2 _ _ [posreal of 1]).
-apply ball_center.
 Qed.
 
 Lemma norm_opp :
@@ -3197,14 +3177,9 @@ apply Rle_antisym.
 2: apply norm_ge_0.
 apply prop_eps.
 intros eps He.
-assert (He' : 0 < eps / norm_factor).
-  apply Rdiv_lt_0_compat with (1 := He).
-  apply norm_factor_gt_0.
-specialize (H (mkposreal _ He')).
-replace eps with (norm_factor * (eps / norm_factor)).
-apply norm_compat2 with (1 := H).
-field.
-apply Rgt_not_eq, norm_factor_gt_0.
+have /proj2 [] := norm_compat x [set y | norm (minus y x) < mkposreal _ He].
+  by exists (mkposreal _ He).
+move=> e; apply; apply: H.
 Qed.
 
 Definition ball_norm (x : V) (eps : R) (y : V) := norm (minus y x) < eps.
@@ -3213,31 +3188,10 @@ Definition locally_norm (x : V) (P : V -> Prop) :=
   exists eps : posreal, forall y, ball_norm x eps y -> P y.
 
 Lemma locally_le_locally_norm x : filter_le (locally x) (locally_norm x).
-Proof.
-intros P [eps H].
-have He : 0 < / norm_factor * eps.
-  apply Rmult_lt_0_compat.
-  by apply/Rinv_0_lt_compat/norm_factor_gt_0.
-  by apply cond_pos.
-exists (mkposreal _ He).
-intros y By.
-apply H.
-unfold ball_norm.
-rewrite -(Rmult_1_l eps) -(Rinv_r norm_factor).
-rewrite Rmult_assoc.
-apply norm_compat2 with (1 := By).
-apply Rgt_not_eq.
-apply norm_factor_gt_0.
-Qed.
+Proof. by move=> ? /norm_compat. Qed.
 
 Lemma locally_norm_le_locally x : filter_le (locally_norm x) (locally x).
-Proof.
-move=> P [eps H].
-exists eps.
-intros y By.
-apply H.
-now apply norm_compat1.
-Qed.
+Proof. by move=> ? /norm_compat. Qed.
 
 Lemma locally_norm_ball_norm :
   forall (x : V) (eps : posreal),
@@ -3413,16 +3367,14 @@ Variable (K : AbsRing).
 Canonical AbsRing_NormedModuleAux :=
   NormedModuleAux.Pack K K (NormedModuleAux.Class _ _ (ModuleSpace.class _ (AbsRing_ModuleSpace K)) (UniformSpace.class (AbsRing_UniformSpace K))) K.
 
-Lemma AbsRing_norm_compat2 :
-  forall (x y : AbsRing_NormedModuleAux) (eps : posreal),
-  ball x eps y -> abs (minus y x) < 1 * eps.
-Proof.
-  intros x y eps H.
-  now rewrite Rmult_1_l.
-Qed.
+Lemma AbsRing_norm_compat (x : AbsRing_NormedModuleAux)
+  (A : set AbsRing_NormedModuleAux) :
+  locally x A <-> exists eps : posreal, forall y, abs (minus y x) < eps -> A y.
+Proof. by []. Qed.
 
 Definition AbsRing_NormedModule_mixin :=
-  NormedModule.Mixin K _ abs 1 abs_triangle abs_mult (fun x y e H => H) AbsRing_norm_compat2 abs_eq_zero.
+  NormedModule.Mixin K _ abs abs_triangle abs_mult AbsRing_norm_compat
+  abs_eq_zero.
 
 Canonical AbsRing_NormedModule :=
   NormedModule.Pack K _ (NormedModule.Class _ _ _ AbsRing_NormedModule_mixin) K.
@@ -3446,6 +3398,24 @@ Proof. exact: locally_filter. Qed.
 (* Abort. *)
 
 (** Normed vector spaces have some continuous functions *)
+
+Lemma filterlim_locally_ball_norm {T : Type} {K : AbsRing} {V : NormedModule K}
+  {F : set (set T)} {FF : Filter F} (f : T -> V) (y : V) :
+  f @ F --> y <->
+  forall eps : posreal, F [set x | ball_norm y eps (f x)].
+Proof.
+split.
+  move=> /filterlim_locally => hF eps.
+  have /proj2 [] := norm_compat y (ball_norm y eps).
+    by exists eps.
+  move=> e he.
+  by have := hF e; apply: filter_imp => ? /he.
+move=> hF; apply/filterlim_locally => eps.
+have /proj1 [] := norm_compat y (ball y eps).
+  exact: locally_ball.
+move=> e he.
+by have := hF e; apply: filter_imp => ? /he.
+Qed.
 
 Section NVS_continuity.
 
@@ -3485,13 +3455,18 @@ Qed.
 Lemma filterlim_scal (k : K) (x : V) :
   (fun z => scal (fst z) (snd z)) @ (k, x) --> (scal k x).
 Proof.
-apply/filterlim_locally => /= eps.
+apply (filterlim_filter_le_1 (F := filter_prod (locally_norm k) (locally_norm x))).
+  intros P [Q R LQ LR H].
+  exists Q R.
+  exact: locally_le_locally_norm.
+  exact: locally_le_locally_norm.
+  exact H.
+apply/filterlim_locally_ball_norm => /= eps.
 eapply filter_imp.
 move => /= u Hu.
 rewrite (double_var eps).
-apply ball_triangle with (scal (fst u) x).
-apply norm_compat1.
-rewrite -scal_minus_distr_r.
+apply ball_norm_triangle with (scal (fst u) x).
+rewrite /ball_norm -scal_minus_distr_r.
 eapply Rle_lt_trans.
 apply norm_scal.
 eapply Rle_lt_trans.
@@ -3501,8 +3476,7 @@ apply Rlt_le, Rlt_plus_1.
 apply <- Rlt_div_r.
 2: apply Rle_lt_0_plus_1, norm_ge_0.
 by eapply (proj1 Hu).
-apply norm_compat1.
-rewrite -scal_minus_distr_l.
+rewrite /ball_norm -scal_minus_distr_l.
 eapply Rle_lt_trans.
 apply norm_scal.
 eapply Rle_lt_trans.
@@ -3526,12 +3500,12 @@ assert (Hd : 0 < eps / 2 / (norm x + 1)).
   apply: Rdiv_lt_0_compat => //.
   apply Rle_lt_0_plus_1, norm_ge_0.
 eexists.
-apply (locally_ball_norm (V := AbsRing_NormedModule K) _ (mkposreal _ Hd)).
+apply (locally_norm_ball_norm (V := AbsRing_NormedModule K) _ (mkposreal _ Hd)).
 apply: filter_true.
 by [].
 
 eexists.
-apply (locally_ball_norm (V := AbsRing_NormedModule K) _ [posreal of 1]).
+apply (locally_norm_ball_norm (V := AbsRing_NormedModule K) _ [posreal of 1]).
 apply: filter_true.
 by [].
 
@@ -3540,7 +3514,7 @@ assert (Hd : 0 < eps / 2 / (abs k + 1)).
   apply Rle_lt_0_plus_1, abs_ge_0.
 eexists.
 apply: filter_true.
-apply (locally_ball_norm _ (mkposreal _ Hd)).
+apply (locally_norm_ball_norm _ (mkposreal _ Hd)).
 by [].
 Qed.
 
@@ -3574,23 +3548,6 @@ Lemma filterlim_mult {K : AbsRing} (x y : K) :
   (fun z => mult (fst z) (snd z)) @ (x , y) --> (mult x y).
 Proof.
   by apply @filterlim_scal.
-Qed.
-
-Lemma filterlim_locally_ball_norm {K : AbsRing} {T} {U : NormedModule K}
-  {F : set (set T)} {FF : Filter F} (f : T -> U) (y : U) :
-  f @ F --> y <-> forall eps : posreal, F (fun x => ball_norm y eps (f x)).
-Proof.
-split.
-- intros Cf eps.
-  apply (Cf (fun x => ball_norm y eps x)).
-  apply locally_le_locally_norm.
-  apply locally_norm_ball_norm.
-- intros Cf.
-  apply (filterlim_filter_le_2 _ (locally_norm_le_locally y)).
-  intros P [eps He].
-  apply: filter_imp (Cf eps).
-  intros t.
-  apply He.
 Qed.
 
 (** ** Complete Normed Modules *)
@@ -3874,46 +3831,52 @@ exact (norm_scal l xv).
 apply Rplus_le_le_0_compat ; apply Rle_0_sqr.
 Qed.
 
-Lemma prod_norm_compat1 :
-  forall (x y : U * V) (eps : R),
-  prod_norm (minus y x) < eps -> ball x eps y.
+Lemma prod_norm_compat (x : U * V) (A : set (U * V)) :
+  locally x A <->
+  exists eps : posreal, forall y, prod_norm (minus y x) < eps -> A y.
 Proof.
-intros [xu xv] [yu yv] eps H.
-generalize (Rle_lt_trans _ _ _ (proj1 (sqrt_plus_sqr _ _)) H).
-rewrite -> !Rabs_pos_eq by apply norm_ge_0.
-intros H'.
-split ;
-  apply norm_compat1 ;
-  apply Rle_lt_trans with (2 := H').
-apply Rmax_l.
-apply Rmax_r.
-Qed.
+Admitted.
 
-Definition prod_norm_factor :=
-  sqrt 2 * Rmax (@norm_factor K U) (@norm_factor K V).
+(* Lemma prod_norm_compat1 : *)
+(*   forall (x y : U * V) (eps : R), *)
+(*   prod_norm (minus y x) < eps -> ball x eps y. *)
+(* Proof. *)
+(* intros [xu xv] [yu yv] eps H. *)
+(* generalize (Rle_lt_trans _ _ _ (proj1 (sqrt_plus_sqr _ _)) H). *)
+(* rewrite -> !Rabs_pos_eq by apply norm_ge_0. *)
+(* intros H'. *)
+(* split ; *)
+(*   apply norm_compat1 ; *)
+(*   apply Rle_lt_trans with (2 := H'). *)
+(* apply Rmax_l. *)
+(* apply Rmax_r. *)
+(* Qed. *)
 
-Lemma prod_norm_compat2 :
-  forall (x y : U * V) (eps : posreal),
-  ball x eps y ->
-  prod_norm (minus y x) < prod_norm_factor * eps.
-Proof.
-intros [xu xv] [yu yv] eps [Bu Bv].
-apply Rle_lt_trans with (1 := proj2 (sqrt_plus_sqr _ _)).
-simpl.
-rewrite Rmult_assoc.
-apply Rmult_lt_compat_l.
-apply sqrt_lt_R0.
-apply Rlt_0_2.
-rewrite -> !Rabs_pos_eq by apply norm_ge_0.
-rewrite Rmax_mult.
-apply Rmax_case.
-apply Rlt_le_trans with (2 := Rmax_l _ _).
-now apply norm_compat2.
-apply Rlt_le_trans with (2 := Rmax_r _ _).
-now apply norm_compat2.
-apply Rlt_le.
-apply cond_pos.
-Qed.
+(* Definition prod_norm_factor := *)
+(*   sqrt 2 * Rmax (@norm_factor K U) (@norm_factor K V). *)
+
+(* Lemma prod_norm_compat2 : *)
+(*   forall (x y : U * V) (eps : posreal), *)
+(*   ball x eps y -> *)
+(*   prod_norm (minus y x) < prod_norm_factor * eps. *)
+(* Proof. *)
+(* intros [xu xv] [yu yv] eps [Bu Bv]. *)
+(* apply Rle_lt_trans with (1 := proj2 (sqrt_plus_sqr _ _)). *)
+(* simpl. *)
+(* rewrite Rmult_assoc. *)
+(* apply Rmult_lt_compat_l. *)
+(* apply sqrt_lt_R0. *)
+(* apply Rlt_0_2. *)
+(* rewrite -> !Rabs_pos_eq by apply norm_ge_0. *)
+(* rewrite Rmax_mult. *)
+(* apply Rmax_case. *)
+(* apply Rlt_le_trans with (2 := Rmax_l _ _). *)
+(* now apply norm_compat2. *)
+(* apply Rlt_le_trans with (2 := Rmax_r _ _). *)
+(* now apply norm_compat2. *)
+(* apply Rlt_le. *)
+(* apply cond_pos. *)
+(* Qed. *)
 
 Lemma prod_norm_eq_zero :
   forall x : U * V,
@@ -3934,8 +3897,8 @@ Qed.
 End prod_NormedModule.
 
 Definition prod_NormedModule_mixin (K : AbsRing) (U V : NormedModule K) :=
-  NormedModule.Mixin K _ (@prod_norm K U V) prod_norm_factor prod_norm_triangle
-  prod_norm_scal prod_norm_compat1 prod_norm_compat2 prod_norm_eq_zero.
+  NormedModule.Mixin K _ (@prod_norm K U V) prod_norm_triangle
+  prod_norm_scal prod_norm_compat prod_norm_eq_zero.
 
 Canonical prod_NormedModule (K : AbsRing) (U V : NormedModule K) :=
   NormedModule.Pack K (U * V) (NormedModule.Class K (U * V) _ (prod_NormedModule_mixin K U V)) (U * V).
@@ -4646,14 +4609,30 @@ Canonical R_CompleteNormedModule :=
 Definition at_left x := within (fun u : R => Rlt u x) (locally x).
 Definition at_right x := within (fun u : R => Rlt x u) (locally x).
 
+Lemma at_left_norm x (A : set R) :
+  at_left x A <-> within (fun u => u < x) (locally_norm x) A.
+Proof.
+split.
+  by move/locally_norm_le_locally.
+by move/locally_le_locally_norm.
+Qed.
+
+Lemma at_right_norm x (A : set R) :
+  at_right x A <-> within (fun u => x < u) (locally_norm x) A.
+Proof.
+split.
+  by move/locally_norm_le_locally.
+by move/locally_le_locally_norm.
+Qed.
+
 Global Instance at_right_proper_filter : forall (x : R),
   ProperFilter (at_right x).
 Proof.
   constructor.
-  intros P [d Hd].
+  move=> P /at_right_norm [d Hd].
   exists (x + d / 2).
   apply Hd.
-  apply @norm_compat1 ; rewrite /norm /minus /plus /opp /= /abs /=.
+  rewrite /ball_norm /norm /minus /plus /opp /= /abs /=.
   ring_simplify (x + d / 2 + - x).
   rewrite Rabs_pos_eq.
   apply Rlt_div_l.
@@ -4667,10 +4646,10 @@ Global Instance at_left_proper_filter : forall (x : R),
   ProperFilter (at_left x).
 Proof.
   constructor.
-  intros P [d Hd].
+  move=> P /at_left_norm [d Hd].
   exists (x - d / 2).
   apply Hd.
-  apply @norm_compat1 ; rewrite /norm /minus /plus /opp /= /abs /=.
+  rewrite /ball_norm /norm /minus /plus /opp /= /abs /=.
   ring_simplify (x - d / 2 + - x).
   rewrite Rabs_Ropp Rabs_pos_eq.
   apply Rlt_div_l.
