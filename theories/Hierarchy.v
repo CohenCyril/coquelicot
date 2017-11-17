@@ -1749,6 +1749,8 @@ Definition pack m :=
 
 Definition type_is_canonical_filter := @CanonicalFilter cT cT xclass.
 
+Definition TopologicalSpace := TopologicalSpace.Pack cT xclass xT.
+
 End ClassDef.
 
 Module Exports.
@@ -1758,6 +1760,8 @@ Coercion base : class_of >-> TopologicalSpace.mixin_of.
 Coercion mixin : class_of >-> mixin_of.
 Coercion type_is_canonical_filter : type >-> canonical_filter.
 Canonical type_is_canonical_filter.
+Coercion TopologicalSpace : type >-> TopologicalSpace.type.
+Canonical TopologicalSpace.
 Notation UniformSpace := type.
 Notation "[ 'UniformSpace' 'of' T 'for' cT ]" :=  (@clone T cT _ idfun)
   (at level 0, format "[ 'UniformSpace'  'of'  T  'for'  cT ]") : form_scope.
@@ -1866,6 +1870,12 @@ Lemma ball_le :
   forall (y : M), ball x e1 y -> ball x e2 y.
 Proof. exact: my_ball_le. Qed.
 
+Lemma locallyE (p : M) (A : set M) :
+  locally p A <-> exists e : posreal, ball p e `<=` A.
+Proof.
+by have [] := UniformSpace.locally_mixin M (UniformSpace.class M); apply.
+Qed.
+
 Definition close (x y : M) : Prop := forall eps : posreal, ball x eps y.
 
 Lemma close_refl (x : M) : close x x.
@@ -1882,6 +1892,110 @@ Qed.
 
 Lemma close_trans (x y z : M) : close x y -> close y z -> close x z.
 Proof. by move=> ?? eps; rewrite (double_var eps); apply: ball_triangle. Qed.
+
+Lemma locally_ball (x : M) (eps : posreal) : locally x (ball x eps).
+Proof. by apply/locallyE; exists eps. Qed.
+
+Lemma locally_not' :
+  forall (x : M) (P : M -> Prop),
+  not (forall eps : posreal, not (forall y, ball x eps y -> not (P y))) ->
+  {d : posreal | forall y, ball x d y -> not (P y)}.
+Proof.
+intros x P H.
+set (Q := fun z => z <= 1 /\ forall y, ball x z y -> not (P y)).
+destruct (completeness Q) as [d [H1 H2]].
+- exists 1.
+  now intros y [Hy _].
+- exists 0.
+  split.
+  apply Rle_0_1.
+  intros y Hy Py.
+  apply H.
+  intros eps He.
+  apply He with (2 := Py).
+  apply ball_le with (2 := Hy).
+  apply Rlt_le, eps.
+assert (Zd : 0 < d).
+  apply Rnot_le_lt.
+  intros Hd.
+  apply H.
+  intros eps He.
+  apply (Rlt_irrefl (Rmin 1 eps)).
+  apply Rle_lt_trans with d.
+  apply H1.
+  split.
+  apply Rmin_l.
+  intros y By.
+  apply He.
+  apply ball_le with (2 := By).
+  apply Rmin_r.
+  apply Rle_lt_trans with (1 := Hd).
+  apply Rmin_case.
+  apply Rlt_0_1.
+  apply cond_pos.
+exists [posreal of mkposreal _ Zd / 2].
+simpl.
+intros y Hy HP.
+apply (Rlt_not_le _ _ (Rlt_eps2_eps _ Zd)).
+apply H2.
+intros z Hz.
+apply Rnot_lt_le.
+contradict HP.
+apply Hz.
+apply ball_le with (2 := Hy).
+now apply Rlt_le.
+Qed.
+
+Lemma locally_not (x : M) (P : M -> Prop) :
+  not (forall eps : posreal, not (forall y, ball x eps y -> not (P y))) ->
+  locally x (fun y => not (P y)).
+Proof.
+move=> H; apply/locallyE.
+case: (locally_not' x P H) => eps He; by exists eps.
+Qed.
+
+Lemma locally_ex_not (x : M) (P : M -> Prop) :
+  locally x (fun y => not (P y)) ->
+  {d : posreal | forall y, ball x d y -> not (P y)}.
+Proof.
+move=> /locallyE H.
+apply locally_not'.
+case: H => eps He.
+by move/(_ eps).
+Qed.
+
+Lemma locally_ex_dec (x : M) (P : M -> Prop) :
+  (forall x, P x \/ ~ P x) ->
+  locally x P ->
+  {d : posreal | forall y, ball x d y -> P y}.
+Proof.
+intros P_dec H.
+destruct (locally_ex_not x (fun y => not (P y))) as [d Hd].
+  apply: filter_imp H => y Py.
+  by apply.
+exists d => y Hy.
+case: (P_dec y) => // HP.
+exfalso.
+by apply: (Hd y).
+Qed.
+
+Lemma is_filter_lim_close {F} {FF : ProperFilter F} (x y : M) :
+  F --> x -> F --> y -> close x y.
+Proof.
+intros Fx Fy eps.
+specialize (Fy _ (locally_ball y [posreal of eps / 2])).
+specialize (Fx _ (locally_ball x [posreal of eps / 2])).
+generalize (filter_and _ _ Fx Fy) => {Fx Fy} Fxy.
+rewrite (double_var eps).
+destruct (filter_ex _ Fxy) as [z Fz].
+apply ball_triangle with z.
+apply Fz.
+apply ball_sym, Fz.
+Qed.
+
+Lemma is_filter_lim_locally_close (x y : M) :
+  x --> y -> close x y.
+Proof. exact: is_filter_lim_close. Qed.
 
 End UniformSpace1.
 
@@ -1967,11 +2081,17 @@ End prod_UniformSpace.
 Definition prod_UniformSpace_mixin (U V : UniformSpace) :=
   UniformSpace.Mixin (U * V) _ prod_ball_center prod_ball_sym prod_ball_triangle.
 
+(* TODO : handle products of topological spaces *)
+Definition prod_TopologicalSpace_mixin (U V : UniformSpace) :=
+  uniformTopologicalSpaceMixin (U * V) (prod_UniformSpace_mixin _ _).
+Canonical prod_TopologicalSpace (U V : UniformSpace) :=
+  TopologicalSpace.Pack _ (prod_TopologicalSpace_mixin U V) (U * V).
+
 (*Canonical canonical_pair_filter (U V : UniformSpace) :=
   @CanonicalFilter (U * V) (U * V) (prod_UniformSpace_mixin U V).*)
 Canonical prod_UniformSpace (U V : UniformSpace) :=
-  (*UniformSpacePack (U * V) (prod_UniformSpace_mixin U V).*)
-  (UniformSpace.pack (U * V) (prod_UniformSpace_mixin U V) _ (@CanonicalFilter (U * V) (U * V) (prod_UniformSpace_mixin U V)) idfun (fun x y => iff_refl ((prod_UniformSpace_mixin U V) x y))).
+  UniformSpacePack (U * V) (prod_UniformSpace_mixin U V).
+  (* (UniformSpace.pack (U * V) (prod_UniformSpace_mixin U V) _ (@CanonicalFilter (U * V) (U * V) (prod_UniformSpace_mixin U V)) idfun (fun x y => iff_refl ((prod_UniformSpace_mixin U V) x y))). *)
 
 (** Functional metric spaces *)
 
@@ -2011,6 +2131,13 @@ Definition fct_UniformSpace_mixin :=
 
 Canonical generic_source_filter :=
   @CanonicalFilterSource _ _ _ fct_UniformSpace_mixin.
+
+(* TODO : deal with functions with values in a topological space *)
+Definition fct_TopologicalSpace_mixin :=
+  uniformTopologicalSpaceMixin _ fct_UniformSpace_mixin.
+Canonical fct_TopologicalSpace :=
+  TopologicalSpace.Pack _ fct_TopologicalSpace_mixin (T -> U).
+
 Canonical fct_UniformSpace := UniformSpacePack (T -> U) fct_UniformSpace_mixin.
 
 End fct_UniformSpace.
@@ -2043,59 +2170,26 @@ constructor.
   now apply HP.
 Qed.
 
-(** locally *)
+(* Instance uniform_space_base_filter U c (x : U) : *)
+(*   ProperFilter (UniformSpace.base U c x). *)
+(* Proof. exact: (@locally_filter (UniformSpace.Pack U c U)). Qed. *)
 
-(*Require Import FunctionalExtensionality.
-Notation funext := functional_extensionality.*)
+(* Lemma ProperFilter_ext {T} (F G : set (set T)) : (forall P, F P <-> G P) -> *)
+(*   ProperFilter F -> ProperFilter G. *)
+(* Proof. *)
+(* move=> FG FF. *)
+(* constructor; first by move=> P /FG; apply filter_ex. *)
+(* constructor; first by apply/FG/filter_true. *)
+(* by move=> P Q /FG FP /FG GQ; apply/FG/filter_and. *)
+(* by move=> P Q PQ /FG FP; apply/FG; apply:filter_imp FP. *)
+(* Qed. *)
 
-Section LocallyDef.
-
-Context {T : UniformSpace}.
-
-Definition locally (x : T) := [filter of x].
-
-Lemma locallyP x P : locally x P <-> exists eps : posreal, forall y, ball x eps y -> P y.
-Proof.
-rewrite /locally /filter_of /=/ball.
-case: UniformSpace.class=> //= op mix [H /=].
-by rewrite H.
-Qed.
-
-Lemma locallyE : locally = fun x P => exists eps : posreal, forall y, ball x eps y -> P y.
-Proof.
-rewrite /locally /filter_of /=/ball.
-case: UniformSpace.class=> //= op mix [H /=].
-Abort.
-
-Lemma locallyxE x : locally x = fun P => exists eps : posreal, forall y, ball x eps y -> P y.
-Proof. Abort. (*by rewrite locallyE. Qed.*)
-
-(*Lemma filterE (x : T) :
-  [filter of x] = fun P => exists eps : posreal, forall y, ball x eps y -> P y.
-Proof. exact: locallyxE. Qed.*)
-
-End LocallyDef.
-
-Instance uniform_space_base_filter U c (x : U) :
-  ProperFilter (UniformSpace.base U c x).
-Proof. exact: (@locally_filter (UniformSpace.Pack U c U)). Qed.
-
-Lemma ProperFilter_ext {T} (F G : set (set T)) : (forall P, F P <-> G P) ->
-  ProperFilter F -> ProperFilter G.
-Proof.
-move=> FG FF.
-constructor; first by move=> P /FG; apply filter_ex.
-constructor; first by apply/FG/filter_true.
-by move=> P Q /FG FP /FG GQ; apply/FG/filter_and.
-by move=> P Q PQ /FG FP; apply/FG; apply:filter_imp FP.
-Qed.
-
-Instance uniform_space_filter U m (x : U) :
-  ProperFilter (UniformSpace.uniform_filter U m x).
-Proof.
-rewrite /UniformSpace.uniform_filter.
-exact: (ProperFilter_ext (@locally (UniformSpacePack (CanonicalFilter U U m) m) x) _ (locallyP _)).
-Qed.
+(* Instance uniform_space_filter U m (x : U) : *)
+(*   ProperFilter (UniformSpace.uniform_filter U m x). *)
+(* Proof. *)
+(* rewrite /UniformSpace.uniform_filter. *)
+(* exact: (ProperFilter_ext (@locally (UniformSpacePack (CanonicalFilter U U m) m) x) _ (locallyP _)). *)
+(* Qed. *)
 
 Section Locally.
 Context {T : UniformSpace}.
@@ -2108,110 +2202,6 @@ Proof. exact. Qed.
 Instance canonical_filter_of_proper_filter (F : set (set T)) :
   ProperFilter F -> ProperFilter [filter of F].
 Proof. exact. Qed.
-
-Lemma locally_ball (x : T) (eps : posreal) : locally x (ball x eps).
-Proof. by apply/locallyP; exists eps. Qed.
-
-Lemma locally_not' :
-  forall (x : T) (P : T -> Prop),
-  not (forall eps : posreal, not (forall y, ball x eps y -> not (P y))) ->
-  {d : posreal | forall y, ball x d y -> not (P y)}.
-Proof.
-intros x P H.
-set (Q := fun z => z <= 1 /\ forall y, ball x z y -> not (P y)).
-destruct (completeness Q) as [d [H1 H2]].
-- exists 1.
-  now intros y [Hy _].
-- exists 0.
-  split.
-  apply Rle_0_1.
-  intros y Hy Py.
-  apply H.
-  intros eps He.
-  apply He with (2 := Py).
-  apply ball_le with (2 := Hy).
-  apply Rlt_le, eps.
-assert (Zd : 0 < d).
-  apply Rnot_le_lt.
-  intros Hd.
-  apply H.
-  intros eps He.
-  apply (Rlt_irrefl (Rmin 1 eps)).
-  apply Rle_lt_trans with d.
-  apply H1.
-  split.
-  apply Rmin_l.
-  intros y By.
-  apply He.
-  apply ball_le with (2 := By).
-  apply Rmin_r.
-  apply Rle_lt_trans with (1 := Hd).
-  apply Rmin_case.
-  apply Rlt_0_1.
-  apply cond_pos.
-exists [posreal of mkposreal _ Zd / 2].
-simpl.
-intros y Hy HP.
-apply (Rlt_not_le _ _ (Rlt_eps2_eps _ Zd)).
-apply H2.
-intros z Hz.
-apply Rnot_lt_le.
-contradict HP.
-apply Hz.
-apply ball_le with (2 := Hy).
-now apply Rlt_le.
-Qed.
-
-Lemma locally_not (x : T) (P : T -> Prop) :
-  not (forall eps : posreal, not (forall y, ball x eps y -> not (P y))) ->
-  locally x (fun y => not (P y)).
-Proof.
-move=> H; apply/locallyP.
-case: (locally_not' x P H) => eps He; by exists eps.
-Qed.
-
-Lemma locally_ex_not (x : T) (P : T -> Prop) :
-  locally x (fun y => not (P y)) ->
-  {d : posreal | forall y, ball x d y -> not (P y)}.
-Proof.
-move=> /locallyP H.
-apply locally_not'.
-case: H => eps He.
-by move/(_ eps).
-Qed.
-
-Lemma locally_ex_dec (x : T) (P : T -> Prop) :
-  (forall x, P x \/ ~ P x) ->
-  locally x P ->
-  {d : posreal | forall y, ball x d y -> P y}.
-Proof.
-intros P_dec H.
-destruct (locally_ex_not x (fun y => not (P y))) as [d Hd].
-  apply: filter_imp H => y Py.
-  by apply.
-exists d => y Hy.
-case: (P_dec y) => // HP.
-exfalso.
-by apply: (Hd y).
-Qed.
-
-Lemma is_filter_lim_close {F} {FF : ProperFilter F} (x y : T) :
-  F --> x -> F --> y -> close x y.
-Proof.
-intros Fx Fy eps.
-specialize (Fy _ (locally_ball y [posreal of eps / 2])).
-specialize (Fx _ (locally_ball x [posreal of eps / 2])).
-generalize (filter_and _ _ Fx Fy) => {Fx Fy} Fxy.
-rewrite (double_var eps).
-destruct (filter_ex _ Fxy) as [z Fz].
-apply ball_triangle with z.
-apply Fz.
-apply ball_sym, Fz.
-Qed.
-
-Lemma is_filter_lim_locally_close (x y : T) :
-  x --> y -> close x y.
-Proof. exact: is_filter_lim_close. Qed.
 
 End Locally.
 
