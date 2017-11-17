@@ -24,6 +24,7 @@ Require Import mathcomp.ssreflect.ssreflect mathcomp.ssreflect.ssrbool mathcomp.
 Require Import Markov Rcomplements Rbar Lub Lim_seq Derive SF_seq.
 Require Import Continuity Hierarchy Seq_fct RInt PSeries.
 
+Local Open Scope classical_set_scope.
 (** This file contains results about the integral as a function:
  continuity, differentiability, and composition. Theorems on
  parametric integrals are also provided. *)
@@ -253,6 +254,7 @@ Proof.
     by apply is_RInt_swap, Hab.
     by apply Ha.
     by apply HIf.
+    Unshelve. all: do ?by typeclasses eauto.
   eapply filterlim_comp_2, filterlim_plus ; simpl.
   apply (continuous_comp (fun x => fst x) (fun x => If x b)) ; simpl.
   apply continuous_fst.
@@ -262,12 +264,7 @@ Proof.
     apply (HIf (x,b)).
     split => //=.
     by apply ball_center.
-  set tmp := [filter of fun P : set (R * R) => _].
-  rewrite (_ : tmp = locally (a, b)) //.
-  eapply filterlim_comp_2, filterlim_plus; simpl.
-  clear tmp.
-  set tmp := [filter of fun P : set (R * R) => _].
-  rewrite (_ : tmp = locally (a, b)) //.
+  eapply filterlim_comp_2, filterlim_plus.
   apply: filterlim_const.
   apply (continuous_comp (fun x => snd x) (fun x => If a x)) ; simpl.
   apply continuous_snd.
@@ -277,8 +274,6 @@ Proof.
     apply (HIf (a,x)).
     split => //=.
     by apply ball_center.
-  Unshelve.
-  by apply Riemann_fine_filter.
 Qed.
 
 End Continuity.

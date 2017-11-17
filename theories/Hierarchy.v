@@ -247,19 +247,19 @@ Class Filter {T : Type} (F : set (set T)) := {
   filter_and : forall P Q : T -> Prop, F P -> F Q -> F (fun x => P x /\ Q x) ;
   filter_imp : forall P Q : T -> Prop, (forall x, P x -> Q x) -> F P -> F Q
 }.
-Global Hint Mode Filter - + : typeclass_instances.
+Global Hint Mode Filter - ! : typeclass_instances.
 
 Class ProperFilter' {T : Type} (F : set (set T)) := {
   filter_not_empty : not (F (fun _ => False)) ;
   filter_filter' :> Filter F
 }.
-Global Hint Mode ProperFilter' - + : typeclass_instances.
+Global Hint Mode ProperFilter' - ! : typeclass_instances.
 
 Class ProperFilter {T : Type} (F : set (set T)) := {
   filter_ex : forall P, F P -> exists x, P x ;
   filter_filter :> Filter F
 }.
-Global Hint Mode ProperFilter - + : typeclass_instances.
+Global Hint Mode ProperFilter - ! : typeclass_instances.
 
 Global Instance Proper_StrongProper :
   forall {T : Type} (F : set (set T)),
