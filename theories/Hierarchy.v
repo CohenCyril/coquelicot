@@ -1650,7 +1650,7 @@ End TopologicalSpaceTheory.
 
 Section TopologyOfFilter.
 
-Variable (T : Type) (loc : T -> set (set T)).
+Context {T : Type} {loc : T -> set (set T)}.
 Hypothesis (loc_filter : forall p : T, ProperFilter (loc p)).
 Hypothesis (loc_singleton : forall (p : T) (A : set T), loc p A -> A p).
 Hypothesis (loc_loc : forall (p : T) (A : set T), loc p A -> loc p (loc^~ A)).
@@ -1696,6 +1696,61 @@ by move=> /Aop [B [Bop [Bp sBA]]]; exists (existT _ B (conj Bop sBA)).
 Defined.
 
 End TopologyOfOpen.
+
+(* Specific topological spaces *)
+
+Hint Resolve cond_pos.
+
+Section AbsRing_TopologicalSpace.
+
+Variable K : AbsRing.
+
+Definition AbsRing_ball (x : K) (eps : R) (y : K) := abs (minus y x) < eps.
+
+Definition AbsRing_loc (x : K) (A : set K) :=
+  exists eps : posreal, AbsRing_ball x eps `<=` A.
+
+Lemma AbsRing_ball_center (x : K) (e : posreal) : AbsRing_ball x e x.
+Proof. by rewrite /AbsRing_ball /minus plus_opp_r abs_zero. Qed.
+
+Lemma AbsRing_ball_triangle (x y z : K) (e1 e2 : R) :
+  AbsRing_ball x e1 y -> AbsRing_ball y e2 z ->
+  AbsRing_ball x (e1 + e2) z.
+Proof.
+move=> xe1_y ye2_z; rewrite /AbsRing_ball (minus_trans y) plus_comm.
+by apply: Rle_lt_trans (abs_triangle _ _) _; apply: Rplus_lt_compat.
+Qed.
+
+Lemma AbsRing_loc_filter (x : K) : ProperFilter (AbsRing_loc x).
+Proof.
+split; first by move=> A [e xe_A]; exists x; apply/xe_A/AbsRing_ball_center.
+split; first by exists [posreal of 1].
+  move=> A B [e1 xe1_A] [e2 xe2_B]; exists [posreal of Rmin e1 e2] => y xmin_y.
+  split.
+  - by apply: xe1_A; apply: Rlt_le_trans xmin_y _; apply: Rmin_l.
+  - by apply: xe2_B; apply: Rlt_le_trans xmin_y _; apply: Rmin_r.
+by move=> A B sAB [e xe_A]; exists e => y /xe_A/sAB.
+Qed.
+
+Lemma AbsRing_loc_singleton (x : K) (A : set K) : AbsRing_loc x A -> A x.
+Proof. by move=> [?]; apply; apply: AbsRing_ball_center. Qed.
+
+Lemma AbsRing_loc_loc (x : K) (A : set K) :
+  AbsRing_loc x A -> AbsRing_loc x (AbsRing_loc^~ A).
+Proof.
+move=> [e xe_A]; exists [posreal of e / 2] => y xhe_y.
+exists [posreal of e / 2] => z yhe_z.
+by apply: xe_A; rewrite [_ e]double_var; apply: AbsRing_ball_triangle yhe_z.
+Qed.
+
+Definition AbsRing_TopologicalSpace_Mixin :=
+  topologyOfFilterMixin AbsRing_loc_filter AbsRing_loc_singleton
+  AbsRing_loc_loc.
+
+Canonical AbsRing_TopologicalSpace :=
+  TopologicalSpace.Pack _ AbsRing_TopologicalSpace_Mixin K.
+
+End AbsRing_TopologicalSpace.
 
 (** * Uniform spaces defined using balls *)
 
@@ -1833,39 +1888,12 @@ Section AbsRing_UniformSpace.
 
 Variable K : AbsRing.
 
-Definition AbsRing_ball (x : K) (eps : R) (y : K) := abs (minus y x) < eps.
-
-Lemma AbsRing_ball_center :
-  forall (x : K) (e : posreal),
-  AbsRing_ball x e x.
-Proof.
-  intros x e.
-  rewrite /AbsRing_ball /minus plus_opp_r abs_zero.
-  apply cond_pos.
-Qed.
-
 Lemma AbsRing_ball_sym :
   forall (x y : K) (e : R),
   AbsRing_ball x e y -> AbsRing_ball y e x.
 Proof.
   intros x y e.
   by rewrite /AbsRing_ball abs_minus.
-Qed.
-
-Lemma AbsRing_ball_triangle :
-  forall (x y z : K) (e1 e2 : R),
-  AbsRing_ball x e1 y -> AbsRing_ball y e2 z ->
-  AbsRing_ball x (e1 + e2) z.
-Proof.
-intros x y z e1 e2 H1 H2.
-unfold AbsRing_ball.
-replace (minus z x) with (plus (minus y x) (minus z y)).
-apply: Rle_lt_trans (abs_triangle _ _) _.
-now apply Rplus_lt_compat.
-rewrite plus_comm /minus plus_assoc.
-apply (f_equal (fun y => plus y _)).
-rewrite <- plus_assoc.
-now rewrite plus_opp_l plus_zero_r.
 Qed.
 
 
