@@ -1613,13 +1613,13 @@ apply: filter_imp sBA _.
 by have /openP := Bop; apply.
 Qed.
 
-Lemma open_set0 : open set0.
+Lemma open_false : open set0.
 Proof. by apply/openP. Qed.
 
-Lemma open_setT : open setT.
+Lemma open_true : open setT.
 Proof. by apply/openP => ??; apply: filter_true. Qed.
 
-Lemma open_setI (A B : set T) :
+Lemma open_and (A B : set T) :
   open A -> open B -> open (A `&` B).
 Proof.
 move=> /openP Aop /openP Bop; apply/openP => p [Ap Bp].
@@ -1640,13 +1640,21 @@ move=> AB /openP Aop.
 by apply/openP => p /AB/Aop; apply: filter_imp => ? /AB.
 Qed.
 
+Lemma open_or (A B : set T) : open A -> open B -> open [set p | A p \/ B p].
+Proof.
+move=> Aop Bop.
+have : open (\bigcup_(b : bool) if b then A else B) by apply: open_setU; case.
+apply: open_ext => p; split=> [[b _]|]; first by case: b => ?; [left|right].
+by apply: or_ind; [exists true|exists false].
+Qed.
+
 Lemma neigh_setT (p : T) : neigh p setT.
-Proof. by split=> //; apply: open_setT. Qed.
+Proof. by split=> //; apply: open_true. Qed.
 
 Lemma neigh_setI (p : T) (A B : set T) :
   neigh p A -> neigh p B -> neigh p (A `&` B).
 Proof.
-by move=> [Aop Ap] [Bop Bp]; split; [apply: open_setI|split].
+by move=> [Aop Ap] [Bop Bp]; split; [apply: open_and|split].
 Qed.
 
 Lemma neigh_locally (p : T) (A : set T) : neigh p A -> locally p A.
@@ -2224,7 +2232,7 @@ Proof. by []. Qed.
 Lemma filterlim_const {T} {U : UniformSpace} {F : set (set T)} {FF : Filter F} (a : U) :
   a @[_ --> F] --> a.
 Proof.
-move=> P /locallyP[eps HP].
+move=> P /locallyE[eps HP].
 rewrite /filter_of /= appfilter /=.
 by apply: filter_forall=> ?; apply/HP/ball_center.
 Qed.
@@ -2239,8 +2247,8 @@ Proof.
 split.
 - move=> Cf eps.
   apply: (Cf (fun x => ball y eps x)).
-  by apply/locallyP; exists eps.
-- move=> Cf P /locallyP[eps He].
+  by apply/locallyE; exists eps.
+- move=> Cf P /locallyE[eps He].
   apply: filter_imp (Cf eps) => t.
   exact: He.
 Qed.
@@ -2252,8 +2260,8 @@ Proof.
 split.
 - intros Cf eps.
   apply (Cf (ball y eps)).
-  by apply/locallyP; exists eps.
-- move=> Cf P /locallyP[eps He].
+  by apply/locallyE; exists eps.
+- move=> Cf P /locallyE[eps He].
   rewrite /filtermapi /filter_of /=.
   apply: filter_imp (Cf eps).
   intros t [z [Hz1 Hz2]].
@@ -2301,7 +2309,7 @@ Qed.
 
 End Locally_fct.
 
-Lemma is_filter_lim_filtermap {T: UniformSpace} {U : UniformSpace} :
+Lemma is_filter_lim_filtermap {T U : TopologicalSpace} :
   forall (F : set (set T)) x (f : T -> U), {for x, continuous f} -> F --> x -> f @ F --> f x.
 Proof.
   intros F x f Cf Fx P HP.
@@ -2311,11 +2319,11 @@ Qed.
 
 (** locally' *)
 
-Definition locally' {T : UniformSpace} (x : T) :=
+Definition locally' {T : TopologicalSpace} (x : T) :=
   within (fun y => y <> x) (locally x).
 
 Global Instance locally'_filter :
-  forall {T : UniformSpace} (x : T), Filter (locally' x).
+  forall {T : TopologicalSpace} (x : T), Filter (locally' x).
 Proof.
 intros T x.
 apply within_filter.
@@ -2324,7 +2332,7 @@ Qed.
 
 Section at_point.
 
-Context {T : UniformSpace}.
+Context {T : Type}.
 
 Definition at_point (a : T) (P : T -> Prop) : Prop := P a.
 
@@ -2341,41 +2349,30 @@ Qed.
 
 End at_point.
 
-(** ** Open sets in uniform spaces *)
+(** ** Open sets in topological spaces *)
 
 Lemma open_comp :
-  forall {T U : UniformSpace} (f : T -> U) (D : U -> Prop),
+  forall {T U : TopologicalSpace} (f : T -> U) (D : U -> Prop),
   (forall x, D (f x) -> {for x, continuous f}) ->
   open D -> open (fun x : T => D (f x)).
 Proof.
-intros T U f D Cf OD x Dfx.
-apply Cf.
-exact Dfx.
-now apply OD.
+move=> T U f D fc /openP Dop.
+apply/openP => p Dfp.
+by apply: (fc _ Dfp); apply: Dop.
 Qed.
 
-(** ** Closed sets in uniform spaces *)
+(** ** Closed sets in topological spaces *)
 
 Section Closed.
 
-Context {T : UniformSpace}.
+Context {T : TopologicalSpace}.
 
 Definition closed (D : T -> Prop) :=
   forall x, not ((locally x) (fun x : T => not (D x))) -> D x.
 
-Lemma open_not (D : T -> Prop) : closed D -> open (fun x => not (D x)).
-Proof.
-intros CD x Dx.
-apply locally_not.
-intros H.
-apply Dx, CD.
-move/locallyP => [eps He].
-by apply (H eps).
-Qed.
-
 Lemma closed_not (D : T -> Prop) : open D -> closed (fun x => not (D x)).
 Proof.
-intros OD x Lx Dx.
+move=> /openP OD x Lx Dx.
 apply Lx.
 apply: filter_imp (OD _ Dx).
 intros t Dt nDt.
@@ -2427,15 +2424,23 @@ Proof. by []. Qed.
 
 Lemma closed_false : closed (fun x : T => False).
 Proof.
-intros x Hx.
-apply: Hx.
-apply/locallyP; now exists [posreal of 1].
+apply: closed_ext (closed_not _ open_true).
+by move=> ?; split => //; apply.
 Qed.
 
 End Closed.
 
+Lemma open_not (T : UniformSpace) (D : T -> Prop) :
+  closed D -> open (fun x => not (D x)).
+Proof.
+move=> Dcl; apply/openP => p nDp.
+apply: locally_not => p_nD.
+apply: nDp; apply: Dcl.
+by move=> /locallyE [e pe_nD]; apply: (p_nD e).
+Qed.
+
 Lemma closed_comp :
-  forall {T U : UniformSpace} (f : T -> U) (D : U -> Prop),
+  forall {T U : TopologicalSpace} (f : T -> U) (D : U -> Prop),
   continuous f ->
   closed D -> closed (fun x : T => D (f x)).
 Proof.
@@ -2446,7 +2451,7 @@ exact: Cf Dfx.
 Qed.
 
 Lemma closed_filterlim_loc :
-  forall {T} {U : UniformSpace} {F} {FF : ProperFilter' F} (f : T -> U) (D : U -> Prop),
+  forall {T} {U : TopologicalSpace} {F} {FF : ProperFilter' F} (f : T -> U) (D : U -> Prop),
   forall y, f @ F --> y ->
   F (fun x => D (f x)) ->
   closed D -> D y.
@@ -2463,7 +2468,7 @@ by apply: filter_and.
 Qed.
 
 Lemma closed_filterlim :
-  forall {T} {U : UniformSpace} {F} {FF : ProperFilter' F} (f : T -> U) (D : U -> Prop),
+  forall {T} {U : TopologicalSpace} {F} {FF : ProperFilter' F} (f : T -> U) (D : U -> Prop),
   forall y, f @ F --> y ->
   (forall x, D (f x)) ->
   closed D -> D y.
@@ -2506,6 +2511,7 @@ Notation xclass := (class : class_of xT).
 
 Definition type_canonical_filter := CanonicalFilter cT cT xclass.
 Definition UniformSpace := UniformSpace.Pack cT xclass xT.
+Definition TopologicalSpace := TopologicalSpace.Pack cT xclass xT.
 
 End ClassDef.
 
@@ -2518,6 +2524,8 @@ Coercion type_canonical_filter : type >-> canonical_filter.
 Canonical type_canonical_filter.
 Coercion UniformSpace : type >-> UniformSpace.type.
 Canonical UniformSpace.
+Coercion TopologicalSpace : type >-> TopologicalSpace.type.
+Canonical TopologicalSpace.
 Notation CompleteSpace := type.
 
 End Exports.
@@ -2632,7 +2640,7 @@ intros F FF f.
 split.
 - intros H.
   exists [lim f @ F].
-  move=> P /locallyP[eps HP].
+  move=> P /locallyE[eps HP].
   refine (_ (complete_cauchy (filtermap f F) _ _ eps)).
   + now apply filter_imp.
   + clear eps P HP.
@@ -2649,7 +2657,7 @@ split.
   exists (fun x => ball y [posreal of eps / 2] (f x)).
   split.
   apply Hy.
-  apply/locallyP;   now exists [posreal of eps / 2].
+  apply/locallyE;   now exists [posreal of eps / 2].
 - intros u v Hu Hv.
   rewrite (double_var eps).
   apply ball_triangle with y.
@@ -2673,7 +2681,7 @@ assert (FF': ProperFilter (filtermapi f F)).
   exact FF.
 split.
 - intros H.
-  exists [lim f `@ F] => P /locallyP[eps HP].
+  exists [lim f `@ F] => P /locallyE[eps HP].
   refine (_ (complete_cauchy (filtermapi f F) _ _ eps)).
   + now apply filter_imp.
   + clear eps P HP.
@@ -3159,6 +3167,7 @@ Definition type_canonical_filter := CanonicalFilter cT cT xclass.
 Definition AbelianGroup := AbelianGroup.Pack cT xclass xT.
 Definition ModuleSpace := ModuleSpace.Pack _ cT xclass xT.
 Definition UniformSpace := UniformSpace.Pack cT xclass xT.
+Definition TopologicalSpace := TopologicalSpace.Pack cT xclass xT.
 
 End ClassDef.
 
@@ -3175,6 +3184,8 @@ Coercion ModuleSpace : type >-> ModuleSpace.type.
 Canonical ModuleSpace.
 Coercion UniformSpace : type >-> UniformSpace.type.
 Canonical UniformSpace.
+Coercion TopologicalSpace : type >-> TopologicalSpace.type.
+Canonical TopologicalSpace.
 Notation NormedModuleAux := type.
 
 End Exports.
@@ -3219,6 +3230,7 @@ Definition type_canonical_filter := CanonicalFilter cT cT xclass.
 Definition AbelianGroup := AbelianGroup.Pack cT xclass xT.
 Definition ModuleSpace := ModuleSpace.Pack _ cT xclass xT.
 Definition UniformSpace := UniformSpace.Pack cT xclass xT.
+Definition TopologicalSpace := TopologicalSpace.Pack cT xclass xT.
 Definition NormedModuleAux := NormedModuleAux.Pack _ cT xclass xT.
 
 End ClassDef.
@@ -3236,6 +3248,8 @@ Coercion ModuleSpace : type >-> ModuleSpace.type.
 Canonical ModuleSpace.
 Coercion UniformSpace : type >-> UniformSpace.type.
 Canonical UniformSpace.
+Coercion TopologicalSpace : type >-> TopologicalSpace.type.
+Canonical TopologicalSpace.
 Coercion NormedModuleAux : type >-> NormedModuleAux.type.
 Canonical NormedModuleAux.
 Notation NormedModule := type.
@@ -3390,7 +3404,7 @@ have He : 0 < / norm_factor * eps.
   apply Rmult_lt_0_compat.
   by apply/Rinv_0_lt_compat/norm_factor_gt_0.
   by apply cond_pos.
-apply/locallyP; exists (mkposreal _ He).
+apply/locallyE; exists (mkposreal _ He).
 intros y By.
 apply H.
 unfold ball_norm.
@@ -3403,7 +3417,7 @@ Qed.
 
 Lemma locally_norm_le_locally x : filter_le (locally_norm x) (locally x).
 Proof.
-move=> P /locallyP[eps H].
+move=> P /locallyE[eps H].
 exists eps.
 intros y By.
 apply H.
@@ -3781,6 +3795,7 @@ Definition ModuleSpace := ModuleSpace.Pack _ cT xclass xT.
 Definition NormedModuleAux := NormedModuleAux.Pack _ cT xclass xT.
 Definition NormedModule := NormedModule.Pack _ cT xclass xT.
 Definition UniformSpace := UniformSpace.Pack cT xclass xT.
+Definition TopologicalSpace := TopologicalSpace.Pack cT xclass xT.
 Definition CompleteSpace := CompleteSpace.Pack cT xclass xT.
 
 End ClassDef.
@@ -3803,6 +3818,8 @@ Coercion NormedModule : type >-> NormedModule.type.
 Canonical NormedModule.
 Coercion UniformSpace : type >-> UniformSpace.type.
 Canonical UniformSpace.
+Coercion TopologicalSpace : type >-> TopologicalSpace.type.
+Canonical TopologicalSpace.
 Coercion CompleteSpace : type >-> CompleteSpace.type.
 Canonical CompleteSpace.
 Notation CompleteNormedModule := type.
@@ -4654,6 +4671,11 @@ Definition R_UniformSpace_mixin :=
 
 Canonical R_canonical_filter := CanonicalFilter R R R_UniformSpace_mixin.
 
+Definition R_TopologicalSpace_mixin :=
+  AbsRing_TopologicalSpace_Mixin R_AbsRing.
+Canonical R_TopologicalSpace :=
+  TopologicalSpace.Pack R R_TopologicalSpace_mixin R.
+
 Canonical R_UniformSpace :=
   UniformSpacePack R R_UniformSpace_mixin.
 
@@ -5290,7 +5312,7 @@ apply: locally_2d_impl.
 apply locally_2d_forall => u v H t Ht.
 specialize (H t Ht).
 have : locally t (fun z => locally_2d P (x + z * (u - x)) (y + z * (v - y))).
-  by apply/locallyP.
+  by apply/locallyE.
 by apply: locally_singleton.
 Qed.
 
@@ -5460,10 +5482,10 @@ intros [x| |] y Hxy.
 Qed.
 
 Lemma Rbar_locally'_le x : Rbar_locally' x --> Rbar_locally x.
-Proof. by move: x; move=> [x| | ] P [eps HP]; exists eps => *; apply: HP. Qed.
+Proof. by move: x; move=> [x| | ] P [eps HP]; exists eps => ?*; apply: HP. Qed.
 
 Lemma Rbar_locally'_le_finite (x : R) : Rbar_locally' x --> locally x.
-Proof. by move=> P [eps HP]; exists eps => *; apply: HP. Qed.
+Proof. by move=> P [eps HP]; exists eps => ?*; apply: HP. Qed.
 
 (** * Some limits on real functions *)
 
