@@ -660,7 +660,7 @@ Proof.
   by apply is_lim_continuity.
 Qed.
 
-Lemma C0_extension_right {T : UniformSpace} (f : R -> T) lb (a b : R) :
+Lemma C0_extension_right {T : TopologicalSpace} (f : R -> T) lb (a b : R) :
    a < b ->
    (forall c : R, a < c < b -> f @ c --> (f c)) ->
    (f @ (at_left b) --> lb) ->
@@ -700,15 +700,11 @@ Proof.
   - rewrite -Hbc => {c Hbc Hac}.
     rewrite Gb.
     2: by apply Rle_refl.
-    apply filterlim_locally => eps /= {H}.
-    destruct (proj1 (filterlim_locally _ _) H0 eps) as [d Hd].
-    simpl in Hd.
-    exists d => x Hx.
-    case: (Rlt_le_dec x b) => Hxb.
-    rewrite Gab //.
-    by apply Hd.
-    rewrite Gb //.
-    by apply ball_center.
+    move=> A lb_A.
+    have Alb : A lb by have /locallyP [? [[??]]] := lb_A; apply.
+    move: lb_A; move=> /H0 /locallyP [B [b_B sBfVA]].
+    apply/locallyE/locallyP; exists B; split => // x /sBfVA Afx.
+    rewrite /= /g; case: (Rlt_dec x b) => //.
   - split.
     by apply Gab.
     apply Gb ; by apply Rle_refl.
@@ -736,7 +732,7 @@ Proof.
   by apply Ropp_lt_contravar.
 Qed.
 
-Lemma C0_extension_left {T : UniformSpace} (f : R -> T) la (a b : R) :
+Lemma C0_extension_left {T : TopologicalSpace} (f : R -> T) la (a b : R) :
    a < b ->
    (forall c : R, a < c < b -> f @ c --> (f c)) ->
    (f @ (at_right a) --> la) ->
@@ -767,7 +763,7 @@ Proof.
   by apply Hg.
 Qed.
 
-Lemma C0_extension_lt {T : UniformSpace} (f : R -> T) la lb (a b : R) :
+Lemma C0_extension_lt {T : TopologicalSpace} (f : R -> T) la lb (a b : R) :
   a < b ->
    (forall c : R, a < c < b -> f @ c --> f c) ->
    (f @ (at_right a) --> la) ->
@@ -808,7 +804,7 @@ Proof.
   by [].
 Qed.
 
-Lemma C0_extension_le {T : UniformSpace} (f : R -> T) (a b : R) :
+Lemma C0_extension_le {T : TopologicalSpace} (f : R -> T) (a b : R) :
    (forall c : R, a <= c <= b -> f @ c --> f c) ->
    {g : R -> T | (forall c, g @ c --> g c)
      /\ (forall c : R, a <= c <= b -> g c = f c)}.
@@ -1583,7 +1579,7 @@ Qed.
 
 Section Continuity.
 
-Context {T U : UniformSpace}.
+Context {T U : TopologicalSpace}.
 
 Definition continuous_on (D : T -> Prop) (f : T -> U) :=
   forall x, D x -> f @ (within D (locally x)) --> (f x).
@@ -1662,13 +1658,14 @@ Qed.
 
 End Continuity.
 
-Lemma continuous_comp {U V W : UniformSpace} (f : U -> V) (g : V -> W) (x : U) :
+Lemma continuous_comp {U V W : TopologicalSpace} (f : U -> V) (g : V -> W)
+  (x : U) :
   {for x, continuous f} -> {for (f x), continuous g}
   -> {for x, continuous (fun x => g (f x))}.
 Proof.
   by apply filterlim_comp.
 Qed.
-Lemma continuous_comp_2 {U V W X : UniformSpace}
+Lemma continuous_comp_2 {U V W X : TopologicalSpace}
   (f : U -> V) (g : U -> W) (h : V -> W -> X) (x : U) :
   {for x, continuous f} -> {for x, continuous g}
   -> {for (f x, g x), continuous (fun (x : V * W) => h (fst x) (snd x))}
@@ -1678,15 +1675,7 @@ Proof.
   eapply filterlim_comp_2.
   by apply Cf.
   by apply Cg.
-  apply filterlim_locally => eps.
-  case: (proj1 (filterlim_locally _ _) Ch eps) => /= del Hdel.
-  rewrite {1}/ball /= /prod_ball /= in Hdel.
-  exists (fun y => ball (f x) (pos del) y) (fun y => ball (g x) (pos del) y).
-  apply locally_ball.
-  apply locally_ball.
-  move => y z /= Hy Hz.
-  apply (Hdel (y,z)).
-  by split.
+  exact: Ch.
 Qed.
 
 Lemma is_lim_comp_continuous (f g : R -> R) (x : Rbar) (l : R) :
@@ -1694,7 +1683,7 @@ Lemma is_lim_comp_continuous (f g : R -> R) (x : Rbar) (l : R) :
     -> is_lim (fun x => g (f x)) x (g l).
 Proof.
   intros Hf Hg.
-  apply filterlim_locally => eps.
+  apply/filterlim_locally => eps.
   destruct (proj1 (filterlim_locally _ _) Hg eps) as [e He] ; clear Hg.
   eapply filter_imp.
   intros y Hy.
@@ -1702,31 +1691,33 @@ Proof.
   by apply/Hf/locally_ball.
 Qed.
 
-Lemma continuous_fst {U V : UniformSpace} (x : U) (y : V) :
+Lemma continuous_fst {U V : TopologicalSpace} (x : U) (y : V) :
   {for (x, y), continuous (fst (B:=V))}.
 Proof.
-  move=> P /locallyP [d Hd].
-  exists d => z [/= Hz1 Hz2].
-  by apply Hd => /=.
+  move=> P /locallyP [A [[Aop Ax] sAP]].
+  apply/locallyP; exists (A `*` setT); split; last by move=> p [/sAP].
+  split=> // p [Ap1 _]; exists A setT => //; last exact: filter_true.
+  by apply/locallyP; exists A; split.
 Qed.
-Lemma continuous_snd {U V : UniformSpace} (x : U) (y : V) :
+Lemma continuous_snd {U V : TopologicalSpace} (x : U) (y : V) :
   {for (x, y), continuous (snd (B:=V))}.
 Proof.
-  move=> P /locallyP[d Hd].
-  exists d => z [/= Hz1 Hz2].
-  by apply Hd => /=.
+  move=> P /locallyP [A [[Aop Ax] sAP]].
+  apply/locallyP; exists (setT `*` A); split; last by move=> p [_ /sAP].
+  split=> // p [_ Ap2]; exists setT A => //; first exact: filter_true.
+  by apply/locallyP; exists A; split.
 Qed.
 
-Lemma continuous_const {U V : UniformSpace} (c : V) :
+Lemma continuous_const {U V : TopologicalSpace} (c : V) :
   continuous (fun _ : U => c).
 Proof. by move=> ?; apply filterlim_const. Qed.
 
-Lemma continuous_id {U : UniformSpace} : continuous (fun y : U => y).
+Lemma continuous_id {U : TopologicalSpace} : continuous (fun y : U => y).
 Proof. move=> ?; apply filterlim_id. Qed.
 
 Section Continuity_op.
 
-Context {U : UniformSpace} {K : AbsRing} {V : NormedModule K}.
+Context {U : TopologicalSpace} {K : AbsRing} {V : NormedModule K}.
 
 Lemma continuous_opp (f : U -> V) (x : U) :
   {for x, continuous f} ->
@@ -1782,7 +1773,7 @@ Qed.
 
 End Continuity_op.
 
-Lemma continuous_mult {U : UniformSpace} {K : AbsRing}
+Lemma continuous_mult {U : TopologicalSpace} {K : AbsRing}
   (f g : U -> K) (x : U) :
   {for x, continuous f} -> {for x, continuous g}
   -> {for x, continuous (fun y => mult (f y) (g y))}.

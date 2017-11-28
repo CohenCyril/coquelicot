@@ -2794,7 +2794,7 @@ Proof.
   intros x.
   apply sym_eq, Rmult_0_l.
   rewrite Rbar_mult_0_l.
-  apply filterlim_const.
+  apply: filterlim_const.
   eapply filterlim_comp_2.
   apply filterlim_const.
   apply filterlim_id.

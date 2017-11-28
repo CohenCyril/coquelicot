@@ -77,6 +77,9 @@ Definition setC {A} (X : set A) := [set a | ~ X a].
 
 Definition setD {A} (X Y : set A) := [set a | X a /\ ~ Y a].
 
+Definition set_prod {A B} (X : set A) (Y : set B) :=
+  [set ab | X ab.1 /\ Y ab.2].
+
 Notation "[ 'set' a ]" := (set1 a)
   (at level 0, a at level 99, format "[ 'set'  a ]") : classical_set_scope.
 Notation "[ 'set' a : T ]" := [set (a : T)]
@@ -92,6 +95,7 @@ Notation "[ 'set' ~ a ]" := (~` [set a])
   (at level 0, format "[ 'set' ~  a ]") : classical_set_scope.
 Notation "A `\` B" := (setD A B) : classical_set_scope.
 Notation "A `\ a" := (A `\` [set a]) : classical_set_scope.
+Notation "A `*` B" := (set_prod A B) : classical_set_scope.
 
 Definition bigsetI {A I} (P : set I) (X : I -> set A) :=
   [set a | forall i, P i -> X i a].
@@ -2052,6 +2056,36 @@ Canonical AbsRing_UniformSpace := UniformSpacePack K AbsRing_UniformSpace_mixin.
 
 End AbsRing_UniformSpace.
 
+Section Prod_TopologicalSpace.
+
+Context {T U : TopologicalSpace}.
+
+Definition prod_loc (p : T * U) := filter_prod (locally p.1) (locally p.2).
+
+Lemma prod_loc_filter (p : T * U) : ProperFilter (prod_loc p).
+Proof. exact: filter_prod_proper. Qed.
+
+Lemma prod_loc_singleton (p : T * U) (A : set (T * U)) : prod_loc p A -> A p.
+Proof.
+move=> [Q R /locally_singleton Qp1 /locally_singleton Rp2 sQRA].
+by rewrite [p]surjective_pairing; apply: sQRA.
+Qed.
+
+Lemma prod_loc_loc (p : T * U) (A : set (T * U)) :
+  prod_loc p A -> prod_loc p (prod_loc^~ A).
+Proof.
+move=> [Q R /locally_locally p1_Q /locally_locally p2_R sQRA].
+by exists (locally^~ Q) (locally^~ R) => // ????; exists Q R.
+Qed.
+
+Definition prod_TopologicalSpace_mixin :=
+  topologyOfFilterMixin prod_loc_filter prod_loc_singleton prod_loc_loc.
+
+Canonical prod_TopologicalSpace :=
+  TopologicalSpace.Pack _ prod_TopologicalSpace_mixin (T * U).
+
+End Prod_TopologicalSpace.
+
 Section prod_UniformSpace.
 
 Context {U V : UniformSpace}.
@@ -2084,22 +2118,30 @@ intros x y z e1 e2 [H1 H2] [H3 H4].
 split ; eapply ball_triangle ; eassumption.
 Qed.
 
+Lemma prod_locallyE (p : U * V) (A : set (U * V)) :
+  locally p A <-> exists eps : posreal, forall q, prod_ball p eps q -> A q.
+Proof.
+split; last first.
+  move=> [e pe_A]; exists (ball p.1 e) (ball p.2 e); try apply: locally_ball.
+  by move=> ????; apply: pe_A.
+move=> [Q R /locallyE [e1 p1e1_Q] /locallyE [e2 p2e2_R] sQRA].
+exists [posreal of Rmin e1 e2] => q [p1_q1 p2_q2].
+rewrite [q]surjective_pairing; apply: sQRA.
+  by apply: p1e1_Q; apply:ball_le p1_q1; apply: Rmin_l.
+by apply: p2e2_R; apply:ball_le p2_q2; apply: Rmin_r.
+Qed.
+
 End prod_UniformSpace.
 
 Definition prod_UniformSpace_mixin (U V : UniformSpace) :=
   UniformSpace.Mixin (U * V) _ prod_ball_center prod_ball_sym prod_ball_triangle.
 
-(* TODO : handle products of topological spaces *)
-Definition prod_TopologicalSpace_mixin (U V : UniformSpace) :=
-  uniformTopologicalSpaceMixin (U * V) (prod_UniformSpace_mixin _ _).
-Canonical prod_TopologicalSpace (U V : UniformSpace) :=
-  TopologicalSpace.Pack _ (prod_TopologicalSpace_mixin U V) (U * V).
-
 (*Canonical canonical_pair_filter (U V : UniformSpace) :=
   @CanonicalFilter (U * V) (U * V) (prod_UniformSpace_mixin U V).*)
 Canonical prod_UniformSpace (U V : UniformSpace) :=
-  UniformSpacePack (U * V) (prod_UniformSpace_mixin U V).
-  (* (UniformSpace.pack (U * V) (prod_UniformSpace_mixin U V) _ (@CanonicalFilter (U * V) (U * V) (prod_UniformSpace_mixin U V)) idfun (fun x y => iff_refl ((prod_UniformSpace_mixin U V) x y))). *)
+  UniformSpace.Pack _ (UniformSpace.Class _ _ (prod_UniformSpace_mixin U V)
+  (UniformSpace.LocallyMixin _ (prod_UniformSpace_mixin U V) _
+    (@prod_locallyE U V))) (U * V).
 
 (** Functional metric spaces *)
 
@@ -2144,7 +2186,7 @@ Canonical generic_source_filter :=
 Definition fct_TopologicalSpace_mixin :=
   uniformTopologicalSpaceMixin _ fct_UniformSpace_mixin.
 Canonical fct_TopologicalSpace :=
-  TopologicalSpace.Pack _ fct_TopologicalSpace_mixin (T -> U).
+  TopologicalSpace.Pack (T -> U) fct_TopologicalSpace_mixin (T -> U).
 
 Canonical fct_UniformSpace := UniformSpacePack (T -> U) fct_UniformSpace_mixin.
 
@@ -2229,12 +2271,12 @@ Require Import ssrbool ssrfun.
 Lemma appfilter U V (f : U -> V) (F : set (set U)) : f @ F = [set P | F (f @^-1` P)].
 Proof. by []. Qed.
 
-Lemma filterlim_const {T} {U : UniformSpace} {F : set (set T)} {FF : Filter F} (a : U) :
+Lemma filterlim_const {T} {U : TopologicalSpace} {F : set (set T)} {FF : Filter F} (a : U) :
   a @[_ --> F] --> a.
 Proof.
-move=> P /locallyE[eps HP].
+move=> A /locallyP [B [[Bop Ba] sBA]].
 rewrite /filter_of /= appfilter /=.
-by apply: filter_forall=> ?; apply/HP/ball_center.
+by apply: filter_forall => _; apply/sBA.
 Qed.
 
 Section Locally_fct.
@@ -5127,7 +5169,7 @@ Lemma locally_2d_locally :
   locally_2d P x y <-> locally (x,y) (fun z => P (fst z) (snd z)).
 Proof.
 intros P x y.
-split ; intros [d H] ; exists d.
+split=> [[d H]|/locallyE [d H]]; [apply/locallyE|]; exists d.
 - simpl.
   intros [u v] H'.
   now apply H ; apply H'.
@@ -5326,6 +5368,7 @@ intros P x y P_dec H.
 destruct (locally_ex_dec (x, y) (fun z => P (fst z) (snd z))) as [d Hd].
 - now intros [u v].
 - destruct H as [e H].
+  apply/locallyE.
   exists e.
   intros [u v] Huv.
   apply H.
