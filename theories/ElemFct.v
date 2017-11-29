@@ -323,15 +323,17 @@ Proof.
   by apply Hf.
   by apply Hg.
   eapply filterdiff_ext_lin.
+  have fgx_proper : ProperFilter (filtermap (fun t => (f t, g t)) (locally x)).
+    exact: filtermap_proper_filter.
   apply (filterdiff_mult (f x,g x)) => /=.
-  intros P [d Hd].
+  move=> P /(locallyE (f x, g x)) [d Hd].
   assert (Cf := ex_derive_continuous f x).
   assert (Cg := ex_derive_continuous g x).
   destruct (fun H => proj1 (filterlim_locally _ _) (Cf H) d) as [d1 Hd1].
     eexists ; by apply Hf.
   destruct (fun H => proj1 (filterlim_locally _ _) (Cg H) d) as [d2 Hd2].
     eexists ; by apply Hg.
-  exists (mkposreal _ (Rmin_stable_in_posreal d1 d2)) => /= y Hy.
+  apply/locallyE; exists [posreal of Rmin d1 d2] => /= y Hy.
   apply Hd ; split => /=.
   apply/(Hd1 y).
   apply: (ball_le x _ d1) Hy.

@@ -444,7 +444,7 @@ Proof.
   move => H.
   apply filterdiff_ext_loc with (1 := H).
   move => y Hy.
-  case/locallyP : H => [d Hd].
+  case/locallyE : H => [d Hd].
   apply Hd.
   replace y with x.
   apply ball_center.
@@ -748,7 +748,7 @@ Proof.
   by apply is_linear_id.
 
   move => x Hx eps.
-  apply/Hx/locallyP; exists eps => y /= Hy.
+  apply/Hx/locallyE; exists eps => y /= Hy.
   rewrite /minus plus_opp_r norm_zero.
   apply Rmult_le_pos.
   by apply Rlt_le, eps.
@@ -768,7 +768,7 @@ Proof.
   split.
   by apply is_linear_opp.
   move => x Hx eps.
-  apply/Hx/locallyP; exists eps => y /= Hy.
+  apply/Hx/locallyE; exists eps => y /= Hy.
   rewrite /minus -!opp_plus plus_opp_r norm_opp norm_zero.
   apply Rmult_le_pos.
   by apply Rlt_le, eps.
@@ -788,7 +788,7 @@ Proof.
   split.
   by apply is_linear_plus.
   move => x Hx eps.
-  apply Hx ; exists eps => u /= Hu.
+  apply/Hx/(locallyE x); exists eps => u /= Hu.
   set v := plus (plus _ _) _.
   replace v with (minus (plus (fst u) (snd u)) (plus (fst x) (snd x))).
   rewrite /minus plus_opp_r norm_zero.
@@ -818,7 +818,7 @@ Proof.
   by apply is_linear_opp.
   by apply is_linear_plus.
   move => x Hx eps.
-  apply Hx ; exists eps => u Hu.
+  apply/Hx/(locallyE x) ; exists eps => u Hu.
   simpl fst ; simpl snd.
   set v := minus (plus _ (opp (fst x))) _.
   replace v with (minus (minus (fst u) (snd u)) (minus (fst x) (snd x))).
@@ -843,7 +843,7 @@ Local Ltac plus_grab e :=
 
 Lemma filterdiff_scal :
   forall {F : (K * V -> Prop) -> Prop} {FF : ProperFilter F} (x : K * V),
-  F --> locally(* TODO: shouldn't this be inferred? *) x ->
+  F --> x ->
   (forall (n m : K), mult n m = mult m n) ->
   filterdiff (fun t : K * V => scal (fst t) (snd t)) F
     (fun t => plus (scal (fst t) (snd x)) (scal (fst x) (snd t))).
@@ -863,7 +863,7 @@ Proof.
     2: now apply is_filter_lim_unique with (1 := Hx).
     clear y Hy.
     apply Hx ; clear Hx.
-    apply: locally_le_locally_norm.
+    apply: (locally_le_locally_norm (x1, x2)).
     exists eps.
     intros [y1 y2] H.
     simpl.
@@ -892,7 +892,7 @@ Proof.
 Qed.
 
 Lemma ex_filterdiff_scal : forall {F} {FF : ProperFilter F} (x : K * V),
-  F --> locally(* TODO: shouldn't this be inferred? *) x ->
+  F --> x ->
   (forall (n m : K), mult n m = mult m n) ->
   ex_filterdiff (fun t : K * V => scal (fst t) (snd t)) F.
 Proof.
@@ -936,7 +936,7 @@ End Operations.
 
 Lemma filterdiff_mult {K : AbsRing} :
  forall {F} {FF : ProperFilter F} (x : K * K),
-  F --> locally (* TODO: shouldn't this be inferred *) x ->
+  F --> x ->
   (forall (n m : K), mult n m = mult m n) ->
   filterdiff (fun t : K * K => mult (fst t) (snd t)) F
     (fun t => plus (mult (fst t) (snd x)) (mult (fst x) (snd t))).
@@ -947,7 +947,7 @@ Qed.
 
 Lemma ex_filterdiff_mult {K : AbsRing} :
  forall {F} {FF : ProperFilter F} (x : K * K),
-  F --> locally(* TODO *) x ->
+  F --> x ->
   (forall (n m : K), mult n m = mult m n) ->
   ex_filterdiff (fun t : K * K => mult (fst t) (snd t)) F.
 Proof.
@@ -2076,10 +2076,11 @@ Proof.
   set (eps' := [posreal of eps / 2]).
   generalize (proj1 (filterlim_locally _ _) Cx eps') => {Cx} /= Cx.
   generalize (filter_and _ _ Dx Cx) => {Dx Cx}.
-  intros (d1,Hd1).
+  move=> /locallyE [d1 Hd1].
   destruct (proj2 Dy y (fun P H => H) eps') as (d2,Hd2).
   set (l1 := dfx x y).
-  exists (mkposreal _ (Rmin_stable_in_posreal d1 d2)).
+  apply/locallyE.
+  exists [posreal of Rmin d1 d2].
   intros (u,v) (Hu,Hv) ; simpl in *.
   set (g1 t := minus (f t v) (scal t l1)).
   set (g2 t := minus (f x t) (scal t dfy)).
@@ -2191,7 +2192,7 @@ Qed.
 
 Section ext_cont.
 
-Context {U : UniformSpace}.
+Context {U : TopologicalSpace}.
 
 Definition extension_cont (f g : R -> U) (a x : R) : U :=
   match Rle_dec x a with
@@ -2204,15 +2205,15 @@ Lemma extension_cont_continuous (f g : R -> U) (a : R) :
   -> f a = g a
   -> {for a, continuous (extension_cont f g a)}.
 Proof.
-  simpl => Cf Cg Heq ; apply filterlim_locally => /= eps.
-  generalize (proj1 (filterlim_locally _ _) Cf eps) => {Cf} Cf.
-  generalize (proj1 (filterlim_locally _ _) Cg eps) => {Cg} Cg.
-  generalize (filter_and _ _ Cf Cg).
-  apply: filter_imp => {Cf Cg} x [Cf Cg].
-  rewrite /extension_cont.
-  case: Rle_dec (Rle_refl a) => // _ _.
-  case: Rle_dec => // H.
-  by rewrite Heq.
+move=> Cf Cg faega A /locallyP [B].
+have -> : extension_cont f g a a = f a.
+  by rewrite /extension_cont; case: (Rle_dec a a).
+move=> [fa_B sBA].
+suff : locally a (f @^-1` B `&` g @^-1` B).
+  apply: filter_imp => b [Bfb Bgb]; apply: sBA.
+  by rewrite /extension_cont; case: (Rle_dec b a).
+apply: filter_and; first by apply/Cf/locallyP; exists B; split.
+by apply/Cg/locallyP; rewrite -faega; exists B; split.
 Qed.
 
 End ext_cont.

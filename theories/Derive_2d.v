@@ -226,7 +226,7 @@ Proof.
     by apply @is_linear_scal_l.
   rewrite -(is_filter_lim_locally_unique _ _ Hz) => {z Hz}.
   elim (Df eps) ; clear Df ; intros delta Df.
-  exists delta ; simpl in Df ; simpl ; intros.
+  exists delta => y0 H.
   rewrite /minus /plus /opp /scal /= /mult /=.
   replace (f y0 + - f x + - ((y0 + - x) * l)) with (f y0 - f x - (l * (y0 - x) + 0 * (y - y))) by ring.
   assert (Rabs (y0 - x) = Rmax (Rabs (y0 - x)) (Rabs (y-y))).

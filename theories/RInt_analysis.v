@@ -232,14 +232,14 @@ Proof.
   apply continuous_ext_loc
     with (fun z : R * R => plus (If (fst z) b) (plus (opp (If a b)) (If a (snd z)))) ; simpl.
     assert (Ha : locally (a,b) (fun z : R * R => is_RInt f a (snd z) (If a (snd z)))).
-      case: HIf => /= d HIf.
-      exists d => y /= Hy.
+      case/locallyE: HIf => /= d HIf.
+      apply/locallyE; exists d => y /= Hy.
       apply (HIf (a,(snd y))) ; split => //=.
       by apply ball_center.
       by apply Hy.
     assert (Hb : locally (a,b) (fun z : R * R => is_RInt f (fst z) b (If (fst z) b))).
-      case: HIf => /= d HIf.
-      exists d => x /= Hx.
+      case/locallyE: HIf => /= d HIf.
+      apply/locallyE; exists d => x /= Hx.
       apply (HIf (fst x,b)) ; split => //=.
       by apply Hx.
       by apply ball_center.
@@ -257,8 +257,8 @@ Proof.
   apply (continuous_comp (fun x => fst x) (fun x => If x b)) ; simpl.
   apply continuous_fst.
   apply: (continuous_RInt_2 f _ b).
-    case: HIf => /= d HIf.
-    exists d => x /= Hx.
+    case/locallyE: HIf => /= d HIf.
+    apply/locallyE; exists d => x /= Hx.
     apply (HIf (x,b)).
     split => //=.
     by apply ball_center.
@@ -269,14 +269,15 @@ Proof.
   set tmp := [filter of fun P : set (R * R) => _].
   rewrite (_ : tmp = locally (a, b)) //.
   apply: filterlim_const.
-  apply (continuous_comp (fun x => snd x) (fun x => If a x)) ; simpl.
-  apply continuous_snd.
+  suff: {for (a, b), continuous (fun ab => If a (snd ab))}.
+    by [].
+  apply: continuous_comp; first exact: continuous_snd.
   eapply (continuous_RInt_1 f a b).
-    case: HIf => /= d HIf.
-    exists d => x /= Hx.
-    apply (HIf (a,x)).
-    split => //=.
-    by apply ball_center.
+  case/locallyE: HIf => /= d HIf.
+  apply/locallyE; exists d => x /= Hx.
+  apply (HIf (a,x)).
+  split => //=.
+  by apply ball_center.
   Unshelve.
   by apply Riemann_fine_filter.
 Qed.
@@ -289,8 +290,8 @@ Lemma ex_RInt_locally {V : CompleteNormedModule R_AbsRing} (f : R -> V) (a b : R
   -> (exists eps : posreal, ex_RInt f (b - eps) (b + eps))
   -> locally (a,b) (fun z : R * R => ex_RInt f (fst z) (snd z)).
 Proof.
-  intros Hf (ea,Hea) (eb,Heb).
-  exists (mkposreal _ (Rmin_stable_in_posreal ea eb)) => [[a' b'] [Ha' Hb']] ; simpl in *.
+  intros Hf (ea,Hea) (eb,Heb); apply/locallyE.
+  exists [posreal of Rmin ea eb] => [[a' b'] [Ha' Hb']] ; simpl in *.
   apply ex_RInt_Chasles with (a - ea).
   eapply ex_RInt_swap, ex_RInt_Chasles_1 ; try eassumption.
   apply Rabs_le_between'.
@@ -430,14 +431,14 @@ Proof.
   intros Hf Cfa Cfb.
 
   assert (Ha : locally a (fun a : R => is_RInt f a b (If a b))).
-    case: Hf => /= e He.
-    exists e => x Hx.
+    case/locallyE: Hf => /= e He.
+    apply/locallyE; exists e => x Hx.
     apply (He (x,b)).
     split => //.
     by apply ball_center.
   assert (Hb : locally b (fun b : R => is_RInt f a b (If a b))).
-    case: Hf => /= e He.
-    exists e => x Hx.
+    case/locallyE: Hf => /= e He.
+    apply/locallyE; exists e => x Hx.
     apply (He (a,x)).
     split => //.
     by apply ball_center.
@@ -464,12 +465,12 @@ Proof.
   simpl.
 
   have : (locally (a,b) (fun u : R * R => is_RInt f (fst u) b (If (fst u) b))) => [ | {Ha} Ha].
-    case: Ha => /= e He.
-    exists e => y Hy.
+    case/locallyE: Ha => /= e He.
+    apply/locallyE; exists e => y Hy.
     apply He, Hy.
   have : (locally (a,b) (fun u : R * R => is_RInt f a (snd u) (If a (snd u)))) => [ | {Hb} Hb].
-    case: Hb => /= e He.
-    exists e => y Hy.
+    case/locallyE: Hb => /= e He.
+    apply/locallyE; exists e => y Hy.
     apply He, Hy.
   move: (locally_singleton _ _ Hf) => /= Hab.
   generalize (filter_and _ _ Hf (filter_and _ _ Ha Hb)).
@@ -1211,10 +1212,8 @@ apply (is_derive_filterdiff
 destruct Df as (d2,Df).
 destruct Cdf2 as (d3,Cdf2).
 destruct Ia as (d4,Ia).
-exists (mkposreal _ (Rmin_stable_in_posreal
-                (mkposreal _ (Rmin_stable_in_posreal d1 [posreal of d2 / 2]))
-                (mkposreal _ (Rmin_stable_in_posreal d3
-                            (mkposreal _ (Rmin_stable_in_posreal d0 [posreal of d4 / 2])))))).
+apply/locallyE.
+exists [posreal of Rmin (Rmin d1 (d2 / 2)) (Rmin d3 (Rmin d0 (d4 / 2)))].
 intros [u v] [Hu Hv] ; simpl in *.
 apply: Derive_correct.
 eexists ; apply is_derive_RInt_param.
@@ -1389,8 +1388,8 @@ intros z Hz.
 specialize (Cf1 z Hz).
 apply continuity_2d_pt_filterlim in Cf1.
 intros c Hc.
-destruct (Cf1 c Hc) as [e He].
-exists e.
+have /Cf1/locallyE [e He] := Hc.
+apply/locallyE; exists e.
 intros d Hd.
 apply (He (x,d)).
 split.

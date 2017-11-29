@@ -453,7 +453,10 @@ Definition C_UniformMixin : UniformSpace.mixin_of C :=
   UniformSpace.class (prod_UniformSpace R_UniformSpace R_UniformSpace).
 
 Canonical C_canonical_filter := CanonicalFilter C C C_UniformMixin.
-Canonical C_UniformSpace := UniformSpacePack C C_UniformMixin.
+Canonical C_UniformSpace :=
+  UniformSpace.Pack _ (UniformSpace.Class _ _ C_UniformMixin
+  (UniformSpace.LocallyMixin _ C_UniformMixin _
+    (@prod_locallyE R_UniformSpace R_UniformSpace))) C.
 
 (** on C (with the balls of R^2) *)
 
@@ -584,8 +587,8 @@ Canonical C_R_CompleteNormedModule :=
 Lemma locally_C x P :
   locally (T := C_UniformSpace) x P <-> locally (T := AbsRing_UniformSpace C_AbsRing) x P.
 Proof.
-  split => [[e He] | [e He]].
-  - exists e => /= y Hy.
+  split => [/locallyE [e He] | /locallyE [e He]].
+  - apply/locallyE; exists e => /= y Hy.
     apply He.
     split.
     eapply Rle_lt_trans, Hy.
@@ -598,7 +601,7 @@ Proof.
     apply Rdiv_lt_0_compat.
     by apply e.
     apply Rlt_sqrt2_0.
-    exists (mkposreal _ Hd) => /= y [Hy1 Hy2].
+    apply/locallyE; exists (mkposreal _ Hd) => /= y [Hy1 Hy2].
     apply He.
     eapply Rle_lt_trans.
     apply Cmod_2Rmax.
@@ -623,9 +626,8 @@ Proof.
 
   apply (f_equal real (y := Finite lx)).
   apply is_lim_unique => /= P [eps Hp].
-  destruct (H (fun z => P (fst z))) as [delta Hd] ; clear H.
-  exists eps => y Hy.
-  apply Hp, Hy.
+  have /H/locallyE [delta {H} Hd] : locally (lx, ly) [set z | P (fst z)].
+    by apply/locallyE; exists eps => y Hy; apply Hp, Hy.
   exists delta.
   intros y By Hy.
   apply Hd.
@@ -639,10 +641,8 @@ Proof.
 
   apply (f_equal real (y := Finite ly)).
   apply is_lim_unique => /= P [eps Hp].
-  destruct (H (fun z => P (snd z))) as [delta Hd] ; clear H.
-  exists eps => y Hy.
-  apply Hp.
-  apply Hy.
+  have /H/locallyE [delta {H} Hd] : locally (lx, ly) [set z | P (snd z)].
+    by apply/locallyE; exists eps => y Hy; apply Hp, Hy.
   exists delta.
   intros y By Hy.
   apply Hd.
@@ -664,10 +664,10 @@ Lemma is_C_derive_unique (f : C -> C) (z l : C) :
 Proof.
 move=> [_ /(_ _ (fun P H => H)) Df].
 apply is_C_lim_unique.
-move=> p; rewrite filter_ofE => /locallyP [eps HP].
-have /locallyP [eps' Df'] := Df ([posreal of eps / 2]).
+move=> p; rewrite filter_ofE => /locallyE [eps HP].
+have /locallyE [eps' Df'] := Df ([posreal of eps / 2]).
 unfold filtermap, locally', within.
-apply/locally_C/locallyP.
+apply/locally_C/locallyE.
 exists eps' => y Hy Hyz.
 apply HP.
   assert (y - z <> 0).
@@ -676,11 +676,13 @@ replace y with (y - z + z) by ring.
 rewrite Hyz.
 apply Cplus_0_l.
 apply: norm_compat1.
-rewrite /minus /plus /opp /=.
-replace ((f y - f z) / (y - z) + - l) with
+suff: Cmod ((f y - f z) / (y - z) - l) < eps.
+  by rewrite /minus /plus /opp /norm /= /prod_norm -?Rsqr_pow2 -?Rsqr_abs
+    !Rsqr_pow2.
+replace ((f y - f z) / (y - z) - l) with
   ((f y + - f z + - ((y + - z) * l)) / (y + - z)).
   2: by field.
-rewrite /norm /= Cmod_div => //.
+rewrite Cmod_div => //.
 apply Rlt_div_l.
   by apply Cmod_gt_0.
 eapply Rle_lt_trans.
